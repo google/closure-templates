@@ -1,0 +1,135 @@
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<project name="Soy" basedir="." default="jar">
+
+
+  <!-- Define properties. -->
+  <property name="build.dir" value="${basedir}/build" />
+  <property name="soy.jar.file" value="${build.dir}/Soy.jar" />
+  <property name="build.classes.dir" value="${build.dir}/classes" />
+  <property name="build.genfiles.dir" value="${build.dir}/genfiles" />
+  <property name="java.src.dir" value="${basedir}/java/src" />
+  <property name="java.lib.dir" value="${basedir}/java/lib" />
+
+
+  <!-- Target to delete the generated files. -->
+  <target name="clean"
+          description="Deletes generated files.">
+    <delete dir="${build.dir}" />
+  </target>
+
+
+  <!-- Target to compile the Java source. -->
+  <target name="compile"
+          description="Compiles the Java source.">
+
+    <mkdir dir="${build.classes.dir}" />
+    <mkdir dir="${build.genfiles.dir}" />
+    <mkdir dir="${build.genfiles.dir}/com/google/template/soy/exprparse" />
+    <mkdir dir="${build.genfiles.dir}/com/google/template/soy/soyparse" />
+
+    <!-- JavaCC compilation. Generated files go into the 'genfiles' directory. -->
+    <javacc target="${java.src.dir}/com/google/template/soy/exprparse/ExpressionParser.jj"
+            outputdirectory="${build.genfiles.dir}/com/google/template/soy/exprparse"
+            javacchome="buildtools/javacc" />
+    <javacc target = "${java.src.dir}/com/google/template/soy/soyparse/SoyFileParser.jj"
+            outputdirectory = "${build.genfiles.dir}/com/google/template/soy/soyparse"
+            javacchome = "buildtools/javacc" />
+    <javacc target = "${java.src.dir}/com/google/template/soy/soyparse/TemplateParser.jj"
+            outputdirectory = "${build.genfiles.dir}/com/google/template/soy/soyparse"
+            javacchome = "buildtools/javacc" />
+
+    <!-- Java compilation. -->
+    <javac srcdir="${java.src.dir}:${build.genfiles.dir}"
+           destdir="${build.classes.dir}"
+           source="1.6" target="1.6">
+      <classpath>
+        <fileset dir="${java.lib.dir}">
+          <include name="*.jar" />
+        </fileset>
+      </classpath>
+    </javac>
+
+  </target>
+
+
+  <!-- Target to create a standalone jar of all Java class files and dependencies. -->
+  <target name="jar"
+          depends="compile"
+          description="Creates a standalone jar of all Java class files and dependencies.">
+    <jar destfile="${soy.jar.file}" update="true">
+      <fileset dir="${build.classes.dir}" />
+      <zipfileset src="${java.lib.dir}/google-guava-snapshot.jar" />
+      <zipfileset src="${java.lib.dir}/guice-snapshot.jar" />
+      <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar" />
+      <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar" />
+      <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
+    </jar>
+  </target>
+
+
+  <!-- Macro for targets to create standalone executable jars. -->
+  <macrodef name="executable-jar">
+    <attribute name="executable.name" />
+    <sequential>
+      <jar destfile="${build.dir}/@{executable.name}.jar" update="true">
+        <manifest>
+          <attribute name="Main-Class" value="com.google.template.soy.@{executable.name}" />
+        </manifest>
+        <fileset dir="${build.classes.dir}" />
+        <zipfileset src="${java.lib.dir}/google-guava-snapshot.jar" />
+        <zipfileset src="${java.lib.dir}/guice-snapshot.jar" />
+        <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar" />
+        <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar" />
+        <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
+      </jar>
+    </sequential>
+  </macrodef>
+
+
+  <!-- Target to create a standalone executable SoyToJsSrcCompiler.jar. -->
+  <target name="SoyToJsSrcCompiler"
+          depends="compile"
+          description="Creates a standalone executable SoyToJsSrcCompiler.jar.">
+    <executable-jar executable.name="SoyToJsSrcCompiler" />
+  </target>
+
+
+  <!-- Target to create a standalone executable SoyParseInfoGenerator.jar. -->
+  <target name="SoyParseInfoGenerator"
+          depends="compile"
+          description="Creates a standalone executable SoyParseInfoGenerator.jar.">
+    <executable-jar executable.name="SoyParseInfoGenerator" />
+  </target>
+
+
+  <!-- Target to create a standalone executable SoyMsgExtractor.jar. -->
+  <target name="SoyMsgExtractor"
+          depends="compile"
+          description="Creates a standalone executable SoyMsgExtractor.jar.">
+    <executable-jar executable.name="SoyMsgExtractor" />
+  </target>
+
+
+  <!-- Target to create a standalone executable SoyToJavaSrcCompilerExperimental.jar. -->
+  <target name="SoyToJavaSrcCompilerExperimental"
+          depends="compile"
+          description="Creates a standalone executable SoyToJavaSrcCompilerExperimental.jar.">
+    <executable-jar executable.name="SoyToJavaSrcCompilerExperimental" />
+  </target>
+
+
+</project>

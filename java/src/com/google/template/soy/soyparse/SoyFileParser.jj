@@ -1,0 +1,473 @@
+/*
+ * Copyright 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+//
+// JavaCC grammar specification for a Soy file.
+//
+// @author Kai Huang
+
+
+// =================================================================================================
+// Options
+// =================================================================================================
+
+options {
+  JDK_VERSION = "1.6";
+  STATIC = false;
+  UNICODE_INPUT = true;
+}
+
+
+// =================================================================================================
+// Parser class
+// =================================================================================================
+
+
+PARSER_BEGIN(SoyFileParser)
+
+package com.google.template.soy.soyparse;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Join;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.base.IntegerIdGenerator;
+import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateNode;
+
+import java.io.*;
+import java.util.*;
+
+
+/**
+ * This Java class was automatically generated using JavaCC. Do not edit this class by hand.
+ *
+ * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <pre>
+ * This parser parses the following Soy file structure:
+ *
+ * 1. Namespace:
+ *    + The file must contain exactly one namespace declaration.
+ *    + It must appear before any templates.
+ *    + It must appear on its own line(s) and start at the start of a line.
+ *    Example:   {namespace boo.foo}
+ *
+ * 2. SoyDoc:
+ *    + Starts with slash-star-star (/**) and ends with star-slash (*&#47;) like JavaDoc.
+ *    + SoyDoc must appear on its own line(s) and start at the start of a line.
+ *    + Currently recognizes two tags: "@param keyName" and "@param? optionalKeyName".
+ *    Example:
+ *    /**
+ *     * @param boo Something scary.
+ *     * @param? goo Something slimy (optional).
+ *     *&#47;
+ *
+ * 3. Template:
+ *    + Each template must be immediately preceded by a SoyDoc block.
+ *    + The 'template' tag and the '/template' tag much each appear on its own line(s) and start
+ *      at the start of a line.
+ *    + The template body is not parsed by this parser. The body will be saved and returned for
+ *      parsing by the template parser.
+ *    Example:
+ *    /**
+ *     * @param boo Something scary.
+ *     * @param? goo Something slimy (optional).
+ *     *&#47;
+ *    {template name="foo"}
+ *      {msg desc=""}
+ *        {$boo} has a friend named {$goo.firstName}.
+ *      {/msg}
+ *    {/template}
+ *
+ * 4. Misc:
+ *    + Other than the items specified above, everything else is ignored.
+ *    + SoyDoc blocks not immediately followed by a template are ignored.
+ *    + The file must end with a newline.
+ * </pre>
+ *
+ * @author Kai Huang
+ */
+public class SoyFileParser {
+
+
+  /** Node id generator for the tree being built. */
+  private IdGenerator nodeIdGen;
+
+
+  /**
+   * Constructor that takes a reader object providing the input.
+   * @param input The input to parse.
+   * @param nodeIdGen The node id generator for the tree being built.
+   */
+  public SoyFileParser(Reader input, IdGenerator nodeIdGen) {
+    this(input);
+    this.nodeIdGen = nodeIdGen;
+  }
+
+
+  /**
+   * Constructor that takes a string input.
+   * @param input The input to parse.
+   * @param nodeIdGen The node id generator for the tree being built.
+   */
+  public SoyFileParser(String input, IdGenerator nodeIdGen) {
+    this(new StringReader(input), nodeIdGen);
+  }
+
+
+  /**
+   * Attempts to parse STDIN as a Soy file in UTF-8 encoding. If successful, prints "Valid input."
+   * to STDOUT. If unsuccessful, throws an exception.
+   * @param args This executable does not take any args.
+   * @throws TokenMgrError When the input from STDIN has a token error.
+   * @throws ParseException When the input from STDIN has a parse error.
+   * @throws SoySyntaxException When the input from STDIN has a syntax error.
+   */
+  public static void main(String[] args) throws SoySyntaxException, TokenMgrError, ParseException {
+    Reader stdinReader;
+    try {
+      stdinReader = new InputStreamReader(System.in, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new AssertionError();
+    }
+    IdGenerator nodeIdGen = new IntegerIdGenerator();
+    (new SoyFileParser(stdinReader, nodeIdGen)).SoyFile();
+    System.out.println("Valid input.");
+  }
+
+
+  /**
+   * Attempts to parse the given input as a Soy file.
+   * @throws TokenMgrError When the input has a token error.
+   * @throws ParseException When the input has a parse error.
+   * @throws SoySyntaxException When the input from STDIN has a syntax error.
+   */
+  public SoyFileNode parseSoyFile() throws SoySyntaxException, TokenMgrError, ParseException {
+    Preconditions.checkNotNull(nodeIdGen);
+    return SoyFile();
+  }
+
+}
+
+PARSER_END(SoyFileParser)
+
+
+// =================================================================================================
+// Tokens
+// =================================================================================================
+
+
+TOKEN_MGR_DECLS:
+{
+
+  /** Whether we have encountered a namespace declaration. */
+  private boolean seenNamespace = false;
+
+  /** Whether we have already encountered a template. */
+  private boolean seenTemplate = false;
+
+
+  /**
+   * Creates a new TokenMgrError with the given message and throws it.
+   * @param message The error message.
+   * @throws TokenMgrError Always.
+   */
+  private static void throwTokenMgrError(String message) throws TokenMgrError {
+    throw new TokenMgrError(message, TokenMgrError.LEXICAL_ERROR);
+  }
+
+
+  /**
+   * Creates a new TokenMgrError with the given message and line/column numbers and throws it.
+   * @param message The error message. Should not end with a period because the suffix
+   *     " [line ..., column ...]" will be appended.
+   * @param matchedToken The current matched token to get the line/column numbers from.
+   * @throws TokenMgrError Always.
+   */
+  private static void throwTokenMgrError(String message, Token matchedToken) throws TokenMgrError {
+    throw new TokenMgrError(message + " [line " + matchedToken.beginLine +
+                            ", column " + matchedToken.beginColumn + "].",
+                            TokenMgrError.LEXICAL_ERROR);
+  }
+
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// Namespace.
+
+<DEFAULT> TOKEN:
+{
+  < NAMESPACE_TAG: "{namespace" (<WS>)+ <DOTTED_IDENT> (<WS>)* "}" >
+  { if (seenNamespace) {
+      throwTokenMgrError("Found multiple 'namespace' declarations.");
+    }
+    if (seenTemplate) {
+      throwTokenMgrError("The 'namespace' declaration must appear before any templates.");
+    }
+    seenNamespace = true;
+  }
+|
+  < #DOTTED_IDENT: <IDENT> ( (<WS>)* "." (<WS>)* <IDENT> )* >
+}
+
+// Invalid 'namespace' tags.
+<DEFAULT> TOKEN:
+{
+  < XXX_NAMESPACE_TAG_NOT_SOL: <NOT_SOL> "{namespace" >
+  { throwTokenMgrError("Tag 'namespace' not at start of line."); }
+|
+  < XXX_NAMESPACE_TAG_NOT_EOL: "{namespace" ( <NOT_BRACE> )* "}" <NOT_EOL> >
+  { throwTokenMgrError("End of tag 'namespace' not at end of line."); }
+}
+
+// Catch all other errors.
+<DEFAULT, IN_TEMPLATE> TOKEN:
+{
+  < XXX_NAMESPACE_INVALID: "{namespace" >
+  { throwTokenMgrError("Invalid 'namespace' tag", matchedToken); }
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// SoyDoc.
+
+<DEFAULT> SPECIAL_TOKEN:
+{
+  < SOY_DOC_START: "/**" > : IN_SOY_DOC
+}
+
+<IN_SOY_DOC> SPECIAL_TOKEN:
+{
+  < SOY_DOC_NEWLINE: <NEWLINE> >
+|
+  < SOY_DOC_CHAR: <ANY_CHAR> >
+|
+  // Grab everything until end of line so that if there's a following template, then this special
+  // token will be the special token immediately before the template tag.
+  < SOY_DOC_END: "*/" <WS_UNTIL_EOL> > : DEFAULT
+}
+
+// Invalid SoyDoc start.
+<DEFAULT> TOKEN:
+{
+  < XXX_SOY_DOC_START_NOT_SOL: <NOT_SOL> "/**" >
+  { throwTokenMgrError("SoyDoc not at start of line", matchedToken); }
+}
+
+// Invalid SoyDoc end.
+<IN_SOY_DOC> TOKEN:
+{
+  < XXX_SOY_DOC_END_NOT_EOL: "*/" <NOT_EOL> >
+  { throwTokenMgrError("End of SoyDoc not at end of line", matchedToken); }
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// Template.
+
+<DEFAULT> TOKEN:
+{
+  // Grab everything until end of line so that the template body starts with the next line.
+  < TEMPLATE_TAG: "{template" <WS> ( <NOT_BRACE> )+ "}" <WS_UNTIL_EOL> >
+  { seenTemplate = true;
+    // Remove the extra whitespace that we matched after the tag.
+    int rbIndex = image.lastIndexOf("}");
+    matchedToken.image = image.substring(0, rbIndex + 1);
+  }
+  : IN_TEMPLATE
+}
+
+// Collect the template body using MORE and return it when we reach the '/template' tag.
+<IN_TEMPLATE> MORE:
+{
+  < TEMPLATE_BODY_CHAR: <ANY_CHAR> >
+}
+
+<IN_TEMPLATE> TOKEN:
+{
+  // Match a '/template' tag and return the collected template body as the TEMPLATE_BODY token.
+  < TEMPLATE_BODY: "{/template}" >
+  { // Remove the end-template tag so that the template body ends with the last newline.
+    matchedToken.image = image.substring(0, image.length() - 11);
+  }
+  : DEFAULT
+}
+
+// Invalid 'template' tag.
+<DEFAULT> TOKEN:
+{
+  < XXX_TEMPLATE_TAG_NOT_SOL: <NOT_SOL> "{template" >
+  { throwTokenMgrError("Tag 'template' not at start of line", matchedToken); }
+|
+  < XXX_TEMPLATE_TAG_NOT_EOL: "{template" ( <NOT_BRACE> )+ "}" <NOT_EOL> >
+  { throwTokenMgrError("End of tag 'template' not at end of line", matchedToken); }
+}
+
+// Invalid '/template' tag.
+<IN_TEMPLATE> TOKEN:
+{
+  < XXX_END_TEMPLATE_TAG_NOT_SOL: <NOT_SOL> "{/template}" >
+  { throwTokenMgrError("Tag '/template' not at start of line", matchedToken); }
+|
+  < XXX_END_TEMPLATE_TAG_NOT_EOL: "{/template}" <NOT_EOL> >
+  { throwTokenMgrError("End of tag '/template' not at end of line", matchedToken); }
+}
+
+// Catch all other errors.
+<DEFAULT, IN_TEMPLATE> TOKEN:
+{
+  < XXX_TEMPLATE_TAG_INVALID: "{template" >
+  { throwTokenMgrError("Invalid 'template' tag", matchedToken); }
+|
+  < XXX_END_TEMPLATE_TAG_INVALID: "{/template" >
+  { throwTokenMgrError("Invalid '/template' tag", matchedToken); }
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// Misc.
+
+// Skip unmatched characters in all states except IN_TEMPLATE.
+// Note: We need to capture characters using SPECIAL_TOKEN instead of SKIP so we can check for
+// newline before EOF.
+<DEFAULT> SPECIAL_TOKEN:
+{
+  < SKIPPED_NEWLINE: <NEWLINE> >
+|
+  < SKIPPED_CHAR: <ANY_CHAR> >
+}
+
+// Private helper regexes.
+<*> TOKEN:
+{
+  < #ANY_CHAR: ~[] >
+|
+  < #WS: " " | "\t" | "\n" | "\r" | "\r\n" >
+|
+  < #NEWLINE: "\n" | "\r" | "\r\n" >
+|
+  < #WS_UNTIL_EOL: ( [" ","\t"] )* <NEWLINE> >
+|
+  < #NOT_SOL: ~["\n","\r"] >
+|
+  < #NOT_EOL: ( [" ","\t"] )* ~[" ","\t","\n","\r"] >  // allows whitespace at end of line
+|
+  < #NOT_BRACE: ~["{","}"] >
+|
+  < #IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+}
+
+
+// =================================================================================================
+// Grammar
+// =================================================================================================
+
+
+/**
+ * Matches the whole input if it is a valid Soy file.
+ *
+ * SoyFile -> [ NamespaceTag ] ( Template )* EOF
+ */
+private SoyFileNode SoyFile() throws SoySyntaxException :
+{
+  Token namespaceTag, eof;
+  TemplateNode template;
+}
+{
+  { String namespace = null; }
+
+  [
+    namespaceTag = <NAMESPACE_TAG>
+    { int start = namespaceTag.image.indexOf("{namespace") + 10;
+      int end = namespaceTag.image.length() - 1;
+      String cmdText = namespaceTag.image.substring(start, end);
+      namespace = CharMatcher.WHITESPACE.removeFrom(cmdText);
+    }
+  ]
+
+  { SoyFileNode soyFileNode = new SoyFileNode(nodeIdGen.genStringId(), namespace); }
+
+  (
+    template = Template()
+    { soyFileNode.addChild(template); }
+  )*
+
+  eof = <EOF>
+  { // Note: The only tokens that can end with a newline are the special tokens SKIPPED_NEWLINE,
+    // SOY_DOC_NEWLINE, and SOY_DOC_END. Thus, EOF must be preceded by one of these special tokens.
+    if (eof.specialToken == null ||
+        (eof.specialToken.kind != SKIPPED_NEWLINE && eof.specialToken.kind != SOY_DOC_NEWLINE &&
+         eof.specialToken.kind != SOY_DOC_END)) {
+      throw new ParseException("Soy file must end with newline.");
+    }
+  }
+
+  { return soyFileNode; }
+}
+
+
+/**
+ * Template -> TemplateTag TemplateBody
+ */
+private TemplateNode Template() throws SoySyntaxException :
+{
+  Token templateTag, templateBody;
+}
+{
+  templateTag = <TEMPLATE_TAG>
+  { String soyDoc;
+    Token soyDocEnd = templateTag.specialToken;
+    if (soyDocEnd != null && soyDocEnd.kind == SOY_DOC_END) {
+      // Collect all the preceding special tokens to reconstruct the SoyDoc. The special tokens
+      // should be a list of the form
+      //     SOY_DOC_START ( SOY_DOC_NEWLINE | SOY_DOC_CHAR )* SOY_DOC_END
+      // Note that since we're iterating in reverse, we need to prepend to the list we're building.
+      List<String> soyDocParts = Lists.newArrayList();
+      soyDocParts.add(0, "*/");
+      for (Token st = soyDocEnd.specialToken; st.kind != SOY_DOC_START; st = st.specialToken) {
+        soyDocParts.add(0, st.image);
+      }
+      soyDocParts.add(0, "/**");
+      soyDoc = Join.join("", soyDocParts);
+    } else {
+      // Null means there is no preceding SoyDoc.
+      soyDoc = null;
+    }
+
+    String cmdText = templateTag.image.substring(10, templateTag.image.length()-1).trim();
+    TemplateNode templateNode = new TemplateNode(nodeIdGen.genStringId(), cmdText, soyDoc);
+  }
+
+  templateBody = <TEMPLATE_BODY>
+  { List<SoyNode> templateBodyNodes;
+    try {
+      templateBodyNodes = (new TemplateParser(templateBody.image, nodeIdGen)).parseTemplateBody();
+    } catch (TokenMgrError tme) {
+      throw (new SoySyntaxException(tme)).setTemplateName(templateNode.getTemplateName());
+    } catch (ParseException pe) {
+      throw (new SoySyntaxException(pe)).setTemplateName(templateNode.getTemplateName());
+    } catch (SoySyntaxException sse) {
+      throw sse.setTemplateName(templateNode.getTemplateName());
+    }
+    templateNode.addChildren(templateBodyNodes);
+  }
+
+  { return templateNode; }
+}

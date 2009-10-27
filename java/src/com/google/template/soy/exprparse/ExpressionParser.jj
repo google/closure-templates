@@ -1,0 +1,716 @@
+/*
+ * Copyright 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// JavaCC grammar specification for the Soy expression language.
+//
+// @author Kai Huang
+
+
+// =================================================================================================
+// Options
+// =================================================================================================
+
+options {
+  JDK_VERSION = "1.6";
+  STATIC = false;
+  UNICODE_INPUT = true;
+}
+
+
+// =================================================================================================
+// Parser class
+// =================================================================================================
+
+PARSER_BEGIN(ExpressionParser)
+
+package com.google.template.soy.exprparse;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.StringUtil;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.DataRefIndexNode;
+import com.google.template.soy.exprtree.DataRefKeyNode;
+import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.OperatorNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FloatNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes;
+import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarNode;
+
+import java.io.StringReader;
+import java.util.List;
+
+
+/**
+ * This Java class was automatically generated using JavaCC. Do not edit this class by hand.
+ *
+ * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <pre>
+ * This parser parses several related things: variables, data references, globals, expression lists,
+ * and expressions.
+ *
+ * A. Variable:
+ *    + A dollar sign "$" followed by an identifier (no space between).
+ *
+ * B. Data reference:
+ *    + The first part must be "$" followed by the first key name (no space between).
+ *    + The first key name cannot be a number.
+ *    + A variable will only have the first part. A data reference may have subsequent parts.
+ *    + Subsequent parts may be:
+ *       - A dot "." followed by a key name or array index (spaces between are allowed).
+ *       - Brackets "[ ]" with any expression inside (see below for definition of expression).
+ *    Examples:   $aaa   $aaa.bbb.0.ccc.12   $aaa[0]['bbb'].ccc   $aaa[$bbb + $ccc]
+ *
+ * C. Global:
+ *    + One or more identifiers. If more than one, a dot "." is used to separate them.
+ *    + Must not be preceded by a dollar sign "$".
+ *    Examples:   AAA   aaa.bbb.CCC   a22.b88_
+ *
+ * D. Expression list:
+ *    + A comma-separated list of one or more expressions (see below for definition of expression).
+ *    Example:   $aaa, $bbb.ccc + 1, round(3.14)
+ *
+ * E. Expression:
+ *
+ *    1. Data reference:
+ *       + See above for definition.
+ *
+ *    2. Global:
+ *       + See above for definition.
+ *
+ *    3. Null:   null
+ *
+ *    4. Boolean:   false   true
+ *
+ *    5. Integer:
+ *       + No octal numbers.
+ *       + Hex numbers have strict lower case "x" in "0x" and upper case "A-F".
+ *       Examples:   0   26   -729   0x1A2B
+ *
+ *    6. Float:
+ *       + Decimal numbers only.
+ *       + Must have digits on both sides of decimal point.
+ *       + Exponents have strict lower case "e".
+ *       Examples:   0.0   3.14159   -20.0   6.03e23   -3e-3
+ *
+ *    7. String:
+ *       + Single quotes only.
+ *       + Escape sequences:   \\   \'   \"   \n   \r   \t   \b   \f
+ *       + Unicode escape:   \ u ####   (backslash, "u", four hex digits -- no spaces in between)
+ *       Examples:   ''   'abc'   'blah bleh bluh'   'aa\\bb\'cc\ndd'
+ *
+ *    8. Operators:
+ *       + Parentheses can be used to override precedence rules:   ( )
+ *       + Precedence 8:   - (unary)   not
+ *       + Precedence 7:   *   /   %
+ *       + Precedence 6:   +   - (binary)
+ *       + Precedence 5:   <   >   <=   >=
+ *       + Precedence 4:   ==   !=
+ *       + Precedence 3:   and
+ *       + Precedence 2:   or
+ *       + Precedence 1:   ? : (ternary)
+ *
+ *    9. Functions:
+ *       + Function name, open parenthesis, optional expression list, close parenthesis.
+ *       + The function name is one identifier.
+ *       + See above for the definition of an expression list.
+ *       Examples:   isFirst($item)   hasData()   myFunction(2, 'aa')
+ * </pre>
+ *
+ * @author Kai Huang
+ */
+public class ExpressionParser {
+
+
+  /**
+   * Constructor that takes a string input.
+   * @param input The input to parse.
+   */
+  public ExpressionParser(String input) {
+    this(new StringReader(input));
+  }
+
+
+  /**
+   * Attempts to parse the input as a comma-separated list of one or more expressions.
+   * @throws TokenMgrError When the input has a token error.
+   * @throws ParseException When the input has a parse error.
+   */
+  public List<ExprRootNode<ExprNode>> parseExpressionList() throws TokenMgrError, ParseException {
+    return ExprListInput();
+  }
+
+
+  /**
+   * Attempts to parse the input as an expression.
+   * @throws TokenMgrError When the input has a token error.
+   * @throws ParseException When the input has a parse error.
+   */
+  public ExprRootNode<ExprNode> parseExpression() throws TokenMgrError, ParseException {
+    return ExprInput();
+  }
+
+
+  /**
+   * Attempts to parse the input as a variable name.
+   * @throws TokenMgrError When the input has a token error.
+   * @throws ParseException When the input has a parse error.
+   */
+  public ExprRootNode<VarNode> parseVariable() throws TokenMgrError, ParseException {
+    return VarInput();
+  }
+
+
+  /**
+   * Attempts to parse the input as a data reference.
+   * @throws TokenMgrError When the input has a token error.
+   * @throws ParseException When the input has a parse error.
+   */
+  public ExprRootNode<DataRefNode> parseDataReference() throws TokenMgrError, ParseException {
+    return DataRefInput();
+  }
+
+
+  /**
+   * Attempts to parse the input as a global.
+   * @throws TokenMgrError When the input has a token error.
+   * @throws ParseException When the input has a parse error.
+   */
+  public ExprRootNode<GlobalNode> parseGlobal() throws TokenMgrError, ParseException {
+    return GlobalInput();
+  }
+
+
+  /**
+   * Private helper to create an operator node.
+   */
+  private static final OperatorNode createOperatorNode(String op, int numOperands) {
+
+    try {
+      return Operator.of(op, numOperands).getNodeClass().getConstructor().newInstance();
+    } catch (Exception e) {
+      Throwables.propagate(e);
+      return null;  // make compiler happy
+    }
+  }
+
+}
+
+PARSER_END(ExpressionParser)
+
+
+// =================================================================================================
+// Tokens
+// =================================================================================================
+
+
+// Literals.
+TOKEN:
+{
+  < NULL: "null" >
+|
+  < BOOLEAN: "true" | "false" >
+|
+  < INTEGER:
+        <DEC_DIGITS>
+      | "0x" (<HEX_DIGIT>)+
+  >
+|
+  < FLOAT:
+        <DEC_DIGITS> "." <DEC_DIGITS> ( "e" ( ["+","-"] )? <DEC_DIGITS> )?
+      | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
+  >
+|
+  < STRING:
+      "'"
+      (
+          ~["'","\\","\n","\r"]
+        | "\\" ["n","r","t","b","f","\\","'","\""]
+        | "\\u" (<HEX_DIGIT>){4}
+      )*
+      "'"
+  >
+|
+  < #DEC_DIGITS: ( ["0"-"9"] )+ >
+|
+  < #HEX_DIGIT: ["0"-"9","A"-"F"] >
+}
+
+
+// Operators.
+TOKEN:
+{
+  < UNARY_OR_BINARY_OP: "-" >
+|
+  < ONLY_UNARY_OP: "not" >
+|
+  < ONLY_BINARY_OP:
+        "*" | "/" | "%" | "+"
+      | "<" | ">" | "<=" | ">=" | "==" | "!="
+      | "and" | "or"
+  >
+}
+
+
+// Variables, data references, and globals.
+TOKEN:
+{
+  < IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+|
+  < DOLLAR_IDENT: "$" <IDENT> >
+|
+  < DOT_IDENT: "." (<WS>)* <IDENT> >
+  { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
+|
+  < DOT_INDEX: "." (<WS>)* <DEC_DIGITS> >
+  { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
+}
+
+
+// Skip unmatched whitespace.
+SKIP:
+{
+  < WS: " " | "\t" | "\n" | "\r" | "\r\n" >
+}
+
+
+// =================================================================================================
+// Grammar basics
+// =================================================================================================
+
+
+/**
+ * Primitive -> Null | Boolean | Integer | Float | String
+ */
+private PrimitiveNode Primitive() :
+{
+  Token b, i, f, str;
+}
+{
+  { PrimitiveNode primitive; }
+
+  (
+    <NULL>
+    { primitive = new NullNode(); }
+  |
+    b = <BOOLEAN>
+    { primitive = new BooleanNode(b.image.equals("true")); }
+  |
+    i = <INTEGER>
+    { if (i.image.startsWith("0x")) {
+        primitive = new IntegerNode(Integer.parseInt(i.image.substring(2), 16));
+      } else {
+        primitive = new IntegerNode(Integer.parseInt(i.image, 10));
+      }
+    }
+  |
+    f = <FLOAT>
+    { primitive = new FloatNode(Double.parseDouble(f.image)); }
+  |
+    str = <STRING>
+    { String strNoQuotes = str.image.substring(1, str.image.length() - 1);
+      primitive = new StringNode(StringUtil.javaScriptUnescape(strNoQuotes));
+    }
+  )
+
+  { return primitive; }
+}
+
+
+/**
+ * UnaryOp -> OnlyUnaryOp | UnaryOrBinaryOp
+ */
+private String UnaryOp() :
+{
+  Token unaryOp;
+}
+{
+  (
+    unaryOp = <ONLY_UNARY_OP>
+  | unaryOp = <UNARY_OR_BINARY_OP>
+  )
+  { return unaryOp.image; }
+}
+
+
+/**
+ * BinaryOp -> OnlyBinaryOp | UnaryOrBinaryOp
+ */
+private String BinaryOp() :
+{
+  Token binaryOp;
+}
+{
+  (
+    binaryOp = <ONLY_BINARY_OP>
+  | binaryOp = <UNARY_OR_BINARY_OP>
+  )
+  { return binaryOp.image; }
+}
+
+
+// =================================================================================================
+// Grammar
+// =================================================================================================
+
+
+/**
+ * Matches the whole input if it is a comma-separated list of one or more expressions.
+ *
+ * ExprListInput -> ExprList EOF
+ */
+private List<ExprRootNode<ExprNode>> ExprListInput() :
+{
+  List<ExprNode> exprList;
+}
+{
+  exprList = ExprList()
+  { List<ExprRootNode<ExprNode>> rootedExprList = Lists.newArrayList();
+    for (ExprNode expr : exprList) {
+      rootedExprList.add(new ExprRootNode<ExprNode>(expr));
+    }
+  }
+  <EOF>
+  { return rootedExprList; }
+}
+
+
+/**
+ * Matches the whole input if it is a full expression.
+ *
+ * ExprInput -> Expr EOF
+ */
+private ExprRootNode<ExprNode> ExprInput() :
+{
+  ExprNode expr;
+}
+{
+  expr = Expr()
+  <EOF>
+  { return new ExprRootNode<ExprNode>(expr); }
+}
+
+
+/**
+ * Matches the whole input if it is a variable.
+ *
+ * VarInput -> Var EOF
+ */
+private ExprRootNode<VarNode> VarInput() :
+{
+  VarNode var;
+}
+{
+  var = Var()
+  <EOF>
+  { return new ExprRootNode<VarNode>(var); }
+}
+
+
+/**
+ * Matches the whole input if it is a data reference.
+ *
+ * DataRefInput -> DataRef EOF
+ */
+private ExprRootNode<DataRefNode> DataRefInput():
+{
+  DataRefNode dataRef;
+}
+{
+  dataRef = DataRef()
+  <EOF>
+  { return new ExprRootNode<DataRefNode>(dataRef); }
+}
+
+
+/**
+ * Matches the whole input if it is a global.
+ *
+ * GlobalInput -> Global EOF
+ */
+private ExprRootNode<GlobalNode> GlobalInput():
+{
+  GlobalNode global;
+}
+{
+  global = Global()
+  <EOF>
+  { return new ExprRootNode<GlobalNode>(global); }
+}
+
+
+/**
+ * Matches a comma-separated list of one or more expressions.
+ * ExprList -> Expr ( "," Expr )*
+ */
+private List<ExprNode> ExprList() :
+{
+  ExprNode expr;
+}
+{
+  { List<ExprNode> exprList = Lists.newArrayList(); }
+
+  expr = Expr()
+  { exprList.add(expr); }
+
+  (
+    ","
+    expr = Expr()
+    { exprList.add(expr); }
+  )*
+
+  { return exprList; }
+}
+
+
+/**
+ * Matches a full expression.
+ * Expr -> PrecExpr1
+ */
+private ExprNode Expr() :
+{
+  ExprNode expr;
+}
+{
+  expr = PrecExpr1()
+  { return expr; }
+}
+
+
+/**
+ * Matches expressions with precedence levels 1 and higher.
+ * This rule handles precedence level 1, which is the ternary conditional operator "? :".
+ *
+ * PrecExpr1 -> PrecExpr(2) [ "?" PrecExpr1 ":" PrecExpr1 ]
+ */
+private ExprNode PrecExpr1() :
+{
+  ExprNode expr1, expr2;
+}
+{
+  { ExprNode expr; }
+
+  expr = PrecExpr(2)
+
+  [
+    "?"
+    expr1 = PrecExpr1()
+    ":"
+    expr2 = PrecExpr1()
+
+    { ConditionalOpNode cond = new OperatorNodes.ConditionalOpNode();
+      cond.addChild(expr);
+      cond.addChild(expr1);
+      cond.addChild(expr2);
+      expr = cond;
+    }
+  ]
+
+  { return expr; }
+}
+
+
+/**
+ * For handling binary operators, we use the Precedence Climbing algorithm described in:
+ *   http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
+ * While the performance gain may not be important, the code also becomes much shorter.
+ *
+ * PrecExpr(minPrec) matches expressions with precedence level minPrec and higher (but no lower
+ * levels). In our parsing algorithm, this rule will only be called with minPrec in 2-8.
+ *
+ * PrecExpr(p) -> Primary ( b=BinaryOp PrecExpr(prec(b)+1) )*
+ *
+ * The BinaryOp will only match if its precedence level is at least p (this is done via semantic
+ * lookahead). Note that the calculation "prec(b)+1" for the minPrec of the right PrecExpr is only
+ * correct for binary operators that associate left-to-right. Fortunately, all of our supported
+ * binary operators associate left-to-right. If we ever add a binary operator that associates
+ * right-to-left (e.g. '^' for exponentiation), then we'll have to change the computation for the
+ * minPrec of the right PrecExpr.
+ */
+private ExprNode PrecExpr(int minPrec) :
+{
+  String binaryOp;
+  ExprNode rightOperand;
+}
+{
+  { ExprNode expr; }
+
+  expr = Primary()
+
+  (
+    // First, use syntactic lookahead to check next token is a binary op.
+    // Second, use semantic lookahead to check its precedence is at least minPrec.
+    LOOKAHEAD( BinaryOp(),
+               { Operator.of(getToken(1).image, 2).getPrecedence() >= minPrec } )
+
+    binaryOp = BinaryOp()
+    rightOperand = PrecExpr(Operator.of(binaryOp, 2).getPrecedence() + 1)
+
+    { OperatorNode opNode = createOperatorNode(binaryOp, 2);
+      opNode.addChild(expr);  // expr is the current left operand
+      opNode.addChild(rightOperand);
+      expr = opNode;
+    }
+  )*
+
+  { return expr; }
+}
+
+
+/**
+ * Primary ->   "(" Expr ")"
+ *            | u=UnaryOp PrecExpr(prec(u))
+ *            | FunctionCall | DataRef | Global | Primitive
+ */
+private ExprNode Primary() :
+{
+  String unaryOp;
+  ExprNode operand;
+}
+{
+  { ExprNode primary; }
+
+  (
+    "("
+    primary = Expr()
+    ")"
+  |
+    unaryOp = UnaryOp()
+    operand = PrecExpr(Operator.of(unaryOp, 1).getPrecedence())
+    { OperatorNode opNode = createOperatorNode(unaryOp, 1);
+      opNode.addChild(operand);
+      primary = opNode;
+    }
+  |
+    LOOKAHEAD( <IDENT> "(" )
+    primary = FunctionCall()
+  |
+    primary = DataRef()
+  |
+    primary = Global()
+  |
+    primary = Primitive()
+  )
+
+  { return primary; }
+}
+
+
+/**
+ * Note: This nonterminal is not used in expressions. It's only used to match an input string that
+ * should be a variable.
+ *
+ * Var -> DollarIdent
+ */
+private VarNode Var():
+{
+  Token dollarIdent;
+}
+{
+  dollarIdent = <DOLLAR_IDENT>
+  { return new VarNode(dollarIdent.image.substring(1)); }
+}
+
+
+/**
+ * DataRef -> DollarIdent ( DotIdent | DotIndex | "[" Expr "]" )*
+ */
+private DataRefNode DataRef() :
+{
+  Token dollarIdent, dotIdent, dotIndex;
+  ExprNode expr;
+}
+{
+  { DataRefNode dataRef = new DataRefNode(); }
+
+  dollarIdent = <DOLLAR_IDENT>
+  { dataRef.addChild(new DataRefKeyNode(dollarIdent.image.substring(1))); }
+
+  (
+    dotIdent = <DOT_IDENT>
+    { dataRef.addChild(new DataRefKeyNode(dotIdent.image.substring(1))); }
+  |
+    dotIndex = <DOT_INDEX>
+    { dataRef.addChild(new DataRefIndexNode(Integer.parseInt(dotIndex.image.substring(1)))); }
+  |
+    "["
+    expr = Expr()
+    "]"
+    { dataRef.addChild(expr); }
+  )*
+
+  { return dataRef; }
+}
+
+
+/**
+ * Global -> Ident ( DotIdent )*
+ */
+private GlobalNode Global() :
+{
+  Token ident, dotIdent;
+}
+{
+  {  StringBuilder globalNameSb = new StringBuilder(); }
+
+  ident = <IDENT>
+  { globalNameSb.append(ident.image); }
+
+  (
+    dotIdent = <DOT_IDENT>
+    { globalNameSb.append(dotIdent.image); }
+  )*
+
+  { return new GlobalNode(globalNameSb.toString()); }
+}
+
+
+/**
+ * FunctionCall -> Ident "(" [ ExprList ] ")"
+ */
+private FunctionNode FunctionCall() :
+{
+  Token ident;
+  List<ExprNode> exprList;
+}
+{
+  ident = <IDENT>
+  "("
+  { exprList = null; }
+  [
+    exprList = ExprList()
+  ]
+  ")"
+
+  { FunctionNode fnNode = new FunctionNode(ident.image);
+    if (exprList != null) {
+      fnNode.addChildren(exprList);
+    }
+    return fnNode;
+  }
+}
