@@ -16,12 +16,11 @@
 
 package com.google.template.soy.examples;
 
+import com.google.common.io.Resources;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.tofu.SoyTofu;
-
-import java.io.File;
 
 
 /**
@@ -45,8 +44,7 @@ public class SimpleUsage {
   public static void main(String[] args) {
 
     // Compile the template.
-    SoyFileSet sfs =
-        (new SoyFileSet.Builder()).add(new File("template/soy/examples/simple.soy")).build();
+    SoyFileSet sfs = (new SoyFileSet.Builder()).add(Resources.getResource("simple.soy")).build();
     SoyTofu tofu = sfs.compileToJavaObj();
 
     // Example 1.

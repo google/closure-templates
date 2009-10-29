@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.DataUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
@@ -36,6 +37,8 @@ import com.google.template.soy.exprtree.GlobalNode;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -148,49 +151,86 @@ public class SoyGeneralOptions implements Cloneable {
    * @throws IOException If there is an error reading the compile-time globals file.
    */
   public void setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
+    setCompileTimeGlobalsHelper(Files.toString(compileTimeGlobalsFile, Charsets.UTF_8));
+  }
+
+
+  /**
+   * Sets the resource file containing compile-time globals.
+   *
+   * <p> Each line of the file should have the format
+   * <pre>
+   *     &lt;global_name&gt; = &lt;primitive_data&gt;
+   * </pre>
+   * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
+   * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
+   * should be encoded in UTF-8.
+   *
+   * <p> If you need to generate a file in this format from Java, consider using the utility
+   * {@code SoyUtils.generateCompileTimeGlobalsFile()}.
+   *
+   * @param compileTimeGlobalsResource The resource file containing compile-time globals.
+   * @throws IOException If there is an error reading the compile-time globals file.
+   */
+  public void setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
+    setCompileTimeGlobalsHelper(Resources.toString(compileTimeGlobalsResource, Charsets.UTF_8));
+  }
+
+
+  /**
+   * Private helper for setCompileTimeGlobals(File) and setCompileTimeGlobals(URL).
+   *
+   * @param compileTimeGlobalsFileContent The content of the file containing compile-time globals.
+   */
+  private void setCompileTimeGlobalsHelper(String compileTimeGlobalsFileContent) {
 
     Preconditions.checkState(compileTimeGlobals == null, "Compile-time globals already set.");
-    ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
 
+    ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
     List<Pair<CompileTimeGlobalsFileError, String>> errors = Lists.newArrayListWithCapacity(0);
 
-    BufferedReader reader = Files.newReader(compileTimeGlobalsFile, Charsets.UTF_8);
-    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+    BufferedReader reader = new BufferedReader(new StringReader(compileTimeGlobalsFileContent));
+    try {
+      for (String line = reader.readLine(); line != null; line = reader.readLine()) {
 
-      if (line.startsWith("//") || line.trim().length() == 0) {
-        continue;
-      }
-
-      Matcher matcher = COMPILE_TIME_GLOBAL_LINE.matcher(line);
-      if (!matcher.matches()) {
-        errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_FORMAT, line));
-        continue;
-      }
-      String name = matcher.group(1);
-      String valueText = matcher.group(2).trim();
-
-      PrimitiveData value;
-      try {
-        ExprNode valueExpr = (new ExpressionParser(valueText)).parseExpression().getChild(0);
-        if (!(valueExpr instanceof PrimitiveNode)) {
-          if (valueExpr instanceof GlobalNode || valueExpr instanceof DataRefNode) {
-            errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
-          } else {
-            errors.add(Pair.of(CompileTimeGlobalsFileError.NON_PRIMITIVE_VALUE, line));
-          }
+        if (line.startsWith("//") || line.trim().length() == 0) {
           continue;
         }
-        value = DataUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr);
-      } catch (TokenMgrError tme) {
-        errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
-        continue;
-      } catch (ParseException pe) {
-        errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
-        continue;
-      }
 
-      compileTimeGlobalsBuilder.put(name, value);
+        Matcher matcher = COMPILE_TIME_GLOBAL_LINE.matcher(line);
+        if (!matcher.matches()) {
+          errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_FORMAT, line));
+          continue;
+        }
+        String name = matcher.group(1);
+        String valueText = matcher.group(2).trim();
+
+        PrimitiveData value;
+        try {
+          ExprNode valueExpr = (new ExpressionParser(valueText)).parseExpression().getChild(0);
+          if (!(valueExpr instanceof PrimitiveNode)) {
+            if (valueExpr instanceof GlobalNode || valueExpr instanceof DataRefNode) {
+              errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
+            } else {
+              errors.add(Pair.of(CompileTimeGlobalsFileError.NON_PRIMITIVE_VALUE, line));
+            }
+            continue;
+          }
+          value = DataUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr);
+        } catch (TokenMgrError tme) {
+          errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
+          continue;
+        } catch (ParseException pe) {
+          errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
+          continue;
+        }
+
+        compileTimeGlobalsBuilder.put(name, value);
+      }
+    } catch (IOException e) {
+      throw new AssertionError("Should not have error reading a string.");
     }
+
     compileTimeGlobals = compileTimeGlobalsBuilder.build();
 
     if (errors.size() > 0) {

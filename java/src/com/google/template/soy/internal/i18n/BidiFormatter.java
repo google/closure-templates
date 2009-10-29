@@ -181,7 +181,7 @@ public class BidiFormatter {
    * @return "rtl" if {@code str}'s estimated directionality is RTL, and "ltr" otherwise.
    */
   public String dirAttrValue(String str, boolean isHtml) {
-    return knownDirAttrValue(detectDirectionality(str, isHtml));
+    return knownDirAttrValue(estimateDirection(str, isHtml));
   }
 
   /**
@@ -218,7 +218,7 @@ public class BidiFormatter {
    *     else, the empty string.
    */
   public String dirAttr(String str, boolean isHtml) {
-    return knownDirAttr(detectDirectionality(str, isHtml));
+    return knownDirAttr(estimateDirection(str, isHtml));
   }
 
   /**
@@ -268,7 +268,7 @@ public class BidiFormatter {
    * @return Input string after applying the above processing.
    */
   public String spanWrap(String str, boolean isHtml, boolean dirReset) {
-    BidiUtils.Dir dir = detectDirectionality(str, isHtml);
+    BidiUtils.Dir dir = estimateDirection(str, isHtml);
     return spanWrapWithKnownDir(dir, str, isHtml, dirReset);
   }
 
@@ -375,7 +375,7 @@ public class BidiFormatter {
    * @return Input string after applying the above processing.
    */
   public String unicodeWrap(String str, boolean isHtml, boolean dirReset) {
-    BidiUtils.Dir dir = detectDirectionality(str, isHtml);
+    BidiUtils.Dir dir = estimateDirection(str, isHtml);
     return unicodeWrapWithKnownDir(dir, str, isHtml, dirReset);
   }
 
@@ -463,7 +463,7 @@ public class BidiFormatter {
    */
   public String markAfter(String str, boolean isHtml) {
     str = BidiUtils.stripHtmlIfNeeded(str, isHtml);
-    return dirResetIfNeeded(str, detectDirectionality(str, false), false, true);
+    return dirResetIfNeeded(str, estimateDirection(str), false, true);
   }
 
   /**
@@ -508,8 +508,17 @@ public class BidiFormatter {
    * @param isHtml Whether {@code str} is HTML / HTML-escaped
    * @return Overall directionality estimation of input string.
    */
-  static BidiUtils.Dir detectDirectionality(String str, boolean isHtml) {
+  public static BidiUtils.Dir estimateDirection(String str, boolean isHtml) {
     return BidiUtils.estimateDirection(str, isHtml);
+  }
+
+  /**
+   * Like {@link #estimateDirection(String, boolean)}, but assumes {@code isHtml} is false.
+   * @param str String to be estimated
+   * @return Overall directionality estimation of input string.
+   */
+  public static BidiUtils.Dir estimateDirection(String str) {
+    return BidiUtils.estimateDirection(str);
   }
 
   /**

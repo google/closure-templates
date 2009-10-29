@@ -264,6 +264,30 @@ public final class SoyFileSet {
       return this;
     }
 
+
+    /**
+     * Sets the resource file containing compile-time globals.
+     *
+     * <p> Each line of the file should have the format
+     * <pre>
+     *     &lt;global_name&gt; = &lt;primitive_data&gt;
+     * </pre>
+     * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
+     * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
+     * should be encoded in UTF-8.
+     *
+     * <p> If you need to generate a file in this format from Java, consider using the utility
+     * {@code SoyUtils.generateCompileTimeGlobalsFile()}.
+     *
+     * @param compileTimeGlobalsResource The resource containing compile-time globals.
+     * @return This builder.
+     * @throws IOException If there is an error reading the compile-time globals file.
+     */
+    public Builder setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
+      this.options.setCompileTimeGlobals(compileTimeGlobalsResource);
+      return this;
+    }
+
   }
 
 

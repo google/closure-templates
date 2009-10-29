@@ -13,16 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
+<!--
+Author: Kai Huang
+Author: Robert Bowdidge
+-->
 <project name="Soy" basedir="." default="jar">
 
 
-  <!-- Define properties. -->
+  <property name="java.src.dir" value="${basedir}/java/src" />
+  <property name="java.lib.dir" value="${basedir}/java/lib" />
+
   <property name="build.dir" value="${basedir}/build" />
   <property name="soy.jar.file" value="${build.dir}/Soy.jar" />
   <property name="build.classes.dir" value="${build.dir}/classes" />
   <property name="build.genfiles.dir" value="${build.dir}/genfiles" />
-  <property name="java.src.dir" value="${basedir}/java/src" />
-  <property name="java.lib.dir" value="${basedir}/java/lib" />
 
 
   <!-- Target to delete the generated files. -->
@@ -82,55 +86,210 @@ limitations under the License.
   </target>
 
 
-  <!-- Macro for targets to create standalone executable jars. -->
-  <macrodef name="executable-jar">
-    <attribute name="executable.name" />
-    <sequential>
-      <jar destfile="${build.dir}/@{executable.name}.jar" update="true">
-        <manifest>
-          <attribute name="Main-Class" value="com.google.template.soy.@{executable.name}" />
-        </manifest>
-        <fileset dir="${build.classes.dir}" />
-        <zipfileset src="${java.lib.dir}/google-guava-snapshot.jar" />
-        <zipfileset src="${java.lib.dir}/guice-snapshot.jar" />
-        <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar" />
-        <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar" />
-        <zipfileset src="${java.lib.dir}/aopalliance.jar" />
-        <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
-      </jar>
-    </sequential>
-  </macrodef>
-
-
   <!-- Target to create a standalone executable SoyToJsSrcCompiler.jar. -->
   <target name="SoyToJsSrcCompiler"
-          depends="compile"
+          depends="jar"
           description="Creates a standalone executable SoyToJsSrcCompiler.jar.">
-    <executable-jar executable.name="SoyToJsSrcCompiler" />
+    <jar destfile="${build.dir}/SoyToJsSrcCompiler.jar" update="true">
+      <manifest>
+        <attribute name="Main-Class" value="com.google.template.soy.SoyToJsSrcCompiler" />
+      </manifest>
+      <zipfileset src="${soy.jar.file}" />
+    </jar>
   </target>
 
 
   <!-- Target to create a standalone executable SoyParseInfoGenerator.jar. -->
   <target name="SoyParseInfoGenerator"
-          depends="compile"
+          depends="jar"
           description="Creates a standalone executable SoyParseInfoGenerator.jar.">
-    <executable-jar executable.name="SoyParseInfoGenerator" />
+    <jar destfile="${build.dir}/SoyParseInfoGenerator.jar" update="true">
+      <manifest>
+        <attribute name="Main-Class" value="com.google.template.soy.SoyParseInfoGenerator" />
+      </manifest>
+      <zipfileset src="${soy.jar.file}" />
+    </jar>
   </target>
 
 
   <!-- Target to create a standalone executable SoyMsgExtractor.jar. -->
   <target name="SoyMsgExtractor"
-          depends="compile"
+          depends="jar"
           description="Creates a standalone executable SoyMsgExtractor.jar.">
-    <executable-jar executable.name="SoyMsgExtractor" />
+    <jar destfile="${build.dir}/SoyMsgExtractor.jar" update="true">
+      <manifest>
+        <attribute name="Main-Class" value="com.google.template.soy.SoyMsgExtractor" />
+      </manifest>
+      <zipfileset src="${soy.jar.file}" />
+    </jar>
   </target>
 
 
   <!-- Target to create a standalone executable SoyToJavaSrcCompilerExperimental.jar. -->
   <target name="SoyToJavaSrcCompilerExperimental"
-          depends="compile"
+          depends="jar"
           description="Creates a standalone executable SoyToJavaSrcCompilerExperimental.jar.">
-    <executable-jar executable.name="SoyToJavaSrcCompilerExperimental" />
+    <jar destfile="${build.dir}/SoyToJavaSrcCompilerExperimental.jar" update="true">
+      <manifest>
+        <attribute name="Main-Class" value="com.google.template.soy.SoyToJavaSrcCompilerExperimental" />
+      </manifest>
+      <zipfileset src="${soy.jar.file}" />
+    </jar>
+  </target>
+
+
+  <!--*******************************************************************************************-->
+  <!-- Below are targets for the examples. -->
+
+
+  <property name="examples.dir" value="${basedir}/examples" />
+  <property name="javascript.examples.dir" value="${basedir}/javascript/examples" />
+  <property name="java.examples.dir" value="${basedir}/java/src/com/google/template/soy/examples" />
+
+  <property name="build.examples.dir" value="${build.dir}/examples" />
+
+
+  <!--
+  Uses SoyToJsSrcCompiler to compile simple.soy.
+  In 'build/examples', generates the following file:
+      simple_generated.js
+  Should be same as the file in 'javascript/examples'.
+  -->
+  <target name="js-simple-example"
+          depends="SoyToJsSrcCompiler"
+          description="Uses SoyToJsSrcCompiler to compile simple.soy.">
+    <mkdir dir="${build.examples.dir}" />
+    <java jar="${build.dir}/SoyToJsSrcCompiler.jar"
+          fork="true" failonerror="true">
+      <arg value="--outputPathFormat" />
+      <arg value="${build.examples.dir}/{INPUT_FILE_NAME_NO_EXT}_generated.js" />
+      <arg value="${examples.dir}/simple.soy" />
+    </java>
+  </target>
+
+
+  <!--
+  Uses SoyToJsSrcCompiler to compile simple.soy and features.soy for locales en and x-zz.
+  In 'build/examples', generates the following files:
+      simple_generated_en.js
+      features_generated_en.js
+      simple_generated_x-zz.js
+      features_generated_x-zz.js
+  Should be same as the files in 'javascript/examples'.
+  -->
+  <target name="js-features-example"
+          depends="SoyToJsSrcCompiler"
+          description="Uses SoyToJsSrcCompiler to compile simple.soy and features.soy for locales en and x-zz.">
+    <mkdir dir="${build.examples.dir}" />
+    <java jar="${build.dir}/SoyToJsSrcCompiler.jar"
+          fork="true" failonerror="true">
+      <arg value="--outputPathFormat" />
+      <arg value="${build.examples.dir}/{INPUT_FILE_NAME_NO_EXT}_generated_{LOCALE}.js" />
+      <arg value="--locales" />
+      <arg value="en,x-zz" />
+      <arg value="--messageFilePathFormat" />
+      <arg value="${examples.dir}/examples_translated_{LOCALE}.xlf" />
+      <arg value="--compileTimeGlobalsFile" />
+      <arg value="${javascript.examples.dir}/features-usage_globals.txt" />
+      <arg value="--inputPrefix" />
+      <arg value="${examples.dir}/" />  <!-- note the trailing slash -->
+      <arg value="simple.soy" />
+      <arg value="features.soy" />
+    </java>
+  </target>
+
+
+  <!--
+  Creates an executable jar for rendering the simple examples from Java.
+  In 'build/examples', generates the following file:
+      SimpleUsage.jar
+  This can be executed to render the simple examples from Java:
+      java -jar SimpleUsage.jar
+  -->
+  <target name="java-simple-example"
+          depends="jar"
+          description="Creates an executable jar for rendering the simple examples from Java.">
+    <mkdir dir="${build.examples.dir}" />
+    <jar destfile="${build.examples.dir}/SimpleUsage.jar" update="true">
+      <manifest>
+        <attribute name="Main-Class" value="com.google.template.soy.examples.SimpleUsage" />
+      </manifest>
+      <zipfileset src="${soy.jar.file}" />
+      <!-- Resources. -->
+      <fileset file="${examples.dir}/simple.soy" />
+    </jar>
+  </target>
+
+
+  <!--
+  Uses SoyParseInfoGenerator to generate parse info for features.soy.
+  In 'build/examples', generates the following file:
+      FeaturesSoyInfo.java
+  Should be same as the file in 'java/src/com/google/template/soy/examples'.
+  -->
+  <target name="parse-info-generation-example"
+          depends="SoyParseInfoGenerator"
+          description="Uses SoyParseInfoGenerator to generate parse info for features.soy.">
+    <mkdir dir="${build.examples.dir}" />
+    <java jar="${build.dir}/SoyParseInfoGenerator.jar"
+          fork="true" failonerror="true">
+      <arg value="--outputDirectory" />
+      <arg value="${build.examples.dir}" />
+      <arg value="--javaPackage" />
+      <arg value="com.google.template.soy.examples" />
+      <arg value="--javaClassNameSource" />
+      <arg value="filename" />
+      <arg value="${examples.dir}/features.soy" />
+    </java>
+  </target>
+
+
+  <!--
+  Creates an executable jar for rendering the features examples from Java.
+  In 'build/examples', generates the following file:
+      FeaturesUsage.jar
+  This can be executed to render the features examples from Java:
+      java -jar FeaturesUsage.jar
+      java -jar FeaturesUsage.jar -locale x-zz
+  -->
+  <target name="java-features-example"
+          depends="jar"
+          description="Creates an executable jar for rendering the features examples from Java.">
+    <mkdir dir="${build.examples.dir}" />
+    <jar destfile="${build.examples.dir}/FeaturesUsage.jar" update="true">
+      <manifest>
+        <attribute name="Main-Class" value="com.google.template.soy.examples.FeaturesUsage" />
+      </manifest>
+      <zipfileset src="${soy.jar.file}" />
+      <!-- Resources. -->
+      <fileset file="${examples.dir}/simple.soy" />
+      <fileset file="${examples.dir}/features.soy" />
+      <fileset file="${examples.dir}/examples_translated_en.xlf" />
+      <fileset file="${examples.dir}/examples_translated_x-zz.xlf" />
+      <fileset file="${java.examples.dir}/FeaturesUsage_globals.txt" />
+    </jar>
+  </target>
+
+
+  <!--
+  Uses SoyMsgExtractor to extract messages from simple.soy and features.soy.
+  In 'build/examples', generates the following file:
+      examples_extracted.xlf
+  Should be same as the file in 'examples'.
+  -->
+  <target name="msg-extraction-example"
+          depends="SoyMsgExtractor"
+          description="Uses SoyMsgExtractor to extract messages from simple.soy and features.soy.">
+    <mkdir dir="${build.examples.dir}" />
+    <java jar="${build.dir}/SoyMsgExtractor.jar"
+          fork="true" failonerror="true">
+      <arg value="--outputFile" />
+      <arg value="${build.examples.dir}/examples_extracted.xlf" />
+      <arg value="--inputPrefix" />
+      <arg value="${examples.dir}/" />  <!-- note the trailing slash -->
+      <arg value="simple.soy" />
+      <arg value="features.soy" />
+    </java>
   </target>
 
 
