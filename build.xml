@@ -28,6 +28,9 @@ Author: Robert Bowdidge
   <property name="build.classes.dir" value="${build.dir}/classes" />
   <property name="build.genfiles.dir" value="${build.dir}/genfiles" />
 
+  <property name="javadoc.lite.dir" value="${basedir}/javadoc-lite" />
+  <property name="javadoc.complete.dir" value="${basedir}/javadoc-complete" />
+
 
   <!-- Target to delete the generated files. -->
   <target name="clean"
@@ -135,6 +138,109 @@ Author: Robert Bowdidge
       </manifest>
       <zipfileset src="${soy.jar.file}" />
     </jar>
+  </target>
+
+
+  <!-- Target to generate lite javadoc (for API users). -->
+  <target name="javadoc-lite"
+          depends="compile"
+          description="Generates lite javadoc (for API users).">
+    <mkdir dir="${javadoc.lite.dir}" />
+    <javadoc destdir="${javadoc.lite.dir}"
+             author="false"
+             windowtitle="Soy Lite"
+             link="http://java.sun.com/javase/6/docs/api/">
+      <packageset dir="${java.src.dir}">
+        <include name="com/google/template/soy" />
+        <include name="com/google/template/soy/data" />
+        <include name="com/google/template/soy/javasrc" />
+        <include name="com/google/template/soy/jssrc" />
+        <include name="com/google/template/soy/msgs" />
+        <include name="com/google/template/soy/parseinfo" />
+        <include name="com/google/template/soy/shared" />
+        <include name="com/google/template/soy/tofu" />
+        <include name="com/google/template/soy/xliffmsgplugin" />
+      </packageset>
+      <fileset dir="${java.src.dir}">
+        <include name="com/google/template/soy/base/SoySyntaxException.java" />
+      </fileset>
+      <classpath>
+        <pathelement path="${java.src.dir}" />
+        <pathelement path="${build.genfiles.dir}" />
+        <fileset dir="${java.lib.dir}">
+          <include name="*.jar" />
+        </fileset>
+      </classpath>
+      <doctitle>
+        <![CDATA[
+          <h1>Closure Templates (a.k.a. Soy)</h1>
+          <h4>Lite javadoc for API users.</h4>
+          <h5><a href="../javadoc-complete/index.html" target="_blank">(Go to complete javadoc.)</a></h5>
+        ]]>
+      </doctitle>
+      <bottom>
+        <![CDATA[
+          <div id="footer">
+            <div id="footerlogo" style="float:left">
+              <img src="http://www.google.com/images/art.gif"
+                   alt="Google colored balls">
+            </div>
+            <div id="copyright" style="float:left">
+              <p>
+                &copy; 2009 Google -
+                <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
+                <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
+                <a href="http://www.google.com/about.html">About Google</a>
+              </p>
+            </div>
+          </div>
+        ]]>
+      </bottom>
+    </javadoc>
+  </target>
+
+
+  <!-- Target to generate complete javadoc (for developers and plugin writers). -->
+  <target name="javadoc-complete"
+          depends="compile"
+          description="Generates complete javadoc (for developers and plugin writers).">
+    <mkdir dir="${javadoc.complete.dir}" />
+    <javadoc sourcepath="${java.src.dir}:${build.genfiles.dir}"
+             destdir="${javadoc.complete.dir}"
+             author="false"
+             windowtitle="Soy Complete"
+             link="http://java.sun.com/javase/6/docs/api/">
+      <classpath>
+        <fileset dir="${java.lib.dir}">
+          <include name="*.jar" />
+        </fileset>
+      </classpath>
+      <doctitle>
+        <![CDATA[
+          <h1>Closure Templates (a.k.a. Soy)</h1>
+          <h4>Complete javadoc for developers and plugin writers.</h4>
+          <h5><a href="../javadoc-lite/index.html" target="_blank">(Go to lite javadoc.)</a></h5>
+        ]]>
+      </doctitle>
+      <bottom>
+        <![CDATA[
+          <div id="footer">
+            <div id="footerlogo" style="float:left">
+              <img src="http://www.google.com/images/art.gif"
+                   alt="Google colored balls">
+            </div>
+            <div id="copyright" style="float:left">
+              <p>
+                &copy; 2009 Google -
+                <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
+                <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
+                <a href="http://www.google.com/about.html">About Google</a>
+              </p>
+            </div>
+          </div>
+        ]]>
+      </bottom>
+    </javadoc>
   </target>
 
 
