@@ -17,9 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.collect.Lists;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
@@ -115,15 +113,7 @@ public final class SoyMsgExtractor {
       MainClassUtils.exitWithError("Must provide output file path.", cmdLineParser, USAGE_PREFIX);
     }
 
-    Module msgPluginModuleInstance;
-    try {
-      msgPluginModuleInstance = (Module) Class.forName(messagePluginModule).newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to instantiate message plugin module \"" + messagePluginModule + "\".", e);
-    }
-
-    Injector injector = Guice.createInjector(new SoyModule(), msgPluginModuleInstance);
+    Injector injector = MainClassUtils.createInjector(messagePluginModule, null);
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
     String inputPrefixStr = inputPrefix;

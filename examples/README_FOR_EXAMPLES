@@ -16,7 +16,7 @@
 'examples'
 This directory contains example Soy files shared by both the JS and Java usage examples.
 For the JavaScript usage examples, see 'javascript/examples'.
-For the Java usage examples, see 'src/com/google/template/soy/examples'.
+For the Java usage examples, see 'java/src/com/google/template/soy/examples'.
 
 + simple.soy
     A simple Soy file.

@@ -19,9 +19,7 @@ package com.google.template.soy;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions.CodeStyle;
@@ -111,6 +109,11 @@ public class SoyToJavaSrcCompilerExperimental {
                   " the XliffMsgPlugin.")
   private String messagePluginModule = XliffMsgPluginModule.class.getName();
 
+  @Option(name = "--pluginModules",
+          usage = "Specifies the full class names of Guice modules for function plugins and" +
+                  " print directive plugins (comma-delimited list).")
+  private String pluginModules = "";
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument
   private List<String> arguments = Lists.newArrayList();
@@ -128,15 +131,7 @@ public class SoyToJavaSrcCompilerExperimental {
       MainClassUtils.exitWithError("Must provide list of Soy files.", cmdLineParser, USAGE_PREFIX);
     }
 
-    Module msgPluginModuleInstance;
-    try {
-      msgPluginModuleInstance = (Module) Class.forName(messagePluginModule).newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to instantiate message plugin module \"" + messagePluginModule + "\".", e);
-    }
-
-    Injector injector = Guice.createInjector(new SoyModule(), msgPluginModuleInstance);
+    Injector injector = MainClassUtils.createInjector(messagePluginModule, pluginModules);
 
     // Create SoyJavaSrcOptions.
     SoyJavaSrcOptions javaSrcOptions = new SoyJavaSrcOptions();

@@ -16,12 +16,23 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.OptionDef;
 import org.kohsuke.args4j.spi.OptionHandler;
 import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
+
+import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -121,6 +132,57 @@ class MainClassUtils {
     cmdLineParser.printUsage(System.err);
 
     System.exit(1);
+  }
+
+
+  /**
+   * Creates a Guice injector that includes the SoyModule, a message plugin module, and maybe
+   * additional plugin modules.
+   *
+   * @param msgPluginModuleName The full class name of the message plugin module. Required.
+   * @param pluginModuleNames Comma-delimited list of full class names of additional plugin modules
+   *     to include. Optional.
+   * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
+   *     given additional plugin modules (if any).
+   */
+  public static Injector createInjector(
+      String msgPluginModuleName, @Nullable String pluginModuleNames) {
+
+    List<Module> guiceModules = Lists.newArrayListWithCapacity(2);
+
+    guiceModules.add(new SoyModule());
+
+    checkArgument(msgPluginModuleName != null && msgPluginModuleName.length() > 0);
+    guiceModules.add(instantiatePluginModule(msgPluginModuleName));
+
+    if (pluginModuleNames != null && pluginModuleNames.length() > 0) {
+      for (String pluginModuleName : Splitter.on(',').split(pluginModuleNames)) {
+        guiceModules.add(instantiatePluginModule(pluginModuleName));
+      }
+    }
+
+    return Guice.createInjector(guiceModules);
+  }
+
+
+  /**
+   * Private helper for createInjector().
+   *
+   * @param moduleName The name of the plugin module to instantiate.
+   * @return A new instance of the specified plugin module.
+   */
+  private static Module instantiatePluginModule(String moduleName) {
+
+    try {
+      return (Module) Class.forName(moduleName).newInstance();
+
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("Cannot find plugin module \"" + moduleName + "\".", e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException("Cannot access plugin module \"" + moduleName + "\".", e);
+    } catch (InstantiationException e) {
+      throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);
+    }
   }
 
 }

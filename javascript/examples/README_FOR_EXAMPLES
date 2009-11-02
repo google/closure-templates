@@ -15,7 +15,7 @@
 
 'javascript/examples'
 This directory contains files related to using the examples from JavaScript.
-For the shared examples files, see directory 'examples'.
+For the shared examples files, see top-level directory 'examples'.
 
 
 1. Files for the simple example:
