@@ -388,7 +388,7 @@ soy.$$escapeUri = function(str) {
   } else {
     return str;
   }
-}
+};
 
 /**
  * Regular expression used for determining if a string needs to be encoded.
@@ -517,6 +517,32 @@ soy.$$CharCode_ = {
  */
 soy.WORD_BREAK_ =
     soy.IS_WEBKIT_ ? '<wbr></wbr>' : soy.IS_OPERA_ ? '&shy;' : '<wbr>';
+
+
+/**
+ * Converts \r\n, \r, and \n to <br>s
+ * @param {*} str The string in which to convert newlines.
+ * @return {string} A copy of {@code str} with converted newlines.
+ */
+soy.$$changeNewlineToBr = function(str) {
+
+  str = String(str);
+
+  // This quick test helps in the case when there are no chars to replace, in
+  // the worst case this makes barely a difference to the time taken.
+  if (!soy.$$CHANGE_NEWLINE_TO_BR_RE_.test(str)) {
+    return str;
+  }
+
+  return str.replace(/(\r\n|\r|\n)/g, '<br>');
+};
+
+/**
+ * Regular expression used within $$changeNewlineToBr().
+ * @type {RegExp}
+ * @private
+ */
+soy.$$CHANGE_NEWLINE_TO_BR_RE_ = /[\r\n]/;
 
 
 /**

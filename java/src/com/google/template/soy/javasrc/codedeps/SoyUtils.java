@@ -28,6 +28,7 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -39,6 +40,8 @@ import javax.annotation.Nullable;
  */
 public class SoyUtils {
 
+
+  private static final Pattern NEWLINE_PATTERN = Pattern.compile("(\\r\\n|\\r|\\n)");
 
   // -----------------------------------------------------------------------------------------------
   // Basics.
@@ -77,6 +80,11 @@ public class SoyUtils {
 
   public static String $$escapeUri(String value) {
     return CharEscapers.uriEscaper(false).escape(value);
+  }
+
+
+  public static String $$changeNewlineToBr(String value) {
+    return NEWLINE_PATTERN.matcher(value).replaceAll("<br>");
   }
 
 

@@ -373,6 +373,18 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     localVarTranslations = new ArrayDeque<Map<String, JsExpr>>();
     genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations);
 
+    if (jsSrcOptions.shouldGenerateJsdoc()) {
+      jsCodeBuilder.appendLine("/**");
+      jsCodeBuilder.appendLine(" * @param {Object.<string, *>} opt_data");
+      if (isCodeStyleStringbuilder) {
+        jsCodeBuilder.appendLine(" * @param {soy.StringBuilder} opt_sb");
+        jsCodeBuilder.appendLine(" * @return {string|undefined}");
+      } else {
+        jsCodeBuilder.appendLine(" * @return {string}");
+      }
+      jsCodeBuilder.appendLine(" */");
+    }
+
     if (isCodeStyleStringbuilder) {
       jsCodeBuilder.appendLine(node.getTemplateName(), " = function(opt_data, opt_sb) {");
     } else {

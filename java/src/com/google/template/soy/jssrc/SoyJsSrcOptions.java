@@ -41,6 +41,9 @@ public class SoyJsSrcOptions implements Cloneable {
   /** The output variable code style to use. */
   private CodeStyle codeStyle;
 
+  /** Whether we should generate JSDoc with type info for the Closure Compiler. */
+  private boolean shouldGenerateJsdoc;
+
   /** Whether we should generate code to provide/require Soy namespaces. */
   private boolean shouldProvideRequireSoyNamespaces;
 
@@ -60,6 +63,7 @@ public class SoyJsSrcOptions implements Cloneable {
   public SoyJsSrcOptions() {
     shouldAllowDeprecatedSyntax = false;
     codeStyle = CodeStyle.STRINGBUILDER;
+    shouldGenerateJsdoc = false;
     shouldProvideRequireSoyNamespaces = false;
     shouldProvideRequireJsFunctions = false;
     shouldDeclareTopLevelNamespaces = true;
@@ -93,6 +97,20 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Returns the currently set code style. */
   public CodeStyle getCodeStyle() {
     return codeStyle;
+  }
+
+
+  /**
+   * Sets whether we should generate JSDoc with type info for the Closure Compiler.
+   * @param shouldGenerateJsdoc The value to set.
+   */
+  public void setShouldGenerateJsdoc(boolean shouldGenerateJsdoc) {
+    this.shouldGenerateJsdoc = shouldGenerateJsdoc;
+  }
+
+  /** Returns whether we should generate JSDoc with type info for the Closure Compiler. */
+  public boolean shouldGenerateJsdoc() {
+    return shouldGenerateJsdoc;
   }
 
 

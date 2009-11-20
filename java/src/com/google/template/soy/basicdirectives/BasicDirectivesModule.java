@@ -36,6 +36,7 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(EscapeJsDirective.class);
     soyDirectivesSetBinder.addBinding().to(EscapeUriDirective.class);
     soyDirectivesSetBinder.addBinding().to(InsertWordBreaksDirective.class);
+    soyDirectivesSetBinder.addBinding().to(ChangeNewlineToBrDirective.class);
   }
 
 }

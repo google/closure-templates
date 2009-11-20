@@ -16,6 +16,8 @@
 
 package com.google.template.soy.javasrc.internal;
 
+import java.io.File;
+
 import javax.annotation.Nullable;
 
 
@@ -62,7 +64,7 @@ public class JavaSrcUtils {
       inputFilePath = inputFilePath.substring(inputPathPrefix.length());
 
       // Compute directory and file name.
-      int lastSlashIndex = inputFilePath.lastIndexOf('/');
+      int lastSlashIndex = inputFilePath.lastIndexOf(File.separatorChar);
       String directory = inputFilePath.substring(0, lastSlashIndex + 1);
       String fileName = inputFilePath.substring(lastSlashIndex + 1);
 

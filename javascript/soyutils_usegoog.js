@@ -160,7 +160,7 @@ soy.$$escapeJs = function(s) {
 */
 soy.$$escapeUri = function(str) {
   return goog.string.urlEncode(String(str));
-}
+};
 
 
 /**
@@ -177,6 +177,16 @@ soy.$$escapeUri = function(str) {
  */
 soy.$$insertWordBreaks = function(str, maxCharsBetweenWordBreaks) {
   return goog.format.insertWordBreaks(String(str), maxCharsBetweenWordBreaks);
+};
+
+
+/**
+ * Converts \r\n, \r, and \n to <br>s
+ * @param {*} str The string in which to convert newlines.
+ * @return {string} A copy of {@code str} with converted newlines.
+ */
+soy.$$changeNewlineToBr = function(str) {
+  return goog.string.newLineToBr(String(str), false);
 };
 
 

@@ -149,21 +149,21 @@ public class BidiFormatter {
   }
 
   /**
-   * @return the context directionality
+   * @return The context directionality
    */
   public BidiUtils.Dir getContextDir() {
     return contextDir;
   }
 
   /**
-   * @return whether the context directionality is RTL
+   * @return Whether the context directionality is RTL
    */
   public boolean isRtlContext() {
     return contextDir == BidiUtils.Dir.RTL;
   }
 
   /**
-   * @return whether the span structure added by the formatter should be stable, i.e. spans added
+   * @return Whether the span structure added by the formatter should be stable, i.e. spans added
    * even when the directionality does not need to be declared
    */
   public boolean getAlwaysSpan() {
@@ -186,6 +186,9 @@ public class BidiFormatter {
 
   /**
    * Operates like {@link #dirAttrValue(String, boolean)}, but assumes {@code isHtml} is false.
+   *
+   * @param str String whose directionality is to be estimated
+   * @return "rtl" if {@code str}'s estimated directionality is RTL, and "ltr" otherwise.
    */
   public String dirAttrValue(String str) {
     return dirAttrValue(str, false);
@@ -223,6 +226,10 @@ public class BidiFormatter {
 
   /**
    * Operates like {@link #dirAttr(String, boolean)}, but assumes {@code isHtml} is false.
+   *
+   * @param str String whose directionality is to be estimated
+   * @return "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
+   *     else, the empty string.
    */
   public String dirAttr(String str) {
     return dirAttr(str, false);
@@ -275,6 +282,10 @@ public class BidiFormatter {
   /**
    * Operates like {@link #spanWrap(String, boolean, boolean)}, but assumes {@code dirReset} is
    * true.
+   *
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   * @return Input string after applying the above processing.
    */
   public String spanWrap(String str, boolean isHtml) {
     return spanWrap(str, isHtml, true);
@@ -283,6 +294,9 @@ public class BidiFormatter {
   /**
    * Operates like {@link #spanWrap(String, boolean, boolean)}, but assumes {@code isHtml} is false
    * and {@code dirReset} is true.
+   *
+   * @param str The input string
+   * @return Input string after applying the above processing.
    */
   public String spanWrap(String str) {
     return spanWrap(str, false, true);
@@ -338,6 +352,11 @@ public class BidiFormatter {
   /**
    * Operates like {@link #spanWrapWithKnownDir(BidiUtils.Dir, String, boolean, boolean)}, but
    * assumes {@code dirReset} is true.
+   *
+   * @param dir {@code str}'s directionality
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   * @return Input string after applying the above processing.
    */
   public String spanWrapWithKnownDir(BidiUtils.Dir dir, String str, boolean isHtml) {
     return spanWrapWithKnownDir(dir, str, isHtml, true);
@@ -346,6 +365,10 @@ public class BidiFormatter {
   /**
    * Operates like {@link #spanWrapWithKnownDir(BidiUtils.Dir, String, boolean, boolean)}, but
    * assumes {@code isHtml} is false and {@code dirReset} is true.
+   *
+   * @param dir {@code str}'s directionality
+   * @param str The input string
+   * @return Input string after applying the above processing.
    */
   public String spanWrapWithKnownDir(BidiUtils.Dir dir, String str) {
     return spanWrapWithKnownDir(dir, str, false, true);
@@ -382,6 +405,10 @@ public class BidiFormatter {
   /**
    * Operates like {@link #unicodeWrap(String, boolean, boolean)}, but assumes {@code dirReset} is
    * true.
+   *
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   * @return Input string after applying the above processing.
    */
   public String unicodeWrap(String str, boolean isHtml) {
     return unicodeWrap(str, isHtml, true);
@@ -390,6 +417,9 @@ public class BidiFormatter {
   /**
    * Operates like {@link #unicodeWrap(String, boolean, boolean)}, but assumes {@code isHtml} is
    * false and {@code dirReset} is true.
+   *
+   * @param str The input string
+   * @return Input string after applying the above processing.
    */
   public String unicodeWrap(String str) {
     return unicodeWrap(str, false, true);
@@ -437,17 +467,26 @@ public class BidiFormatter {
   /**
    * Operates like {@link #unicodeWrapWithKnownDir(BidiUtils.Dir, String, boolean, boolean)}, but
    * assumes {@code dirReset} is true.
+   *
+   * @param dir {@code str}'s directionality
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   * @return Input string after applying the above processing.
    */
-  public String unicodeWrapWithKnownDir(String str, boolean isHtml) {
-    return unicodeWrap(str, isHtml, true);
+  public String unicodeWrapWithKnownDir(BidiUtils.Dir dir, String str, boolean isHtml) {
+    return unicodeWrapWithKnownDir(dir, str, isHtml, true);
   }
 
   /**
    * Operates like {@link #unicodeWrapWithKnownDir(BidiUtils.Dir, String, boolean, boolean)}, but
    * assumes {@code isHtml} is false and {@code dirReset} is true.
+   *
+   * @param dir {@code str}'s directionality
+   * @param str The input string
+   * @return Input string after applying the above processing.
    */
-  public String unicodeWrapWithKnownDir(String str) {
-    return unicodeWrap(str, false, true);
+  public String unicodeWrapWithKnownDir(BidiUtils.Dir dir, String str) {
+    return unicodeWrapWithKnownDir(dir, str, false, true);
   }
 
   /**
@@ -456,8 +495,8 @@ public class BidiFormatter {
    * {@code str} is opposite to the context directionality. Otherwise returns 
    * the empty string.
    *
-   * @param str string to be estimated
-   * @param isHtml whether {@code str} is HTML / HTML-escaped
+   * @param str String after which the mark may need to appear
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
    * @return LRM for RTL text in LTR context; RLM for LTR text in RTL context; 
    *     else, the empty string.
    */
@@ -469,6 +508,10 @@ public class BidiFormatter {
   /**
    * Operates like {@link #markAfter(String, boolean)}, but assumes 
    * {@code isHtml} is false.
+   *
+   * @param Str String after which the mark may need to appear
+   * @return LRM for RTL text in LTR context; RLM for LTR text in RTL context; 
+   *     else, the empty string.
    */
   public String markAfter(String str) {
     return markAfter(str, false);
@@ -501,12 +544,12 @@ public class BidiFormatter {
   }
 
   /**
-   * Returns the estimated overall directionality of input argument {@code str}. Dir.UNKNOWN
-   * indicates a completely neutral input.
+   * Estimates the directionality of a string using the best known general-purpose method, i.e.
+   * using relative word counts. Dir.UNKNOWN return value indicates completely neutral input.
    *
-   * @param str String to be estimated
+   * @param str String whose directionality is to be estimated
    * @param isHtml Whether {@code str} is HTML / HTML-escaped
-   * @return Overall directionality estimation of input string.
+   * @return {@code str}'s estimated overall directionality
    */
   public static BidiUtils.Dir estimateDirection(String str, boolean isHtml) {
     return BidiUtils.estimateDirection(str, isHtml);
@@ -514,8 +557,9 @@ public class BidiFormatter {
 
   /**
    * Like {@link #estimateDirection(String, boolean)}, but assumes {@code isHtml} is false.
-   * @param str String to be estimated
-   * @return Overall directionality estimation of input string.
+   *
+   * @param str String whose directionality is to be estimated
+   * @return {@code str}'s estimated overall directionality
    */
   public static BidiUtils.Dir estimateDirection(String str) {
     return BidiUtils.estimateDirection(str);

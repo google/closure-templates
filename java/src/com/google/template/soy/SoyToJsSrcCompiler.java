@@ -72,6 +72,12 @@ public final class SoyToJsSrcCompiler {
           usage = "The code style to use when generating JS code ('stringbuilder' or 'concat').")
   private CodeStyle codeStyle = CodeStyle.STRINGBUILDER;
 
+  @Option(name = "--shouldGenerateJsdoc",
+          usage = "Whether we should generate JSDoc with type info for the Closure Compiler." +
+                  " Note the generated JSDoc does not have description text, only types for the" +
+                  " benefit of the Closure Compiler.")
+  private boolean shouldGenerateJsdoc = false;
+
   @Option(name = "--shouldProvideRequireSoyNamespaces",
           usage = "When this option is used, each generated JS file will contain (a) one single" +
                   " goog.provide statement for the corresponding Soy file's namespace and" +
@@ -179,6 +185,7 @@ public final class SoyToJsSrcCompiler {
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setCodeStyle(codeStyle);
+    jsSrcOptions.setShouldGenerateJsdoc(shouldGenerateJsdoc);
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
     jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
