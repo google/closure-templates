@@ -17,8 +17,8 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.common.collect.Maps;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
@@ -78,7 +78,7 @@ public class BaseTofu implements SoyTofu {
    * @param renderVisitorFactory Factory for creating an instance of RenderVisitor.
    * @param soyTree The Soy parse tree containing all the files in the Soy file set.
    */
-  @Inject
+  @AssistedInject
   public BaseTofu(@ApiCall GuiceSimpleScope apiCallScope, RenderVisitorFactory renderVisitorFactory,
                   @Assisted SoyFileSetNode soyTree) {
 

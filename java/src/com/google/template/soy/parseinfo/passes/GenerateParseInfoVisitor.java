@@ -20,12 +20,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.IndentedLinesBuilder;
@@ -46,7 +46,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -238,7 +237,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
     // Figure out the generated class name for each Soy file, including adding number suffixes
     // to resolve collisions, and then adding the common suffix "SoyInfo".
-    Multimap<String, SoyFileNode> baseGeneratedClassNameToSoyFilesMap = Multimaps.newHashMultimap();
+    Multimap<String, SoyFileNode> baseGeneratedClassNameToSoyFilesMap = HashMultimap.create();
     for (SoyFileNode soyFile : node.getChildren()) {
       baseGeneratedClassNameToSoyFilesMap.put(
           javaClassNameSource.generateBaseClassName(soyFile), soyFile);
@@ -295,7 +294,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     List<String> nonprivateTemplatePartialNames = Lists.newArrayList();
     Set<String> allParamKeys = Sets.newHashSet();
     LinkedHashMultimap<String, TemplateNode> paramKeyToTemplatesMultimap =
-        Multimaps.newLinkedHashMultimap();
+        LinkedHashMultimap.create();
     for (TemplateNode template : node.getChildren()) {
       if (!template.isPrivate()) {
         nonprivateTemplatePartialNames.add(template.getPartialTemplateName());
@@ -344,10 +343,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.appendLine();
     ilb.appendLine();
     appendJavadoc(ilb, "Soy parse info for " + node.getFileName() + ".", true, false);
-    ilb.appendLine("public class ", javaClassName, " {");
+    ilb.appendLine("public class ", javaClassName, " extends SoyFileInfo {");
     ilb.increaseIndent();
-    ilb.appendLine();
-    ilb.appendLine("private ", javaClassName, "() {}");
 
     // ------ Params ------
     ilb.appendLine();
@@ -396,13 +393,14 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     // ------ File info ------
     ilb.appendLine();
     ilb.appendLine();
-    ilb.appendLine("private static final SoyFileInfo __SOY_FILE_INFO__ = new SoyFileInfo(");
+    // Constructor.
+    ilb.appendLine("private ", javaClassName, "() {");
     ilb.increaseIndent();
-    ilb.increaseIndent();
-    ilb.appendLine("\"", node.getFileName(), "\",");
+    ilb.appendLine("super(\"", node.getFileName(), "\",");
+    ilb.setIndentLen(ilb.getCurrIndentLen() + 6);
     ilb.appendLine("\"", node.getNamespace(), "\",");
 
-    ilb.appendLine("ImmutableSortedSet.of(");
+    ilb.appendLine("ImmutableSortedSet.<String>of(");
     ilb.increaseIndent();
     ilb.increaseIndent();
     boolean isFirst = true;
@@ -434,14 +432,18 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.decreaseIndent();
     ilb.decreaseIndent();
 
+    ilb.setIndentLen(ilb.getCurrIndentLen() - 6);
+
     ilb.decreaseIndent();
-    ilb.decreaseIndent();
+    ilb.appendLine("}");
 
     ilb.appendLine();
+    ilb.appendLine("private static final ", javaClassName, " __INSTANCE__ = new ", javaClassName,
+                   "();");
     ilb.appendLine();
-    ilb.appendLine("public static SoyFileInfo getFileInfo() {");
+    ilb.appendLine("public static ", javaClassName, " getInstance() {");
     ilb.increaseIndent();
-    ilb.appendLine("return __SOY_FILE_INFO__;");
+    ilb.appendLine("return __INSTANCE__;");
     ilb.decreaseIndent();
     ilb.appendLine("}");
 

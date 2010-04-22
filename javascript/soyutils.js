@@ -65,7 +65,7 @@ var soy = soy || {};
  * using Array.join() rather than the '+' operator.  For other browsers
  * we simply use the '+' operator.
  *
- * @param {Object|number|string|boolean} opt_a1 Optional first initial item
+ * @param {Object|number|string|boolean=} opt_a1 Optional first initial item
  *     to append.
  * @param {Object|number|string|boolean} var_args Other initial items to
  *     append, e.g., new soy.StringBuilder('foo', 'bar').
@@ -101,7 +101,7 @@ soy.StringBuilder.prototype.bufferLength_ = 0;
  * Calling this with null, undefined, or empty arguments is an error.
  *
  * @param {Object|number|string|boolean} a1 Required first string.
- * @param {Object|number|string|boolean} opt_a2 Optional second string.
+ * @param {Object|number|string|boolean=} opt_a2 Optional second string.
  * @param {Object|number|string|boolean} var_args Other items to append,
  *     e.g., sb.append('foo', 'bar', 'baz').
  * @return {soy.StringBuilder} This same StringBuilder object.
@@ -183,7 +183,7 @@ soy.StringBuilder.prototype.toString = function() {
  *
  * @param {Element} element The element whose content we are rendering.
  * @param {Function} template The Soy template defining the element's content.
- * @param {Object} opt_templateData The data for the template.
+ * @param {Object=} opt_templateData The data for the template.
  */
 soy.renderElement = function(element, template, opt_templateData) {
   element.innerHTML = template(opt_templateData);
@@ -197,7 +197,7 @@ soy.renderElement = function(element, template, opt_templateData) {
  * rendered nodes.
  *
  * @param {Function} template The Soy template defining the element's content.
- * @param {Object} opt_templateData The data for the template.
+ * @param {Object=} opt_templateData The data for the template.
  * @return {Node} The resulting node or document fragment.
  */
 soy.renderAsFragment = function(template, opt_templateData) {
@@ -550,7 +550,7 @@ soy.$$CHANGE_NEWLINE_TO_BR_RE_ = /[\r\n]/;
  * ignore the LTR nature of the mark-up and escapes in text, making the logic
  * suitable for HTML and HTML-escaped text.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
  */
@@ -572,7 +572,7 @@ soy.$$bidiTextDir = function(text, opt_isHtml) {
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {string} "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR
  *     text in non-LTR context; else, the empty string.
@@ -595,7 +595,7 @@ soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {string} A Unicode bidi mark matching bidiGlobalDir, or
  *     the empty string when text's overall and exit directionalities both match
@@ -617,7 +617,7 @@ soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
  *     if rtl, 0 if unknown.
  * @param {number} dir text's directionality: 1 if ltr, -1 if rtl, 0 if unknown.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {string} A Unicode bidi mark matching bidiGlobalDir, or
  *     the empty string when text's overall and exit directionalities both match
@@ -638,7 +638,7 @@ soy.$$bidiMarkAfterKnownDir = function(bidiGlobalDir, dir, text, opt_isHtml) {
  * precision is not very important, since the result is only meant to be used
  * for directionality detection.
  * @param {string} str The string to be stripped.
- * @param {boolean} opt_isHtml Whether str is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
  *     Default: false.
  * @return {string} The stripped string.
  * @private
@@ -854,7 +854,7 @@ soy.$$bidiRtlExitDirCheckRe_ = new RegExp(
  * Check if the exit directionality a piece of text is LTR, i.e. if the last
  * strongly-directional character in the string is LTR.
  * @param {string} str string being checked.
- * @param {boolean} opt_isHtml Whether str is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
  *     Default: false.
  * @return {boolean} Whether LTR exit directionality was detected.
  * @private
@@ -869,7 +869,7 @@ soy.$$bidiIsLtrExitText_ = function(str, opt_isHtml) {
  * Check if the exit directionality a piece of text is RTL, i.e. if the last
  * strongly-directional character in the string is RTL.
  * @param {string} str string being checked.
- * @param {boolean} opt_isHtml Whether str is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
  *     Default: false.
  * @return {boolean} Whether RTL exit directionality was detected.
  * @private

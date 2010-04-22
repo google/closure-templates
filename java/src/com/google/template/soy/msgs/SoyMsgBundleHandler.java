@@ -21,12 +21,10 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import com.google.template.soy.base.BaseUtils;
-import com.google.template.soy.msgs.restricted.SoyMsg;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.regex.Pattern;
 
 
@@ -157,7 +155,7 @@ public class SoyMsgBundleHandler {
     // We special-case English locales because they often don't have translated files and falling
     // back to the Soy source should be fine.
     if (!inputFile.exists() && FIRST_WORD_IS_EN_PATTERN.matcher(inputFile.getName()).matches()) {
-      return new SoyMsgBundle(null, Collections.<SoyMsg>emptyList());
+      return SoyMsgBundle.EMPTY;
     }
 
     try {

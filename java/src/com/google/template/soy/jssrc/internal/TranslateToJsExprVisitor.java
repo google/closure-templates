@@ -16,9 +16,10 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataRefIndexNode;
@@ -86,7 +87,7 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
    */
-  @Inject
+  @AssistedInject
   TranslateToJsExprVisitor(
       Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
       @Assisted Deque<Map<String, JsExpr>> localVarTranslations) {
@@ -143,7 +144,8 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
       exprTextSb.append(translation.getText());
     } else {
       // Case 2: Data reference.
-      exprTextSb.append("opt_data.").append(firstPart);
+      exprTextSb.append("opt_data");
+      appendDataRefKey(exprTextSb, firstPart);
     }
 
     // ------ Translate the rest of the keys, if any ------
@@ -152,7 +154,7 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
       for (int i = 1; i < numKeys; ++i) {
         ExprNode child = node.getChild(i);
         if (child instanceof DataRefKeyNode) {
-          exprTextSb.append(".").append(((DataRefKeyNode) child).getKey());
+          appendDataRefKey(exprTextSb, ((DataRefKeyNode) child).getKey());
         } else if (child instanceof DataRefIndexNode) {
           exprTextSb.append("[").append(((DataRefIndexNode) child).getIndex()).append("]");
         } else {
@@ -355,4 +357,34 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
         opNode.getOperator(), operandJsExprs, newToken);
   }
 
+
+  /**
+   * Appends a key onto a data reference expression.
+   * Handles JS reserved words.
+   * @param sb StringBuilder to append to.
+   * @param key Key to append.
+   */
+  private void appendDataRefKey(StringBuilder sb, String key) {
+    if (JS_RESERVED_WORDS.contains(key)) {
+      sb.append("['").append(key).append("']");
+    } else {
+      sb.append(".").append(key);
+    }
+  }
+
+
+  /**
+   * Set of words that JavaScript considers reserved words.  These words cannot
+   * be used as identifiers.  This list is from the ECMA-262 v5, section 7.6.1:
+   * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
+   */
+  private static final ImmutableSet<String> JS_RESERVED_WORDS = ImmutableSet.of(
+      "break", "case", "catch", "class",
+      "const", "continue", "debugger", "default", "delete", "do",
+      "else", "enum", "export", "extends", "finally",
+      "for", "function", "if", "implements", "import", "in",
+      "instanceof", "interface", "let", "new",
+      "package", "private", "protected", "public", "return", "static",
+      "super", "switch", "this", "throw",
+      "try", "typeof", "var", "void", "while", "with", "yield");
 }

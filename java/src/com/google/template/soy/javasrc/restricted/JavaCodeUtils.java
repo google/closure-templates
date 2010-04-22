@@ -16,7 +16,7 @@
 
 package com.google.template.soy.javasrc.restricted;
 
-import com.google.common.base.Join;
+import com.google.common.base.Joiner;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -271,7 +271,7 @@ public class JavaCodeUtils {
 
   public static String genFunctionCall(
       String functionNameExprText, String... functionArgsExprTexts) {
-    return functionNameExprText + "(" + Join.join(", ", functionArgsExprTexts) + ")";
+    return functionNameExprText + "(" + Joiner.on(", ").join(functionArgsExprTexts) + ")";
   }
 
 

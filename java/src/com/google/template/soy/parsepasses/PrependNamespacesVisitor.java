@@ -23,6 +23,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.base.SoySyntaxException;
 
 
 /**
@@ -55,15 +56,21 @@ public class PrependNamespacesVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitInternal(SoyFileNode node) {
 
     currNamespace = node.getNamespace();
-    if (currNamespace != null) {
-      visitChildren(node);
-    }
+    visitChildren(node);
     currNamespace = null;
   }
 
 
   @Override protected void visitInternal(TemplateNode node) {
-    Preconditions.checkState(currNamespace != null);
+
+    if (currNamespace == null) {
+      // If there's no namespace, template name must not start with a dot.
+      if (node.getTemplateName().charAt(0) == '.') {
+        throw new SoySyntaxException(
+            "No namespace found in file " + ((SoyFileNode) node.getParent()).getFileName() + ".");
+      }
+      return;
+    }
 
     String origTemplateName = node.getTemplateName();
     if (origTemplateName.charAt(0) == '.') {

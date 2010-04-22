@@ -26,6 +26,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.internal.base.CharEscapers;
 
 import java.util.Map;
 import java.util.regex.Pattern;

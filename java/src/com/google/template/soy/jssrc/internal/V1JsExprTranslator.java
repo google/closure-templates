@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.StringUtil;
+import com.google.common.base.Splitter;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -170,7 +170,7 @@ class V1JsExprTranslator {
 
     // ------ Translate the rest of the keys, if any ------
     if (rest != null && rest.length() > 0) {
-      for (String part : StringUtil.split(rest.substring(1), ".")) {
+      for (String part : Splitter.on('.').split(rest.substring(1))) {
         if (NUMBER.matcher(part).matches()) {
           exprTextSb.append("[").append(part).append("]");
         } else {

@@ -18,8 +18,8 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
@@ -109,7 +109,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
    */
-  @Inject
+  @AssistedInject
   GenJsExprsVisitor(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap, JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils, IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,

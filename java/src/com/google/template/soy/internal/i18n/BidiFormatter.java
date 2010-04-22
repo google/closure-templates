@@ -16,7 +16,7 @@
 
 package com.google.template.soy.internal.i18n;
 
-import com.google.common.base.CharEscapers;
+import com.google.template.soy.internal.base.CharEscapers;
 
 import java.util.Locale;
 

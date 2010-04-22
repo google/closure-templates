@@ -16,15 +16,15 @@
 
 package com.google.template.soy.javasrc.internal;
 
-import com.google.common.base.CharEscapers;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.javasrc.internal.TranslateToJavaExprVisitor.TranslateToJavaExprVisitorFactory;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeProtect;
@@ -107,7 +107,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
    * @param localVarTranslations The current stack of replacement Java expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
    */
-  @Inject
+  @AssistedInject
   GenJavaExprsVisitor(
       Map<String, SoyJavaSrcPrintDirective> soyJavaSrcDirectivesMap,
       GenCallCodeUtils genCallCodeUtils,

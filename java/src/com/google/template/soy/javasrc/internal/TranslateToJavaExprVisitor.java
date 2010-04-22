@@ -16,11 +16,10 @@
 
 package com.google.template.soy.javasrc.internal;
 
-import com.google.common.base.CharEscapers;
-import com.google.common.base.Join;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -61,6 +60,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.internal.base.CharEscapers;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.UTILS_LIB;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genBinaryOp;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
@@ -132,7 +132,7 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
    * @param localVarTranslations The current stack of replacement Java expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
    */
-  @Inject
+  @AssistedInject
   TranslateToJavaExprVisitor(
       Map<String, SoyJavaSrcFunction> soyJavaSrcFunctionsMap,
       @Assisted Deque<Map<String, JavaExpr>> localVarTranslations) {
@@ -252,7 +252,7 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
       keyStrParts.add("\"" + currStringLiteralPart.toString() + "\"");
     }
 
-    return Join.join(" + ", keyStrParts);
+    return Joiner.on(" + ").join(keyStrParts);
   }
 
 

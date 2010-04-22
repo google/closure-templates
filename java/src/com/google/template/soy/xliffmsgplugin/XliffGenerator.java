@@ -16,10 +16,10 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
-import com.google.common.base.CharEscaper;
-import com.google.common.base.CharEscapers;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.IndentedLinesBuilder;
+import com.google.template.soy.internal.base.CharEscaper;
+import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;

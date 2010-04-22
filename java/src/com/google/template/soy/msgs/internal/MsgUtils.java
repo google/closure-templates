@@ -16,8 +16,8 @@
 
 package com.google.template.soy.msgs.internal;
 
-import com.google.common.base.Pair;
 import com.google.common.collect.Lists;
+import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.restricted.SoyMsgIdComputer;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;

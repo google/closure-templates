@@ -17,7 +17,6 @@
 package com.google.template.soy.shared;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -33,6 +32,7 @@ import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.internal.base.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;

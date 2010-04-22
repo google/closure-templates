@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.javasrc.codedeps;
+package com.google.template.soy.internal.base;
 
 import java.util.HashMap;
 import java.util.Map;
-
 
 /**
  * Simple helper class to build a "sparse" array of objects based on the
@@ -81,8 +80,6 @@ public class CharEscaperBuilder {
 
   /**
    * Add a new mapping from an index to an object to the escaping.
-   * @param c -
-   * @param r -
    */
   public CharEscaperBuilder addEscape(char c, String r) {
     map.put(c, r);
@@ -94,8 +91,6 @@ public class CharEscaperBuilder {
 
   /**
    * Add multiple mappings at once for a particular index.
-   * @param cs -
-   * @param r -
    */
   public CharEscaperBuilder addEscapes(char[] cs, String r) {
     for (char c : cs) {

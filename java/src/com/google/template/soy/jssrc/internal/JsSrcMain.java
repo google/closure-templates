@@ -54,6 +54,9 @@ public class JsSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
+  /** Provider for getting an instance of ReplaceMsgsWithGoogMsgsVisitor. */
+  private final Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider;
+
   /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
   private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
@@ -63,15 +66,19 @@ public class JsSrcMain {
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
+   * @param replaceMsgsWithGoogMsgsVisitorProvider Provider for getting an instance of
+   *     ReplaceMsgsWithGoogMsgsVisitor.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
    *     OptimizeBidiCodeGenVisitor.
    * @param genJsCodeVisitorProvider Provider for getting an instance of GenJsCodeVisitor.
    */
   @Inject
   JsSrcMain(@ApiCall GuiceSimpleScope apiCallScope,
+            Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider,
             Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
             Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
+    this.replaceMsgsWithGoogMsgsVisitorProvider = replaceMsgsWithGoogMsgsVisitorProvider;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
   }
@@ -104,22 +111,23 @@ public class JsSrcMain {
       (new CheckSoyDocVisitor(true)).exec(soyTree);
     }
 
-    if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
-      (new ReplaceMsgsWithGoogMsgsVisitor()).exec(soyTree);
-      (new MoveGoogMsgNodesEarlierVisitor()).exec(soyTree);
-      Preconditions.checkState(
-          jsSrcOptions.getBidiGlobalDir() != 0,
-          "If enabling shouldGenerateGoogMsgDefs, must also set bidiGlobalDir.");
-    } else {
-      (new InsertMsgsVisitor(msgBundle)).exec(soyTree);
-    }
-
     apiCallScope.enter();
     try {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
       ApiCallScopeUtils.seedSharedParams(
           apiCallScope, msgBundle, jsSrcOptions.getBidiGlobalDir());
+
+      // Replace MsgNodes.
+      if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
+        replaceMsgsWithGoogMsgsVisitorProvider.get().exec(soyTree);
+        (new MoveGoogMsgNodesEarlierVisitor()).exec(soyTree);
+        Preconditions.checkState(
+            jsSrcOptions.getBidiGlobalDir() != 0,
+            "If enabling shouldGenerateGoogMsgDefs, must also set bidiGlobalDir.");
+      } else {
+        (new InsertMsgsVisitor(msgBundle)).exec(soyTree);
+      }
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);

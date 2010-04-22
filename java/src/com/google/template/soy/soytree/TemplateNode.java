@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Join;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
@@ -85,7 +85,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
           new Attribute("name", Attribute.ALLOW_ALL_VALUES,
                         Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
           new Attribute("private", Attribute.BOOLEAN_VALUES, "false"),
-          new Attribute("override", Sets.newUnmodifiableHashSet("true", "false", null), null), // V1
+          new Attribute("override", Sets.newHashSet("true", "false", null), null), // V1
           new Attribute("autoescape", Attribute.BOOLEAN_VALUES, "true"));
 
   /** Pattern for a newline. */
@@ -216,7 +216,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
       removeCommonStartChar(lines, ' ', true);
     }
 
-    return Join.join("\n", lines);
+    return Joiner.on('\n').join(lines);
   }
 
 

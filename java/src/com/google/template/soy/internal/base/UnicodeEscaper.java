@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.javasrc.codedeps;
+package com.google.template.soy.internal.base;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkPositionIndexes;
+
+import java.io.IOException;
 
 /**
  * An {@link Escaper} that converts literal text into a format safe for
@@ -117,11 +121,19 @@ public abstract class UnicodeEscaper implements Escaper {
   /**
    * Returns the escaped form of a given literal string.
    *
+   * <p>If you are escaping input in arbitrary successive chunks, then it is not
+   * generally safe to use this method. If an input string ends with an
+   * unmatched high surrogate character, then this method will throw
+   * {@link IllegalArgumentException}. You should either ensure your input is
+   * valid <a href="http://en.wikipedia.org/wiki/UTF-16">UTF-16</a> before
+   * calling this method or use an escaped {@link Appendable} (as returned by
+   * {@link #escape(Appendable)}) which can cope with arbitrarily split input.
+   *
    * <p><b>Note:</b> When implementing an escaper it is a good idea to override
    * this method for efficiency by inlining the implementation of
    * {@link #nextEscapeIndex(CharSequence, int, int)} directly. Doing this for
    * {@link PercentEscaper} more than doubled the performance for unescaped
-   * strings (as measured by {@code CharEscapersBenchmark}).
+   * strings.
    *
    * @param string the literal string to be escaped
    * @return the escaped form of {@code string}
@@ -129,7 +141,9 @@ public abstract class UnicodeEscaper implements Escaper {
    * @throws IllegalArgumentException if invalid surrogate characters are
    *         encountered
    */
-  @Override public String escape(String string) {
+  @Override
+  public String escape(String string) {
+    checkNotNull(string);
     int end = string.length();
     int index = nextEscapeIndex(string, 0, end);
     return index == end ? string : escapeSlow(string, index);
@@ -166,7 +180,11 @@ public abstract class UnicodeEscaper implements Escaper {
         throw new IllegalArgumentException(
             "Trailing high surrogate at end of input");
       }
+      // It is possible for this to return null because nextEscapeIndex() may
+      // (for performance reasons) yield some false positives but it must never
+      // give false negatives.
       char[] escaped = escape(cp);
+      int nextIndex = index + (Character.isSupplementaryCodePoint(cp) ? 2 : 1);
       if (escaped != null) {
         int charsSkipped = index - unescapedChunkStart;
 
@@ -186,10 +204,10 @@ public abstract class UnicodeEscaper implements Escaper {
           System.arraycopy(escaped, 0, dest, destIndex, escaped.length);
           destIndex += escaped.length;
         }
+        // If we dealt with an escaped character, reset the unescaped range.
+        unescapedChunkStart = nextIndex;
       }
-      unescapedChunkStart
-          = index + (Character.isSupplementaryCodePoint(cp) ? 2 : 1);
-      index = nextEscapeIndex(s, unescapedChunkStart, end);
+      index = nextEscapeIndex(s, nextIndex, end);
     }
 
     // Process trailing unescaped characters - no need to account for escaped
@@ -206,6 +224,134 @@ public abstract class UnicodeEscaper implements Escaper {
     return new String(dest, 0, destIndex);
   }
 
+  /**
+   * Returns an {@code Appendable} instance which automatically escapes all
+   * text appended to it before passing the resulting text to an underlying
+   * {@code Appendable}.
+   *
+   * <p>Unlike {@link #escape(String)} it is permitted to append arbitrarily
+   * split input to this Appendable, including input that is split over a
+   * surrogate pair. In this case the pending high surrogate character will not
+   * be processed until the corresponding low surrogate is appended. This means
+   * that a trailing high surrogate character at the end of the input cannot be
+   * detected and will be silently ignored. This is unavoidable since the
+   * Appendable interface has no {@code close()} method, and it is impossible to
+   * determine when the last characters have been appended.
+   *
+   * <p>The methods of the returned object will propagate any exceptions thrown
+   * by the underlying {@code Appendable}.
+   *
+   * <p>For well formed <a href="http://en.wikipedia.org/wiki/UTF-16">UTF-16</a>
+   * the escaping behavior is identical to that of {@link #escape(String)} and
+   * the following code is equivalent to (but much slower than)
+   * {@code escaper.escape(string)}: <pre>{@code
+   *
+   *   StringBuilder sb = new StringBuilder();
+   *   escaper.escape(sb).append(string);
+   *   return sb.toString();}</pre>
+   *
+   * @param out the underlying {@code Appendable} to append escaped output to
+   * @return an {@code Appendable} which passes text to {@code out} after
+   *     escaping it
+   * @throws NullPointerException if {@code out} is null
+   * @throws IllegalArgumentException if invalid surrogate characters are
+   *         encountered
+   */
+  @Override
+  public Appendable escape(final Appendable out) {
+    checkNotNull(out);
+
+    return new Appendable() {
+      char pendingHighSurrogate = 0;
+
+      @Override
+      public Appendable append(CharSequence csq) throws IOException {
+        return append(csq, 0, csq.length());
+      }
+
+      @Override
+      public Appendable append(CharSequence csq, int start, int end)
+          throws IOException {
+        checkNotNull(csq);
+        checkPositionIndexes(start, end, csq.length());
+
+        // If there is a pending high surrogate, handle it and start at the
+        // next character.
+        if (pendingHighSurrogate != 0 && start < end) {
+          completeSurrogatePair(csq.charAt(start++));
+        }
+
+        if (start < end) {
+          // If the string ends with a high surrogate, store it for the next
+          // append, and skip that character from the current escaping.
+          char last = csq.charAt(end - 1);
+          if (Character.isHighSurrogate(last)) {
+            pendingHighSurrogate = last;
+            end--;
+          }
+
+          // Escape the subsequence from start to end, which cannot legally
+          // contain an unpaired surrogate
+          out.append(escape(csq.subSequence(start, end).toString()));
+        }
+        return this;
+      }
+
+      @Override
+      public Appendable append(char c) throws IOException {
+        if (pendingHighSurrogate != 0) {
+          completeSurrogatePair(c);
+        } else if (Character.isHighSurrogate(c)) {
+          pendingHighSurrogate = c;
+        } else {
+          if (Character.isLowSurrogate(c)) {
+            throw new IllegalArgumentException(
+                "Unexpected low surrogate character '" + c +
+                "' with value " + (int) c);
+          }
+          // This is a normal (non surrogate) char.
+          char[] escaped = escape(c);
+          if (escaped != null) {
+            outputChars(escaped);
+          } else {
+            out.append(c);
+          }
+        }
+        return this;
+      }
+
+      /**
+       * Our last append operation ended halfway through a surrogate pair so we
+       * complete the surrogate pair using {@code c}, which must be a low
+       * surrogate.
+       */
+      private void completeSurrogatePair(char c) throws IOException {
+        if (!Character.isLowSurrogate(c)) {
+          throw new IllegalArgumentException(
+              "Expected low surrogate character but got '" + c +
+              "' with value " + (int) c);
+        }
+        char[] escaped = escape(
+            Character.toCodePoint(pendingHighSurrogate, c));
+        if (escaped != null) {
+          outputChars(escaped);
+        } else {
+          out.append(pendingHighSurrogate);
+          out.append(c);
+        }
+        pendingHighSurrogate = 0;
+      }
+
+      /**
+       * Output some characters to the underlying appendable.
+       */
+      private void outputChars(char[] chars) throws IOException {
+        for (int n = 0; n < chars.length; n++) {
+          out.append(chars[n]);
+        }
+      }
+    };
+  }
 
   /**
    * Returns the Unicode code point of the character at the given index.

@@ -16,18 +16,10 @@
 
 package com.google.template.soy.msgs;
 
-import com.google.common.base.Objects;
-import static com.google.common.base.Preconditions.checkArgument;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-
-import javax.annotation.Nullable;
 
 
 /**
@@ -35,61 +27,14 @@ import javax.annotation.Nullable;
  *
  * @author Kai Huang
  */
-public class SoyMsgBundle implements Iterable<SoyMsg> {
-
-
-  /** The language/locale string of this bundle's messages. */
-  private final String localeString;
-
-  /** Map from unique message id to message. Iteration order is sorted order of message id. */
-  private final Map<Long, SoyMsg> msgMap;
+public interface SoyMsgBundle extends Iterable<SoyMsg> {
 
 
   /**
-   * Important: Do not use this constructor from non-Soy code! This constructor being public is only
-   * a temporary state.
-   *
-   * Note: If there exist duplicate message ids in the {@code msgs} list, the first one wins.
-   * However, the source paths from subsequent duplicates will be added to the source paths for the
-   * message.
-   *
-   * @param localeString The language/locale string of this bundle of messages, or null if unknown.
-   *     Should only be null for bundles newly extracted from source files. Should always be set
-   *     for bundles parsed from message files/resources.
-   * @param msgs The list of messages. List order will become the iteration order.
-   */
-  public SoyMsgBundle(@Nullable String localeString, List<SoyMsg> msgs) {
-
-    this.localeString = localeString;
-
-    SortedMap<Long, SoyMsg> tempMsgMap = Maps.newTreeMap();
-    for (SoyMsg msg : msgs) {
-      checkArgument(Objects.equal(msg.getLocaleString(), localeString));
-      long msgId = msg.getId();
-
-      if (!tempMsgMap.containsKey(msgId)) {  // new message id
-        tempMsgMap.put(msgId, msg);
-
-      } else {  // duplicate message id
-        SoyMsg existingMsg = tempMsgMap.get(msgId);
-        for (String source : msg.getSourcePaths()) {
-          existingMsg.addSourcePath(source);
-        }
-      }
-    }
-
-    msgMap = ImmutableMap.copyOf(tempMsgMap);
-  }
-
-
-  /**
-   * Gets the language/locale string of this bundle of messages (see note in
-   * {@link SoyMsgBundle} class doc).
+   * Gets the language/locale string of this bundle of messages.
    * @return The language/locale string of the messages provided by this bundle.
    */
-  public String getLocaleString() {
-    return localeString;
-  }
+  public String getLocaleString();
 
 
   /**
@@ -97,26 +42,46 @@ public class SoyMsgBundle implements Iterable<SoyMsg> {
    * @param msgId The message id of the message to retrieve.
    * @return The corresponding message, or null if not found.
    */
-  public SoyMsg getMsg(long msgId) {
-    return msgMap.get(msgId);
-  }
+  public SoyMsg getMsg(long msgId);
 
 
   /**
    * Gets the number of messages in this bundle.
    * @return The number of messages in this bundle.
    */
-  public int getNumMsgs() {
-    return msgMap.size();
-  }
+  public int getNumMsgs();
 
 
   /**
    * Returns an iterator over all the messages.
    * @return An iterator over all the messages.
    */
-  @Override public Iterator<SoyMsg> iterator() {
-    return msgMap.values().iterator();
-  }
+  @Override public Iterator<SoyMsg> iterator();
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Null object.
+
+
+  /** Null object for SoyMsgBundle. */
+  public static SoyMsgBundle EMPTY =
+      new SoyMsgBundle() {
+
+        @Override public String getLocaleString() {
+          return null;
+        }
+
+        @Override public SoyMsg getMsg(long msgId) {
+          return null;
+        }
+
+        @Override public int getNumMsgs() {
+          return 0;
+        }
+
+        @Override public Iterator<SoyMsg> iterator() {
+          return ImmutableList.<SoyMsg>of().iterator();
+        }
+      };
 
 }

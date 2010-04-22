@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.StringUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
@@ -147,7 +146,8 @@ public class PrintNode extends AbstractParentSoyCommandNode<PrintDirectiveNode>
       // If the name appears as a dotted list of components, only display
       // the last component.
       if (exprAsGlobal != null) {
-        String lastPart = StringUtil.lastToken(exprAsGlobal.getName(), ".");
+        int lastDotIndex = exprAsGlobal.getName().lastIndexOf('.');
+        String lastPart = exprAsGlobal.getName().substring(lastDotIndex + 1);
         basePlaceholderName = BaseUtils.convertToUpperUnderscore(lastPart);
       }
     }

@@ -16,8 +16,8 @@
 
 package com.google.template.soy.javasrc.internal;
 
-import com.google.common.base.Pair;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions.CodeStyle;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.JavaExprUtils;

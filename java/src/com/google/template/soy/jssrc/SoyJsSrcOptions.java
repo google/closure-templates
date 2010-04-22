@@ -56,7 +56,10 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
   private boolean shouldGenerateGoogMsgDefs;
 
-  /** The bidi global directionality (ltr=1, rtl=-1). Set iff shouldGenerateJsMsgDefs is true. */
+  /** Whether the Closure Library messages are external, i.e. "MSG_EXTERNAL_[soyGeneratedMsgId]". */
+  private boolean googMsgsAreExternal;
+
+  /** Bidi global directionality (ltr=1, rtl=-1). Required if shouldGenerateJsMsgDefs is true. */
   private int bidiGlobalDir;
 
 
@@ -68,6 +71,7 @@ public class SoyJsSrcOptions implements Cloneable {
     shouldProvideRequireJsFunctions = false;
     shouldDeclareTopLevelNamespaces = true;
     shouldGenerateGoogMsgDefs = false;
+    googMsgsAreExternal = false;
     bidiGlobalDir = 0;
   }
 
@@ -198,8 +202,37 @@ public class SoyJsSrcOptions implements Cloneable {
 
 
   /**
+   * Sets whether the generated Closure Library message definitions are for external messages
+   * (only applicable if shouldGenerateGoogMsgDefs is true).
+   *
+   * If this option is true, then we generate
+   *     var MSG_EXTERNAL_[soyGeneratedMsgId] = goog.getMsg(...);
+   * If this option is false, then we generate
+   *     var MSG_UNNAMED_[uniquefier] = goog.getMsg(...);
+   *
+   * @param googMsgsAreExternal The value to set.
+   */
+  public void setGoogMsgsAreExternal(boolean googMsgsAreExternal) {
+    this.googMsgsAreExternal = googMsgsAreExternal;
+  }
+
+  /**
+   * Returns whether the generated Closure Library message definitions are for external messages
+   * (only applicable if shouldGenerateGoogMsgDefs is true).
+   *
+   * If this option is true, then we generate
+   *     var MSG_EXTERNAL_[soyGeneratedMsgId] = goog.getMsg(...);
+   * If this option is false, then we generate
+   *     var MSG_UNNAMED_[uniquefier] = goog.getMsg(...);
+   */
+  public boolean googMsgsAreExternal() {
+    return googMsgsAreExternal;
+  }
+
+
+  /**
    * Sets the bidi global directionality (1 for LTR, -1 for RTL, 0 to infer from message bundle).
-   * If shouldGenerateGoogMsgDefs is true, this must be set to a non-zero value.
+   * Note: If shouldGenerateGoogMsgDefs is true, this must be set to a non-zero value.
    * @param bidiGlobalDir The value to set.
    */
   public void setBidiGlobalDir(int bidiGlobalDir) {
@@ -214,8 +247,7 @@ public class SoyJsSrcOptions implements Cloneable {
   }
 
   /**
-   * Returns the bidi global directionality (ltr=1, rtl=-1). This is only applicable iff
-   * shouldGenerateJsMsgDefs is true.
+   * Returns the bidi global directionality (ltr=1, rtl=-1).
    */
   public int getBidiGlobalDir() {
     return bidiGlobalDir;

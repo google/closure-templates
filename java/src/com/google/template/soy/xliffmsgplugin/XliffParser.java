@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgException;
 import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
@@ -81,7 +82,7 @@ class XliffParser {
     }
 
     // Build a SoyMsgBundle from the parsed data (stored in xliffSaxHandler).
-    return new SoyMsgBundle(xliffSaxHandler.getTargetLocaleString(), xliffSaxHandler.getMsgs());
+    return new SoyMsgBundleImpl(xliffSaxHandler.getTargetLocaleString(), xliffSaxHandler.getMsgs());
   }
 
 

@@ -64,7 +64,7 @@ soy.StringBuilder = goog.string.StringBuffer;
  *
  * @param {Element} element The element whose content we are rendering.
  * @param {Function} template The Soy template defining the element's content.
- * @param {Object} opt_templateData The data for the template.
+ * @param {Object=} opt_templateData The data for the template.
  */
 soy.renderElement = function(element, template, opt_templateData) {
   element.innerHTML = template(opt_templateData);
@@ -78,7 +78,7 @@ soy.renderElement = function(element, template, opt_templateData) {
  * rendered nodes.
  *
  * @param {Function} template The Soy template defining the element's content.
- * @param {Object} opt_templateData The data for the template.
+ * @param {Object=} opt_templateData The data for the template.
  * @return {Node} The resulting node or document fragment.
  */
 soy.renderAsFragment = function(template, opt_templateData) {
@@ -218,7 +218,7 @@ soy.$$bidiFormatterInstance_ = function(bidiGlobalDir) {
  * ignore the LTR nature of the mark-up and escapes in text, making the logic
  * suitable for HTML and HTML-escaped text.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
  */
@@ -239,7 +239,7 @@ soy.$$bidiTextDir = function(text, opt_isHtml) {
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {string} "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR
  *     text in non-LTR context; else, the empty string.
@@ -259,7 +259,7 @@ soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {string} A Unicode bidi mark matching bidiGlobalDir, or
  *     the empty string when text's overall and exit directionalities both match

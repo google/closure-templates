@@ -16,10 +16,11 @@
 
 package com.google.template.soy.msgs.internal;
 
-import com.google.common.base.Pair;
 import com.google.common.collect.Lists;
+import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
@@ -58,7 +59,7 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
   /** Returns a SoyMsgBundle containing all the extracted messages (locale string is null). */
   @Override protected SoyMsgBundle getResult() {
-    return new SoyMsgBundle(null, msgs);
+    return new SoyMsgBundleImpl(null, msgs);
   }
 
 
@@ -68,7 +69,7 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
   @Override protected void visitInternal(SoyFileNode node) {
 
-    currentSource = node.getFileName();
+    currentSource = node.getFilePath();
     visitChildren(node);
     currentSource = null;
   }

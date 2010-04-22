@@ -16,10 +16,10 @@
 
 package com.google.template.soy.tofu.internal;
 
-import com.google.common.base.Join;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -113,7 +113,7 @@ class EvalVisitor extends AbstractExprNodeVisitor<SoyData> {
    * @param data The current template data.
    * @param env The current environment.
    */
-  @Inject
+  @AssistedInject
   EvalVisitor(Map<String, SoyTofuFunction> soyTofuFunctionsMap, @Assisted @Nullable SoyMapData data,
               @Assisted Deque<Map<String, SoyData>> env) {
     this.soyTofuFunctionsMap = soyTofuFunctionsMap;
@@ -196,7 +196,7 @@ class EvalVisitor extends AbstractExprNodeVisitor<SoyData> {
     }
     // Resolve the key string built from the rest of the keys.
     SoyData value = (value0 instanceof CollectionData) ?
-                    ((CollectionData) value0).get(Join.join(".", keys)) /*may be null*/ : null;
+                    ((CollectionData) value0).get(Joiner.on('.').join(keys)) /*may be null*/ : null;
     if (value != null) {
       resultStack.push(value);
     } else {

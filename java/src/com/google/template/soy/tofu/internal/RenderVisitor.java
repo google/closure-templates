@@ -18,8 +18,8 @@ package com.google.template.soy.tofu.internal;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
@@ -140,7 +140,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
    *     Soy source.
    */
-  @Inject
+  @AssistedInject
   RenderVisitor(
       Map<String, SoyTofuPrintDirective> soyTofuDirectivesMap,
       EvalVisitorFactory evalVisitorFactory, RenderVisitorFactory renderVisitorFactory,

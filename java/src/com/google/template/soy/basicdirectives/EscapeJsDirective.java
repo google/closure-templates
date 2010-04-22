@@ -16,11 +16,11 @@
 
 package com.google.template.soy.basicdirectives;
 
-import com.google.common.base.CharEscapers;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;

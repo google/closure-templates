@@ -77,7 +77,9 @@ import java.util.regex.*;
 
 
 /**
- * This Java class was automatically generated using JavaCC. Do not edit this class by hand.
+ * This parser's specification is in TemplateParser.jj, which is read by JavaCC and transformed
+ * into TemplateParser.java. To modify this parser, please edit TemplateParser.jj. Do not edit
+ * TemplateParser.java directly.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *

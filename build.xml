@@ -24,7 +24,7 @@ Author: Robert Bowdidge
   <property name="java.lib.dir" value="${basedir}/java/lib" />
 
   <property name="build.dir" value="${basedir}/build" />
-  <property name="soy.jar.file" value="${build.dir}/Soy.jar" />
+  <property name="soy.jar.file" value="${build.dir}/soy.jar" />
   <property name="build.classes.dir" value="${build.dir}/classes" />
   <property name="build.genfiles.dir" value="${build.dir}/genfiles" />
 
@@ -79,12 +79,23 @@ Author: Robert Bowdidge
           description="Creates a standalone jar of all Java class files and dependencies.">
     <jar destfile="${soy.jar.file}" update="true">
       <fileset dir="${build.classes.dir}" />
-      <zipfileset src="${java.lib.dir}/google-guava-snapshot.jar" />
+      <zipfileset src="${java.lib.dir}/jsr305.jar" />
+      <zipfileset src="${java.lib.dir}/guava-r03.jar" />
+      <zipfileset src="${java.lib.dir}/aopalliance.jar" />
       <zipfileset src="${java.lib.dir}/guice-snapshot.jar" />
       <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar" />
       <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar" />
-      <zipfileset src="${java.lib.dir}/aopalliance.jar" />
       <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
+    </jar>
+  </target>
+
+
+  <!-- Target to create a non-standalone jar of all Java class files, excluding dependencies. -->
+  <target name="jar-excluding-deps"
+          depends="compile"
+          description="Creates a non-standalone jar of all Java class files, excluding dependencies.">
+    <jar destfile="${build.dir}/soy-excluding-deps.jar" update="true">
+      <fileset dir="${build.classes.dir}" />
     </jar>
   </target>
 

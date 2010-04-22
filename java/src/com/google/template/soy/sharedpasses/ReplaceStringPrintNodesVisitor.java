@@ -16,11 +16,11 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.common.base.CharEscapers;
 import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.coredirectives.CoreDirectiveUtils;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;

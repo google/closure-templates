@@ -16,9 +16,7 @@ import static com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisitene
 /**
  * Soy parse info for features.soy.
  */
-public class FeaturesSoyInfo {
-
-  private FeaturesSoyInfo() {}
+public class FeaturesSoyInfo extends SoyFileInfo {
 
 
   public static class Param {
@@ -476,61 +474,63 @@ public class FeaturesSoyInfo {
   }
 
 
-  private static final SoyFileInfo __SOY_FILE_INFO__ = new SoyFileInfo(
-      "features.soy",
-      "soy.examples.features",
-      ImmutableSortedSet.of(
-          Param.AUTHOR,
-          Param.BOO,
-          Param.COMPANION_NAME,
-          Param.CSS_CLASS,
-          Param.CURRENT_YEAR,
-          Param.DESTINATION,
-          Param.DESTINATIONS,
-          Param.ELEMENT_ID,
-          Param.EXAMPLE_NAME,
-          Param.EXAMPLE_NUM,
-          Param.ITALIC_HTML,
-          Param.ITEMS,
-          Param.KEYWORDS,
-          Param.LABS_URL,
-          Param.LONG_VAR_NAME,
-          Param.NAME,
-          Param.NUM_LINES,
-          Param.PERSONS,
-          Param.PI,
-          Param.SET_MEMBERS,
-          Param.SET_NAME,
-          Param.STUDENTS,
-          Param.TITLE,
-          Param.TRIP_INFO,
-          Param.TWO,
-          Param.YEAR),
-      ImmutableList.<SoyTemplateInfo>of(
-          DEMO_COMMENTS,
-          DEMO_LINE_JOINING,
-          DEMO_RAW_TEXT_COMMANDS,
-          DEMO_PRINT,
-          DEMO_PRINT_DIRECTIVES,
-          DEMO_AUTOESCAPE_TRUE,
-          DEMO_AUTOESCAPE_FALSE,
-          DEMO_MSG,
-          DEMO_IF,
-          DEMO_SWITCH,
-          DEMO_FOREACH,
-          DEMO_FOR,
-          DEMO_CALL_WITHOUT_PARAM,
-          DEMO_CALL_WITH_PARAM,
-          DEMO_CALL_WITH_PARAM_BLOCK,
-          DEMO_EXPRESSIONS,
-          DEMO_DOUBLE_BRACES,
-          DEMO_BIDI_SUPPORT,
-          BIDI_GLOBAL_DIR,
-          EXAMPLE_HEADER));
+  private FeaturesSoyInfo() {
+    super("features.soy",
+          "soy.examples.features",
+          ImmutableSortedSet.<String>of(
+              Param.AUTHOR,
+              Param.BOO,
+              Param.COMPANION_NAME,
+              Param.CSS_CLASS,
+              Param.CURRENT_YEAR,
+              Param.DESTINATION,
+              Param.DESTINATIONS,
+              Param.ELEMENT_ID,
+              Param.EXAMPLE_NAME,
+              Param.EXAMPLE_NUM,
+              Param.ITALIC_HTML,
+              Param.ITEMS,
+              Param.KEYWORDS,
+              Param.LABS_URL,
+              Param.LONG_VAR_NAME,
+              Param.NAME,
+              Param.NUM_LINES,
+              Param.PERSONS,
+              Param.PI,
+              Param.SET_MEMBERS,
+              Param.SET_NAME,
+              Param.STUDENTS,
+              Param.TITLE,
+              Param.TRIP_INFO,
+              Param.TWO,
+              Param.YEAR),
+          ImmutableList.<SoyTemplateInfo>of(
+              DEMO_COMMENTS,
+              DEMO_LINE_JOINING,
+              DEMO_RAW_TEXT_COMMANDS,
+              DEMO_PRINT,
+              DEMO_PRINT_DIRECTIVES,
+              DEMO_AUTOESCAPE_TRUE,
+              DEMO_AUTOESCAPE_FALSE,
+              DEMO_MSG,
+              DEMO_IF,
+              DEMO_SWITCH,
+              DEMO_FOREACH,
+              DEMO_FOR,
+              DEMO_CALL_WITHOUT_PARAM,
+              DEMO_CALL_WITH_PARAM,
+              DEMO_CALL_WITH_PARAM_BLOCK,
+              DEMO_EXPRESSIONS,
+              DEMO_DOUBLE_BRACES,
+              DEMO_BIDI_SUPPORT,
+              BIDI_GLOBAL_DIR,
+              EXAMPLE_HEADER));
+  }
 
+  private static final FeaturesSoyInfo __INSTANCE__ = new FeaturesSoyInfo();
 
-  public static SoyFileInfo getFileInfo() {
-    return __SOY_FILE_INFO__;
+  public static FeaturesSoyInfo getInstance() {
+    return __INSTANCE__;
   }
 
 }

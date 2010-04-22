@@ -17,7 +17,10 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -40,8 +43,17 @@ import java.util.List;
 class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
+  /** The options for generating JS source code. */
+  private final SoyJsSrcOptions jsSrcOptions;
+
   /** The list of MsgNodes found in the given node's subtree. */
   private List<MsgNode> msgNodes;
+
+
+  @Inject
+  ReplaceMsgsWithGoogMsgsVisitor(SoyJsSrcOptions jsSrcOptions) {
+    this.jsSrcOptions = jsSrcOptions;
+  }
 
 
   @Override protected void setup() {
@@ -95,9 +107,12 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void replaceMsgNodeHelper(MsgNode msgNode, IdGenerator nodeIdGen) {
 
-    GoogMsgNode googMsgNode = new GoogMsgNode(nodeIdGen.genStringId(), msgNode);
-    GoogMsgRefNode googMsgRefNode =
-        new GoogMsgRefNode(nodeIdGen.genStringId(), googMsgNode.getGoogMsgName());
+    String googMsgNodeId = nodeIdGen.genStringId();
+    String googMsgName = jsSrcOptions.googMsgsAreExternal() ?
+        "MSG_EXTERNAL_" + MsgUtils.computeMsgId(msgNode) : "MSG_UNNAMED_" + googMsgNodeId;
+
+    GoogMsgNode googMsgNode = new GoogMsgNode(googMsgNodeId, msgNode, googMsgName);
+    GoogMsgRefNode googMsgRefNode = new GoogMsgRefNode(nodeIdGen.genStringId(), googMsgName);
 
     @SuppressWarnings("unchecked")  // cast with generics
     ParentSoyNode<SoyNode> parent = (ParentSoyNode<SoyNode>) msgNode.getParent();

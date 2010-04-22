@@ -17,9 +17,9 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Visitor for finding the indirect params of a given template.
@@ -200,7 +199,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     memoizedListedParamKeys = Maps.newHashMap();
     callerStack = new ArrayDeque<CallerFrame>();
     indirectParams = Maps.newLinkedHashMap();
-    paramKeyToCalleesMultimap = Multimaps.newLinkedHashMultimap();
+    paramKeyToCalleesMultimap = LinkedHashMultimap.create();
     mayHaveExternalIndirectParams = false;
   }
 

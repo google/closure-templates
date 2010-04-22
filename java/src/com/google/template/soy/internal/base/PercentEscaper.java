@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.javasrc.codedeps;
+package com.google.template.soy.internal.base;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A {@code UnicodeEscaper} that escapes some set of Java characters using
@@ -26,7 +27,8 @@ package com.google.template.soy.javasrc.codedeps;
  * <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
  *
  * <p>In most cases this class should not need to be used directly. If you
- * have no special requirements for escaping your URIs, you should use
+ * have no special requirements for escaping your URIs, you should use either
+ * {@link CharEscapers#uriEscaper()} or
  * {@link CharEscapers#uriEscaper(boolean)}.
  *
  * <p>When encoding a String, the following rules apply:
@@ -52,7 +54,7 @@ package com.google.template.soy.javasrc.codedeps;
  * <p>For performance reasons the only currently supported character encoding of
  * this class is UTF-8.
  *
- * <p><b>Note</b>: This escaper produces uppercase hexidecimal sequences. From
+ * <p><b>Note</b>: This escaper produces uppercase hexadecimal sequences. From
  * <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>:<br>
  * <i>"URI producers and normalizers should use uppercase hexadecimal digits
  * for all percent-encodings."</i>
@@ -87,7 +89,6 @@ public class PercentEscaper extends UnicodeEscaper {
   // In some uri escapers spaces are escaped to '+'
   private static final char[] URI_ESCAPED_SPACE = { '+' };
 
-  // TODO: Remove this once UriEscaper uses lower case
   private static final char[] UPPER_HEX_DIGITS =
       "0123456789ABCDEF".toCharArray();
 
@@ -139,7 +140,6 @@ public class PercentEscaper extends UnicodeEscaper {
    * Creates a boolean[] with entries corresponding to the character values
    * for 0-9, A-Z, a-z and those specified in safeChars set to true. The array
    * is as small as is required to hold the given character information.
-   * @param safeChars -
    */
   private static boolean[] createSafeOctets(String safeChars) {
     int maxChar = 'z';
@@ -186,6 +186,7 @@ public class PercentEscaper extends UnicodeEscaper {
    */
   @Override
   public String escape(String s) {
+    checkNotNull(s);
     int slen = s.length();
     for (int index = 0; index < slen; index++) {
       char c = s.charAt(index);

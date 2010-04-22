@@ -16,7 +16,7 @@
 
 package com.google.template.soy.data;
 
-import com.google.common.base.Join;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.CollectionData;
@@ -84,7 +84,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * <p> This method should only be used for debugging purposes.
    */
   @Override public String toString() {
-    return "[" + Join.join(", ", list) + "]";
+    return "[" + Joiner.on(", ").join(list) + "]";
   }
 
 

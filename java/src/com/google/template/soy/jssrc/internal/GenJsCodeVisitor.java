@@ -375,13 +375,14 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     if (jsSrcOptions.shouldGenerateJsdoc()) {
       jsCodeBuilder.appendLine("/**");
-      jsCodeBuilder.appendLine(" * @param {Object.<string, *>} opt_data");
+      jsCodeBuilder.appendLine(" * @param {Object.<string, *>=} opt_data");
       if (isCodeStyleStringbuilder) {
-        jsCodeBuilder.appendLine(" * @param {soy.StringBuilder} opt_sb");
+        jsCodeBuilder.appendLine(" * @param {soy.StringBuilder=} opt_sb");
         jsCodeBuilder.appendLine(" * @return {string|undefined}");
       } else {
         jsCodeBuilder.appendLine(" * @return {string}");
       }
+      jsCodeBuilder.appendLine(" * @notypecheck");
       jsCodeBuilder.appendLine(" */");
     }
 

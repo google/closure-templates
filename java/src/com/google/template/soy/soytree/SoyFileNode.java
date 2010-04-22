@@ -69,6 +69,11 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** @param filePath The path to the source Soy file. */
   public void setFilePath(String filePath) {
+    int lastBangIndex = filePath.lastIndexOf('!');
+    if (lastBangIndex != -1) {
+      // This is a resource in a JAR file. Only keep everything after the bang.
+      filePath = filePath.substring(lastBangIndex + 1);
+    }
     this.filePath = filePath;
     int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
     if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {

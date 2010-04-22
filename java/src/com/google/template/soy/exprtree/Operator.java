@@ -16,7 +16,6 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.base.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -41,6 +40,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.internal.base.Pair;
 
 import java.util.Collections;
 import java.util.List;

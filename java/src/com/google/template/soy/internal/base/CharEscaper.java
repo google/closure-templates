@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.javasrc.codedeps;
+package com.google.template.soy.internal.base;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.io.IOException;
 
 /**
  * An object that converts literal text into a format safe for inclusion in a
@@ -49,6 +52,7 @@ public abstract class CharEscaper implements Escaper {
    * @throws NullPointerException if {@code string} is null
    */
   @Override public String escape(String string) {
+    checkNotNull(string);
     // Inlineable fast-path loop which hands off to escapeSlow() only if needed
     int length = string.length();
     for (int index = 0; index < length; index++) {
@@ -57,6 +61,58 @@ public abstract class CharEscaper implements Escaper {
       }
     }
     return string;
+  }
+
+  /**
+   * Returns an {@code Appendable} instance which automatically escapes all
+   * text appended to it before passing the resulting text to an underlying
+   * {@code Appendable}.
+   *
+   * <p>The methods of the returned object will propagate any exceptions thrown
+   * by the underlying {@code Appendable}, and will throw {@link
+   * NullPointerException} if asked to append {@code null}, but do not otherwise
+   * throw any exceptions.
+   *
+   * <p>The escaping behavior is identical to that of {@link #escape(String)},
+   * so the following code is always equivalent to {@code
+   * escaper.escape(string)}: <pre>   {@code
+   *
+   *   StringBuilder sb = new StringBuilder();
+   *   escaper.escape(sb).append(string);
+   *   return sb.toString();}</pre>
+   *
+   * @param out the underlying {@code Appendable} to append escaped output to
+   * @return an {@code Appendable} which passes text to {@code out} after
+   *     escaping it
+   * @throws NullPointerException if {@code out} is null.
+   */
+  @Override public Appendable escape(final Appendable out) {
+    checkNotNull(out);
+
+    return new Appendable() {
+      @Override public Appendable append(CharSequence csq) throws IOException {
+        out.append(escape(csq.toString()));
+        return this;
+      }
+
+      @Override public Appendable append(CharSequence csq, int start, int end)
+          throws IOException {
+        out.append(escape(csq.subSequence(start, end).toString()));
+        return this;
+      }
+
+      @Override public Appendable append(char c) throws IOException {
+        char[] escaped = escape(c);
+        if (escaped == null) {
+          out.append(c);
+        } else {
+          for (char e : escaped) {
+            out.append(e);
+          }
+        }
+        return this;
+      }
+    };
   }
 
   /**
@@ -153,7 +209,7 @@ public abstract class CharEscaper implements Escaper {
    * once in a while so it's ok if it's in a method call.  If the index passed
    * in is 0 then no copying will be done.
    */
-  private static final char[] growBuffer(char[] dest, int index, int size) {
+  private static char[] growBuffer(char[] dest, int index, int size) {
     char[] copy = new char[size];
     if (index > 0) {
       System.arraycopy(dest, 0, copy, 0, index);

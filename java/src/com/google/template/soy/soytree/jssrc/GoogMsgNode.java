@@ -1,4 +1,18 @@
-// Copyright 2009 Google Inc. All Rights Reserved.
+/*
+ * Copyright 2009 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.google.template.soy.soytree.jssrc;
 
@@ -13,7 +27,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author kai@google.com (Kai Huang)
+ * @author Kai Huang
  */
 public class GoogMsgNode extends AbstractParentSoyNode<SoyNode> implements LocalVarInlineNode {
 
@@ -21,24 +35,27 @@ public class GoogMsgNode extends AbstractParentSoyNode<SoyNode> implements Local
   /** The original MsgNode that this node is based off. */
   private final MsgNode origMsgNode;
 
-  /** The name of the Closure message variable (defined by goog.getMsg). */
+  /** The name of the Closure message variable ("MSG_UNNAMED_..." or "MSG_EXTERNAL..."). */
   private final String googMsgName;
 
 
   /**
    * @param id The id for this node.
    * @param origMsgNode The original MsgNode that this node is based off.
+   * @param googMsgName The name of the Closure message variable defined by goog.getMsg, e.g.
+   *     "MSG_UNNAMED_[uniquefier]" or "MSG_EXTERNAL_[soyGeneratedMsgId]".
    */
-  public GoogMsgNode(String id, MsgNode origMsgNode) {
+  public GoogMsgNode(String id, MsgNode origMsgNode, String googMsgName) {
     super(id);
-    this.googMsgName = "MSG_UNNAMED_" + getId();
 
     this.origMsgNode = origMsgNode;
     this.addChildren(origMsgNode.getChildren());
+
+    this.googMsgName = googMsgName;
   }
 
 
-  /** Returns the name of the Closure message variable (defined by goog.getMsg). */
+  /** Returns the name of the Closure message variable ("MSG_UNNAMED_..." or "MSG_EXTERNAL..."). */
   public String getGoogMsgName() {
     return googMsgName;
   }
