@@ -382,16 +382,6 @@ TOKEN_MGR_DECLS:
 
 
   /**
-   * Creates a new TokenMgrError with the given message and throws it.
-   * @param message The error message.
-   * @throws TokenMgrError Always.
-   */
-  private static void throwTokenMgrError(String message) throws TokenMgrError {
-    throw new TokenMgrError(message, TokenMgrError.LEXICAL_ERROR);
-  }
-
-
-  /**
    * Creates a new TokenMgrError with the given message and line/column numbers and throws it.
    * @param message The error message. Should not end with a period because the suffix
    *     " [line ..., column ...]" will be appended.
@@ -998,8 +988,8 @@ private void MaybeWhitespace(String previousCommand, String nextCommand) :
     basicRawText = BasicRawText()
     { if (basicRawText.trim().length() != 0) {
         throw new ParseException(
-            "No content nor comments allowed between '" + previousCommand + "' and '" +
-            nextCommand + "' (whitespace okay).");
+            "No content allowed between '" + previousCommand + "' and '" + nextCommand +
+            "' (whitespace and comments are okay).");
       }
     }
   ]
