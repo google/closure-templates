@@ -83,8 +83,10 @@ Author: Robert Bowdidge
       <zipfileset src="${java.lib.dir}/guava-r03.jar" />
       <zipfileset src="${java.lib.dir}/aopalliance.jar" />
       <zipfileset src="${java.lib.dir}/guice-snapshot.jar" />
-      <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar" />
-      <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar" />
+      <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar"
+                  excludes="LICENSE,NOTICE" />
+      <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar"
+                  excludes="LICENSE,NOTICE" />
       <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
     </jar>
   </target>

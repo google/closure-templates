@@ -71,14 +71,17 @@ public abstract class SoyData {
       return new BooleanData((Boolean) obj);
     } else if (obj instanceof Integer) {
       return new IntegerData((Integer) obj);
-    } else if (obj instanceof Double) {
-      return new FloatData((Double) obj);
     } else if (obj instanceof Map) {
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
       return new SoyMapData(objCast);
     } else if (obj instanceof List) {
       return new SoyListData((List<?>) obj);
+    } else if (obj instanceof Double) {
+      return new FloatData((Double) obj);
+    } else if (obj instanceof Float) {
+      // Automatically convert float to double.
+      return new FloatData((Float) obj);
     } else {
       throw new SoyDataException(
           "Attempting to convert unrecognized object to Soy data (object type " +
