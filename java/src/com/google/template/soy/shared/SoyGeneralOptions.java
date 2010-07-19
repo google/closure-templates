@@ -54,6 +54,14 @@ public class SoyGeneralOptions implements Cloneable {
 
 
   /**
+   * Levels of safe-print-tags inference.
+   */
+  public static enum SafePrintTagsInferenceLevel {
+    NONE, SIMPLE, ADVANCED;
+  }
+
+
+  /**
    * Schemes for handling {@code css} commands.
    */
   public static enum CssHandlingScheme {
@@ -88,6 +96,9 @@ public class SoyGeneralOptions implements Cloneable {
       Pattern.compile("([a-zA-Z_][a-zA-Z_0-9.]*) \\s* = \\s* (.+)", Pattern.COMMENTS);
 
 
+  /** The level of safe-print-tags inference. */
+  private SafePrintTagsInferenceLevel safePrintTagsInferenceLevel;
+
   /** Scheme for handling 'css' commands. */
   private CssHandlingScheme cssHandlingScheme;
 
@@ -96,13 +107,47 @@ public class SoyGeneralOptions implements Cloneable {
 
 
   public SoyGeneralOptions() {
-    this.cssHandlingScheme = CssHandlingScheme.LITERAL;
+    safePrintTagsInferenceLevel = SafePrintTagsInferenceLevel.NONE;
+    cssHandlingScheme = CssHandlingScheme.LITERAL;
     compileTimeGlobals = null;
   }
 
 
   /**
+   * Sets the level of safe-print-tags inference. For all inferred safe print tags, the compiler
+   * automatically adds the '|noAutoescape' directive.
+   * <pre>
+   *     NONE: No inference. '@safe' declarations are ignored.
+   *     SIMPLE: Infers safe print tags based on '@safe' declarations in the current template's
+   *         SoyDoc (same behavior for public and private templates).
+   *     ADVANCED: Infers safe print tags based on '@safe' declarations in SoyDoc of public
+   *         templates. For private templates, infers safe data from the data being passed in all
+   *         the calls to the private template from the rest of the Soy code (in the same compiled
+   *         bundle).
+   * </pre>
+   * Also, for inference levels SIMPLE and ADVANCED, the compiler checks calls between templates.
+   * Specifically, if the callee template's SoyDoc specifies '@safe' declarations, then the data
+   * being passed in the call must be known to be safe for all of those declared safe data paths.
+   * Otherwise, a data-safety-mismatch error is reported.
+   *
+   * @param inferenceLevel The level of safe-print-tags inference to set (0, 1, or 2).
+   */
+  public void setSafePrintTagsInferenceLevel(SafePrintTagsInferenceLevel inferenceLevel) {
+    this.safePrintTagsInferenceLevel = inferenceLevel;
+  }
+
+
+  /**
+   * Returns the level of safe-print-tags inference.
+   */
+  public SafePrintTagsInferenceLevel getSafePrintTagsInferenceLevel() {
+    return safePrintTagsInferenceLevel;
+  }
+
+
+  /**
    * Sets the scheme for handling {@code css} commands.
+   *
    * @param cssHandlingScheme The css-handling scheme to set.
    */
   public void setCssHandlingScheme(CssHandlingScheme cssHandlingScheme) {
@@ -110,7 +155,9 @@ public class SoyGeneralOptions implements Cloneable {
   }
 
 
-  /** Returns the scheme for handling {@code css} commands. */
+  /**
+   * Returns the scheme for handling {@code css} commands.
+   */
   public CssHandlingScheme getCssHandlingScheme() {
     return cssHandlingScheme;
   }
@@ -245,7 +292,9 @@ public class SoyGeneralOptions implements Cloneable {
   }
 
 
-  /** Returns the map from compile-time global name to value. */
+  /**
+   * Returns the map from compile-time global name to value.
+   */
   public ImmutableMap<String, PrimitiveData> getCompileTimeGlobals() {
     return compileTimeGlobals;
   }

@@ -1093,15 +1093,19 @@ private List<String> PrintTag() :
   List<String> cmdTextParts;
 }
 {
+  { List<String> printTagParts = Lists.newArrayList(); }
+
   SoyTagOpen()
   [
     LOOKAHEAD( <CMD_NAME_PRINT> <WS_AFTER_CMD_NAME> )
     <CMD_NAME_PRINT> <WS_AFTER_CMD_NAME>
+    { printTagParts.add("print"); }
   ]
   cmdTextParts = CmdTextParts()
+  { printTagParts.addAll(cmdTextParts); }
   RegSoyTagClose()
 
-  { return cmdTextParts; }
+  { return printTagParts; }
 }
 
 
@@ -1699,19 +1703,29 @@ private MsgHtmlTagNode MsgHtmlTag() throws SoySyntaxException :
  */
 private PrintNode PrintStmt() throws SoySyntaxException :
 {
-  List<String> cmdTextParts;
+  List<String> printTagParts;
 }
 {
-  cmdTextParts = PrintTag()
+  printTagParts = PrintTag()
 
-  { if (cmdTextParts.size() == 0) {
+  { boolean isImplicit;
+    List<String> cmdTextParts;
+    if (printTagParts.size() != 0 && printTagParts.get(0).equals("print")) {
+      isImplicit = false;
+      cmdTextParts = printTagParts.subList(1, printTagParts.size());
+    } else {
+      isImplicit = true;
+      cmdTextParts = printTagParts;
+    }
+
+    if (cmdTextParts.size() == 0) {
       throw new SoySyntaxException("Found 'print' command with empty command text.");
     }
 
     // Note: First part is expression, rest of parts are directives or directive args.
     String cmdText = Joiner.on("").join(cmdTextParts);
     String exprText = cmdTextParts.get(0).trim();
-    PrintNode printNode = new PrintNode(nodeIdGen.genStringId(), cmdText, exprText);
+    PrintNode printNode = new PrintNode(nodeIdGen.genStringId(), isImplicit, cmdText, exprText);
 
     String directiveName = null;
     for (int i = 1, n = cmdTextParts.size(); i < n; i++) {

@@ -97,7 +97,7 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
         newNode = new RawTextNode(nodeIdGen.genStringId(), cssNode.getCommandText());
       } else if (cssHandlingScheme == CssHandlingScheme.REFERENCE) {
         PrintNode newPrintNode = new PrintNode(
-            nodeIdGen.genStringId(), cssNode.getCommandText() + "|noAutoescape",
+            nodeIdGen.genStringId(), false, cssNode.getCommandText() + "|noAutoescape",
             cssNode.getCommandText());
         PrintDirectiveNode newPrintDirectiveNode =
             new PrintDirectiveNode(nodeIdGen.genStringId(), "|noAutoescape", "");

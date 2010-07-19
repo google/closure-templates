@@ -38,18 +38,22 @@ import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.parsepasses.CheckOverridesVisitor;
 import com.google.template.soy.parsepasses.HandleCssCommandVisitor;
+import com.google.template.soy.parsepasses.InferSafePrintNodesVisitor;
 import com.google.template.soy.parsepasses.PerformAutoescapeVisitor;
 import com.google.template.soy.parsepasses.PrependNamespacesVisitor;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
+import com.google.template.soy.shared.SoyGeneralOptions.SafePrintTagsInferenceLevel;
 import com.google.template.soy.sharedpasses.AssertSyntaxVersionV2Visitor;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.ReplaceStringPrintNodesVisitor;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.soyparse.SoyFileSetParser;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
@@ -208,6 +212,32 @@ public final class SoyFileSet {
      */
     public Builder add(CharSequence content, String filePath) {
       listBuilder.add(new SoyFileSupplier(content, filePath));
+      return this;
+    }
+
+
+    /**
+     * Sets the level of safe-print-tags inference. For all inferred safe print tags, the compiler
+     * automatically adds the '|noAutoescape' directive.
+     * <pre>
+     *     NONE: No inference. '@safe' declarations are ignored.
+     *     SIMPLE: Infers safe print tags based on '@safe' declarations in the current template's
+     *         SoyDoc (same behavior for public and private templates).
+     *     ADVANCED: Infers safe print tags based on '@safe' declarations in SoyDoc of public
+     *         templates. For private templates, infers safe data from the data being passed in all
+     *         the calls to the private template from the rest of the Soy code (in the same compiled
+     *         bundle).
+     * </pre>
+     * Also, for inference levels SIMPLE and ADVANCED, the compiler checks calls between templates.
+     * Specifically, if the callee template's SoyDoc specifies '@safe' declarations, then the data
+     * being passed in the call must be known to be safe for all of those declared safe data paths.
+     * Otherwise, a data-safety-mismatch error is reported.
+     *
+     * @param inferenceLevel The level of safe-print-tags inference to set.
+     * @return This builder.
+     */
+    public Builder setSafePrintTagsInferenceLevel(SafePrintTagsInferenceLevel inferenceLevel) {
+      this.options.setSafePrintTagsInferenceLevel(inferenceLevel);
       return this;
     }
 
@@ -543,6 +573,19 @@ public final class SoyFileSet {
     (new PrependNamespacesVisitor()).exec(soyTree);
     (new CheckOverridesVisitor()).exec(soyTree);
     (new HandleCssCommandVisitor(options.getCssHandlingScheme())).exec(soyTree);
+    SafePrintTagsInferenceLevel safePrintTagsInferenceLevel =
+        options.getSafePrintTagsInferenceLevel();
+    if (safePrintTagsInferenceLevel != SafePrintTagsInferenceLevel.NONE) {
+      List<PrintNode> safePrintNodes =
+          (new InferSafePrintNodesVisitor(safePrintTagsInferenceLevel, true)).exec(soyTree);
+      if (safePrintTagsInferenceLevel == SafePrintTagsInferenceLevel.ADVANCED) {
+        System.err.println("Inferred safe print tags (inference level ADVANCED):");
+        for (PrintNode safePrintNode : safePrintNodes) {
+          TemplateNode template = safePrintNode.getNearestAncestor(TemplateNode.class);
+          System.err.println(template.getTemplateName() + ": " + safePrintNode.toSourceString());
+        }
+      }
+    }
     performAutoescapeVisitor.exec(soyTree);
 
     if (options.getCompileTimeGlobals() != null) {

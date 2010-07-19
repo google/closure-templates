@@ -48,6 +48,9 @@ public class PrintNode extends AbstractParentSoyCommandNode<PrintDirectiveNode>
     ParentExprHolderNode<PrintDirectiveNode>, MsgPlaceholderNode {
 
 
+  /** Whether the command 'print' is implicit. */
+  private final boolean isImplicit;
+
   /** The text of the expression to print. */
   private final String exprText;
 
@@ -60,14 +63,17 @@ public class PrintNode extends AbstractParentSoyCommandNode<PrintDirectiveNode>
 
   /**
    * @param id The id for this node.
+   * @param isImplicit Whether the command 'print' is implicit.
    * @param commandText The command text.
    * @param exprText The text of the expression to print.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public PrintNode(String id, String commandText, String exprText) throws SoySyntaxException {
+  public PrintNode(String id, boolean isImplicit, String commandText, String exprText)
+      throws SoySyntaxException {
 
     super(id, "print", commandText);
 
+    this.isImplicit = isImplicit;
     this.exprText = exprText;
 
     ExprRootNode<ExprNode> tempExpr = null;
@@ -169,6 +175,11 @@ public class PrintNode extends AbstractParentSoyCommandNode<PrintDirectiveNode>
   @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
     return (expr != null) ? ImmutableList.of(expr)
                           : Collections.<ExprRootNode<? extends ExprNode>>emptyList();
+  }
+
+
+  @Override public String getTagString() {
+    return buildTagStringHelper(false, isImplicit);
   }
 
 

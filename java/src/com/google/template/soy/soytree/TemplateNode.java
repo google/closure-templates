@@ -20,10 +20,12 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.List;
@@ -46,9 +48,28 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
 
 
   /**
-   * Info about a parameter that's explicitly listed in the SoyDoc.
+   * Abstract base class for a SoyDoc declaration.
    */
-  public static class SoyDocParam {
+  private abstract static class SoyDocDecl {
+
+    /** The SoyDoc text describing the declaration. */
+    public String desc;
+
+    private SoyDocDecl(@Nullable String desc) {
+      this.desc = desc;
+    }
+
+    /** Clears the desc text. */
+    public void clearDesc() {
+      desc = null;
+    }
+  }
+
+
+  /**
+   * Info for a parameter declaration in the SoyDoc.
+   */
+  public static class SoyDocParam extends SoyDocDecl {
 
     /** The param key. */
     public final String key;
@@ -56,18 +77,26 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
     /** Wehther the param is required. */
     public final boolean isRequired;
 
-    /** The SoyDoc text describing the param. */
-    public String desc;
-
     public SoyDocParam(String key, boolean isRequired, @Nullable String desc) {
+      super(desc);
       this.key = key;
       this.isRequired = isRequired;
-      this.desc = desc;
     }
+  }
 
-    /** Clears the param desc text. */
-    private void clearDesc() {
-      desc = null;
+
+  /**
+   * Info for a safe data path declaration in the SoyDoc.
+   */
+  public static class SoyDocSafePath extends SoyDocDecl {
+
+    public final List<String> path;
+
+    public String desc;
+
+    public SoyDocSafePath(List<String> path, @Nullable String desc) {
+      super(desc);
+      this.path = path;
     }
   }
 
@@ -99,10 +128,18 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
   private static final Pattern SOY_DOC_END =
       Pattern.compile("\\r?\\n? [\\ ]* [*][/] $", Pattern.COMMENTS);
 
-  /** Pattern for a SoyDoc @param or @param? tag, including the param key. */
-  // group(1) = the @param or @param? tag; group(2) = param key
-  private static final Pattern SOY_DOC_PARAM =
-      Pattern.compile("(@param [?]?) \\s+ ([a-zA-Z_]\\w*)", Pattern.COMMENTS);
+  /** Pattern for a SoyDoc declaration. */
+  // group(1) = declaration keyword; group(2) = declaration text.
+  private static final Pattern SOY_DOC_DECL_PATTERN =
+      Pattern.compile("( @param[?]? | @safe ) \\s+ ( \\S+ )", Pattern.COMMENTS);
+
+  /** Pattern for SoyDoc parameter declaration text. */
+  private static final Pattern SOY_DOC_PARAM_TEXT_PATTERN =
+      Pattern.compile("[a-zA-Z_]\\w*", Pattern.COMMENTS);
+
+  /** Pattern for SoyDoc safe data path declaration text. */
+  private static final Pattern SOY_DOC_SAFE_PATH_TEXT_PATTERN =
+      Pattern.compile("[a-zA-Z_]\\w* ( [.] ( [*] | [a-zA-Z_]\\w* ) )*", Pattern.COMMENTS);
 
 
   /** This template's name. */
@@ -123,11 +160,14 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
   /** The full SoyDoc, including the start/end tokens, or null. */
   private String soyDoc;
 
-  /** The description portion of the SoyDoc (before @param tags), or null. */
+  /** The description portion of the SoyDoc (before declarations), or null. */
   private String soyDocDesc;
 
   /** The parameters listed in the SoyDoc, or null if no SoyDoc. */
   private List<SoyDocParam> soyDocParams;
+
+  /** The safe data paths listed in the SoyDoc, or null if no SoyDoc. */
+  private List<SoyDocSafePath> soyDocSafePaths;
 
 
   /**
@@ -176,12 +216,15 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
     if (soyDoc != null) {
       Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
       String cleanedSoyDoc = cleanSoyDoc(soyDoc);
-      this.soyDocDesc = parseSoyDocDesc(cleanedSoyDoc);
-      this.soyDocParams = parseSoyDocParams(cleanedSoyDoc);
+      soyDocDesc = parseSoyDocDesc(cleanedSoyDoc);
+      Pair<List<SoyDocParam>, List<SoyDocSafePath>> decls = parseSoyDocDecls(cleanedSoyDoc);
+      soyDocParams = decls.first;
+      soyDocSafePaths = decls.second;
     } else {
       maybeSetSyntaxVersion(SyntaxVersion.V1);
-      this.soyDocDesc = null;
-      this.soyDocParams = null;
+      soyDocDesc = null;
+      soyDocParams = null;
+      soyDocSafePaths = null;
     }
   }
 
@@ -283,7 +326,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
    */
   private static String parseSoyDocDesc(String cleanedSoyDoc) {
 
-    Matcher paramMatcher = SOY_DOC_PARAM.matcher(cleanedSoyDoc);
+    Matcher paramMatcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
     int endOfDescPos = (paramMatcher.find()) ? paramMatcher.start() : cleanedSoyDoc.length();
     String soyDocDesc = cleanedSoyDoc.substring(0, endOfDescPos);
     return CharMatcher.WHITESPACE.trimTrailingFrom(soyDocDesc);
@@ -291,47 +334,66 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
 
 
   /**
-   * Private helper for the constructor to parse the SoyDoc params.
+   * Private helper for the constructor to parse the SoyDoc declarations.
    *
    * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
-   * @return The list of params.
+   * @return A pair containing the list of parameters and the list of safe paths.
    */
-  private static List<SoyDocParam> parseSoyDocParams(String cleanedSoyDoc) {
+  private static Pair<List<SoyDocParam>, List<SoyDocSafePath>> parseSoyDocDecls(
+      String cleanedSoyDoc) {
 
     List<SoyDocParam> soyDocParams = Lists.newArrayList();
-    Set<String> seenKeys = Sets.newHashSet();
+    List<SoyDocSafePath> soyDocSafePaths = Lists.newArrayList();
 
-    Matcher paramMatcher = SOY_DOC_PARAM.matcher(cleanedSoyDoc);
+    Set<String> seenParamKeys = Sets.newHashSet();
+
+    Matcher matcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
     // Important: This statement finds the param for the first iteration of the loop.
-    boolean isFound = paramMatcher.find();
+    boolean isFound = matcher.find();
     while (isFound) {
 
-      String key = paramMatcher.group(2);
-      if (seenKeys.contains(key)) {
-        throw new SoySyntaxException("Duplicate declaration of param in SoyDoc: " + key);
-      }
-      seenKeys.add(key);
+      // Save the match groups.
+      String declKeyword = matcher.group(1);
+      String declText = matcher.group(2);
 
-      boolean isRequired;
-      if (paramMatcher.group(1).equals("@param")) {
-        isRequired = true;
-      } else if (paramMatcher.group(1).equals("@param?")) {
-        isRequired = false;
+      // Find the next declaration in the SoyDoc and extract this declaration's desc string.
+      int descStart = matcher.end();
+      // Important: This statement finds the param for the next iteration of the loop.
+      // We must find the next param now in order to know where the current param's desc ends.
+      isFound = matcher.find();
+      int descEnd = (isFound) ? matcher.start() : cleanedSoyDoc.length();
+      String desc = cleanedSoyDoc.substring(descStart, descEnd).trim();
+
+      if (declKeyword.equals("@param") || declKeyword.equals("@param?")) {
+        if (! SOY_DOC_PARAM_TEXT_PATTERN.matcher(declText).matches()) {
+          if (declText.startsWith("{")) {
+            continue;  // for now, allow incorrect syntax where '{' is the start of the declText
+          } else {
+            throw new SoySyntaxException(
+                "Invalid SoyDoc declaration \"" + declKeyword + " " + declText + "\".");
+          }
+        }
+        if (seenParamKeys.contains(declText)) {
+          throw new SoySyntaxException(
+              "Duplicate declaration of param in SoyDoc: '" + declText + "'.");
+        }
+        seenParamKeys.add(declText);
+        soyDocParams.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc));
+
+      } else if (declKeyword.equals("@safe")) {
+        if (! SOY_DOC_SAFE_PATH_TEXT_PATTERN.matcher(declText).matches()) {
+          throw new SoySyntaxException(
+              "Invalid SoyDoc declaration \"" + declKeyword + " " + declText + "\".");
+        }
+        List<String> safePath = ImmutableList.copyOf(Splitter.on('.').split(declText));
+        soyDocSafePaths.add(new SoyDocSafePath(safePath, desc));
+
       } else {
         throw new AssertionError();
       }
-
-      int descStart = paramMatcher.end();
-      // Important: This statement finds the param for the next iteration of the loop.
-      // We must find the next param now in order to know where the current param's desc ends.
-      isFound = paramMatcher.find();
-      int descEnd = (isFound) ? paramMatcher.start() : cleanedSoyDoc.length();
-      String desc = cleanedSoyDoc.substring(descStart, descEnd).trim();
-
-      soyDocParams.add(new SoyDocParam(key, isRequired, desc));
     }
 
-    return soyDocParams;
+    return Pair.of(soyDocParams, soyDocSafePaths);
   }
 
 
@@ -377,6 +439,9 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
     for (SoyDocParam param : soyDocParams) {
       param.clearDesc();
     }
+    for (SoyDocSafePath safePath : soyDocSafePaths) {
+      safePath.clearDesc();
+    }
   }
 
   /** Returns the SoyDoc, or null. */
@@ -392,6 +457,11 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
   /** Returns the parameters listed in the SoyDoc, or null if no SoyDoc. */
   public List<SoyDocParam> getSoyDocParams() {
     return soyDocParams;
+  }
+
+  /** Returns the safe data paths listed in the SoyDoc, or null if no SoyDoc. */
+  public List<SoyDocSafePath> getSoyDocSafePaths() {
+    return soyDocSafePaths;
   }
 
 
