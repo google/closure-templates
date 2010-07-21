@@ -56,6 +56,16 @@ var soy = soy || {};
 })();
 
 
+/**
+ * Immutable object that is passed into templates that are rendered
+ * without any data.
+ *
+ * @type {Object}
+ * @private
+ */
+soy.defaultTemplateData_ = {};
+
+
 // -----------------------------------------------------------------------------
 // StringBuilder (compatible with the 'stringbuilder' code style).
 
@@ -186,33 +196,88 @@ soy.StringBuilder.prototype.toString = function() {
  * @param {Object=} opt_templateData The data for the template.
  */
 soy.renderElement = function(element, template, opt_templateData) {
-  element.innerHTML = template(opt_templateData);
+  element.innerHTML = template(opt_templateData || soy.defaultTemplateData_);
 };
 
 
 /**
  * Helper function to render a Soy template into a single node or a document
  * fragment. If the rendered HTML string represents a single node, then that
- * node is returned. Otherwise a document fragment is returned containing the
+ * node is returned (note that this is *not* a fragment, despite them name of
+ * the method). Otherwise a document fragment is returned containing the
  * rendered nodes.
  *
  * @param {Function} template The Soy template defining the element's content.
  * @param {Object=} opt_templateData The data for the template.
+ * @param {Document=} opt_document The document used to create DOM nodes. If not
+ *     specified, global document object is used.
  * @return {Node} The resulting node or document fragment.
  */
-soy.renderAsFragment = function(template, opt_templateData) {
+soy.renderAsFragment = function(template, opt_templateData, opt_document) {
+  return soy.renderWithWrapper_(template, opt_templateData, opt_document,
+      false /* asElement */);
+};
 
-  var tempDiv = document.createElement('div');
-  tempDiv.innerHTML = template(opt_templateData);
-  if (tempDiv.childNodes.length == 1) {
-    return tempDiv.firstChild;
-  } else {
-    var fragment = document.createDocumentFragment();
-    while (tempDiv.firstChild) {
-      fragment.appendChild(tempDiv.firstChild);
+
+/**
+ * Helper function to render a Soy template into a single node. If the rendered
+ * HTML string represents a single node, then that node is returned. Otherwise,
+ * a DIV element is returned containing the rendered nodes.
+ *
+ * @param {Function} template The Soy template defining the element's content.
+ * @param {Object=} opt_templateData The data for the template.
+ * @param {Document=} opt_document The document used to create DOM nodes. If not
+ *     specified, global document object is used.
+ * @return {Element} Rendered template contents, wrapped in a parent DIV element
+ *     if necessary.
+ */
+soy.renderAsElement = function(template, opt_templateData, opt_document) {
+  return /** @type {Element} */ (soy.renderWithWrapper_(template,
+      opt_templateData, opt_document, true /* asElement */));
+};
+
+
+/**
+ * Helper function to render a Soy template into a single node or a document
+ * fragment. If the rendered HTML string represents a single node, then that
+ * node is returned. Otherwise a document fragment is created and returned
+ * (wrapped in a DIV element if #opt_singleNode is true).
+ *
+ * @param {Function} template The Soy template defining the element's content.
+ * @param {Object=} opt_templateData The data for the template.
+ * @param {Document=} opt_document The document used to create DOM nodes. If not
+ *     specified, global document object is used.
+ * @param {boolean=} opt_asElement Whether to wrap the fragment in an
+ *     element if the template does not render a single element. If true, result
+ *     is always an Element.
+ * @return {Node} The resulting node or document fragment.
+ * @private
+ */
+soy.renderWithWrapper_ = function(template, opt_templateData, opt_document,
+    opt_asElement) {
+  var doc = opt_document || document;
+  var wrapper = doc.createElement('div');
+  wrapper.innerHTML = template(opt_templateData || soy.defaultTemplateData_);
+
+  // If the template renders as a single element, return it.
+  if (wrapper.childNodes.length == 1) {
+    var firstChild = wrapper.firstChild;
+    if (!opt_asElement || firstChild.nodeType == 1 /* Element */) {
+      return firstChild;
     }
-    return fragment;
   }
+
+  // If we're forcing it to be a single element, return the wrapper DIV.
+  if (opt_asElement) {
+    return wrapper;
+  }
+
+  // Otherwise, create and return a fragment.
+  var fragment = doc.createDocumentFragment();
+  while (wrapper.firstChild) {
+    fragment.appendChild(wrapper.firstChild);
+  }
+  return fragment;
 };
 
 

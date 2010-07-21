@@ -17,7 +17,7 @@
 package com.google.template.soy;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.assistedinject.FactoryProvider;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.SoyFileSet.SoyFileSetFactory;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
@@ -52,8 +52,7 @@ public class SoyModule extends AbstractModule {
     install(new BidiFunctionsModule());
 
     // Bind providers of factories (created via assisted inject).
-    bind(SoyFileSetFactory.class)
-        .toProvider(FactoryProvider.newFactory(SoyFileSetFactory.class, SoyFileSet.class));
+    install(new FactoryModuleBuilder().build(SoyFileSetFactory.class));
 
     // The static injection of SoyFileSetFactory into SoyFileSet.Builder is what allows the Soy
     // compiler to use Guice even if the user of the Soy API does not use Guice.

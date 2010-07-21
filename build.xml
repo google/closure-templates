@@ -16,6 +16,7 @@ limitations under the License.
 <!--
 Author: Kai Huang
 Author: Robert Bowdidge
+Author: Neil Sanchala
 -->
 <project name="Soy" basedir="." default="jar">
 
@@ -31,6 +32,10 @@ Author: Robert Bowdidge
   <property name="javadoc.lite.dir" value="${basedir}/javadoc-lite" />
   <property name="javadoc.complete.dir" value="${basedir}/javadoc-complete" />
 
+  <!-- To release a new stable version of soy, update release.stamp to 'latest' or pass
+       -Drelease.stamp=latest when running ant. -->
+  <property name="release.dir" value="${basedir}/release" />
+  <property name="release.stamp" value="unstable" />
 
   <!-- Target to delete the generated files. -->
   <target name="clean"
@@ -269,6 +274,21 @@ Author: Robert Bowdidge
   <property name="build.examples.dir" value="${build.dir}/examples" />
 
 
+  <!-- Utility macro. Fails if the specified file is not available. -->
+  <macrodef name="AssertFileExists">
+    <attribute name="filename" description="Filename to look for." />
+    <sequential>
+      <fail>
+        <condition>
+          <not>
+            <available file="@{filename}" />
+          </not>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+
+
   <!--
   Uses SoyToJsSrcCompiler to compile simple.soy.
   In 'build/examples', generates the following file:
@@ -285,6 +305,8 @@ Author: Robert Bowdidge
       <arg value="${build.examples.dir}/{INPUT_FILE_NAME_NO_EXT}_generated.js" />
       <arg value="${examples.dir}/simple.soy" />
     </java>
+
+    <AssertFileExists filename="${build.examples.dir}/simple_generated.js" />
   </target>
 
 
@@ -316,6 +338,11 @@ Author: Robert Bowdidge
       <arg value="simple.soy" />
       <arg value="features.soy" />
     </java>
+
+    <AssertFileExists filename="${build.examples.dir}/simple_generated_en.js" />
+    <AssertFileExists filename="${build.examples.dir}/features_generated_en.js" />
+    <AssertFileExists filename="${build.examples.dir}/simple_generated_x-zz.js" />
+    <AssertFileExists filename="${build.examples.dir}/features_generated_x-zz.js" />
   </target>
 
 
@@ -338,6 +365,8 @@ Author: Robert Bowdidge
       <!-- Resources. -->
       <fileset file="${examples.dir}/simple.soy" />
     </jar>
+
+    <AssertFileExists filename="${build.examples.dir}/SimpleUsage.jar" />
   </target>
 
 
@@ -361,6 +390,8 @@ Author: Robert Bowdidge
       <arg value="filename" />
       <arg value="${examples.dir}/features.soy" />
     </java>
+
+    <AssertFileExists filename="${build.examples.dir}/FeaturesSoyInfo.java" />
   </target>
 
 
@@ -388,7 +419,16 @@ Author: Robert Bowdidge
       <fileset file="${examples.dir}/examples_translated_x-zz.xlf" />
       <fileset file="${java.examples.dir}/FeaturesUsage_globals.txt" />
     </jar>
+
+    <AssertFileExists filename="${build.examples.dir}/FeaturesUsage.jar" />
   </target>
+
+
+  <!--
+  ********************************************************************************************
+  Below are targets to generate release zip files, and to test that the generated binaries are
+  sane.
+  -->
 
 
   <!--
@@ -410,7 +450,165 @@ Author: Robert Bowdidge
       <arg value="simple.soy" />
       <arg value="features.soy" />
     </java>
+
+    <AssertFileExists filename="${build.examples.dir}/examples_extracted.xlf" />
   </target>
 
+
+  <!--
+  Runs the specified jar with no arguments, and asserts that the specified usage message was
+  printed.
+   -->
+  <macrodef name="RunBuiltJarAndLookForExpectedError">
+    <attribute name="jar" description="The jar to run and test"/>
+    <attribute name="expectederror" description="The error message to expect"/>
+
+    <sequential>
+      <!-- Run the jar and dump its output to ${@{jar}_output}. -->
+      <java jar="${build.dir}/@{jar}.jar"
+            fork="true"
+            failonerror="false"
+            errorproperty="@{jar}_output">
+      </java>
+
+      <!-- Look in the output for the error message we expect to see. -->
+      <fail message="The output of the specified jar does not include the expected error message.
+                     ${line.separator}Expected Error Substring : @{expectederror}
+                     ${line.separator}Actual Output            : ${@{jar}_output}">
+        <condition>
+          <not>
+            <contains string="${@{jar}_output}" substring="@{expectederror}" />
+          </not>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+
+
+  <target name="test-built-jars" depends="SoyToJsSrcCompiler,
+                                          SoyParseInfoGenerator,
+                                          SoyMsgExtractor">
+    <RunBuiltJarAndLookForExpectedError
+      jar="SoyToJsSrcCompiler"
+      expectederror="Error: Option &quot;--outputPathFormat&quot; is required" />
+
+    <RunBuiltJarAndLookForExpectedError
+      jar="SoyParseInfoGenerator"
+      expectederror="Error: Option &quot;--javaClassNameSource&quot; is required" />
+
+    <RunBuiltJarAndLookForExpectedError
+      jar="SoyMsgExtractor"
+      expectederror="Error: Option &quot;--outputFile&quot; is required" />
+  </target>
+
+
+  <!-- Runs a full build, the examples, and test-built-jars to ensure that the build is sane. -->
+  <target name="verification-tests"
+          depends="compile,
+                   jar,
+                   jar-excluding-deps,
+                   SoyToJsSrcCompiler,
+                   SoyParseInfoGenerator,
+                   SoyMsgExtractor,
+                   test-built-jars,
+                   js-simple-example,
+                   js-features-example,
+                   java-simple-example,
+                   parse-info-generation-example,
+                   java-features-example,
+                   msg-extraction-example" />
+
+
+  <!--
+  Builds a set of zip files containing releaseable bundles of code. These zip files may be uploaded
+  to the project's Downloads area at Google Code.
+  -->
+  <target name="zips-for-release" depends="jar,
+                                              jar-excluding-deps,
+                                              javadoc-lite,
+                                              SoyMsgExtractor,
+                                              SoyParseInfoGenerator,
+                                              SoyToJsSrcCompiler">
+    <mkdir dir="${release.dir}" />
+
+    <!--
+    Rename our three README files to README in appropriately-named directories so they can be
+    pulled in as just "README" in the zip files below.
+    -->
+    <copy file="for-java_jar_README.txt" tofile="${build.dir}/java/README" />
+    <copy file="for-javascript_jar_README.txt" tofile="${build.dir}/javascript/README" />
+    <copy file="msg-extractor_jar_README.txt" tofile="${build.dir}/msg_extractor/README" />
+
+    <!--
+    Zip file 1: Create a "msg-extractor" zip files.
+    Mapping:
+           COPYING                         ==> ./COPYING
+           README.msg_extractor            ==> ./README
+           build/SoyMsgExtractor.jar       ==> ./SoyMsgExtractor.jar
+    -->
+    <zip destfile="${release.dir}/closure-templates-msg-extractor-${release.stamp}.zip">
+      <fileset file="COPYING" />
+      <fileset file="${build.dir}/msg_extractor/README" />
+      <fileset file="${build.dir}/SoyMsgExtractor.jar" />
+    </zip>
+
+    <!-- Rename soy.jar and soy-excluding-deps.jar to to include a ${release.stamp} suffix.  -->
+    <copy file="${build.dir}/soy-excluding-deps.jar"
+          tofile="${build.dir}/soy-excluding-deps-${release.stamp}.jar" />
+    <copy file="${build.dir}/soy.jar"
+          tofile="${build.dir}/soy-${release.stamp}.jar" />
+
+    <!--
+    Zip file 2.1: Make soy-src-${release.stamp}.zip containing all soy src. Note that this gets
+    stored in the build directory, not the release directory, because this is only released as part
+    of the for-java zip.
+    Mapping:
+           java/src/** ==> ./**
+    -->
+    <zip destfile="${build.dir}/soy-src-${release.stamp}.zip"
+         basedir="java/src" />
+
+    <!--
+    Zip file 2.2: Create "for-java" zip file.
+    Mapping:
+           COPYING                            ==> ./COPYING
+           README.java                        ==> ./README
+           build/soy.jar                      ==> ./soy-${release.stamp}.jar
+           build/SoyParseInfoGenerator.jar    ==> ./SoyParseInfoGenerator.jar
+           java/lib/**                        ==> ./separate-jars/lib/**
+           javadoc-lite/**                    ==> ./separate-jars/javadoc/**
+           build/soy-excluding-deps.jar       ==> ./separate-jars/soy-excluding-deps-${release.stamp}.jar
+           build/soy-src-${release.stamp}.zip ==> ./separate-jars/soy-src-${release.stamp}.zip
+    -->
+    <zip destfile="${release.dir}/closure-templates-for-java-${release.stamp}.zip">
+      <fileset file="COPYING" />
+      <fileset file="${build.dir}/java/README" />
+      <fileset file="${build.dir}/SoyParseInfoGenerator.jar" />
+      <fileset file="${build.dir}/soy-${release.stamp}.jar" />
+      <zipfileset dir="${build.dir}"
+                  includes="soy-src-${release.stamp}.zip"
+                  prefix="separate-jars" />
+      <zipfileset dir="${build.dir}"
+                  includes="soy-excluding-deps-${release.stamp}.jar"
+                  prefix="separate-jars" />
+      <zipfileset dir="java/lib" prefix="separate-jars/lib" />
+      <zipfileset dir="javadoc-lite" prefix="separate-jars/javadoc" />
+    </zip>
+
+    <!--
+    Zip file 3: Create "for-javascript" zip file.
+    Mapping:
+           COPYING                         ==> ./COPYING
+           README.javascript               ==> ./README
+           build/SoyToJsSrcCompiler.jar    ==> ./SoyToJsSrcCompiler.jar
+           javascript/*.js                 ==> ./*.js
+    -->
+    <zip destfile="${release.dir}/closure-templates-for-javascript-${release.stamp}.zip">
+      <fileset file="COPYING" />
+      <fileset file="${build.dir}/javascript/README" />
+      <fileset file="${build.dir}/SoyParseInfoGenerator.jar" />
+      <fileset dir="javascript" includes="soyutils.js,soyutils_usegoog.js" />
+    </zip>
+  </target>
 
 </project>

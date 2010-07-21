@@ -19,7 +19,7 @@ package com.google.template.soy.tofu.internal;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.assistedinject.FactoryProvider;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.shared.internal.BackendModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -50,12 +50,9 @@ public class TofuModule extends AbstractModule {
     install(new SharedModule());
 
     // Bind providers of factories (created via assisted inject).
-    bind(BaseTofuFactory.class)
-        .toProvider(FactoryProvider.newFactory(BaseTofuFactory.class, BaseTofu.class));
-    bind(RenderVisitorFactory.class)
-        .toProvider(FactoryProvider.newFactory(RenderVisitorFactory.class, RenderVisitor.class));
-    bind(EvalVisitorFactory.class)
-        .toProvider(FactoryProvider.newFactory(EvalVisitorFactory.class, EvalVisitor.class));
+    install(new FactoryModuleBuilder().build(BaseTofuFactory.class));
+    install(new FactoryModuleBuilder().build(RenderVisitorFactory.class));
+    install(new FactoryModuleBuilder().build(EvalVisitorFactory.class));
   }
 
 
