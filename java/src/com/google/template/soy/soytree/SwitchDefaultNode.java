@@ -26,24 +26,33 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  *
  * @author Kai Huang
  */
-public class SwitchDefaultNode extends AbstractParentSoyCommandNode<SoyNode>
-    implements ConditionalBlockNode<SoyNode> {
+public class SwitchDefaultNode extends CaseOrDefaultNode implements ConditionalBlockNode {
 
 
   /**
    * @param id The id for this node.
    */
-  public SwitchDefaultNode(String id) {
+  public SwitchDefaultNode(int id) {
     super(id, "default", "");
   }
 
 
-  @Override public String toSourceString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(getTagString());
-    appendSourceStringForChildren(sb);
-    // Note: No end tag.
-    return sb.toString();
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected SwitchDefaultNode(SwitchDefaultNode orig) {
+    super(orig);
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.SWITCH_DEFAULT_NODE;
+  }
+
+
+  @Override public SwitchDefaultNode clone() {
+    return new SwitchDefaultNode(this);
   }
 
 }

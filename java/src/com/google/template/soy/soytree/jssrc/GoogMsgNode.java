@@ -16,9 +16,10 @@
 
 package com.google.template.soy.soytree.jssrc;
 
-import com.google.template.soy.soytree.AbstractParentSoyNode;
+import com.google.template.soy.soytree.AbstractMsgNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 
 
@@ -29,80 +30,94 @@ import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
  *
  * @author Kai Huang
  */
-public class GoogMsgNode extends AbstractParentSoyNode<SoyNode> implements LocalVarInlineNode {
+public class GoogMsgNode extends AbstractMsgNode implements LocalVarInlineNode {
 
 
-  /** The original MsgNode that this node is based off. */
-  private final MsgNode origMsgNode;
+  /** The (fake) source string we return. */
+  private final String sourceString;
 
   /** The name of the Closure message variable ("MSG_UNNAMED_..." or "MSG_EXTERNAL..."). */
-  private final String googMsgName;
+  private final String googMsgVarName;
+
+  /** The JS var name of the rendered goog msg (usually same as googMsgVarName,
+   * except when there's plural/select postprocessing). */
+  private final String renderedGoogMsgVarName;
 
 
   /**
+   * Regular constructor. Note that this new node is meant to replace origMsgNode, so this
+   * constructor will simply move the children from origMsgNode to this new node (i.e. origMsgNode
+   * is destructively modified).
+   *
    * @param id The id for this node.
-   * @param origMsgNode The original MsgNode that this node is based off.
-   * @param googMsgName The name of the Closure message variable defined by goog.getMsg, e.g.
-   *     "MSG_UNNAMED_[uniquefier]" or "MSG_EXTERNAL_[soyGeneratedMsgId]".
+   * @param origMsgNode The original MsgNode that this node is based off. Note origMsgNode will be
+   *     destructively modified.
+   * @param googMsgVarName The name of the Closure message variable defined by goog.getMsg, e.g.
    */
-  public GoogMsgNode(String id, MsgNode origMsgNode, String googMsgName) {
-    super(id);
+  public GoogMsgNode(int id, MsgNode origMsgNode, String googMsgVarName) {
+    super(id, origMsgNode);
 
-    this.origMsgNode = origMsgNode;
+    // Move origMsgNode's children to be this node's children.
     this.addChildren(origMsgNode.getChildren());
 
-    this.googMsgName = googMsgName;
+    this.sourceString =
+        "[GoogMsgNode " + getVarName() + " " + origMsgNode.toSourceString() + "]";
+    this.googMsgVarName = googMsgVarName;
+    
+    if (origMsgNode.getChildren().size() > 0 && 
+        (origMsgNode.getChild(0) instanceof MsgPluralNode || 
+         origMsgNode.getChild(0) instanceof MsgSelectNode)) {
+      this.renderedGoogMsgVarName = "rendered_" + googMsgVarName;    
+    } else {
+      this.renderedGoogMsgVarName = googMsgVarName;
+    }
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected GoogMsgNode(GoogMsgNode orig) {
+    super(orig);
+    this.sourceString = orig.sourceString;
+    this.googMsgVarName = orig.googMsgVarName;
+    this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.GOOG_MSG_NODE;
   }
 
 
   /** Returns the name of the Closure message variable ("MSG_UNNAMED_..." or "MSG_EXTERNAL..."). */
-  public String getGoogMsgName() {
-    return googMsgName;
-  }
-
-  /** Returns the meaning string if set, otherwise null (usually null). */
-  public String getMeaning() {
-    return origMsgNode.getMeaning();
-  }
-
-  /** Returns the description string for translators. */
-  public String getDesc() {
-    return origMsgNode.getDesc();
-  }
-
-  /** Returns whether the message should be added as 'hidden' in the TC. */
-  public boolean isHidden() {
-    return origMsgNode.isHidden();
+  public String getGoogMsgVarName() {
+    return googMsgVarName;
   }
 
 
   /**
-   * Gets the representative placeholder node for a given placeholder name.
-   * @param placeholderName The placeholder name.
-   * @return The representative placeholder node for the given placeholder name.
+   * Returns the JS var name of the rendered goog msg (usually same as {@code getGoogMsgVarName()},
+   * except when there's plural/select postprocessing).
    */
-  public MsgPlaceholderNode getPlaceholderNode(String placeholderName) {
-    return origMsgNode.getPlaceholderNode(placeholderName);
+  public String getRenderedGoogMsgVarName() {
+    return renderedGoogMsgVarName;
   }
 
 
-  /**
-   * Gets the placeholder name for a given placeholder node.
-   * @param placeholderNode The placeholder node.
-   * @return The placeholder name for the given placeholder node.
-   */
-  public String getPlaceholderName(MsgPlaceholderNode placeholderNode) {
-    return origMsgNode.getPlaceholderName(placeholderNode);
-  }
-
-
-  @Override public String getLocalVarName() {
-    return googMsgName;
+  @Override public String getVarName() {
+    return renderedGoogMsgVarName;
   }
 
 
   @Override public String toSourceString() {
-    return "[GoogMsgNode " + getLocalVarName() + " " + origMsgNode.toSourceString() + "]";
+    return sourceString;
+  }
+
+
+  @Override public GoogMsgNode clone() {
+    return new GoogMsgNode(this);
   }
 
 }

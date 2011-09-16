@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 
 
 /**
@@ -125,8 +124,15 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param data The data to add.
    */
   private void add(Iterable<?> data) {
+
     for (Object el : data) {
-      add(SoyData.createFromExistingData(el));
+      try {
+        add(SoyData.createFromExistingData(el));
+
+      } catch (SoyDataException sde) {
+        sde.prependIndexToDataPath(list.size());
+        throw sde;
+      }
     }
   }
 
@@ -153,7 +159,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to add.
    */
   public void add(boolean value) {
-    add(new BooleanData(value));
+    add(BooleanData.forValue(value));
   }
 
   /**
@@ -161,7 +167,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to add.
    */
   public void add(int value) {
-    add(new IntegerData(value));
+    add(IntegerData.forValue(value));
   }
 
   /**
@@ -169,7 +175,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to add.
    */
   public void add(double value) {
-    add(new FloatData(value));
+    add(FloatData.forValue(value));
   }
 
   /**
@@ -177,7 +183,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to add.
    */
   public void add(String value) {
-    add(new StringData(value));
+    add(StringData.forValue(value));
   }
 
 
@@ -202,7 +208,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to set.
    */
   public void set(int index, boolean value) {
-    set(index, new BooleanData(value));
+    set(index, BooleanData.forValue(value));
   }
 
   /**
@@ -211,7 +217,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to set.
    */
   public void set(int index, int value) {
-    set(index, new IntegerData(value));
+    set(index, IntegerData.forValue(value));
   }
 
   /**
@@ -220,7 +226,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to set.
    */
   public void set(int index, double value) {
-    set(index, new FloatData(value));
+    set(index, FloatData.forValue(value));
   }
 
   /**
@@ -229,7 +235,7 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to set.
    */
   public void set(int index, String value) {
-    set(index, new StringData(value));
+    set(index, StringData.forValue(value));
   }
 
 
@@ -321,31 +327,40 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Protected/private helpers.
+  // Superpackage-private methods.
 
 
-  /** Pattern for a valid key for SoyListData (an index). */
-  private static final Pattern KEY_PATTERN = Pattern.compile("[0-9]+");
-
-
-  @Override protected void checkKey(String key) throws IllegalArgumentException {
-    if (!KEY_PATTERN.matcher(key).matches()) {
-      throw new IllegalArgumentException("Illegal data key '" + key + "' for list data.");
-    }
-  }
-
-
-  @Override protected void putSingle(String key, SoyData value) {
+  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * Puts data into this data object at the specified key.
+   * @param key An individual key.
+   * @param value The data to put at the specified key.
+   */
+  @Override public void putSingle(String key, SoyData value) {
     set(Integer.parseInt(key), value);
   }
 
 
-  @Override protected void removeSingle(String key) {
+  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * Removes the data at the specified key.
+   * @param key An individual key.
+   */
+  @Override public void removeSingle(String key) {
     remove(Integer.parseInt(key));
   }
 
 
-  @Override protected SoyData getSingle(String key) {
+  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * Gets the data at the specified key.
+   * @param key An individual key.
+   * @return The data at the specified key, or null if the key is not defined.
+   */
+  @Override public SoyData getSingle(String key) {
     return get(Integer.parseInt(key));
   }
 

@@ -51,23 +51,22 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
   String currentSource;
 
 
-  @Override protected void setup() {
+  /**
+   * Returns a SoyMsgBundle containing all the extracted messages (locale string is null).
+   */
+  @Override public SoyMsgBundle exec(SoyNode node) {
     msgs = Lists.newArrayList();
     currentSource = null;
-  }
-
-
-  /** Returns a SoyMsgBundle containing all the extracted messages (locale string is null). */
-  @Override protected SoyMsgBundle getResult() {
+    visit(node);
     return new SoyMsgBundleImpl(null, msgs);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
 
     currentSource = node.getFilePath();
     visitChildren(node);
@@ -75,7 +74,7 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
   }
 
 
-  @Override protected void visitInternal(MsgNode node) {
+  @Override protected void visitMsgNode(MsgNode node) {
 
     Pair<List<SoyMsgPart>, Long> msgPartsAndId = MsgUtils.buildMsgPartsAndComputeMsgId(node);
     msgs.add(new SoyMsg(
@@ -85,16 +84,13 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for non-parent node.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 }

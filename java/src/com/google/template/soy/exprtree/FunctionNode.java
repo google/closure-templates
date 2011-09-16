@@ -39,6 +39,21 @@ public class FunctionNode extends AbstractParentExprNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected FunctionNode(FunctionNode orig) {
+    super(orig);
+    this.functionName = orig.functionName;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.FUNCTION_NODE;
+  }
+
+
   /** Returns the function name. */
   public String getFunctionName() {
     return functionName;
@@ -62,6 +77,11 @@ public class FunctionNode extends AbstractParentExprNode {
 
     sourceSb.append(')');
     return sourceSb.toString();
+  }
+
+
+  @Override public FunctionNode clone() {
+    return new FunctionNode(this);
   }
 
 }

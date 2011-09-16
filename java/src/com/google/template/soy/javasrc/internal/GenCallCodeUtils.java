@@ -16,16 +16,18 @@
 
 package com.google.template.soy.javasrc.internal;
 
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.UTILS_LIB;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genFunctionCall;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeCast;
+
 import com.google.inject.Inject;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.javasrc.internal.GenJavaExprsVisitor.GenJavaExprsVisitorFactory;
 import com.google.template.soy.javasrc.internal.TranslateToJavaExprVisitor.TranslateToJavaExprVisitorFactory;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.UTILS_LIB;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genFunctionCall;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeCast;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.JavaExprUtils;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -118,9 +120,14 @@ class GenCallCodeUtils {
   public JavaExpr genCallExpr(
       CallNode callNode, Deque<Map<String, JavaExpr>> localVarTranslations) {
 
+    if (! (callNode instanceof CallBasicNode)) {
+      throw new UnsupportedOperationException("Delegates are not supported in JavaSrc backend.");
+    }
+
     JavaExpr objToPass = genObjToPass(callNode, localVarTranslations);
     return new JavaExpr(
-        callNode.getCalleeName().replace('.', '$') + "(" + objToPass.getText() + ")",
+        ((CallBasicNode) callNode).getCalleeName().replace('.', '$') +
+            "(" + objToPass.getText() + ")",
         String.class, Integer.MAX_VALUE);
   }
 
@@ -176,7 +183,7 @@ class GenCallCodeUtils {
       dataToPass = new JavaExpr("data", SoyMapData.class, Integer.MAX_VALUE);
     } else if (callNode.isPassingData()) {
       dataToPass = new JavaExpr(
-          genMaybeCast(ttjev.exec(callNode.getDataRef()), SoyMapData.class),
+          genMaybeCast(ttjev.exec(callNode.getExpr()), SoyMapData.class),
           SoyMapData.class, Integer.MAX_VALUE);
     } else {
       dataToPass = new JavaExpr("null", SoyMapData.class, Integer.MAX_VALUE);
@@ -205,7 +212,7 @@ class GenCallCodeUtils {
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
-        JavaExpr valueJavaExpr = ttjev.exec(cpvn.getValueExpr());
+        JavaExpr valueJavaExpr = ttjev.exec(cpvn.getValueExprUnion().getExpr());
         paramsObjSb.append(valueJavaExpr.getText());
 
       } else {

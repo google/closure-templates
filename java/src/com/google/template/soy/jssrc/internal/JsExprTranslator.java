@@ -107,15 +107,13 @@ class JsExprTranslator {
       this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     }
 
-    @Override protected void setup() {
+    @Override public Boolean exec(ExprNode node) {
       areAllFunctionsSupported = true;
-    }
-
-    @Override protected Boolean getResult() {
+      visit(node);
       return areAllFunctionsSupported;
     }
 
-    @Override protected void visitInternal(FunctionNode node) {
+    @Override protected void visitFunctionNode(FunctionNode node) {
 
       String fnName = node.getFunctionName();
       if (ImpureFunction.forFunctionName(fnName) == null &&
@@ -127,15 +125,13 @@ class JsExprTranslator {
       visitChildren(node);
     }
 
-    @Override protected void visitInternal(ExprNode node) {
-      // Nothing to do for other nodes.
-    }
-
-    @Override protected void visitInternal(ParentExprNode node) {
-      if (!areAllFunctionsSupported) {
-        return;  // already found an unsupported function, so don't keep looking
+    @Override protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        if (!areAllFunctionsSupported) {
+          return;  // already found an unsupported function, so don't keep looking
+        }
+        visitChildren((ParentExprNode) node);
       }
-      visitChildren(node);
     }
   }
 

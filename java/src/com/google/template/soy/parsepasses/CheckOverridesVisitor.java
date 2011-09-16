@@ -22,6 +22,9 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Map;
@@ -40,31 +43,33 @@ import java.util.Map;
  * non-explicit override is found.
  *
  * <p> Precondition: All the template names in {@code TemplateNode}s must be full names (i.e. you
- * must execute {@link PrependNamespacesVisitor} before executing this visitor).
+ * must execute {@link PrependNamespacesToCalleeNamesVisitor} before executing this visitor).
  *
  * @author Kai Huang
  */
 public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
-  /** Map of template name to template node for templates seen so far. */
-  private Map<String, TemplateNode> templateMap;
+  /** Map of template name to template node for basic templates seen so far. */
+  private Map<String, TemplateBasicNode> basicTemplatesMap;
 
 
-  @Override protected void setup() {
-    templateMap = Maps.newHashMap();
+  @Override public Void exec(SoyNode node) {
+    basicTemplatesMap = Maps.newHashMap();
+    visit(node);
+    return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
   /**
    * {@inheritDoc}
    * @throws SoySyntaxException If a non-explicit override is found.
    */
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     visitChildren(node);
   }
 
@@ -73,7 +78,7 @@ public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
    * {@inheritDoc}
    * @throws SoySyntaxException If a non-explicit override is found.
    */
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
     visitChildren(node);
   }
 
@@ -82,14 +87,14 @@ public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
    * {@inheritDoc}
    * @throws SoySyntaxException If a non-explicit override is found.
    */
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateBasicNode(TemplateBasicNode node) {
 
     String templateName = node.getTemplateName();
     // Template name should be full name (not start with '.').
     Preconditions.checkArgument(templateName.charAt(0) != '.');
 
-    if (templateMap.containsKey(templateName)) {
-      TemplateNode prevTemplate = templateMap.get(templateName);
+    if (basicTemplatesMap.containsKey(templateName)) {
+      TemplateNode prevTemplate = basicTemplatesMap.get(templateName);
       // If this duplicate definition is not an explicit Soy V1 override, report error.
       if (!node.isOverride()) {
         String prevTemplateFilePath =
@@ -107,8 +112,13 @@ public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
         }
       }
     } else {
-      templateMap.put(templateName, node);
+      basicTemplatesMap.put(templateName, node);
     }
+  }
+
+
+  @Override protected void visitTemplateDelegateNode(TemplateDelegateNode node) {
+    return;  // nothing to do
   }
 
 }

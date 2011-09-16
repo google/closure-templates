@@ -104,7 +104,15 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    * Increases the indent by one stop.
    */
   public void increaseIndent() {
-    indentLen += indentIncrementLen;
+    increaseIndent(1);
+  }
+
+
+  /**
+   * Increases the indent by the given number of stops.
+   */
+  public void increaseIndent(int numStops) {
+    indentLen += numStops * indentIncrementLen;
     Preconditions.checkState(0 <= indentLen && indentLen <= MAX_INDENT_LEN);
     indent = SPACES.substring(0, indentLen);
   }
@@ -114,7 +122,15 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    * Decreases the indent by one stop.
    */
   public void decreaseIndent() {
-    indentLen -= indentIncrementLen;
+    decreaseIndent(1);
+  }
+
+
+  /**
+   * Decreases the indent by the given number of stops.
+   */
+  public void decreaseIndent(int numStops) {
+    indentLen -= numStops * indentIncrementLen;
     Preconditions.checkState(0 <= indentLen && indentLen <= MAX_INDENT_LEN);
     indent = SPACES.substring(0, indentLen);
   }

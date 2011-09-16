@@ -78,6 +78,36 @@ Author: Neil Sanchala
   </target>
 
 
+  <target name="generated-soyutils"
+          depends="compile"
+          description="generates soyutils.js and soyutils_usegoog.js.">
+    <!-- Load a custom ANT task. -->
+    <taskdef name="gen.escape.directives"
+             classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode">
+      <classpath>
+        <fileset dir="${java.lib.dir}">
+          <include name="*.jar" />
+        </fileset>
+        <pathelement path="${build.classes.dir}" />
+      </classpath>
+    </taskdef>
+
+    <mkdir dir="${build.dir}/javascript"/>
+
+    <gen.escape.directives>
+      <input path="${basedir}/javascript/soyutils.js"/>
+      <output path="${build.dir}/javascript/soyutils.js"/>
+    </gen.escape.directives>
+
+    <gen.escape.directives>
+      <input path="${basedir}/javascript/soyutils_usegoog.js"/>
+      <output path="${build.dir}/javascript/soyutils_usegoog.js"/>
+      <jsdefined pattern="goog.string.*"/>
+      <jsdefined pattern="goog.asserts.*"/>
+    </gen.escape.directives>
+  </target>
+
+
   <!-- Target to create a standalone jar of all Java class files and dependencies. -->
   <target name="jar"
           depends="compile"
@@ -85,15 +115,16 @@ Author: Neil Sanchala
     <jar destfile="${soy.jar.file}" update="true">
       <fileset dir="${build.classes.dir}" />
       <zipfileset src="${java.lib.dir}/jsr305.jar" />
-      <zipfileset src="${java.lib.dir}/guava-r03.jar" />
-      <zipfileset src="${java.lib.dir}/javax-inject.jar" />
+      <zipfileset src="${java.lib.dir}/guava-r09.jar" />
+      <zipfileset src="${java.lib.dir}/javax.inject.jar" />
       <zipfileset src="${java.lib.dir}/aopalliance.jar" />
-      <zipfileset src="${java.lib.dir}/guice-snapshot.jar" />
-      <zipfileset src="${java.lib.dir}/guice-multibindings-snapshot.jar"
+      <zipfileset src="${java.lib.dir}/guice-3.0.jar" />
+      <zipfileset src="${java.lib.dir}/guice-multibindings-3.0.jar"
                   excludes="LICENSE,NOTICE" />
-      <zipfileset src="${java.lib.dir}/guice-assistedinject-snapshot.jar"
+      <zipfileset src="${java.lib.dir}/guice-assistedinject-3.0.jar"
                   excludes="LICENSE,NOTICE" />
       <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
+      <zipfileset src="${java.lib.dir}/icu4j-core.jar" />
     </jar>
   </target>
 
@@ -166,6 +197,7 @@ Author: Neil Sanchala
           description="Generates lite javadoc (for API users).">
     <mkdir dir="${javadoc.lite.dir}" />
     <javadoc destdir="${javadoc.lite.dir}"
+             additionalparam="-notimestamp"
              author="false"
              windowtitle="Soy Lite"
              link="http://java.sun.com/javase/6/docs/api/">
@@ -225,6 +257,7 @@ Author: Neil Sanchala
           description="Generates complete javadoc (for developers and plugin writers).">
     <mkdir dir="${javadoc.complete.dir}" />
     <javadoc sourcepath="${java.src.dir}:${build.genfiles.dir}"
+             additionalparam="-notimestamp"
              destdir="${javadoc.complete.dir}"
              author="false"
              windowtitle="Soy Complete"
@@ -498,7 +531,7 @@ Author: Neil Sanchala
 
     <RunBuiltJarAndLookForExpectedError
       jar="SoyMsgExtractor"
-      expectederror="Error: Option &quot;--outputFile&quot; is required" />
+      expectederror="Error: Must provide list of Soy files." />
   </target>
 
 
@@ -524,11 +557,12 @@ Author: Neil Sanchala
   to the project's Downloads area at Google Code.
   -->
   <target name="zips-for-release" depends="jar,
-                                              jar-excluding-deps,
-                                              javadoc-lite,
-                                              SoyMsgExtractor,
-                                              SoyParseInfoGenerator,
-                                              SoyToJsSrcCompiler">
+                                           jar-excluding-deps,
+                                           generated-soyutils,
+                                           SoyMsgExtractor,
+                                           SoyParseInfoGenerator,
+                                           SoyToJsSrcCompiler,
+                                           javadoc-lite">
     <mkdir dir="${release.dir}" />
 
     <!--
@@ -601,13 +635,13 @@ Author: Neil Sanchala
            COPYING                         ==> ./COPYING
            README.javascript               ==> ./README
            build/SoyToJsSrcCompiler.jar    ==> ./SoyToJsSrcCompiler.jar
-           javascript/*.js                 ==> ./*.js
+           build/javascript/*.js           ==> ./soyutils{,_usegoog}.js
     -->
     <zip destfile="${release.dir}/closure-templates-for-javascript-${release.stamp}.zip">
       <fileset file="COPYING" />
       <fileset file="${build.dir}/javascript/README" />
       <fileset file="${build.dir}/SoyParseInfoGenerator.jar" />
-      <fileset dir="javascript" includes="soyutils.js,soyutils_usegoog.js" />
+      <fileset dir="${build.dir}/javascript" includes="soyutils.js,soyutils_usegoog.js" />
     </zip>
   </target>
 

@@ -17,6 +17,7 @@ com.google.template.soy.internal.base
 com.google.template.soy.internal.i18n
 com.google.template.soy.javasrc
 com.google.template.soy.javasrc.codedeps
+com.google.template.soy.javasrc.dyncompile
 com.google.template.soy.javasrc.internal
 com.google.template.soy.javasrc.restricted
 com.google.template.soy.jssrc
@@ -28,10 +29,13 @@ com.google.template.soy.msgs.restricted
 com.google.template.soy.parseinfo
 com.google.template.soy.parseinfo.passes
 com.google.template.soy.parsepasses
+com.google.template.soy.parsepasses.contextautoesc
 com.google.template.soy.shared
 com.google.template.soy.shared.internal
 com.google.template.soy.shared.restricted
 com.google.template.soy.sharedpasses
+com.google.template.soy.sharedpasses.opti
+com.google.template.soy.sharedpasses.render
 com.google.template.soy.soyparse
 com.google.template.soy.soytree
 com.google.template.soy.soytree.jssrc

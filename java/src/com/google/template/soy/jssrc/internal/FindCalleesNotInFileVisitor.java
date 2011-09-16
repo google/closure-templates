@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -31,7 +31,9 @@ import java.util.SortedSet;
 /**
  * Visitor for finding the templates called in a file that are not defined in the file.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p> Important: Only deals with basic callees (not delegates). Delegates are not applicable here
+ * because we cannot tell at compile time which delegate will be called (if any). Thus, during
+ * compilation, we usually handle delegate calls the same way as external calls.
  *
  * <p> Precondition: All template and callee names should be full names (i.e. you must execute
  * {@code PrependNamespacesVisitor} before executing this visitor).
@@ -44,7 +46,7 @@ import java.util.SortedSet;
  *
  * @author Kai Huang
  */
-public class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<String>> {
+class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<String>> {
 
 
   /** The names of templates defined in this file. */
@@ -54,16 +56,17 @@ public class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<Stri
   private SortedSet<String> calleesNotInFile;
 
 
-  @Override protected SortedSet<String> getResult() {
+  @Override public Set<String> exec(SoyNode node) {
+    visit(node);
     return calleesNotInFile;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
 
     templatesInFile = Sets.newHashSet();
     for (TemplateNode template : node.getChildren()) {
@@ -76,7 +79,7 @@ public class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<Stri
   }
 
 
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected void visitCallBasicNode(CallBasicNode node) {
 
     String calleeName = node.getCalleeName();
     if (!templatesInFile.contains(calleeName)) {
@@ -88,16 +91,13 @@ public class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<Stri
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 }

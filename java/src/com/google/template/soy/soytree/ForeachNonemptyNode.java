@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
@@ -30,46 +29,51 @@ import com.google.template.soy.soytree.SoyNode.LoopNode;
  *
  * @author Kai Huang
  */
-public class ForeachNonemptyNode extends AbstractParentSoyNode<SoyNode>
-    implements ConditionalBlockNode<SoyNode>, LoopNode<SoyNode>, LocalVarBlockNode<SoyNode> {
-
-
-  /** The ForeachNode that is or will become this node's parent. */
-  private final ForeachNode parentForeachNode;
+public class ForeachNonemptyNode extends AbstractBlockNode
+    implements ConditionalBlockNode, LoopNode, LocalVarBlockNode {
 
 
   /**
    * @param id The id for this node.
-   * @param parentForeachNode The ForeachNode that will become this node's parent.
    */
-  public ForeachNonemptyNode(String id, ForeachNode parentForeachNode) {
+  public ForeachNonemptyNode(int id) {
     super(id);
-    this.parentForeachNode = parentForeachNode;
   }
 
 
-  public String getForeachNodeId() {
-    return parentForeachNode.getId();
-  }
-
-  /** Returns the foreach-loop variable name. */
-  public String getVarName() {
-    return parentForeachNode.getVarName();
-  }
-
-  /** Returns the text of the data reference we're iterating over. */
-  public String getDataRefText() {
-    return parentForeachNode.getDataRefText();
-  }
-
-  /** Returns the parsed data reference. */
-  public ExprRootNode<DataRefNode> getDataRef() {
-    return parentForeachNode.getDataRef();
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected ForeachNonemptyNode(ForeachNonemptyNode orig) {
+    super(orig);
   }
 
 
-  @Override public String getLocalVarName() {
-    return parentForeachNode.getVarName();
+  @Override public Kind getKind() {
+    return Kind.FOREACH_NONEMPTY_NODE;
+  }
+
+
+  public int getForeachNodeId() {
+    return getParent().getId();
+  }
+
+
+  @Override public String getVarName() {
+    return getParent().getVarName();
+  }
+
+
+  /** Returns the text of the expression we're iterating over. */
+  public String getExprText() {
+    return getParent().getExprText();
+  }
+
+
+  /** Returns the expression we're iterating over. */
+  public ExprRootNode<?> getExpr() {
+    return getParent().getExpr();
   }
 
 
@@ -77,6 +81,16 @@ public class ForeachNonemptyNode extends AbstractParentSoyNode<SoyNode>
     StringBuilder sb = new StringBuilder();
     appendSourceStringForChildren(sb);
     return sb.toString();
+  }
+
+
+  @Override public ForeachNode getParent() {
+    return (ForeachNode) super.getParent();
+  }
+
+
+  @Override public ForeachNonemptyNode clone() {
+    return new ForeachNonemptyNode(this);
   }
 
 }

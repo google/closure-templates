@@ -22,7 +22,6 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
-import com.google.template.soy.shared.SoyGeneralOptions.SafePrintTagsInferenceLevel;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 
 import org.kohsuke.args4j.Argument;
@@ -69,23 +68,10 @@ public final class SoyToJsSrcCompiler {
                   " pt_br.")
   private String outputPathFormat = "";
 
-  @Option(name = "--safePrintTagsInferenceLevel",
-          usage = "The level of safe-print-tags inference ('none', 'simple', or 'advanced'). For" +
-                  " all inferred safe print tags, the compiler automatically adds the" +
-                  " '|noAutoescape' directive." +
-                  "    NONE: No inference. '@safe' declarations are ignored." +
-                  "    SIMPLE: Infers safe print tags based on '@safe' declarations in the" +
-                  " current template's SoyDoc (same behavior for public and private templates)." +
-                  "    ADVANCED: Infers safe print tags based on '@safe' declarations in SoyDoc" +
-                  " of public templates. For private templates, infers safe data from the data" +
-                  " being passed in all the calls to the private template from the rest of the" +
-                  " Soy code (in the same compiled bundle)." +
-                  "    Also, for inference levels SIMPLE and ADVANCED, the compiler checks calls" +
-                  " between templates. Specifically, if the callee template's SoyDoc specifies" +
-                  " '@safe' declarations, then the data being passed in the call must be known" +
-                  " to be safe for all of those declared safe data paths. Otherwise, a" +
-                  " data-safety-mismatch error is reported.")
-  private String safePrintTagsInferenceLevel = "none";
+  @Option(name = "--isUsingIjData",
+          usage = "Whether to enable use of injected data (syntax is '$ij.*').",
+          handler = MainClassUtils.BooleanOptionHandler.class)
+  private boolean isUsingIjData = false;
 
   @Option(name = "--codeStyle",
           usage = "The code style to use when generating JS code ('stringbuilder' or 'concat').")
@@ -94,13 +80,15 @@ public final class SoyToJsSrcCompiler {
   @Option(name = "--shouldGenerateJsdoc",
           usage = "Whether we should generate JSDoc with type info for the Closure Compiler." +
                   " Note the generated JSDoc does not have description text, only types for the" +
-                  " benefit of the Closure Compiler.")
+              " benefit of the Closure Compiler.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
   private boolean shouldGenerateJsdoc = false;
 
   @Option(name = "--shouldProvideRequireSoyNamespaces",
           usage = "When this option is used, each generated JS file will contain (a) one single" +
                   " goog.provide statement for the corresponding Soy file's namespace and" +
-                  " (b) goog.require statements for the namespaces of the called templates.")
+                  " (b) goog.require statements for the namespaces of the called templates.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
   private boolean shouldProvideRequireSoyNamespaces = false;
 
   @Option(name = "--shouldDeclareTopLevelNamespaces",
@@ -110,7 +98,8 @@ public final class SoyToJsSrcCompiler {
                   " name in its namespace, instead assuming the top-level name is already" +
                   " declared in the global scope. E.g. for namespace aaa.bbb, the code will not" +
                   " attempt to declare aaa, but will still define aaa.bbb if it's not already" +
-                  " defined.")
+                  " defined.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
   private boolean shouldDeclareTopLevelNamespaces = true;
 
   @Option(name = "--locales",
@@ -130,11 +119,10 @@ public final class SoyToJsSrcCompiler {
   private String messageFilePathFormat = "";
 
   @Option(name = "--bidiGlobalDir",
-          usage = "The bidi global directionality (ltr=1, rtl=-1) to use when processing bidi" +
-                  " functions/directives. Only applicable if your Soy code uses bidi" +
-                  " functions/directives. Also note that this flag is usually not necessary if" +
-                  " a message file is provided, because in that case the bidi global" +
-                  " directionality is simply inferred from the message bundle.")
+          usage = "The bidi global directionality (ltr=1, rtl=-1). Only applicable if your Soy" +
+                  " code uses bidi functions/directives. Also note that this flag is usually not" +
+                  " necessary if a message file is provided, because by default the bidi global" +
+                  " directionality is simply inferred from the message file.")
   private int bidiGlobalDir = 0;
 
   @Option(name = "--cssHandlingScheme",
@@ -203,6 +191,7 @@ public final class SoyToJsSrcCompiler {
 
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
+    jsSrcOptions.setIsUsingIjData(isUsingIjData);
     jsSrcOptions.setCodeStyle(codeStyle);
     jsSrcOptions.setShouldGenerateJsdoc(shouldGenerateJsdoc);
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
@@ -219,8 +208,6 @@ public final class SoyToJsSrcCompiler {
     sfsBuilder.setCssHandlingScheme(
         cssHandlingSchemeUc.equals("GOOG") ?
         CssHandlingScheme.BACKEND_SPECIFIC : CssHandlingScheme.valueOf(cssHandlingSchemeUc));
-    sfsBuilder.setSafePrintTagsInferenceLevel(
-        SafePrintTagsInferenceLevel.valueOf(safePrintTagsInferenceLevel.toUpperCase()));
     if (compileTimeGlobalsFile.length() > 0) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }

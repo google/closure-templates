@@ -18,8 +18,6 @@ package com.google.template.soy.internal.base;
 
 import com.google.common.base.Objects;
 
-import java.util.Comparator;
-
 import javax.annotation.Nullable;
 
 /**
@@ -30,13 +28,13 @@ import javax.annotation.Nullable;
  * <p>This type is devoid of semantics, best used for simple mechanical
  * aggregations of unrelated values in implementation code. Avoid using it in
  * your APIs, preferring an explicit type that conveys the exact semantics of
- * the data. For example, instead of: <pre>   {@code
+ * the data. For example, instead of: <xmp>
  *
- *   Pair<T, T> findMinAndMax(List<T> list) {...}}</pre>
+ *   Pair<T, T> findMinAndMax(List<T> list) {...}</xmp>
  *
- * ... use: <pre>   {@code
+ * ... use: <xmp>
  *
- *   Range<T> findRange(List<T> list) {...}}</pre>
+ *   Range<T> findRange(List<T> list) {...}</xmp>
  *
  * This usually involves creating a new custom value-object type. This is
  * difficult to do "by hand" in Java, but avoid the temptation to extend {@code
@@ -85,44 +83,6 @@ public class Pair<A, B> {
    */
   public B getSecond() {
     return second;
-  }
-
-  /**
-   * Returns a comparator that compares two Pair objects by comparing the
-   * result of {@link #getFirst()} for each.
-   */
-  @SuppressWarnings("unchecked")
-  public static <A extends Comparable, B> Comparator<Pair<A,B>> compareByFirst() {
-    return (Comparator) FirstComparator.FIRST_COMPARATOR;
-  }
-
-  /**
-   * Returns a comparator that compares two Pair objects by comparing the
-   * result of {@link #getSecond()} for each.
-   */
-  @SuppressWarnings("unchecked")
-  public static <A, B extends Comparable> Comparator<Pair<A,B>> compareBySecond() {
-    return (Comparator) SecondComparator.SECOND_COMPARATOR;
-  }
-
-  // uses raw Comparable to support classes defined without generics
-  @SuppressWarnings("unchecked")
-  private enum FirstComparator implements Comparator<Pair<Comparable,Object>> {
-    FIRST_COMPARATOR;
-
-    public int compare(Pair<Comparable, Object> pair1, Pair<Comparable, Object> pair2) {
-      return pair1.getFirst().compareTo(pair2.getFirst());
-    }
-  }
-
-  // uses raw Comparable to support classes defined without generics
-  @SuppressWarnings("unchecked")
-  private enum SecondComparator implements Comparator<Pair<Object,Comparable>> {
-    SECOND_COMPARATOR;
-
-    public int compare(Pair<Object, Comparable> pair1, Pair<Object, Comparable> pair2) {
-      return pair1.getSecond().compareTo(pair2.getSecond());
-    }
   }
 
   @Override public boolean equals(@Nullable Object object) {

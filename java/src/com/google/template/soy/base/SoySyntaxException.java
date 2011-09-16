@@ -16,20 +16,23 @@
 
 package com.google.template.soy.base;
 
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNullableByDefault;
 
 /**
  * Exception for Soy syntax errors.
  *
  * @author Kai Huang
  */
+@ParametersAreNullableByDefault
 public class SoySyntaxException extends RuntimeException {
 
 
-  /** The path of the Soy file with the syntax error. */
-  public String filePath;
+  /** The location in the soy file at which the error occurred. */
+  private SourceLocation sourceLocation = SourceLocation.UNKNOWN;
 
-  /** The name of the template with the syntax error. */
-  public String templateName;
+  /** The name of the template with the syntax error if any. */
+  private String templateName;
 
 
   /**
@@ -59,12 +62,37 @@ public class SoySyntaxException extends RuntimeException {
 
 
   /**
+   * The source location at which the error occurred or {@link SourceLocation#UNKNOWN}.
+   */
+  public SourceLocation getSourceLocation() {
+    return sourceLocation;
+  }
+
+
+  /**
+   * The name of the template in which the problem occurred or {@code null} if not known.
+   */
+  public @Nullable String getTemplateName() {
+    return templateName;
+  }
+
+
+  /**
    * Sets the file name for this SoySyntaxException instance.
    * @param filePath The path of the file containing the syntax error.
    * @return This same instance.
    */
   public SoySyntaxException setFilePath(String filePath) {
-    this.filePath = filePath;
+    return setSourceLocation(new SourceLocation(filePath, 0));
+  }
+
+
+  /**
+   * Sets the source location at which the problem occurred.
+   * @return This same instance.
+   */
+  public SoySyntaxException setSourceLocation(SourceLocation sourceLocation) {
+    this.sourceLocation = sourceLocation;
     return this;
   }
 
@@ -81,12 +109,19 @@ public class SoySyntaxException extends RuntimeException {
 
 
   @Override public String getMessage() {
-    if (filePath != null && templateName != null) {
-      return "In file " + filePath + ", template " + templateName + ": " + super.getMessage();
-    } else if (filePath != null) {
-      return "In file " + filePath + ": " + super.getMessage();
+    boolean locationKnown = sourceLocation.isKnown();
+    boolean templateKnown = templateName != null;
+    String message = super.getMessage();
+    if (locationKnown) {
+      if (templateKnown) {
+        return "In file " + sourceLocation + ", template " + templateName + ": " + message;
+      } else {
+        return "In file " + sourceLocation + ": " + message;
+      }
+    } else if (templateKnown) {
+      return "In template " + templateName + ": " + message;
     } else {
-      return super.getMessage();
+      return message;
     }
   }
 

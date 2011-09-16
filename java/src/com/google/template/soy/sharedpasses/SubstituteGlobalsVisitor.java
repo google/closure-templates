@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.DataUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
@@ -23,6 +24,8 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.Map;
 
@@ -35,14 +38,12 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> Use with {@link com.google.template.soy.soytree.SoytreeUtils#visitAllExprs}.
- *
  * <p> To do substitution only, set {@code shouldAssertNoUnboundGlobals} to false in the
  * constructor. To do substitution and checking, set  {@code shouldAssertNoUnboundGlobals} to true.
  *
  * @author Kai Huang
  */
-public class SubstituteGlobalsVisitor extends AbstractExprNodeVisitor<Void> {
+public class SubstituteGlobalsVisitor {
 
 
   /** Map from compile-time global name to value. */
@@ -65,31 +66,43 @@ public class SubstituteGlobalsVisitor extends AbstractExprNodeVisitor<Void> {
   }
 
 
-  @Override protected void visitInternal(GlobalNode node) {
+  /**
+   * Runs this pass on the given Soy tree.
+   */
+  public void exec(SoyFileSetNode soyTree) {
 
-    PrimitiveData value =
-        (compileTimeGlobals != null) ? compileTimeGlobals.get(node.getName()) : null;
+    SoytreeUtils.execOnAllV2Exprs(soyTree, new SubstituteGlobalsInExprVisitor());
+  }
 
-    if (value == null) {
-      if (shouldAssertNoUnboundGlobals) {
-        throw new SoySyntaxException("Found unbound global '" + node.getName() + "'.");
+
+  /**
+   * Private helper class for SubstituteGlobalsVisitor to visit expressions.
+   * This class does the real work.
+   */
+  @VisibleForTesting
+  class SubstituteGlobalsInExprVisitor extends AbstractExprNodeVisitor<Void> {
+
+    @Override protected void visitGlobalNode(GlobalNode node) {
+
+      PrimitiveData value =
+          (compileTimeGlobals != null) ? compileTimeGlobals.get(node.getName()) : null;
+
+      if (value == null) {
+        if (shouldAssertNoUnboundGlobals) {
+          throw new SoySyntaxException("Found unbound global '" + node.getName() + "'.");
+        }
+        return;
       }
-      return;
+
+      // Replace this node with a primitive literal.
+      node.getParent().replaceChild(node, DataUtils.convertPrimitiveDataToExpr(value));
     }
 
-    // Replace this node with a StringNode.
-    ParentExprNode parent = node.getParent();
-    parent.setChild(parent.getChildIndex(node), DataUtils.convertPrimitiveDataToExpr(value));
-  }
-
-
-  @Override protected void visitInternal(ExprNode node) {
-    // Nothing to do for other nodes.
-  }
-
-
-  @Override protected void visitInternal(ParentExprNode node) {
-    visitChildren(node);
+    @Override protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        visitChildrenAllowingConcurrentModification((ParentExprNode) node);
+      }
+    }
   }
 
 }

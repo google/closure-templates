@@ -16,10 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 
 import java.util.List;
 
@@ -37,16 +36,101 @@ import java.util.List;
  */
 public interface SoyNode extends Node {
 
+
+  /**
+   * Enum of specific node kinds (coresponding to specific node types).
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   */
+  public static enum Kind {
+
+    SOY_FILE_SET_NODE,
+    SOY_FILE_NODE,
+
+    TEMPLATE_BASIC_NODE,
+    TEMPLATE_DELEGATE_NODE,
+
+    RAW_TEXT_NODE,
+
+    MSG_NODE,
+    MSG_PLACEHOLDER_NODE,
+    GOOG_MSG_NODE,
+    GOOG_MSG_REF_NODE,
+    MSG_PLURAL_NODE,
+    MSG_PLURAL_CASE_NODE,
+    MSG_PLURAL_DEFAULT_NODE,
+    MSG_PLURAL_REMAINDER_NODE,
+    MSG_SELECT_NODE,
+    MSG_SELECT_CASE_NODE,
+    MSG_SELECT_DEFAULT_NODE,
+    MSG_HTML_TAG_NODE,
+
+    PRINT_NODE,
+    PRINT_DIRECTIVE_NODE,
+
+    CSS_NODE,
+
+    LET_VALUE_NODE,
+    LET_CONTENT_NODE,
+
+    IF_NODE,
+    IF_COND_NODE,
+    IF_ELSE_NODE,
+
+    SWITCH_NODE,
+    SWITCH_CASE_NODE,
+    SWITCH_DEFAULT_NODE,
+
+    FOREACH_NODE,
+    FOREACH_NONEMPTY_NODE,
+    FOREACH_IFEMPTY_NODE,
+
+    FOR_NODE,
+
+    CALL_BASIC_NODE,
+    CALL_DELEGATE_NODE,
+    CALL_PARAM_VALUE_NODE,
+    CALL_PARAM_CONTENT_NODE,
+  }
+
+
   /**
    * Enum for the syntax version.
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static enum SyntaxVersion { V1, V2 }
+
+
+  /**
+   * Gets this node's kind (corresponding to this node's specific type).
+   * @return This node's kind (corresponding to this node's specific type).
+   */
+  public Kind getKind();
+
+  /**
+   * Sets this node's id.
+   * <p> Important: The id should already be set during construction, so this method should only be
+   * used during cloning.
+   * @param id The new id for this node.
+   */
+  public void setId(int id);
 
   /**
    * Gets this node's id.
    * @return This node's id.
    */
-  public String getId();
+  public int getId();
+
+  /**
+   * Sets the source location (file path and line number) for this node.
+   * @param location The source location for this node.
+   */
+  public void setLocation(SourceLocation location);
+
+  /**
+   * Gets the source location (file path and line number) for this node.
+   * @return The source location for this node.
+   */
+  public SourceLocation getLocation();
 
   /**
    * Gets the syntax version of this node.
@@ -54,7 +138,14 @@ public interface SoyNode extends Node {
    */
   public SyntaxVersion getSyntaxVersion();
 
-  @Override public ParentSoyNode<? extends SoyNode> getParent();
+  @Override public ParentSoyNode<?> getParent();
+
+  /**
+   * {@inheritDoc}
+   * <p> The cloned nodes will have the same ids as the original nodes. If you need to clone a
+   * subtree with new ids assigned to the cloned nodes, use {@link SoytreeUtils#cloneWithNewIds}.
+   */
+  @Override public SoyNode clone();
 
 
   // -----------------------------------------------------------------------------------------------
@@ -63,7 +154,44 @@ public interface SoyNode extends Node {
   /**
    * A node in a Soy parse tree that may be a parent.
    */
-  public static interface ParentSoyNode<N extends SoyNode> extends SoyNode, ParentNode<N> {}
+  public static interface ParentSoyNode<N extends SoyNode> extends SoyNode, ParentNode<N> {
+
+    /**
+     * Sets whether this node needs an env frame when the template is being interpreted.
+     * @param needsEnvFrameDuringInterp Whether this node needs an env frame during interpretation,
+     *     or null if unknown.
+     */
+    public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp);
+
+    /**
+     * Returns whether this node needs an env frame during interpretation, or null if unknown.
+     * @return Whether this node needs an env frame during interpretation, or null if unknown.
+     */
+    public Boolean needsEnvFrameDuringInterp();
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
+   * A node that can legally appear as the direct child of some block node (doesn't necessarily have
+   * to be legal as the direct child of a template). To put it another way, a node that can legally
+   * appear as the sibling of a RawTextNode or PrintNode.
+   */
+  public static interface StandaloneNode extends SoyNode {
+
+    @Override public BlockNode getParent();
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
+   * A node that represents a template block.
+   */
+  public static interface BlockNode extends ParentSoyNode<StandaloneNode> {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -90,7 +218,7 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a specific Soy command.
    */
-  public static interface SoyCommandNode extends SoyNode {
+  public static interface CommandNode extends SoyNode {
 
     /**
      * Gets the Soy command name.
@@ -119,7 +247,7 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a specific Soy statement.
    */
-  public static interface SoyStatementNode extends SoyNode {}
+  public static interface StatementNode extends StandaloneNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -134,7 +262,7 @@ public interface SoyNode extends Node {
    * <p> Includes nodes such as IfCondNode, IfElseNode, SwitchCaseNode, SwitchDefaultNode,
    * ForeachNonemptyNode, ForeachIfemptyNode, ForNode etc.
    */
-  public static interface ConditionalBlockNode<N extends SoyNode> extends ParentSoyNode<N> {}
+  public static interface ConditionalBlockNode extends BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -145,7 +273,7 @@ public interface SoyNode extends Node {
    *
    * <p> Includes nodes such as ForeachNonemptyNode and ForNode.
    */
-  public static interface LoopNode<N extends SoyNode> extends ParentSoyNode<N> {}
+  public static interface LoopNode extends BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -161,7 +289,7 @@ public interface SoyNode extends Node {
      * Gets the name of this node's local variable (without the preceding '$').
      * @return The name of this node's local variable (without the preceding '$').
      */
-    public String getLocalVarName();
+    public String getVarName();
   }
 
 
@@ -171,8 +299,7 @@ public interface SoyNode extends Node {
   /**
    * A node that adds a new local variable whose scope comprises the children of this code.
    */
-  public static interface LocalVarBlockNode<N extends SoyNode>
-      extends LocalVarNode, ParentSoyNode<N> {}
+  public static interface LocalVarBlockNode extends LocalVarNode, BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -181,7 +308,7 @@ public interface SoyNode extends Node {
   /**
    * A node that adds a new local variable whose scope comprises the younger siblings of this node.
    */
-  public static interface LocalVarInlineNode extends LocalVarNode {}
+  public static interface LocalVarInlineNode extends LocalVarNode, StandaloneNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -196,7 +323,7 @@ public interface SoyNode extends Node {
      * Gets the list of expressions in this node.
      * @return The list of expressions in this node.
      */
-    public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs();
+    public List<ExprUnion> getAllExprUnions();
   }
 
 
@@ -204,20 +331,26 @@ public interface SoyNode extends Node {
 
 
   /**
-   * A node that may be a parent and that holds some expressions in its fields/properties.
+   * A block node that can hold message content. Every direct child of a MsgBlockNode must be one
+   * of: RawTextNode, MsgPlaceholderNode, MsgSelectNode, MsgPluralNode, or MsgPluralRemainderNode.
    */
-  public static interface ParentExprHolderNode<N extends SoyNode>
-      extends ExprHolderNode, ParentSoyNode<N> {}
+  public static interface MsgBlockNode extends BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
 
 
   /**
-   * A node that is the direct child of a MsgNode and will turn into a placeholder. Every direct
-   * child of a MsgNode must either be a RawTextNode or a MsgPlaceholderNode.
+   * A node that can be the initial content (i.e. initial child) of a MsgPlaceholderNode.
    */
-  public static interface MsgPlaceholderNode extends SoyNode {
+  public static interface MsgPlaceholderInitialContentNode extends StandaloneNode {
+
+    /**
+     * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
+     * this raw name can be any identifier (not necessarily in upper-underscore format).
+     * @return The user-supplied placeholder name, or null if not supplied or not applicable.
+     */
+    public String getUserSuppliedPlaceholderName();
 
     /**
      * Generates the base placeholder name for this node.
@@ -226,12 +359,12 @@ public interface SoyNode extends Node {
     public String genBasePlaceholderName();
 
     /**
-     * Determines whether this node and the given other node are the same, such that they should be
-     * represented by the same placeholder.
-     * @param other The other MsgPlaceholderNode to compare to.
-     * @return True if this and the other node should be represented by the same placeholder.
+     * Generates the key object used in comparisons to determine whether two placeholder nodes
+     * should be represented by the same placeholder.
+     * @return The key object for determining whether this node and another node should be
+     *     represented by the same placeholder.
      */
-    public boolean isSamePlaceholderAs(MsgPlaceholderNode other);
+    public Object genSamenessKey();
   }
 
 }

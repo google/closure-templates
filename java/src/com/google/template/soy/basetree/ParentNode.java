@@ -58,8 +58,14 @@ public interface ParentNode<N extends Node> extends Node {
 
 
   /**
-   * Gets a shallow copy of the list of children.
-   * @return A shallow copy of the list of children.
+   * Gets the list of children.
+   *
+   * Note: The returned list may not be a copy. Please do not modify the list directly. Instead, use
+   * the other methods in this class that are intended for modifying children. Also, if you're
+   * iterating over the children list as you're modifying it, then you should first make a copy of
+   * the children list to iterate over, in order to avoid ConcurrentModificationException.
+   * 
+   * @return The list of children.
    */
   public List<N> getChildren();
 
@@ -72,7 +78,7 @@ public interface ParentNode<N extends Node> extends Node {
 
 
   /**
-   * Adds the given child at the given index (shifting existing elements if necessary).
+   * Adds the given child at the given index (shifting existing children if necessary).
    * @param index The index to add the child at.
    * @param child The child to add.
    */
@@ -94,11 +100,19 @@ public interface ParentNode<N extends Node> extends Node {
 
 
   /**
-   * Sets the given index to be the given new child.
-   * @param index The index to set the child at.
-   * @param newChild The new child to set.
+   * Replaces the child at the given index with the given new child.
+   * @param index The index of the child to replace.
+   * @param newChild The new child.
    */
-  public void setChild(int index, N newChild);
+  public void replaceChild(int index, N newChild);
+
+
+  /**
+   * Replaces the given current child with the given new child.
+   * @param currChild The current child to be replaced.
+   * @param newChild The new child.
+   */
+  public void replaceChild(N currChild, N newChild);
 
 
   /**
@@ -112,6 +126,14 @@ public interface ParentNode<N extends Node> extends Node {
    * @param children The children to add.
    */
   public void addChildren(List<? extends N> children);
+
+
+  /**
+   * Adds the given children at the given index (shifting existing children if necessary).
+   * @param index The index to add the children at.
+   * @param children The children to add.
+   */
+  public void addChildren(int index, List<? extends N> children);
 
 
   /**

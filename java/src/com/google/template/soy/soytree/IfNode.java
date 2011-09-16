@@ -16,8 +16,9 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.soytree.SoyNode.SoyStatementNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 
 /**
@@ -28,14 +29,28 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
  * @author Kai Huang
  */
 public class IfNode extends AbstractParentSoyNode<SoyNode>
-    implements SplitLevelTopNode<SoyNode>, SoyStatementNode {
+    implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode {
 
 
   /**
    * @param id The id for this node.
    */
-  public IfNode(String id) {
+  public IfNode(int id) {
     super(id);
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected IfNode(IfNode orig) {
+    super(orig);
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.IF_NODE;
   }
 
 
@@ -45,6 +60,16 @@ public class IfNode extends AbstractParentSoyNode<SoyNode>
     appendSourceStringForChildren(sb);
     sb.append("{/if}");
     return sb.toString();
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  @Override public IfNode clone() {
+    return new IfNode(this);
   }
 
 }

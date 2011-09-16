@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisiteness;
-import static com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisiteness.OPTIONAL;
-import static com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisiteness.REQUIRED;
 
 
 /**
@@ -85,7 +83,8 @@ public class FeaturesSoyInfo extends SoyFileInfo {
    */
   public static final SoyTemplateInfo DEMO_COMMENTS = new SoyTemplateInfo(
       "soy.examples.features.demoComments",
-      ImmutableMap.<String, ParamRequisiteness>of());
+      ImmutableMap.<String, ParamRequisiteness>of(),
+      ImmutableSortedSet.<String>of());
 
 
   /**
@@ -93,7 +92,8 @@ public class FeaturesSoyInfo extends SoyFileInfo {
    */
   public static final SoyTemplateInfo DEMO_LINE_JOINING = new SoyTemplateInfo(
       "soy.examples.features.demoLineJoining",
-      ImmutableMap.<String, ParamRequisiteness>of());
+      ImmutableMap.<String, ParamRequisiteness>of(),
+      ImmutableSortedSet.<String>of());
 
 
   /**
@@ -101,7 +101,8 @@ public class FeaturesSoyInfo extends SoyFileInfo {
    */
   public static final SoyTemplateInfo DEMO_RAW_TEXT_COMMANDS = new SoyTemplateInfo(
       "soy.examples.features.demoRawTextCommands",
-      ImmutableMap.<String, ParamRequisiteness>of());
+      ImmutableMap.<String, ParamRequisiteness>of(),
+      ImmutableSortedSet.<String>of());
 
 
   /**
@@ -114,9 +115,10 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoPrintSoyTemplateInfo() {
       super("soy.examples.features.demoPrint",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("boo", REQUIRED)
-            .put("two", REQUIRED)
-            .build());
+                .put("boo", ParamRequisiteness.REQUIRED)
+                .put("two", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** Something scary. */
@@ -137,10 +139,11 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoPrintDirectivesSoyTemplateInfo() {
       super("soy.examples.features.demoPrintDirectives",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("longVarName", REQUIRED)
-            .put("elementId", REQUIRED)
-            .put("cssClass", REQUIRED)
-            .build());
+                .put("longVarName", ParamRequisiteness.REQUIRED)
+                .put("elementId", ParamRequisiteness.REQUIRED)
+                .put("cssClass", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** Some ridiculously long variable name. */
@@ -164,8 +167,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoAutoescapeTrueSoyTemplateInfo() {
       super("soy.examples.features.demoAutoescapeTrue",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("italicHtml", REQUIRED)
-            .build());
+                .put("italicHtml", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** A string surrounded by HTML italics tags. */
@@ -183,8 +187,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoAutoescapeFalseSoyTemplateInfo() {
       super("soy.examples.features.demoAutoescapeFalse",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("italicHtml", REQUIRED)
-            .build());
+                .put("italicHtml", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** A string surrounded by HTML italics tags. */
@@ -202,9 +207,10 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoMsgSoyTemplateInfo() {
       super("soy.examples.features.demoMsg",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("name", REQUIRED)
-            .put("labsUrl", REQUIRED)
-            .build());
+                .put("name", ParamRequisiteness.REQUIRED)
+                .put("labsUrl", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The name of the person to say hello to. */
@@ -225,8 +231,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoIfSoyTemplateInfo() {
       super("soy.examples.features.demoIf",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("pi", REQUIRED)
-            .build());
+                .put("pi", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** An approximate value for pi. */
@@ -244,8 +251,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoSwitchSoyTemplateInfo() {
       super("soy.examples.features.demoSwitch",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("name", REQUIRED)
-            .build());
+                .put("name", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The name of a kid. */
@@ -263,8 +271,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoForeachSoyTemplateInfo() {
       super("soy.examples.features.demoForeach",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("persons", REQUIRED)
-            .build());
+                .put("persons", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** List of persons. Each person must have 'name' and 'numWaffles'. */
@@ -282,8 +291,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoForSoyTemplateInfo() {
       super("soy.examples.features.demoFor",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("numLines", REQUIRED)
-            .build());
+                .put("numLines", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The number of lines to display. */
@@ -301,10 +311,11 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoCallWithoutParamSoyTemplateInfo() {
       super("soy.examples.features.demoCallWithoutParam",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("name", REQUIRED)
-            .put("tripInfo", REQUIRED)
-            .put("destination", OPTIONAL)
-            .build());
+                .put("name", ParamRequisiteness.REQUIRED)
+                .put("tripInfo", ParamRequisiteness.REQUIRED)
+                .put("destination", ParamRequisiteness.OPTIONAL)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The name of the person who took a trip. */
@@ -329,10 +340,11 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoCallWithParamSoyTemplateInfo() {
       super("soy.examples.features.demoCallWithParam",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("name", REQUIRED)
-            .put("companionName", REQUIRED)
-            .put("destinations", REQUIRED)
-            .build());
+                .put("name", ParamRequisiteness.REQUIRED)
+                .put("companionName", ParamRequisiteness.REQUIRED)
+                .put("destinations", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The name of the person who took the trips. */
@@ -356,8 +368,9 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoCallWithParamBlockSoyTemplateInfo() {
       super("soy.examples.features.demoCallWithParamBlock",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("name", REQUIRED)
-            .build());
+                .put("name", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The name of the person who took the trip. */
@@ -375,9 +388,10 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoExpressionsSoyTemplateInfo() {
       super("soy.examples.features.demoExpressions",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("students", REQUIRED)
-            .put("currentYear", REQUIRED)
-            .build());
+                .put("students", ParamRequisiteness.REQUIRED)
+                .put("currentYear", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** Nonempty list of students. Each student must have 'name', 'major', and 'year'. */
@@ -398,9 +412,10 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoDoubleBracesSoyTemplateInfo() {
       super("soy.examples.features.demoDoubleBraces",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("setName", REQUIRED)
-            .put("setMembers", REQUIRED)
-            .build());
+                .put("setName", ParamRequisiteness.REQUIRED)
+                .put("setMembers", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The name of the infinite set. */
@@ -421,11 +436,12 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private DemoBidiSupportSoyTemplateInfo() {
       super("soy.examples.features.demoBidiSupport",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("title", REQUIRED)
-            .put("author", REQUIRED)
-            .put("year", REQUIRED)
-            .put("keywords", REQUIRED)
-            .build());
+                .put("title", ParamRequisiteness.REQUIRED)
+                .put("author", ParamRequisiteness.REQUIRED)
+                .put("year", ParamRequisiteness.REQUIRED)
+                .put("keywords", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** Book title. */
@@ -448,7 +464,8 @@ public class FeaturesSoyInfo extends SoyFileInfo {
    */
   public static final SoyTemplateInfo BIDI_GLOBAL_DIR = new SoyTemplateInfo(
       "soy.examples.features.bidiGlobalDir",
-      ImmutableMap.<String, ParamRequisiteness>of());
+      ImmutableMap.<String, ParamRequisiteness>of(),
+      ImmutableSortedSet.<String>of());
 
 
   /**
@@ -461,9 +478,10 @@ public class FeaturesSoyInfo extends SoyFileInfo {
     private ExampleHeaderSoyTemplateInfo() {
       super("soy.examples.features.exampleHeader",
             ImmutableMap.<String, ParamRequisiteness>builder()
-            .put("exampleNum", REQUIRED)
-            .put("exampleName", REQUIRED)
-            .build());
+                .put("exampleNum", ParamRequisiteness.REQUIRED)
+                .put("exampleName", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
     }
 
     /** The number of the example. */
@@ -524,10 +542,13 @@ public class FeaturesSoyInfo extends SoyFileInfo {
               DEMO_DOUBLE_BRACES,
               DEMO_BIDI_SUPPORT,
               BIDI_GLOBAL_DIR,
-              EXAMPLE_HEADER));
+              EXAMPLE_HEADER),
+          ImmutableMap.<String, CssTagsPrefixPresence>of());
   }
 
+
   private static final FeaturesSoyInfo __INSTANCE__ = new FeaturesSoyInfo();
+
 
   public static FeaturesSoyInfo getInstance() {
     return __INSTANCE__;

@@ -22,6 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -30,13 +31,23 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.IndentedLinesBuilder;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.sharedpasses.FindUsedIjParamsVisitor;
+import com.google.template.soy.sharedpasses.FindUsedIjParamsVisitor.UsedIjParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -44,8 +55,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -182,8 +195,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   /** Map from Soy file node to generated Java class name (built at start of pass). */
   private Map<SoyFileNode, String> soyFileToJavaClassNameMap;
 
-  /** Map from template name to TemplateNode used by FindTransitiveCalleesVisitor. */
-  private Map<String, TemplateNode> templateNameToNodeMap;
+  /** Registry of all templates in the Soy tree. */
+  private TemplateRegistry templateRegistry;
 
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
   private final Map<String, String> convertedIdents = Maps.newHashMap();
@@ -218,22 +231,19 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   }
 
 
-  @Override protected void setup() {
+  @Override public ImmutableMap<String, String> exec(SoyNode node) {
     generatedFiles = Maps.newLinkedHashMap();
     ilb = null;
-  }
-
-
-  @Override protected ImmutableMap<String, String> getResult() {
+    visit(node);
     return ImmutableMap.copyOf(generatedFiles);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     // Figure out the generated class name for each Soy file, including adding number suffixes
     // to resolve collisions, and then adding the common suffix "SoyInfo".
@@ -258,13 +268,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       }
     }
 
-    // Build templateNameToNodeMap.
-    templateNameToNodeMap = Maps.newHashMap();
-    for (SoyFileNode soyFile : node.getChildren()) {
-      for (TemplateNode template : soyFile.getChildren()) {
-        templateNameToNodeMap.put(template.getTemplateName(), template);
-      }
-    }
+    // Build template registry.
+    templateRegistry = new TemplateRegistry(node);
 
     // Run the pass.
     for (SoyFileNode soyFile : node.getChildren()) {
@@ -277,7 +282,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   }
 
 
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
 
     if (node.getFilePath() == null) {
       throw new SoySyntaxException(
@@ -288,16 +293,16 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     String javaClassName = soyFileToJavaClassNameMap.get(node);
 
     // Collect the following:
-    // + all the partial template names of non-private templates,
+    // + all the partial template names of public basic templates (non-private, non-delegate),
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
-    List<String> nonprivateTemplatePartialNames = Lists.newArrayList();
+    List<String> publicBasicTemplatePartialNames = Lists.newArrayList();
     Set<String> allParamKeys = Sets.newHashSet();
     LinkedHashMultimap<String, TemplateNode> paramKeyToTemplatesMultimap =
         LinkedHashMultimap.create();
     for (TemplateNode template : node.getChildren()) {
-      if (!template.isPrivate()) {
-        nonprivateTemplatePartialNames.add(template.getPartialTemplateName());
+      if (!template.isPrivate() && template instanceof TemplateBasicNode) {
+        publicBasicTemplatePartialNames.add(template.getPartialTemplateName());
       }
       for (SoyDocParam param : template.getSoyDocParams()) {
         allParamKeys.add(param.key);
@@ -319,7 +324,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
     ilb = new IndentedLinesBuilder(2);
 
-    // ------ Header ------
+    // ------ Header. ------
     ilb.appendLine("// This file was automatically generated from ", node.getFileName(), ".");
     ilb.appendLine("// Please don't edit this file by hand.");
 
@@ -332,21 +337,15 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyFileInfo;");
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyTemplateInfo;");
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisiteness;");
-    ilb.appendLine(
-        "import static ",
-        "com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisiteness.OPTIONAL;");
-    ilb.appendLine(
-        "import static ",
-        "com.google.template.soy.parseinfo.SoyTemplateInfo.ParamRequisiteness.REQUIRED;");
 
-    // ------ Class start ------
+    // ------ Class start. ------
     ilb.appendLine();
     ilb.appendLine();
     appendJavadoc(ilb, "Soy parse info for " + node.getFileName() + ".", true, false);
     ilb.appendLine("public class ", javaClassName, " extends SoyFileInfo {");
     ilb.increaseIndent();
 
-    // ------ Params ------
+    // ------ Params. ------
     ilb.appendLine();
     ilb.appendLine();
     ilb.appendLine("public static class Param {");
@@ -367,10 +366,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
         } else {
           javadocSb.append(", ");
         }
-        javadocSb.append(template.getPartialTemplateName());
-        if (template.isPrivate()) {
-          javadocSb.append(" (private)");
-        }
+        javadocSb.append(buildTemplateNameForJavadoc(node, template));
       }
       javadocSb.append(".");
       appendJavadoc(ilb, javadocSb.toString(), false, true);
@@ -381,65 +377,64 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
-    // ------ Templates ------
+    // ------ Templates. ------
     for (TemplateNode template : node.getChildren()) {
       try {
         visit(template);
       } catch (SoySyntaxException sse) {
-        throw sse.setTemplateName(template.getTemplateName());
+        throw sse.setTemplateName(template.getTemplateNameForUserMsgs());
       }
     }
 
-    // ------ File info ------
+    // ------ Constructor. ------
     ilb.appendLine();
     ilb.appendLine();
-    // Constructor.
+
     ilb.appendLine("private ", javaClassName, "() {");
     ilb.increaseIndent();
     ilb.appendLine("super(\"", node.getFileName(), "\",");
     ilb.setIndentLen(ilb.getCurrIndentLen() + 6);
     ilb.appendLine("\"", node.getNamespace(), "\",");
 
-    ilb.appendLine("ImmutableSortedSet.<String>of(");
-    ilb.increaseIndent();
-    ilb.increaseIndent();
-    boolean isFirst = true;
+    // Params from all templates.
+    List<String> itemSnippets = Lists.newArrayList();
     for (String upperUnderscoreKey : allParamKeysMap.keySet()) {
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        ilb.append(",\n");
-      }
-      ilb.appendIndent().append("Param.").append(upperUnderscoreKey);
+      itemSnippets.add("Param." + upperUnderscoreKey);
     }
-    ilb.append("),").appendLineEnd();
-    ilb.decreaseIndent();
-    ilb.decreaseIndent();
+    appendImmutableSortedSet(ilb, "<String>", itemSnippets);
+    ilb.append(",\n");
 
-    ilb.appendLine("ImmutableList.<SoyTemplateInfo>of(");
-    ilb.increaseIndent();
-    ilb.increaseIndent();
-    isFirst = true;
-    for (String partialTemplateName : nonprivateTemplatePartialNames) {
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        ilb.append(",\n");
-      }
-      ilb.appendIndent().append(convertToUpperUnderscore(partialTemplateName.substring(1)));
+    // Templates.
+    itemSnippets = Lists.newArrayList();
+    for (String partialTemplateName : publicBasicTemplatePartialNames) {
+      itemSnippets.add(convertToUpperUnderscore(partialTemplateName.substring(1)));
     }
-    ilb.append("));").appendLineEnd();
-    ilb.decreaseIndent();
-    ilb.decreaseIndent();
+    appendImmutableList(ilb, "<SoyTemplateInfo>", itemSnippets);
+    ilb.append(",\n");
+
+    // CSS names.
+    SortedMap<String, CssTagsPrefixPresence> cssNamesMap =
+        (new CollectCssNamesVisitor()).exec(node);
+    List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
+    for (Map.Entry<String, CssTagsPrefixPresence> entry : cssNamesMap.entrySet()) {
+      entrySnippetPairs.add(Pair.of(
+          "\"" + entry.getKey() + "\"",
+          "CssTagsPrefixPresence." + entry.getValue().name()));
+    }
+    appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", entrySnippetPairs);
+    ilb.append(");\n");
 
     ilb.setIndentLen(ilb.getCurrIndentLen() - 6);
 
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
+    // ------ Singleton instance and its getter. ------
     ilb.appendLine();
-    ilb.appendLine("private static final ", javaClassName, " __INSTANCE__ = new ", javaClassName,
-                   "();");
+    ilb.appendLine();
+    ilb.appendLine(
+        "private static final ", javaClassName, " __INSTANCE__ = new ", javaClassName, "();");
+    ilb.appendLine();
     ilb.appendLine();
     ilb.appendLine("public static ", javaClassName, " getInstance() {");
     ilb.increaseIndent();
@@ -447,7 +442,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
-    // ------ Class end ------
+    // ------ Class end. ------
     ilb.appendLine();
     ilb.decreaseIndent();
     ilb.appendLine("}");
@@ -457,16 +452,15 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   }
 
 
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
 
-    // Don't generate anything for private templates.
-    if (node.isPrivate()) {
+    // Don't generate anything for private or delegate templates.
+    if (node.isPrivate() || node instanceof TemplateDelegateNode) {
       return;
     }
 
     // First build list of all transitive params (direct and indirect).
-    IndirectParamsInfo ipi =
-        (new FindIndirectParamsVisitor(false, true, templateNameToNodeMap)).exec(node);
+    IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
     LinkedHashMap<String, SoyDocParam> transitiveParams = Maps.newLinkedHashMap();
     // Direct params.
     for (SoyDocParam param : node.getSoyDocParams()) {
@@ -492,14 +486,14 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       appendJavadoc(ilb, node.getSoyDocDesc(), true, false);
       ilb.appendLine("public static final SoyTemplateInfo ", upperUnderscoreName,
                      " = new SoyTemplateInfo(");
-      ilb.increaseIndent();
-      ilb.increaseIndent();
+      ilb.increaseIndent(2);
 
       ilb.appendLine("\"", node.getTemplateName(), "\",");
-      ilb.appendLine("ImmutableMap.<String, ParamRequisiteness>of());");
+      ilb.appendLine("ImmutableMap.<String, ParamRequisiteness>of(),");
+      appendUsedIjParams(ilb, node);
+      ilb.append(");\n");
 
-      ilb.decreaseIndent();
-      ilb.decreaseIndent();
+      ilb.decreaseIndent(2);
 
     } else {
       // ------ Generate code for template with params. ------
@@ -522,22 +516,33 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       ilb.increaseIndent();
 
       ilb.appendLine("super(\"", node.getTemplateName(), "\",");
-      ilb.appendLine("      ImmutableMap.<String, ParamRequisiteness>builder()");
+      ilb.increaseIndent(3);
+
+      List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
       for (SoyDocParam param : transitiveParams.values()) {
-        ilb.appendLine("      .put(\"", param.key, "\", ",
-                       (param.isRequired ? "REQUIRED" : "OPTIONAL"), ")");
+        entrySnippetPairs.add(Pair.of(
+            "\"" + param.key + "\"",
+            param.isRequired ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL"));
       }
-      ilb.appendLine("      .build());");
+      appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs);
+      ilb.append(",\n");
+
+      appendUsedIjParams(ilb, node);
+
+      ilb.append(");\n");
+      ilb.decreaseIndent(3);
 
       ilb.decreaseIndent();
       ilb.appendLine("}");
 
       boolean hasSwitchedToIndirectParams = false;
       for (SoyDocParam param : transitiveParams.values()) {
+
         if (param.desc != null) {
           // Direct param.
           ilb.appendLine();
           appendJavadoc(ilb, param.desc, false, false);
+
         } else {
           // Indirect param.
           if (!hasSwitchedToIndirectParams) {
@@ -546,29 +551,33 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
             hasSwitchedToIndirectParams = true;
           }
 
+          // Get the list of all transitive callee names as they will appear in the generated
+          // Javadoc (possibly containing both partial and full names) and sort them before
+          // generating the Javadoc.
+          SortedSet<String> sortedJavadocCalleeNames = Sets.newTreeSet();
+          for (TemplateNode transitiveCallee : ipi.paramKeyToCalleesMultimap.get(param.key)) {
+            String javadocCalleeName =
+                buildTemplateNameForJavadoc((SoyFileNode) node.getParent(), transitiveCallee);
+            sortedJavadocCalleeNames.add(javadocCalleeName);
+          }
+
+          // Generate the Javadoc.
           StringBuilder javadocSb = new StringBuilder();
           javadocSb.append("Listed by ");
           boolean isFirst = true;
-          for (TemplateNode transitiveCallee : ipi.paramKeyToCalleesMultimap.get(param.key)) {
+          for (String javadocCalleeName : sortedJavadocCalleeNames) {
             if (isFirst) {
               isFirst = false;
             } else {
               javadocSb.append(", ");
             }
-            if (transitiveCallee.getParent() == node.getParent()) {
-              // Transitive callee is in the same file.
-              javadocSb.append(transitiveCallee.getPartialTemplateName());
-            } else {
-              // Transitive callee is in a different file.
-              javadocSb.append(transitiveCallee.getTemplateName());
-            }
-            if (transitiveCallee.isPrivate()) {
-              javadocSb.append(" (private)");
-            }
+            javadocSb.append(javadocCalleeName);
           }
           javadocSb.append(".");
           appendJavadoc(ilb, javadocSb.toString(), false, true);
         }
+
+        // The actual param field.
         ilb.appendLine("public final String ", convertToUpperUnderscore(param.key),
                        " = \"", param.key, "\";");
       }
@@ -580,8 +589,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
 
   /**
-   * Private helper for visitInternal(SoyFileNode) and visitInternal(TemplateNode) to convert an
-   * identifier to upper underscore format.
+   * Private helper for visitSoyFileNode() and visitTemplateNode() to convert an identifier to upper
+   * underscore format.
    *
    * We simply dispatch to Utils.convertToUpperUnderscore() to do the actual conversion. The reason
    * for the existence of this method is that we cache all results of previous invocations in this
@@ -602,8 +611,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
 
   /**
-   * Private helper for visitInternal(SoyFileNode) and visitInternal(TemplateNode) to append a
-   * Javadoc comment to the code being built.
+   * Private helper for visitSoyFileNode() and visitTemplateNode() to append a Javadoc comment to
+   * the code being built.
    *
    * @param ilb The builder for the code.
    * @param doc The doc string to append as the content of a Javadoc comment. The Javadoc format
@@ -643,6 +652,192 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     } else {
       // One line.
       ilb.appendLine("/** ", doc, " */");
+    }
+  }
+
+
+  /**
+   * Private helper for visitTemplateNode() to append the set of used injected params.
+   *
+   * @param ilb The builder for the code.
+   * @param template The template to generate code for.
+   */
+  private void appendUsedIjParams(IndentedLinesBuilder ilb, TemplateNode template) {
+
+    UsedIjParamsInfo uipi = (new FindUsedIjParamsVisitor(templateRegistry)).exec(template);
+
+    List<String> itemSnippets = Lists.newArrayList();
+    for (String paramKey : ImmutableSortedSet.copyOf(uipi.usedIjParamToCalleesMultimap.keySet())) {
+      itemSnippets.add("\"" + paramKey + "\"");
+    }
+    appendImmutableSortedSet(ilb, "<String>", itemSnippets);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // General helpers.
+
+
+  /**
+   * Private helper to build the human-readable string for referring to a template in the generated
+   * code's javadoc.
+   * @param currSoyFile The current Soy file for which we're generating parse-info code.
+   * @param template The template that we want to refer to in the generated javadoc. Note that this
+   *     template may not be in the current Soy file.
+   * @return The human-readable string for referring to the given template in the generated code's
+   *     javadoc.
+   */
+  private static String buildTemplateNameForJavadoc(
+      SoyFileNode currSoyFile, TemplateNode template) {
+
+    StringBuilder resultSb = new StringBuilder();
+
+    if (template.getParent() == currSoyFile && ! (template instanceof TemplateDelegateNode)) {
+      resultSb.append(template.getPartialTemplateName());
+    } else {
+      resultSb.append(template.getTemplateNameForUserMsgs());
+    }
+
+    if (template.isPrivate()) {
+      resultSb.append(" (private)");
+    }
+    if (template instanceof TemplateDelegateNode) {
+      resultSb.append(" (delegate)");
+    }
+
+    return resultSb.toString();
+  }
+
+
+  /**
+   * Private helper to append an ImmutableList to the code.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableList.
+   * @param itemSnippets Code snippets for the items to put into the ImmutableList.
+   */
+  private static void appendImmutableList(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
+    appendListOrSetHelper(
+        ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
+  }
+
+
+  /**
+   * Private helper to append an ImmutableSortedSet to the code.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableSortedSet.
+   * @param itemSnippets Code snippets for the items to put into the ImmutableSortedSet.
+   */
+  private static void appendImmutableSortedSet(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
+    appendListOrSetHelper(
+        ilb, "ImmutableSortedSet." + typeParamSnippet + "of", itemSnippets);
+  }
+
+
+  /**
+   * Private helper for appendImmutableList() and appendImmutableSortedSet().
+   *
+   * @param ilb The builder for the code.
+   * @param creationFunctionSnippet Code snippet for the qualified name of the list or set creation
+   *     function (without trailing parentheses).
+   * @param itemSnippets Code snippets for the items to put into the list or set.
+   */
+  private static void appendListOrSetHelper(
+      IndentedLinesBuilder ilb, String creationFunctionSnippet, Collection<String> itemSnippets) {
+
+    if (itemSnippets.size() == 0) {
+      ilb.appendIndent().appendParts(creationFunctionSnippet, "()");
+
+    } else {
+      ilb.appendLine(creationFunctionSnippet, "(");
+      boolean isFirst = true;
+      for (String item : itemSnippets) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          ilb.append(",\n");
+        }
+        ilb.appendIndent().appendParts("    ", item);
+      }
+      ilb.append(")");
+    }
+  }
+
+
+  /**
+   * Private helper to append an ImmutableMap to the code.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableMap.
+   * @param entrySnippetPairs Pairs of (key, value) code snippets for the entries to put into the
+   *     ImmutableMap.
+   */
+  private static void appendImmutableMap(
+      IndentedLinesBuilder ilb, String typeParamSnippet,
+      Collection<Pair<String, String>> entrySnippetPairs) {
+
+    if (entrySnippetPairs.size() == 0) {
+      ilb.appendIndent().appendParts("ImmutableMap.", typeParamSnippet, "of()");
+
+    } else {
+      ilb.appendLine("ImmutableMap.", typeParamSnippet, "builder()");
+      for (Pair<String, String> entrySnippetPair : entrySnippetPairs) {
+        ilb.appendLine("    .put(", entrySnippetPair.first, ", ", entrySnippetPair.second, ")");
+      }
+      ilb.appendIndent().append("    .build()");
+    }
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Helper visitor to collect CSS names.
+
+
+  /**
+   * Private helper class for visitSoyFileNode() to collect all the CSS names appearing in a file.
+   *
+   * The return value of exec() is a map from each CSS name appearing in the given node's subtree to
+   * its CssTagsPrefixPresence state.
+   */
+  private static class CollectCssNamesVisitor
+      extends AbstractSoyNodeVisitor<SortedMap<String, CssTagsPrefixPresence>> {
+
+    /** Map from each CSS name to its CssTagsPrefixPresence state. */
+    private SortedMap<String, CssTagsPrefixPresence> cssNamesMap;
+
+    public CollectCssNamesVisitor() {
+      cssNamesMap = Maps.newTreeMap();
+    }
+
+    @Override public SortedMap<String, CssTagsPrefixPresence> exec(SoyNode node) {
+      visit(node);
+      return cssNamesMap;
+    }
+
+    @Override protected void visitCssNode(CssNode node) {
+
+      String cssName = node.getSelectorText();
+      CssTagsPrefixPresence existingCssTagsPrefixPresence = cssNamesMap.get(cssName);
+      CssTagsPrefixPresence additionalCssTagsPrefixPresence =
+          (node.getComponentNameExpr() == null) ?
+              CssTagsPrefixPresence.NEVER : CssTagsPrefixPresence.ALWAYS;
+
+      if (existingCssTagsPrefixPresence == null) {
+        cssNamesMap.put(cssName, additionalCssTagsPrefixPresence);
+      } else if (existingCssTagsPrefixPresence != additionalCssTagsPrefixPresence) {
+        cssNamesMap.put(cssName, CssTagsPrefixPresence.SOMETIMES);
+      } else {
+        // Nothing to change.
+      }
+    }
+
+    @Override protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ParentSoyNode<?>) {
+        visitChildren((ParentSoyNode<?>) node);
+      }
     }
   }
 

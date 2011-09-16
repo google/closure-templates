@@ -46,11 +46,60 @@ class MainClassUtils {
 
 
   /**
+   * OptionHandler for args4j that handles a boolean.
+   *
+   * <p> The difference between this handler and the default boolean option handler supplied by
+   * args4j is that the default one doesn't take any param, so can only be used to turn on boolean
+   * flags, but never to turn them off. This implementation allows an optional param value
+   * true/false/1/0 so that the user can turn on or off the flag.
+   */
+  public static class BooleanOptionHandler extends OptionHandler<Boolean> {
+
+    /** {@link OptionHandler#OptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public BooleanOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super Boolean> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override public int parseArguments(Parameters params) throws CmdLineException {
+
+      boolean value;
+      boolean hasParam;
+      try {
+        String nextArg = params.getParameter(0);
+        if (nextArg.equals("true") || nextArg.equals("1")) {
+          value = true;
+          hasParam = true;
+        } else if (nextArg.equals("false") || nextArg.equals("0")) {
+          value = false;
+          hasParam = true;
+        } else {
+          // Next arg is not a param for this flag. No param means set flag to true.
+          value = true;
+          hasParam = false;
+        }
+      } catch (CmdLineException e) {
+        // No additional args on command line. No param means set flag to true.
+        value = true;
+        hasParam = false;
+      }
+
+      setter.addValue(value);
+      return hasParam ? 1 : 0;
+    }
+
+    @Override public String getDefaultMetaVariable() {
+      return null;
+    }
+  }
+
+
+  /**
    * OptionHandler for args4j that handles a comma-delimited list.
    */
   public abstract static class ListOptionHandler<T> extends OptionHandler<T> {
 
-    /** {@inheritDoc} */
+    /** {@link OptionHandler#OptionHandler(CmdLineParser,OptionDef,Setter)} */
     public ListOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super T> setter) {
       super(parser, option, setter);
     }
@@ -80,7 +129,7 @@ class MainClassUtils {
    */
   public static class StringListOptionHandler extends ListOptionHandler<String> {
 
-    /** {@inheritDoc} */
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
     public StringListOptionHandler(
         CmdLineParser parser, OptionDef option, Setter<? super String> setter) {
       super(parser, option, setter);

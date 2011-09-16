@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -26,8 +28,7 @@ import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
-import static com.google.template.soy.tofu.restricted.SoyTofuFunctionUtils.toSoyData;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -39,7 +40,7 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-class MaxFunction implements SoyTofuFunction, SoyJsSrcFunction, SoyJavaSrcFunction {
+class MaxFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, SoyJavaSrcFunction {
 
 
   @Inject
@@ -56,7 +57,7 @@ class MaxFunction implements SoyTofuFunction, SoyJsSrcFunction, SoyJavaSrcFuncti
   }
 
 
-  @Override public SoyData computeForTofu(List<SoyData> args) {
+  @Override public SoyData compute(List<SoyData> args) {
     SoyData arg0 = args.get(0);
     SoyData arg1 = args.get(1);
 

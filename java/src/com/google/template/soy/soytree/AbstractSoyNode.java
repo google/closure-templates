@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.AbstractNode;
 
 
@@ -31,7 +32,10 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
 
   /** The id for this node. */
-  private final String id;
+  private int id;
+
+  /** The first line of the node in the file from which it was parsed or derived. */
+  private SourceLocation location = SourceLocation.UNKNOWN;
 
   /** The syntax version of this node. Not final -- may be adjusted by subclass constructors. */
   private SyntaxVersion syntaxVersion;
@@ -40,7 +44,7 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   /**
    * @param id The id for this node.
    */
-  protected AbstractSoyNode(String id) {
+  protected AbstractSoyNode(int id) {
     Preconditions.checkNotNull(id);
     this.id = id;
     // Assumes this node follows V2 syntax. Subclass constructors can modify this value.
@@ -48,9 +52,41 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   }
 
 
-  @Override public String getId() {
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractSoyNode(AbstractSoyNode orig) {
+    super(orig);
+    this.id = orig.id;
+    this.location = orig.location;
+    this.syntaxVersion = orig.syntaxVersion;
+  }
+
+
+  @Override public void setId(int id) {
+    this.id = id;
+  }
+
+
+  @Override public int getId() {
     return id;
   }
+
+
+  /** The first line of the node in the file from which it was parsed or derived. */
+  @Override public SourceLocation getLocation() {
+    return location;
+  }
+
+
+  @Override public void setLocation(SourceLocation location) {
+    if (location == null) {
+      throw new NullPointerException();
+    }
+    this.location = location;
+  }
+
 
   @Override public SyntaxVersion getSyntaxVersion() {
     return syntaxVersion;
@@ -69,12 +105,12 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   }
 
 
-  @Override public ParentSoyNode<? extends SoyNode> getParent() {
-    @SuppressWarnings("unchecked")  // cast involving type parameter
-    ParentSoyNode<? extends SoyNode> parentCast =
-        (ParentSoyNode<? extends SoyNode>) super.getParent();
-    return parentCast;
+  @Override public ParentSoyNode<?> getParent() {
+    return (ParentSoyNode<?>) super.getParent();
   }
+
+
+  @Override public abstract SoyNode clone();
 
 
   @Override public String toString() {

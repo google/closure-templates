@@ -16,18 +16,21 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.ParseException;
 import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -40,11 +43,16 @@ import java.util.Map;
 public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
 
-  /** Mapping from V1 to V2 directive names. */
-  private static final Map<String, String> V1_TO_V2_DIRECTIVE_NAMES =
-      ImmutableMap.of("|noescape", "|noAutoescape",
-                      "|escape", "|escapeHtml",
-                      "|insertwordbreaks", "|insertWordBreaks");
+  /** Set of directive names only recognized in V1. */
+  private static final Set<String> V1_DIRECTIVE_NAMES = ImmutableSet.of(
+      "|noescape", "|escape", "|insertwordbreaks");
+
+  /** Maps deprecated directive names to the names of modern directives. */
+  private static final Map<String, String> DEPRECATED_DIRECTIVE_NAMES = ImmutableMap.of(
+      "|noescape", "|noAutoescape",
+      "|escape", "|escapeHtml",
+      "|escapeJs", "|escapeJsString",
+      "|insertwordbreaks", "|insertWordBreaks");
 
 
   /** The directive name (including vertical bar). */
@@ -54,7 +62,7 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
   private final String argsText;
 
   /** The parsed args. */
-  private final List<ExprRootNode<ExprNode>> args;
+  private final ImmutableList<ExprRootNode<?>> args;
 
 
   /**
@@ -63,32 +71,55 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
    * @param argsText The text of all the args, or empty string if none (usually empty string).
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public PrintDirectiveNode(String id, String name, String argsText) throws SoySyntaxException {
+  public PrintDirectiveNode(int id, String name, String argsText) throws SoySyntaxException {
     super(id);
 
-    String translatedV2DirectiveName = V1_TO_V2_DIRECTIVE_NAMES.get(name);
-    if (translatedV2DirectiveName == null) {
-      // V2 directive name.
+    String translatedDirectiveName = DEPRECATED_DIRECTIVE_NAMES.get(name);
+    if (translatedDirectiveName == null) {
+      // Not a deprecated directive name.
       this.name = name;
     } else {
-      // V1 directive name that we must translate to V2. Also maybe adjust syntax version.
-      this.name = translatedV2DirectiveName;
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      // Use the undeprecated name since the supporting Java and JavaScript code only contains
+      // support functions for undeprecated directives.
+      this.name = translatedDirectiveName;
+
+      // If this name is part of the V1 syntax, then maybe set the syntax version.
+      if (V1_DIRECTIVE_NAMES.contains(name)) {
+        maybeSetSyntaxVersion(SyntaxVersion.V1);
+      }
     }
 
     this.argsText = argsText;
 
+    List<ExprRootNode<?>> tempArgs;
     if (this.argsText.length() > 0) {
       try {
-        args = (new ExpressionParser(argsText)).parseExpressionList();
+        tempArgs = (new ExpressionParser(argsText)).parseExpressionList();
       } catch (TokenMgrError tme) {
         throw createExceptionForInvalidArgs(tme);
       } catch (ParseException pe) {
         throw createExceptionForInvalidArgs(pe);
       }
     } else {
-      args = Collections.emptyList();
+      tempArgs = Collections.emptyList();
     }
+    this.args = ImmutableList.copyOf(tempArgs);
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected PrintDirectiveNode(PrintDirectiveNode orig) {
+    super(orig);
+    this.name = orig.name;
+    this.argsText = orig.argsText;
+    List<ExprRootNode<?>> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
+    for (ExprRootNode<?> origArg : orig.args) {
+      tempArgs.add(origArg.clone());
+    }
+    this.args = ImmutableList.copyOf(tempArgs);
   }
 
 
@@ -104,23 +135,31 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
   }
 
 
+  @Override public Kind getKind() {
+    return Kind.PRINT_DIRECTIVE_NODE;
+  }
+
+
   /** @param name The new name to set for this directive. */
   public void setName(String name) {
     this.name = name;
   }
+
 
   /** Returns the directive name (including vertical bar). */
   public String getName() {
     return name;
   }
 
+
   /** The text of all the args. */
   public String getArgsText() {
     return argsText;
   }
 
+
   /** The parsed args. */
-  public List<ExprRootNode<ExprNode>> getArgs() {
+  public List<ExprRootNode<?>> getArgs() {
     return args;
   }
 
@@ -130,8 +169,13 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
   }
 
 
-  @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
-    return args;
+  @Override public List<ExprUnion> getAllExprUnions() {
+    return ExprUnion.createList(args);
+  }
+
+
+  @Override public PrintDirectiveNode clone() {
+    return new PrintDirectiveNode(this);
   }
 
 }

@@ -28,18 +28,27 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing print directive plugins.
  *
+ * <p> Consider also implementing
+ * {@link com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective}. The
+ * {@code apply()} method in {@code SoyJavaRuntimePrintDirective} should be exactly the same as the
+ * {@code applyForTofu()} method of this interface, but can be used outside of the Tofu backend by
+ * optimization passes. The easiest way to implement both interfaces at once is to subclass
+ * {@link SoyAbstractTofuPrintDirective}.
+ *
+ * @see SoyAbstractTofuPrintDirective
+ * @see com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective
  * @author Kai Huang
  */
 public interface SoyTofuPrintDirective extends SoyPrintDirective {
 
 
   /**
-   * Applies this directive on the given string value.
+   * Applies this directive on the given value.
    *
-   * @param str The string value to apply the directive on.
+   * @param value The input to the directive.  This may have not yet been coerced to a string.
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public String applyForTofu(String str, List<SoyData> args);
+  public String applyForTofu(SoyData value, List<SoyData> args);
 
 }

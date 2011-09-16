@@ -19,7 +19,12 @@ package com.google.template.soy.soytree;
 import com.google.common.base.CharMatcher;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -35,8 +40,14 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
 
 
+  /** The name of the containing delegate package, or null if none. */
+  private final String delPackageName;
+
   /** This Soy file's namespace, or null if syntax version V1. */
   private final String namespace;
+
+  /** The autoescape mode for templates in this file that do not declare an autoescape mode. */
+  private final AutoescapeMode defaultAutoescapeMode;
 
   /** The path to the source Soy file (null if not supplied). */
   private String filePath;
@@ -44,21 +55,95 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** This Soy file's name (null if not supplied). */
   private String fileName;
 
+  /** Decomposes namespace command text into a namespace (group 1) and attributes (group 2). */
+  private static final Pattern CMD_TEXT_PATTERN = Pattern.compile(
+      "\\s* (" + BaseUtils.DOTTED_IDENT_RE + ") (\\s .*)?",
+      Pattern.COMMENTS);
+
+  /** The default autoescape mode if none is specified in the command text. */
+  private static final AutoescapeMode DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE =
+      AutoescapeMode.TRUE;
+
+  /** Parser for the command text besides the namespace. */
+  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
+      new CommandTextAttributesParser("namespace",
+          new Attribute("autoescape", AutoescapeMode.getAttributeValues(),
+                        DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE.getAttributeValue()));
+
 
   /**
    * @param id The id for this node.
-   * @param namespace This Soy file's namespace. Nullable for backwards compatibility only.
+   * @param delpackageCmdText This Soy file's delegate package, or null if none.
+   * @param namespaceCmdText This Soy file's namespace and attributes.
+   *     Nullable for backwards compatibility only.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public SoyFileNode(String id, @Nullable String namespace) throws SoySyntaxException {
+  public SoyFileNode(int id, @Nullable String delpackageCmdText, @Nullable String namespaceCmdText)
+      throws SoySyntaxException {
     super(id);
 
+    if (delpackageCmdText != null) {
+      this.delPackageName = delpackageCmdText.trim();
+      if (! BaseUtils.isDottedIdentifier(delPackageName)) {
+        throw new SoySyntaxException("Invalid delegate package name \"" + delPackageName + "\".");
+      }
+    } else {
+      this.delPackageName = null;
+    }
+
+    String namespace = null;
+    AutoescapeMode defaultAutoescapeMode = DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE;
+
+    if (namespaceCmdText != null) {
+      Matcher matcher = CMD_TEXT_PATTERN.matcher(namespaceCmdText);
+      if (matcher.matches()) {
+        namespace = matcher.group(1);
+        String attributeText = matcher.group(2);
+        if (attributeText != null) {
+          attributeText = attributeText.trim();
+          Map<String, String> attributes = ATTRIBUTES_PARSER.parse(attributeText);
+          if (attributes.containsKey("autoescape")) {
+            defaultAutoescapeMode = AutoescapeMode.forAttributeValue(attributes.get("autoescape"));
+          }
+        }
+      } else {
+        throw new SoySyntaxException(
+            "Invalid namespace command text \"" + namespaceCmdText + "\".");
+      }
+    }
+
     this.namespace = namespace;
+    this.defaultAutoescapeMode = defaultAutoescapeMode;
     if (namespace == null) {
       maybeSetSyntaxVersion(SyntaxVersion.V1);
     } else if (!BaseUtils.isDottedIdentifier(namespace)) {
-      throw new SoySyntaxException("Invalid namespace \"" + namespace + "\".");
+      throw new SoySyntaxException("Invalid namespace name \"" + namespace + "\".");
     }
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected SoyFileNode(SoyFileNode orig) {
+    super(orig);
+    this.delPackageName = orig.delPackageName;
+    this.namespace = orig.namespace;
+    this.defaultAutoescapeMode = orig.defaultAutoescapeMode;
+    this.filePath = orig.filePath;
+    this.fileName = orig.fileName;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.SOY_FILE_NODE;
+  }
+
+
+  /** Returns the name of the containing delegate package, or null if none. */
+  public String getDelPackageName() {
+    return delPackageName;
   }
 
 
@@ -66,6 +151,13 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   public String getNamespace() {
     return namespace;
   }
+
+
+  /** Returns the default autoescaping mode for contained templates. */
+  public AutoescapeMode getDefaultAutoescapeMode() {
+    return defaultAutoescapeMode;
+  }
+
 
   /** @param filePath The path to the source Soy file. */
   public void setFilePath(String filePath) {
@@ -83,10 +175,12 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     }
   }
 
+
   /** Returns the path to the source Soy file (null if not supplied). */
   public String getFilePath() {
     return filePath;
   }
+
 
   /** Returns this Soy file's name (null if not supplied). */
   public String getFileName() {
@@ -108,6 +202,11 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     }
 
     return sb.toString();
+  }
+
+
+  @Override public SoyFileNode clone() {
+    return new SoyFileNode(this);
   }
 
 }

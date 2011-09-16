@@ -16,17 +16,22 @@
 
 package com.google.template.soy.bidifunctions;
 
+import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
+import com.google.template.soy.javasrc.restricted.JavaExpr;
+import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
+import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiGlobalDir;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
-import static com.google.template.soy.tofu.restricted.SoyTofuFunctionUtils.toSoyData;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -43,18 +48,19 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-class BidiMarkAfterFunction implements SoyTofuFunction, SoyJsSrcFunction {
+class BidiMarkAfterFunction extends SoyAbstractTofuFunction
+    implements SoyJsSrcFunction, SoyJavaSrcFunction {
 
 
   /** Provider for the current bidi global directionality. */
-  private final Provider<Integer> bidiGlobalDirProvider;
+  private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
 
   /**
    * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
    */
   @Inject
-  BidiMarkAfterFunction(@BidiGlobalDir Provider<Integer> bidiGlobalDirProvider) {
+  BidiMarkAfterFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
@@ -69,12 +75,12 @@ class BidiMarkAfterFunction implements SoyTofuFunction, SoyJsSrcFunction {
   }
 
 
-  @Override public SoyData computeForTofu(List<SoyData> args) {
+  @Override public SoyData compute(List<SoyData> args) {
     String text = args.get(0).stringValue();
     //noinspection SimplifiableConditionalExpression
     boolean isHtml = (args.size() == 2) ? args.get(1).booleanValue() : false /* default */;
 
-    int bidiGlobalDir = bidiGlobalDirProvider.get();
+    int bidiGlobalDir = bidiGlobalDirProvider.get().getStaticValue();
     return toSoyData(SoyBidiUtils.getBidiFormatter(bidiGlobalDir).markAfter(text, isHtml));
   }
 
@@ -84,10 +90,26 @@ class BidiMarkAfterFunction implements SoyTofuFunction, SoyJsSrcFunction {
     JsExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
     String callText =
-        "soy.$$bidiMarkAfter(" + bidiGlobalDirProvider.get() + ", " + text.getText() +
-        (isHtml != null ? ", " + isHtml.getText() : "") + ")";
+        "soy.$$bidiMarkAfter(" + bidiGlobalDirProvider.get().getCodeSnippet() + ", " +
+        text.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
 
     return new JsExpr(callText, Integer.MAX_VALUE);
+  }
+
+
+  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
+    JavaExpr text = args.get(0);
+    JavaExpr isHtml = (args.size() == 2) ? args.get(1) : null;
+
+    String bidiFunctionName = SoyBidiUtils.class.getName() + ".getBidiFormatter(" +
+        bidiGlobalDirProvider.get().getCodeSnippet() + ").markAfter";
+
+    return SoyJavaSrcFunctionUtils.toStringJavaExpr(
+        JavaCodeUtils.genNewStringData(
+            JavaCodeUtils.genFunctionCall(
+                bidiFunctionName,
+                JavaCodeUtils.genCoerceString(text),
+                isHtml != null ? JavaCodeUtils.genCoerceBoolean(isHtml) : "false")));
   }
 
 }

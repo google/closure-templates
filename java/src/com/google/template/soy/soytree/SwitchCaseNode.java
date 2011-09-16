@@ -16,34 +16,34 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.ParseException;
 import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
 
 
 /**
- * Node representing a 'case' block in a 'switch' statement.
+ * Node representing a 'case' block in a 'switch' block.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @author Kai Huang
  */
-public class SwitchCaseNode extends AbstractParentSoyCommandNode<SoyNode>
-    implements ConditionalBlockNode<SoyNode>, ParentExprHolderNode<SoyNode> {
+public class SwitchCaseNode extends CaseOrDefaultNode
+    implements ConditionalBlockNode, ExprHolderNode {
 
 
   /** The text for this case's expression list. */
   private final String exprListText;
 
   /** The parsed expression list. */
-  private final List<ExprRootNode<ExprNode>> exprList;
+  private final List<ExprRootNode<?>> exprList;
 
 
   /**
@@ -51,19 +51,31 @@ public class SwitchCaseNode extends AbstractParentSoyCommandNode<SoyNode>
    * @param commandText The command text.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public SwitchCaseNode(String id, String commandText) throws SoySyntaxException {
+  public SwitchCaseNode(int id, String commandText) throws SoySyntaxException {
     super(id, "case", commandText);
 
     exprListText = commandText;
-    List<ExprRootNode<ExprNode>> tempExprList = null;
     try {
-      tempExprList = (new ExpressionParser(exprListText)).parseExpressionList();
+      exprList = (new ExpressionParser(exprListText)).parseExpressionList();
     } catch (TokenMgrError tme) {
       throw createExceptionForInvalidExprList(tme);
     } catch (ParseException pe) {
       throw createExceptionForInvalidExprList(pe);
     }
-    exprList = tempExprList;
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected SwitchCaseNode(SwitchCaseNode orig) {
+    super(orig);
+    this.exprListText = orig.exprListText;
+    this.exprList = Lists.newArrayListWithCapacity(orig.exprList.size());
+    for (ExprRootNode<?> origExpr : orig.exprList) {
+      this.exprList.add(origExpr.clone());
+    }
   }
 
 
@@ -79,28 +91,30 @@ public class SwitchCaseNode extends AbstractParentSoyCommandNode<SoyNode>
   }
 
 
+  @Override public Kind getKind() {
+    return Kind.SWITCH_CASE_NODE;
+  }
+
+
   /** Returns the text for this case's expression list. */
   public String getExprListText() {
     return exprListText;
   }
 
+
   /** Returns the parsed expression list, or null if the expression list is not in V2 syntax. */
-  public List<ExprRootNode<ExprNode>> getExprList() {
+  public List<ExprRootNode<?>> getExprList() {
     return exprList;
   }
 
 
-  @Override public String toSourceString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(getTagString());
-    appendSourceStringForChildren(sb);
-    // Note: No end tag.
-    return sb.toString();
+  @Override public List<ExprUnion> getAllExprUnions() {
+    return ExprUnion.createList(exprList);
   }
 
 
-  @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
-    return exprList;
+  @Override public SwitchCaseNode clone() {
+    return new SwitchCaseNode(this);
   }
 
 }

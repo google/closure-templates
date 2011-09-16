@@ -59,11 +59,17 @@ public final class SoyMsgExtractor {
   private String inputPrefix = "";
 
   @Option(name = "--outputFile",
-          required = true,
-          usage = "[Required] The path to the output file to write. If a file already" +
+          usage = "The path to the output file to write. If a file already" +
                   " exists at this location, it will be overwritten. The file extension must" +
                   " match the output format requested.")
   private String outputFile = "";
+
+  @Option(name = "--outputPathFormat",
+          usage = "A format string that specifies how to build the path to each" +
+                  " output file. The format string can include literal characters as well as the" +
+                  " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}," +
+                  " {INPUT_FILE_NAME_NO_EXT}")
+  private String outputPathFormat = "";
 
   @Option(name = "--sourceLocaleString",
           usage = "The locale string of the source language (default 'en').")
@@ -95,7 +101,7 @@ public final class SoyMsgExtractor {
    * @throws IOException If there are problems reading the input files or writing the output file.
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  public static void main(String[] args) throws IOException {
+  public static void main(String... args) throws IOException {
     (new SoyMsgExtractor()).execMain(args);
   }
 
@@ -109,9 +115,6 @@ public final class SoyMsgExtractor {
     if (arguments.size() == 0) {
       MainClassUtils.exitWithError("Must provide list of Soy files.", cmdLineParser, USAGE_PREFIX);
     }
-    if (outputFile.length() == 0) {
-      MainClassUtils.exitWithError("Must provide output file path.", cmdLineParser, USAGE_PREFIX);
-    }
 
     Injector injector = MainClassUtils.createInjector(messagePluginModule, null);
 
@@ -120,6 +123,43 @@ public final class SoyMsgExtractor {
     for (String arg : arguments) {
       sfsBuilder.add(new File(inputPrefixStr + arg));
     }
+
+    File outputFile;
+    if (this.outputPathFormat.length() != 0) {
+      if (this.outputFile.length() != 0) {
+        MainClassUtils.exitWithError(
+          "Must provide one of output file path or output path format.",
+          cmdLineParser, USAGE_PREFIX);
+      }
+      String outputFilePath = outputPathFormat;
+
+      String inputFilePath = inputPrefixStr + arguments.get(0);
+      // Compute directory and file name.
+      int lastSlashIndex = inputFilePath.lastIndexOf(File.separatorChar);
+      String directory = inputFilePath.substring(0, lastSlashIndex + 1);
+      String fileName = inputFilePath.substring(lastSlashIndex + 1);
+
+      // Compute file name without extension.
+      int lastDotIndex = fileName.lastIndexOf('.');
+      if (lastDotIndex == -1) {
+        lastDotIndex = fileName.length();
+      }
+      String fileNameNoExt = fileName.substring(0, lastDotIndex);
+
+      outputFilePath = outputFilePath.replace("{INPUT_PREFIX}", inputPrefix);
+      outputFilePath = outputFilePath.replace("{INPUT_DIRECTORY}", directory);
+      outputFilePath = outputFilePath.replace("{INPUT_FILE_NAME}", fileName);
+      outputFilePath = outputFilePath.replace("{INPUT_FILE_NAME_NO_EXT}", fileNameNoExt);
+      outputFile = new File(outputFilePath);
+    } else if (this.outputFile.length() != 0) {
+      outputFile = new File(this.outputFile);
+    } else {
+      MainClassUtils.exitWithError(
+        "Must provide output file path or output path format.", cmdLineParser,
+        USAGE_PREFIX);
+      return;
+    }
+
     SoyFileSet sfs = sfsBuilder.build();
     SoyMsgBundle msgBundle = sfs.extractMsgs();
 
@@ -129,7 +169,7 @@ public final class SoyMsgExtractor {
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    msgBundleHandler.writeToFile(msgBundle, options, new File(outputFile));
+    msgBundleHandler.writeToFile(msgBundle, options, outputFile);
   }
 
 }

@@ -174,7 +174,7 @@ public class BidiFormatter {
    * Returns "rtl" if {@code str}'s estimated directionality is RTL, and "ltr" if it is LTR. In case
    * it's UNKNOWN, returns "rtl" if the context directionality is RTL, and "ltr" otherwise.
    * Needed for GXP, which can't handle dirAttr.<p>
-   * Example use case: <td expr:dir='bidiFormatter.dirAttrValue(foo)'><gxp:eval expr='foo'></td> 
+   * Example use case: <td expr:dir='bidiFormatter.dirAttrValue(foo)'><gxp:eval expr='foo'></td>
    *
    * @param str String whose directionality is to be estimated
    * @param isHtml Whether {@code str} is HTML / HTML-escaped
@@ -490,27 +490,26 @@ public class BidiFormatter {
   }
 
   /**
-   * Returns a Unicode BiDi mark matching the context directionality 
-   * (LRM or RLM) if either the directionality or the exit directionality of 
-   * {@code str} is opposite to the context directionality. Otherwise returns 
+   * Returns a Unicode BiDi mark matching the context directionality
+   * (LRM or RLM) if either the directionality or the exit directionality of
+   * {@code str} is opposite to the context directionality. Otherwise returns
    * the empty string.
    *
    * @param str String after which the mark may need to appear
    * @param isHtml Whether {@code str} is HTML / HTML-escaped
-   * @return LRM for RTL text in LTR context; RLM for LTR text in RTL context; 
+   * @return LRM for RTL text in LTR context; RLM for LTR text in RTL context;
    *     else, the empty string.
    */
   public String markAfter(String str, boolean isHtml) {
-    str = BidiUtils.stripHtmlIfNeeded(str, isHtml);
-    return dirResetIfNeeded(str, estimateDirection(str), false, true);
+    return dirResetIfNeeded(str, estimateDirection(str, isHtml), isHtml, true);
   }
 
   /**
-   * Operates like {@link #markAfter(String, boolean)}, but assumes 
+   * Operates like {@link #markAfter(String, boolean)}, but assumes
    * {@code isHtml} is false.
    *
-   * @param Str String after which the mark may need to appear
-   * @return LRM for RTL text in LTR context; RLM for LTR text in RTL context; 
+   * @param str String after which the mark may need to appear
+   * @return LRM for RTL text in LTR context; RLM for LTR text in RTL context;
    *     else, the empty string.
    */
   public String markAfter(String str) {

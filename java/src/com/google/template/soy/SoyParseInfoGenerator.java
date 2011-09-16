@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.inject.Guice;
@@ -122,7 +123,11 @@ public final class SoyParseInfoGenerator {
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
     String inputPrefixStr = inputPrefix;
-    for (String arg : arguments) {
+
+    // ImmutableSet.copyOf() removes any duplicate filenames that were provided.
+    // This is so the builder doesn't get confused by multiple identical
+    // definitions.
+    for (String arg : ImmutableSet.copyOf(arguments)) {
       sfsBuilder.add(new File(inputPrefixStr + arg));
     }
     SoyFileSet sfs = sfsBuilder.build();

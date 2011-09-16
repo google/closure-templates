@@ -27,13 +27,22 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing function plugins.
  *
+ * <p> Consider also implementing
+ * {@link com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction}. The {@code compute()}
+ * method in {@code SoyJavaRuntimeFunction} should be exactly the same as the
+ * {@code computeForTofu()} method of this interface, but can be used outside of the Tofu backend by
+ * optimization passes. The easiest way to implement both interfaces at once is to subclass
+ * {@link SoyAbstractTofuFunction}.
+ *
+ * @see SoyAbstractTofuFunction
+ * @see com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction
  * @author Kai Huang
  */
 public interface SoyTofuFunction extends SoyFunction {
 
 
   /**
-   * Computes this function on the given arguments for the Tofu backend. 
+   * Computes this function on the given arguments for the Tofu backend.
    *
    * @param args The function arguments.
    * @return The computed result of this function.

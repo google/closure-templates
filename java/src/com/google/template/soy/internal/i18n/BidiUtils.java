@@ -144,62 +144,725 @@ public class BidiUtils {
   public static final String LEFT = "left";
 
   /**
-   * Simplified regular expression for an HTML tag (opening or closing) or an
-   * HTML escape. We might want to skip over such expressions when estimating
-   * the text directionality.
+   * An object for iterating through the bidi character classes in a given string, forwards or
+   * backwards. Based on Character.getDirectionality(), but with a bidi character class cache for
+   * speed, optimized support for iterating through a UTF-16 string, and a simplistic capability for
+   * skipping over HTML mark-up when iterating through the bidi character classes.
    */
-  private static final Pattern HtmlSkipRe = Pattern.compile("<[^>]*>|&[^;]+;");
+  static class DirTypeIterator {
 
-  /**
-   * Returns the input text with spaces instead of HTML tags or HTML escapes, if
-   * isStripNeeded is true. Else returns the input as is.
-   * Useful for text directionality estimation.
-   * Note: the function should not be used in other contexts; it is not 100%
-   * correct, but rather a good-enough implementation for directionality
-   * estimation purposes.
-   * This is package-private since it is used also by {@link BidiFormatter}.
-   */
-  static String stripHtmlIfNeeded(String str, boolean isStripNeeded) {
-     return isStripNeeded ? HtmlSkipRe.matcher(str).replaceAll(" ") : str;
+    // Statics.
+
+    /**
+     * The size of the bidi character class cache. The results of the Character.getDirectionality()
+     * calls on the lowest DIR_TYPE_CACHE_SIZE codepoints are kept in an array for speed. The 0x700
+     * value is designed to leave all the European and Near Eastern languages in the cache. It can
+     * be reduced to 0x180, restricting the cache to the Western European languages.
+     */
+    private static final int DIR_TYPE_CACHE_SIZE = 0x700;
+
+    /**
+     * The initial value for bidi character class cache values.
+     */
+    private static final byte UNKNOWN_DIR_TYPE = 0x7F;
+
+    /**
+     * The bidi character class cache. It is not thread-safe, but the worst that can happen is that
+     * a particular value will be computed more than once.
+     */
+    private static byte dirTypeCache[];
+
+    static {
+      dirTypeCache = new byte[DIR_TYPE_CACHE_SIZE];
+      for (int i = 0; i < DIR_TYPE_CACHE_SIZE; i++) {
+        dirTypeCache[i] = UNKNOWN_DIR_TYPE;
+      }
+    }
+
+    /**
+     * Gets the bidi character class, i.e. Character.getDirectionality(), of a given char, using a
+     * cache for speed. Not designed for supplementary codepoints, whose results we do not cache.
+     */
+    private static byte getCachedDirectionality(char c) {
+      if (c >= DIR_TYPE_CACHE_SIZE) {
+        return Character.getDirectionality(c);
+      }
+      byte dirType = dirTypeCache[c];
+      if (dirType == UNKNOWN_DIR_TYPE) {
+        dirTypeCache[c] = dirType = Character.getDirectionality(c);
+      }
+      return dirType;
+    }
+
+
+    // Private data members.
+
+    /**
+     * The text to be scanned.
+     */
+    private CharSequence text;
+
+    /**
+     * The length of the text in chars.
+     */
+    private int length;
+
+    /**
+     * Whether the text to be scanned is to be treated as HTML, i.e. skipping over tags and
+     * entities when looking for the next / preceding dir type.
+     */
+    private boolean isHtml;
+
+    /**
+     * The current position in the text.
+     */
+    private int charIndex;
+
+    /**
+     * The char encountered by the last dirTypeForward or dirTypeBackward call. If it encountered a
+     * supplementary codepoint, this contains a char that is not a valid codepoint.
+     */
+    private char lastChar;
+
+
+    // Constructors
+
+    /**
+     * Creates a DirTypeIterator, given a string and whether it is to be treated as HTML, skipping
+     * over mark-up. The initial position is at the start of the string.
+     * @param text The string to scan.
+     * @param isHtml Whether the text to be scanned is to be treated as HTML, i.e. skipping over
+     * tags and entities.
+     */
+    public DirTypeIterator(CharSequence text, boolean isHtml) {
+      this.text = text;
+      this.isHtml = isHtml;
+      length = text.length();
+      rewind(false);
+    }
+
+
+    // Public methods
+
+    /**
+     * Returns whether the iteration has reached the end of the text.
+     */
+    public boolean atEnd() {
+      return charIndex == length;
+    }
+
+    /**
+     * Returns whether the iteration has reached the start of the text.
+     */
+    public boolean atStart() {
+      return charIndex == 0;
+    }
+
+    /**
+     * Returns the char encountered by the last operation to advance the iteration forward or
+     * backward, e.g. {@code dirTypeForward()} or {@code dirTypeBackward()}. If it encountered a
+     * supplementary codepoint, returns a character that is not a valid codepoint.
+     */
+    public char getLastChar() {
+      return lastChar;
+    }
+
+    /**
+     * Re-starts the iteration from the start (or the end) of the string.
+     * @param toEnd Whether to start at the end of the string.
+     */
+    public void rewind(boolean toEnd) {
+      charIndex = toEnd ? length : 0;
+      lastChar = '\uD800';  // An invalid codepoint.
+    }
+
+    /**
+     * Returns the next char and advances the iteration. If it encounters a supplementary codepoint,
+     * returns a char that is not a valid codepoint, but advances through the whole codepoint. Meant
+     * for parsing over a known syntax that does not use supplementary codepoints. Does NOT skip
+     * over HTML mark-up. Will throw IndexOutOfBoundsException if called when atEnd() is true.
+     * @throws java.lang.IndexOutOfBoundsException
+     */
+    public char charForward() {
+      lastChar = text.charAt(charIndex);
+      if (Character.isHighSurrogate(lastChar)) {
+        charIndex += Character.charCount(Character.codePointAt(text, charIndex));
+      } else {
+        charIndex++;
+      }
+      return lastChar;
+    }
+
+    /**
+     * Returns the preceding char and advances the iteration backwards. If it encounters a
+     * supplementary codepoint, returns a char that is not a valid codepoint, but advances through
+     * the whole codepoint. Meant for parsing over a known syntax that does not use supplementary
+     * codepoints. Does NOT skip over HTML mark-up. Will throw IndexOutOfBoundsException if called
+     * when atStart() is true.
+     * @throws java.lang.IndexOutOfBoundsException
+     */
+    public char charBackward() {
+      lastChar = text.charAt(charIndex - 1);
+      if (Character.isLowSurrogate(lastChar)) {
+        charIndex -= Character.charCount(Character.codePointBefore(text, charIndex));
+      } else {
+        charIndex--;
+      }
+      return lastChar;
+    }
+
+    /**
+     * Returns whether the text at the current position going forward is equal to a given string.
+     * Does NOT skip over HTML mark-up.
+     * @param match The string to match.
+     * @param advance Whether to advance the iteration to the end of a successful match.
+     * @return Whether the text at the current position going forward is equal to the given string.
+     */
+    public boolean matchForward(CharSequence match, boolean advance) {
+      int matchLength = match.length();
+      if (matchLength > length - charIndex) {
+        return false;
+      }
+      for (int checkIndex = 0; checkIndex < matchLength; checkIndex++) {
+        if (text.charAt(charIndex + checkIndex) != match.charAt(checkIndex)) {
+          return false;
+        }
+      }
+      if (advance) {
+        charIndex += matchLength;
+      }
+      return true;
+    }
+
+    /**
+     * Returns the Character.DIRECTIONALITY_... value of the next codepoint and advances the
+     * iteration. If isHtml, and the codepoint is '<' or '&', advances through the tag/entity, and
+     * returns Character.DIRECTIONALITY_WHITESPACE. For an entity, it would be best to figure out
+     * the actual character, and return its dirtype, but this is good enough for our purposes. Will
+     * throw IndexOutOfBoundsException if called when atEnd() is true.
+     * @throws java.lang.IndexOutOfBoundsException
+     */
+    public byte dirTypeForward() {
+      lastChar = text.charAt(charIndex);
+      if (Character.isHighSurrogate(lastChar)) {
+        int codePoint = Character.codePointAt(text, charIndex);
+        charIndex += Character.charCount(codePoint);
+        return Character.getDirectionality(codePoint);
+      }
+      charIndex++;
+      byte dirType = getCachedDirectionality(lastChar);
+      if (isHtml) {
+        // Process tags and entities.
+        if (lastChar == '<') {
+          dirType = skipTagForward();
+        } else if (lastChar == '&') {
+          dirType = skipEntityForward();
+        }
+      }
+      return dirType;
+    }
+
+    /**
+     * Returns the Character.DIRECTIONALITY_... value of the preceding codepoint and advances the
+     * iteration backwards. If isHtml, and the codepoint is the end of a complete HTML tag or
+     * entity, advances over the whole tag/entity and returns Character.DIRECTIONALITY_WHITESPACE.
+     * For an entity, it would be best to figure out the actual character, and return its dirtype,
+     * but this is good enough for our purposes. Will throw IndexOutOfBoundsException if called
+     * when atStart() is true.
+     * @throws java.lang.IndexOutOfBoundsException
+     */
+    public byte dirTypeBackward() {
+      lastChar = text.charAt(charIndex - 1);
+      if (Character.isLowSurrogate(lastChar)) {
+        int codePoint = Character.codePointBefore(text, charIndex);
+        charIndex -= Character.charCount(codePoint);
+        return Character.getDirectionality(codePoint);
+      }
+      charIndex--;
+      byte dirType = getCachedDirectionality(lastChar);
+      if (isHtml) {
+        // Process tags and entities.
+        if (lastChar == '>') {
+          dirType = skipTagBackward();
+        } else if (lastChar == ';') {
+          dirType = skipEntityBackward();
+        }
+      }
+      return dirType;
+    }
+
+
+    // Private methods
+
+    /**
+     * Advances current position forward through an HTML tag and returns
+     * Character.DIRECTIONALITY_WHITESPACE.
+     */
+    private byte skipTagForward() {
+      while (!atEnd()) {
+        char c = charForward();
+        if (c == '>') {
+          break;
+        }
+        if (c == '"' || c == '\'') {
+          while (!atEnd()) {
+            if (charForward() == c) {
+              break;
+            }
+          }
+        }
+      }
+      return Character.DIRECTIONALITY_WHITESPACE;
+    }
+
+    /**
+     * Advances current position backward through an HTML tag and returns
+     * Character.DIRECTIONALITY_WHITESPACE. If the tag is not closed, does not advance the position
+     * and returns Character.DIRECTIONALITY_OTHER_NEUTRALS (for the '>' that did not start a tag
+     * after all).
+     */
+    private byte skipTagBackward() {
+      int initialCharIndex = charIndex;
+      while (!atStart()) {
+        char c = charBackward();
+        if (c == '<') {
+          return Character.DIRECTIONALITY_WHITESPACE;
+        }
+        if (c == '>') {
+          break;
+        }
+        if (c == '"' || c == '\'') {
+          for (;;) {
+            if (atStart() || charBackward() == c) {
+              break;
+            }
+          }
+        }
+      }
+      charIndex = initialCharIndex;
+      lastChar = '>';
+      return Character.DIRECTIONALITY_OTHER_NEUTRALS;
+    }
+
+    /**
+     * Advances current position forward through an HTML character entity tag and returns
+     * Character.DIRECTIONALITY_WHITESPACE. It would be best to figure out the actual character and
+     * return its dirtype, but this is good enough.
+     */
+    private byte skipEntityForward() {
+      do {} while (!atEnd() && charForward() != ';');
+      return Character.DIRECTIONALITY_WHITESPACE;
+    }
+
+    /**
+     * Advances current position backward through an HTML character entity tag and returns
+     * Character.DIRECTIONALITY_WHITESPACE. It would be best to figure out the actual character and
+     * return its dirtype, but this is good enough. If the entity is not closed, does not advance
+     * the position and returns Character.DIRECTIONALITY_OTHER_NEUTRALS (for the ';' that did not
+     * start an entity after all).
+     */
+    private byte skipEntityBackward() {
+      int initialCharIndex = charIndex;
+      while (!atStart()) {
+        char c = charBackward();
+        if (c == '&') {
+          return Character.DIRECTIONALITY_WHITESPACE;
+        }
+        if (c == ';') {
+          break;
+        }
+      }
+      charIndex = initialCharIndex;
+      lastChar = ';';
+      return Character.DIRECTIONALITY_OTHER_NEUTRALS;
+    }
   }
 
   /**
-   * A practical pattern to identify strong LTR characters. This pattern is not
-   * completely correct according to the Unicode standard. It is simplified
-   * for performance and small code size.
+   * An object that estimates the directionality of a given string by various methods. The word
+   * count method is a port of the DirectionalityEstimator in i18n/bidi/bidi_classifier.cc.
+   * Although thic class extends DirTypeIterator, this is just for efficiency. All of its methods
+   * ignore the initial position in the iteration, and end with the iteration at some arbitrary
+   * point of their choosing.
    */
-  private static final String ltrChars =
-    "A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF" +
-    "\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF";
+  static class DirectionalityEstimator extends DirTypeIterator {
+
+    // Statics
+
+    /**
+     * Word types, for the word count direction estimation algorithm. As we continue in a single
+     * word, its type may rise from NEUTRAL to NUMERIC to STRONG, but will never descend. There are
+     * also special word types for urls and the text between matching pairs of Unicode bidi
+     * formatting chjaracters.
+     */
+    private static class WordType {
+      /**
+       * Word so far - if any - has consisted of neutral chars only.
+       */
+      public static final int NEUTRAL = 0;
+
+      /**
+       * Word so far had numerals, but no LTR or RTL; weakLtrWordCount has been incremented.
+       */
+      public static final int NUMERIC = 1;
+
+      /**
+       * Word had an LTR or RTL codepoint; ltrWordCount or rtlWordCount has been incremented.
+       */
+      public static final int STRONG = 2;
+
+      /**
+       * Word started with a URL prefix (http://); weakLtrWordCount has been incremented.
+       */
+      public static final int URL = 3;
+
+      /**
+       * A "word" between LRE/LRO/RLE/RLO and matching PDF; embedLevel has been incremented.
+       */
+      public static final int EMBEDDED = 4;
+    }
+
+    /**
+     * If at least RTL_THRESHOLD of the words containing strong LTR or RTL in the string start with
+     * RTL, the string as a whole is judged to be RTL.
+     */
+    private static final double RTL_THRESHOLD = 0.4;
+
+
+    // Private data members
+
+    /**
+     * Number of LTR words found so far.
+     */
+    private int ltrWordCount;
+
+    /**
+     * Number of RTL words found so far.
+     */
+    private int rtlWordCount;
+
+    /**
+     * Number of "weak" LTR words (numbers and URLs) found so far.
+     */
+    private int weakLtrWordCount;
+
+    /**
+     * Number of unmatched LRE/LRO/RLE/RLO characters before current position.
+     */
+    private int embedLevel;
+
+    /**
+     * Type (so far) of the word continuing at the current position in the string.
+     */
+    private int wordType;
+
+
+    // Constructors
+
+    /**
+     * Creates a DirectionalityEstimator, given a string and whether it is to be treated as HTML,
+     * skipping over mark-up.
+     * @param text The string to scan.
+     * @param isHtml Whether the text to be scanned is to be treated as HTML, i.e. skipping over
+     *     tags and entities.
+     */
+    public DirectionalityEstimator(String text, boolean isHtml) {
+      super(text, isHtml);
+    }
+
+
+    // Public methods
+
+    /**
+     * Estimates the directionality of the (whole) string based on relative word counts.
+     * <p>
+     * If the number of RTL words is above a certain percentage of the total number of strongly
+     * directional words, returns RTL.
+     * <p>
+     * Otherwise, if any words are strongly or weakly LTR, returns LTR.
+     * <p>
+     * Otherwise, returns UNKNOWN, which is used to mean "neutral".
+     * <p>
+     * Numbers and URLs are counted as weakly LTR.
+     *
+     * @return the string's directionality
+     */
+    @SuppressWarnings("fallthrough")
+    public Dir estimateDirectionByWordCount() {
+      rewind(false);
+      ltrWordCount = 0;
+      rtlWordCount = 0;
+      weakLtrWordCount = 0;
+      embedLevel = 0;
+      wordType = WordType.NEUTRAL;
+      while (!atEnd()) {
+        switch (dirTypeForward()) {
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
+            // Strong RTL codepoint.
+            // Convert WordType.NEUTRAL or WordType.NUMERIC word to WordType.STRONG.
+            strongWord(true /* isRightToLeft */);
+            break;
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
+            // Strong LTR codepoint.
+            // If it is the beginning of a URL, convert WordType.NEUTRAL to WordType.URL.
+            // Otherwise, convert WordType.NEUTRAL or WordType.NUMERIC word to WordType.STRONG.
+            if (wordType == WordType.NEUTRAL && getLastChar() == 'h' &&
+                (matchForward("ttp://", true) || matchForward("ttps://", true))) {
+              wordType = WordType.URL;
+              ++weakLtrWordCount;
+            } else {
+              strongWord(false /* isRightToLeft */);
+            }
+            break;
+          case Character.DIRECTIONALITY_EUROPEAN_NUMBER:
+          case Character.DIRECTIONALITY_ARABIC_NUMBER:
+            // Convert WordType.NEUTRAL word to WordType.NUMERIC.
+            if (wordType < WordType.NUMERIC) {
+              ++weakLtrWordCount;
+              wordType = WordType.NUMERIC;
+            }
+            break;
+          case Character.DIRECTIONALITY_WHITESPACE:
+          case Character.DIRECTIONALITY_SEGMENT_SEPARATOR:
+            // End of word, unless embedded.
+            if (wordType < WordType.EMBEDDED) {
+              wordType = WordType.NEUTRAL;
+            }
+            break;
+          case Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR:
+            // End of word, and reset embedding level.
+            embedLevel = 0;
+            wordType = WordType.NEUTRAL;
+            break;
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
+            // LRO overrides the directionality of the characters inside it, so treat them as
+            // a strongly LTR word.
+            strongWord(false /* isRightToLeft */);
+            // Fall through to LRE processing.
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
+            // Start embedded area.
+            if (embedLevel++ == 0) {
+              wordType = WordType.EMBEDDED;
+            }
+            break;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
+            // RLO overrides the directionality of the characters inside it, so treat them as
+            // a strongly RTL word.
+            strongWord(true /* isRightToLeft */);
+            // Fall through to RLE processing.
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
+            // Start embedded area.
+            if (embedLevel++ == 0) {
+              wordType = WordType.EMBEDDED;
+            }
+            break;
+          case Character.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
+            // End embedded area.
+            if (--embedLevel == 0) {
+              wordType = WordType.NEUTRAL;
+            }
+            break;
+          default:
+            // There are lots of dir types that don't need any special processing.
+            // Just go on to the next codepoint.
+            break;
+        }
+      }
+
+      // Make the final decision depending on the calculated word counts.
+      if (rtlWordCount > (ltrWordCount + rtlWordCount) * RTL_THRESHOLD) {
+        return Dir.RTL;
+      }
+      if (ltrWordCount + weakLtrWordCount > 0) {
+        return Dir.LTR;
+      }
+      return Dir.UNKNOWN;
+    }
+
+    /**
+     * Upgrades WordType.NEUTRAL or WordType.NUMERIC word to WordType.STRONG and adjusts the word
+     * counts appropriately for the given direction.
+     * @param isRightToLeft Whether the strong word we are starting is RTL.
+     */
+    private void strongWord(boolean isRightToLeft) {
+      if (wordType < WordType.STRONG) {
+        if (isRightToLeft) {
+          ++rtlWordCount;
+        } else {
+          ++ltrWordCount;
+        }
+        if (wordType == WordType.NUMERIC) {
+          // weakLtrWordCount has already been incremented, so fix it.
+          --weakLtrWordCount;
+        }
+        wordType = WordType.STRONG;
+      }
+    }
+
+    /**
+     * Checks if the (whole) string has any LTR characters in it.
+     * @param countEmbedding Whether LRE/RLE/LRO/RLO/PDF characters should be taken into account.
+     * @return Whether any LTR characters were encountered.
+     */
+    public boolean hasAnyLtr(boolean countEmbedding) {
+      rewind(false);
+      int embeddingLevel = 0;
+      while (!atEnd()) {
+        switch (dirTypeForward()) {
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
+            if (embeddingLevel == 0) {
+              return true;
+            }
+            break;
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
+            if (countEmbedding && embeddingLevel++ == 0) {
+              return true;
+            }
+            break;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
+            if (countEmbedding) {
+              ++embeddingLevel;
+            }
+            break;
+          case Character.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
+            if (countEmbedding) {
+              --embeddingLevel;
+            }
+            break;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Checks if the (whole) string has any RTL characters in it.
+     * @param countEmbedding Whether LRE/RLE/LRO/RLO/PDF characters should be taken into account.
+     * @return Whether any RTL characters were encountered.
+     */
+    public boolean hasAnyRtl(boolean countEmbedding) {
+      rewind(false);
+      int embeddingLevel = 0;
+      while (!atEnd()) {
+        switch (dirTypeForward()) {
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
+            if (embeddingLevel == 0) {
+              return true;
+            }
+            break;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
+            if (countEmbedding && embeddingLevel++ == 0) {
+              return true;
+            }
+            break;
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
+            if (countEmbedding) {
+              ++embeddingLevel;
+            }
+            break;
+          case Character.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
+            if (countEmbedding) {
+              --embeddingLevel;
+            }
+            break;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Returns the direction of the first character with strong directionality (going forward from
+     * the start of the string).
+     * @param countEmbedding Whether LRE/RLE/LRO/RLO/PDF characters should be taken into account.
+     * @return The direction of the first character (going forwards!) with strong directionality,
+     *     or Dir.UNKNOWN if none was encountered.
+     */
+    public Dir firstStrong(boolean countEmbedding) {
+      rewind(false);
+      while (!atEnd()) {
+        switch (dirTypeForward()) {
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
+            return Dir.LTR;
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
+            if (countEmbedding) {
+              return Dir.LTR;
+            }
+            break;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
+            return Dir.RTL;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
+            if (countEmbedding) {
+              return Dir.RTL;
+            }
+            break;
+        }
+      }
+      return Dir.UNKNOWN;
+    }
+
+    /**
+     * Returns the direction of the first character with strong directionality going backward from
+     * the end of the string.
+     * @param countEmbedding Whether LRE/RLE/LRO/RLO/PDF characters should be taken into account.
+     * @return The direction of the first character (going backwards!) with strong directionality,
+     *     or Dir.UNKNOWN if none was encountered.
+     */
+    public Dir lastStrong(boolean countEmbedding) {
+      rewind(true);
+      int embeddingLevel = 0;
+      while (!atStart()) {
+        switch (dirTypeBackward()) {
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
+            if (embeddingLevel == 0) {
+              return Dir.LTR;
+            }
+            break;
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
+          case Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
+            if (countEmbedding && --embeddingLevel == 0) {
+              return Dir.LTR;
+            }
+            break;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
+            if (embeddingLevel == 0) {
+              return Dir.RTL;
+            }
+            break;
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
+          case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
+            if (countEmbedding && --embeddingLevel == 0) {
+              return Dir.RTL;
+            }
+            break;
+          case Character.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
+            if (countEmbedding) {
+              ++embeddingLevel;
+            }
+            break;
+        }
+      }
+      return Dir.UNKNOWN;
+    }
+  }
 
   /**
-   * A practical pattern to identify strong RTL characters. This pattern is not
-   * completely correct according to the Unicode standard. It is simplified for
-   * performance and small code size.
-   */
-  private static final String rtlChars =
-      "\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC";
-
-  /**
-   * Regular expression to check if a string contains any LTR characters.
-   */
-  private static final Pattern hasAnyLtrRe =
-      Pattern.compile("[" + ltrChars + ']');
-
-  /**
-   * Regular expression to check if a string contains any RTL characters.
-   */
-  private static final Pattern hasAnyRtlRe =
-      Pattern.compile("[" + rtlChars + ']');
-
-  /**
-   * Checks if the given string has any LTR characters in it.
+   * Checks if the given string has any LTR characters in it. Note that LRE/RLE/LRO/RLO/PDF
+   * characters are ignored.
    * @param str the string to be tested
    * @param isHtml whether str is HTML / HTML-escaped
    * @return whether the string contains any LTR characters
    */
   public static boolean hasAnyLtr(String str, boolean isHtml) {
-    return hasAnyLtr(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).hasAnyLtr(false /* countEmbedding */);
   }
 
   /**
@@ -209,17 +872,18 @@ public class BidiUtils {
    * @return whether the string contains any LTR characters
    */
   public static boolean hasAnyLtr(String str) {
-    return hasAnyLtrRe.matcher(str).find();
+    return hasAnyLtr(str, false /* isHtml */);
   }
 
   /**
-   * Checks if the given string has any RTL characters in it.
+   * Checks if the given string has any RTL characters in it. Note that LRE/RLE/LRO/RLO/PDF
+   * characters are ignored.
    * @param str the string to be tested
    * @param isHtml whether str is HTML / HTML-escaped
    * @return whether the string contains any RTL characters
    */
   public static boolean hasAnyRtl(String str, boolean isHtml) {
-    return hasAnyRtl(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).hasAnyRtl(false /* countEmbedding */);
   }
 
   /**
@@ -229,32 +893,19 @@ public class BidiUtils {
    * @return whether the string contains any RTL characters
    */
   public static boolean hasAnyRtl(String str) {
-    return hasAnyRtlRe.matcher(str).find();
+    return hasAnyRtl(str, false /* isHtml */);
   }
 
   /**
-   * Regular expression to check if a string is LTR
-   * based on the first character with strong directionality.
-   */
-  private static final Pattern firstStrongIsLtrRe =
-      Pattern.compile("^[^" + rtlChars + "]*[" + ltrChars + ']');
-
-  /**
-   * Regular expression to check if a string is RTL
-   * based on the first character with strong directionality.
-   */
-  private static final Pattern firstStrongIsRtlRe =
-      Pattern.compile("^[^" + ltrChars + "]*[" + rtlChars + ']');
-
-  /**
-   * Returns true if the first character with strong directionality
-   * is an LTR character.
+   * Returns true if the first character with strong directionality is an LTR character.
+   * LRE/RLE/LRO/RLO are considered to have strong directionality.
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped
    * @return true if LTR directionality is detected
    */
   public static boolean startsWithLtr(String str, boolean isHtml) {
-    return startsWithLtr(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).firstStrong(true /* countEmbedding */)
+        == Dir.LTR;
   }
 
   /**
@@ -264,18 +915,19 @@ public class BidiUtils {
    * @return true if LTR directionality is detected
    */
   public static boolean startsWithLtr(String str) {
-    return firstStrongIsLtrRe.matcher(str).lookingAt();
+    return startsWithLtr(str, false /* isHtml */);
   }
 
   /**
-   * Returns true if the first character with strong directionality
-   * is an RTL character.
+   * Returns true if the first character with strong directionality is an RTL character.
+   * LRE/RLE/LRO/RLO are considered to have strong directionality.
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped
    * @return true if rtl directionality is detected
    */
   public static boolean startsWithRtl(String str, boolean isHtml) {
-    return startsWithRtl(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).firstStrong(true /* countEmbedding */)
+        == Dir.RTL;
   }
 
   /**
@@ -285,32 +937,25 @@ public class BidiUtils {
    * @return true if rtl directionality is detected
    */
   public static boolean startsWithRtl(String str) {
-    return firstStrongIsRtlRe.matcher(str).lookingAt();
+    return startsWithRtl(str, false /* isHtml */);
   }
 
   /**
-   * Regular expressions to check if the last strongly-directional character in
-   * a piece of text is LTR.
-   */
-  private static final Pattern lastStrongIsLtrRe =
-      Pattern.compile("[" + ltrChars + "][^" + rtlChars + "]*$");
-
-  /**
-   * Regular expressions to check if the last strongly-directional character in
-   * a piece of text is RTL.
-   */
-  private static final Pattern lastStrongIsRtlRe =
-      Pattern.compile("[" + rtlChars + "][^" + ltrChars + "]*$");
-
-  /**
-   * Check whether the exit directionality of a piece of text is LTR, i.e. if
-   * the last strongly-directional character in the string is LTR.
+   * Check whether the exit directionality of a piece of text is LTR, i.e. if the last
+   * strongly-directional character in the string is LTR. If the text ends with a balanced
+   * LRE|RLE|LRO|RLO...PDF sequence, the opening character of that sequence determines the exit
+   * directionality, e.g. LRE...PDF is considered LTR regardless of what's inside it. The intended
+   * use is to check whether a logically separate item that starts with a number or an LTR character
+   * and follows this text inline (not counting any neutral characters in between) would "stick" to
+   * it in an RTL context, thus being displayed in an incorrect position. An RLM character between
+   * the two would prevent the sticking in such a case.
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped
    * @return whether LTR exit directionality was detected
    */
   public static boolean endsWithLtr(String str, boolean isHtml) {
-    return endsWithLtr(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).lastStrong(true /* countEmbedding */)
+        == Dir.LTR;
   }
 
   /**
@@ -318,18 +963,25 @@ public class BidiUtils {
    * {@code str} is not HTML / HTML-escaped.
    */
   public static boolean endsWithLtr(String str) {
-    return lastStrongIsLtrRe.matcher(str).find();
+    return endsWithLtr(str, false /* isHtml */);
   }
 
   /**
-   * Check whether the exit directionality of a piece of text is RTL, i.e. if
-   * the last strongly-directional character in the string is RTL.
+   * Check whether the exit directionality of a piece of text is RTL, i.e. if the last
+   * strongly-directional character in the string is RTL. If the text ends with a balanced
+   * LRE|RLE|LRO|RLO...PDF sequence, the opening character of that sequence determines the exit
+   * directionality, e.g. LRE...PDF is considered LTR regardless of what's inside it. The intended
+   * use is to check whether a logically separate item that starts with a number or an RTL character
+   * and follows this text inline (not counting any neutral characters in between) would "stick" to
+   * it in an LTR context, thus being displayed in an incorrect position. An LRM character between
+   * the two would prevent the sticking in such a case.
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped
    * @return whether RTL exit directionality was detected
    */
   public static boolean endsWithRtl(String str, boolean isHtml) {
-    return endsWithRtl(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).lastStrong(true /* countEmbedding */)
+        == Dir.RTL;
   }
 
   /**
@@ -337,32 +989,8 @@ public class BidiUtils {
    * {@code str} is not HTML / HTML-escaped.
    */
   public static boolean endsWithRtl(String str) {
-    return lastStrongIsRtlRe.matcher(str).find();
+    return endsWithRtl(str, false /* isHtml */);
   }
-
-  /**
-   * Regular expression to split a string into "words" for directionality estimation based on
-   * relative word counts.
-   */
-  private static final Pattern wordSeparatorRe = Pattern.compile("\\s+");
-
-  /**
-   * Regular expression to check if a string looks like something that must always be LTR even in
-   * RTL text, e.g. a URL. When estimating the directionality of text containing these, we treat
-   * these as weakly LTR, like numbers.
-   */
-  private static final Pattern isRequiredLtrRe = Pattern.compile("^http://.*");
-
-  /**
-   * Regular expression to check if a string contains any numerals. Used to differentiate between
-   * completely neutral strings and those containing numbers, which are weakly LTR.
-   */
-  private static final Pattern hasNumeralsRe = Pattern.compile("\\d");
-
-  /**
-   * This constant defines the threshold of RTL directionality.
-   */
-  private static final float rtlDetectionThreshold = 0.40f;
 
   /**
    * Estimates the directionality of a string based on relative word counts.
@@ -375,26 +1003,7 @@ public class BidiUtils {
    * @return the string's directionality
    */
   public static Dir estimateDirection(String str) {
-    int rtlCount = 0;
-    int total = 0;
-    boolean hasWeaklyLtr = false;
-    String[] tokens = wordSeparatorRe.split(str);
-    for (int i = 0; i < tokens.length; i++) {
-      String token = tokens[i];
-      if (startsWithRtl(token)) {
-        rtlCount++;
-        total++;
-      } else if (isRequiredLtrRe.matcher(token).matches()) {
-        hasWeaklyLtr = true;
-      } else if (hasAnyLtr(token)) {
-        total++;
-      } else if (hasNumeralsRe.matcher(token).find()) {
-        hasWeaklyLtr = true;
-      }
-    }
-
-    return total == 0 ? (hasWeaklyLtr ? Dir.LTR : Dir.UNKNOWN)
-        : ((float) rtlCount / total > rtlDetectionThreshold ? Dir.RTL : Dir.LTR);
+    return estimateDirection(str, false /* isHtml */);
   }
 
   /**
@@ -404,6 +1013,6 @@ public class BidiUtils {
    * @param isHtml whether str is HTML / HTML-escaped
    */
   public static Dir estimateDirection(String str, boolean isHtml) {
-    return estimateDirection(stripHtmlIfNeeded(str, isHtml));
+    return new DirectionalityEstimator(str, isHtml).estimateDirectionByWordCount();
   }
 }

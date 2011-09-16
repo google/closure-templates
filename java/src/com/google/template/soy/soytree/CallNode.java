@@ -23,167 +23,181 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.ParseException;
 import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.DataRefNode;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.SoyStatementNode;
+import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 
 /**
- * Node representing a 'call' statement.
+ * Node representing a call.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @author Kai Huang
  */
-public class CallNode extends AbstractParentSoyCommandNode<CallParamNode>
-    implements SplitLevelTopNode<CallParamNode>, SoyStatementNode,
-    ParentExprHolderNode<CallParamNode>, MsgPlaceholderNode {
+public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
+    implements StandaloneNode, SplitLevelTopNode<CallParamNode>, StatementNode, ExprHolderNode,
+    MsgPlaceholderInitialContentNode {
 
 
-  /** Pattern for a callee name not listed as an attribute name="...". */
-  private static final Pattern NONATTRIBUTE_CALLEE_NAME =
-      Pattern.compile("^ (?! name=\" | function=\") [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
+  /**
+   * Private helper class used by constructors. Encapsulates all the info derived from the command
+   * text.
+   */
+  @Immutable
+  protected static class CommandTextInfo {
 
-  /** Parser for the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("call",
-          new Attribute("name", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("function", Attribute.ALLOW_ALL_VALUES, null),  // V1
-          new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
+    private final String commandText;
+    private final boolean isPassingData;
+    @Nullable private final String exprText;
+    @Nullable private final String userSuppliedPlaceholderName;
+    private final SyntaxVersion syntaxVersion;
+
+    public CommandTextInfo(
+        String commandText, boolean isPassingData, @Nullable String exprText,
+        @Nullable String userSuppliedPlaceholderName, SyntaxVersion syntaxVersion) {
+      Preconditions.checkArgument(isPassingData || exprText == null);
+      this.commandText = commandText;
+      this.isPassingData = isPassingData;
+      this.exprText = exprText;
+      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+      this.syntaxVersion = syntaxVersion;
+    }
+  }
 
 
-  /** The name of the template being called. */
-  private String calleeName;
+  /** Fallback base placeholder name. */
+  public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
-  /** Whether we're passing any part of the data (i.e. no 'data' attribute). */
+
+  /** Whether we're passing any part of the data (i.e. has 'data' attribute). */
   private final boolean isPassingData;
 
   /** Whether we're passing all of the data (i.e. data="all"). */
   private final boolean isPassingAllData;
 
-  /** The data ref text for the subset of data to pass, or null if not applicable. */
-  private final String dataRefText;
+  /** The expression for the data to pass, or null if not applicable. */
+  @Nullable private final ExprRootNode<?> expr;
 
-  /** The parsed data reference, or null if not applicable. */
-  private final ExprRootNode<DataRefNode> dataRef;
+  /** The user-supplied placeholder name, or null if not supplied or not applicable. */
+  @Nullable private final String userSuppliedPlaceholderName;
 
 
   /**
+   * Protected constructor for use by subclasses.
+   *
    * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @param commandTextInfo All the info derived from the command text.
    */
-  public CallNode(String id, String commandText) throws SoySyntaxException {
-    super(id, "call", commandText);
+  protected CallNode(int id, String commandName, CommandTextInfo commandTextInfo) {
 
-    // Handle callee name not listed as an attribute name="...".
-    Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(commandText);
-    if (ncnMatcher.find()) {
-      commandText = ncnMatcher.replaceFirst("name=\"" + ncnMatcher.group() + "\"");
-    }
+    super(id, commandName, commandTextInfo.commandText);
 
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
+    this.isPassingData = commandTextInfo.isPassingData;
+    this.isPassingAllData = commandTextInfo.isPassingData && commandTextInfo.exprText == null;
+    maybeSetSyntaxVersion(commandTextInfo.syntaxVersion);
 
-    String nameAttribute = attributes.get("name");
-    String functionAttribute = attributes.get("function");
-    if (nameAttribute == null && functionAttribute == null ||
-        nameAttribute != null && functionAttribute != null) {
-      throw new SoySyntaxException("The 'call' command text must contain attribute 'name'" +
-                                   " (without attribute 'function').");
-    }
-    if (nameAttribute != null) {
-      calleeName = nameAttribute;
-    } else {
-      calleeName = functionAttribute;
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
-    }
-    if (!BaseUtils.isDottedIdentifier(calleeName)) {
-      throw new SoySyntaxException(
-          "Invalid callee name \"" + calleeName + "\" for 'call' command.");
-    }
-
-    String dataAttribute = attributes.get("data");
-    if (dataAttribute == null) {
-      isPassingData = false;
-      isPassingAllData = false;
-      dataRefText = null;
-      dataRef = null;
-    } else if (dataAttribute.equals("all")) {
-      isPassingData = true;
-      isPassingAllData = true;
-      dataRefText = null;
-      dataRef = null;
-    } else {
-      isPassingData = true;
-      isPassingAllData = false;
-      dataRefText = dataAttribute;
+    if (commandTextInfo.exprText != null) {
       try {
-        dataRef = (new ExpressionParser(dataRefText)).parseDataReference();
+        this.expr = (new ExpressionParser(commandTextInfo.exprText)).parseExpression();
       } catch (TokenMgrError tme) {
-        throw createExceptionForInvalidDataRef(tme);
+        throw createExceptionForInvalidExpr(commandTextInfo.commandText, tme);
       } catch (ParseException pe) {
-        throw createExceptionForInvalidDataRef(pe);
+        throw createExceptionForInvalidExpr(commandTextInfo.commandText, pe);
       }
+    } else {
+      this.expr = null;
     }
+
+    this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
   }
 
 
   /**
-   * Private helper for the constructor.
+   * Private helper for constructor {@link #CallNode(int, String, CommandTextInfo)}.
    * @param cause The underlying exception.
    * @return The SoySyntaxException to be thrown.
    */
-  private SoySyntaxException createExceptionForInvalidDataRef(Throwable cause) {
+  private SoySyntaxException createExceptionForInvalidExpr(String commandText, Throwable cause) {
     //noinspection ThrowableInstanceNeverThrown
     return new SoySyntaxException(
-        "Invalid data reference in 'call' command text \"" + getCommandText() + "\".", cause);
+        "Invalid expression in 'call' command text \"" + commandText + "\".", cause);
   }
 
 
   /**
-   * Sets the full name of the template being called (must not be a partial name).
-   * @param calleeName The full name of the template being called.
+   * Private helper function for subclass constructors to parse the 'data' attribute.
+   * @param dataAttr The 'data' attribute in a call.
+   * @return A pair (isPassingData, exprText) where exprText may be null.
    */
-  public void setCalleeName(String calleeName) {
-    Preconditions.checkArgument(
-        BaseUtils.isDottedIdentifier(calleeName) && calleeName.charAt(0) != '.');
-    this.calleeName = calleeName;
+  protected static final Pair<Boolean, String> parseDataAttributeHelper(String dataAttr) {
+
+    boolean isPassingData;
+    String exprText;
+    if (dataAttr == null) {
+      isPassingData = false;
+      exprText = null;
+    } else if (dataAttr.equals("all")) {
+      isPassingData = true;
+      exprText = null;
+    } else {
+      isPassingData = true;
+      exprText = dataAttr;
+    }
+    return Pair.of(isPassingData, exprText);
   }
 
-  /** Returns the name of the template being called. */
-  public String getCalleeName() {
-    return calleeName;
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected CallNode(CallNode orig) {
+    super(orig);
+    this.isPassingData = orig.isPassingData;
+    this.isPassingAllData = orig.isPassingAllData;
+    this.expr = (orig.expr != null) ? orig.expr.clone() : null;
+    this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
   }
 
-  /** Returns whether we're passing any part of the data (i.e. no 'data' attribute). */
+
+  /** Returns whether we're passing any part of the data (i.e. has 'data' attribute). */
   public boolean isPassingData() {
     return isPassingData;
   }
 
+
   /** Returns whether we're passing all of the data (i.e. data="all"). */
   public boolean isPassingAllData() {
     return isPassingAllData;
+  
   }
 
-  /** Returns the data ref text for the subset of data to pass, or null if not applicable. */
-  public String getDataRefText() {
-    return dataRefText;
+
+  /** Returns the expression text for the data to pass, or null if not applicable. */
+  public String getExprText() {
+    return (expr != null) ? expr.toSourceString() : null;
   }
 
-  /** Returns the parsed data reference, or null if not applicable. */
-  public ExprRootNode<DataRefNode> getDataRef() {
-    return dataRef;
+
+  /** Returns the expression for the data to pass, or null if not applicable. */
+  public ExprRootNode<?> getExpr() {
+    return expr;
+  }
+
+
+  @Override public String getUserSuppliedPlaceholderName() {
+    return userSuppliedPlaceholderName;
   }
 
 
@@ -197,19 +211,31 @@ public class CallNode extends AbstractParentSoyCommandNode<CallParamNode>
   }
 
 
-  @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
-    return (dataRef != null) ? ImmutableList.of(dataRef)
-                             : Collections.<ExprRootNode<? extends ExprNode>>emptyList();
+  @Override public List<ExprUnion> getAllExprUnions() {
+    return (expr != null) ?
+        ImmutableList.of(new ExprUnion(expr)) : Collections.<ExprUnion>emptyList();
   }
 
 
   @Override public String genBasePlaceholderName() {
-    return "XXX";
+
+    if (userSuppliedPlaceholderName != null) {
+      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
+    }
+
+    return FALLBACK_BASE_PLACEHOLDER_NAME;
   }
 
 
-  @Override public boolean isSamePlaceholderAs(MsgPlaceholderNode other) {
-    return false;
+  @Override public Object genSamenessKey() {
+    // CallNodes are never considered the same placeholder. We return the node id as the info for
+    // determining sameness. The node id should be unique among all nodes in the tree.
+    return Integer.valueOf(getId());
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
   }
 
 }

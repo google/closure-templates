@@ -16,6 +16,9 @@
 
 package com.google.template.soy.javasrc.internal;
 
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genIntegerValue;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -31,24 +34,25 @@ import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions.CodeStyle;
 import com.google.template.soy.javasrc.internal.GenJavaExprsVisitor.GenJavaExprsVisitorFactory;
 import com.google.template.soy.javasrc.internal.TranslateToJavaExprVisitor.TranslateToJavaExprVisitorFactory;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genIntegerValue;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.JavaExprUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
@@ -119,11 +123,12 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *     TranslateToJavaExprVisitor.
    */
   @Inject
-  GenJavaCodeVisitor(SoyJavaSrcOptions javaSrcOptions, GenCallCodeUtils genCallCodeUtils,
-                     IsComputableAsJavaExprsVisitor isComputableAsJavaExprsVisitor,
-                     CanInitOutputVarVisitor canInitOutputVarVisitor,
-                     GenJavaExprsVisitorFactory genJavaExprsVisitorFactory,
-                     TranslateToJavaExprVisitorFactory translateToJavaExprVisitorFactory) {
+  GenJavaCodeVisitor(
+      SoyJavaSrcOptions javaSrcOptions, GenCallCodeUtils genCallCodeUtils,
+      IsComputableAsJavaExprsVisitor isComputableAsJavaExprsVisitor,
+      CanInitOutputVarVisitor canInitOutputVarVisitor,
+      GenJavaExprsVisitorFactory genJavaExprsVisitorFactory,
+      TranslateToJavaExprVisitorFactory translateToJavaExprVisitorFactory) {
     this.javaSrcOptions = javaSrcOptions;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJavaExprsVisitor = isComputableAsJavaExprsVisitor;
@@ -133,9 +138,11 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
   }
 
 
-  @Override protected void setup() {
+  @Override public String exec(SoyNode node) {
     javaCodeBuilder = new JavaCodeBuilder(javaSrcOptions.getCodeStyle());
     localVarTranslations = null;
+    visit(node);
+    return javaCodeBuilder.getCode();
   }
 
 
@@ -145,12 +152,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
   }
 
 
-  @Override protected String getResult() {
-    return javaCodeBuilder.getCode();
-  }
-
-
-  @Override protected void visitChildren(ParentSoyNode<? extends SoyNode> node) {
+  @Override protected void visitChildren(ParentSoyNode<?> node) {
 
     // If the block is empty or if the first child cannot initilize the output var, we must
     // initialize the output var.
@@ -189,10 +191,10 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     boolean isFirst = true;
     for (SoyFileNode soyFile : node.getChildren()) {
@@ -219,7 +221,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    * ...
    * </pre>
    */
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
 
     javaCodeBuilder.appendLine(
         "// ----------------------------------------------------------------------------- ");
@@ -232,7 +234,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
       try {
         visit(template);
       } catch (SoySyntaxException sse) {
-        throw sse.setTemplateName(template.getTemplateName());
+        throw sse.setTemplateName(template.getTemplateNameForUserMsgs());
       }
     }
   }
@@ -249,24 +251,41 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    * };
    * </pre>
    */
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
 
     boolean isCodeStyleStringbuilder = javaSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER;
 
     localVarTranslations = new ArrayDeque<Map<String, JavaExpr>>();
     genJavaExprsVisitor = genJavaExprsVisitorFactory.create(localVarTranslations);
 
-    if (isCodeStyleStringbuilder) {
-      javaCodeBuilder.appendLine(
-          node.isPrivate() ? "private" : "public", " static String ",
-          node.getTemplateName().replace('.', '$'),
-          "(com.google.template.soy.data.SoyMapData data, StringBuilder sb) {");
+    boolean isPrivate = node.isPrivate();
+    String modifiers;
+    boolean shouldReturn;
+    String params;
+
+    if (isPrivate) {
+      modifiers = "private";
     } else {
-      javaCodeBuilder.appendLine(
-          node.isPrivate() ? "private" : "public", " static String ",
-          node.getTemplateName().replace('.', '$'),
-          "(com.google.template.soy.data.SoyMapData data) {");
+      modifiers = "public";
     }
+
+    if (isCodeStyleStringbuilder && isPrivate) {
+      params = "com.google.template.soy.data.SoyMapData data, StringBuilder output";
+      shouldReturn = false;
+    } else {
+      if (isCodeStyleStringbuilder) {
+        params = "com.google.template.soy.data.SoyMapData data, StringBuilder sb";
+      } else {
+        params = "com.google.template.soy.data.SoyMapData data";
+      }
+      shouldReturn = true;
+    }
+
+    javaCodeBuilder.appendLine(
+        modifiers,
+        shouldReturn ? " String " : " void ",
+        node.getTemplateName().replace('.', '$'),
+        "(" + params + ") {");
     javaCodeBuilder.increaseIndent();
     localVarTranslations.push(Maps.<String, JavaExpr>newHashMap());
 
@@ -284,17 +303,21 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 
       javaCodeBuilder.pushOutputVar("output");
       if (isCodeStyleStringbuilder) {
-        javaCodeBuilder.appendLine(
-            "StringBuilder output = (sb != null) ? sb : new StringBuilder();");
+        if (!isPrivate) {
+          javaCodeBuilder.appendLine(
+              "StringBuilder output = (sb != null) ? sb : new StringBuilder();");
+        }
         javaCodeBuilder.setOutputVarInited();
       }
 
       visitChildren(node);
 
-      if (isCodeStyleStringbuilder) {
-        javaCodeBuilder.appendLine("return (sb != null) ? null : output.toString();");
-      } else {
-        javaCodeBuilder.appendLine("return output;");
+      if (shouldReturn) {
+        if (isCodeStyleStringbuilder) {
+          javaCodeBuilder.appendLine("return (sb != null) ? null : output.toString();");
+        } else {
+          javaCodeBuilder.appendLine("return output;");
+        }
       }
       javaCodeBuilder.popOutputVar();
     }
@@ -302,6 +325,64 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
     localVarTranslations.pop();
     javaCodeBuilder.decreaseIndent();
     javaCodeBuilder.appendLine("}");
+  }
+
+
+  /**
+   * Example:
+   * <pre>
+   *   {let $boo = ...}
+   * </pre>
+   * might generate
+   * <pre>
+   *   final com.google.template.soy.data.SoyData boo35 = ...;
+   * </pre>
+   */
+  @Override protected void visitLetValueNode(LetValueNode node) {
+
+    String generatedVarName = node.getUniqueVarName();
+
+    // Generate code to define the local var.
+    JavaExpr valueJavaExpr =
+        translateToJavaExprVisitorFactory.create(localVarTranslations).exec(node.getValueExpr());
+    javaCodeBuilder.appendLine(
+        "final com.google.template.soy.data.SoyData ", generatedVarName, " = ",
+        valueJavaExpr.getText(), ";");
+
+    // Add a mapping for generating future references to this local var.
+    localVarTranslations.peek().put(
+        node.getVarName(), new JavaExpr(generatedVarName, SoyData.class, Integer.MAX_VALUE));
+  }
+
+
+  /**
+   * Example:
+   * <pre>
+   *   {let $boo}
+   *     Hello {$name}
+   *   {/let}
+   * </pre>
+   * might generate
+   * <pre>
+   *   final com.google.template.soy.data.SoyData boo35 = ...;
+   * </pre>
+   */
+  @Override protected void visitLetContentNode(LetContentNode node) {
+
+    String generatedVarName = node.getUniqueVarName();
+
+    // Generate code to define the local var.
+    localVarTranslations.push(Maps.<String, JavaExpr>newHashMap());
+    javaCodeBuilder.pushOutputVar(generatedVarName);
+
+    visitChildren(node);
+
+    javaCodeBuilder.popOutputVar();
+    localVarTranslations.pop();
+
+    // Add a mapping for generating future references to this local var.
+    localVarTranslations.peek().put(
+        node.getVarName(), new JavaExpr(generatedVarName, SoyData.class, Integer.MAX_VALUE));
   }
 
 
@@ -319,7 +400,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *   }
    * </pre>
    */
-  @Override protected void visitInternal(IfNode node) {
+  @Override protected void visitIfNode(IfNode node) {
 
     if (isComputableAsJavaExprsVisitor.exec(node)) {
       javaCodeBuilder.addToOutputVar(genJavaExprsVisitor.exec(node));
@@ -334,7 +415,8 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
         IfCondNode icn = (IfCondNode) child;
 
         JavaExpr condJavaExpr =
-            translateToJavaExprVisitorFactory.create(localVarTranslations).exec(icn.getExpr());
+            translateToJavaExprVisitorFactory.create(localVarTranslations)
+                .exec(icn.getExprUnion().getExpr());
         if (icn.getCommandName().equals("if")) {
           javaCodeBuilder.appendLine("if (", genCoerceBoolean(condJavaExpr), ") {");
         } else {  // "elseif" block
@@ -390,7 +472,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *   }
    * </pre>
    */
-  @Override protected void visitInternal(SwitchNode node) {
+  @Override protected void visitSwitchNode(SwitchNode node) {
 
     TranslateToJavaExprVisitor ttjev =
         translateToJavaExprVisitorFactory.create(localVarTranslations);
@@ -469,17 +551,17 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *   }
    * </pre>
    */
-  @Override protected void visitInternal(ForeachNode node) {
+  @Override protected void visitForeachNode(ForeachNode node) {
 
     // Build some local variable names.
     String baseVarName = node.getVarName();
-    String nodeId = node.getId();
+    String nodeId = Integer.toString(node.getId());
     String listVarName = baseVarName + "List" + nodeId;
     String listLenVarName = baseVarName + "ListLen" + nodeId;
 
     // Define list var and list-len var.
     JavaExpr dataRefJavaExpr =
-        translateToJavaExprVisitorFactory.create(localVarTranslations).exec(node.getDataRef());
+        translateToJavaExprVisitorFactory.create(localVarTranslations).exec(node.getExpr());
     javaCodeBuilder.appendLine(
         "com.google.template.soy.data.SoyListData ", listVarName,
         " = (com.google.template.soy.data.SoyListData) ", dataRefJavaExpr.getText(), ";");
@@ -493,7 +575,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
     }
 
     // Generate code for nonempty case.
-    visit((ForeachNonemptyNode) node.getChild(0));
+    visit(node.getChild(0));
 
     // If has 'ifempty' node, add the 'else' block of the wrapper 'if' statement.
     if (hasIfemptyNode) {
@@ -502,7 +584,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
       javaCodeBuilder.increaseIndent();
 
       // Generate code for empty case.
-      visit((ForeachIfemptyNode) node.getChild(1));
+      visit(node.getChild(1));
 
       javaCodeBuilder.decreaseIndent();
       javaCodeBuilder.appendLine("}");
@@ -525,11 +607,11 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *   }
    * </pre>
    */
-  @Override protected void visitInternal(ForeachNonemptyNode node) {
+  @Override protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
 
     // Build some local variable names.
     String baseVarName = node.getVarName();
-    String foreachNodeId = node.getForeachNodeId();
+    String foreachNodeId = Integer.toString(node.getForeachNodeId());
     String listVarName = baseVarName + "List" + foreachNodeId;
     String listLenVarName = baseVarName + "ListLen" + foreachNodeId;
     String indexVarName = baseVarName + "Index" + foreachNodeId;
@@ -552,17 +634,17 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
                      SoyData.class, Integer.MAX_VALUE));
     newLocalVarTranslationsFrame.put(
         baseVarName + "__isFirst",
-        new JavaExpr("new com.google.template.soy.data.restricted.BooleanData(" +
+        new JavaExpr("com.google.template.soy.data.restricted.BooleanData.forValue(" +
                      indexVarName + " == 0)",
                      BooleanData.class, Integer.MAX_VALUE));
     newLocalVarTranslationsFrame.put(
         baseVarName + "__isLast",
-        new JavaExpr("new com.google.template.soy.data.restricted.BooleanData(" +
+        new JavaExpr("com.google.template.soy.data.restricted.BooleanData.forValue(" +
                      indexVarName + " == " + listLenVarName + " - 1)",
                      BooleanData.class, Integer.MAX_VALUE));
     newLocalVarTranslationsFrame.put(
         baseVarName + "__index",
-        new JavaExpr("new com.google.template.soy.data.restricted.IntegerData(" +
+        new JavaExpr("com.google.template.soy.data.restricted.IntegerData.forValue(" +
                      indexVarName + ")",
                      IntegerData.class, Integer.MAX_VALUE));
     localVarTranslations.push(newLocalVarTranslationsFrame);
@@ -594,16 +676,16 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *   }
    * </pre>
    */
-  @Override protected void visitInternal(ForNode node) {
+  @Override protected void visitForNode(ForNode node) {
 
-    String varName = node.getLocalVarName();
-    String nodeId = node.getId();
+    String varName = node.getVarName();
+    String nodeId = Integer.toString(node.getId());
 
     TranslateToJavaExprVisitor ttjev =
         translateToJavaExprVisitorFactory.create(localVarTranslations);
 
     // Get the Java expression text for the init/limit/increment values.
-    List<ExprRootNode<ExprNode>> rangeArgs = Lists.newArrayList(node.getRangeArgs());
+    List<ExprRootNode<?>> rangeArgs = Lists.newArrayList(node.getRangeArgs());
     String incrementJavaExprText = (rangeArgs.size() == 3) ?
         genIntegerValue(ttjev.exec(rangeArgs.remove(2))) : "1" /* default */;
     String initJavaExprText = (rangeArgs.size() == 2) ?
@@ -650,7 +732,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
     Map<String, JavaExpr> newLocalVarTranslationsFrame = Maps.newHashMap();
     newLocalVarTranslationsFrame.put(
         varName,
-        new JavaExpr("new com.google.template.soy.data.restricted.IntegerData(" +
+        new JavaExpr("com.google.template.soy.data.restricted.IntegerData.forValue(" +
                      varName + nodeId + ")",
                      IntegerData.class, Integer.MAX_VALUE));
     localVarTranslations.push(newLocalVarTranslationsFrame);
@@ -689,7 +771,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    *   output += some.func(soy.$$augmentData(opt_data.boo, {goo: 'Hello ' + opt_data.name});
    * </pre>
    */
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected void visitCallNode(CallNode node) {
 
     // If this node has any CallParamContentNode children those contents are not computable as Java
     // expressions, visit them to generate code to define their respective 'param<n>' variables.
@@ -701,10 +783,13 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 
     if (javaSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
       // For 'stringbuilder' code style, pass the current output var to collect the call's output.
+      if (! (node instanceof CallBasicNode)) {
+        throw new UnsupportedOperationException("Delegates are not supported in JavaSrc backend.");
+      }
       JavaExpr objToPass = genCallCodeUtils.genObjToPass(node, localVarTranslations);
-      javaCodeBuilder.indent().append(
-          node.getCalleeName().replace('.', '$'), "(", objToPass.getText(), ", ")
-          .appendOutputVarName().append(");\n");
+      javaCodeBuilder.indent()
+          .append(((CallBasicNode) node).getCalleeName().replace('.', '$'))
+          .append("(", objToPass.getText(), ", ").appendOutputVarName().append(");\n");
 
     } else {
       // For 'concat' code style, we simply add the call's result to the current output var.
@@ -714,7 +799,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
   }
 
 
-  @Override protected void visitInternal(CallParamContentNode node) {
+  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
 
     // This node should only be visited when it's not computable as Java expressions, because this
     // method just generates the code to define the temporary 'param<n>' variable.
@@ -734,26 +819,33 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
+  @Override protected void visitSoyNode(SoyNode node) {
+
+    if (node instanceof ParentSoyNode<?>) {
+
+      if (node instanceof BlockNode) {
+        localVarTranslations.push(Maps.<String, JavaExpr>newHashMap());
+        visitChildren((BlockNode) node);
+        localVarTranslations.pop();
+
+      } else {
+        visitChildren((ParentSoyNode<?>) node);
+      }
+
+      return;
+    }
 
     if (isComputableAsJavaExprsVisitor.exec(node)) {
       // Simply generate Java expressions for this node and add them to the current output var.
       javaCodeBuilder.addToOutputVar(genJavaExprsVisitor.exec(node));
 
     } else {
-      // Need to implement visitInternal() for the specific case.
+      // Need to implement visit*Node() for the specific case.
       throw new UnsupportedOperationException();
     }
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    localVarTranslations.push(Maps.<String, JavaExpr>newHashMap());
-    visitChildren(node);
-    localVarTranslations.pop();
   }
 
 }

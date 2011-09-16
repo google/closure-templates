@@ -34,25 +34,22 @@ public class ClearSoyDocStringsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
     node.clearSoyDocStrings();
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 }

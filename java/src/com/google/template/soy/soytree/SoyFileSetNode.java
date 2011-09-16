@@ -41,21 +41,40 @@ public class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
    * @param nodeIdGen The node id generator for this parse tree.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public SoyFileSetNode(String id, IdGenerator nodeIdGen) throws SoySyntaxException {
+  public SoyFileSetNode(int id, IdGenerator nodeIdGen) throws SoySyntaxException {
     super(id);
     this.nodeIdGen = nodeIdGen;
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected SoyFileSetNode(SoyFileSetNode orig) {
+    super(orig);
+    this.nodeIdGen = orig.nodeIdGen.clone();
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.SOY_FILE_SET_NODE;
+  }
+
 
   /** Returns the node id generator for this parse tree. */
-  public IdGenerator getNodeIdGen() {
+  public IdGenerator getNodeIdGenerator() {
     return nodeIdGen;
   }
 
 
   @Override public String toSourceString() {
     throw new UnsupportedOperationException();
+  }
+
+
+  @Override public SoyFileSetNode clone() {
+    return new SoyFileSetNode(this);
   }
 
 }

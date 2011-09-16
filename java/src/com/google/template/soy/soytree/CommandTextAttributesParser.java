@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -96,7 +97,7 @@ class CommandTextAttributesParser {
 
       if (matcher.start() != i) {
         throw new SoySyntaxException(
-            "Malformed attributes in tag {" + commandName + " " + commandText + "}.");
+            "Malformed attributes in '" + commandName + "' command text \"" + commandText + "\".");
       }
       i = matcher.end();
 
@@ -104,19 +105,21 @@ class CommandTextAttributesParser {
       String value = matcher.group(2);
 
       if (!supportedAttributeNames.contains(name)) {
-        throw new SoySyntaxException("Unsupported attribute '" + name + "' in tag {" + commandName +
-                                     " " + commandText + "}.");
+        throw new SoySyntaxException(
+            "Unsupported attribute '" + name + "' in '" + commandName + "' command text \"" +
+            commandText + "\".");
       }
       if (attributes.containsKey(name)) {
-        throw new SoySyntaxException("Duplicate attribute '" + name + "' in tag {" + commandName +
-                                     " " + commandText + "}.");
+        throw new SoySyntaxException(
+            "Duplicate attribute '" + name + "' in '" + commandName + "' command text \"" +
+            commandText + "\".");
       }
       attributes.put(name, value);
     }
 
     if (i != commandText.length()) {
       throw new SoySyntaxException(
-          "Malformed attributes in tag {" + commandName + " " + commandText + "}.");
+          "Malformed attributes in '" + commandName + "' command text \"" + commandText + "\".");
     }
 
     // --- Apply default values or check correctness of supplied values ---
@@ -128,15 +131,17 @@ class CommandTextAttributesParser {
           continue;  // nothing to check
         }
         if (!supportedAttribute.allowedValues.contains(attributes.get(supportedAttribute.name))) {
-          throw new SoySyntaxException("Invalid value for attribute '" + supportedAttribute.name +
-                                       "' in tag {" + commandName + " " + commandText + "}.");
+          throw new SoySyntaxException(
+              "Invalid value for attribute '" + supportedAttribute.name + "' in '" +
+              commandName + "' command text \"" + commandText + "\".");
         }
 
       } else {
         // Check that the attribute is not required.
         if (Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED.equals(supportedAttribute.defaultValue)) {
-          throw new SoySyntaxException("Missing required attribute '" + supportedAttribute.name +
-                                       "' in tag {" + commandName + " " + commandText + "}.");
+          throw new SoySyntaxException(
+              "Missing required attribute '" + supportedAttribute.name + "' in '" +
+              commandName + "' command text \"" + commandText + "\".");
         }
         // Apply default value.
         attributes.put(supportedAttribute.name, supportedAttribute.defaultValue);
@@ -162,6 +167,10 @@ class CommandTextAttributesParser {
 
     /** Use this as the allowed values set for a boolean attribute. */
     public static final Collection<String> BOOLEAN_VALUES = ImmutableSet.of("true", "false");
+
+    /** Use this as the allowed values set for a boolean attribute that may be omitted. */
+    public static final Collection<String> BOOLEAN_VALUES_AND_NULL =
+        Collections.unmodifiableSet(Sets.newHashSet("true", "false", null));
 
     /** Use this as the default attribute value when there should not be a default because the
      *  attribute is required. (Non-required attributes must have default values.) */

@@ -21,11 +21,15 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
+import com.google.template.soy.javasrc.restricted.JavaExpr;
+import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils;
+import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiGlobalDir;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -41,18 +45,19 @@ import java.util.Set;
  * @author Aharon Lanin
  */
 @Singleton
-public class BidiUnicodeWrapDirective implements SoyTofuPrintDirective, SoyJsSrcPrintDirective {
+public class BidiUnicodeWrapDirective extends SoyAbstractTofuPrintDirective
+    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
 
 
   /** Provider for the current bidi global directionality. */
-  private final Provider<Integer> bidiGlobalDirProvider;
+  private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
 
   /**
    * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
    */
   @Inject
-  BidiUnicodeWrapDirective(@BidiGlobalDir Provider<Integer> bidiGlobalDirProvider) {
+  BidiUnicodeWrapDirective(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
@@ -72,16 +77,27 @@ public class BidiUnicodeWrapDirective implements SoyTofuPrintDirective, SoyJsSrc
   }
 
 
-  @Override public String applyForTofu(String str, List<SoyData> args) {
-
-    return SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get()).unicodeWrap(str, true);
+  @Override public String apply(SoyData value, List<SoyData> args) {
+    return SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
+        .unicodeWrap(value.toString(), true);
   }
 
 
-  @Override public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args) {
+  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new JsExpr(
-        "soy.$$bidiUnicodeWrap(" + bidiGlobalDirProvider.get() + ", " + str.getText() + ")",
-        Integer.MAX_VALUE);
+        "soy.$$bidiUnicodeWrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
+  }
+
+
+  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
+    String bidiFunctionName = SoyBidiUtils.class.getName() + ".getBidiFormatter(" +
+        bidiGlobalDirProvider.get().getCodeSnippet() + ").unicodeWrap";
+
+    return SoyJavaSrcFunctionUtils.toStringJavaExpr(
+        JavaCodeUtils.genNewStringData(
+            JavaCodeUtils.genFunctionCall(
+                bidiFunctionName, JavaCodeUtils.genCoerceString(value), "true")));
   }
 
 }

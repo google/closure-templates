@@ -45,14 +45,18 @@ public class BaseUtils {
   /** Pattern for an identifier. */
   private static final Pattern IDENT_PATTERN = Pattern.compile(IDENT_RE);
 
+  /** Pattern for an identifier with leading dot. */
+  private static final Pattern IDENT_WITH_LEADING_DOT_PATTERN = Pattern.compile("[.]" + IDENT_RE);
+
+  /** Regular expression for a dotted identifier. */
+  public static final String DOTTED_IDENT_RE = IDENT_RE + "(?:[.]" + IDENT_RE + ")*";
+
   /** Pattern for a dotted identifier. */
-  private static final Pattern DOTTED_IDENT_PATTERN =
-      Pattern.compile("[.]? " + IDENT_RE + " ( [.] " + IDENT_RE + " )*",
-                      Pattern.COMMENTS);
+  private static final Pattern DOTTED_IDENT_PATTERN = Pattern.compile(DOTTED_IDENT_RE);
 
   /** Pattern for a leading or trailing underscore. */
   private static final Pattern LEADING_OR_TRAILING_UNDERSCORE_PATTERN =
-      Pattern.compile("^_+|_+$");
+      Pattern.compile("^_+|_+\\Z");
 
   /** Pattern for places to insert underscores to make an identifier name underscore-separated. */
   private static final Pattern WORD_BOUNDARY_IN_IDENT_PATTERN =
@@ -113,11 +117,23 @@ public class BaseUtils {
 
 
   /**
-   * Determines whether the given string is a dotted identifier (identifiers separated by dots).
-   * Allows an optional leading dot.
+   * Determines whether the given string is a dot followed by an identifier.
    *
    * @param s The string to check.
-   * @return True if the given string is a dotted identifier.
+   * @return True if the given string is a dot followed by an identifier.
+   */
+  public static boolean isIdentifierWithLeadingDot(String s) {
+    return IDENT_WITH_LEADING_DOT_PATTERN.matcher(s).matches();
+  }
+
+
+  /**
+   * Determines whether the given string is a dotted identifier (e.g. {@code boo.foo0._goo}). A
+   * dotted identifier is not required to have dots (i.e. a simple identifier qualifies as a dotted
+   * identifier).
+   *
+   * @param s The string to check.
+   * @return True if the given string is a dotted identifier (e.g. {@code boo.foo0._goo}).
    */
   public static boolean isDottedIdentifier(String s) {
     return DOTTED_IDENT_PATTERN.matcher(s).matches();

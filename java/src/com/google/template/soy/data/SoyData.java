@@ -42,7 +42,7 @@ public abstract class SoyData {
    * For example, if the object is a primitive, it can be passed directly to methods such as
    * {@code SoyMapData.put()} or {@code SoyListData.add()}. If the object is a Map or an Iterable,
    * you can directly create the equivalent SoyData object using the constructor of
-   * {@code SoyMapData} or {@code SoyListData}. 
+   * {@code SoyMapData} or {@code SoyListData}.
    *
    * <p> If the given object is already a SoyData object, then it is simply returned.
    * Otherwise a new SoyData object will be created that is equivalent to the given primitive, data
@@ -66,26 +66,26 @@ public abstract class SoyData {
     } else if (obj instanceof SoyData) {
       return (SoyData) obj;
     } else if (obj instanceof String) {
-      return new StringData((String) obj);
+      return StringData.forValue((String) obj);
     } else if (obj instanceof Boolean) {
-      return new BooleanData((Boolean) obj);
+      return BooleanData.forValue((Boolean) obj);
     } else if (obj instanceof Integer) {
-      return new IntegerData((Integer) obj);
-    } else if (obj instanceof Map) {
+      return IntegerData.forValue((Integer) obj);
+    } else if (obj instanceof Map<?, ?>) {
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
       return new SoyMapData(objCast);
-    } else if (obj instanceof List) {
+    } else if (obj instanceof List<?>) {
       return new SoyListData((List<?>) obj);
     } else if (obj instanceof Double) {
-      return new FloatData((Double) obj);
+      return FloatData.forValue((Double) obj);
     } else if (obj instanceof Float) {
       // Automatically convert float to double.
-      return new FloatData((Float) obj);
+      return FloatData.forValue((Float) obj);
     } else {
       throw new SoyDataException(
           "Attempting to convert unrecognized object to Soy data (object type " +
-          obj.getClass().getSimpleName() + ").");
+          obj.getClass().getName() + ").");
     }
   }
 

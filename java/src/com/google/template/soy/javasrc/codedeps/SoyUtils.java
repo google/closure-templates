@@ -26,7 +26,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.internal.base.CharEscapers;
+import com.google.template.soy.shared.restricted.Sanitizers;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -44,6 +44,7 @@ public class SoyUtils {
 
   private static final Pattern NEWLINE_PATTERN = Pattern.compile("(\\r\\n|\\r|\\n)");
 
+
   // -----------------------------------------------------------------------------------------------
   // Basics.
 
@@ -55,11 +56,19 @@ public class SoyUtils {
   }
 
 
+  // TODO: Use this in generated Java code instead of $$getData(), whenever possible.
+  public static SoyData $$getDataSingle(CollectionData collectionData, String key) {
+
+    SoyData data = collectionData.getSingle(key);
+    return (data != null) ? data : NullData.INSTANCE;
+  }
+
+
   public static SoyMapData $$augmentData(SoyMapData baseData, SoyMapData additionalData) {
 
     AugmentedSoyMapData augmentedData = new AugmentedSoyMapData(baseData);
     for (Map.Entry<String, SoyData> entry : additionalData.asMap().entrySet()) {
-      augmentedData.put(entry.getKey(), entry.getValue());
+      augmentedData.putSingle(entry.getKey(), entry.getValue());
     }
     return augmentedData;
   }
@@ -67,20 +76,87 @@ public class SoyUtils {
 
   // -----------------------------------------------------------------------------------------------
   // Print directives.
+  // See BasicDirectivesModule for details of how the escaping directives end up invoking these
+  // concrete java implementations.
 
 
-  public static String $$escapeHtml(String value) {
-    return CharEscapers.asciiHtmlEscaper().escape(value);
+  public static String $$escapeHtml(SoyData value) {
+    return Sanitizers.escapeHtml(value);
   }
 
 
-  public static String $$escapeJs(String value) {
-    return CharEscapers.javascriptEscaper().escape(value);
+  public static String $$escapeHtmlRcdata(SoyData value) {
+    return Sanitizers.escapeHtmlRcdata(value);
   }
 
 
-  public static String $$escapeUri(String value) {
-    return CharEscapers.uriEscaper(false).escape(value);
+  public static String $$normalizeHtml(SoyData value) {
+    return Sanitizers.normalizeHtml(value);
+  }
+
+
+  public static String $$normalizeHtmlNospace(SoyData value) {
+    return Sanitizers.normalizeHtmlNospace(value);
+  }
+
+
+  public static String $$escapeHtmlAttribute(SoyData value) {
+    return Sanitizers.escapeHtmlAttribute(value);
+  }
+
+
+  public static String $$escapeHtmlAttributeNospace(SoyData value) {
+    return Sanitizers.escapeHtmlAttributeNospace(value);
+  }
+
+
+  public static String $$escapeJsString(SoyData value) {
+    return Sanitizers.escapeJsString(value);
+  }
+
+
+  public static String $$escapeJsValue(SoyData value) {
+    return Sanitizers.escapeJsValue(value);
+  }
+
+
+  public static String $$escapeJsRegex(SoyData value) {
+    return Sanitizers.escapeJsRegex(value);
+  }
+
+
+  public static String $$escapeCssString(SoyData value) {
+    return Sanitizers.escapeCssString(value);
+  }
+
+
+  public static String $$filterCssValue(SoyData value) {
+    return Sanitizers.filterCssValue(value);
+  }
+
+
+  public static String $$escapeUri(SoyData value) {
+    return Sanitizers.escapeUri(value);
+  }
+
+
+  public static String $$normalizeUri(SoyData value) {
+    return Sanitizers.normalizeUri(value);
+  }
+
+
+  public static String $$filterNormalizeUri(SoyData value) {
+    return Sanitizers.filterNormalizeUri(value);
+  }
+
+
+  public static String $$filterHtmlAttribute(SoyData value) {
+    return Sanitizers.filterHtmlAttribute(value);
+  }
+
+
+  public static String $$filterHtmlElementName(SoyData value) {
+    return Sanitizers.filterHtmlElementName(value);
   }
 
 
@@ -122,7 +198,7 @@ public class SoyUtils {
             ++numCharsWithoutBreak;
             break;
             // If maybe inside an entity and we see '<', we weren't actually in an entity. But
-            // now we're inside and HTML tag.
+            // now we're inside an HTML tag.
           case '<':
             isMaybeInEntity = false;
             isInTag = true;
@@ -164,6 +240,40 @@ public class SoyUtils {
   }
 
 
+  public static String $$truncate(String str, int maxLen, boolean doAddEllipsis) {
+
+    if (str.length() <= maxLen) {
+      return str;  // no need to truncate
+    }
+
+    // If doAddEllipsis, either reduce maxLen to compensate, or else if maxLen is too small, just
+    // turn off doAddEllipsis.
+    if (doAddEllipsis) {
+      if (maxLen > 3) {
+        maxLen -= 3;
+      } else {
+        doAddEllipsis = false;
+      }
+    }
+
+    // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
+    if (Character.isHighSurrogate(str.charAt(maxLen - 1)) &&
+        Character.isLowSurrogate(str.charAt(maxLen))) {
+      maxLen -= 1;
+    }
+
+    // Truncate.
+    str = str.substring(0, maxLen);
+
+    // Add ellipsis.
+    if (doAddEllipsis) {
+      str += "...";
+    }
+
+    return str;
+  }
+
+
   // -----------------------------------------------------------------------------------------------
   // Operators.
 
@@ -171,9 +281,9 @@ public class SoyUtils {
   public static NumberData $$negative(NumberData operand) {
 
     if (operand instanceof IntegerData) {
-      return new IntegerData( - operand.integerValue() );
+      return IntegerData.forValue( - operand.integerValue() );
     } else {
-      return new FloatData( - operand.floatValue() );
+      return FloatData.forValue( - operand.floatValue() );
     }
   }
 
@@ -181,23 +291,25 @@ public class SoyUtils {
   public static NumberData $$times(NumberData operand0, NumberData operand1) {
 
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new IntegerData(operand0.integerValue() * operand1.integerValue());
+      return IntegerData.forValue(operand0.integerValue() * operand1.integerValue());
     } else {
-      return new FloatData(operand0.numberValue() * operand1.numberValue());
+      return FloatData.forValue(operand0.numberValue() * operand1.numberValue());
     }
   }
 
 
   public static SoyData $$plus(SoyData operand0, SoyData operand1) {
 
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new IntegerData(operand0.integerValue() + operand1.integerValue());
-    } else if (operand0 instanceof StringData || operand1 instanceof StringData) {
+    if (operand0 instanceof NumberData && operand1 instanceof NumberData) {
+      if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
+        return IntegerData.forValue(operand0.integerValue() + operand1.integerValue());
+      } else {
+        return FloatData.forValue(operand0.numberValue() + operand1.numberValue());
+      }
+    } else {
       // String concatenation. Note we're calling toString() instead of stringValue() in case one
       // of the operands needs to be coerced to a string.
-      return new StringData(operand0.toString() + operand1.toString());
-    } else {
-      return new FloatData(operand0.numberValue() + operand1.numberValue());
+      return StringData.forValue(operand0.toString() + operand1.toString());
     }
   }
 
@@ -205,9 +317,9 @@ public class SoyUtils {
   public static NumberData $$minus(NumberData operand0, NumberData operand1) {
 
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new IntegerData(operand0.integerValue() - operand1.integerValue());
+      return IntegerData.forValue(operand0.integerValue() - operand1.integerValue());
     } else {
-      return new FloatData(operand0.numberValue() - operand1.numberValue());
+      return FloatData.forValue(operand0.numberValue() - operand1.numberValue());
     }
   }
 
@@ -215,9 +327,9 @@ public class SoyUtils {
   public static BooleanData $$lessThan(NumberData operand0, NumberData operand1) {
 
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new BooleanData(operand0.integerValue() < operand1.integerValue());
+      return BooleanData.forValue(operand0.integerValue() < operand1.integerValue());
     } else {
-      return new BooleanData(operand0.numberValue() < operand1.numberValue());
+      return BooleanData.forValue(operand0.numberValue() < operand1.numberValue());
     }
   }
 
@@ -225,9 +337,9 @@ public class SoyUtils {
   public static BooleanData $$greaterThan(NumberData operand0, NumberData operand1) {
 
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new BooleanData(operand0.integerValue() > operand1.integerValue());
+      return BooleanData.forValue(operand0.integerValue() > operand1.integerValue());
     } else {
-      return new BooleanData(operand0.numberValue() > operand1.numberValue());
+      return BooleanData.forValue(operand0.numberValue() > operand1.numberValue());
     }
   }
 
@@ -235,9 +347,9 @@ public class SoyUtils {
   public static BooleanData $$lessThanOrEqual(NumberData operand0, NumberData operand1) {
 
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new BooleanData(operand0.integerValue() <= operand1.integerValue());
+      return BooleanData.forValue(operand0.integerValue() <= operand1.integerValue());
     } else {
-      return new BooleanData(operand0.numberValue() <= operand1.numberValue());
+      return BooleanData.forValue(operand0.numberValue() <= operand1.numberValue());
     }
   }
 
@@ -245,9 +357,9 @@ public class SoyUtils {
   public static BooleanData $$greaterThanOrEqual(NumberData operand0, NumberData operand1) {
 
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return new BooleanData(operand0.integerValue() >= operand1.integerValue());
+      return BooleanData.forValue(operand0.integerValue() >= operand1.integerValue());
     } else {
-      return new BooleanData(operand0.numberValue() >= operand1.numberValue());
+      return BooleanData.forValue(operand0.numberValue() >= operand1.numberValue());
     }
   }
 
@@ -264,18 +376,18 @@ public class SoyUtils {
 
     if (numDigitsAfterPt == 0) {
       if (valueData instanceof IntegerData) {
-        return (IntegerData) valueData;
+        return valueData;
       } else {
-        return new IntegerData((int) Math.round(valueData.numberValue()));
+        return IntegerData.forValue((int) Math.round(valueData.numberValue()));
       }
     } else if (numDigitsAfterPt > 0) {
       double value = valueData.numberValue();
       double shift = Math.pow(10, numDigitsAfterPt);
-      return new FloatData(Math.round(value * shift) / shift);
+      return FloatData.forValue(Math.round(value * shift) / shift);
     } else {
       double value = valueData.numberValue();
       double shift = Math.pow(10, -numDigitsAfterPt);
-      return new IntegerData((int) (Math.round(value / shift) * shift));
+      return IntegerData.forValue((int) (Math.round(value / shift) * shift));
     }
   }
 
@@ -283,9 +395,9 @@ public class SoyUtils {
   public static NumberData $$min(NumberData arg0, NumberData arg1) {
 
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return new IntegerData(Math.min(arg0.integerValue(), arg1.integerValue()));
+      return IntegerData.forValue(Math.min(arg0.integerValue(), arg1.integerValue()));
     } else {
-      return new FloatData(Math.min(arg0.numberValue(), arg1.numberValue()));
+      return FloatData.forValue(Math.min(arg0.numberValue(), arg1.numberValue()));
     }
   }
 
@@ -293,10 +405,9 @@ public class SoyUtils {
   public static NumberData $$max(NumberData arg0, NumberData arg1) {
 
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return new IntegerData(Math.max(arg0.integerValue(), arg1.integerValue()));
+      return IntegerData.forValue(Math.max(arg0.integerValue(), arg1.integerValue()));
     } else {
-      return new FloatData(Math.max(arg0.numberValue(), arg1.numberValue()));
+      return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
     }
   }
-
 }

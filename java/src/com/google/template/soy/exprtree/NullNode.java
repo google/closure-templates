@@ -27,8 +27,30 @@ package com.google.template.soy.exprtree;
 public class NullNode extends AbstractPrimitiveNode {
 
 
+  public NullNode() {}
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected NullNode(NullNode orig) {
+    super(orig);
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.NULL_NODE;
+  }
+
+
   @Override public String toSourceString() {
     return "null";
+  }
+
+
+  @Override public NullNode clone() {
+    return new NullNode(this);
   }
 
 }

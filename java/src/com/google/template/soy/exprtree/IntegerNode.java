@@ -39,6 +39,21 @@ public class IntegerNode extends AbstractPrimitiveNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected IntegerNode(IntegerNode orig) {
+    super(orig);
+    this.value = orig.value;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.INTEGER_NODE;
+  }
+
+
   /** Returns the integer value. */
   public int getValue() {
     return value;
@@ -47,6 +62,11 @@ public class IntegerNode extends AbstractPrimitiveNode {
 
   @Override public String toSourceString() {
     return Integer.toString(value);
+  }
+
+
+  @Override public IntegerNode clone() {
+    return new IntegerNode(this);
   }
 
 }

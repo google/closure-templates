@@ -22,10 +22,6 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -39,6 +35,7 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -126,25 +123,17 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
 
   @Override public List<JsExpr> exec(SoyNode node) {
     Preconditions.checkArgument(isComputableAsJsExprsVisitor.exec(node));
-    return super.exec(node);
-  }
-
-
-  @Override protected void setup() {
     jsExprs = Lists.newArrayList();
-  }
-
-
-  @Override protected List<JsExpr> getResult() {
+    visit(node);
     return jsExprs;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
     visitChildren(node);
   }
 
@@ -159,7 +148,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   'I\'m feeling lucky!'
    * </pre>
    */
-  @Override protected void visitInternal(RawTextNode node) {
+  @Override protected void visitRawTextNode(RawTextNode node) {
 
     // Note: BaseUtils.escapeToSoyString() builds a Soy string, which is usually a valid JS string.
     // The rare exception is a string containing a Unicode Format character (Unicode category "Cf")
@@ -168,7 +157,16 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
     // result.
     String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false);
     exprText = JsSrcUtils.escapeUnicodeFormatChars(exprText);
+    // Note: </script> in a JavaScript string will end the current script tag
+    // in most browsers.  Escape the forward slash in the string to get around
+    // this issue.
+    exprText = exprText.replace("</script>", "<\\/script>");
     jsExprs.add(new JsExpr(exprText, Integer.MAX_VALUE));
+  }
+
+
+  @Override protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+    visitChildren(node);
   }
 
 
@@ -178,22 +176,22 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   MSG_UNNAMED_42
    * </pre>
    */
-  @Override protected void visitInternal(GoogMsgRefNode node) {
-    jsExprs.add(new JsExpr(node.getGoogMsgName(), Integer.MAX_VALUE));
+  @Override protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
+    jsExprs.add(new JsExpr(node.getRenderedGoogMsgVarName(), Integer.MAX_VALUE));
   }
 
 
   /**
    * Example:
-   * <pre>{@literal
+   * <xmp>
    *   <a href="{$url}">
-   * }</pre>
+   * </xmp>
    * might generate
-   * <pre>{@literal
+   * <xmp>
    *   '<a href="' + opt_data.url + '">'
-   * }</pre>
+   * </xmp>
    */
-  @Override protected void visitInternal(MsgHtmlTagNode node) {
+  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     visitChildren(node);
   }
 
@@ -210,10 +208,10 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   gooData4.moo + 5
    * </pre>
    */
-  @Override protected void visitInternal(PrintNode node) {
+  @Override protected void visitPrintNode(PrintNode node) {
 
     JsExpr jsExpr = jsExprTranslator.translateToJsExpr(
-        node.getExpr(), node.getExprText(), localVarTranslations);
+        node.getExprUnion().getExpr(), node.getExprText(), localVarTranslations);
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -227,7 +225,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
       }
 
       // Get directive args.
-      List<ExprRootNode<ExprNode>> args = directiveNode.getArgs();
+      List<ExprRootNode<?>> args = directiveNode.getArgs();
       if (! directive.getValidArgsSizes().contains(args.size())) {
         throw new SoySyntaxException(
             "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
@@ -236,7 +234,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
 
       // Translate directive args.
       List<JsExpr> argsJsExprs = Lists.newArrayListWithCapacity(args.size());
-      for (ExprRootNode<ExprNode> arg : args) {
+      for (ExprRootNode<?> arg : args) {
         argsJsExprs.add(jsExprTranslator.translateToJsExpr(arg, null, localVarTranslations));
       }
 
@@ -262,48 +260,21 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   goog.getCssName(opt_data.foo, 'bar')
    * </pre>
    */
-  @Override protected void visitInternal(CssNode node) {
+  @Override protected void visitCssNode(CssNode node) {
 
     StringBuilder sb = new StringBuilder();
     sb.append("goog.getCssName(");
 
-    String selectorText = node.getCommandText();
-
-    int delimPos = node.getCommandText().lastIndexOf(',');
-    if (delimPos != -1) {
-      String baseText = node.getCommandText().substring(0, delimPos).trim();
-
-      ExprRootNode<ExprNode> baseExpr = null;
-      try {
-        baseExpr = (new ExpressionParser(baseText)).parseExpression();
-      } catch (TokenMgrError tme) {
-        throw createExceptionForInvalidBase(baseText, tme);
-      } catch (ParseException pe) {
-        throw createExceptionForInvalidBase(baseText, pe);
-      }
-      
-      JsExpr baseJsExpr =
-          jsExprTranslator.translateToJsExpr(baseExpr, baseText, localVarTranslations);
+    ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
+    if (componentNameExpr != null) {
+      JsExpr baseJsExpr = jsExprTranslator.translateToJsExpr(
+          componentNameExpr, node.getComponentNameText(), localVarTranslations);
       sb.append(baseJsExpr.getText()).append(", ");
-      selectorText = node.getCommandText().substring(delimPos + 1).trim();
     }
 
-    sb.append("'").append(selectorText).append("')");
+    sb.append("'").append(node.getSelectorText()).append("')");
 
     jsExprs.add(new JsExpr(sb.toString(), Integer.MAX_VALUE));
-  }
-
-  
-  /**
-   * Private helper for {@link #visitInternal(CssNode)}.
-   * @param baseText The base part of the goog.getCssName() call being generated.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidBase(String baseText, Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid expression for base in 'css' command text \"" + baseText + "\".", cause);
   }
 
 
@@ -323,7 +294,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   (opt_data.boo) ? AAA : (opt_data.foo) ? BBB : CCC
    * </pre>
    */
-  @Override protected void visitInternal(IfNode node) {
+  @Override protected void visitIfNode(IfNode node) {
 
     // Create another instance of this visitor class for generating JS expressions from children.
     GenJsExprsVisitor genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations);
@@ -337,7 +308,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
         IfCondNode icn = (IfCondNode) child;
 
         JsExpr condJsExpr = jsExprTranslator.translateToJsExpr(
-            icn.getExpr(), icn.getExprText(), localVarTranslations);
+            icn.getExprUnion().getExpr(), icn.getExprText(), localVarTranslations);
         jsExprTextSb.append("(").append(condJsExpr.getText()).append(") ? ");
 
         List<JsExpr> condBlockJsExprs = genJsExprsVisitor.exec(icn);
@@ -365,12 +336,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
   }
 
 
-  @Override protected void visitInternal(IfCondNode node) {
+  @Override protected void visitIfCondNode(IfCondNode node) {
     visitChildren(node);
   }
 
 
-  @Override protected void visitInternal(IfElseNode node) {
+  @Override protected void visitIfElseNode(IfElseNode node) {
     visitChildren(node);
   }
 
@@ -395,12 +366,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   some.func(soy.$$augmentData(opt_data.boo, {goo: 'Blah'}))
    * </pre>
    */
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected void visitCallNode(CallNode node) {
     jsExprs.add(genCallCodeUtils.genCallExpr(node, localVarTranslations));
   }
 
 
-  @Override protected void visitInternal(CallParamContentNode node) {
+  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
     visitChildren(node);
   }
 

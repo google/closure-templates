@@ -16,12 +16,38 @@
 
 package com.google.template.soy.javasrc.internal;
 
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.UTILS_LIB;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genBinaryOp;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceString;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genFloatValue;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genFunctionCall;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genIntegerValue;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeCast;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeProtect;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewBooleanData;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewFloatData;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewIntegerData;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewListData;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewMapData;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewStringData;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNumberValue;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genUnaryOp;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysAtLeastOneFloat;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysAtLeastOneString;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysFloat;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysInteger;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysTwoFloatsOrOneFloatOneInteger;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysTwoIntegers;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyListData;
+import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -29,18 +55,21 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataRefIndexNode;
 import com.google.template.soy.exprtree.DataRefKeyNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -61,32 +90,10 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.CharEscapers;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.UTILS_LIB;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genBinaryOp;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceString;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genFloatValue;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genFunctionCall;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genIntegerValue;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeCast;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeProtect;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewBooleanData;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewFloatData;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewIntegerData;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNewStringData;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genNumberValue;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genUnaryOp;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysAtLeastOneFloat;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysAtLeastOneString;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysFloat;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysInteger;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysTwoFloatsOrOneFloatOneInteger;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysTwoIntegers;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.shared.internal.ImpureFunction;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +107,7 @@ import java.util.Map;
  *
  * @author Kai Huang
  */
-public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr> {
+public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor<JavaExpr> {
 
 
   /**
@@ -123,9 +130,6 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
    *  special functions) current in scope. */
   private final Deque<Map<String, JavaExpr>> localVarTranslations;
 
-  /** Stack of partial results (during a pass). */
-  private Deque<JavaExpr> resultStack;
-
 
   /**
    * @param soyJavaSrcFunctionsMap Map of all SoyJavaSrcFunctions (name to function).
@@ -141,85 +145,121 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
   }
 
 
-  @Override protected void setup() {
-    resultStack = new ArrayDeque<JavaExpr>();
-  }
-
-
-  @Override protected JavaExpr getResult() {
-    return resultStack.peek();
-  }
-
-
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
 
 
-  @Override protected void visitInternal(ExprRootNode<? extends ExprNode> node) {
-    visitChildren(node);
+  @Override protected JavaExpr visitExprRootNode(ExprRootNode<?> node) {
+    return visit(node.getChild(0));
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for primitives and data references (concrete classes).
+  // Implementations for primitives.
 
 
-  @Override protected void visitInternal(NullNode node) {
-    resultStack.push(new JavaExpr(
+  @Override protected JavaExpr visitNullNode(NullNode node) {
+    return new JavaExpr(
         "com.google.template.soy.data.restricted.NullData.INSTANCE",
-        NullData.class, Integer.MAX_VALUE));
+        NullData.class, Integer.MAX_VALUE);
   }
 
 
-  @Override protected void visitInternal(BooleanNode node) {
+  @Override protected JavaExpr visitBooleanNode(BooleanNode node) {
     // Soy boolean literals have same form as Java 'boolean' literals.
-    pushBooleanResult(genNewBooleanData(node.toSourceString()));
+    return convertBooleanResult(genNewBooleanData(node.toSourceString()));
   }
 
 
-  @Override protected void visitInternal(IntegerNode node) {
+  @Override protected JavaExpr visitIntegerNode(IntegerNode node) {
     // Soy integer literals have same form as Java 'int' literals.
-    pushIntegerResult(genNewIntegerData(node.toSourceString()));
+    return convertIntegerResult(genNewIntegerData(node.toSourceString()));
   }
 
 
-  @Override protected void visitInternal(FloatNode node) {
+  @Override protected JavaExpr visitFloatNode(FloatNode node) {
     // Soy float literals have same form as Java 'double' literals.
-    pushFloatResult(genNewFloatData(node.toSourceString()));
+    return convertFloatResult(genNewFloatData(node.toSourceString()));
   }
 
 
-  @Override protected void visitInternal(StringNode node) {
-    pushStringResult(genNewStringData(
+  @Override protected JavaExpr visitStringNode(StringNode node) {
+    return convertStringResult(genNewStringData(
         '"' + CharEscapers.javaStringEscaper().escape(node.getValue()) + '"'));
   }
 
 
-  @Override protected void visitInternal(DataRefNode node) {
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for collections.
 
-    String firstPart = ((DataRefKeyNode) node.getChild(0)).getKey();
 
-    JavaExpr translation = getLocalVarTranslation(firstPart);
-    if (translation != null) {
-      // Case 1: In-scope local var.
-      if (node.numChildren() == 1) {
-        resultStack.push(translation);
+  @Override protected JavaExpr visitListLiteralNode(ListLiteralNode node) {
+    return convertListResult(genNewListData(buildCommaSepChildrenListHelper(node)));
+  }
+
+
+  @Override protected JavaExpr visitMapLiteralNode(MapLiteralNode node) {
+    return convertMapResult(genNewMapData(buildCommaSepChildrenListHelper(node)));
+  }
+
+
+  /**
+   * Private helper for visitListLiteralNode() and visitMapLiteralNode() to build a
+   * comma-separated list of children expression texts.
+   * @param node The parent node whose children should be visited and then the resulting expression
+   *     texts joined into a comma-separated list.
+   * @return A comma-separated list of children expression texts.
+   */
+  private String buildCommaSepChildrenListHelper(ParentExprNode node) {
+
+    StringBuilder resultSb = new StringBuilder();
+    boolean isFirst = true;
+    for (ExprNode child : node.getChildren()) {
+      if (isFirst) {
+        isFirst = false;
       } else {
-        pushUnknownResult(genFunctionCall(
-            UTILS_LIB + ".$$getData",
-            genMaybeCast(translation, CollectionData.class), buildKeyStringExprText(node, 1)));
+        resultSb.append(", ");
       }
+      resultSb.append(visit(child).getText());
+    }
+    return resultSb.toString();
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for data references.
+
+
+  @Override protected JavaExpr visitDataRefNode(DataRefNode node) {
+
+    if (node.isIjDataRef()) {
+      // Case 1: $ij data reference.
+      return convertUnknownResult(genFunctionCall(
+          "this.$$getIjData", buildKeyStringExprText(node, 0)));
 
     } else {
-      // Case 2: Data reference.
-      pushUnknownResult(genFunctionCall(
-          UTILS_LIB + ".$$getData", "data", buildKeyStringExprText(node, 0)));
+      JavaExpr translation = getLocalVarTranslation(node.getFirstKey());
+      if (translation != null) {
+        // Case 2: In-scope local var.
+        if (node.numChildren() == 1) {
+          return translation;
+        } else {
+          return convertUnknownResult(genFunctionCall(
+              UTILS_LIB + ".$$getData",
+              genMaybeCast(translation, CollectionData.class), buildKeyStringExprText(node, 1)));
+        }
+
+      } else {
+        // Case 3: Data reference.
+        return convertUnknownResult(genFunctionCall(
+            UTILS_LIB + ".$$getData", "data", buildKeyStringExprText(node, 0)));
+      }
     }
   }
 
 
   /**
-   * Private helper for visitInternal(DataRefNode).
+   * Private helper for visitDataRefNode(DataRefNode).
    * @param node -
    * @param startIndex -
    */
@@ -241,9 +281,9 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
       } else if (child instanceof DataRefIndexNode) {
         currStringLiteralPart.append(Integer.toString(((DataRefIndexNode) child).getIndex()));
       } else {
-        visit(child);
+        JavaExpr childJavaExpr = visit(child);
         keyStrParts.add("\"" + currStringLiteralPart.toString() + "\"");
-        keyStrParts.add(genMaybeProtect(resultStack.pop(), Integer.MAX_VALUE) + ".toString()");
+        keyStrParts.add(genMaybeProtect(childJavaExpr, Integer.MAX_VALUE) + ".toString()");
         currStringLiteralPart = new StringBuilder();
       }
     }
@@ -256,74 +296,70 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
   }
 
 
-  @Override protected void visitInternal(GlobalNode node) {
+  @Override protected JavaExpr visitGlobalNode(GlobalNode node) {
     throw new UnsupportedOperationException();
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for operators (concrete classes).
+  // Implementations for operators.
 
 
-  @Override protected void visitInternal(NegativeOpNode node) {
+  @Override protected JavaExpr visitNegativeOpNode(NegativeOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand = resultStack.pop();
+    JavaExpr operand = visit(node.getChild(0));
 
     String integerComputation = genNewIntegerData(genUnaryOp("-", genIntegerValue(operand)));
     String floatComputation = genNewFloatData(genUnaryOp("-", genFloatValue(operand)));
 
     if (isAlwaysInteger(operand)) {
-      pushIntegerResult(integerComputation);
+      return convertIntegerResult(integerComputation);
     } else if (isAlwaysFloat(operand)) {
-      pushFloatResult(floatComputation);
+      return convertFloatResult(floatComputation);
     } else {
-      pushNumberResult(genFunctionCall(UTILS_LIB + ".$$negative", operand.getText()));
+      return convertNumberResult(genFunctionCall(
+          UTILS_LIB + ".$$negative", genMaybeCast(operand, NumberData.class)));
     }
   }
 
 
-  @Override protected void visitInternal(NotOpNode node) {
+  @Override protected JavaExpr visitNotOpNode(NotOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand = resultStack.pop();
-    pushBooleanResult(genNewBooleanData(genUnaryOp("!", genCoerceBoolean(operand))));
+    JavaExpr operand = visit(node.getChild(0));
+    return convertBooleanResult(genNewBooleanData(genUnaryOp("!", genCoerceBoolean(operand))));
   }
 
 
-  @Override protected void visitInternal(TimesOpNode node) {
-    visitNumberToNumberBinaryOpHelper(node, "*", "$$times");
+  @Override protected JavaExpr visitTimesOpNode(TimesOpNode node) {
+    return visitNumberToNumberBinaryOpHelper(node, "*", "$$times");
   }
 
 
-  @Override protected void visitInternal(DivideByOpNode node) {
+  @Override protected JavaExpr visitDivideByOpNode(DivideByOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
     // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
-    pushFloatResult(genNewFloatData(genBinaryOp(
+    return convertFloatResult(genNewFloatData(genBinaryOp(
         "/", genNumberValue(operand0), genNumberValue(operand1))));
   }
 
 
-  @Override protected void visitInternal(ModOpNode node) {
+  @Override protected JavaExpr visitModOpNode(ModOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
-    pushIntegerResult(genNewIntegerData(genBinaryOp(
+    return convertIntegerResult(genNewIntegerData(genBinaryOp(
         "%", genIntegerValue(operand0), genIntegerValue(operand1))));
   }
 
 
-  @Override protected void visitInternal(PlusOpNode node) {
+  @Override protected JavaExpr visitPlusOpNode(PlusOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
     String stringComputation = genNewStringData(genBinaryOp(
         "+", genCoerceString(operand0), genCoerceString(operand1)));
@@ -333,82 +369,79 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
         "+", genNumberValue(operand0), genNumberValue(operand1)));
 
     if (isAlwaysTwoIntegers(operand0, operand1)) {
-      pushIntegerResult(integerComputation);
+      return convertIntegerResult(integerComputation);
     } else if (isAlwaysAtLeastOneString(operand0, operand1)) {
-      pushStringResult(stringComputation);
+      return convertStringResult(stringComputation);
     } else if (isAlwaysTwoFloatsOrOneFloatOneInteger(operand0, operand1)) {
-      pushFloatResult(floatComputation);
+      return convertFloatResult(floatComputation);
     } else {
-      pushNumberResult(genFunctionCall(
+      return convertUnknownResult(genFunctionCall(
           UTILS_LIB + ".$$plus", operand0.getText(), operand1.getText()));
     }
   }
 
 
-  @Override protected void visitInternal(MinusOpNode node) {
-    visitNumberToNumberBinaryOpHelper(node, "-", "$$minus");
+  @Override protected JavaExpr visitMinusOpNode(MinusOpNode node) {
+    return visitNumberToNumberBinaryOpHelper(node, "-", "$$minus");
   }
 
 
-  @Override protected void visitInternal(LessThanOpNode node) {
-    visitNumberToBooleanBinaryOpHelper(node, "<", "$$lessThan");
+  @Override protected JavaExpr visitLessThanOpNode(LessThanOpNode node) {
+    return visitNumberToBooleanBinaryOpHelper(node, "<", "$$lessThan");
   }
 
 
-  @Override protected void visitInternal(GreaterThanOpNode node) {
-    visitNumberToBooleanBinaryOpHelper(node, ">", "$$greaterThan");
+  @Override protected JavaExpr visitGreaterThanOpNode(GreaterThanOpNode node) {
+    return visitNumberToBooleanBinaryOpHelper(node, ">", "$$greaterThan");
   }
 
 
-  @Override protected void visitInternal(LessThanOrEqualOpNode node) {
-    visitNumberToBooleanBinaryOpHelper(node, "<=", "$$lessThanOrEqual");
+  @Override protected JavaExpr visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
+    return visitNumberToBooleanBinaryOpHelper(node, "<=", "$$lessThanOrEqual");
   }
 
 
-  @Override protected void visitInternal(GreaterThanOrEqualOpNode node) {
-    visitNumberToBooleanBinaryOpHelper(node, ">=", "$$greaterThanOrEqual");
+  @Override protected JavaExpr visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
+    return visitNumberToBooleanBinaryOpHelper(node, ">=", "$$greaterThanOrEqual");
   }
 
 
-  @Override protected void visitInternal(EqualOpNode node) {
+  @Override protected JavaExpr visitEqualOpNode(EqualOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
-    pushBooleanResult(genNewBooleanData(
+    return convertBooleanResult(genNewBooleanData(
         genMaybeProtect(operand0, Integer.MAX_VALUE) + ".equals(" + operand1.getText() + ")"));
   }
 
 
-  @Override protected void visitInternal(NotEqualOpNode node) {
+  @Override protected JavaExpr visitNotEqualOpNode(NotEqualOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
-    pushBooleanResult(genNewBooleanData(
+    return convertBooleanResult(genNewBooleanData(
         "! " + genMaybeProtect(operand0, Integer.MAX_VALUE) + ".equals(" +
         operand1.getText() + ")"));
   }
 
 
-  @Override protected void visitInternal(AndOpNode node) {
-    visitBooleanToBooleanBinaryOpHelper(node, "&&");
+  @Override protected JavaExpr visitAndOpNode(AndOpNode node) {
+    return visitBooleanToBooleanBinaryOpHelper(node, "&&");
   }
 
 
-  @Override protected void visitInternal(OrOpNode node) {
-    visitBooleanToBooleanBinaryOpHelper(node, "||");
+  @Override protected JavaExpr visitOrOpNode(OrOpNode node) {
+    return visitBooleanToBooleanBinaryOpHelper(node, "||");
   }
 
 
-  @Override protected void visitInternal(ConditionalOpNode node) {
+  @Override protected JavaExpr visitConditionalOpNode(ConditionalOpNode node) {
 
-    visitChildren(node);
-    JavaExpr operand2 = resultStack.pop();
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
+    JavaExpr operand2 = visit(node.getChild(2));
 
     Class<?> type1 = operand1.getType();
     Class<?> type2 = operand2.getType();
@@ -424,11 +457,11 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
       throw new AssertionError();
     }
 
-    resultStack.push(new JavaExpr(
+    return new JavaExpr(
         genCoerceBoolean(operand0) + " ? " +
         genMaybeProtect(operand1, Operator.CONDITIONAL.getPrecedence() + 1) + " : " +
         genMaybeProtect(operand2, Operator.CONDITIONAL.getPrecedence() + 1),
-        resultType, Operator.CONDITIONAL.getPrecedence()));
+        resultType, Operator.CONDITIONAL.getPrecedence());
   }
 
 
@@ -436,7 +469,7 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
   // Implementation for functions.
 
 
-  @Override protected void visitInternal(FunctionNode node) {
+  @Override protected JavaExpr visitFunctionNode(FunctionNode node) {
 
     String fnName = node.getFunctionName();
     int numArgs = node.numChildren();
@@ -451,17 +484,13 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
       }
       switch (impureFn) {
         case IS_FIRST:
-          visitIsFirstFunction(node);
-          return;
+          return visitIsFirstFunction(node);
         case IS_LAST:
-          visitIsLastFunction(node);
-          return;
+          return visitIsLastFunction(node);
         case INDEX:
-          visitIndexFunction(node);
-          return;
+          return visitIndexFunction(node);
         case HAS_DATA:
-          visitHasDataFunction();
-          return;
+          return visitHasDataFunction();
         default:
           throw new AssertionError();
       }
@@ -475,18 +504,13 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
             "Function '" + fnName + "' called with the wrong number of arguments" +
             " (function call \"" + node.toSourceString() + "\").");
       }
-      List<JavaExpr> args = Lists.newArrayList();
-      for (ExprNode child : node.getChildren()) {
-        visit(child);
-        args.add(resultStack.pop());
-      }
+      List<JavaExpr> args = visitChildren(node);
       try {
-        resultStack.push(fn.computeForJavaSrc(args));
+        return fn.computeForJavaSrc(args);
       } catch (Exception e) {
         throw new SoySyntaxException(
             "Error in function call \"" + node.toSourceString() + "\": " + e.getMessage(), e);
       }
-      return;
     }
 
     throw new SoySyntaxException(
@@ -495,100 +519,88 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
   }
 
 
-  private void visitIsFirstFunction(FunctionNode node) {
-    String varName = ((DataRefKeyNode) ((DataRefNode) node.getChild(0)).getChild(0)).getKey();
-    resultStack.push(getLocalVarTranslation(varName + "__isFirst"));
+  private JavaExpr visitIsFirstFunction(FunctionNode node) {
+    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    return getLocalVarTranslation(varName + "__isFirst");
   }
 
 
-  private void visitIsLastFunction(FunctionNode node) {
-    String varName = ((DataRefKeyNode) ((DataRefNode) node.getChild(0)).getChild(0)).getKey();
-    resultStack.push(getLocalVarTranslation(varName + "__isLast"));
+  private JavaExpr visitIsLastFunction(FunctionNode node) {
+    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    return getLocalVarTranslation(varName + "__isLast");
   }
 
 
-  private void visitIndexFunction(FunctionNode node) {
-    String varName = ((DataRefKeyNode) ((DataRefNode) node.getChild(0)).getChild(0)).getKey();
-    resultStack.push(getLocalVarTranslation(varName + "__index"));
+  private JavaExpr visitIndexFunction(FunctionNode node) {
+    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    return getLocalVarTranslation(varName + "__index");
   }
 
 
-  private void visitHasDataFunction() {
-    pushBooleanResult(genNewBooleanData("data != null"));
+  private JavaExpr visitHasDataFunction() {
+    return convertBooleanResult(genNewBooleanData("data != null"));
   }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
 
 
   // -----------------------------------------------------------------------------------------------
   // Private helpers.
 
 
-  /**
-   * Private helper to push a BooleanData expression onto the result stack.
-   * @param exprText The expression text that computes a BooleanData.
-   */
-  private void pushBooleanResult(String exprText) {
-    resultStack.push(new JavaExpr(exprText, BooleanData.class, Integer.MAX_VALUE));
+  private JavaExpr convertBooleanResult(String exprText) {
+    return new JavaExpr(exprText, BooleanData.class, Integer.MAX_VALUE);
   }
 
 
-  /**
-   * Private helper to push an IntegerData expression onto the result stack.
-   * @param exprText The expression text that computes an IntegerData.
-   */
-  private void pushIntegerResult(String exprText) {
-    resultStack.push(new JavaExpr(exprText, IntegerData.class, Integer.MAX_VALUE));
+  private JavaExpr convertIntegerResult(String exprText) {
+    return new JavaExpr(exprText, IntegerData.class, Integer.MAX_VALUE);
   }
 
 
-  /**
-   * Private helper to push a FloatData expression onto the result stack.
-   * @param exprText The expression text that computes a DoubleData.
-   */
-  private void pushFloatResult(String exprText) {
-    resultStack.push(new JavaExpr(exprText, FloatData.class, Integer.MAX_VALUE));
+  private JavaExpr convertFloatResult(String exprText) {
+    return new JavaExpr(exprText, FloatData.class, Integer.MAX_VALUE);
   }
 
 
-  private void pushNumberResult(String exprText) {
-    resultStack.push(new JavaExpr(exprText, NumberData.class, Integer.MAX_VALUE));
+  private JavaExpr convertNumberResult(String exprText) {
+    return new JavaExpr(exprText, NumberData.class, Integer.MAX_VALUE);
   }
 
 
-  /**
-   * Private helper to push a StringData expression onto the result stack.
-   * @param exprText The expression text that computes a StringData.
-   */
-  private void pushStringResult(String exprText) {
-    resultStack.push(new JavaExpr(exprText, StringData.class, Integer.MAX_VALUE));
+  private JavaExpr convertStringResult(String exprText) {
+    return new JavaExpr(exprText, StringData.class, Integer.MAX_VALUE);
   }
 
 
-  private void pushUnknownResult(String exprText) {
-    resultStack.push(new JavaExpr(exprText, SoyData.class, Integer.MAX_VALUE));
+  private JavaExpr convertListResult(String exprText) {
+    return new JavaExpr(exprText, SoyListData.class, Integer.MAX_VALUE);
   }
 
 
-  private void visitBooleanToBooleanBinaryOpHelper(OperatorNode node, String javaOpToken) {
+  private JavaExpr convertMapResult(String exprText) {
+    return new JavaExpr(exprText, SoyMapData.class, Integer.MAX_VALUE);
+  }
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
 
-    pushBooleanResult(genNewBooleanData(genBinaryOp(
+  private JavaExpr convertUnknownResult(String exprText) {
+    return new JavaExpr(exprText, SoyData.class, Integer.MAX_VALUE);
+  }
+
+
+  private JavaExpr visitBooleanToBooleanBinaryOpHelper(OperatorNode node, String javaOpToken) {
+
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
+
+    return convertBooleanResult(genNewBooleanData(genBinaryOp(
         javaOpToken, genCoerceBoolean(operand0), genCoerceBoolean(operand1))));
   }
 
 
-  private void visitNumberToNumberBinaryOpHelper(
+  private JavaExpr visitNumberToNumberBinaryOpHelper(
       OperatorNode node, String javaOpToken, String utilsLibFnName) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
     String integerComputation = genNewIntegerData(genBinaryOp(
         javaOpToken, genIntegerValue(operand0), genIntegerValue(operand1)));
@@ -596,23 +608,22 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
         javaOpToken, genNumberValue(operand0), genNumberValue(operand1)));
 
     if (isAlwaysTwoIntegers(operand0, operand1)) {
-      pushIntegerResult(integerComputation);
+      return convertIntegerResult(integerComputation);
     } else if (isAlwaysAtLeastOneFloat(operand0, operand1)) {
-      pushFloatResult(floatComputation);
+      return convertFloatResult(floatComputation);
     } else {
-      pushNumberResult(genFunctionCall(
+      return convertNumberResult(genFunctionCall(
           UTILS_LIB + "." + utilsLibFnName,
           genMaybeCast(operand0, NumberData.class), genMaybeCast(operand1, NumberData.class)));
     }
   }
 
 
-  private void visitNumberToBooleanBinaryOpHelper(
+  private JavaExpr visitNumberToBooleanBinaryOpHelper(
       OperatorNode node, String javaOpToken, String utilsLibFnName) {
 
-    visitChildren(node);
-    JavaExpr operand1 = resultStack.pop();
-    JavaExpr operand0 = resultStack.pop();
+    JavaExpr operand0 = visit(node.getChild(0));
+    JavaExpr operand1 = visit(node.getChild(1));
 
     String integerComputation = genNewBooleanData(genBinaryOp(
         javaOpToken, genIntegerValue(operand0), genIntegerValue(operand1)));
@@ -620,11 +631,11 @@ public class TranslateToJavaExprVisitor extends AbstractExprNodeVisitor<JavaExpr
         javaOpToken, genNumberValue(operand0), genNumberValue(operand1)));
 
     if (isAlwaysTwoIntegers(operand0, operand1)) {
-      pushBooleanResult(integerComputation);
+      return convertBooleanResult(integerComputation);
     } else if (isAlwaysAtLeastOneFloat(operand0, operand1)) {
-      pushBooleanResult(floatComputation);
+      return convertBooleanResult(floatComputation);
     } else {
-      pushBooleanResult(genFunctionCall(
+      return convertBooleanResult(genFunctionCall(
           UTILS_LIB + "." + utilsLibFnName,
           genMaybeCast(operand0, NumberData.class), genMaybeCast(operand1, NumberData.class)));
     }

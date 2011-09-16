@@ -53,6 +53,8 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes;
@@ -62,6 +64,7 @@ import com.google.template.soy.exprtree.VarNode;
 import com.google.template.soy.internal.base.UnescapeUtils;
 
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -86,7 +89,10 @@ import java.util.List;
  *    + Subsequent parts may be:
  *       - A dot "." followed by a key name or array index (spaces between are allowed).
  *       - Brackets "[ ]" with any expression inside (see below for definition of expression).
- *    Examples:   $aaa   $aaa.bbb.0.ccc.12   $aaa[0]['bbb'].ccc   $aaa[$bbb + $ccc]
+ *    + A special case is when the first key name is "ij". In this case, it's a reference to
+ *      injected data, and the reference is considered to start from the second key (i.e. the second
+ *      key actually becomes the first key in the parsed node).
+ *    Examples:   $aaa   $ij.aaa   $aaa.bbb.0.ccc.12   $aaa[0]['bbb'].ccc   $aaa[$bbb + $ccc]
  *
  * C. Global:
  *    + One or more identifiers. If more than one, a dot "." is used to separate them.
@@ -126,7 +132,17 @@ import java.util.List;
  *       + Unicode escape:   \ u ####   (backslash, "u", four hex digits -- no spaces in between)
  *       Examples:   ''   'abc'   'blah bleh bluh'   'aa\\bb\'cc\ndd'
  *
- *    8. Operators:
+ *    8. List literal:
+ *       + Delimited by brackets.
+ *       Examples:   []   ['blah', 123, $foo]
+ *
+ *    9. Map literal:
+ *       + Delimited by brackets.
+ *       + Empty map has a single colon within the brackets (to distinguish from empty list).
+ *       + Keys must be strings (or expressions that will evaluate to strings).
+ *       Examples:   [:]   ['aaa': 'blah', 'bbb': 123, $boo: $foo]
+ *
+ *    10. Operators:
  *       + Parentheses can be used to override precedence rules:   ( )
  *       + Precedence 8:   - (unary)   not
  *       + Precedence 7:   *   /   %
@@ -137,7 +153,7 @@ import java.util.List;
  *       + Precedence 2:   or
  *       + Precedence 1:   ? : (ternary)
  *
- *    9. Functions:
+ *    11. Functions:
  *       + Function name, open parenthesis, optional expression list, close parenthesis.
  *       + The function name is one identifier.
  *       + See above for the definition of an expression list.
@@ -163,7 +179,7 @@ public class ExpressionParser {
    * @throws TokenMgrError When the input has a token error.
    * @throws ParseException When the input has a parse error.
    */
-  public List<ExprRootNode<ExprNode>> parseExpressionList() throws TokenMgrError, ParseException {
+  public List<ExprRootNode<?>> parseExpressionList() throws TokenMgrError, ParseException {
     return ExprListInput();
   }
 
@@ -173,7 +189,7 @@ public class ExpressionParser {
    * @throws TokenMgrError When the input has a token error.
    * @throws ParseException When the input has a parse error.
    */
-  public ExprRootNode<ExprNode> parseExpression() throws TokenMgrError, ParseException {
+  public ExprRootNode<?> parseExpression() throws TokenMgrError, ParseException {
     return ExprInput();
   }
 
@@ -386,13 +402,13 @@ private String BinaryOp() :
  *
  * ExprListInput -> ExprList EOF
  */
-private List<ExprRootNode<ExprNode>> ExprListInput() :
+private List<ExprRootNode<?>> ExprListInput() :
 {
   List<ExprNode> exprList;
 }
 {
   exprList = ExprList()
-  { List<ExprRootNode<ExprNode>> rootedExprList = Lists.newArrayList();
+  { List<ExprRootNode<?>> rootedExprList = Lists.newArrayList();
     for (ExprNode expr : exprList) {
       rootedExprList.add(new ExprRootNode<ExprNode>(expr));
     }
@@ -407,7 +423,7 @@ private List<ExprRootNode<ExprNode>> ExprListInput() :
  *
  * ExprInput -> Expr EOF
  */
-private ExprRootNode<ExprNode> ExprInput() :
+private ExprRootNode<?> ExprInput() :
 {
   ExprNode expr;
 }
@@ -587,7 +603,7 @@ private ExprNode PrecExpr(int minPrec) :
 /**
  * Primary ->   "(" Expr ")"
  *            | u=UnaryOp PrecExpr(prec(u))
- *            | FunctionCall | DataRef | Global | Primitive
+ *            | FunctionCall | DataRef | Global | ListLiteral | MapLiteral | Primitive
  */
 private ExprNode Primary() :
 {
@@ -616,6 +632,11 @@ private ExprNode Primary() :
   |
     primary = Global()
   |
+    LOOKAHEAD( "[" ( "]" | Expr() ( "," | "]" ) ) )
+    primary = ListLiteral()
+  |
+    primary = MapLiteral()
+  |
     primary = Primitive()
   )
 
@@ -635,23 +656,42 @@ private VarNode Var():
 }
 {
   dollarIdent = <DOLLAR_IDENT>
-  { return new VarNode(dollarIdent.image.substring(1)); }
+  { String identStr = dollarIdent.image.substring(1);
+    if (identStr.equals("ij")) {
+      throw new ParseException("Invalid var name 'ij' ('ij' is for injected data ref).");
+    }
+    return new VarNode(identStr);
+  }
 }
 
 
 /**
- * DataRef -> DollarIdent ( DotIdent | DotIndex | "[" Expr "]" )*
+ * DataRef ->  ( "$ij." Ident | DollarIdent ) ( DotIdent | DotIndex | "[" Expr "]" )*
  */
 private DataRefNode DataRef() :
 {
-  Token dollarIdent, dotIdent, dotIndex;
+  Token ident, dollarIdent, dotIdent, dotIndex;
   ExprNode expr;
 }
 {
-  { DataRefNode dataRef = new DataRefNode(); }
+  { DataRefNode dataRef; }
 
-  dollarIdent = <DOLLAR_IDENT>
-  { dataRef.addChild(new DataRefKeyNode(dollarIdent.image.substring(1))); }
+  (
+    "$ij."
+    ident = <IDENT>
+    { dataRef = new DataRefNode(true);
+      dataRef.addChild(new DataRefKeyNode(ident.image));
+    }
+  |
+    dollarIdent = <DOLLAR_IDENT>
+    { dataRef = new DataRefNode(false);
+      String identStr = dollarIdent.image.substring(1);
+      if (identStr.equals("ij")) {
+        throw new ParseException("Invalid param name 'ij' ('ij' is for injected data ref).");
+      }
+      dataRef.addChild(new DataRefKeyNode(identStr));
+    }
+  )
 
   (
     dotIdent = <DOT_IDENT>
@@ -715,4 +755,100 @@ private FunctionNode FunctionCall() :
     }
     return fnNode;
   }
+}
+
+
+/**
+ * ListLiteral -> "[" [ Expr ( "," Expr )* [ "," ] ] "]"
+ */
+private ListLiteralNode ListLiteral() :
+{
+  ExprNode itemExpr;
+}
+{
+  { List<ExprNode> items = Lists.newArrayList(); }
+
+  "["
+  [
+    itemExpr = Expr()
+    { items.add(itemExpr); }
+
+    (
+      LOOKAHEAD( "," Expr() )
+
+      ","
+
+      itemExpr = Expr()
+      { items.add(itemExpr); }
+    )*
+
+    [
+      ","
+    ]
+  ]
+  "]"
+
+  { return new ListLiteralNode(items); }
+}
+
+
+/**
+ * MapLiteral -> "[" ( ":" | Expr ":" Expr ( "," Expr ":" Expr )* [ "," ] ) "]"
+ *
+ * Note: We use brackets instead of braces to delimit map literals because braces in Soy are used to
+ * delimit Soy tags.
+ */
+private MapLiteralNode MapLiteral() :
+{
+  Token ident;
+  ExprNode keyExpr, valueExpr;
+}
+{
+  { List<ExprNode> alternatingKeysAndValues = Lists.newArrayList(); }
+
+  "["
+  (
+    ":"
+  |
+    [
+      LOOKAHEAD( <IDENT> ":" )
+      ident = <IDENT>
+      { throw new ParseException(
+            "Disallowed single-identifier key \"" + ident.image + "\" in map literal" +
+            " (please surround with single quotes for string or parentheses for global).");
+      }
+    ]
+    keyExpr = Expr()
+    { alternatingKeysAndValues.add(keyExpr); }
+    ":"
+    valueExpr = Expr()
+    { alternatingKeysAndValues.add(valueExpr); }
+
+    (
+      LOOKAHEAD( "," Expr() )
+
+      ","
+
+      [
+        LOOKAHEAD( <IDENT> ":" )
+        ident = <IDENT>
+        { throw new ParseException(
+              "Disallowed single-identifier key \"" + ident.image + "\" in map literal" +
+              " (please surround with single quotes for string or parentheses for global).");
+        }
+      ]
+      keyExpr = Expr()
+      { alternatingKeysAndValues.add(keyExpr); }
+      ":"
+      valueExpr = Expr()
+      { alternatingKeysAndValues.add(valueExpr); }
+    )*
+
+    [
+      ","
+    ]
+  )
+  "]"
+
+  { return new MapLiteralNode(alternatingKeysAndValues); }
 }

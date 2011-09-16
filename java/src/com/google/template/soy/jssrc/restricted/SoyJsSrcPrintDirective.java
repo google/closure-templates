@@ -38,11 +38,11 @@ public interface SoyJsSrcPrintDirective extends SoyPrintDirective {
    * coerced to a string. You may need to explicitly coerce it to a string using the JS function
    * {@code String()}.
    *
-   * @param str The string value to apply the directive on. This value may not yet have been
+   * @param value The value to apply the directive on.  This value may not yet have been
    *     coerced to a string.
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args);
-  
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args);
+
 }

@@ -19,6 +19,8 @@ package com.google.template.soy.basicdirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
@@ -26,7 +28,7 @@ import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -34,12 +36,13 @@ import java.util.Set;
 
 /**
  * A directive that inserts word breaks as necessary.
+ * It takes a single argument : an integer specifying the max number of characters between breaks.
  *
  * @author Kai Huang
  */
 @Singleton
-public class InsertWordBreaksDirective
-    implements SoyTofuPrintDirective, SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective
+    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective, SanitizedContentOperator {
 
 
   @Inject
@@ -61,7 +64,7 @@ public class InsertWordBreaksDirective
   }
 
 
-  @Override public String applyForTofu(String str, List<SoyData> args) {
+  @Override public String apply(SoyData value, List<SoyData> args) {
 
     int maxCharsBetweenWordBreaks;
     try {
@@ -78,7 +81,8 @@ public class InsertWordBreaksDirective
     boolean isMaybeInEntity = false;  // whether we might be inside an HTML entity
     int numCharsWithoutBreak = 0;  // number of characters since the last word break
 
-    for (int codePoint, i = 0; i < str.length(); i += Character.charCount(codePoint)) {
+    String str = value.toString();
+    for (int codePoint, i = 0, n = str.length(); i < n; i += Character.charCount(codePoint)) {
       codePoint = str.codePointAt(i);
 
       // If hit maxCharsBetweenWordBreaks, and next char is not a space, then add <wbr>.
@@ -102,7 +106,7 @@ public class InsertWordBreaksDirective
             ++numCharsWithoutBreak;
             break;
             // If maybe inside an entity and we see '<', we weren't actually in an entity. But
-            // now we're inside and HTML tag.
+            // now we're inside an HTML tag.
           case '<':
             isMaybeInEntity = false;
             isInTag = true;
@@ -144,20 +148,28 @@ public class InsertWordBreaksDirective
   }
 
 
-  @Override public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args) {
+  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
 
     return new JsExpr(
-        "soy.$$insertWordBreaks(" + str.getText() + ", " + args.get(0).getText() + ")",
+        "soy.$$insertWordBreaks(" + value.getText() + ", " + args.get(0).getText() + ")",
         Integer.MAX_VALUE);
   }
 
 
-  @Override public JavaExpr applyForJavaSrc(JavaExpr str, List<JavaExpr> args) {
+  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
 
     return new JavaExpr(
         JavaCodeUtils.genFunctionCall(
-            JavaCodeUtils.UTILS_LIB + ".$$insertWordBreaks", str.getText(), args.get(0).getText()),
+            JavaCodeUtils.UTILS_LIB + ".$$insertWordBreaks",
+            JavaCodeUtils.genCoerceString(value),
+            JavaCodeUtils.genIntegerValue(args.get(0))),
         String.class, Integer.MAX_VALUE);
+  }
+
+
+  @Override public SanitizedContent.ContentKind getContentKind() {
+    // This directive expects HTML as input and produces HTML as output.
+    return SanitizedContent.ContentKind.HTML;
   }
 
 }

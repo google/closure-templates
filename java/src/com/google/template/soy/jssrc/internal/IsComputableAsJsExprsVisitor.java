@@ -21,7 +21,7 @@ import com.google.inject.Inject;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.internal.ApiCallScope;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -31,7 +31,9 @@ import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -41,8 +43,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Map;
 
 
@@ -62,7 +62,7 @@ import java.util.Map;
  * @author Kai Huang
  */
 @ApiCallScope
-class IsComputableAsJsExprsVisitor extends AbstractSoyNodeVisitor<Boolean> {
+class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
 
   /** The options for generating JS source code. */
@@ -70,9 +70,6 @@ class IsComputableAsJsExprsVisitor extends AbstractSoyNodeVisitor<Boolean> {
 
   /** The memoized results of past visits to nodes. */
   private final Map<SoyNode, Boolean> memoizedResults;
-
-  /** Stack of partial results (during run). */
-  private Deque<Boolean> resultStack;
 
 
   /**
@@ -85,113 +82,112 @@ class IsComputableAsJsExprsVisitor extends AbstractSoyNodeVisitor<Boolean> {
   }
 
 
-  @Override protected void setup() {
-    resultStack = new ArrayDeque<Boolean>();
-  }
-
-
-  @Override protected void visit(SoyNode node) {
+  @Override protected Boolean visit(SoyNode node) {
 
     if (memoizedResults.containsKey(node)) {
-      resultStack.push(memoizedResults.get(node));
+      return memoizedResults.get(node);
 
     } else {
-      super.visit(node);
-      memoizedResults.put(node, resultStack.peek());
+      Boolean result = super.visit(node);
+      memoizedResults.put(node, result);
+      return result;
     }
   }
 
 
-  @Override protected Boolean getResult() {
-    return resultStack.peek();
-  }
-
-
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(TemplateNode node) {
-    resultStack.push(areChildrenComputableAsJsExprs(node));
+  @Override protected Boolean visitTemplateNode(TemplateNode node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(RawTextNode node) {
-    resultStack.push(true);
+  @Override protected Boolean visitRawTextNode(RawTextNode node) {
+    return true;
   }
 
 
-  @Override protected void visitInternal(GoogMsgNode node) {
-    resultStack.push(false);
+  @Override protected Boolean visitGoogMsgNode(GoogMsgNode node) {
+    return false;
   }
 
 
-  @Override protected void visitInternal(GoogMsgRefNode node) {
-    resultStack.push(true);
+  @Override protected Boolean visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(MsgHtmlTagNode node) {
-    resultStack.push(areChildrenComputableAsJsExprs(node));
+  @Override protected Boolean visitGoogMsgRefNode(GoogMsgRefNode node) {
+    return true;
   }
 
 
-  @Override protected void visitInternal(PrintNode node) {
-    resultStack.push(true);
+  @Override protected Boolean visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(CssNode node) {
-    resultStack.push(true);
+  @Override protected Boolean visitPrintNode(PrintNode node) {
+    return true;
   }
 
 
-  @Override protected void visitInternal(IfNode node) {
+  @Override protected Boolean visitCssNode(CssNode node) {
+    return true;
+  }
+
+
+  @Override protected Boolean visitLetNode(LetNode node) {
+    return false;
+  }
+
+
+  @Override protected Boolean visitIfNode(IfNode node) {
     // If all children are computable as JS expressions, then this 'if' statement can be written
     // as an expression as well, using the ternary conditional operator ("? :").
-    resultStack.push(areChildrenComputableAsJsExprs(node));
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(IfCondNode node) {
-    resultStack.push(areChildrenComputableAsJsExprs(node));
+  @Override protected Boolean visitIfCondNode(IfCondNode node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(IfElseNode node) {
-    resultStack.push(areChildrenComputableAsJsExprs(node));
+  @Override protected Boolean visitIfElseNode(IfElseNode node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(SwitchNode node) {
-    resultStack.push(false);
+  @Override protected Boolean visitSwitchNode(SwitchNode node) {
+    return false;
   }
 
 
-  @Override protected void visitInternal(ForeachNode node) {
-    resultStack.push(false);
+  @Override protected Boolean visitForeachNode(ForeachNode node) {
+    return false;
   }
 
 
-  @Override protected void visitInternal(ForNode node) {
-    resultStack.push(false);
+  @Override protected Boolean visitForNode(ForNode node) {
+    return false;
   }
 
 
-  @Override protected void visitInternal(CallNode node) {
-
-    resultStack.push(jsSrcOptions.getCodeStyle() == CodeStyle.CONCAT &&
-                     areChildrenComputableAsJsExprs(node));
+  @Override protected Boolean visitCallNode(CallNode node) {
+    return jsSrcOptions.getCodeStyle() == CodeStyle.CONCAT && areChildrenComputableAsJsExprs(node);
   }
 
 
-  @Override protected void visitInternal(CallParamValueNode node) {
-    resultStack.push(true);
+  @Override protected Boolean visitCallParamValueNode(CallParamValueNode node) {
+    return true;
   }
 
 
-  @Override protected void visitInternal(CallParamContentNode node) {
-    resultStack.push(areChildrenComputableAsJsExprs(node));
+  @Override protected Boolean visitCallParamContentNode(CallParamContentNode node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
@@ -205,14 +201,12 @@ class IsComputableAsJsExprsVisitor extends AbstractSoyNodeVisitor<Boolean> {
    * @param node The parent node whose children to check.
    * @return True if all children satisfy IsComputableAsJsExprsVisitor. 
    */
-  private boolean areChildrenComputableAsJsExprs(ParentSoyNode<? extends SoyNode> node) {
+  private boolean areChildrenComputableAsJsExprs(ParentSoyNode<?> node) {
 
     for (SoyNode child : node.getChildren()) {
       // Note: Save time by not visiting RawTextNode and PrintNode children.
-      if (!(child instanceof RawTextNode) && !(child instanceof PrintNode)) {
-        visit(child);
-        boolean childResult = resultStack.pop();
-        if (!childResult) {
+      if (! (child instanceof RawTextNode) && ! (child instanceof PrintNode)) {
+        if (! visit(child)) {
           return false;
         }
       }

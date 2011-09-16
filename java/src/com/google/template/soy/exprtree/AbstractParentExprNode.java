@@ -41,6 +41,16 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractParentExprNode(AbstractParentExprNode orig) {
+    super(orig);
+    this.parentMixin = new MixinParentNode<ExprNode>(orig.parentMixin, this);
+  }
+
+
   @Override public int numChildren() {
     return parentMixin.numChildren();
   }
@@ -73,8 +83,12 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
     parentMixin.removeChild(child);
   }
 
-  @Override public void setChild(int index, ExprNode newChild) {
-    parentMixin.setChild(index, newChild);
+  @Override public void replaceChild(int index, ExprNode newChild) {
+    parentMixin.replaceChild(index, newChild);
+  }
+
+  @Override public void replaceChild(ExprNode currChild, ExprNode newChild) {
+    parentMixin.replaceChild(currChild, newChild);
   }
 
   @Override public void clearChildren() {
@@ -83,6 +97,10 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
 
   @Override public void addChildren(List<? extends ExprNode> children) {
     parentMixin.addChildren(children);
+  }
+
+  @Override public void addChildren(int index, List<? extends ExprNode> children) {
+    parentMixin.addChildren(index, children);
   }
 
   @Override public void appendSourceStringForChildren(StringBuilder sb) {

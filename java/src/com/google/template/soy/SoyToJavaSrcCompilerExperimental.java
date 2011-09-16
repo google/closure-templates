@@ -77,11 +77,10 @@ public class SoyToJavaSrcCompilerExperimental {
   private String messageFilePath = "";
 
   @Option(name = "--bidiGlobalDir",
-          usage = "The bidi global directionality (ltr=1, rtl=-1) to use when processing bidi" +
-                  " functions/directives. Only applicable if your Soy code uses bidi" +
-                  " functions/directives. Also note that this flag is usually not necessary if" +
-                  " a message file is provided, because in that case the bidi global" +
-                  " directionality is simply inferred from the message bundle.")
+          usage = "The bidi global directionality (ltr=1, rtl=-1). Only applicable if your Soy" +
+                  " code uses bidi functions/directives. Also note that this flag is usually not" +
+                  " necessary if a message file is provided, because by default the bidi global" +
+                  " directionality is simply inferred from the message file.")
   private int bidiGlobalDir = 0;
 
   @Option(name = "--cssHandlingScheme",
@@ -149,7 +148,7 @@ public class SoyToJavaSrcCompilerExperimental {
     }
     SoyFileSet sfs = sfsBuilder.build();
 
-    // Creat SoyMsgBundle
+    // Create SoyMsgBundle.
     SoyMsgBundle msgBundle = null;
     if (messageFilePath.length() > 0) {
       SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);

@@ -25,6 +25,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
@@ -34,7 +35,7 @@ import java.util.List;
 
 /**
  * Visitor for replacing {@code MsgNode}s with corresponding pairs of {@code GoogMsgNode}s and
- * {@code PrintGoogMsgNode}s.
+ * {@code GoogMsgRefNode}s.
  *
  * <p> {@link #exec} must be called on a full parse tree.
  *
@@ -51,21 +52,23 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Inject
-  ReplaceMsgsWithGoogMsgsVisitor(SoyJsSrcOptions jsSrcOptions) {
+  public ReplaceMsgsWithGoogMsgsVisitor(SoyJsSrcOptions jsSrcOptions) {
     this.jsSrcOptions = jsSrcOptions;
   }
 
 
-  @Override protected void setup() {
+  @Override public Void exec(SoyNode node) {
     msgNodes = Lists.newArrayList();
+    visit(node);
+    return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     // We find all the MsgNodes before replacing them because we don't want the modifications to
     // interfere with the traversal.
@@ -74,30 +77,27 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
 
     // Perform the replacments.
-    IdGenerator nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGen();
+    IdGenerator nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
     for (MsgNode msgNode : msgNodes) {
       replaceMsgNodeHelper(msgNode, nodeIdGen);
     }
   }
 
 
-  @Override protected void visitInternal(MsgNode node) {
+  @Override protected void visitMsgNode(MsgNode node) {
     msgNodes.add(node);
     visitChildren(node);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for other nodes.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 
@@ -107,17 +107,17 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void replaceMsgNodeHelper(MsgNode msgNode, IdGenerator nodeIdGen) {
 
-    String googMsgNodeId = nodeIdGen.genStringId();
-    String googMsgName = jsSrcOptions.googMsgsAreExternal() ?
+    int googMsgNodeId = nodeIdGen.genId();
+    String googMsgVarName = jsSrcOptions.googMsgsAreExternal() ?
         "MSG_EXTERNAL_" + MsgUtils.computeMsgId(msgNode) : "MSG_UNNAMED_" + googMsgNodeId;
+      
+    GoogMsgNode googMsgNode = new GoogMsgNode(googMsgNodeId, msgNode, googMsgVarName);
+    GoogMsgRefNode googMsgRefNode = new GoogMsgRefNode(nodeIdGen.genId(),
+        googMsgNode.getRenderedGoogMsgVarName());
 
-    GoogMsgNode googMsgNode = new GoogMsgNode(googMsgNodeId, msgNode, googMsgName);
-    GoogMsgRefNode googMsgRefNode = new GoogMsgRefNode(nodeIdGen.genStringId(), googMsgName);
-
-    @SuppressWarnings("unchecked")  // cast with generics
-    ParentSoyNode<SoyNode> parent = (ParentSoyNode<SoyNode>) msgNode.getParent();
+    BlockNode parent = msgNode.getParent();
     int msgNodeIndex = parent.getChildIndex(msgNode);
-    parent.setChild(msgNodeIndex, googMsgNode);
+    parent.replaceChild(msgNodeIndex, googMsgNode);
     parent.addChild(msgNodeIndex + 1, googMsgRefNode);
   }
 

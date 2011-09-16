@@ -21,12 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.ParseException;
 import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
-import java.util.Collections;
 import java.util.List;
 
 
@@ -38,15 +36,12 @@ import java.util.List;
  *
  * @author Kai Huang
  */
-public class IfCondNode extends AbstractParentSoyCommandNode<SoyNode>
-    implements ConditionalBlockNode<SoyNode>, ParentExprHolderNode<SoyNode> {
+public class IfCondNode extends AbstractBlockCommandNode
+    implements ConditionalBlockNode, ExprHolderNode {
 
 
-  /** The text of the conditional expression. */
-  private final String exprText;
-
-  /** The parsed expression (null if the expression is not in V2 syntax). */
-  private final ExprRootNode<ExprNode> expr;
+  /** The parsed expression. */
+  private final ExprUnion exprUnion;
 
 
   /**
@@ -54,31 +49,62 @@ public class IfCondNode extends AbstractParentSoyCommandNode<SoyNode>
    * @param commandName The command name -- either 'if' or 'elseif'.
    * @param commandText The command text.
    */
-  public IfCondNode(String id, String commandName, String commandText) {
+  public IfCondNode(int id, String commandName, String commandText) {
     super(id, commandName, commandText);
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
 
-    exprText = commandText;
-    ExprRootNode<ExprNode> tempExpr = null;
+    ExprRootNode<?> expr;
     try {
-      tempExpr = (new ExpressionParser(exprText)).parseExpression();
+      expr = (new ExpressionParser(commandText)).parseExpression();
     } catch (TokenMgrError tme) {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      expr = null;
     } catch (ParseException pe) {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      expr = null;
     }
-    expr = tempExpr;
+
+    if (expr != null) {
+      exprUnion = new ExprUnion(expr);
+    } else {
+      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      exprUnion = new ExprUnion(commandText);
+    }
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected IfCondNode(IfCondNode orig) {
+    super(orig);
+    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.clone() : null;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.IF_COND_NODE;
   }
 
 
   /** Returns the text of the conditional expression. */
   public String getExprText() {
-    return exprText;
+    return exprUnion.getExprText();
   }
 
-  /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
-  public ExprRootNode<ExprNode> getExpr() {
-    return expr;
+
+  /** Returns the parsed expression. */
+  public ExprUnion getExprUnion() {
+    return exprUnion;
+  }
+
+
+  @Override public String getCommandName() {
+    return (getParent().getChild(0) == this) ? "if" : "elseif";
+  }
+
+
+  @Override public String getCommandText() {
+    return exprUnion.getExprText();
   }
 
 
@@ -91,9 +117,13 @@ public class IfCondNode extends AbstractParentSoyCommandNode<SoyNode>
   }
 
 
-  @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
-    return (expr != null) ? ImmutableList.of(expr)
-                          : Collections.<ExprRootNode<? extends ExprNode>>emptyList();
+  @Override public List<ExprUnion> getAllExprUnions() {
+    return ImmutableList.of(exprUnion);
+  }
+
+
+  @Override public IfCondNode clone() {
+    return new IfCondNode(this);
   }
 
 }

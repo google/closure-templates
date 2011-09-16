@@ -24,7 +24,7 @@ import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -37,8 +37,8 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-public class IdDirective
-    implements SoyTofuPrintDirective, SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+public class IdDirective extends SoyAbstractTofuPrintDirective
+    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
 
 
   public static final String NAME = "|id";
@@ -63,18 +63,18 @@ public class IdDirective
   }
 
 
-  @Override public String applyForTofu(String str, List<SoyData> args) {
-    return str;
+  @Override public String apply(SoyData value, List<SoyData> args) {
+    return value.toString();
   }
 
 
-  @Override public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args) {
-    return str;
+  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    return value;
   }
 
 
-  @Override public JavaExpr applyForJavaSrc(JavaExpr str, List<JavaExpr> args) {
-    return str;
+  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
+    return value;
   }
 
 }

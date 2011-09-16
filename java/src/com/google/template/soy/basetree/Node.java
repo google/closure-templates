@@ -35,14 +35,14 @@ public interface Node {
    * Sets this node's parent.
    * @param parent The parent node to set.
    */
-  public void setParent(ParentNode<? extends Node> parent);
+  public void setParent(ParentNode<?> parent);
 
 
   /**
    * Gets this node's parent.
    * @return This node's parent.
    */
-  public ParentNode<? extends Node> getParent();
+  public ParentNode<?> getParent();
 
 
   /**
@@ -57,7 +57,8 @@ public interface Node {
   /**
    * Finds and returns this node's nearest ancestor of the given type. The ancestor can be this node
    * (i.e. doesn't have to be a proper ancestor).
-   * @param ancestorClass The type of ancestor to retrieve.
+   * @param <N> The type of ancestor to retrieve.
+   * @param ancestorClass The class object for the type of ancestor to retrieve.
    * @return This node's nearest ancestor of the given type, or null if none.
    */
   public <N extends Node> N getNearestAncestor(Class<N> ancestorClass);
@@ -84,5 +85,12 @@ public interface Node {
    * @return A string that visually shows the subtree rooted at this node.
    */
   public String toTreeString(int indent);
+
+
+  /**
+   * Clones this node. The clone's parent pointer is set to null.
+   * @return A clone of this code.
+   */
+  public Node clone();
 
 }

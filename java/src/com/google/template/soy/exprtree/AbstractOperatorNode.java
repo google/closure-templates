@@ -36,13 +36,36 @@ import java.util.List;
 public abstract class AbstractOperatorNode extends AbstractParentExprNode implements OperatorNode {
 
 
+  /** The operator. */
+  private final Operator operator;
+
+
+  public AbstractOperatorNode(Operator operator) {
+    this.operator = operator;
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractOperatorNode(AbstractOperatorNode orig) {
+    super(orig);
+    this.operator = orig.operator;
+  }
+
+
+  @Override public Operator getOperator() {
+    return operator;
+  }
+
+
   @Override public String toSourceString() {
 
-    Operator op = getOperator();
-    boolean isLeftAssociative = op.getAssociativity() == Associativity.LEFT;
+    boolean isLeftAssociative = operator.getAssociativity() == Associativity.LEFT;
     StringBuilder sourceSb = new StringBuilder();
 
-    List<SyntaxElement> syntax = op.getSyntax();
+    List<SyntaxElement> syntax = operator.getSyntax();
     for (int i = 0, n = syntax.size(); i < n; ++i) {
       SyntaxElement syntaxEl = syntax.get(i);
 
@@ -107,7 +130,7 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
    */
   private String getOperandProtectedForPrecHelper(int index, boolean shouldProtectEqualPrec) {
 
-    int thisOpPrec = this.getOperator().getPrecedence();
+    int thisOpPrec = operator.getPrecedence();
 
     ExprNode child = getChild(index);
 

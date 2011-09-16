@@ -80,13 +80,13 @@ public class DataUtils {
   public static PrimitiveData convertPrimitiveExprToData(PrimitiveNode primitiveNode) {
 
     if (primitiveNode instanceof StringNode) {
-      return new StringData(((StringNode) primitiveNode).getValue());
+      return StringData.forValue(((StringNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof BooleanNode) {
-      return new BooleanData(((BooleanNode) primitiveNode).getValue());
+      return BooleanData.forValue(((BooleanNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof IntegerNode) {
-      return new IntegerData(((IntegerNode) primitiveNode).getValue());
+      return IntegerData.forValue(((IntegerNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof FloatNode) {
-      return new FloatData(((FloatNode) primitiveNode).getValue());
+      return FloatData.forValue(((FloatNode) primitiveNode).getValue());
     } else if (primitiveNode instanceof NullNode) {
       return NullData.INSTANCE;
     } else {

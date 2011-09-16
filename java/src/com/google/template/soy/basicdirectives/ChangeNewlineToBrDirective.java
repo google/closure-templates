@@ -19,13 +19,15 @@ package com.google.template.soy.basicdirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -38,11 +40,11 @@ import java.util.regex.Pattern;
  * @author Felix Chang
  */
 @Singleton
-public class ChangeNewlineToBrDirective
-    implements SoyTofuPrintDirective, SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+public class ChangeNewlineToBrDirective extends SoyAbstractTofuPrintDirective
+    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective, SanitizedContentOperator {
 
 
-  private static final Pattern NEWLINE_PATTERN = Pattern.compile("(\\r\\n|\\r|\\n)");
+  private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\r\\n|\\r|\\n");
 
 
   @Inject
@@ -64,21 +66,27 @@ public class ChangeNewlineToBrDirective
   }
 
 
-  @Override public String applyForTofu(String str, List<SoyData> args) {
-    return NEWLINE_PATTERN.matcher(str).replaceAll("<br>");
+  @Override public String apply(SoyData value, List<SoyData> args) {
+    return NEWLINE_PATTERN.matcher(value.toString()).replaceAll("<br>");
   }
 
 
-  @Override public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args) {
-    return new JsExpr("soy.$$changeNewlineToBr(" + str.getText() + ")", Integer.MAX_VALUE);
+  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    return new JsExpr("soy.$$changeNewlineToBr(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
 
-  @Override public JavaExpr applyForJavaSrc(JavaExpr str, List<JavaExpr> args) {
+  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
     return new JavaExpr(
-        JavaCodeUtils.genFunctionCall(JavaCodeUtils.UTILS_LIB + ".$$changeNewlineToBr",
-            str.getText()),
+        JavaCodeUtils.genFunctionCall(
+            JavaCodeUtils.UTILS_LIB + ".$$changeNewlineToBr", value.getText()),
         String.class, Integer.MAX_VALUE);
+  }
+
+
+  @Override public SanitizedContent.ContentKind getContentKind() {
+    // This directive expects HTML as input and produces HTML as output.
+    return SanitizedContent.ContentKind.HTML;
   }
 
 }

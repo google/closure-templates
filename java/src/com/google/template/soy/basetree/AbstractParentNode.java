@@ -40,6 +40,16 @@ public abstract class AbstractParentNode<N extends Node>
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractParentNode(AbstractParentNode<N> orig) {
+    super(orig);
+    this.parentMixin = new MixinParentNode<N>(orig.parentMixin, this);
+  }
+
+
   @Override public int numChildren() {
     return parentMixin.numChildren();
   }
@@ -72,8 +82,12 @@ public abstract class AbstractParentNode<N extends Node>
     parentMixin.removeChild(child);
   }
 
-  @Override public void setChild(int index, N newChild) {
-    parentMixin.setChild(index, newChild);
+  @Override public void replaceChild(int index, N newChild) {
+    parentMixin.replaceChild(index, newChild);
+  }
+
+  @Override public void replaceChild(N currChild, N newChild) {
+    parentMixin.replaceChild(currChild, newChild);
   }
 
   @Override public void clearChildren() {
@@ -82,6 +96,10 @@ public abstract class AbstractParentNode<N extends Node>
 
   @Override public void addChildren(List<? extends N> children) {
     parentMixin.addChildren(children);
+  }
+
+  @Override public void addChildren(int index, List<? extends N> children) {
+    parentMixin.addChildren(index, children);
   }
 
   @Override public void appendSourceStringForChildren(StringBuilder sb) {

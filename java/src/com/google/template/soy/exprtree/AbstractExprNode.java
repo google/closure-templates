@@ -33,4 +33,19 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
     return (ParentExprNode) super.getParent();
   }
 
+
+  public AbstractExprNode() {}
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractExprNode(AbstractExprNode orig) {
+    super(orig);
+  }
+
+
+  @Override public abstract ExprNode clone();
+
 }

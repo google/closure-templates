@@ -59,7 +59,7 @@ public abstract class CollectionData extends SoyData {
       } catch (ClassCastException cce) {
         throw new SoyDataException(
             "Attempting to add a mapping containing a non-string key (key type " +
-            data[i].getClass().getSimpleName() + ").");
+            data[i].getClass().getName() + ").");
       }
     }
   }
@@ -79,7 +79,6 @@ public abstract class CollectionData extends SoyData {
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
 
-      checkKeyHelper(collectionData, keys.get(i), keyStr);
       SoyData nextSoyData = collectionData.getSingle(keys.get(i));
       if (nextSoyData != null && !(nextSoyData instanceof CollectionData)) {
         throw new SoyDataException(
@@ -98,7 +97,6 @@ public abstract class CollectionData extends SoyData {
       collectionData = nextCollectionData;
     }
 
-    checkKeyHelper(collectionData, keys.get(numKeys - 1), keyStr);
     collectionData.putSingle(keys.get(numKeys - 1), ensureValidValue(value));
   }
 
@@ -110,7 +108,7 @@ public abstract class CollectionData extends SoyData {
    * @param value The data to put at the specified location.
    */
   public void put(String keyStr, boolean value) {
-    put(keyStr, new BooleanData(value));
+    put(keyStr, BooleanData.forValue(value));
   }
 
   /**
@@ -120,7 +118,7 @@ public abstract class CollectionData extends SoyData {
    * @param value The data to put at the specified location.
    */
   public void put(String keyStr, int value) {
-    put(keyStr, new IntegerData(value));
+    put(keyStr, IntegerData.forValue(value));
   }
 
   /**
@@ -130,7 +128,7 @@ public abstract class CollectionData extends SoyData {
    * @param value The data to put at the specified location.
    */
   public void put(String keyStr, double value) {
-    put(keyStr, new FloatData(value));
+    put(keyStr, FloatData.forValue(value));
   }
 
   /**
@@ -140,7 +138,7 @@ public abstract class CollectionData extends SoyData {
    * @param value The data to put at the specified location.
    */
   public void put(String keyStr, String value) {
-    put(keyStr, new StringData(value));
+    put(keyStr, StringData.forValue(value));
   }
 
 
@@ -159,7 +157,6 @@ public abstract class CollectionData extends SoyData {
 
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
-      checkKeyHelper(collectionData, keys.get(i), keyStr);
       SoyData soyData = collectionData.getSingle(keys.get(i));
       if (soyData == null || !(soyData instanceof CollectionData)) {
         return;
@@ -167,7 +164,6 @@ public abstract class CollectionData extends SoyData {
       collectionData = (CollectionData) soyData;
     }
 
-    checkKeyHelper(collectionData, keys.get(numKeys - 1), keyStr);
     collectionData.removeSingle(keys.get(numKeys - 1));
   }
 
@@ -188,7 +184,6 @@ public abstract class CollectionData extends SoyData {
 
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
-      checkKeyHelper(collectionData, keys.get(i), keyStr);
       SoyData soyData = collectionData.getSingle(keys.get(i));
       if (soyData == null || !(soyData instanceof CollectionData)) {
         return null;
@@ -196,7 +191,6 @@ public abstract class CollectionData extends SoyData {
       collectionData = (CollectionData) soyData;
     }
 
-    checkKeyHelper(collectionData, keys.get(numKeys - 1), keyStr);
     return collectionData.getSingle(keys.get(numKeys - 1));
   }
 
@@ -289,70 +283,51 @@ public abstract class CollectionData extends SoyData {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Protected/private helpers.
+  // Superpackage-private methods.
 
 
   /**
-   * Private helper to check that a given individual key (may be an index) is valid for the given
-   * CollectionData object.
-   * @param collectionData The object that the key is to be referenced in.
-   * @param key The individual key to check.
-   * @param fullKeyStr The full key string that the individual key is part of (used in error
-   *     reporting only).
-   * @throws IllegalArgumentException If the key is not valid for the CollectionData.
-   */
-  private static void checkKeyHelper(CollectionData collectionData, String key, String fullKeyStr)
-      throws IllegalArgumentException {
-    try {
-      collectionData.checkKey(key);
-    } catch (IllegalArgumentException iae) {
-      throw new IllegalArgumentException(
-          "Error while referencing \"" + fullKeyStr + "\": " + iae.getMessage());
-    }
-  }
-
-
-  /**
-   * Ensures that the given value is valid for insertion into a Soy data tree. If the value is not
-   * null, then simply returns it, else returns a new NullData object.
-   * @param value The value to ensure validity for.
-   * @return The given value if it's not null, or a new NullData object to represent the value if
-   *     it is null.
-   */
-  protected static SoyData ensureValidValue(SoyData value) {
-    return (value != null) ? value : NullData.INSTANCE;
-  }
-
-
-  /**
-   * Checks that the given key is valid for this data object.
-   * @param key An individual key.
-   * @throws IllegalArgumentException If the given key is invalid for this collection data object.
-   */
-  protected abstract void checkKey(String key) throws IllegalArgumentException;
-
-
-  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
    * Puts data into this data object at the specified key.
    * @param key An individual key.
    * @param value The data to put at the specified key.
    */
-  protected abstract void putSingle(String key, SoyData value);
+  public abstract void putSingle(String key, SoyData value);
 
 
   /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
    * Removes the data at the specified key.
    * @param key An individual key.
    */
-  protected abstract void removeSingle(String key);
+  public abstract void removeSingle(String key);
 
 
   /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
    * Gets the data at the specified key.
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
-  protected abstract SoyData getSingle(String key);
+  public abstract SoyData getSingle(String key);
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Protected/private helpers.
+
+
+  /**
+   * Ensures that the given value is valid for insertion into a Soy data tree. If the value is not
+   * null, then simply returns it, else return NullData.
+   * @param value The value to ensure validity for.
+   * @return The given value if it's not null, or NullData if it is null.
+   */
+  protected static SoyData ensureValidValue(SoyData value) {
+    return (value != null) ? value : NullData.INSTANCE;
+  }
 
 
   /**

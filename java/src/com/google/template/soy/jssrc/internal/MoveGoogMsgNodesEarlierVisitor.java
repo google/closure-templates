@@ -21,8 +21,10 @@ import com.google.template.soy.sharedpasses.BuildNearestDependeeMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgNode;
 
 import java.util.List;
@@ -45,16 +47,18 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
   private List<GoogMsgNode> googMsgNodes;
 
 
-  @Override protected void setup() {
+  @Override public Void exec(SoyNode node) {
     googMsgNodes = Lists.newArrayList();
+    visit(node);
+    return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     // We find all the GoogMsgNodes before moving them because we don't want the modifications to
     // interfere with the traversal.
@@ -70,22 +74,19 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
 
-  @Override protected void visitInternal(GoogMsgNode node) {
+  @Override protected void visitGoogMsgNode(GoogMsgNode node) {
     googMsgNodes.add(node);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for other nodes.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 
@@ -96,14 +97,14 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
   @SuppressWarnings("unchecked")  // casts with generics
   private void moveGoogMsgNodeEarlierHelper(GoogMsgNode googMsgNode, SoyNode nearestDependee) {
 
-    ParentSoyNode<SoyNode> newParent;
+    BlockNode newParent;
     int indexUnderNewParent;
 
     if (nearestDependee instanceof LocalVarInlineNode) {
-      newParent = (ParentSoyNode<SoyNode>) nearestDependee.getParent();
-      indexUnderNewParent = newParent.getChildIndex(nearestDependee) + 1;
-    } else if (nearestDependee instanceof ParentSoyNode) {
-      newParent = (ParentSoyNode<SoyNode>) nearestDependee;
+      newParent = (BlockNode) nearestDependee.getParent();
+      indexUnderNewParent = newParent.getChildIndex((LocalVarInlineNode) nearestDependee) + 1;
+    } else if (nearestDependee instanceof BlockNode) {
+      newParent = (BlockNode) nearestDependee;
       indexUnderNewParent = 0;
     } else {
       throw new AssertionError();
@@ -112,7 +113,7 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
     // Advance the index under the new parent past any GoogMsgNodes already at that location. Also,
     // if we end up finding the exact GoogMsgNode that we're currently trying to move, then we're
     // done because it's already at the location we want to move it to.
-    List<SoyNode> siblings = newParent.getChildren();
+    List<StandaloneNode> siblings = newParent.getChildren();
     while (indexUnderNewParent < siblings.size() &&
            siblings.get(indexUnderNewParent) instanceof GoogMsgNode) {
       if (googMsgNode == siblings.get(indexUnderNewParent)) {
@@ -123,7 +124,7 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Move the node.
-    ((ParentSoyNode<SoyNode>) googMsgNode.getParent()).removeChild(googMsgNode);
+    googMsgNode.getParent().removeChild(googMsgNode);
     newParent.addChild(indexUnderNewParent, googMsgNode);
   }
 

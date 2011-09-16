@@ -35,6 +35,7 @@ public class BasicFunctionsModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), SoyFunction.class);
     soyFunctionsSetBinder.addBinding().to(CeilingFunction.class);
     soyFunctionsSetBinder.addBinding().to(FloorFunction.class);
+    soyFunctionsSetBinder.addBinding().to(KeysFunction.class);
     soyFunctionsSetBinder.addBinding().to(LengthFunction.class);
     soyFunctionsSetBinder.addBinding().to(MaxFunction.class);
     soyFunctionsSetBinder.addBinding().to(MinFunction.class);

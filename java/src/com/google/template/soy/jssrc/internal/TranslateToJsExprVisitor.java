@@ -17,11 +17,10 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.DataRefIndexNode;
 import com.google.template.soy.exprtree.DataRefKeyNode;
 import com.google.template.soy.exprtree.DataRefNode;
@@ -31,6 +30,8 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
@@ -41,7 +42,6 @@ import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.ImpureFunction;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +55,7 @@ import java.util.Map;
  *
  * @author Kai Huang
  */
-public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
+public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<JsExpr> {
 
 
   /**
@@ -78,9 +78,6 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
    *  special functions) current in scope. */
   private final Deque<Map<String, JsExpr>> localVarTranslations;
 
-  /** Stack of partial results (during a pass). */
-  private Deque<JsExpr> resultStack;
-
 
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
@@ -96,59 +93,115 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
   }
 
 
-  @Override protected void setup() {
-    resultStack = new ArrayDeque<JsExpr>();
-  }
-
-
-  @Override protected JsExpr getResult() {
-    return resultStack.peek();
-  }
-
-
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
 
 
-  @Override protected void visitInternal(ExprRootNode<? extends ExprNode> node) {
-    visitChildren(node);
+  @Override protected JsExpr visitExprRootNode(ExprRootNode<?> node) {
+    return visit(node.getChild(0));
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for primitives and data references (concrete classes).
+  // Implementations for primitives.
 
 
-  @Override protected void visitInternal(StringNode node) {
+  @Override protected JsExpr visitStringNode(StringNode node) {
 
     // Note: StringNode.toSourceString() produces a Soy string, which is usually a valid JS string.
     // The rare exception is a string containing a Unicode Format character (Unicode category "Cf")
     // because of the JavaScript language quirk that requires all category "Cf" characters to be
     // escaped in JS strings. Therefore, we must call JsSrcUtils.escapeUnicodeFormatChars() on the
     // result.
-    resultStack.push(new JsExpr(
+    return new JsExpr(
         JsSrcUtils.escapeUnicodeFormatChars(node.toSourceString()),
-        Integer.MAX_VALUE));
+        Integer.MAX_VALUE);
   }
 
 
-  @Override protected void visitInternal(DataRefNode node) {
+  @Override protected JsExpr visitPrimitiveNode(PrimitiveNode node) {
+
+    // Note: ExprNode.toSourceString() technically returns a Soy expression. In the case of
+    // primitives, the result is usually also the correct JS expression.
+    // Note: The rare exception to the above note is a StringNode containing a Unicode Format
+    // character (Unicode category "Cf") because of the JavaScript language quirk that requires all
+    // category "Cf" characters to be escaped in JS strings. Therefore, we have a separate
+    // implementation above for visitStringNode(StringNode).
+    return new JsExpr(node.toSourceString(), Integer.MAX_VALUE);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for collections.
+
+
+  @Override protected JsExpr visitListLiteralNode(ListLiteralNode node) {
+
+    StringBuilder exprTextSb = new StringBuilder();
+    exprTextSb.append("[");
+
+    boolean isFirst = true;
+    for (ExprNode child : node.getChildren()) {
+      if (isFirst) {
+        isFirst = false;
+      } else {
+        exprTextSb.append(", ");
+      }
+      exprTextSb.append(visit(child).getText());
+    }
+
+    exprTextSb.append("]");
+
+    return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
+  }
+
+
+  @Override protected JsExpr visitMapLiteralNode(MapLiteralNode node) {
+
+    StringBuilder exprTextSb = new StringBuilder();
+    exprTextSb.append("{");
+
+    for (int i = 0, n = node.numChildren(); i < n; i += 2) {
+      if (i != 0) {
+        exprTextSb.append(", ");
+      }
+      exprTextSb.append(visit(node.getChild(i)).getText()).append(": ")
+                .append(visit(node.getChild(i + 1)).getText());
+    }
+
+    exprTextSb.append("}");
+
+    return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for data references.
+
+
+  @Override protected JsExpr visitDataRefNode(DataRefNode node) {
 
     StringBuilder exprTextSb = new StringBuilder();
 
-    // ------ Translate the first part, which may be a variable or a data key ------
-    String firstPart = ((DataRefKeyNode) node.getChild(0)).getKey();
-    JsExpr translation = getLocalVarTranslation(firstPart);
-    if (translation != null) {
-      // Case 1: In-scope local var.
-      exprTextSb.append(translation.getText());
+    // ------ Translate first key, which may reference a variable, data, or injected data. ------
+    String firstKey = node.getFirstKey();
+    if (node.isIjDataRef()) {
+      // Case 1: Injected data reference.
+      exprTextSb.append("opt_ijData");
+      appendDataRefKey(exprTextSb, firstKey);
     } else {
-      // Case 2: Data reference.
-      exprTextSb.append("opt_data");
-      appendDataRefKey(exprTextSb, firstPart);
+      JsExpr translation = getLocalVarTranslation(firstKey);
+      if (translation != null) {
+        // Case 2: In-scope local var.
+        exprTextSb.append(translation.getText());
+      } else {
+        // Case 3: Data reference.
+        exprTextSb.append("opt_data");
+        appendDataRefKey(exprTextSb, firstKey);
+      }
     }
 
-    // ------ Translate the rest of the keys, if any ------
+    // ------ Translate the rest of the keys, if any. ------
     int numKeys = node.numChildren();
     if (numKeys > 1) {
       for (int i = 1; i < numKeys; ++i) {
@@ -158,40 +211,45 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
         } else if (child instanceof DataRefIndexNode) {
           exprTextSb.append("[").append(((DataRefIndexNode) child).getIndex()).append("]");
         } else {
-          visit(child);
-          exprTextSb.append("[").append(resultStack.pop().getText()).append("]");
+          JsExpr childJsExpr = visit(child);
+          exprTextSb.append("[").append(childJsExpr.getText()).append("]");
         }
       }
     }
 
-    resultStack.push(new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE));
+    return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
   }
 
 
-  @Override protected void visitInternal(GlobalNode node) {
-    resultStack.push(new JsExpr(node.toSourceString(), Integer.MAX_VALUE));
+  @Override protected JsExpr visitGlobalNode(GlobalNode node) {
+    return new JsExpr(node.toSourceString(), Integer.MAX_VALUE);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for operators (concrete classes).
+  // Implementations for operators.
 
 
-  @Override protected void visitInternal(NotOpNode node) {
+  @Override protected JsExpr visitNotOpNode(NotOpNode node) {
     // Note: Since we're using Soy syntax for the 'not' operator, we'll end up generating code with
     // a space between the token '!' and the subexpression that it negates. This isn't the usual
     // style, but it should be fine (besides, it's more readable with the extra space).
-    resultStack.push(genJsExprUsingSoySyntaxWithNewToken(node, "!"));
+    return genJsExprUsingSoySyntaxWithNewToken(node, "!");
   }
 
 
-  @Override protected void visitInternal(AndOpNode node) {
-    resultStack.push(genJsExprUsingSoySyntaxWithNewToken(node, "&&"));
+  @Override protected JsExpr visitAndOpNode(AndOpNode node) {
+    return genJsExprUsingSoySyntaxWithNewToken(node, "&&");
   }
 
 
-  @Override protected void visitInternal(OrOpNode node) {
-    resultStack.push(genJsExprUsingSoySyntaxWithNewToken(node, "||"));
+  @Override protected JsExpr visitOrOpNode(OrOpNode node) {
+    return genJsExprUsingSoySyntaxWithNewToken(node, "||");
+  }
+
+
+  @Override protected JsExpr visitOperatorNode(OperatorNode node) {
+    return genJsExprUsingSoySyntax(node);
   }
 
 
@@ -199,7 +257,7 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
   // Implementations for functions.
 
 
-  @Override protected void visitInternal(FunctionNode node) {
+  @Override protected JsExpr visitFunctionNode(FunctionNode node) {
 
     String fnName = node.getFunctionName();
     int numArgs = node.numChildren();
@@ -214,17 +272,13 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
       }
       switch (impureFn) {
         case IS_FIRST:
-          visitIsFirstFunction(node);
-          return;
+          return visitIsFirstFunction(node);
         case IS_LAST:
-          visitIsLastFunction(node);
-          return;
+          return visitIsLastFunction(node);
         case INDEX:
-          visitIndexFunction(node);
-          return;
+          return visitIndexFunction(node);
         case HAS_DATA:
-          visitHasDataFunction();
-          return;
+          return visitHasDataFunction();
         default:
           throw new AssertionError();
       }
@@ -238,18 +292,13 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
             "Function '" + fnName + "' called with the wrong number of arguments" +
             " (function call \"" + node.toSourceString() + "\").");
       }
-      List<JsExpr> args = Lists.newArrayList();
-      for (ExprNode child : node.getChildren()) {
-        visit(child);
-        args.add(resultStack.pop());
-      }
+      List<JsExpr> args = visitChildren(node);
       try {
-        resultStack.push(fn.computeForJsSrc(args));
+        return fn.computeForJsSrc(args);
       } catch (Exception e) {
         throw new SoySyntaxException(
             "Error in function call \"" + node.toSourceString() + "\": " + e.getMessage(), e);
       }
-      return;
     }
 
     // Function not found.
@@ -259,47 +308,26 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
   }
 
 
-  private void visitIsFirstFunction(FunctionNode node) {
-    String varName = ((DataRefKeyNode) ((DataRefNode) node.getChild(0)).getChild(0)).getKey();
-    resultStack.push(getLocalVarTranslation(varName + "__isFirst"));
+  private JsExpr visitIsFirstFunction(FunctionNode node) {
+    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    return getLocalVarTranslation(varName + "__isFirst");
   }
 
 
-  private void visitIsLastFunction(FunctionNode node) {
-    String varName = ((DataRefKeyNode) ((DataRefNode) node.getChild(0)).getChild(0)).getKey();
-    resultStack.push(getLocalVarTranslation(varName + "__isLast"));
+  private JsExpr visitIsLastFunction(FunctionNode node) {
+    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    return getLocalVarTranslation(varName + "__isLast");
   }
 
 
-  private void visitIndexFunction(FunctionNode node) {
-    String varName = ((DataRefKeyNode) ((DataRefNode) node.getChild(0)).getChild(0)).getKey();
-    resultStack.push(getLocalVarTranslation(varName + "__index"));
+  private JsExpr visitIndexFunction(FunctionNode node) {
+    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    return getLocalVarTranslation(varName + "__index");
   }
 
 
-  private void visitHasDataFunction() {
-    resultStack.push(new JsExpr("opt_data != null", Operator.NOT_EQUAL.getPrecedence()));
-  }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
-
-
-  @Override protected void visitInternal(OperatorNode node) {
-    resultStack.push(genJsExprUsingSoySyntax(node));
-  }
-
-
-  @Override protected void visitInternal(PrimitiveNode node) {
-
-    // Note: ExprNode.toSourceString() technically returns a Soy expression. In the case of
-    // primitives, the result is usually also the correct JS expression.
-    // Note: The rare exception to the above note is a StringNode containing a Unicode Format
-    // character (Unicode category "Cf") because of the JavaScript language quirk that requires all
-    // category "Cf" characters to be escaped in JS strings. Therefore, we have a separate
-    // implementation above for visitInternal(StringNode).
-    resultStack.push(new JsExpr(node.toSourceString(), Integer.MAX_VALUE));
+  private JsExpr visitHasDataFunction() {
+    return new JsExpr("opt_data != null", Operator.NOT_EQUAL.getPrecedence());
   }
 
 
@@ -347,11 +375,7 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
    */
   private JsExpr genJsExprUsingSoySyntaxWithNewToken(OperatorNode opNode, String newToken) {
 
-    List<JsExpr> operandJsExprs = Lists.newArrayList();
-    for (ExprNode child : opNode.getChildren()) {
-      visit(child);
-      operandJsExprs.add(resultStack.pop());
-    }
+    List<JsExpr> operandJsExprs = visitChildren(opNode);
 
     return SoyJsCodeUtils.genJsExprUsingSoySyntaxWithNewToken(
         opNode.getOperator(), operandJsExprs, newToken);
@@ -377,14 +401,13 @@ public class TranslateToJsExprVisitor extends AbstractExprNodeVisitor<JsExpr> {
    * Set of words that JavaScript considers reserved words.  These words cannot
    * be used as identifiers.  This list is from the ECMA-262 v5, section 7.6.1:
    * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
+   * plus the keywords for boolean values and <code>null</code>.
    */
   private static final ImmutableSet<String> JS_RESERVED_WORDS = ImmutableSet.of(
-      "break", "case", "catch", "class",
-      "const", "continue", "debugger", "default", "delete", "do",
-      "else", "enum", "export", "extends", "finally",
-      "for", "function", "if", "implements", "import", "in",
-      "instanceof", "interface", "let", "new",
-      "package", "private", "protected", "public", "return", "static",
-      "super", "switch", "this", "throw",
-      "try", "typeof", "var", "void", "while", "with", "yield");
+      "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do",
+      "else", "enum", "export", "extends", "false", "finally", "for", "function", "if",
+      "implements", "import", "in", "instanceof", "interface", "let", "null", "new", "package",
+      "private", "protected", "public", "return", "static", "super", "switch", "this", "throw",
+      "true", "try", "typeof", "var", "void", "while", "with", "yield");
+
 }

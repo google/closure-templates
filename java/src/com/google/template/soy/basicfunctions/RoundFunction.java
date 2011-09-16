@@ -16,6 +16,9 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toNumberJavaExpr;
+import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
@@ -27,12 +30,10 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
-import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toNumberJavaExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
-import static com.google.template.soy.tofu.restricted.SoyTofuFunctionUtils.toSoyData;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -45,7 +46,8 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-class RoundFunction implements SoyTofuFunction, SoyJsSrcFunction, SoyJavaSrcFunction {
+class RoundFunction extends SoyAbstractTofuFunction
+    implements SoyJsSrcFunction, SoyJavaSrcFunction {
 
 
   @Inject
@@ -62,7 +64,7 @@ class RoundFunction implements SoyTofuFunction, SoyJsSrcFunction, SoyJavaSrcFunc
   }
 
 
-  @Override public SoyData computeForTofu(List<SoyData> args) {
+  @Override public SoyData compute(List<SoyData> args) {
     SoyData value = args.get(0);
     int numDigitsAfterPt = (args.size() == 2) ? args.get(1).integerValue() : 0 /* default */;
 

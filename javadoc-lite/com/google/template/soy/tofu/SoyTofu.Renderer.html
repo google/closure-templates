@@ -1,0 +1,424 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--NewPage-->
+<HTML>
+<HEAD>
+<TITLE>
+SoyTofu.Renderer (Soy Lite)
+</TITLE>
+
+
+<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../stylesheet.css" TITLE="Style">
+
+<SCRIPT type="text/javascript">
+function windowTitle()
+{
+    if (location.href.indexOf('is-external=true') == -1) {
+        parent.document.title="SoyTofu.Renderer (Soy Lite)";
+    }
+}
+</SCRIPT>
+<NOSCRIPT>
+</NOSCRIPT>
+
+</HEAD>
+
+<BODY BGCOLOR="white" onload="windowTitle();">
+<HR>
+
+
+<!-- ========= START OF TOP NAVBAR ======= -->
+<A NAME="navbar_top"><!-- --></A>
+<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
+<TR>
+<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu"><B>NEXT CLASS</B></A></FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="../../../../../index.html?com/google/template/soy/tofu/SoyTofu.Renderer.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="SoyTofu.Renderer.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+&nbsp;<SCRIPT type="text/javascript">
+  <!--
+  if(window==top) {
+    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+  }
+  //-->
+</SCRIPT>
+<NOSCRIPT>
+  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
+</NOSCRIPT>
+
+
+</FONT></TD>
+</TR>
+<TR>
+<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
+DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+</TR>
+</TABLE>
+<A NAME="skip-navbar_top"></A>
+<!-- ========= END OF TOP NAVBAR ========= -->
+
+<HR>
+<!-- ======== START OF CLASS DATA ======== -->
+<H2>
+<FONT SIZE="-1">
+com.google.template.soy.tofu</FONT>
+<BR>
+Interface SoyTofu.Renderer</H2>
+<DL>
+<DT><B>Enclosing interface:</B><DD><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A></DD>
+</DL>
+<HR>
+<DL>
+<DT><PRE>public static interface <B>SoyTofu.Renderer</B></DL>
+</PRE>
+
+<P>
+Renderer for a template.
+<P>
+
+<P>
+<HR>
+
+<P>
+
+<!-- ========== METHOD SUMMARY =========== -->
+
+<A NAME="method_summary"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
+<B>Method Summary</B></FONT></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#render()">render</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Renders the template using the data, injected data, and message bundle previously set.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setActiveDelegatePackageNames(java.util.Set)">setActiveDelegatePackageNames</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelegatePackageNames)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the set of active delegate package names.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setCssRenamingMap(com.google.template.soy.shared.SoyCssRenamingMap)">setCssRenamingMap</A></B>(<A HREF="../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html" title="interface in com.google.template.soy.shared">SoyCssRenamingMap</A>&nbsp;cssRenamingMap)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the CSS renaming map.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setData(java.util.Map)">setData</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,?&gt;&nbsp;data)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the data to call the template with.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setData(com.google.template.soy.data.SoyMapData)">setData</A></B>(<A HREF="../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the data to call the template with.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setDontAddToCache(boolean)">setDontAddToCache</A></B>(boolean&nbsp;dontAddToCache)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If set to true, indicates that we should not add the current combination of
+ <code>SoyMsgBundle</code> and <code>SoyCssRenamingMap</code> to the cache if it's not already there.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setIjData(java.util.Map)">setIjData</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,?&gt;&nbsp;ijData)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the injected data to call the template with.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setIjData(com.google.template.soy.data.SoyMapData)">setIjData</A></B>(<A HREF="../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the injected data to call the template with.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setMsgBundle(com.google.template.soy.msgs.SoyMsgBundle)">setMsgBundle</A></B>(<A HREF="../../../../../com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A>&nbsp;msgBundle)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the bundle of translated messages, or null to use the messages from the Soy source.</TD>
+</TR>
+</TABLE>
+&nbsp;
+<P>
+
+<!-- ============ METHOD DETAIL ========== -->
+
+<A NAME="method_detail"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
+<B>Method Detail</B></FONT></TH>
+</TR>
+</TABLE>
+
+<A NAME="setData(java.util.Map)"><!-- --></A><H3>
+setData</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setData</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,?&gt;&nbsp;data)</PRE>
+<DL>
+<DD>Sets the data to call the template with. Can be null if the template has no parameters.
+
+ <p> Note: If you call this method instead of <A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setData(com.google.template.soy.data.SoyMapData)"><CODE>setData(SoyMapData)</CODE></A>, your template data
+ will be converted to a <code>SoyMapData</code> object on each call. This may not be a big deal if
+ you only need to use the data object once. But if you need to reuse the same data object for
+ multiple calls, it's more efficient to build your own <code>SoyMapData</code> object and reuse it
+ with <A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setData(com.google.template.soy.data.SoyMapData)"><CODE>setData(SoyMapData)</CODE></A>.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setData(com.google.template.soy.data.SoyMapData)"><!-- --></A><H3>
+setData</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setData</B>(<A HREF="../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data)</PRE>
+<DL>
+<DD>Sets the data to call the template with. Can be null if the template has no parameters.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setIjData(java.util.Map)"><!-- --></A><H3>
+setIjData</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setIjData</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,?&gt;&nbsp;ijData)</PRE>
+<DL>
+<DD>Sets the injected data to call the template with. Can be null if not used.
+
+ <p> Note: If you call this method instead of <A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setIjData(com.google.template.soy.data.SoyMapData)"><CODE>setIjData(SoyMapData)</CODE></A>, the data
+ will be converted to a <code>SoyMapData</code> object on each call. This may not be a big deal if
+ you only need to use the data object once. But if you need to reuse the same data object for
+ multiple calls, it's more efficient to build your own <code>SoyMapData</code> object and reuse it
+ with <CODE>setIjData (SoyMapData)</CODE>.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setIjData(com.google.template.soy.data.SoyMapData)"><!-- --></A><H3>
+setIjData</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setIjData</B>(<A HREF="../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData)</PRE>
+<DL>
+<DD>Sets the injected data to call the template with. Can be null if not used.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setActiveDelegatePackageNames(java.util.Set)"><!-- --></A><H3>
+setActiveDelegatePackageNames</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setActiveDelegatePackageNames</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelegatePackageNames)</PRE>
+<DL>
+<DD>Sets the set of active delegate package names.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setMsgBundle(com.google.template.soy.msgs.SoyMsgBundle)"><!-- --></A><H3>
+setMsgBundle</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setMsgBundle</B>(<A HREF="../../../../../com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A>&nbsp;msgBundle)</PRE>
+<DL>
+<DD>Sets the bundle of translated messages, or null to use the messages from the Soy source.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setCssRenamingMap(com.google.template.soy.shared.SoyCssRenamingMap)"><!-- --></A><H3>
+setCssRenamingMap</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setCssRenamingMap</B>(<A HREF="../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html" title="interface in com.google.template.soy.shared">SoyCssRenamingMap</A>&nbsp;cssRenamingMap)</PRE>
+<DL>
+<DD>Sets the CSS renaming map.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setDontAddToCache(boolean)"><!-- --></A><H3>
+setDontAddToCache</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A> <B>setDontAddToCache</B>(boolean&nbsp;dontAddToCache)</PRE>
+<DL>
+<DD>If set to true, indicates that we should not add the current combination of
+ <code>SoyMsgBundle</code> and <code>SoyCssRenamingMap</code> to the cache if it's not already there.
+ Only applicable when the associated <code>SoyTofu</code> instance uses caching. Default value is
+ false, i.e. by default we always add to cache when not already present.
+
+ <p> Specifically, if <code>dontAddToCache</code> is set to true, then after checking the cache for
+ the current combination of <code>SoyMsgBundle</code> and <code>SoyCssRenamingMap</code>:
+ (a) if found in cache, we will use the cached intermediate results for faster rendering,
+ (b) if not found in cache, we will fall back to the no-caching method of rendering.
+
+ <p> If your app uses many different <code>SoyMsgBundle</code>s or <code>SoyCssRenamingMap</code>s and
+ you're finding that the caching mode of <code>SoyTofu</code> is using too much memory, one
+ strategy may be to first prime the cache with the most common combinations by calling
+ <A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.html#addToCache(com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)"><CODE>SoyTofu.addToCache(com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)</CODE></A>, and then when rendering, always <code>setDontAddToCache(true)</code>.
+ This way, most of your renders will use the cached results, yet your cache will never grow
+ beyond the size that you initially primed it to be.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="render()"><!-- --></A><H3>
+render</H3>
+<PRE>
+<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>render</B>()</PRE>
+<DL>
+<DD>Renders the template using the data, injected data, and message bundle previously set.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<!-- ========= END OF CLASS DATA ========= -->
+<HR>
+
+
+<!-- ======= START OF BOTTOM NAVBAR ====== -->
+<A NAME="navbar_bottom"><!-- --></A>
+<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
+<TR>
+<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_bottom_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu"><B>NEXT CLASS</B></A></FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="../../../../../index.html?com/google/template/soy/tofu/SoyTofu.Renderer.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="SoyTofu.Renderer.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+&nbsp;<SCRIPT type="text/javascript">
+  <!--
+  if(window==top) {
+    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+  }
+  //-->
+</SCRIPT>
+<NOSCRIPT>
+  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
+</NOSCRIPT>
+
+
+</FONT></TD>
+</TR>
+<TR>
+<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
+DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+</TR>
+</TABLE>
+<A NAME="skip-navbar_bottom"></A>
+<!-- ======== END OF BOTTOM NAVBAR ======= -->
+
+<HR>
+
+        
+          <div id="footer">
+            <div id="footerlogo" style="float:left">
+              <img src="http://www.google.com/images/art.gif"
+                   alt="Google colored balls">
+            </div>
+            <div id="copyright" style="float:left">
+              <p>
+                &copy; 2009 Google -
+                <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
+                <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
+                <a href="http://www.google.com/about.html">About Google</a>
+              </p>
+            </div>
+          </div>
+        
+      
+</BODY>
+</HTML>

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data.restricted;
 
+import javax.annotation.concurrent.Immutable;
+
 
 /**
  * Float data.
@@ -24,6 +26,7 @@ package com.google.template.soy.data.restricted;
  *
  * @author Kai Huang
  */
+@Immutable
 public class FloatData extends NumberData {
 
 
@@ -33,9 +36,21 @@ public class FloatData extends NumberData {
 
   /**
    * @param value The float value.
+   * @deprecated Use {@link FloatData#forValue}.
    */
+  @Deprecated
   public FloatData(double value) {
     this.value = value;
+  }
+
+
+  /**
+   * Gets a FloatData instance for the given value.
+   * @param value The desired value.
+   * @return A FloatData instance with the given value.
+   */
+  public static FloatData forValue(double value) {
+    return new FloatData(value);
   }
 
 
@@ -51,6 +66,10 @@ public class FloatData extends NumberData {
 
 
   @Override public String toString() {
+    // Note: This differs from JS in how it rendered values that have a zero fractional component
+    // and in how it renders the value -0.0.
+    // JavaScript specifies that the string form of -0 is signless, and that the string form of
+    // fractionless numeric values has no decimal point.
     return Double.toString(value).replace('E', 'e');
   }
 
@@ -58,10 +77,10 @@ public class FloatData extends NumberData {
   /**
    * {@inheritDoc}
    *
-   * <p> 0.0 is falsy.
+   * <p> 0.0 is falsy as is NaN.
    */
   @Override public boolean toBoolean() {
-    return value != 0.0;
+    return value != 0.0 && !Double.isNaN(value);
   }
 
 

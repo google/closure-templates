@@ -36,6 +36,10 @@ import java.util.regex.Pattern;
  */
 public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  // TODO: Make sure this doesn't remove escaping text spans in CSS or JavaScript.
+  // E.g. <style><!-- ... --></style>
+  //      <script>while (i<!--x) { ... } while (j-->0) { ... }</script>
+
 
   /** Regex pattern for an HTML comment. */
   private static final Pattern HTML_COMMENT = Pattern.compile("<!--.*?-->");
@@ -45,16 +49,18 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
   private IdGenerator nodeIdGen;
 
 
-  @Override protected void setup() {
+  @Override public Void exec(SoyNode node) {
     nodeIdGen = null;
+    visit(node);
+    return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(RawTextNode node) {
+  @Override protected void visitRawTextNode(RawTextNode node) {
 
     Matcher matcher = HTML_COMMENT.matcher(node.getRawText());
     if (!matcher.find()) {
@@ -71,39 +77,28 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // If the new raw text string is nonempty, then create a new RawTextNode to replace this node,
     // else simply remove this node.
-
-    @SuppressWarnings("unchecked")  // cast involving type parameter
-    ParentSoyNode<? super RawTextNode> parent =
-        (ParentSoyNode<? super RawTextNode>) node.getParent();
-
     if (newRawText.length() > 0) {
       if (nodeIdGen == null) {
         // Retrieve the node id generator from the root of the parse tree.
-        nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGen();
+        nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
       }
-      RawTextNode newRawTextNode = new RawTextNode(nodeIdGen.genStringId(), newRawText.toString());
-      parent.setChild(parent.getChildIndex(node), newRawTextNode);
+      RawTextNode newRawTextNode = new RawTextNode(nodeIdGen.genId(), newRawText.toString());
+      node.getParent().replaceChild(node, newRawTextNode);
 
     } else {
-      parent.removeChild(node);
+      node.getParent().removeChild(node);
     }
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for non-parent node.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    // Note: We're possibly replacing/removing children while iterating through them. I thought
-    // this would cause errors, but it seems to work fine. If this starts to cause errors, we'll
-    // have to rewrite it.
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
+    }
   }
 
 }

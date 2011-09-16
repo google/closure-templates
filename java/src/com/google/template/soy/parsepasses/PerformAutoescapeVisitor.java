@@ -16,12 +16,14 @@
 
 package com.google.template.soy.parsepasses;
 
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -61,33 +63,33 @@ public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive).
    */
   @Inject
-  PerformAutoescapeVisitor(Map<String, SoyPrintDirective> soyDirectivesMap) {
+  public PerformAutoescapeVisitor(Map<String, SoyPrintDirective> soyDirectivesMap) {
     this.soyDirectivesMap = soyDirectivesMap;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
-    nodeIdGen = node.getNodeIdGen();
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
+    nodeIdGen = node.getNodeIdGenerator();
     visitChildren(node);
   }
 
 
-  @Override protected void visitInternal(TemplateNode node) {
-    currTemplateShouldAutoescape = node.shouldAutoescape();
+  @Override protected void visitTemplateNode(TemplateNode node) {
+    currTemplateShouldAutoescape = node.getAutoescapeMode() != AutoescapeMode.FALSE;
     visitChildren(node);
   }
 
 
-  @Override protected void visitInternal(PrintNode node) {
+  @Override protected void visitPrintNode(PrintNode node) {
 
     // Traverse the list to (a) record whether we saw any directive that cancels autoescape
     // (including 'noAutoescape' of course) and (b) remove 'noAutoescape' directives.
     boolean shouldCancelAutoescape = false;
-    for (PrintDirectiveNode directiveNode : node.getChildren()) {
+    for (PrintDirectiveNode directiveNode : Lists.newArrayList(node.getChildren()) /*copy*/) {
       SoyPrintDirective directive = soyDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
         throw new SoySyntaxException(
@@ -106,23 +108,20 @@ public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
     // because other directives may add HTML tags).
     if (currTemplateShouldAutoescape && !shouldCancelAutoescape) {
       PrintDirectiveNode newEscapeHtmlDirectiveNode =
-          new PrintDirectiveNode(nodeIdGen.genStringId(), EscapeHtmlDirective.NAME, "");
+          new PrintDirectiveNode(nodeIdGen.genId(), EscapeHtmlDirective.NAME, "");
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for non-parent node.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 }

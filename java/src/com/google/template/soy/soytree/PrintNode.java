@@ -27,13 +27,15 @@ import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.SoyStatementNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyNode.StatementNode;
 
-import java.util.Collections;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -43,138 +45,174 @@ import java.util.List;
  *
  * @author Kai Huang
  */
-public class PrintNode extends AbstractParentSoyCommandNode<PrintDirectiveNode>
-    implements SplitLevelTopNode<PrintDirectiveNode>, SoyStatementNode,
-    ParentExprHolderNode<PrintDirectiveNode>, MsgPlaceholderNode {
+public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
+    implements StandaloneNode, SplitLevelTopNode<PrintDirectiveNode>, StatementNode,
+    ExprHolderNode, MsgPlaceholderInitialContentNode {
+
+
+  /** Fallback base placeholder name. */
+  public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
 
   /** Whether the command 'print' is implicit. */
   private final boolean isImplicit;
 
-  /** The text of the expression to print. */
-  private final String exprText;
+  /** The parsed expression. */
+  private final ExprUnion exprUnion;
 
-  /** The parsed expression (null if the expression is not in V2 syntax). */
-  private final ExprRootNode<ExprNode> expr;
-
-  /** The base placeholder name for this node (null if genBasePlaceholderName() is never called). */
-  private String basePlaceholderName = null;
+  /** The user-supplied placeholder name, or null if not supplied or not applicable. */
+  @Nullable private final String userSuppliedPlaceholderName;
 
 
   /**
    * @param id The id for this node.
    * @param isImplicit Whether the command 'print' is implicit.
-   * @param commandText The command text.
    * @param exprText The text of the expression to print.
+   * @param userSuppliedPlaceholderName The user-supplied placeholder name, or null if not supplied
+   *     or not applicable.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public PrintNode(String id, boolean isImplicit, String commandText, String exprText)
+  public PrintNode(
+      int id, boolean isImplicit, String exprText, @Nullable String userSuppliedPlaceholderName)
       throws SoySyntaxException {
 
-    super(id, "print", commandText);
+    super(id, "print", "");
 
     this.isImplicit = isImplicit;
-    this.exprText = exprText;
 
-    ExprRootNode<ExprNode> tempExpr = null;
+    ExprRootNode<?> expr;
     try {
-      tempExpr = (new ExpressionParser(exprText)).parseExpression();
+      expr = (new ExpressionParser(exprText)).parseExpression();
     } catch (TokenMgrError tme) {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      expr = null;
     } catch (ParseException pe) {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      expr = null;
     }
-    expr = tempExpr;
+
+    if (expr != null) {
+      this.exprUnion = new ExprUnion(expr);
+    } else {
+      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      this.exprUnion = new ExprUnion(exprText);
+    }
+
+    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+  }
+
+
+  /**
+   * Constructor for use by passes that want to create a PrintNode with already-parsed expression.
+   *
+   * @param id The id for this node.
+   * @param isImplicit Whether the command 'print' is implicit.
+   * @param exprUnion The parsed expression.
+   * @param userSuppliedPlaceholderName The user-supplied placeholder name, or null if not supplied
+   *     or not applicable.
+   */
+  public PrintNode(
+      int id, boolean isImplicit, ExprUnion exprUnion,
+      @Nullable String userSuppliedPlaceholderName) {
+    super(id, "print", "");
+    this.isImplicit = isImplicit;
+    this.exprUnion = exprUnion;
+    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected PrintNode(PrintNode orig) {
+    super(orig);
+    this.isImplicit = orig.isImplicit;
+    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.clone() : null;
+    this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.PRINT_NODE;
+  }
+
+
+  /** Returns whether the 'print' command name was implicit. */
+  public boolean isImplicit() {
+    return isImplicit;
   }
 
 
   /** Returns the text of the expression to print. */
   public String getExprText() {
-    return exprText;
+    return exprUnion.getExprText();
   }
+
 
   /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
-  public ExprRootNode<ExprNode> getExpr() {
-    return expr;
+  public ExprUnion getExprUnion() {
+    return exprUnion;
   }
 
 
-  /**
-   * Given a value to be included in a generated string, create an appropriate
-   * placeholder name to use in the generated code.
-   *
-   * We don't know what the object being referenced in the exprText is --
-   * is it a local variable (starting with $) or a reference to a global
-   * variable?
-   *
-   * Try parsing the expression as each potential kind of object - data
-   * reference or global.  If the string parses as neither object,
-   * then default to "XXX" for the placeholder, otherwise generate
-   * an appropriate name based on the kind of reference and the provided name.
-   * Placeholder names must stay constant between versions of Soy because
-   * changing the placeholders requires re-translating the strings, and the
-   * translators use the placeholder names as hints for context.
-   *
-   * @return Base name of placeholder.
-   */
+  @Override public String getUserSuppliedPlaceholderName() {
+    return userSuppliedPlaceholderName;
+  }
+
+
   @Override public String genBasePlaceholderName() {
 
-    if (basePlaceholderName != null) {
-      return basePlaceholderName;  // return previously generated name
+    if (userSuppliedPlaceholderName != null) {
+      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
     }
+
+    ExprRootNode<?> exprRoot = exprUnion.getExpr();
+    if (exprRoot == null) {
+      return FALLBACK_BASE_PLACEHOLDER_NAME;
+    }
+
+    ExprNode exprNode = exprRoot.getChild(0);
 
     // Attempt to parse the expression as a data ref for the purpose of using the last key as the
     // base placeholder name.
-    DataRefNode exprAsDataRef = null;
-    try {
-      exprAsDataRef = ((new ExpressionParser(exprText)).parseDataReference()).getChild(0);
-    } catch (TokenMgrError tme) {  // exprAsDataRef is still null
-    } catch (ParseException pe) {  // exprAsDataRef is still null
-    }
-    if (exprAsDataRef != null) {
-      ExprNode lastPart = exprAsDataRef.getChild(exprAsDataRef.numChildren() - 1);
+    if (exprNode instanceof DataRefNode) {
+      DataRefNode dataRefNode = (DataRefNode) exprNode;
+      ExprNode lastPart = dataRefNode.getChild(dataRefNode.numChildren() - 1);
       if (lastPart instanceof DataRefKeyNode) {
-        String key = ((DataRefKeyNode) lastPart).getKey();
-        basePlaceholderName = BaseUtils.convertToUpperUnderscore(key);
+        return BaseUtils.convertToUpperUnderscore(((DataRefKeyNode) lastPart).getKey());
       }
+
+    } else if (exprNode instanceof GlobalNode) {
+      GlobalNode globalNode = (GlobalNode) exprNode;
+      int lastDotIndex = globalNode.getName().lastIndexOf('.');
+      String lastPart = globalNode.getName().substring(lastDotIndex + 1);
+      return BaseUtils.convertToUpperUnderscore(lastPart);
     }
 
-    // Didn't parse as a data reference?  Try parsing the string as a global
-    // reference.  If it parses cleanly, then derive the appropriate placeholder
-    // name.
-    if (basePlaceholderName == null) {
-      GlobalNode exprAsGlobal = null;
-      try {
-        exprAsGlobal = ((new ExpressionParser(exprText)).parseGlobal()).getChild(0);
-      } catch (TokenMgrError tme) {  // exprAsGlobal is still null
-      } catch (ParseException pe) {  // exprAsGlobal is still null
-      }
-      // If the name appears as a dotted list of components, only display
-      // the last component.
-      if (exprAsGlobal != null) {
-        int lastDotIndex = exprAsGlobal.getName().lastIndexOf('.');
-        String lastPart = exprAsGlobal.getName().substring(lastDotIndex + 1);
-        basePlaceholderName = BaseUtils.convertToUpperUnderscore(lastPart);
-      }
-    }
-
-    if (basePlaceholderName == null) {
-      basePlaceholderName = "XXX";  // fallback value
-    }
-
-    return basePlaceholderName;
+    return FALLBACK_BASE_PLACEHOLDER_NAME;
   }
 
 
-  @Override public boolean isSamePlaceholderAs(MsgPlaceholderNode other) {
-    return (other instanceof PrintNode) &&
-           this.getCommandText().equals(((PrintNode) other).getCommandText());
+  @Override public Object genSamenessKey() {
+    // PrintNodes are considered the same placeholder if they have the same command text.
+    return getCommandText();
   }
 
 
-  @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
-    return (expr != null) ? ImmutableList.of(expr)
-                          : Collections.<ExprRootNode<? extends ExprNode>>emptyList();
+  @Override public List<ExprUnion> getAllExprUnions() {
+    return ImmutableList.of(exprUnion);
+  }
+
+
+  @Override public String getCommandText() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(exprUnion.getExprText());
+    for (PrintDirectiveNode child : getChildren()) {
+      sb.append(' ').append(child.toSourceString());
+    }
+    if (userSuppliedPlaceholderName != null) {
+      sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
+    }
+    return sb.toString();
   }
 
 
@@ -185,6 +223,16 @@ public class PrintNode extends AbstractParentSoyCommandNode<PrintDirectiveNode>
 
   @Override public String toSourceString() {
     return getTagString();
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  @Override public PrintNode clone() {
+    return new PrintNode(this);
   }
 
 }

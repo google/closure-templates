@@ -16,10 +16,13 @@
 
 package com.google.template.soy.tofu.internal;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.tofu.SoyTofu;
 
 import java.util.Map;
@@ -67,41 +70,66 @@ class NamespacedTofu implements SoyTofu {
 
 
   @Override public SoyTofu forNamespace(@Nullable String namespace) {
-    return (namespace == null) ? baseTofu : new NamespacedTofu(baseTofu, namespace);
+    if (namespace == null) {
+      return baseTofu;
+    } else {
+      checkArgument(namespace.charAt(0) != '.' && namespace.charAt(namespace.length() - 1) != '.',
+          "Invalid namespace '" + namespace + "' (must not begin or end with a dot).");
+      return new NamespacedTofu(baseTofu, namespace);
+    }
   }
 
 
+  @Override public boolean isCaching() {
+    return baseTofu.isCaching();
+  }
+
+
+  @Override public void addToCache(
+      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
+    baseTofu.addToCache(msgBundle, cssRenamingMap);
+  }
+
+
+  @Override public Renderer newRenderer(SoyTemplateInfo templateInfo) {
+    return baseTofu.newRenderer(templateInfo);
+  }
+
+
+  @Override public Renderer newRenderer(String templateName) {
+    return baseTofu.newRenderer(namespace + templateName);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Old render methods.
+
+
+  @Deprecated
   @Override public String render(SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
                                  @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
   }
 
 
+  @Deprecated
   @Override public String render(SoyTemplateInfo templateInfo, @Nullable SoyMapData data,
                                  @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
   }
 
 
-  /**
-   * {@inheritDoc}
-   *
-   * @param templateName The partial name of the template to render (e.g. ".fooTemplate").
-   */
+  @Deprecated
   @Override public String render(String templateName, @Nullable Map<String, ?> data,
                                  @Nullable SoyMsgBundle msgBundle) {
     return render(templateName, (data == null) ? null : new SoyMapData(data), msgBundle);
   }
 
 
-  /**
-   * {@inheritDoc}
-   *
-   * @param templateName The partial name of the template to render (e.g. ".fooTemplate").
-   */
+  @Deprecated
   @Override public String render(String templateName, @Nullable SoyMapData data,
                                  @Nullable SoyMsgBundle msgBundle) {
-    Preconditions.checkArgument(templateName.charAt(0) == '.');
+    checkArgument(templateName.charAt(0) == '.');
     return baseTofu.render(namespace + templateName, data, msgBundle);
   }
 

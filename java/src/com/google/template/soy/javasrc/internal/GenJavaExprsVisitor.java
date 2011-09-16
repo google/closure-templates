@@ -16,24 +16,28 @@
 
 package com.google.template.soy.javasrc.internal;
 
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeProtect;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.CharEscapers;
+import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.javasrc.internal.TranslateToJavaExprVisitor.TranslateToJavaExprVisitorFactory;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
-import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genMaybeProtect;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.JavaExprUtils;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
+import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -76,6 +80,9 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
   /** Map of all SoyJavaSrcPrintDirectives (name to directive). */
   Map<String, SoyJavaSrcPrintDirective> soyJavaSrcDirectivesMap;
 
+  /** The options for generating Java source code. */
+  private final SoyJavaSrcOptions javaSrcOptions;
+
   /** Instance of GenCallCodeUtils to use. */
   private final GenCallCodeUtils genCallCodeUtils;
 
@@ -98,6 +105,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
 
   /**
    * @param soyJavaSrcDirectivesMap Map of all SoyJavaSrcPrintDirectives (name to directive).
+   * @param javaSrcOptions The options for generating Java source code.
    * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
    * @param isComputableAsJavaExprsVisitor The IsComputableAsJavaExprsVisitor used by this instance
    *     (when needed).
@@ -110,12 +118,14 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
   @AssistedInject
   GenJavaExprsVisitor(
       Map<String, SoyJavaSrcPrintDirective> soyJavaSrcDirectivesMap,
+      SoyJavaSrcOptions javaSrcOptions,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJavaExprsVisitor isComputableAsJavaExprsVisitor,
       GenJavaExprsVisitorFactory genJavaExprsVisitorFactory,
       TranslateToJavaExprVisitorFactory translateToJavaExprVisitorFactory,
       @Assisted Deque<Map<String, JavaExpr>> localVarTranslations) {
     this.soyJavaSrcDirectivesMap = soyJavaSrcDirectivesMap;
+    this.javaSrcOptions = javaSrcOptions;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJavaExprsVisitor = isComputableAsJavaExprsVisitor;
     this.genJavaExprsVisitorFactory = genJavaExprsVisitorFactory;
@@ -126,25 +136,17 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
 
   @Override public List<JavaExpr> exec(SoyNode node) {
     Preconditions.checkArgument(isComputableAsJavaExprsVisitor.exec(node));
-    return super.exec(node);
-  }
-
-
-  @Override protected void setup() {
     javaExprs = Lists.newArrayList();
-  }
-
-
-  @Override protected List<JavaExpr> getResult() {
+    visit(node);
     return javaExprs;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
     visitChildren(node);
   }
 
@@ -159,7 +161,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
    *   'I\'m feeling lucky!'
    * </pre>
    */
-  @Override protected void visitInternal(RawTextNode node) {
+  @Override protected void visitRawTextNode(RawTextNode node) {
 
     javaExprs.add(new JavaExpr(
         '"' + CharEscapers.javaStringEscaper().escape(node.getRawText()) + '"',
@@ -179,12 +181,12 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
    *   gooData4.moo + 5
    * </pre>
    */
-  @Override protected void visitInternal(PrintNode node) {
+  @Override protected void visitPrintNode(PrintNode node) {
 
     TranslateToJavaExprVisitor ttjev =
         translateToJavaExprVisitorFactory.create(localVarTranslations);
 
-    JavaExpr javaExpr = ttjev.exec(node.getExpr());
+    JavaExpr javaExpr = ttjev.exec(node.getExprUnion().getExpr());
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -198,7 +200,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
       }
 
       // Get directive args.
-      List<ExprRootNode<ExprNode>> args = directiveNode.getArgs();
+      List<ExprRootNode<?>> args = directiveNode.getArgs();
       if (! directive.getValidArgsSizes().contains(args.size())) {
         throw new SoySyntaxException(
             "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
@@ -207,7 +209,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
 
       // Translate directive args.
       List<JavaExpr> argsJavaExprs = Lists.newArrayListWithCapacity(args.size());
-      for (ExprRootNode<ExprNode> arg : args) {
+      for (ExprRootNode<?> arg : args) {
         argsJavaExprs.add(ttjev.exec(arg));
       }
 
@@ -235,7 +237,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
    *   (opt_data.boo) ? AAA : (opt_data.foo) ? BBB : CCC
    * </pre>
    */
-  @Override protected void visitInternal(IfNode node) {
+  @Override protected void visitIfNode(IfNode node) {
 
     // Create another instance of this visitor class for generating Java expressions from children.
     GenJavaExprsVisitor genJavaExprsVisitor =
@@ -250,7 +252,8 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
         IfCondNode icn = (IfCondNode) child;
 
         JavaExpr condJavaExpr =
-            translateToJavaExprVisitorFactory.create(localVarTranslations).exec(icn.getExpr());
+            translateToJavaExprVisitorFactory.create(localVarTranslations)
+                .exec(icn.getExprUnion().getExpr());
         javaExprTextSb.append("(").append(genCoerceBoolean(condJavaExpr)).append(") ? ");
 
         List<JavaExpr> condBlockJavaExprs = genJavaExprsVisitor.exec(icn);
@@ -283,12 +286,12 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
   }
 
 
-  @Override protected void visitInternal(IfCondNode node) {
+  @Override protected void visitIfCondNode(IfCondNode node) {
     visitChildren(node);
   }
 
 
-  @Override protected void visitInternal(IfElseNode node) {
+  @Override protected void visitIfElseNode(IfElseNode node) {
     visitChildren(node);
   }
 
@@ -313,13 +316,65 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
    *   some.func(soy.$$augmentData(opt_data.boo, {goo: 'Blah'}))
    * </pre>
    */
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected void visitCallNode(CallNode node) {
     javaExprs.add(genCallCodeUtils.genCallExpr(node, localVarTranslations));
   }
 
 
-  @Override protected void visitInternal(CallParamContentNode node) {
+  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
     visitChildren(node);
+  }
+
+
+  /**
+   * CSS can be rewritten in two ways : at compile time or at run time.
+   * If the css renaming hints knows how to rename selector text, it returns a non-null string.
+   * If the CSS hints rom the javasrc options renames "Alex" to "Axel" then the Soy
+   * <xmp>
+   *   <div class="{css Alex}">
+   * </xmp>
+   * will compile to the java
+   * <xmp>
+   *   output.append("<div class=\"Axel\">
+   * </xmp>.
+   * But if the renaming hints returns null for "Chris", then we have to use a runtime renamer.
+   * Then, the Soy
+   * <xmp>
+   *   <div class="Chris">
+   * </xmp>
+   * is rewritten to Java with a method call to dynamically rewrite the CSS:
+   * <xmp>
+   *   output.append("<div class=\"").append(this.$$renameCss("Chris")).append("\">")
+   * </xmp>
+   */
+  @Override protected void visitCssNode(CssNode node) {
+    ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
+    if (componentNameExpr != null) {
+      // Append the result of componentNameExpr and a dash
+      TranslateToJavaExprVisitor ttjev =
+        translateToJavaExprVisitorFactory.create(localVarTranslations);
+
+      javaExprs.add(ttjev.exec(componentNameExpr));
+      javaExprs.add(new JavaExpr("\"-\"", StringData.class, Integer.MAX_VALUE));
+    }
+
+
+    String selectorText = node.getSelectorText();
+
+    // If we can rename at compile time, do so.
+    SoyCssRenamingMap cssRenamingHints = javaSrcOptions.getCssRenamingHints();
+    String renamedSelectorText = cssRenamingHints.get(selectorText);
+    if (renamedSelectorText != null && renamedSelectorText.length() != 0) {
+      String javaRenamedSelectorText = (
+          '"' + CharEscapers.javaStringEscaper().escape(renamedSelectorText) + '"');
+      javaExprs.add(new JavaExpr(javaRenamedSelectorText, StringData.class, Integer.MAX_VALUE));
+
+    } else {
+      // We can't rename at compile time, so do it dynamically.
+      String javaSelectorText = '"' + CharEscapers.javaStringEscaper().escape(selectorText) + '"';
+      javaExprs.add(new JavaExpr(
+          "this.$$renameCss(" + javaSelectorText + ")", StringData.class, Integer.MAX_VALUE));
+    }
   }
 
 }

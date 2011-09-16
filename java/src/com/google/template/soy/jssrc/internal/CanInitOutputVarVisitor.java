@@ -19,12 +19,9 @@ package com.google.template.soy.jssrc.internal;
 import com.google.inject.Inject;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyNode;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 
 /**
@@ -35,7 +32,7 @@ import java.util.Deque;
  *
  * @author Kai Huang
  */
-class CanInitOutputVarVisitor extends AbstractSoyNodeVisitor<Boolean> {
+class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
 
   /** The options for generating JS source code. */
@@ -43,9 +40,6 @@ class CanInitOutputVarVisitor extends AbstractSoyNodeVisitor<Boolean> {
 
   /** The IsComputableAsJsExprsVisitor used by this instance (when needed). */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
-
-  /** Stack of partial results (during run). */
-  private Deque<Boolean> resultStack;
 
 
   /**
@@ -61,37 +55,27 @@ class CanInitOutputVarVisitor extends AbstractSoyNodeVisitor<Boolean> {
   }
 
 
-  @Override protected void setup() {
-    resultStack = new ArrayDeque<Boolean>();
-  }
-
-
-  @Override protected Boolean getResult() {
-    return resultStack.peek();
-  }
-
-
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected Boolean visitCallNode(CallNode node) {
     // If we're generating code in the 'concat' style, then the call is a JS expression that returns
     // its output as a string. However, if we're generating code in the 'stringbuilder' style, then
     // the call is a full statement that returns no value (instead, the output is directly appended
     // to the StringBuilder we pass to the callee).
-    resultStack.push(jsSrcOptions.getCodeStyle() == CodeStyle.CONCAT);
+    return jsSrcOptions.getCodeStyle() == CodeStyle.CONCAT;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
+  @Override protected Boolean visitSoyNode(SoyNode node) {
     // For the vast majority of nodes, the return value of this visitor should be the same as the
     // return value of IsComputableAsJsExprsVisitor.
-    resultStack.push(isComputableAsJsExprsVisitor.exec(node));
+    return isComputableAsJsExprsVisitor.exec(node);
   }
 
 }

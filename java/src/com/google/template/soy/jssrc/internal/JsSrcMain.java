@@ -18,24 +18,36 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
+import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
+import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPluralSelectMsgException;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.sharedpasses.AssertSyntaxVersionV2Visitor;
-import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
-import com.google.template.soy.sharedpasses.RemoveHtmlCommentsVisitor;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
+import com.google.template.soy.sharedpasses.IsUsingIjDataVisitor;
+import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Writer;
+import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -54,6 +66,9 @@ public class JsSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
+  /** The instanceof of SimplifyVisitor to use. */
+  private final SimplifyVisitor simplifyVisitor;
+
   /** Provider for getting an instance of ReplaceMsgsWithGoogMsgsVisitor. */
   private final Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider;
 
@@ -66,6 +81,7 @@ public class JsSrcMain {
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
+   * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param replaceMsgsWithGoogMsgsVisitorProvider Provider for getting an instance of
    *     ReplaceMsgsWithGoogMsgsVisitor.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
@@ -73,11 +89,13 @@ public class JsSrcMain {
    * @param genJsCodeVisitorProvider Provider for getting an instance of GenJsCodeVisitor.
    */
   @Inject
-  JsSrcMain(@ApiCall GuiceSimpleScope apiCallScope,
-            Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider,
-            Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
-            Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
+  public JsSrcMain(
+      @ApiCall GuiceSimpleScope apiCallScope, SimplifyVisitor simplifyVisitor,
+      Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider,
+      Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
+      Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
+    this.simplifyVisitor = simplifyVisitor;
     this.replaceMsgsWithGoogMsgsVisitorProvider = replaceMsgsWithGoogMsgsVisitorProvider;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
@@ -100,37 +118,52 @@ public class JsSrcMain {
       SoyFileSetNode soyTree, SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle)
       throws SoySyntaxException {
 
-    if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
-      // Passes that we only want to run if allowing V1 syntax.
-      (new RemoveHtmlCommentsVisitor()).exec(soyTree);
-      (new CheckSoyDocVisitor(false)).exec(soyTree);
+    // Generate code with the opt_ijData param if either (a) the user specified the compiler flag
+    // --isUsingIjData or (b) any of the Soy code in the file set references injected data.
+    boolean isUsingIjData =
+        jsSrcOptions.isUsingIjData() || (new IsUsingIjDataVisitor()).exec(soyTree);
 
-    } else {
-      // Passes that we only want to run if enforcing V2 syntax.
-      (new AssertSyntaxVersionV2Visitor()).exec(soyTree);
-      (new CheckSoyDocVisitor(true)).exec(soyTree);
-    }
+    // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
+    Preconditions.checkState(
+        !jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir() ||
+        jsSrcOptions.shouldProvideRequireSoyNamespaces() ||
+        jsSrcOptions.shouldProvideRequireJsFunctions(),
+        "Do not specify useGoogIsRtlForBidiGlobalDir without either" +
+        " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
 
     apiCallScope.enter();
     try {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
-      ApiCallScopeUtils.seedSharedParams(
-          apiCallScope, msgBundle, jsSrcOptions.getBidiGlobalDir());
+      apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), isUsingIjData);
+      BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromOptions(
+          jsSrcOptions.getBidiGlobalDir(),
+          jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
+      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle, bidiGlobalDir);
 
       // Replace MsgNodes.
       if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
         replaceMsgsWithGoogMsgsVisitorProvider.get().exec(soyTree);
         (new MoveGoogMsgNodesEarlierVisitor()).exec(soyTree);
         Preconditions.checkState(
-            jsSrcOptions.getBidiGlobalDir() != 0,
-            "If enabling shouldGenerateGoogMsgDefs, must also set bidiGlobalDir.");
+            bidiGlobalDir != null,
+            "If enabling shouldGenerateGoogMsgDefs, must also set bidi global directionality.");
       } else {
-        (new InsertMsgsVisitor(msgBundle)).exec(soyTree);
+        Preconditions.checkState(
+            bidiGlobalDir == null || bidiGlobalDir.isStaticValue(),
+            "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
+        try {
+          (new InsertMsgsVisitor(msgBundle, false)).exec(soyTree);
+        } catch (EncounteredPluralSelectMsgException e) {
+          throw new SoySyntaxException(
+              "JS code generation currently only supports plural/select messages when" +
+              " shouldGenerateGoogMsgDefs is true.");
+        }
       }
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
+      simplifyVisitor.exec(soyTree);
       return genJsCodeVisitorProvider.get().exec(soyTree);
 
     } finally {
@@ -166,13 +199,49 @@ public class JsSrcMain {
       throw new AssertionError();
     }
 
-    for (int i = 0; i < numFiles; i++) {
-      String inputFilePath = soyTree.getChild(i).getFilePath();
+    // Maps output paths to indices of inputs that should be emitted to them.
+    Multimap<String, Integer> outputs = Multimaps.newListMultimap(
+        Maps.<String, Collection<Integer>>newLinkedHashMap(),
+        new Supplier<List<Integer>>() {
+          @Override
+          public List<Integer> get() {
+            return Lists.newArrayList();
+          }
+        });
+
+    // First, check that the parent directories for all output files exist, and group the output
+    // files by the inputs that go there.
+    // This means that the compiled source from multiple input files might be written to a single
+    // output file, as is the case when there are multiple inputs, and the output format string
+    // contains no wildcards.
+    for (int i = 0; i < numFiles; ++i) {
+      SoyFileNode inputFile = soyTree.getChild(i);
+      String inputFilePath = inputFile.getFilePath();
       String outputFilePath =
           JsSrcUtils.buildFilePath(outputPathFormat, locale, inputFilePath, inputPathsPrefix);
 
       BaseUtils.ensureDirsExistInPath(outputFilePath);
-      Files.write(jsFileContents.get(i), new File(outputFilePath), Charsets.UTF_8);
+      outputs.put(outputFilePath, i);
+    }
+
+    for (String outputFilePath : outputs.keySet()) {
+      Writer out = Files.newWriter(new File(outputFilePath), Charsets.UTF_8);
+      try {
+        boolean isFirst = true;
+        for (int inputFileIndex : outputs.get(outputFilePath)) {
+          if (isFirst) {
+            isFirst = false;
+          } else {
+            // Concatenating JS files is not safe unless we know that the last statement from one
+            // couldn't combine with the isFirst statement of the next.  Inserting a semicolon will
+            // prevent this from happening.
+            out.write("\n;\n");
+          }
+          out.write(jsFileContents.get(inputFileIndex));
+        }
+      } finally {
+        out.close();
+      }
     }
   }
 

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
@@ -24,10 +25,11 @@ import com.google.template.soy.exprparse.TokenMgrError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.SoyStatementNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -41,9 +43,9 @@ import java.util.regex.Pattern;
  *
  * @author Kai Huang
  */
-public class ForNode extends AbstractParentSoyCommandNode<SoyNode>
-    implements SoyStatementNode, ConditionalBlockNode<SoyNode>, LoopNode<SoyNode>,
-    ParentExprHolderNode<SoyNode>, LocalVarBlockNode<SoyNode> {
+public class ForNode extends AbstractBlockCommandNode
+    implements StandaloneNode, StatementNode, ConditionalBlockNode, LoopNode, ExprHolderNode,
+    LocalVarBlockNode {
 
 
   /** Regex pattern for the command text. */
@@ -54,13 +56,13 @@ public class ForNode extends AbstractParentSoyCommandNode<SoyNode>
 
 
   /** The local (loop) variable name. */
-  private final String localVarName;
+  private final String varName;
 
   /** The texts of the individual range args (sort of canonicalized). */
-  private final List<String> rangeArgTexts;
+  private final ImmutableList<String> rangeArgTexts;
 
   /** The parsed range args. */
-  private final List<ExprRootNode<ExprNode>> rangeArgs;
+  private final ImmutableList<ExprRootNode<?>> rangeArgs;
 
 
   /**
@@ -68,7 +70,7 @@ public class ForNode extends AbstractParentSoyCommandNode<SoyNode>
    * @param commandText The command text.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public ForNode(String id, String commandText) throws SoySyntaxException {
+  public ForNode(int id, String commandText) throws SoySyntaxException {
     super(id, "for", commandText);
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
@@ -77,29 +79,49 @@ public class ForNode extends AbstractParentSoyCommandNode<SoyNode>
     }
 
     try {
-      localVarName = (new ExpressionParser(matcher.group(1))).parseVariable().getChild(0).getName();
+      varName = (new ExpressionParser(matcher.group(1))).parseVariable().getChild(0).getName();
     } catch (TokenMgrError tme) {
       throw createExceptionForInvalidCommandText("variable name", tme);
     } catch (ParseException pe) {
       throw createExceptionForInvalidCommandText("variable name", pe);
     }
 
+    List<ExprRootNode<?>> tempRangeArgs;
     try {
-      rangeArgs = (new ExpressionParser(matcher.group(2))).parseExpressionList();
+      tempRangeArgs = (new ExpressionParser(matcher.group(2))).parseExpressionList();
     } catch (TokenMgrError tme) {
       throw createExceptionForInvalidCommandText("range specification", tme);
     } catch (ParseException pe) {
       throw createExceptionForInvalidCommandText("range specification", pe);
     }
-    if (rangeArgs.size() > 3) {
+    if (tempRangeArgs.size() > 3) {
       throw new SoySyntaxException(
           "Invalid range specification in 'for' command text \"" + commandText + "\".");
     }
+    rangeArgs = ImmutableList.copyOf(tempRangeArgs);
 
-    rangeArgTexts = Lists.newArrayList();
+    List<String> tempRangeArgTexts = Lists.newArrayList();
     for (ExprNode rangeArg : rangeArgs) {
-      rangeArgTexts.add(rangeArg.toSourceString());
+      tempRangeArgTexts.add(rangeArg.toSourceString());
     }
+    rangeArgTexts = ImmutableList.copyOf(tempRangeArgTexts);
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected ForNode(ForNode orig) {
+    super(orig);
+    this.varName = orig.varName;
+    this.rangeArgTexts = orig.rangeArgTexts;  // safe to reuse (immutable)
+    List<ExprRootNode<?>> tempRangeArgs =
+        Lists.newArrayListWithCapacity(orig.rangeArgs.size());
+    for (ExprRootNode<?> origRangeArg : orig.rangeArgs) {
+      tempRangeArgs.add(origRangeArg.clone());
+    }
+    this.rangeArgs = ImmutableList.copyOf(tempRangeArgs);
   }
 
 
@@ -117,23 +139,40 @@ public class ForNode extends AbstractParentSoyCommandNode<SoyNode>
   }
 
 
-  @Override public String getLocalVarName() {
-    return localVarName;
+  @Override public Kind getKind() {
+    return Kind.FOR_NODE;
   }
+
+
+  @Override public String getVarName() {
+    return varName;
+  }
+
 
   /** Returns the texts of the individual range args (sort of canonicalized). */
   public List<String> getRangeArgTexts() {
     return rangeArgTexts;
   }
 
+
   /** Returns the parsed range args. */
-  public List<ExprRootNode<ExprNode>> getRangeArgs() {
+  public List<ExprRootNode<?>> getRangeArgs() {
     return rangeArgs;
   }
 
 
-  @Override public List<? extends ExprRootNode<? extends ExprNode>> getAllExprs() {
-    return rangeArgs;
+  @Override public List<ExprUnion> getAllExprUnions() {
+    return ExprUnion.createList(rangeArgs);
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  @Override public ForNode clone() {
+    return new ForNode(this);
   }
 
 }

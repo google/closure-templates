@@ -39,6 +39,21 @@ public class DataRefKeyNode extends AbstractExprNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected DataRefKeyNode(DataRefKeyNode orig) {
+    super(orig);
+    this.key = orig.key;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.DATA_REF_KEY_NODE;
+  }
+
+
   /** Returns the key. */
   public String getKey() {
     return key;
@@ -47,6 +62,11 @@ public class DataRefKeyNode extends AbstractExprNode {
 
   @Override public String toSourceString() {
     return key;
+  }
+
+
+  @Override public DataRefKeyNode clone() {
+    return new DataRefKeyNode(this);
   }
 
 }

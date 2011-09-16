@@ -21,6 +21,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import com.google.common.io.InputSupplier;
 import com.google.common.io.Resources;
+import com.google.template.soy.internal.base.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,97 +30,132 @@ import java.net.URL;
 
 
 /**
- * Record for one input Soy file. Contains an {@link InputSupplier} to supply a {@code Reader} for
- * the file content, and also the file path.
+ * Record for one input Soy file.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @author Kai Huang
+ * @author Mike Samuel
  */
-public class SoyFileSupplier implements InputSupplier<Reader> {
-
-
-  /** Supplier of a Reader for the Soy file content. */
-  private final InputSupplier<? extends Reader> contentSupplier;
-
-  /** The path to the Soy file (used for messages only). */
-  private final String path;
+public interface SoyFileSupplier {
 
 
   /**
-   * Creates a new {@code SoyFileSupplier} given an {@code InputSupplier} for the file content, as
-   * well as the desired file path for messages.
-   *
-   * @param contentSupplier Supplier of a Reader for the Soy file content.
-   * @param filePath The path to the Soy file (used for messages only).
+   * An opaque identifier that can be compared for equality with other versions from the same
+   * resource.
+   * <p>
+   * Instances are not {@code Comparable} since a version is not necessarily monotonic ; e.g. a
+   * cryptographically strong hash function produces a more reliable version identifier than a
+   * time-stamp but not one that can be said to be newer or older than any other version.
    */
-  public SoyFileSupplier(InputSupplier<? extends Reader> contentSupplier, String filePath) {
-    this.contentSupplier = contentSupplier;
-    this.path = filePath;
+  public interface Version {
+
+    /**
+     * Compares to versions that are equivalent.  Meaningless if applied to versions from a
+     * different resource.
+     */
+    @Override boolean equals(Object o);
+
+
+    /** A version for stable resources : resources that don't change over the life of a JVM. */
+    public static final Version STABLE_VERSION = new Version() {};
+
   }
 
 
   /**
-   * Creates a new {@code SoyFileSupplier} given a {@code File}.
+   * Returns a {@link Reader} for the Soy file content and the version of the file read.
    *
-   * @param inputFile The Soy file.
+   * @throws IOException If there is an error opening the input.
    */
-  public SoyFileSupplier(File inputFile) {
-    this(Files.newReaderSupplier(inputFile, Charsets.UTF_8), inputFile.getPath());
-  }
+  public Pair<Reader, Version> open() throws IOException;
 
 
   /**
-   * Creates a new {@code SoyFileSupplier} given a resource {@code URL}, as well as the desired file
-   * path for messages.
-   *
-   * @param inputFileUrl The URL of the Soy file.
-   * @param filePath The path to the Soy file (used for messages only).
+   * True if the underlying resource has changed since the given version.
    */
-  public SoyFileSupplier(URL inputFileUrl, String filePath) {
-    this(Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), filePath);
-  }
+  public boolean hasChangedSince(Version version);
 
 
   /**
-   * Creates a new {@code SoyFileSupplier} given a resource {@code URL}.
-   *
-   * <p> Important: This function assumes that the desired file path is returned by
-   * {@code inputFileUrl.toString()}. If this is not the case, please use
-   * {@link #SoyFileSupplier(URL, String)} instead.
-   *
-   * @see #SoyFileSupplier(URL, String)
-   * @param inputFileUrl The URL of the Soy file.
+   * Returns the file path (used for messages only).
    */
-  public SoyFileSupplier(URL inputFileUrl) {
-    this(Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), inputFileUrl.toString());
-  }
+  public String getPath();
 
 
   /**
-   * Creates a new {@code SoyFileSupplier} given the file content provided as a string, as well as
-   * the desired file path for messages.
-   *
-   * @param content The Soy file content.
-   * @param filePath The path to the Soy file (used for messages only).
+   * Container for factory methods for {@link SoyFileSupplier}s.
    */
-  public SoyFileSupplier(CharSequence content, String filePath) {
-    this(CharStreams.newReaderSupplier(content.toString()), filePath);
-  }
+  public static final class Factory {
 
 
-  /**
-   * Returns a {@code Reader} for the Soy file content.
-   * @throws IOException If there is an error obtaining the {@code Reader}.
-   */
-  @Override public Reader getInput() throws IOException {
-    return contentSupplier.getInput();
-  }
+    /**
+     * Creates a new {@code SoyFileSupplier} given an {@code InputSupplier} for the file content,
+     * as well as the desired file path for messages.
+     *
+     * @param contentSupplier Supplier of a Reader for the Soy file content.
+     * @param filePath The path to the Soy file (used for messages only).
+     */
+    public static SoyFileSupplier create(
+        InputSupplier<? extends Reader> contentSupplier, String filePath) {
+      return new StableSoyFileSupplier(contentSupplier, filePath);
+    }
 
 
-  /** Returns the file path (used for messages only). */
-  public String getPath() {
-    return path;
+    /**
+     * Creates a new {@code SoyFileSupplier} given a {@code File}.
+     *
+     * @param inputFile The Soy file.
+     */
+    public static SoyFileSupplier create(File inputFile) {
+      return create(Files.newReaderSupplier(inputFile, Charsets.UTF_8), inputFile.getPath());
+    }
+
+
+    /**
+     * Creates a new {@code SoyFileSupplier} given a resource {@code URL}, as well as the desired
+     * file path for messages.
+     *
+     * @param inputFileUrl The URL of the Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
+     */
+    public static SoyFileSupplier create(URL inputFileUrl, String filePath) {
+      return create(Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), filePath);
+    }
+
+
+    /**
+     * Creates a new {@code SoyFileSupplier} given a resource {@code URL}.
+     *
+     * <p> Important: This function assumes that the desired file path is returned by
+     * {@code inputFileUrl.toString()}. If this is not the case, please use
+     * {@link #create(URL, String)} instead.
+     *
+     * @see #create(URL, String)
+     * @param inputFileUrl The URL of the Soy file.
+     */
+    public static SoyFileSupplier create(URL inputFileUrl) {
+      return create(
+          Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), inputFileUrl.toString());
+    }
+
+
+    /**
+     * Creates a new {@code SoyFileSupplier} given the file content provided as a string, as well
+     * as the desired file path for messages.
+     *
+     * @param content The Soy file content.
+     * @param filePath The path to the Soy file (used for messages only).
+     */
+    public static SoyFileSupplier create(CharSequence content, String filePath) {
+      return create(CharStreams.newReaderSupplier(content.toString()), filePath);
+    }
+
+
+    private Factory() {
+      // Not instantiable.
+    }
+
   }
 
 }

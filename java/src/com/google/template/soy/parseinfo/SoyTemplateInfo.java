@@ -18,6 +18,7 @@ package com.google.template.soy.parseinfo;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 
 
 /**
@@ -44,19 +45,37 @@ public class SoyTemplateInfo {
   private final String partialName;
 
   /** Map from each param to whether it's required for this template. */
-  private final ImmutableMap<String, ParamRequisiteness> params;
+  private final ImmutableMap<String, ParamRequisiteness> paramsMap;
+
+  /** Set of injected params used by this template (or a transitive callee). */
+  private final ImmutableSortedSet<String> usedIjParams;
 
 
   /**
+   * Constructor for info for a template that doesn't use injected data (even transitively).
    * @param name The full template name.
-   * @param params Map from each param to whether it's required for this template.
+   * @param paramsMap Map from each param to whether it's required for this template.
    */
-  public SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> params) {
+  public SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramsMap) {
+    this(name, paramsMap, ImmutableSortedSet.<String>of());
+  }
+
+
+  /**
+   * General constructor.
+   * @param name The full template name.
+   * @param paramsMap Map from each param to whether it's required for this template.
+   * @param usedIjParams Set of injected params used by this template (or a transitive callee).
+   */
+  public SoyTemplateInfo(
+      String name, ImmutableMap<String, ParamRequisiteness> paramsMap,
+      ImmutableSortedSet<String> usedIjParams) {
     this.name = name;
     int lastDotPos = name.lastIndexOf('.');
     Preconditions.checkArgument(lastDotPos > 0);
     this.partialName = name.substring(lastDotPos);
-    this.params = params;
+    this.paramsMap = paramsMap;
+    this.usedIjParams = usedIjParams;
   }
 
 
@@ -72,7 +91,12 @@ public class SoyTemplateInfo {
 
   /** Returns a map from each param to whether it's required for this template. */
   public ImmutableMap<String, ParamRequisiteness> getParams() {
-    return params;
+    return paramsMap;
+  }
+
+  /** Returns the set of injected params used by this template (or a transitive callee). */
+  public ImmutableSortedSet<String> getUsedIjParams() {
+    return usedIjParams;
   }
 
 }

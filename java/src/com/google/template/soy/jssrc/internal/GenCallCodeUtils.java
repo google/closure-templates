@@ -21,6 +21,9 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -42,6 +45,9 @@ class GenCallCodeUtils {
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
 
+  /** Whether any of the Soy code uses injected data. */
+  private final boolean isUsingIjData;
+
   /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
 
@@ -54,15 +60,18 @@ class GenCallCodeUtils {
 
   /**
    * @param jsSrcOptions The options for generating JS source code.
+   * @param isUsingIjData Whether any of the Soy code uses injected data.
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
    */
   @Inject
-  GenCallCodeUtils(SoyJsSrcOptions jsSrcOptions, JsExprTranslator jsExprTranslator,
-                   IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-                   GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
+  GenCallCodeUtils(
+      SoyJsSrcOptions jsSrcOptions, @IsUsingIjData boolean isUsingIjData,
+      JsExprTranslator jsExprTranslator, IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
+      GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
     this.jsSrcOptions = jsSrcOptions;
+    this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -110,9 +119,15 @@ class GenCallCodeUtils {
    */
   public JsExpr genCallExpr(CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations) {
 
+    String calleeExprText = (callNode instanceof CallBasicNode) ?
+        ((CallBasicNode) callNode).getCalleeName() :
+        "soy.$$getDelegateFn(soy.$$getDelegateId('" +
+            ((CallDelegateNode) callNode).getDelCalleeName() + "'))";
     JsExpr objToPass = genObjToPass(callNode, localVarTranslations);
     return new JsExpr(
-        callNode.getCalleeName() + "(" + objToPass.getText() + ")", Integer.MAX_VALUE);
+        calleeExprText + "(" + objToPass.getText() +
+            (isUsingIjData ? ", null, opt_ijData" : "") + ")",
+        Integer.MAX_VALUE);
   }
 
 
@@ -163,7 +178,7 @@ class GenCallCodeUtils {
       dataToPass = new JsExpr("opt_data", Integer.MAX_VALUE);
     } else if (callNode.isPassingData()) {
       dataToPass = jsExprTranslator.translateToJsExpr(
-          callNode.getDataRef(), callNode.getDataRefText(), localVarTranslations);
+          callNode.getExpr(), callNode.getExprText(), localVarTranslations);
     } else {
       dataToPass = new JsExpr("null", Integer.MAX_VALUE);
     }
@@ -192,7 +207,7 @@ class GenCallCodeUtils {
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
         JsExpr valueJsExpr = jsExprTranslator.translateToJsExpr(
-            cpvn.getValueExpr(), cpvn.getValueExprText(), localVarTranslations);
+            cpvn.getValueExprUnion().getExpr(), cpvn.getValueExprText(), localVarTranslations);
         paramsObjSb.append(valueJsExpr.getText());
 
       } else {

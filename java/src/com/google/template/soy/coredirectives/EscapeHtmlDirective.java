@@ -19,14 +19,15 @@ package com.google.template.soy.coredirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyData;
-import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.shared.restricted.EscapingConventions;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -38,8 +39,8 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-public class EscapeHtmlDirective
-    implements SoyTofuPrintDirective, SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+public class EscapeHtmlDirective extends SoyAbstractTofuPrintDirective
+    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
 
 
   public static final String NAME = "|escapeHtml";
@@ -64,19 +65,25 @@ public class EscapeHtmlDirective
   }
 
 
-  @Override public String applyForTofu(String str, List<SoyData> args) {
-    return CharEscapers.asciiHtmlEscaper().escape(str);
+  @Override public String apply(SoyData value, List<SoyData> args) {
+    if (value instanceof SanitizedContent) {
+      SanitizedContent sanitizedContent = (SanitizedContent) value;
+      if (sanitizedContent.getContentKind() == SanitizedContent.ContentKind.HTML) {
+        return sanitizedContent.getContent();
+      }
+    }
+    return EscapingConventions.EscapeHtml.INSTANCE.escape(value.toString());
   }
 
 
-  @Override public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args) {
-    return new JsExpr("soy.$$escapeHtml(" + str.getText() + ")", Integer.MAX_VALUE);
+  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    return new JsExpr("soy.$$escapeHtml(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
 
-  @Override public JavaExpr applyForJavaSrc(JavaExpr str, List<JavaExpr> args) {
+  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
     return new JavaExpr(
-        JavaCodeUtils.genFunctionCall(JavaCodeUtils.UTILS_LIB + ".$$escapeHtml", str.getText()),
+        JavaCodeUtils.genFunctionCall(JavaCodeUtils.UTILS_LIB + ".$$escapeHtml", value.getText()),
         String.class, Integer.MAX_VALUE);
   }
 

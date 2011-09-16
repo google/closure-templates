@@ -39,6 +39,21 @@ public class DataRefIndexNode extends AbstractExprNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected DataRefIndexNode(DataRefIndexNode orig) {
+    super(orig);
+    this.index = orig.index;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.DATA_REF_INDEX_NODE;
+  }
+
+
   /** Returns the index. */
   public int getIndex() {
     return index;
@@ -47,6 +62,11 @@ public class DataRefIndexNode extends AbstractExprNode {
 
   @Override public String toSourceString() {
     return Integer.toString(index);
+  }
+
+
+  @Override public DataRefIndexNode clone() {
+    return new DataRefIndexNode(this);
   }
 
 }

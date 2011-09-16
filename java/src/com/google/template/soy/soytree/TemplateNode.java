@@ -26,15 +26,14 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.internal.base.Pair;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 
 /**
@@ -44,24 +43,91 @@ import javax.annotation.Nullable;
  *
  * @author Kai Huang
  */
-public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
+public abstract class TemplateNode extends AbstractBlockCommandNode {
+
+
+  /** Priorities range from 0 to MAX_PRIORITY, inclusive. */
+  public static final int MAX_PRIORITY = 1;
+
+
+  /**
+   * Info from the containing Soy file's {@code delpackage} and {@code namespace} declarations.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * <p> Note: Currently, there are only 2 delegate priority values: 0 and 1. Delegate templates
+   * that are not in a delegate package are given priority 0 (lowest). Delegate templates in a
+   * delegate package are given priority 1. There is currently no syntax for the user to override
+   * these default priority values.
+   */
+  @Immutable
+  public static class SoyFileHeaderInfo {
+
+    @Nullable public final String delPackageName;
+    public final int defaultDelPriority;
+    public final String namespace;
+    public final AutoescapeMode defaultAutoescapeMode;
+
+    public SoyFileHeaderInfo(SoyFileNode soyFileNode) {
+      this(soyFileNode.getDelPackageName(), soyFileNode.getNamespace(),
+          soyFileNode.getDefaultAutoescapeMode());
+    }
+
+    public SoyFileHeaderInfo(String namespace) {
+      this(null, namespace, AutoescapeMode.TRUE);
+    }
+
+    public SoyFileHeaderInfo(
+        String delPackageName, String namespace, AutoescapeMode defaultAutoescapeMode) {
+      this.delPackageName = delPackageName;
+      this.defaultDelPriority = (delPackageName == null) ? 0 : 1;
+      this.namespace = namespace;
+      this.defaultAutoescapeMode = defaultAutoescapeMode;
+    }
+  }
+
+
+  /**
+   * Private helper class used by constructors. Encapsulates all the info derived from the command
+   * text.
+   */
+  @Immutable
+  protected static class CommandTextInfo {
+
+    public final String commandText;
+    public final String templateName;
+    @Nullable public final String partialTemplateName;
+    public final boolean isPrivate;
+    public final AutoescapeMode autoescapeMode;
+    public final SyntaxVersion syntaxVersion;
+
+    public CommandTextInfo(
+        String commandText, String templateName, @Nullable String partialTemplateName,
+        boolean isPrivate, AutoescapeMode autoescapeMode, SyntaxVersion syntaxVersion) {
+      Preconditions.checkArgument(BaseUtils.isDottedIdentifier(templateName));
+      Preconditions.checkArgument(
+          partialTemplateName == null || BaseUtils.isIdentifierWithLeadingDot(partialTemplateName));
+      this.commandText = commandText;
+      this.templateName = templateName;
+      this.partialTemplateName = partialTemplateName;
+      this.isPrivate = isPrivate;
+      this.autoescapeMode = autoescapeMode;
+      this.syntaxVersion = syntaxVersion;
+    }
+  }
 
 
   /**
    * Abstract base class for a SoyDoc declaration.
    */
+  @Immutable
   private abstract static class SoyDocDecl {
 
     /** The SoyDoc text describing the declaration. */
-    public String desc;
+    @Nullable public final String desc;
 
     private SoyDocDecl(@Nullable String desc) {
       this.desc = desc;
-    }
-
-    /** Clears the desc text. */
-    public void clearDesc() {
-      desc = null;
     }
   }
 
@@ -69,7 +135,8 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
   /**
    * Info for a parameter declaration in the SoyDoc.
    */
-  public static class SoyDocParam extends SoyDocDecl {
+  @Immutable
+  public static final class SoyDocParam extends SoyDocDecl {
 
     /** The param key. */
     public final String key;
@@ -79,43 +146,22 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
 
     public SoyDocParam(String key, boolean isRequired, @Nullable String desc) {
       super(desc);
+      Preconditions.checkArgument(key != null);
       this.key = key;
       this.isRequired = isRequired;
     }
-  }
 
+    @Override public boolean equals(Object o) {
+      if (! (o instanceof SoyDocParam)) { return false; }
+      SoyDocParam other = (SoyDocParam) o;
+      return this.key.equals(other.key) && this.isRequired == other.isRequired;
+    }
 
-  /**
-   * Info for a safe data path declaration in the SoyDoc.
-   */
-  public static class SoyDocSafePath extends SoyDocDecl {
-
-    public final List<String> path;
-
-    public String desc;
-
-    public SoyDocSafePath(List<String> path, @Nullable String desc) {
-      super(desc);
-      this.path = path;
+    @Override public int hashCode() {
+      return key.hashCode() + (isRequired ? 1 : 0);
     }
   }
 
-
-  /** Pattern for a template name not listed as an attribute name="...". */
-  private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
-      Pattern.compile("^ (?! name=\") [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
-
-  /** Pattern for valid template name in V2 syntax. */
-  private static final Pattern VALID_V2_NAME = Pattern.compile("[.][a-zA-Z_]\\w*");
-
-  /** Parser for the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("template",
-          new Attribute("name", Attribute.ALLOW_ALL_VALUES,
-                        Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
-          new Attribute("private", Attribute.BOOLEAN_VALUES, "false"),
-          new Attribute("override", Sets.newHashSet("true", "false", null), null), // V1
-          new Attribute("autoescape", Attribute.BOOLEAN_VALUES, "true"));
 
   /** Pattern for a newline. */
   private static final Pattern NEWLINE = Pattern.compile("\\n|\\r\\n?");
@@ -131,31 +177,27 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
   /** Pattern for a SoyDoc declaration. */
   // group(1) = declaration keyword; group(2) = declaration text.
   private static final Pattern SOY_DOC_DECL_PATTERN =
-      Pattern.compile("( @param[?]? | @safe ) \\s+ ( \\S+ )", Pattern.COMMENTS);
+      Pattern.compile("( @param[?]? ) \\s+ ( \\S+ )", Pattern.COMMENTS);
 
   /** Pattern for SoyDoc parameter declaration text. */
   private static final Pattern SOY_DOC_PARAM_TEXT_PATTERN =
       Pattern.compile("[a-zA-Z_]\\w*", Pattern.COMMENTS);
 
-  /** Pattern for SoyDoc safe data path declaration text. */
-  private static final Pattern SOY_DOC_SAFE_PATH_TEXT_PATTERN =
-      Pattern.compile("[a-zA-Z_]\\w* ( [.] ( [*] | [a-zA-Z_]\\w* ) )*", Pattern.COMMENTS);
 
+  /** Info from the containing Soy file's header declarations. */
+  private final SoyFileHeaderInfo soyFileHeaderInfo;
 
   /** This template's name. */
-  private String templateName;
+  private final String templateName;
 
   /** This template's partial name. Only applicable for V2. */
-  private final String partialTemplateName;
+  @Nullable private final String partialTemplateName;
 
   /** Whether this template is private. */
   private final boolean isPrivate;
 
-  /** Whether this template overrides another (always false for syntax version V2). */
-  private final boolean isOverride;
-
-  /** Whether autoescape is on for this template. */
-  private final boolean shouldAutoescape;
+  /** The kind of autoescaping, if any, done for this template. */
+  private final AutoescapeMode autoescapeMode;
 
   /** The full SoyDoc, including the start/end tokens, or null. */
   private String soyDoc;
@@ -164,67 +206,57 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
   private String soyDocDesc;
 
   /** The parameters listed in the SoyDoc, or null if no SoyDoc. */
-  private List<SoyDocParam> soyDocParams;
-
-  /** The safe data paths listed in the SoyDoc, or null if no SoyDoc. */
-  private List<SoyDocSafePath> soyDocSafePaths;
+  private ImmutableList<SoyDocParam> soyDocParams;
 
 
   /**
+   * Protected constructor for use by subclasses.
+   *
    * @param id The id for this node.
-   * @param commandText The command text.
+   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   * @param commandName The command name, either {@code template} or {@code deltemplate}.
+   * @param commandTextInfo All the info derived from the command text.
    * @param soyDoc The full SoyDoc, including the start/end tokens, or null if the template is not
-   *     preceded by SoyDoc.
-   * @throws SoySyntaxException If a syntax error is found.
    */
-  public TemplateNode(String id, String commandText, @Nullable String soyDoc)
-      throws SoySyntaxException {
-    super(id, "template", commandText);
+  protected TemplateNode(
+      int id, SoyFileHeaderInfo soyFileHeaderInfo, String commandName,
+      CommandTextInfo commandTextInfo, @Nullable String soyDoc) {
 
-    // Handle template name not listed as an attribute name="...".
-    Matcher ntnMatcher = NONATTRIBUTE_TEMPLATE_NAME.matcher(commandText);
-    if (ntnMatcher.find()) {
-      commandText = ntnMatcher.replaceFirst("name=\"" + ntnMatcher.group() + "\"");
-    }
+    super(id, commandName, commandTextInfo.commandText);
 
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
+    this.soyFileHeaderInfo = soyFileHeaderInfo;
 
-    templateName = attributes.get("name");
-    if (!BaseUtils.isDottedIdentifier(templateName)) {
-      throw new SoySyntaxException("Invalid template name \"" + templateName + "\".");
-    }
-    if (VALID_V2_NAME.matcher(templateName).matches()) {
-      partialTemplateName = templateName;
-    } else {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
-      partialTemplateName = null;
-    }
-
-    isPrivate = attributes.get("private").equals("true");
-
-    String overrideAttribute = attributes.get("override");
-    if (overrideAttribute == null) {
-      isOverride = false;
-    } else {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
-      isOverride = overrideAttribute.equals("true");
-    }
-
-    shouldAutoescape = attributes.get("autoescape").equals("true");
+    this.templateName = commandTextInfo.templateName;
+    this.partialTemplateName = commandTextInfo.partialTemplateName;
+    this.isPrivate = commandTextInfo.isPrivate;
+    this.autoescapeMode = commandTextInfo.autoescapeMode;
+    maybeSetSyntaxVersion(commandTextInfo.syntaxVersion);
 
     this.soyDoc = soyDoc;
     if (soyDoc != null) {
       Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
-      String cleanedSoyDoc = cleanSoyDoc(soyDoc);
-      soyDocDesc = parseSoyDocDesc(cleanedSoyDoc);
-      Pair<List<SoyDocParam>, List<SoyDocSafePath>> decls = parseSoyDocDecls(cleanedSoyDoc);
-      soyDocParams = decls.first;
-      soyDocSafePaths = decls.second;
+      String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
+      this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
+      Pair<Boolean, List<SoyDocParam>> soyDocParamsInfo = parseSoyDocDeclsHelper(cleanedSoyDoc);
+      this.soyDocParams = ImmutableList.copyOf(soyDocParamsInfo.second);
+      if (soyDocParamsInfo.first) {
+        maybeSetSyntaxVersion(SyntaxVersion.V1);
+      }
     } else {
       maybeSetSyntaxVersion(SyntaxVersion.V1);
-      soyDocDesc = null;
-      soyDocParams = null;
-      soyDocSafePaths = null;
+      this.soyDocDesc = null;
+      this.soyDocParams = null;
+    }
+
+    // Check template name.
+    if (partialTemplateName != null) {
+      if (! BaseUtils.isIdentifierWithLeadingDot(partialTemplateName)) {
+        throw new SoySyntaxException("Invalid template name \"" + partialTemplateName + "\".");
+      }
+    } else {
+      if (! BaseUtils.isDottedIdentifier(templateName)) {
+        throw new SoySyntaxException("Invalid template name \"" + templateName + "\".");
+      }
     }
   }
 
@@ -238,7 +270,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
    * @param soyDoc The SoyDoc to clean.
    * @return The cleaned SoyDoc.
    */
-  private static String cleanSoyDoc(String soyDoc) {
+  private static String cleanSoyDocHelper(String soyDoc) {
 
     // Change all newlines to "\n".
     soyDoc = NEWLINE.matcher(soyDoc).replaceAll("\n");
@@ -254,9 +286,9 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
     // (specifically the most common indent is space-star-space). Thus, we first remove common
     // spaces, then remove one common star, and finally, if we did remove a star, then we once again
     // remove common spaces.
-    removeCommonStartChar(lines, ' ', true);
-    if (removeCommonStartChar(lines, '*', false) == 1) {
-      removeCommonStartChar(lines, ' ', true);
+    removeCommonStartCharHelper(lines, ' ', true);
+    if (removeCommonStartCharHelper(lines, '*', false) == 1) {
+      removeCommonStartCharHelper(lines, ' ', true);
     }
 
     return Joiner.on('\n').join(lines);
@@ -264,7 +296,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
 
 
   /**
-   * Private helper for {@code cleanSoyDoc()}.
+   * Private helper for {@code cleanSoyDocHelper()}.
    * Removes a common character at the start of all lines, either once or as many times as possible.
    *
    * <p> Special case: Empty lines count as if they do have the common character for the purpose of
@@ -275,7 +307,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
    * @param shouldRemoveMultiple Whether to remove the char as many times as possible.
    * @return The number of chars removed from the start of each line.
    */
-  private static int removeCommonStartChar(
+  private static int removeCommonStartCharHelper(
       List<String> lines, char charToRemove, boolean shouldRemoveMultiple) {
 
     int numCharsToRemove = 0;
@@ -324,7 +356,7 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
    * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
    * @return The description (with trailing whitespace removed).
    */
-  private static String parseSoyDocDesc(String cleanedSoyDoc) {
+  private static String parseSoyDocDescHelper(String cleanedSoyDoc) {
 
     Matcher paramMatcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
     int endOfDescPos = (paramMatcher.find()) ? paramMatcher.start() : cleanedSoyDoc.length();
@@ -337,13 +369,12 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
    * Private helper for the constructor to parse the SoyDoc declarations.
    *
    * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
-   * @return A pair containing the list of parameters and the list of safe paths.
+   * @return Pair of (whether there are any params in incorrect syntax, the list of parameters).
    */
-  private static Pair<List<SoyDocParam>, List<SoyDocSafePath>> parseSoyDocDecls(
-      String cleanedSoyDoc) {
+  private static Pair<Boolean, List<SoyDocParam>> parseSoyDocDeclsHelper(String cleanedSoyDoc) {
 
+    boolean hasParamsWithIncorrectSyntax = false;
     List<SoyDocParam> soyDocParams = Lists.newArrayList();
-    List<SoyDocSafePath> soyDocSafePaths = Lists.newArrayList();
 
     Set<String> seenParamKeys = Sets.newHashSet();
 
@@ -367,11 +398,15 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
       if (declKeyword.equals("@param") || declKeyword.equals("@param?")) {
         if (! SOY_DOC_PARAM_TEXT_PATTERN.matcher(declText).matches()) {
           if (declText.startsWith("{")) {
+            hasParamsWithIncorrectSyntax = true;
             continue;  // for now, allow incorrect syntax where '{' is the start of the declText
           } else {
             throw new SoySyntaxException(
                 "Invalid SoyDoc declaration \"" + declKeyword + " " + declText + "\".");
           }
+        }
+        if (declText.equals("ij")) {
+          throw new SoySyntaxException("Invalid param name 'ij' ('ij' is for injected data ref).");
         }
         if (seenParamKeys.contains(declText)) {
           throw new SoySyntaxException(
@@ -380,88 +415,102 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
         seenParamKeys.add(declText);
         soyDocParams.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc));
 
-      } else if (declKeyword.equals("@safe")) {
-        if (! SOY_DOC_SAFE_PATH_TEXT_PATTERN.matcher(declText).matches()) {
-          throw new SoySyntaxException(
-              "Invalid SoyDoc declaration \"" + declKeyword + " " + declText + "\".");
-        }
-        List<String> safePath = ImmutableList.copyOf(Splitter.on('.').split(declText));
-        soyDocSafePaths.add(new SoyDocSafePath(safePath, desc));
-
       } else {
         throw new AssertionError();
       }
     }
 
-    return Pair.of(soyDocParams, soyDocSafePaths);
+    return Pair.of(hasParamsWithIncorrectSyntax, soyDocParams);
   }
 
 
   /**
-   * Sets this template's full name (must not be a partial name).
-   * @param templateName This template's full name.
+   * Copy constructor.
+   * @param orig The node to copy.
    */
-  public void setTemplateName(String templateName) {
-    Preconditions.checkArgument(
-        BaseUtils.isDottedIdentifier(templateName) && templateName.charAt(0) != '.');
-    this.templateName = templateName;
+  protected TemplateNode(TemplateNode orig) {
+    super(orig);
+    this.soyFileHeaderInfo = orig.soyFileHeaderInfo;
+    this.templateName = orig.templateName;
+    this.partialTemplateName = orig.partialTemplateName;
+    this.isPrivate = orig.isPrivate;
+    this.autoescapeMode = orig.autoescapeMode;
+    this.soyDoc = orig.soyDoc;
+    this.soyDocDesc = orig.soyDocDesc;
+    this.soyDocParams = orig.soyDocParams;  // safe to reuse (immutable)
   }
+
+
+  /** Returns info from the containing Soy file's header declarations. */
+  public SoyFileHeaderInfo getSoyFileHeaderInfo() {
+    return soyFileHeaderInfo;
+  }
+
+
+  /** Returns the name of the containing delegate package, or null if none. */
+  public String getDelPackageName() {
+    return soyFileHeaderInfo.delPackageName;
+  }
+
+
+  /** Returns a template name suitable for display in user msgs. */
+  public abstract String getTemplateNameForUserMsgs();
+
 
   /** Returns this template's name. */
   public String getTemplateName() {
     return templateName;
   }
 
-  /** Returns this template's partial name. Only applicable for V2. */
+
+  /** Returns this template's partial name. Only applicable for V2 (null for V1). */
   public String getPartialTemplateName() {
     return partialTemplateName;
   }
+
 
   /** Returns whether this template is private. */
   public boolean isPrivate() {
     return isPrivate;
   }
 
-  /** Returns whether this template overrides another (always false for syntax version V2). */
-  public boolean isOverride() {
-    return isOverride;
+
+  /**
+   * Returns the kind of autoescaping, if any, done for this template.
+   */
+  public AutoescapeMode getAutoescapeMode() {
+    return autoescapeMode;
   }
 
-  /** Returns whether autoescape is on for this template. */
-  public boolean shouldAutoescape() {
-    return shouldAutoescape;
-  }
 
   /** Clears the SoyDoc text, description, and param descriptions. */
   public void clearSoyDocStrings() {
     soyDoc = null;
     soyDocDesc = null;
-    for (SoyDocParam param : soyDocParams) {
-      param.clearDesc();
+
+    List<SoyDocParam> newSoyDocParams = Lists.newArrayListWithCapacity(soyDocParams.size());
+    for (SoyDocParam origParam : soyDocParams) {
+      newSoyDocParams.add(new SoyDocParam(origParam.key, origParam.isRequired, null));
     }
-    for (SoyDocSafePath safePath : soyDocSafePaths) {
-      safePath.clearDesc();
-    }
+    soyDocParams = ImmutableList.copyOf(newSoyDocParams);
   }
+
 
   /** Returns the SoyDoc, or null. */
   public String getSoyDoc() {
     return soyDoc;
   }
 
+
   /** Returns the description portion of the SoyDoc (before @param tags), or null. */
   public String getSoyDocDesc() {
     return soyDocDesc;
   }
 
+
   /** Returns the parameters listed in the SoyDoc, or null if no SoyDoc. */
   public List<SoyDocParam> getSoyDocParams() {
     return soyDocParams;
-  }
-
-  /** Returns the safe data paths listed in the SoyDoc, or null if no SoyDoc. */
-  public List<SoyDocSafePath> getSoyDocSafePaths() {
-    return soyDocSafePaths;
   }
 
 
@@ -478,17 +527,19 @@ public class TemplateNode extends AbstractParentSoyCommandNode<SoyNode> {
     // If first or last char of template body is a space, must be turned into '{sp}'.
     StringBuilder bodySb = new StringBuilder();
     appendSourceStringForChildren(bodySb);
-    if (bodySb.charAt(0) == ' ') {
-      bodySb.replace(0, 1, "{sp}");
-    }
     int bodyLen = bodySb.length();
-    if (bodySb.charAt(bodyLen-1) == ' ') {
-      bodySb.replace(bodyLen-1, bodyLen, "{sp}");
+    if (bodyLen != 0) {
+      if (bodyLen != 1 && bodySb.charAt(bodyLen-1) == ' ') {
+        bodySb.replace(bodyLen-1, bodyLen, "{sp}");
+      }
+      if (bodySb.charAt(0) == ' ') {
+        bodySb.replace(0, 1, "{sp}");
+      }
     }
 
     sb.append(bodySb);
     sb.append("\n");
-    sb.append("{/template}\n");
+    sb.append("{/").append(getCommandName()).append("}\n");
     return sb.toString();
   }
 

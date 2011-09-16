@@ -32,7 +32,7 @@ public abstract class AbstractNode implements Node {
 
 
   /** The parent of this node. */
-  private ParentNode<? extends Node> parent;
+  private ParentNode<?> parent;
 
 
   protected AbstractNode() {
@@ -40,11 +40,20 @@ public abstract class AbstractNode implements Node {
   }
 
 
-  @Override public void setParent(ParentNode<? extends Node> parent) {
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractNode(AbstractNode orig) {
+    parent = null;  // important: should not copy parent pointer
+  }
+
+
+  @Override public void setParent(ParentNode<?> parent) {
     this.parent = parent;
   }
 
-  @Override public ParentNode<? extends Node> getParent() {
+  @Override public ParentNode<?> getParent() {
     return parent;
   }
 
@@ -79,5 +88,8 @@ public abstract class AbstractNode implements Node {
   @Override public String toTreeString(int indent) {
     return SPACES.substring(0, indent) + "[" + toString() + "]\n";
   }
+
+
+  @Override public abstract Node clone();
 
 }

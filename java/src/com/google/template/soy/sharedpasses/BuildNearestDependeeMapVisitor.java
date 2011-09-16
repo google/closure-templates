@@ -16,37 +16,28 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefKeyNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
-import com.google.template.soy.soytree.IfCondNode;
-import com.google.template.soy.soytree.IfElseNode;
-import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.PrintDirectiveNode;
-import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.ExprUnion;
+import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import com.google.template.soy.soytree.SwitchCaseNode;
-import com.google.template.soy.soytree.SwitchDefaultNode;
-import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgNode;
 
@@ -89,8 +80,8 @@ import javax.annotation.Nullable;
  *     an exception for LoopNodes because we don't want to lose the ability to pull invariants out
  *     of loops.
  * (d) LocalVarNode: Its subtree or younger siblings may reference its local variable.
- * (e) MsgNode or GoogMsgNode: Any change to its immediate children would change the message to be
- *     translated, which would be incorrect.
+ * (e) MsgBlockNode: Any change to its immediate children would change the message to be translated,
+ *     which would be incorrect.
  *
  * @author Kai Huang
  */
@@ -107,195 +98,105 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
   private Map<SoyNode, SoyNode> nearestDependeeMap;
 
 
-  @Override protected void setup() {
-    potentialDependeeFrames = null;
-    allDependeesMap = null;
+  @Override public Map<SoyNode, SoyNode> exec(SoyNode node) {
+
+    Preconditions.checkArgument(
+        node instanceof SoyFileSetNode || node instanceof SoyFileNode ||
+        node instanceof TemplateNode);
+
     nearestDependeeMap = Maps.newHashMap();
-  }
-
-
-  @Override protected Map<SoyNode, SoyNode> getResult() {
+    visit(node);
     return nearestDependeeMap;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     visitChildren(node);
   }
 
 
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
     visitChildren(node);
   }
 
 
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
 
     potentialDependeeFrames = new ArrayDeque<List<SoyNode>>();
     allDependeesMap = Maps.newHashMap();
 
-    // Note: Add to potential dependees because descendents can't be moved out of the template.
+    // Note: Add to potential dependees while visiting children because descendents can't be moved
+    // out of the template.
     potentialDependeeFrames.push(Lists.<SoyNode>newArrayList(node));
     visitChildren(node);
     potentialDependeeFrames.pop();
   }
 
 
-  @Override protected void visitInternal(MsgNode node) {
-    // Note: Add to potential dependees because its children define the message for translation.
-    visitParentPotentialDependeeHelper(node, null);
-  }
+  @Override protected void visitGoogMsgNode(GoogMsgNode node) {
 
+    visitSoyNode(node);
 
-  @Override protected void visitInternal(GoogMsgNode node) {
-
-    // Note: Add to potential dependees because its children define the message for translation.
-    visitParentPotentialDependeeHelper(node, null);
-
-    // Note: Add to potential dependees because it defines an inline local variable.
+    // Note: Add to potential dependees before visiting younger siblings because it defines an
+    // inline local variable.
     potentialDependeeFrames.peek().add(node);
   }
 
 
-  @Override protected void visitInternal(PrintNode node) {
-    Set<String> topLevelRefs = getTopLevelRefsInExpr(node.getExpr(), node.getExprText());
-    // Note: Add to potential dependees because it is the top of a split-level structure.
-    visitParentPotentialDependeeHelper(node, topLevelRefs);
-  }
+  @Override protected void visitLetNode(LetNode node) {
 
+    visitSoyNode(node);
 
-  @Override protected void visitInternal(PrintDirectiveNode node) {
-
-    Set<String> topLevelRefs = Sets.newHashSet();
-    for (ExprNode arg : node.getArgs()) {
-      topLevelRefs.addAll(getTopLevelRefsInExpr(arg, null));
-    }
-
-    visitHelper(node, topLevelRefs);
-  }
-
-
-  @Override protected void visitInternal(IfNode node) {
-    // Note: Add to potential dependees because it is the top of a split-level structure.
-    visitParentPotentialDependeeHelper(node, null);
-  }
-
-
-  @Override protected void visitInternal(IfCondNode node) {
-    Set<String> topLevelRefs = getTopLevelRefsInExpr(node.getExpr(), node.getExprText());
-    // Note: Add to potential dependees because it is a conditionally executed block.
-    visitParentPotentialDependeeHelper(node, topLevelRefs);
-  }
-
-
-  @Override protected void visitInternal(IfElseNode node) {
-    // Note: Add to potential dependees because it is a conditionally executed block.
-    visitParentPotentialDependeeHelper(node, null);
-  }
-
-
-  @Override protected void visitInternal(SwitchNode node) {
-    Set<String> topLevelRefs = getTopLevelRefsInExpr(node.getExpr(), node.getExprText());
-    // Note: Add to potential dependees because it is the top of a split-level structure.
-    visitParentPotentialDependeeHelper(node, topLevelRefs);
-  }
-
-
-  @Override protected void visitInternal(SwitchCaseNode node) {
-
-    Set<String> topLevelRefs = Sets.newHashSet();
-    for (ExprNode caseExpr : node.getExprList()) {
-      topLevelRefs.addAll(getTopLevelRefsInExpr(caseExpr, null));
-    }
-
-    // Note: Add to potential dependees because it is a conditionally executed block.
-    visitParentPotentialDependeeHelper(node, topLevelRefs);
-  }
-
-
-  @Override protected void visitInternal(SwitchDefaultNode node) {
-    // Note: Add to potential dependees because it is a conditionally executed block.
-    visitParentPotentialDependeeHelper(node, null);
-  }
-
-
-  @Override protected void visitInternal(ForeachNode node) {
-    Set<String> topLevelRefs = getTopLevelRefsInExpr(node.getDataRef(), node.getDataRefText());
-    // Note: Add to potential dependees because it is the top of a split-level structure.
-    visitParentPotentialDependeeHelper(node, topLevelRefs);
-  }
-
-
-  @Override protected void visitInternal(ForeachNonemptyNode node) {
-    // Note: Add to potential dependees because it defines a local variable.
-    visitParentPotentialDependeeHelper(node, null);
-  }
-
-
-  @Override protected void visitInternal(ForeachIfemptyNode node) {
-    // Note: Add to potential dependees because it is a conditionally executed block.
-    visitParentPotentialDependeeHelper(node, null);
-  }
-
-
-  @Override protected void visitInternal(ForNode node) {
-
-    Set<String> topLevelRefs = Sets.newHashSet();
-    for (ExprNode rangeArg : node.getRangeArgs()) {
-      topLevelRefs.addAll(getTopLevelRefsInExpr(rangeArg, null));
-    }
-
-    // Note: Add to potential dependees because it defines a local variable.
-    visitParentPotentialDependeeHelper(node, topLevelRefs);
-  }
-
-
-  @Override protected void visitInternal(CallNode node) {
-    // Note: Add to potential dependees because it is the top of a split-level structure.
-    visitParentPotentialDependeeHelper(node, null);
+    // Note: Add to potential dependees before visiting younger siblings because it defines an
+    // inline local variable.
+    potentialDependeeFrames.peek().add(node);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    visitHelper(node, null);
-  }
+  @Override protected void visitSoyNode(SoyNode node) {
 
+    // ------ Recurse. ------
+    // Note: We must recurse first, because a parent's children must have already been processed
+    // (thus their mappings are already in allDependeesMap) when the parent is processed.
 
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
+    if (node instanceof ParentSoyNode<?>) {
 
-    potentialDependeeFrames.push(Lists.<SoyNode>newArrayList());
-    visitChildren(node);
-    potentialDependeeFrames.pop();
+      List<SoyNode> newPotentialDependeeFrame = Lists.newArrayList();
 
-    visitHelper(node, null);
-  }
+      if (node instanceof TemplateNode || node instanceof SplitLevelTopNode<?> ||
+          node instanceof ConditionalBlockNode || node instanceof LocalVarBlockNode ||
+          node instanceof MsgBlockNode) {
+        // This node is a potential dependee for descendants.
+        newPotentialDependeeFrame.add(node);
+      }
 
+      potentialDependeeFrames.push(newPotentialDependeeFrame);
+      visitChildren((ParentSoyNode<?>) node);
+      potentialDependeeFrames.pop();
+    }
 
-  // -----------------------------------------------------------------------------------------------
-  // Helpers.
+    // ------ Process this node. ------
 
+    // Find the top-level refs within expressions in this node, if any.
+    Set<String> topLevelRefs;
+    if (node instanceof ExprHolderNode) {
+      topLevelRefs = Sets.newHashSet();
+      for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
+        topLevelRefs.addAll(getTopLevelRefsInExpr(exprUnion));
+      }
+    } else {
+      topLevelRefs = null;
+    }
 
-  /**
-   * Helper for visiting a given node and adding its mappings in nearestDependeeMap and
-   * allDependeesMap.
-   *
-   * <p> Precondition: If this node is a parent, its children must have already been visited (thus
-   * their mappings are already in allDependeesMap).
-   *
-   * @param node The node to visit.
-   * @param topLevelRefs The top-level references made by this node. Does not include references
-   *     made by its descendents. May be either empty or null if there are no references.
-   */
-  private void visitHelper(SoyNode node, @Nullable Set<String> topLevelRefs) {
-
+    // Add mappings for this node to nearestDependeeMap and allDependeesMap.
     boolean foundNearestDependee = false;
     Set<SoyNode> allDependees = Sets.newHashSetWithExpectedSize(4);
 
@@ -322,8 +223,12 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
   }
 
 
+  // -----------------------------------------------------------------------------------------------
+  // Helpers.
+
+
   /**
-   * Helper for visitHelper() to determine whether a given node is dependent on a given potential
+   * Helper for visitSoyNode() to determine whether a given node is dependent on a given potential
    * dependee.
    *
    * @param potentialDependee The potential dependee node.
@@ -344,26 +249,22 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
     }
 
     if (node.getParent() == potentialDependee &&
-        (potentialDependee instanceof SplitLevelTopNode ||
-         potentialDependee instanceof MsgNode ||
-         potentialDependee instanceof GoogMsgNode)) {
+        (potentialDependee instanceof SplitLevelTopNode<?> ||
+         potentialDependee instanceof MsgBlockNode)) {
       // The bottom level of a split-level structure cannot be moved. Also, the immediate children
-      // of a MsgNode or GoogMsgNode cannot be moved because they define the message for
-      // translation.
+      // of a MsgBlockNode cannot be moved because they define the message for translation.
       return true;
     }
 
     if (potentialDependee instanceof LocalVarNode) {
       // Check whether this node depends on the local var.
       if (topLevelRefs != null &&
-          topLevelRefs.contains(((LocalVarNode) potentialDependee).getLocalVarName())) {
+          topLevelRefs.contains(((LocalVarNode) potentialDependee).getVarName())) {
         return true;
       }
       // Check whether any child depends on the local var.
-      if (node instanceof ParentSoyNode) {
-        @SuppressWarnings("unchecked")
-        ParentSoyNode<? extends SoyNode> nodeCast = (ParentSoyNode<? extends SoyNode>) node;
-        for (SoyNode child : nodeCast.getChildren()) {
+      if (node instanceof ParentSoyNode<?>) {
+        for (SoyNode child : ((ParentSoyNode<?>) node).getChildren()) {
           Set<SoyNode> allDependeesOfChild = allDependeesMap.get(child);
           if (allDependeesOfChild == null) {
             throw new AssertionError("Child has not been visited.");
@@ -380,26 +281,6 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
   }
 
 
-  /**
-   * Helper for visiting a node that is both a potential dependee and a parent. This function takes
-   * care of visiting the node's children.
-   *
-   * @param parentPotentialDependee The node to visit.
-   * @param topLevelRefs The top-level references made by this node. Does not include references
-   *     made by its descendents. May be either empty or null if there are no references.
-   */
-  private void visitParentPotentialDependeeHelper(
-      ParentSoyNode<? extends SoyNode> parentPotentialDependee,
-      @Nullable Set<String> topLevelRefs) {
-
-    potentialDependeeFrames.push(Lists.<SoyNode>newArrayList(parentPotentialDependee));
-    visitChildren(parentPotentialDependee);
-    potentialDependeeFrames.pop();
-
-    visitHelper(parentPotentialDependee, topLevelRefs);
-  }
-
-
   // -----------------------------------------------------------------------------------------------
   // Helper to retrieve top-level references from a Soy expression.
 
@@ -407,20 +288,17 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
   /**
    * Finds the top-level references within a Soy expression (V1 or V2 syntax).
    *
-   * @param expr The expression tree, or null of the expression is not in Soy V2 syntax.
-   * @param exprText The expression text. Required if the parameter {@code expr} is null, otherwise
-   *     optional and will not be used.
+   * @param exprUnion The expression (V1 or V2 syntax).
    * @return The set of top-level references in the given expression.
    */
-  private static Set<String> getTopLevelRefsInExpr(
-      @Nullable ExprNode expr, @Nullable String exprText) {
+  private static Set<String> getTopLevelRefsInExpr(ExprUnion exprUnion) {
 
-    if (expr != null) {
+    if (exprUnion.getExpr() != null) {
       // V2 expression.
-      return (new GetTopLevelRefsInExprVisitor()).exec(expr);
+      return (new GetTopLevelRefsInExprVisitor()).exec(exprUnion.getExpr());
     } else {
       // V1 expression.
-      return getTopLevelRefsInV1Expr(exprText);
+      return getTopLevelRefsInV1Expr(exprUnion.getExprText());
     }
   }
 
@@ -433,25 +311,21 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
 
     private Set<String> topLevelRefs;
 
-    @Override protected void setup() {
+    @Override public Set<String> exec(ExprNode node) {
       topLevelRefs = Sets.newHashSet();
-    }
-
-    @Override protected Set<String> getResult() {
+      visit(node);
       return topLevelRefs;
     }
 
-    @Override protected void visitInternal(DataRefNode node) {
-      topLevelRefs.add(((DataRefKeyNode) node.getChild(0)).getKey());
+    @Override protected void visitDataRefNode(DataRefNode node) {
+      topLevelRefs.add(node.getFirstKey());
       visitChildren(node);
     }
 
-    @Override protected void visitInternal(ExprNode node) {
-      // Nothing to do for other nodes.
-    }
-
-    @Override protected void visitInternal(ParentExprNode node) {
-      visitChildren(node);
+    @Override protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        visitChildren((ParentExprNode) node);
+      }
     }
   }
 

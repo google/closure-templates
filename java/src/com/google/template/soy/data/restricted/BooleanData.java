@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data.restricted;
 
+import javax.annotation.concurrent.Immutable;
+
 
 /**
  * Boolean data.
@@ -24,7 +26,15 @@ package com.google.template.soy.data.restricted;
  *
  * @author Kai Huang
  */
+@Immutable
 public class BooleanData extends PrimitiveData {
+
+
+  /** Static instance of BooleanData with value 'true'. */
+  public static final BooleanData TRUE = new BooleanData(true);
+
+  /** Static instance of BooleanData with value 'false'. */
+  public static final BooleanData FALSE = new BooleanData(false);
 
 
   /** The boolean value. */
@@ -33,9 +43,22 @@ public class BooleanData extends PrimitiveData {
 
   /**
    * @param value The boolean value.
+   * @deprecated Use {@link BooleanData#TRUE}, {@link BooleanData#FALSE}, or
+   *     {@link BooleanData#forValue}.
    */
+  @Deprecated
   public BooleanData(boolean value) {
     this.value = value;
+  }
+
+
+  /**
+   * Gets a BooleanData instance for the given value.
+   * @param value The desired value.
+   * @return A BooleanData instance with the given value.
+   */
+  public static BooleanData forValue(boolean value) {
+    return value ? TRUE : FALSE;
   }
 
 

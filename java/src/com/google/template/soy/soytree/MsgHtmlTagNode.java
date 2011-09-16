@@ -17,12 +17,18 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderNode;
+import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -32,8 +38,12 @@ import java.util.regex.Pattern;
  *
  * @author Kai Huang
  */
-public class MsgHtmlTagNode extends AbstractParentSoyNode<SoyNode> implements MsgPlaceholderNode {
+public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialContentNode {
 
+
+  /** Pattern for matching the 'phname' attribute. */
+  private static final Pattern PHNAME_ATTR_PATTERN =
+      Pattern.compile("\\s phname=\" ( [^\"]* ) \"", Pattern.COMMENTS);
 
   /** Pattern for matching the tag name in the initial raw text. */
   private static final Pattern TAG_NAME_PATTERN =
@@ -60,44 +70,120 @@ public class MsgHtmlTagNode extends AbstractParentSoyNode<SoyNode> implements Ms
   /** Whether this HTML tag only has raw text (i.e. has only a single RawTextNode child). */
   private final boolean isOnlyRawText;
 
-  /** Only applicable when isOnlyRawText is true. A hash of the full tag text. */
-  private final int fullTagTextHash;
+  /** Only applicable when isOnlyRawText is true. The full tag text. */
+  private final @Nullable String fullTagText;
 
-  /** The generated base placeholder name, or null if it has not yet been generated. */
-  private String basePlaceholderName;
+  /** The user-supplied placeholder name, or null if not supplied or not applicable. */
+  @Nullable private final String userSuppliedPlaceholderName;
 
 
   /**
    * @param id The id for this node.
-   * @param sourceContent The source content of this HTML tag.
-   * @param isOnlyRawText Whether this HTML tag only has raw text (i.e. will have only a single
-   *     RawTextNode child).
+   * @param children The children nodes representing the content of this HTML tag. The first and
+   *     last children must be RawTextNodes (can be the same node if there's only one child). If
+   *     there is any 'phname' attribute, it should not have been stripped out yet (this constructor
+   *     will handle parsing and stripping any 'phname' attribute).
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public MsgHtmlTagNode(String id, String sourceContent, boolean isOnlyRawText)
-      throws SoySyntaxException {
+  public MsgHtmlTagNode(int id, List<StandaloneNode> children) throws SoySyntaxException {
+
     super(id);
 
-    Matcher matcher = TAG_NAME_PATTERN.matcher(sourceContent);
+    int numChildren = children.size();
+
+    // ------ Strip out the 'phname' attribute (if any). ------
+    String userSuppliedPlaceholderName = null;
+
+    for (int i = 0; i < numChildren; i++) {
+      StandaloneNode child = children.get(i);
+      if (! (child instanceof RawTextNode)) {
+        continue;
+      }
+
+      boolean didReplaceChild;
+      do {
+        String rawText = ((RawTextNode) child).getRawText();
+        Matcher matcher = PHNAME_ATTR_PATTERN.matcher(rawText);
+
+        if (matcher.find()) {
+          if (userSuppliedPlaceholderName != null) {
+            throw new SoySyntaxException(
+                "Found multiple 'phname' attributes in HTML tag (phname=\"" +
+                userSuppliedPlaceholderName + "\" and phname=\"" + matcher.group(1) + "\").");
+          }
+
+          userSuppliedPlaceholderName = matcher.group(1);
+          if (! BaseUtils.isIdentifier(userSuppliedPlaceholderName)) {
+            throw new SoySyntaxException(
+                "Found 'phname' attribute in HTML tag that is not a valid identifier (phname=\"" +
+                userSuppliedPlaceholderName + "\").");
+          }
+
+          RawTextNode replacementChild =
+              new RawTextNode(child.getId(), rawText.replaceFirst(matcher.group(), ""));
+          children.set(i, replacementChild);
+
+          child = replacementChild;  // set 'child' for next iteration of do-while loop
+          didReplaceChild = true;
+
+        } else {
+          didReplaceChild = false;
+        }
+
+      } while (didReplaceChild);
+    }
+
+    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+
+    // ------ Compute other fields. ------
+    String firstChildText = ((RawTextNode) children.get(0)).getRawText();
+    Matcher matcher = TAG_NAME_PATTERN.matcher(firstChildText);
     if (!matcher.find()) {
-      if (sourceContent.startsWith("!--")) {
-        throw new SoySyntaxException(
-            "Found HTML comment within 'msg' block: " + sourceContent);
+      if (firstChildText.startsWith("<!--")) {
+        throw new SoySyntaxException("Found HTML comment within 'msg' block: " + firstChildText);
       } else {
         throw new SoySyntaxException(
-            "HTML tag within 'msg' block has no tag name: " + sourceContent);
+            "HTML tag within 'msg' block has no tag name: " + firstChildText);
       }
     }
-    lcTagName = matcher.group().toLowerCase();
+    this.lcTagName = matcher.group().toLowerCase(Locale.ENGLISH);
 
-    isSelfEnding = sourceContent.endsWith("/>");
+    String lastChildText = ((RawTextNode) children.get(numChildren - 1)).getRawText();
+    this.isSelfEnding = lastChildText.endsWith("/>");
 
-    this.isOnlyRawText = isOnlyRawText;
-    if (isOnlyRawText) {
-      fullTagTextHash = sourceContent.hashCode();
+    this.isOnlyRawText = numChildren == 1;
+
+    if (this.isOnlyRawText) {
+      StringBuilder fullTagTextSb = new StringBuilder();
+      for (StandaloneNode child : children) {
+        fullTagTextSb.append(child.toSourceString());
+      }
+      this.fullTagText = fullTagTextSb.toString();
     } else {
-      fullTagTextHash = 0;
+      this.fullTagText = null;
     }
+
+    // ------ Add children. ------
+    this.addChildren(children);
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected MsgHtmlTagNode(MsgHtmlTagNode orig) {
+    super(orig);
+    this.lcTagName = orig.lcTagName;
+    this.isSelfEnding = orig.isSelfEnding;
+    this.isOnlyRawText = orig.isOnlyRawText;
+    this.fullTagText = orig.fullTagText;
+    this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.MSG_HTML_TAG_NODE;
   }
 
 
@@ -107,10 +193,21 @@ public class MsgHtmlTagNode extends AbstractParentSoyNode<SoyNode> implements Ms
   }
 
 
+  /** Returns tag text used to determine whether two nodes refer to the same placeholder. */
+  public @Nullable String getFullTagText() {
+    return fullTagText;
+  }
+
+
+  @Override public String getUserSuppliedPlaceholderName() {
+    return userSuppliedPlaceholderName;
+  }
+
+
   @Override public String genBasePlaceholderName() {
 
-    if (basePlaceholderName != null) {
-      return basePlaceholderName;
+    if (userSuppliedPlaceholderName != null) {
+      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
     }
 
     boolean isEndTag;
@@ -122,33 +219,61 @@ public class MsgHtmlTagNode extends AbstractParentSoyNode<SoyNode> implements Ms
       isEndTag = false;
       baseLcTagName = lcTagName;
     }
-    basePlaceholderName = LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.containsKey(baseLcTagName) ?
-                          LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.get(baseLcTagName) : baseLcTagName;
+    String basePlaceholderName =
+        LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.containsKey(baseLcTagName) ?
+            LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.get(baseLcTagName) : baseLcTagName;
     if (isEndTag) {
       basePlaceholderName = "end_" + basePlaceholderName;
     } else if (!isSelfEnding) {
       basePlaceholderName = "start_" + basePlaceholderName;
     }
-    basePlaceholderName = basePlaceholderName.toUpperCase();
-
-    return basePlaceholderName;
+    return basePlaceholderName.toUpperCase();
   }
 
 
-  @Override public boolean isSamePlaceholderAs(MsgPlaceholderNode other) {
-    if (!(other instanceof MsgHtmlTagNode)) {
-      return false;
-    }
-    MsgHtmlTagNode otherMhtn = (MsgHtmlTagNode) other;
-    return this.isOnlyRawText && otherMhtn.isOnlyRawText &&
-           this.fullTagTextHash == otherMhtn.fullTagTextHash;
+  @Override public Object genSamenessKey() {
+    // If two MsgHtmlTagNodes are both only raw text, then they are considered the same placeholder
+    // if they both have the same user-supplied placeholder name (if any) and the same tag text.
+    // If one of the MsgHtmlTagNodes is not only raw text, then the two MsgHtmlTagNodes are never
+    // considered the same placeholder.
+    return isOnlyRawText ?
+        Pair.of(userSuppliedPlaceholderName, fullTagText) : Integer.valueOf(getId());
   }
 
 
   @Override public String toSourceString() {
+
     StringBuilder sb = new StringBuilder();
+
     appendSourceStringForChildren(sb);
+
+    if (userSuppliedPlaceholderName != null) {
+      int indexBeforeClose;
+      if (isSelfEnding) {
+        indexBeforeClose = sb.length() - 2;
+        if (! sb.substring(indexBeforeClose).equals("/>")) {
+          throw new AssertionError();
+        }
+      } else {
+        indexBeforeClose = sb.length() - 1;
+        if (! sb.substring(indexBeforeClose).equals(">")) {
+          throw new AssertionError();
+        }
+      }
+      sb.insert(indexBeforeClose, " phname=\"" + userSuppliedPlaceholderName + "\"");
+    }
+
     return sb.toString();
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  @Override public MsgHtmlTagNode clone() {
+    return new MsgHtmlTagNode(this);
   }
 
 }

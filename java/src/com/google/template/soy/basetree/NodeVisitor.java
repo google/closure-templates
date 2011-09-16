@@ -24,7 +24,7 @@ package com.google.template.soy.basetree;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @param <N> A more specific subinterface of Node, or just Node if not applicable.
- * @param <R> The return value of the function implemented by this visitor.
+ * @param <R> The return type of this visitor.
  * 
  * @author Kai Huang
  */

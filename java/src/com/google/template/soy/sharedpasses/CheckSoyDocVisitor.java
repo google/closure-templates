@@ -17,11 +17,9 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefKeyNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -30,26 +28,20 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
-import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
-import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
+import com.google.template.soy.soytree.TemplateRegistry;
 
-import java.util.ArrayDeque;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 
@@ -78,20 +70,14 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Whether the parse tree is guaranteed to all be in V2 syntax. */
   private final boolean isTreeAllV2;
 
-  /** Map from template name to TemplateNode used by FindTransitiveCalleesVisitor. */
-  private Map<String, TemplateNode> templateNameToNodeMap;
+  /** Registry of all templates in the Soy tree. */
+  private TemplateRegistry templateRegistry;
 
   /** Whether the current file specifies optional parameters "{@code @param?}" (during pass). */
   private boolean currFileHasOptParams;
 
   /** Whether the current template uses the function {@code hasData()} (during pass). */
   private boolean usesFunctionHasData;
-
-  /** The data keys (not local vars) referenced in the current template (collected during pass). */
-  private Set<String> dataKeys;
-
-  /** Stack of frames containing sets of local vars currently defined (during pass). */
-  private Deque<Set<String>> localVarFrames;
 
   /** The GetDataKeysInExprVisitor to use for expressions in the current template (during pass). */
   private GetDataKeysInExprVisitor getDataKeysInExprVisitor;
@@ -105,17 +91,16 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
 
-  @Override protected void setup() {
-    currFileHasOptParams = false;
-    usesFunctionHasData = false;
-    dataKeys = null;
-    localVarFrames = null;
-    getDataKeysInExprVisitor = null;
+  @Override public Void exec(SoyNode node) {
+    (new MarkLocalVarDataRefsVisitor()).exec(node);
+    super.exec(node);
+    (new UnmarkLocalVarDataRefsVisitor()).exec(node);
+    return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
   /**
@@ -123,15 +108,10 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * @throws SoySyntaxException If the parameters declared in some template's SoyDoc do not match
    *     the data keys referenced in that template.
    */
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
-    // Build templateNameToNodeMap.
-    templateNameToNodeMap = Maps.newHashMap();
-    for (SoyFileNode soyFile : node.getChildren()) {
-      for (TemplateNode template : soyFile.getChildren()) {
-        templateNameToNodeMap.put(template.getTemplateName(), template);
-      }
-    }
+    // Build templateRegistry.
+    templateRegistry = new TemplateRegistry(node);
 
     // Run pass only on the Soy files that are all in V2 syntax. 
     for (SoyFileNode soyFile : node.getChildren()) {
@@ -160,7 +140,7 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * @throws SoySyntaxException If the parameters declared in some template's SoyDoc do not match
    *     the data keys referenced in that template.
    */
-  @Override protected void visitInternal(SoyFileNode node) {
+  @Override protected void visitSoyFileNode(SoyFileNode node) {
 
     // Set currFileHasOptParams to true if this file uses '@param?' anywhere.
     currFileHasOptParams = false;
@@ -183,19 +163,15 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * @throws SoySyntaxException If the parameters declared in some template's SoyDoc do not match
    *     the data keys referenced in that template.
    */
-  @Override protected void visitInternal(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
 
     usesFunctionHasData = false;
-    dataKeys = Sets.newHashSet();
-    localVarFrames = new ArrayDeque<Set<String>>();
-    getDataKeysInExprVisitor = new GetDataKeysInExprVisitor(dataKeys, localVarFrames);
+    Set<String> dataKeys = Sets.newHashSet();  // data keys referenced in this template
+    getDataKeysInExprVisitor = new GetDataKeysInExprVisitor(dataKeys);
 
-    localVarFrames.push(Sets.<String>newHashSet());
     visitChildren(node);
-    localVarFrames.pop();
 
-    IndirectParamsInfo ipi =
-        (new FindIndirectParamsVisitor(true, false, templateNameToNodeMap)).exec(node);
+    IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
 
     List<String> unusedParams = Lists.newArrayList();
     for (SoyDocParam param : node.getSoyDocParams()) {
@@ -221,15 +197,14 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
       Collections.sort(undeclaredDataKeys);
     }
 
-    dataKeys = null;
-    getDataKeysInExprVisitor = null;
-
     if (undeclaredDataKeys.size() > 0) {
       throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
           "Found references to data keys that are not declared in SoyDoc: " + undeclaredDataKeys,
           null, node);
     }
-    if (unusedParams.size() > 0) {
+    if (unusedParams.size() > 0 && ! (node instanceof TemplateDelegateNode)) {
+      // Note: The reason we allow delegate templates to declare unused params (in the if-condition
+      // above) is that other implementations of the same delegate may need to use those params.
       throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
           "Found params declared in SoyDoc but not used in template: " + unusedParams, null, node);
     }
@@ -247,46 +222,7 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
 
-  @Override protected void visitInternal(IfNode node) {
-    visitChildren(node);  // children will add their own local var frames
-  }
-
-
-  @Override protected void visitInternal(SwitchNode node) {
-    visitExprHolderHelper(node);
-    visitChildren(node);  // children will add their own local var frames
-  }
-
-
-  @Override protected void visitInternal(ForeachNode node) {
-    visitExprHolderHelper(node);
-    visitChildren(node);  // children will add their own local var frames
-  }
-
-
-  @Override protected void visitInternal(ForeachNonemptyNode node) {
-
-    Set<String> newLocalVarFrame = Sets.newHashSet();
-    newLocalVarFrame.add(node.getLocalVarName());
-    localVarFrames.push(newLocalVarFrame);
-    visitChildren(node);
-    localVarFrames.pop();
-  }
-
-
-  @Override protected void visitInternal(ForNode node) {
-
-    visitExprHolderHelper(node);
-
-    Set<String> newLocalVarFrame = Sets.newHashSet();
-    newLocalVarFrame.add(node.getLocalVarName());
-    localVarFrames.push(newLocalVarFrame);
-    visitChildren(node);
-    localVarFrames.pop();
-  }
-
-
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected void visitCallNode(CallNode node) {
 
     if (node.isPassingAllData()) {
       // Nothing to do here, because we now use FindIndirectParamsVisitor to find all the
@@ -302,33 +238,18 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for non-parent nodes not handled above.
-  }
+  @Override protected void visitSoyNode(SoyNode node) {
 
+    if (node instanceof ExprHolderNode) {
+      visitExprHolderHelper((ExprHolderNode) node);
+    }
 
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    localVarFrames.push(Sets.<String>newHashSet());
-    visitChildren(node);
-    localVarFrames.pop();
-  }
-
-
-  @Override protected void visitInternal(ExprHolderNode node) {
-    visitExprHolderHelper(node);
-  }
-
-
-  @Override protected void visitInternal(ParentExprHolderNode<? extends SoyNode> node) {
-
-    visitExprHolderHelper(node);
-
-    localVarFrames.push(Sets.<String>newHashSet());
-    visitChildren(node);
-    localVarFrames.pop();
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 
@@ -343,7 +264,8 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void visitExprHolderHelper(ExprHolderNode exprHolder) {
 
-    for (ExprRootNode<? extends ExprNode> expr : exprHolder.getAllExprs()) {
+    for (ExprUnion exprUnion : exprHolder.getAllExprUnions()) {
+      ExprRootNode<?> expr = exprUnion.getExpr();
 
       if (currFileHasOptParams && !usesFunctionHasData &&
           (new UsesFunctionHasDataVisitor()).exec(expr)) {
@@ -362,99 +284,77 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
     private boolean usesFunctionHasData;
 
-    @Override protected void setup() {
+    @Override public Boolean exec(ExprNode node) {
       usesFunctionHasData = false;
-    }
-
-    @Override protected Boolean getResult() {
+      visit(node);
       return usesFunctionHasData;
     }
 
-    // ------ Implementations for concrete classes. ------
+    // ------ Implementations for specific nodes. ------
 
-    @Override protected void visitInternal(FunctionNode node) {
+    @Override protected void visitFunctionNode(FunctionNode node) {
       if (node.getFunctionName().equals("hasData")) {
         usesFunctionHasData = true;
       }
     }
 
-    // ------ Implementations for interfaces. ------
+    // ------ Fallback implementation. ------
 
-    @Override protected void visitInternal(ExprNode node) {
-      // Nothing to do for non-parent, non-data-ref nodes.
-    }
-
-    @Override protected void visitInternal(ParentExprNode node) {
-
-      for (ExprNode child : node.getChildren()) {
-        if (usesFunctionHasData) {
-          return;  // no need to keep searching if already found a call to hasData()
+    @Override protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        for (ExprNode child : ((ParentExprNode) node).getChildren()) {
+          if (usesFunctionHasData) {
+            return;  // no need to keep searching if already found a call to hasData()
+          }
+          visit(child);
         }
-        visit(child);
       }
     }
+
   }
 
 
   /**
-   * Helper for travering an expression tree and locating all the data keys (excluding local vars)
-   * referenced in the expression.
+   * Helper for travering an expression tree and locating all the data keys (excluding local vars
+   * and injected data keys) referenced in the expression.
    *
    * <p> {@link #exec} may be called on any expression. Any data keys referenced in the expression
-   * (excluding local vars) will be added to the {@code dataKeys} set passed in to the constructor.
-   * There is no return value.
+   * (excluding local vars and injected data keys) will be added to the {@code dataKeys} set passed
+   * in to the constructor. There is no return value.
    */
   private static class GetDataKeysInExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     /** The set used to collect the data keys found. */
     private final Set<String> dataKeys;
 
-    /** The stack of frames containing sets of local vars currently defined. */
-    private final Deque<Set<String>> localVarFrames;
-
     /**
      * @param dataKeys The set used to collect the data keys found.
-     * @param localVarFrames The stack of frames containing sets of local vars currently defined.
      */
-    public GetDataKeysInExprVisitor(Set<String> dataKeys, Deque<Set<String>> localVarFrames) {
+    public GetDataKeysInExprVisitor(Set<String> dataKeys) {
       this.dataKeys = dataKeys;
-      this.localVarFrames = localVarFrames;
     }
 
-    // ------ Implementations for concrete classes. ------
+    // ------ Implementations for specific nodes. ------
 
-    @Override protected void visitInternal(DataRefNode node) {
+    @Override protected void visitDataRefNode(DataRefNode node) {
 
-      String dataKeyOrVar = ((DataRefKeyNode) node.getChild(0)).getKey();
-
-      // Determine whether this DataRefNode references a local variable.
-      boolean isLocalVar = false;
-      for (Set<String> localVarFrame : localVarFrames) {
-        if (localVarFrame.contains(dataKeyOrVar)) {
-          isLocalVar = true;
-          break;
-        }
-      }
-
-      // If not local variable, add to set of data keys referenced.
-      if (!isLocalVar) {
-        dataKeys.add(dataKeyOrVar);
+      // If not referencing injected or local var data, add the first key to the set of data keys
+      // referenced.
+      if (! node.isIjDataRef() && ! node.isLocalVarDataRef()) {
+        dataKeys.add(node.getFirstKey());
       }
 
       // Important: Must visit children since children may be expressions that contain data refs.
       visitChildren(node);
     }
 
-    // ------ Implementations for interfaces. ------
+    // ------ Fallback implementation. ------
 
-    @Override protected void visitInternal(ExprNode node) {
-      // Nothing to do for non-parent, non-data-ref nodes.
+    @Override protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        visitChildren((ParentExprNode) node);
+      }
     }
-
-    @Override protected void visitInternal(ParentExprNode node) {
-      visitChildren(node);
-    }
-
   }
 
 }

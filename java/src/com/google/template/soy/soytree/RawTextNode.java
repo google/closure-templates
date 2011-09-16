@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -30,7 +31,7 @@ import java.util.regex.Pattern;
  *
  * @author Kai Huang
  */
-public class RawTextNode extends AbstractSoyNode {
+public class RawTextNode extends AbstractSoyNode implements StandaloneNode {
 
 
   /** The special chars we need to re-escape for toSourceString(). */
@@ -52,9 +53,24 @@ public class RawTextNode extends AbstractSoyNode {
    * @param id The id for this node.
    * @param rawText The raw text string.
    */
-  public RawTextNode(String id, String rawText) {
+  public RawTextNode(int id, String rawText) {
     super(id);
     this.rawText = rawText;
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected RawTextNode(RawTextNode orig) {
+    super(orig);
+    this.rawText = orig.rawText;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.RAW_TEXT_NODE;
   }
 
 
@@ -77,6 +93,16 @@ public class RawTextNode extends AbstractSoyNode {
     matcher.appendTail(sb);
 
     return sb.toString();
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  @Override public RawTextNode clone() {
+    return new RawTextNode(this);
   }
 
 }

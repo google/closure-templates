@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data.restricted;
 
+import javax.annotation.concurrent.Immutable;
+
 
 /**
  * Null data.
@@ -24,10 +26,11 @@ package com.google.template.soy.data.restricted;
  *
  * @author Kai Huang
  */
+@Immutable
 public class NullData extends PrimitiveData {
 
 
-  /** Singleton instance of NullData. */
+  /** Static singleton instance of NullData. */
   public static final NullData INSTANCE = new NullData();
 
 

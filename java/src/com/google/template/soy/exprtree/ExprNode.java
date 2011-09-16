@@ -33,7 +33,62 @@ import com.google.template.soy.basetree.ParentNode;
  */
 public interface ExprNode extends Node {
 
+
+  /**
+   * Enum of specific node kinds (coresponding to specific node types).
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   */
+  public static enum Kind {
+
+    EXPR_ROOT_NODE,
+
+    NULL_NODE,
+    BOOLEAN_NODE,
+    INTEGER_NODE,
+    FLOAT_NODE,
+    STRING_NODE,
+
+    LIST_LITERAL_NODE,
+    MAP_LITERAL_NODE,
+
+    VAR_NODE,
+
+    DATA_REF_NODE,
+    DATA_REF_KEY_NODE,
+    DATA_REF_INDEX_NODE,
+
+    GLOBAL_NODE,
+
+    NEGATIVE_OP_NODE,
+    NOT_OP_NODE,
+    TIMES_OP_NODE,
+    DIVIDE_BY_OP_NODE,
+    MOD_OP_NODE,
+    PLUS_OP_NODE,
+    MINUS_OP_NODE,
+    LESS_THAN_OP_NODE,
+    GREATER_THAN_OP_NODE,
+    LESS_THAN_OR_EQUAL_OP_NODE,
+    GREATER_THAN_OR_EQUAL_OP_NODE,
+    EQUAL_OP_NODE,
+    NOT_EQUAL_OP_NODE,
+    AND_OP_NODE,
+    OR_OP_NODE,
+    CONDITIONAL_OP_NODE,
+
+    FUNCTION_NODE,
+  }
+
+
+  /**
+   * Gets this node's kind (corresponding to this node's specific type).
+   * @return This node's kind (corresponding to this node's specific type).
+   */
+  public Kind getKind();
+
   @Override public ParentExprNode getParent();
+
+  @Override public ExprNode clone();
 
 
   // -----------------------------------------------------------------------------------------------
@@ -61,8 +116,17 @@ public interface ExprNode extends Node {
 
 
   /**
+   * A node representing a constant.
+   */
+  public static interface ConstantNode extends ExprNode {}
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
    * A node representing a primitive literal.
    */
-  public static interface PrimitiveNode extends ExprNode {}
+  public static interface PrimitiveNode extends ConstantNode {}
 
 }

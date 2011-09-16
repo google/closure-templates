@@ -41,6 +41,20 @@ public class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected ExprRootNode(ExprRootNode<N> orig) {
+    super(orig);
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.EXPR_ROOT_NODE;
+  }
+
+
   @Override public N getChild(int index) {
     Preconditions.checkArgument(index == 0);
     @SuppressWarnings("unchecked")
@@ -51,6 +65,11 @@ public class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
 
   @Override public String toSourceString() {
     return getChild(0).toSourceString();
+  }
+
+
+  @Override public ExprRootNode<N> clone() {
+    return new ExprRootNode<N>(this);
   }
 
 }

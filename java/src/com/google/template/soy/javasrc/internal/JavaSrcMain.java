@@ -19,12 +19,16 @@ package com.google.template.soy.javasrc.internal;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
+import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPluralSelectMsgException;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import javax.annotation.Nullable;
@@ -43,6 +47,9 @@ public class JavaSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
+  /** The instanceof of SimplifyVisitor to use. */
+  private final SimplifyVisitor simplifyVisitor;
+
   /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
   private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
@@ -52,15 +59,18 @@ public class JavaSrcMain {
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
+   * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
    *     OptimizeBidiCodeGenVisitor.
    * @param genJavaCodeVisitorProvider Provider for getting an instance of GenJavaCodeVisitor.
    */
   @Inject
-  JavaSrcMain(@ApiCall GuiceSimpleScope apiCallScope,
-              Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
-              Provider<GenJavaCodeVisitor> genJavaCodeVisitorProvider) {
+  public JavaSrcMain(
+      @ApiCall GuiceSimpleScope apiCallScope, SimplifyVisitor simplifyVisitor,
+      Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
+      Provider<GenJavaCodeVisitor> genJavaCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
+    this.simplifyVisitor = simplifyVisitor;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJavaCodeVisitorProvider = genJavaCodeVisitorProvider;
   }
@@ -82,18 +92,23 @@ public class JavaSrcMain {
       SoyFileSetNode soyTree, SoyJavaSrcOptions javaSrcOptions, @Nullable SoyMsgBundle msgBundle)
       throws SoySyntaxException {
 
-    // TODO: Some passes are here, some are in SoyFileSet... reorganize better.
-    (new InsertMsgsVisitor(msgBundle)).exec(soyTree);
+    try {
+      (new InsertMsgsVisitor(msgBundle, false)).exec(soyTree);
+    } catch (EncounteredPluralSelectMsgException e) {
+      throw new SoySyntaxException("JavaSrc backend doesn't support plural/select messages.");
+    }
 
     apiCallScope.enter();
     try {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJavaSrcOptions.class, javaSrcOptions);
-      ApiCallScopeUtils.seedSharedParams(
-          apiCallScope, msgBundle, javaSrcOptions.getBidiGlobalDir());
+      BidiGlobalDir bidiGlobalDir =
+          SoyBidiUtils.decodeBidiGlobalDir(javaSrcOptions.getBidiGlobalDir());
+      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle, bidiGlobalDir);
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
+      simplifyVisitor.exec(soyTree);
       return genJavaCodeVisitorProvider.get().exec(soyTree);
 
     } finally {

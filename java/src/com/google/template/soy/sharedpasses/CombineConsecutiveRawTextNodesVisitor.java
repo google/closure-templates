@@ -22,7 +22,9 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.List;
 
@@ -45,26 +47,29 @@ public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisito
   @Override public Void exec(SoyNode node) {
 
     // Retrieve the node id generator from the root of the parse tree.
-    nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGen();
+    nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
 
     // Execute the pass.
     return super.exec(node);
   }
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for other nodes.
-  }
+  @Override protected void visitSoyNode(SoyNode node) {
 
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
 
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-
-    visitChildren(node);
+    if (! (node instanceof BlockNode)) {
+      return;
+    }
+    BlockNode nodeAsBlock = (BlockNode) node;
 
     // Check whether there are any consecutive RawTextNode children.
     boolean hasConsecRawTextNodes = false;
-    for (int i = 0; i <= node.numChildren() - 2; i++) {
-      if (node.getChild(i) instanceof RawTextNode && node.getChild(i+1) instanceof RawTextNode) {
+    for (int i = 0; i <= nodeAsBlock.numChildren() - 2; i++) {
+      if (nodeAsBlock.getChild(i) instanceof RawTextNode &&
+          nodeAsBlock.getChild(i+1) instanceof RawTextNode) {
         hasConsecRawTextNodes = true;
         break;
       }
@@ -74,31 +79,27 @@ public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisito
       return;
     }
 
-    // If there are RawTextNode children, then this node must be a ParentSoyNode<SoyNode>.
-    @SuppressWarnings("unchecked")
-    ParentSoyNode<SoyNode> nodeCast = (ParentSoyNode<SoyNode>) node;
-
     // Rebuild the list of children, combining consecutive RawTextNodes into one.
-    List<SoyNode> children = nodeCast.getChildren();
-    nodeCast.clearChildren();
+    List<StandaloneNode> copyOfOrigChildren = Lists.newArrayList(nodeAsBlock.getChildren());
+    nodeAsBlock.clearChildren();
 
     List<RawTextNode> consecutiveRawTextNodes = Lists.newArrayList();
-    for (SoyNode child : children) {
+    for (StandaloneNode origChild : copyOfOrigChildren) {
 
-      if (child instanceof RawTextNode) {
-        consecutiveRawTextNodes.add((RawTextNode) child);
+      if (origChild instanceof RawTextNode) {
+        consecutiveRawTextNodes.add((RawTextNode) origChild);
 
       } else {
         // First add the preceding consecutive RawTextNodes, if any.
-        addConsecutiveRawTextNodesAsOneNodeHelper(nodeCast, consecutiveRawTextNodes);
+        addConsecutiveRawTextNodesAsOneNodeHelper(nodeAsBlock, consecutiveRawTextNodes);
         consecutiveRawTextNodes.clear();
         // Then add the current new child.
-        nodeCast.addChild(child);
+        nodeAsBlock.addChild(origChild);
       }
     }
 
     // Add the final group of consecutive RawTextNodes, if any.
-    addConsecutiveRawTextNodesAsOneNodeHelper(nodeCast, consecutiveRawTextNodes);
+    addConsecutiveRawTextNodesAsOneNodeHelper(nodeAsBlock, consecutiveRawTextNodes);
     consecutiveRawTextNodes.clear();
   }
 
@@ -116,7 +117,7 @@ public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisito
    * @param consecutiveRawTextNodes The list of consecutive RawTextNodes.
    */
   private void addConsecutiveRawTextNodesAsOneNodeHelper(
-      ParentSoyNode<? super RawTextNode> parent, List<RawTextNode> consecutiveRawTextNodes) {
+      BlockNode parent, List<RawTextNode> consecutiveRawTextNodes) {
 
     if (consecutiveRawTextNodes.size() == 0) {
       return;
@@ -129,7 +130,7 @@ public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisito
       for (RawTextNode rtn : consecutiveRawTextNodes) {
         rawText.append(rtn.getRawText());
       }
-      parent.addChild(new RawTextNode(nodeIdGen.genStringId(), rawText.toString()));
+      parent.addChild(new RawTextNode(nodeIdGen.genId(), rawText.toString()));
     }
   }
 

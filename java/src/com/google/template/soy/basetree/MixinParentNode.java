@@ -47,13 +47,56 @@ public final class MixinParentNode<N extends Node> {
   /** The children of the master node (accessed via this instance). */
   private final List<N> children;
 
+  /** Whether the master node needs an env frame when being interpreted, or null if unknown. */
+  private Boolean needsEnvFrameDuringInterp;
+
 
   /**
    * @param master The master node that delegates to this instance.
    */
   public MixinParentNode(ParentNode<N> master) {
     this.master = master;
+    needsEnvFrameDuringInterp = null;
     children = Lists.newArrayList();
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   * @param newMaster The master node for the copy.
+   */
+  public MixinParentNode(MixinParentNode<N> orig, ParentNode<N> newMaster) {
+    this.master = newMaster;
+
+    this.needsEnvFrameDuringInterp = orig.needsEnvFrameDuringInterp;
+
+    this.children = Lists.newArrayListWithCapacity(orig.children.size());
+    for (N origChild : orig.children) {
+      @SuppressWarnings("unchecked")
+      N newChild = (N) origChild.clone();
+      this.children.add(newChild);
+      newChild.setParent(this.master);
+    }
+  }
+
+
+  /**
+   * Sets whether this node needs an env frame when the template is being interpreted.
+   * @param needsEnvFrameDuringInterp Whether this node needs an env frame during interpretation,
+   *     or null if unknown.
+   */
+  public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp) {
+    this.needsEnvFrameDuringInterp = needsEnvFrameDuringInterp;
+  }
+
+
+  /**
+   * Returns whether this node needs an env frame during interpretation, or null if unknown.
+   * @return Whether this node needs an env frame during interpretation, or null if unknown.
+   */
+  public Boolean needsEnvFrameDuringInterp() {
+    return needsEnvFrameDuringInterp;
   }
 
 
@@ -87,13 +130,17 @@ public final class MixinParentNode<N extends Node> {
 
 
   /**
-   * Gets a shallow copy of the list of children.
-   * @return A shallow copy of the list of children.
+   * Gets the list of children.
+   *
+   * Note: The returned list is not a copy. Please do not modify the list directly. Instead, use
+   * the other methods in this class that are intended for modifying children. Also, if you're
+   * iterating over the children list as you're modifying it, then you should first make a copy of
+   * the children list to iterate over, in order to avoid ConcurrentModificationException.
+   *
+   * @return The list of children.
    */
   public List<N> getChildren() {
-    List<N> copy = Lists.newArrayList();
-    copy.addAll(children);
-    return copy;
+    return children;
   }
 
 
@@ -108,7 +155,7 @@ public final class MixinParentNode<N extends Node> {
 
 
   /**
-   * Adds the given child at the given index (shifting existing elements if necessary).
+   * Adds the given child at the given index (shifting existing children if necessary).
    * @param index The index to add the child at.
    * @param child The child to add.
    */
@@ -139,14 +186,24 @@ public final class MixinParentNode<N extends Node> {
 
 
   /**
-   * Sets the given index to be the given new child.
-   * @param index The index to set the child at.
-   * @param newChild The new child to set.
+   * Replaces the child at the given index with the given new child.
+   * @param index The index of the child to replace.
+   * @param newChild The new child.
    */
-  public void setChild(int index, N newChild) {
+  public void replaceChild(int index, N newChild) {
     N oldChild = children.set(index, newChild);
-    newChild.setParent(master);
     oldChild.setParent(null);
+    newChild.setParent(master);
+  }
+
+
+  /**
+   * Replaces the given current child with the given new child.
+   * @param currChild The current child to be replaced.
+   * @param newChild The new child.
+   */
+  public void replaceChild(N currChild, N newChild) {
+    replaceChild(getChildIndex(currChild), newChild);
   }
 
 
@@ -166,6 +223,25 @@ public final class MixinParentNode<N extends Node> {
     for (N child : children) {
       addChild(child);
     }
+  }
+
+
+  /**
+   * Adds the given children at the given index (shifting existing children if necessary).
+   * @param index The index to add the children at.
+   * @param children The children to add.
+   */
+  public void addChildren(int index, List<? extends N> children) {
+    List<N> origChildren = Lists.newArrayList(this.children);
+    int origNumChildren = this.children.size();
+    // Temporarily remove the original children from index onward (in reverse order).
+    for (int i = origNumChildren - 1; i >= index; i--) {
+      removeChild(i);
+    }
+    // Add the new children.
+    addChildren(children);
+    // Add back the original children that we temporarily removed (in correct order).
+    addChildren(origChildren.subList(index, origNumChildren));
   }
 
 

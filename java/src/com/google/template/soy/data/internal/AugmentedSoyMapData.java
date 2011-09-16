@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
@@ -25,6 +26,7 @@ import com.google.template.soy.data.SoyMapData;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -106,6 +108,11 @@ public class AugmentedSoyMapData extends SoyMapData {
   }
 
 
+  @Override public Set<String> getKeys() {
+    return Collections.unmodifiableSet(Sets.union(super.getKeys(), baseData.getKeys()));
+  }
+
+
   @Override public String toString() {
     return toStringHelper(asMap());
   }
@@ -122,12 +129,25 @@ public class AugmentedSoyMapData extends SoyMapData {
           "Attempted to put multi-part key string into AugmentedSoyMapData. Please ensure that" +
           " all of your 'param' commands only use top-level keys.");
     }
-    super.put(keyStr, value);
+    super.putSingle(keyStr, value);
   }
 
 
-  /** Removal of data from AugmentedSoyMapData is not well defined, so it's prohibited. */
+  // Note: No need to override putSingle since it would do same thing as super method.
+
+
+  /**
+   * Removal of data from AugmentedSoyMapData is not well defined, so it's prohibited.
+   */
   @Override public void remove(String keyStr) {
+    throw new UnsupportedOperationException();
+  }
+
+
+  /**
+   * Removal of data from AugmentedSoyMapData is not well defined, so it's prohibited.
+   */
+  @Override public void removeSingle(String key) {
     throw new UnsupportedOperationException();
   }
 
@@ -141,5 +161,14 @@ public class AugmentedSoyMapData extends SoyMapData {
     return baseData.get(keyStr);
   }
 
+
+  @Override public SoyData getSingle(String key) {
+
+    SoyData value = super.getSingle(key);
+    if (value != null) {
+      return value;
+    }
+    return baseData.getSingle(key);
+  }
 
 }

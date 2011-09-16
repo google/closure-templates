@@ -39,6 +39,21 @@ public class FloatNode extends AbstractPrimitiveNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected FloatNode(FloatNode orig) {
+    super(orig);
+    this.value = orig.value;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.FLOAT_NODE;
+  }
+
+
   /** Returns the float value. */
   public double getValue() {
     return value;
@@ -47,6 +62,11 @@ public class FloatNode extends AbstractPrimitiveNode {
 
   @Override public String toSourceString() {
     return Double.toString(value).replace('E', 'e');
+  }
+
+
+  @Override public FloatNode clone() {
+    return new FloatNode(this);
   }
 
 }

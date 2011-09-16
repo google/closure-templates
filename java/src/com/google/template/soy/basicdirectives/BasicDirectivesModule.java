@@ -33,10 +33,27 @@ public class BasicDirectivesModule extends AbstractModule {
 
     Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
         Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-    soyDirectivesSetBinder.addBinding().to(EscapeJsDirective.class);
-    soyDirectivesSetBinder.addBinding().to(EscapeUriDirective.class);
-    soyDirectivesSetBinder.addBinding().to(InsertWordBreaksDirective.class);
+
+    // Basic escape directives.
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeCssString());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterCssValue());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlRcdata());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlAttribute());
+    soyDirectivesSetBinder.addBinding().toInstance(
+        new BasicEscapeDirective.EscapeHtmlAttributeNospace());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterHtmlAttribute());
+    soyDirectivesSetBinder.addBinding().toInstance(
+        new BasicEscapeDirective.FilterHtmlElementName());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsString());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsValue());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterNormalizeUri());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.NormalizeUri());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeUri());
+
+    // Other directives.
     soyDirectivesSetBinder.addBinding().to(ChangeNewlineToBrDirective.class);
+    soyDirectivesSetBinder.addBinding().to(InsertWordBreaksDirective.class);
+    soyDirectivesSetBinder.addBinding().to(TruncateDirective.class);
   }
 
 }

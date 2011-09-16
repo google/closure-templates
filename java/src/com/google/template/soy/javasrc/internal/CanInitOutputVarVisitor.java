@@ -19,12 +19,9 @@ package com.google.template.soy.javasrc.internal;
 import com.google.inject.Inject;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions.CodeStyle;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyNode;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 
 /**
@@ -35,17 +32,14 @@ import java.util.Deque;
  *
  * @author Kai Huang
  */
-class CanInitOutputVarVisitor extends AbstractSoyNodeVisitor<Boolean> {
+class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
 
   /** The options for generating Java source code. */
   private final SoyJavaSrcOptions javaSrcOptions;
 
   /** The IsComputableAsJavaExprsVisitor used by this instance (when needed). */
-  private final IsComputableAsJavaExprsVisitor computableAsJavaExprsVisitor;
-
-  /** Stack of partial results (during run). */
-  private Deque<Boolean> resultStack;
+  private final IsComputableAsJavaExprsVisitor isComputableAsJavaExprsVisitor;
 
 
   /**
@@ -57,41 +51,31 @@ class CanInitOutputVarVisitor extends AbstractSoyNodeVisitor<Boolean> {
   public CanInitOutputVarVisitor(SoyJavaSrcOptions javaSrcOptions,
                                  IsComputableAsJavaExprsVisitor computableAsJavaExprsVisitor) {
     this.javaSrcOptions = javaSrcOptions;
-    this.computableAsJavaExprsVisitor = computableAsJavaExprsVisitor;
-  }
-
-
-  @Override protected void setup() {
-    resultStack = new ArrayDeque<Boolean>();
-  }
-
-
-  @Override protected Boolean getResult() {
-    return resultStack.peek();
+    this.isComputableAsJavaExprsVisitor = computableAsJavaExprsVisitor;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(CallNode node) {
+  @Override protected Boolean visitCallNode(CallNode node) {
     // If we're generating code in the 'concat' style, then the call is a Java expression that
     // returns its output as a string. However, if we're generating code in the 'stringbuilder'
     // style, then the call is a full statement that returns no value (instead, the output is
     // directly appended to the StringBuilder we pass to the callee).
-    resultStack.push(javaSrcOptions.getCodeStyle() == CodeStyle.CONCAT);
+    return javaSrcOptions.getCodeStyle() == CodeStyle.CONCAT;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
+  @Override protected Boolean visitSoyNode(SoyNode node) {
     // For the vast majority of nodes, the return value of this visitor should be the same as the
     // return value of IsComputableAsJavaExprsVisitor.
-    resultStack.push(computableAsJavaExprsVisitor.exec(node));
+    return isComputableAsJavaExprsVisitor.exec(node);
   }
 
 }

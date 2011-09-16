@@ -39,6 +39,21 @@ public class GlobalNode extends AbstractExprNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected GlobalNode(GlobalNode orig) {
+    super(orig);
+    this.name = orig.name;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.GLOBAL_NODE;
+  }
+
+
   /** Returns the name of the global. */
   public String getName() {
     return name;
@@ -47,6 +62,11 @@ public class GlobalNode extends AbstractExprNode {
 
   @Override public String toSourceString() {
     return name;
+  }
+
+
+  @Override public GlobalNode clone() {
+    return new GlobalNode(this);
   }
 
 }

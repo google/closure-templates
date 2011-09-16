@@ -19,18 +19,19 @@ package com.google.template.soy.jssrc.internal;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.assistedinject.FactoryProvider;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.TranslateToJsExprVisitorFactory;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
-import com.google.template.soy.shared.internal.BackendModuleUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.ModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.sharedpasses.SharedPassesModule;
 
 import java.util.Map;
 import java.util.Set;
@@ -50,14 +51,21 @@ public class JsSrcModule extends AbstractModule {
 
     // Install requisite modules.
     install(new SharedModule());
+    install(new SharedPassesModule());
+
+    // Bindings for when explicit dependencies are required.
+    bind(JsSrcMain.class);
+    bind(GenJsCodeVisitor.class);
+    bind(OptimizeBidiCodeGenVisitor.class);
+    bind(ReplaceMsgsWithGoogMsgsVisitor.class);
+    bind(CanInitOutputVarVisitor.class);
+    bind(GenCallCodeUtils.class);
+    bind(IsComputableAsJsExprsVisitor.class);
+    bind(JsExprTranslator.class);
 
     // Bind providers of factories (created via assisted inject).
-    bind(GenJsExprsVisitorFactory.class)
-        .toProvider(FactoryProvider.newFactory(
-            GenJsExprsVisitorFactory.class, GenJsExprsVisitor.class));
-    bind(TranslateToJsExprVisitorFactory.class)
-        .toProvider(FactoryProvider.newFactory(
-            TranslateToJsExprVisitorFactory.class, TranslateToJsExprVisitor.class));
+    install(new FactoryModuleBuilder().build(GenJsExprsVisitorFactory.class));
+    install(new FactoryModuleBuilder().build(TranslateToJsExprVisitorFactory.class));
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyJsSrcOptions.class)
@@ -75,14 +83,13 @@ public class JsSrcModule extends AbstractModule {
   @Singleton
   Map<String, SoyJsSrcFunction> provideSoyJsSrcFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
 
-    return BackendModuleUtils.buildBackendSpecificSoyFunctionsMap(
-        SoyJsSrcFunction.class, soyFunctionsSet);
+    return ModuleUtils.buildSpecificSoyFunctionsMap(SoyJsSrcFunction.class, soyFunctionsSet);
   }
 
 
   /**
    * Builds and provides the map of SoyJsSrcDirectives (name to directive).
-   * @param soyDirectivesSet The installed set of SoyDirectives (from Guice Multibinder). Each
+   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
    *     SoyDirective may or may not implement SoyJsSrcDirective.
    */
   @Provides
@@ -90,7 +97,7 @@ public class JsSrcModule extends AbstractModule {
   Map<String, SoyJsSrcPrintDirective> provideSoyJsSrcDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
 
-    return BackendModuleUtils.buildBackendSpecificSoyDirectivesMap(
+    return ModuleUtils.buildSpecificSoyDirectivesMap(
         SoyJsSrcPrintDirective.class, soyDirectivesSet);
   }
 

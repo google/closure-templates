@@ -18,10 +18,11 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.SoyCommandNode;
 import com.google.template.soy.soytree.SoyNode.SyntaxVersion;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
@@ -41,38 +42,27 @@ public class AssertSyntaxVersionV2Visitor extends AbstractSoyNodeVisitor<Void> {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
-
-
-  /**
-   * {@inheritDoc}
-   * @throws SoySyntaxException If the given node is not in Soy V2 syntax.
-   */
-  @Override protected void visitInternal(SoyNode node) {
-    visitNodeHelper(node);
-  }
+  // Implementations for specific nodes.
 
 
   /**
    * {@inheritDoc}
    * @throws SoySyntaxException If the given node or a descendent is not in Soy V2 syntax.
    */
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-
-    visitNodeHelper(node);
-
-    for (SoyNode child : node.getChildren()) {
-      visit(child);
-    }
+  @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+    // Temporarily allow deprecated directives.
   }
 
 
+  // -----------------------------------------------------------------------------------------------
+  // Fallback implementation.
+
+
   /**
-   * Asserts that the given node is in Soy V2 syntax.
-   * @param node The node to visit.
-   * @throws SoySyntaxException If the given node is not in Soy V2 syntax.
+   * {@inheritDoc}
+   * @throws SoySyntaxException If the given node or a descendent is not in Soy V2 syntax.
    */
-  private void visitNodeHelper(SoyNode node) {
+  @Override protected void visitSoyNode(SoyNode node) {
 
     if (node.getSyntaxVersion() == SyntaxVersion.V1) {
 
@@ -85,12 +75,16 @@ public class AssertSyntaxVersionV2Visitor extends AbstractSoyNodeVisitor<Void> {
 
       // General error message.
       String nodeStringForErrorMsg =
-          (node instanceof SoyCommandNode) ? "tag " + ((SoyCommandNode) node).getTagString() :
+          (node instanceof CommandNode) ? "tag " + ((CommandNode) node).getTagString() :
           (node instanceof SoyFileNode) ? "file " + ((SoyFileNode) node).getFileName():
           "node " + node.toString();
       throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
           "Not all code is in Soy V2 syntax (found " + nodeStringForErrorMsg +
           " not in Soy V2 syntax).", null, node);
+    }
+
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
     }
   }
 

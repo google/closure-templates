@@ -26,4 +26,18 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
  *
  * @author Kai Huang
  */
-public abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {}
+public abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {
+
+
+  public AbstractPrimitiveNode() {}
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractPrimitiveNode(AbstractPrimitiveNode orig) {
+    super(orig);
+  }
+
+}

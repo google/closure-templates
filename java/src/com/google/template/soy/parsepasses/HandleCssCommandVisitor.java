@@ -30,6 +30,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.List;
@@ -67,16 +68,18 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
 
-  @Override protected void setup() {
+  @Override public Void exec(SoyNode node) {
     cssNodes = Lists.newArrayList();
+    visit(node);
+    return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(SoyFileSetNode node) {
+  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     if (cssHandlingScheme == CssHandlingScheme.BACKEND_SPECIFIC) {
       return;  // leave CssNodes alone to be handled by backend
@@ -89,53 +92,57 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
 
     // Perform the replacments.
-    IdGenerator nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGen();
+    IdGenerator nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
     for (CssNode cssNode : cssNodes) {
 
-      SoyNode newNode;
+      StandaloneNode newNode;
+
       if (cssHandlingScheme == CssHandlingScheme.LITERAL) {
-        newNode = new RawTextNode(nodeIdGen.genStringId(), cssNode.getCommandText());
+        newNode = new RawTextNode(nodeIdGen.genId(), cssNode.getCommandText());
+
       } else if (cssHandlingScheme == CssHandlingScheme.REFERENCE) {
-        PrintNode newPrintNode = new PrintNode(
-            nodeIdGen.genStringId(), false, cssNode.getCommandText() + "|noAutoescape",
-            cssNode.getCommandText());
-        PrintDirectiveNode newPrintDirectiveNode =
-            new PrintDirectiveNode(nodeIdGen.genStringId(), "|noAutoescape", "");
-        newPrintNode.addChild(newPrintDirectiveNode);
-        ExprNode exprNode = newPrintNode.getExpr().getChild(0);
-        if (!(exprNode instanceof DataRefNode || exprNode instanceof GlobalNode)) {
+        PrintNode newPrintNode =
+            new PrintNode(nodeIdGen.genId(), false, cssNode.getCommandText(), null);
+        newPrintNode.addChild(new PrintDirectiveNode(nodeIdGen.genId(), "|noAutoescape", ""));
+        newNode = newPrintNode;
+        // Check that the expression is a valid reference.
+        boolean isInvalidExpr = false;
+        if (newPrintNode.getExprUnion().getExpr() == null) {
+          isInvalidExpr = true;
+        } else {
+          ExprNode exprNode = newPrintNode.getExprUnion().getExpr().getChild(0);
+          if (! (exprNode instanceof DataRefNode || exprNode instanceof GlobalNode)) {
+            isInvalidExpr = true;
+          }
+        }
+        if (isInvalidExpr) {
           throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
               "The css-handling scheme is 'reference', but tag " + cssNode.getTagString() +
               " does not contain a valid reference.", null, node);
         }
-        newNode = newPrintNode;
+
       } else {
         throw new AssertionError();
       }
 
-      @SuppressWarnings("unchecked")  // cast with generics
-      ParentSoyNode<SoyNode> parent = (ParentSoyNode<SoyNode>) cssNode.getParent();
-      parent.setChild(parent.getChildIndex(cssNode), newNode);
+      cssNode.getParent().replaceChild(cssNode, newNode);
     }
   }
 
 
-  @Override protected void visitInternal(CssNode node) {
+  @Override protected void visitCssNode(CssNode node) {
     cssNodes.add(node);
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(SoyNode node) {
-    // Nothing to do for non-parent node.
-  }
-
-
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-    visitChildren(node);
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (node instanceof ParentSoyNode<?>) {
+      visitChildren((ParentSoyNode<?>) node);
+    }
   }
 
 }

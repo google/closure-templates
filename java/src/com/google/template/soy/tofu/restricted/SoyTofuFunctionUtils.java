@@ -30,8 +30,12 @@ import com.google.template.soy.data.restricted.StringData;
  *
  * <p> Feel free to static import these helpers in your function implementation classes.
  *
+ * @deprecated Plese use
+ *     {@link com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils} instead.
+ *
  * @author Kai Huang
  */
+@Deprecated
 public class SoyTofuFunctionUtils {
 
   private SoyTofuFunctionUtils() {}
@@ -42,7 +46,7 @@ public class SoyTofuFunctionUtils {
    * @param value The boolean value to convert.
    */
   public static SoyData toSoyData(boolean value) {
-    return new BooleanData(value);
+    return BooleanData.forValue(value);
   }
 
 
@@ -51,7 +55,7 @@ public class SoyTofuFunctionUtils {
    * @param value The int value to convert.
    */
   public static SoyData toSoyData(int value) {
-    return new IntegerData(value);
+    return IntegerData.forValue(value);
   }
 
 
@@ -60,7 +64,7 @@ public class SoyTofuFunctionUtils {
    * @param value The double value to convert.
    */
   public static SoyData toSoyData(double value) {
-    return new FloatData(value);
+    return FloatData.forValue(value);
   }
 
 
@@ -69,7 +73,7 @@ public class SoyTofuFunctionUtils {
    * @param value The String value to convert.
    */
   public static SoyData toSoyData(String value) {
-    return new StringData(value);
+    return StringData.forValue(value);
   }
 
 }

@@ -26,15 +26,28 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  *
  * @author Kai Huang
  */
-public class IfElseNode extends AbstractParentSoyCommandNode<SoyNode>
-    implements ConditionalBlockNode<SoyNode> {
+public class IfElseNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
 
 
   /**
    * @param id The id for this node.
    */
-  public IfElseNode(String id) {
+  public IfElseNode(int id) {
     super(id, "else", "");
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected IfElseNode(IfElseNode orig) {
+    super(orig);
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.IF_ELSE_NODE;
   }
 
 
@@ -44,6 +57,11 @@ public class IfElseNode extends AbstractParentSoyCommandNode<SoyNode>
     appendSourceStringForChildren(sb);
     // Note: No end tag.
     return sb.toString();
+  }
+
+
+  @Override public IfElseNode clone() {
+    return new IfElseNode(this);
   }
 
 }

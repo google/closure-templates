@@ -18,6 +18,8 @@ package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
 
+import javax.annotation.concurrent.Immutable;
+
 
 /**
  * String data.
@@ -26,7 +28,12 @@ import com.google.common.base.Preconditions;
  *
  * @author Kai Huang
  */
+@Immutable
 public class StringData extends PrimitiveData {
+
+
+  /** Static instance of StringData with value "". */
+  public static final StringData EMPTY_STRING = new StringData("");
 
 
   /** The string value. */
@@ -35,10 +42,22 @@ public class StringData extends PrimitiveData {
 
   /**
    * @param value The string value.
+   * @deprecated Use {@link StringData#EMPTY_STRING} or {@link StringData#forValue}.
    */
+  @Deprecated
   public StringData(String value) {
     Preconditions.checkNotNull(value);
     this.value = value;
+  }
+
+
+  /**
+   * Gets a StringData instance for the given value.
+   * @param value The desired value.
+   * @return A StringData instance with the given value.
+   */
+  public static StringData forValue(String value) {
+    return (value.length() == 0) ? EMPTY_STRING : new StringData(value);
   }
 
 

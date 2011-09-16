@@ -26,15 +26,28 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  *
  * @author Kai Huang
  */
-public class ForeachIfemptyNode extends AbstractParentSoyCommandNode<SoyNode>
-    implements ConditionalBlockNode<SoyNode> {
+public class ForeachIfemptyNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
 
 
   /**
    * @param id The id for this node.
    */
-  public ForeachIfemptyNode(String id) {
+  public ForeachIfemptyNode(int id) {
     super(id, "ifempty", "");
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected ForeachIfemptyNode(ForeachIfemptyNode orig) {
+    super(orig);
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.FOREACH_IFEMPTY_NODE;
   }
 
 
@@ -44,6 +57,16 @@ public class ForeachIfemptyNode extends AbstractParentSoyCommandNode<SoyNode>
     appendSourceStringForChildren(sb);
     // Note: No end tag.
     return sb.toString();
+  }
+
+
+  @Override public ForeachNode getParent() {
+    return (ForeachNode) super.getParent();
+  }
+
+
+  @Override public ForeachIfemptyNode clone() {
+    return new ForeachIfemptyNode(this);
   }
 
 }

@@ -48,20 +48,20 @@ public class ApiCallScopeBindingAnnotations {
 
 
   /**
+   * Annotation for the isIsingIjData parameter in the ApiCallScope.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface IsUsingIjData {}
+
+
+  /**
    * Annotation for the localeString parameter in the ApiCallScope.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
   public @interface LocaleString {}
-
-
-  /**
-   * Annotation for the bidiGlobalDir parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface BidiGlobalDir {}
 
 }

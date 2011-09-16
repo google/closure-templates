@@ -456,9 +456,6 @@ public final class CharEscapers {
    * <p>This escaper has identical behavior to (but is potentially much faster
    * than):
    * <ul>
-   * <li>{@link com.google.httputil.FastURLEncoder#encode(String)}
-   * <li>{@link com.google.httputil.FastURLEncoder#encode(String,String)}
-   *     with the encoding name "UTF-8"
    * <li>{@link com.google.common.net.UriEncoder#encode(String)}
    * <li>{@link com.google.common.net.UriEncoder#encode(String,java.nio.charset.Charset)}
    *     with the UTF_8 Charset

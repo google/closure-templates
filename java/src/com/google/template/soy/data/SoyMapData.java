@@ -21,7 +21,7 @@ import com.google.template.soy.data.restricted.CollectionData;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 
 /**
@@ -47,7 +47,7 @@ public class SoyMapData extends CollectionData {
    */
   public SoyMapData(Map<String, ?> data) {
 
-    this();
+    map = Maps.newHashMapWithExpectedSize(data.size());
 
     for (Map.Entry<String, ?> entry : data.entrySet()) {
 
@@ -57,13 +57,18 @@ public class SoyMapData extends CollectionData {
       } catch (ClassCastException cce) {
         throw new SoyDataException(
             "Attempting to convert a map with non-string key to Soy data (key type " +
-            ((Map.Entry<?, ?>) entry).getKey().getClass().getSimpleName() + ").");
+            ((Map.Entry<?, ?>) entry).getKey().getClass().getName() + ").");
       }
-      checkKey(key);
 
       Object value = entry.getValue();
 
-      map.put(key, SoyData.createFromExistingData(value));
+      try {
+        map.put(key, SoyData.createFromExistingData(value));
+
+      } catch (SoyDataException sde) {
+        sde.prependKeyToDataPath(key);
+        throw sde;
+      }
     }
   }
 
@@ -86,6 +91,15 @@ public class SoyMapData extends CollectionData {
    */
   public Map<String, SoyData> asMap() {
     return Collections.unmodifiableMap(map);
+  }
+
+
+  /**
+   * Gets the keys in this map data.
+   * @return A set containing the keys in this map data.
+   */
+  public Set<String> getKeys() {
+    return Collections.unmodifiableSet(map.keySet());
   }
 
 
@@ -140,31 +154,40 @@ public class SoyMapData extends CollectionData {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Protected/private helpers.
+  // Superpackage-private methods.
 
 
-  /** Pattern for a valid key for SoyMapData (an identifier). */
-  private static final Pattern KEY_PATTERN = Pattern.compile("[A-Za-z_][A-Za-z_0-9]*");
-
-
-  @Override protected void checkKey(String key) throws IllegalArgumentException {
-    if (!KEY_PATTERN.matcher(key).matches()) {
-      throw new IllegalArgumentException("Illegal data key '" + key + "' for map data.");
-    }
-  }
-
-
-  @Override protected void putSingle(String key, SoyData value) {
+  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * Puts data into this data object at the specified key.
+   * @param key An individual key.
+   * @param value The data to put at the specified key.
+   */
+  @Override public void putSingle(String key, SoyData value) {
     map.put(key, value);
   }
 
 
-  @Override protected void removeSingle(String key) {
+  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * Removes the data at the specified key.
+   * @param key An individual key.
+   */
+  @Override public void removeSingle(String key) {
     map.remove(key);
   }
 
 
-  @Override protected SoyData getSingle(String key) {
+  /**
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * Gets the data at the specified key.
+   * @param key An individual key.
+   * @return The data at the specified key, or null if the key is not defined.
+   */
+  @Override public SoyData getSingle(String key) {
     return map.get(key);
   }
 

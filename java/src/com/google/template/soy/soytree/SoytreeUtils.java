@@ -16,12 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.ParentExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import javax.annotation.Nullable;
@@ -63,68 +62,186 @@ public class SoytreeUtils {
       throw new AssertionError();
     }
 
-    TemplateNode template = soyNode.getNearestAncestor(TemplateNode.class);
-    if (template != null) {
-      sse.setTemplateName(template.getTemplateName());
-    }
-    SoyFileNode soyFile = soyNode.getNearestAncestor(SoyFileNode.class);
-    if (soyFile != null) {
-      sse.setFilePath(soyFile.getFilePath());
-    }
+    associateMetaInfoWithException(soyNode, sse);
 
     return sse;
   }
 
 
+  private static void associateMetaInfoWithException(SoyNode soyNode, SoySyntaxException sse) {
+    TemplateNode template = soyNode.getNearestAncestor(TemplateNode.class);
+    if (sse.getSourceLocation() == SourceLocation.UNKNOWN) {
+      sse.setSourceLocation(soyNode.getLocation());
+    }
+    if (sse.getTemplateName() == null && template != null) {
+      sse.setTemplateName(template.getTemplateNameForUserMsgs());
+    }
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Utils for executing an ExprNode visitor on all expressions in a Soy tree.
+
+
   /**
-   * Given a Soy tree and a visitor for expression trees, traverses the Soy tree and executes the
-   * visitor on all expressions held by nodes in the Soy tree.
+   * Given a Soy node and a visitor for expression trees, traverses the subtree of the node and
+   * executes the visitor on all expressions held by nodes in the subtree.
    *
-   * @param soyTree The Soy tree to traverse.
+   * <p> Only processes expressions in V2 syntax. Ignores all expressions in V1 syntax.
+   *
+   * @param <R> The ExprNode visitor's return type.
+   * @param node The root of the subtree to visit all expressions in.
    * @param exprNodeVisitor The visitor to execute on all expressions.
    */
-  public static void visitAllExprs(
-      SoyFileSetNode soyTree, AbstractExprNodeVisitor<Void> exprNodeVisitor) {
+  public static <R> void execOnAllV2Exprs(
+      SoyNode node, AbstractExprNodeVisitor<R> exprNodeVisitor) {
 
-    (new VisitAllExprsVisitor(exprNodeVisitor)).exec(soyTree);
+    execOnAllV2ExprsShortcircuitably(node, exprNodeVisitor, null);
   }
 
 
   /**
-   * Private helper class for {@code visitAllExprs}.
+   * Given a Soy node and a visitor for expression trees, traverses the subtree of the node and
+   * executes the visitor on all expressions held by nodes in the subtree.
+   *
+   * <p> Only processes expressions in V2 syntax. Ignores all expressions in V1 syntax.
+   *
+   * <p> Same as {@code visitAllExprs} except that this pass can be shortcircuited by providing a
+   * {@link Shortcircuiter}.
+   *
+   * @param <R> The ExprNode visitor's return type.
+   * @param node The root of the subtree to visit all expressions in.
+   * @param exprNodeVisitor The visitor to execute on all expressions.
+   * @param shortcircuiter The Shortcircuiter to tell us when to shortcircuit the pass.
+   * @see Shortcircuiter
    */
-  private static class VisitAllExprsVisitor extends AbstractSoyNodeVisitor<Void> {
+  public static <R> void execOnAllV2ExprsShortcircuitably(
+      SoyNode node, AbstractExprNodeVisitor<R> exprNodeVisitor, Shortcircuiter<R> shortcircuiter) {
 
-    private final AbstractExprNodeVisitor<Void> exprNodeVisitor;
+    (new VisitAllV2ExprsVisitor<R>(exprNodeVisitor, shortcircuiter)).exec(node);
+  }
 
-    public VisitAllExprsVisitor(AbstractExprNodeVisitor<Void> exprNodeVisitor) {
+
+  /**
+   * Helper interface for {@code visitAllExprsShortcircuitably}.
+   *
+   * @param <R> The ExprNode visitor's return type.
+   */
+  public static interface Shortcircuiter<R> {
+
+    /**
+     * Called at various points during a pass initiated by visitAllExprsShortcircuitably.
+     * This method should return whether or not to shortcircuit the pass (at the current point in
+     * the pass).
+     *
+     * @param exprNodeVisitor The expression visitor being used by visitAllExprsShortcircuitably.
+     * @return Whether to shortcircuit the pass (at the current point in the pass).
+     */
+    public boolean shouldShortcircuit(AbstractExprNodeVisitor<R> exprNodeVisitor);
+  }
+
+
+  /**
+   * Private helper class for {@code visitAllExprs} and {@code visitAllExprsShortcircuitably}.
+   *
+   * @param <R> The ExprNode visitor's return type.
+   */
+  private static class VisitAllV2ExprsVisitor<R> extends AbstractSoyNodeVisitor<R> {
+
+    private final AbstractExprNodeVisitor<R> exprNodeVisitor;
+
+    private final Shortcircuiter<R> shortcircuiter;
+
+    public VisitAllV2ExprsVisitor(
+        AbstractExprNodeVisitor<R> exprNodeVisitor, @Nullable Shortcircuiter<R> shortcircuiter) {
       this.exprNodeVisitor = exprNodeVisitor;
+      this.shortcircuiter = shortcircuiter;
     }
 
-    @Override protected void visitInternal(SoyNode node) {
-      // Nothing to do for nodes not handled elsewhere.
-    }
+    @Override protected void visitSoyNode(SoyNode node) {
 
-    @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-      visitChildren(node);
-    }
-
-    @Override protected void visitInternal(ExprHolderNode node) {
-      visitExprs(node);
-    }
-
-    @Override protected void visitInternal(ParentExprHolderNode<? extends SoyNode> node) {
-      visitChildren(node);
-      visitExprs(node);
-    }
-
-    private void visitExprs(ExprHolderNode exprHolder) {
-      for (ExprRootNode<? extends ExprNode> expr : exprHolder.getAllExprs()) {
-        try {
-          exprNodeVisitor.exec(expr);
-        } catch (SoySyntaxException sse) {
-          throw createSoySyntaxExceptionWithMetaInfo(sse.getMessage(), sse.getCause(), exprHolder);
+      if (node instanceof ParentSoyNode<?>) {
+        for (SoyNode child : ((ParentSoyNode<?>) node).getChildren()) {
+          visit(child);
+          if (shortcircuiter != null && shortcircuiter.shouldShortcircuit(exprNodeVisitor)) {
+            return;
+          }
         }
+      }
+
+      if (node instanceof ExprHolderNode) {
+        ExprHolderNode nodeAsExprHolder = (ExprHolderNode) node;
+
+        for (ExprUnion exprUnion : nodeAsExprHolder.getAllExprUnions()) {
+          if (exprUnion.getExpr() == null) {
+            continue;
+          }
+
+          try {
+            exprNodeVisitor.exec(exprUnion.getExpr());
+          } catch (SoySyntaxException sse) {
+            associateMetaInfoWithException(nodeAsExprHolder, sse);
+            throw sse;
+          }
+        }
+      }
+    }
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Utils for cloning.
+
+
+  /**
+   * Clones the given node and then generates and sets new ids on all the cloned nodes (by default,
+   * SoyNode.clone() creates cloned nodes with the same ids as the original nodes).
+   *
+   * <p> This function will use the original Soy tree's node id generator to generate the new node
+   * ids for the cloned nodes. Thus, the original node to be cloned must be part of a full Soy tree.
+   * However, this does not mean that the cloned node will become part of the original tree (unless
+   * it is manually attached later). The cloned node will be an independent subtree with parent set
+   * to null.
+   *
+   * @param <T> The type of the node being cloned.
+   * @param origNode The original node to be cloned. This node must be part of a full Soy tree,
+   *     because the generator for the new node ids will be retrieved from the root (SoyFileSetNode)
+   *     of the tree.
+   * @return The cloned node, with all new ids for its subtree.
+   */
+  public static <T extends SoyNode> T cloneWithNewIds(T origNode) {
+
+    // Clone the node.
+    @SuppressWarnings("unchecked")
+    T clone = (T) origNode.clone();
+
+    // Generate new ids.
+    IdGenerator nodeIdGen = origNode.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
+    (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
+
+    return clone;
+  }
+
+
+  /**
+   * Private helper for cloneWithNewIds() to set new ids on a cloned subtree.
+   */
+  private static class GenNewIdsVisitor extends AbstractSoyNodeVisitor<Void> {
+
+    /** The generator for new node ids. */
+    private IdGenerator nodeIdGen;
+
+    /**
+     * @param nodeIdGen The generator for new node ids.
+     */
+    public GenNewIdsVisitor(IdGenerator nodeIdGen) {
+      this.nodeIdGen = nodeIdGen;
+    }
+
+    @Override protected void visitSoyNode(SoyNode node) {
+      node.setId(nodeIdGen.genId());
+      if (node instanceof ParentSoyNode<?>) {
+        visitChildren((ParentSoyNode<?>) node);
       }
     }
   }

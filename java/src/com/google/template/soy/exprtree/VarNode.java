@@ -44,6 +44,21 @@ public class VarNode extends AbstractExprNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected VarNode(VarNode orig) {
+    super(orig);
+    this.name = orig.name;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.VAR_NODE;
+  }
+
+
   /** Returns the variable name (without the dollar sign). */
   public String getName() {
     return name;
@@ -52,6 +67,11 @@ public class VarNode extends AbstractExprNode {
 
   @Override public String toSourceString() {
     return "$" + name;
+  }
+
+
+  @Override public VarNode clone() {
+    return new VarNode(this);
   }
 
 }

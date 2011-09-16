@@ -40,11 +40,29 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
   /**
    * @param id The id for this node.
    */
-  public AbstractParentSoyNode(String id) {
+  public AbstractParentSoyNode(int id) {
     super(id);
     parentMixin = new MixinParentNode<N>(this);
   }
 
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected AbstractParentSoyNode(AbstractParentSoyNode<N> orig) {
+    super(orig);
+    this.parentMixin = new MixinParentNode<N>(orig.parentMixin, this);
+  }
+
+
+  @Override public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp) {
+    parentMixin.setNeedsEnvFrameDuringInterp(needsEnvFrameDuringInterp);
+  }
+
+  @Override public Boolean needsEnvFrameDuringInterp() {
+    return parentMixin.needsEnvFrameDuringInterp();
+  }
 
   @Override public int numChildren() {
     return parentMixin.numChildren();
@@ -78,8 +96,12 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
     parentMixin.removeChild(child);
   }
 
-  @Override public void setChild(int index, N newChild) {
-    parentMixin.setChild(index, newChild);
+  @Override public void replaceChild(int index, N newChild) {
+    parentMixin.replaceChild(index, newChild);
+  }
+
+  @Override public void replaceChild(N currChild, N newChild) {
+    parentMixin.replaceChild(currChild, newChild);
   }
 
   @Override public void clearChildren() {
@@ -88,6 +110,10 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
 
   @Override public void addChildren(List<? extends N> children) {
     parentMixin.addChildren(children);
+  }
+
+  @Override public void addChildren(int index, List<? extends N> children) {
+    parentMixin.addChildren(index, children);
   }
 
   @Override public void appendSourceStringForChildren(StringBuilder sb) {

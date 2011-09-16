@@ -41,6 +41,21 @@ public class StringNode extends AbstractPrimitiveNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected StringNode(StringNode orig) {
+    super(orig);
+    this.value = orig.value;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.STRING_NODE;
+  }
+
+
   /** Returns the string value. */
   public String getValue() {
     return value;
@@ -66,6 +81,11 @@ public class StringNode extends AbstractPrimitiveNode {
    */
   public String toSourceString(boolean escapeToAscii) {
     return BaseUtils.escapeToSoyString(value, escapeToAscii);
+  }
+
+
+  @Override public StringNode clone() {
+    return new StringNode(this);
   }
 
 }

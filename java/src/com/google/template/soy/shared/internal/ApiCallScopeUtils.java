@@ -17,9 +17,8 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.inject.Key;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 
 import javax.annotation.Nullable;
@@ -42,19 +41,36 @@ public class ApiCallScopeUtils {
    *
    * @param apiCallScope The scope object that manages the API call scope.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   * @param bidiGlobalDir The bidi global directionality (ltr=1, rtl=-1).
+   * @param bidiGlobalDir The bidi global directionality (ltr=1, rtl=-1, or 0 to use a value derived
+   *     from the msgBundle locale, if any, otherwise ltr).
    */
   public static void seedSharedParams(
       GuiceSimpleScope apiCallScope, @Nullable SoyMsgBundle msgBundle, int bidiGlobalDir) {
+    seedSharedParams(apiCallScope, msgBundle,
+                     bidiGlobalDir == 0 ? null : BidiGlobalDir.forStaticIsRtl(bidiGlobalDir < 0));
+  }
+
+
+  /**
+   * Helper utility to seed params shared by multiple backends.
+   *
+   * @param apiCallScope The scope object that manages the API call scope.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   * @param bidiGlobalDir The bidi global directionality. If null, it is derived from the msgBundle
+   *     locale, if any, otherwise ltr.
+   */
+  public static void seedSharedParams(
+      GuiceSimpleScope apiCallScope, @Nullable SoyMsgBundle msgBundle,
+      @Nullable BidiGlobalDir bidiGlobalDir) {
 
     String localeString = (msgBundle != null) ? msgBundle.getLocaleString() : null;
-    if (bidiGlobalDir == 0) {
-      bidiGlobalDir = SoyBidiUtils.getBidiGlobalDir(localeString);
+    if (bidiGlobalDir == null) {
+        bidiGlobalDir = BidiGlobalDir.forStaticLocale(localeString);
     }
 
     apiCallScope.seed(SoyMsgBundle.class, msgBundle);
     apiCallScope.seed(Key.get(String.class, LocaleString.class), localeString);
-    apiCallScope.seed(Key.get(Integer.class, BidiGlobalDir.class), bidiGlobalDir);
+    apiCallScope.seed(BidiGlobalDir.class, bidiGlobalDir);
   }
 
 }

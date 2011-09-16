@@ -34,10 +34,11 @@ public interface SoyJavaSrcPrintDirective extends SoyPrintDirective {
   /**
    * Applies this directive on the given string value.
    *
-   * @param str The string value to apply the directive on.
+   * @param value The value to apply the directive on.  This value may not yet have been
+   *     coerced to a string.
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public JavaExpr applyForJavaSrc(JavaExpr str, List<JavaExpr> args);
+  public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args);
 
 }

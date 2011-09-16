@@ -30,6 +30,75 @@ package com.google.template.soy.exprtree;
 public class DataRefNode extends AbstractParentExprNode {
 
 
+  /** Whether this node is a reference to injected data. */
+  private final boolean isIjDataRef;
+
+  /** Whether this node is a reference to local var data, or null if unknown. */
+  private Boolean isLocalVarDataRef;
+
+
+  /**
+   * Constructor.
+   * @param isIjDataRef Whether this node is a reference to injected data.
+   */
+  public DataRefNode(boolean isIjDataRef) {
+    this.isIjDataRef = isIjDataRef;
+    this.isLocalVarDataRef = null;
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected DataRefNode(DataRefNode orig) {
+    super(orig);
+    this.isIjDataRef = orig.isIjDataRef;
+    this.isLocalVarDataRef = orig.isLocalVarDataRef;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.DATA_REF_NODE;
+  }
+
+
+  /**
+   * Returns whether this node is a reference to injected data.
+   */
+  public boolean isIjDataRef() {
+    return isIjDataRef;
+  }
+
+
+  /**
+   * Sets whether this node is a reference to local var data, or null if unknown.
+   */
+  public void setIsLocalVarDataRef(Boolean isLocalVarDataRef) {
+    this.isLocalVarDataRef = isLocalVarDataRef;
+  }
+
+
+  /**
+   * Returns whether this node is a reference to local var data, or null if unknown.
+   */
+  public Boolean isLocalVarDataRef() {
+    return isLocalVarDataRef;
+  }
+
+
+  /**
+   * Returns the first key as a string.
+   * <p> This method is for convenience. It is equivalent to
+   * <pre>
+   *     ((DataRefKeyNode) thisNode.getChild(0)).getKey()
+   * </pre>
+   */
+  public String getFirstKey() {
+    return ((DataRefKeyNode) getChild(0)).getKey();
+  }
+
+
   @Override public String toSourceString() {
 
     StringBuilder sourceSb = new StringBuilder();
@@ -38,7 +107,7 @@ public class DataRefNode extends AbstractParentExprNode {
     for (ExprNode child : getChildren()) {
 
       if (isFirst) {
-        sourceSb.append('$').append(child.toSourceString());
+        sourceSb.append(isIjDataRef ? "$ij." : "$").append(child.toSourceString());
         isFirst = false;
 
       } else {
@@ -51,6 +120,11 @@ public class DataRefNode extends AbstractParentExprNode {
     }
 
     return sourceSb.toString();
+  }
+
+
+  @Override public DataRefNode clone() {
+    return new DataRefNode(this);
   }
 
 }

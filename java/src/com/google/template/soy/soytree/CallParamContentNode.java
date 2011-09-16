@@ -18,13 +18,9 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.MixinParentNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -34,25 +30,11 @@ import java.util.regex.Pattern;
  *
  * @author Kai Huang
  */
-public class CallParamContentNode extends CallParamNode implements ParentSoyNode<SoyNode> {
-
-
-  /** Pattern for a key and optional value not listed as attributes. */
-  // Note: group 1 = key, group 2 = value (or null).
-  private static final Pattern NONATTRIBUTE_COMMAND_TEXT =
-      Pattern.compile("^ (?! key=\") ([\\w]+) (?: \\s* : \\s* (.+) )? $",
-                      Pattern.COMMENTS);
-
-  /** Parser for the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("param",
-          new Attribute("key", Attribute.ALLOW_ALL_VALUES,
-                        Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
-          new Attribute("value", Attribute.ALLOW_ALL_VALUES, null));
+public class CallParamContentNode extends CallParamNode implements BlockNode {
 
 
   /** The mixin object that implements the ParentNode functionality. */
-  private final MixinParentNode<SoyNode> parentMixin;
+  private final MixinParentNode<StandaloneNode> parentMixin;
 
   /** The param key. */
   private final String key;
@@ -63,26 +45,34 @@ public class CallParamContentNode extends CallParamNode implements ParentSoyNode
    * @param commandText The command text.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public CallParamContentNode(String id, String commandText) throws SoySyntaxException {
+  public CallParamContentNode(int id, String commandText) throws SoySyntaxException {
     super(id, commandText);
-    parentMixin = new MixinParentNode<SoyNode>(this);
+    parentMixin = new MixinParentNode<StandaloneNode>(this);
 
-    String valueText;
+    CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
+    key = parseResult.key;
 
-    Matcher nctMatcher = NONATTRIBUTE_COMMAND_TEXT.matcher(commandText);
-    if (nctMatcher.matches()) {
-      key = parseKeyHelper(nctMatcher.group(1));
-      valueText = nctMatcher.group(2);
-    } else {
-      Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
-      key = parseKeyHelper(attributes.get("key"));
-      valueText = attributes.get("value");
+    if (parseResult.valueExprUnion != null) {
+      throw new SoySyntaxException(
+          "A 'param' tag should contain a value if and only if it is also self-ending (with a" +
+          " trailing '/') (invalid tag is {param " + commandText + "}).");
     }
+  }
 
-    if (valueText != null) {
-      throw new SoySyntaxException("If a 'param' tag contains a value, then the tag must be" +
-                                   " self-ending (with a trailing '/').");
-    }
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected CallParamContentNode(CallParamContentNode orig) {
+    super(orig);
+    this.parentMixin = new MixinParentNode<StandaloneNode>(orig.parentMixin, this);
+    this.key = orig.key;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.CALL_PARAM_CONTENT_NODE;
   }
 
 
@@ -93,6 +83,9 @@ public class CallParamContentNode extends CallParamNode implements ParentSoyNode
 
   // -----------------------------------------------------------------------------------------------
   // ParentSoyNode stuff.
+  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
+  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
+  // it needs to subclass CallParamNode (and Java doesn't allow multiple inheritance).
 
 
   @Override public String toSourceString() {
@@ -103,27 +96,35 @@ public class CallParamContentNode extends CallParamNode implements ParentSoyNode
     return sb.toString();
   }
 
+  @Override public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp) {
+    parentMixin.setNeedsEnvFrameDuringInterp(needsEnvFrameDuringInterp);
+  }
+
+  @Override public Boolean needsEnvFrameDuringInterp() {
+    return parentMixin.needsEnvFrameDuringInterp();
+  }
+
   @Override public int numChildren() {
     return parentMixin.numChildren();
   }
 
-  @Override public SoyNode getChild(int index) {
+  @Override public StandaloneNode getChild(int index) {
     return parentMixin.getChild(index);
   }
 
-  @Override public int getChildIndex(SoyNode child) {
+  @Override public int getChildIndex(StandaloneNode child) {
     return parentMixin.getChildIndex(child);
   }
 
-  @Override public List<SoyNode> getChildren() {
+  @Override public List<StandaloneNode> getChildren() {
     return parentMixin.getChildren();
   }
 
-  @Override public void addChild(SoyNode child) {
+  @Override public void addChild(StandaloneNode child) {
     parentMixin.addChild(child);
   }
 
-  @Override public void addChild(int index, SoyNode child) {
+  @Override public void addChild(int index, StandaloneNode child) {
     parentMixin.addChild(index, child);
   }
 
@@ -131,20 +132,28 @@ public class CallParamContentNode extends CallParamNode implements ParentSoyNode
     parentMixin.removeChild(index);
   }
 
-  @Override public void removeChild(SoyNode child) {
+  @Override public void removeChild(StandaloneNode child) {
     parentMixin.removeChild(child);
   }
 
-  @Override public void setChild(int index, SoyNode newChild) {
-    parentMixin.setChild(index, newChild);
+  @Override public void replaceChild(int index, StandaloneNode newChild) {
+    parentMixin.replaceChild(index, newChild);
+  }
+
+  @Override public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
+    parentMixin.replaceChild(currChild, newChild);
   }
 
   @Override public void clearChildren() {
     parentMixin.clearChildren();
   }
 
-  @Override public void addChildren(List<? extends SoyNode> children) {
+  @Override public void addChildren(List<? extends StandaloneNode> children) {
     parentMixin.addChildren(children);
+  }
+
+  @Override public void addChildren(int index, List<? extends StandaloneNode> children) {
+    parentMixin.addChildren(index, children);
   }
 
   @Override public void appendSourceStringForChildren(StringBuilder sb) {
@@ -157,6 +166,10 @@ public class CallParamContentNode extends CallParamNode implements ParentSoyNode
 
   @Override public String toTreeString(int indent) {
     return parentMixin.toTreeString(indent);
+  }
+
+  @Override public CallParamContentNode clone() {
+    return new CallParamContentNode(this);
   }
 
 }

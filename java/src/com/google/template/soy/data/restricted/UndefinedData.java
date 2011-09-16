@@ -18,6 +18,8 @@ package com.google.template.soy.data.restricted;
 
 import com.google.template.soy.data.SoyDataException;
 
+import javax.annotation.concurrent.Immutable;
+
 
 /**
  * Undefined data.
@@ -26,9 +28,18 @@ import com.google.template.soy.data.SoyDataException;
  *
  * @author Kai Huang
  */
+@Immutable
 public class UndefinedData extends PrimitiveData {
 
 
+  /** Static singleton instance of UndefinedData. */
+  public static final UndefinedData INSTANCE = new UndefinedData();
+
+
+  /**
+   * @deprecated Use {@link UndefinedData#INSTANCE}.
+   */
+  @Deprecated
   public UndefinedData() {}
 
 

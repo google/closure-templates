@@ -38,6 +38,9 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Whether to allow deprecated syntax (semi backwards compatible mode). */
   private boolean shouldAllowDeprecatedSyntax;
 
+  /** Whether to enable use of injected data. */
+  private boolean isUsingIjData;
+
   /** The output variable code style to use. */
   private CodeStyle codeStyle;
 
@@ -59,12 +62,25 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Whether the Closure Library messages are external, i.e. "MSG_EXTERNAL_[soyGeneratedMsgId]". */
   private boolean googMsgsAreExternal;
 
-  /** Bidi global directionality (ltr=1, rtl=-1). Required if shouldGenerateJsMsgDefs is true. */
+  /**
+   * The bidi global directionality as a static value, 1: ltr, -1: rtl, 0: unspecified. If 0, and
+   * useGoogIsRtlForBidiGlobalDir is false, the bidi global directionality will actually be inferred
+   * from the message bundle locale. This must not be the case when shouldGenerateGoogMsgDefs is
+   * true, but is the recommended mode of operation otherwise.
+   */
   private int bidiGlobalDir;
+
+  /**
+   * Whether to determine the bidi global direction at template runtime by evaluating
+   * goog.i18n.bidi.IS_RTL. May only be true when both shouldGenerateGoogMsgDefs and either
+   * shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions is true.
+   */
+  private boolean useGoogIsRtlForBidiGlobalDir;
 
 
   public SoyJsSrcOptions() {
     shouldAllowDeprecatedSyntax = false;
+    isUsingIjData = false;
     codeStyle = CodeStyle.STRINGBUILDER;
     shouldGenerateJsdoc = false;
     shouldProvideRequireSoyNamespaces = false;
@@ -73,6 +89,7 @@ public class SoyJsSrcOptions implements Cloneable {
     shouldGenerateGoogMsgDefs = false;
     googMsgsAreExternal = false;
     bidiGlobalDir = 0;
+    useGoogIsRtlForBidiGlobalDir = false;
   }
 
 
@@ -87,6 +104,20 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Returns whether we're set to allow deprecated syntax (semi backwards compatible mode). */
   public boolean shouldAllowDeprecatedSyntax() {
     return shouldAllowDeprecatedSyntax;
+  }
+
+
+  /**
+   * Sets whether to enable use of injected data (syntax is '$ij.*').
+   * @param isUsingIjData The code style to set.
+   */
+  public void setIsUsingIjData(boolean isUsingIjData) {
+    this.isUsingIjData = isUsingIjData;
+  }
+
+  /** Returns whether use of injected data is currently enabled. */
+  public boolean isUsingIjData() {
+    return isUsingIjData;
   }
 
 
@@ -231,26 +262,65 @@ public class SoyJsSrcOptions implements Cloneable {
 
 
   /**
-   * Sets the bidi global directionality (1 for LTR, -1 for RTL, 0 to infer from message bundle).
-   * Note: If shouldGenerateGoogMsgDefs is true, this must be set to a non-zero value.
-   * @param bidiGlobalDir The value to set.
+   * Sets the bidi global directionality to a static value, 1: ltr, -1: rtl, 0: unspecified. If 0,
+   * and useGoogIsRtlForBidiGlobalDir is false, the bidi global directionality will actually be
+   * inferred from the message bundle locale. This is the recommended mode of operation when
+   * shouldGenerateGoogMsgDefs is false. When shouldGenerateGoogMsgDefs is true, the bidi global
+   * direction can not be left unspecified, but the recommended way of doing so is via
+   * setUseGoogIsRtlForBidiGlobalDir(true). Thus, whether shouldGenerateGoogMsgDefs is true or not,
+   * THERE IS USUALLY NO NEED TO USE THIS METHOD!
+   *
+   * @param bidiGlobalDir 1: ltr, -1: rtl, 0: unspecified. Checks that no other value is used.
    */
   public void setBidiGlobalDir(int bidiGlobalDir) {
     Preconditions.checkArgument(
-        bidiGlobalDir == 1 || bidiGlobalDir == -1 || bidiGlobalDir == 0,
-        "Bidi global directionality must be 1 for LTR, -1 for RTL, or 0 to infer this from the" +
-        " locale string in the message bundle.");
-    this.bidiGlobalDir = bidiGlobalDir;
+        bidiGlobalDir >= -1 && bidiGlobalDir <= 1,
+        "bidiGlobalDir must be 1 for LTR, or -1 for RTL (or 0 to leave unspecified).");
     Preconditions.checkState(
-        ! (this.shouldGenerateGoogMsgDefs && bidiGlobalDir == 0),
-        "If shouldGenerateGoogMsgDefs is true, then bidiGlobalDir must be set to 1 or -1.");
+        !useGoogIsRtlForBidiGlobalDir || bidiGlobalDir == 0,
+        "Must not specify both bidiGlobalDir and useGoogIsRtlForBidiGlobalDir.");
+    this.bidiGlobalDir = bidiGlobalDir;
   }
 
+
   /**
-   * Returns the bidi global directionality (ltr=1, rtl=-1).
+   * Returns the static bidi global directionality, 1: ltr, -1: rtl, 0: unspecified.
    */
   public int getBidiGlobalDir() {
     return bidiGlobalDir;
+  }
+
+
+  /**
+   * Sets the Javascript code snippet that will evaluate at template runtime to a boolean value
+   * indicating whether the bidi global direction is rtl. Can only be used when
+   * shouldGenerateGoogMsgDefs is true.
+   *
+   * @param useGoogIsRtlForBidiGlobalDir Whether to determine the bidi global direction at template
+   *     runtime by evaluating goog.i18n.bidi.IS_RTL.
+   */
+  public void setUseGoogIsRtlForBidiGlobalDir(boolean useGoogIsRtlForBidiGlobalDir) {
+    Preconditions.checkState(
+        !useGoogIsRtlForBidiGlobalDir || shouldGenerateGoogMsgDefs,
+        "Do not specify useGoogIsRtlForBidiGlobalDir without shouldGenerateGoogMsgDefs.");
+    Preconditions.checkState(
+        !useGoogIsRtlForBidiGlobalDir ||
+        shouldProvideRequireSoyNamespaces || shouldProvideRequireJsFunctions,
+        "Do not specify useGoogIsRtlForBidiGlobalDir without either" +
+        " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
+    Preconditions.checkState(
+        !useGoogIsRtlForBidiGlobalDir || bidiGlobalDir == 0,
+        "Must not specify both bidiGlobalDir and useGoogIsRtlForBidiGlobalDir.");
+    this.useGoogIsRtlForBidiGlobalDir = useGoogIsRtlForBidiGlobalDir;
+  }
+
+
+  /**
+   * Returns whether to determine the bidi global direction at template runtime by evaluating
+   * goog.i18n.bidi.IS_RTL. May only be true when shouldGenerateGoogMsgDefs is true.
+   */
+  public boolean getUseGoogIsRtlForBidiGlobalDir() {
+    return useGoogIsRtlForBidiGlobalDir;
   }
 
 

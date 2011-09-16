@@ -23,15 +23,18 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.sharedpasses.CombineConsecutiveRawTextNodesVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.List;
 
@@ -39,58 +42,89 @@ import javax.annotation.Nullable;
 
 
 /**
- * Visitor for inserting translated messages into Soy parse tree. This pass replaces the MsgNodes
- * in the parse tree with sequences of RawTextNodes and other nodes. Also, if the replacement of a
- * MsgNode causes consecutive sibling RawTextNodes to appear, those consecutive nodes will be
- * joined into one combined RawTextNode. After this pass, the parse tree should no longer contain
- * MsgNodes and MsgHtmlTagNodes.
+ * Visitor for inserting translated messages into Soy tree. This pass replaces the MsgNodes in the
+ * tree with sequences of RawTextNodes and other nodes. The only exception is plural/select
+ * messages. This pass currently does not replace plural/select messages.
+ *
+ * <p> If the Soy tree doesn't contain plural/select messages, then after this pass, the Soy tree
+ * should no longer contain MsgNodes, MsgPlaceholderNodes, and MsgHtmlTagNodes. If the Soy tree
+ * contains plural/select messages, then the only messages left in the tree after this pass runs
+ * should be the plural/select messages.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p> Note that the Soy tree is usually simplifiable after this pass is run (e.g. it usually
+ * contains consecutive RawTextNodes). It's usually advisable to run a simplification pass after
+ * this pass.
  *
  * @author Kai Huang
  */
 public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
+  /**
+   * Exception thrown when a plural or select message is encountered.
+   */
+  public static class EncounteredPluralSelectMsgException extends RuntimeException {}
+
+
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   private final SoyMsgBundle msgBundle;
+
+  /** If set to true, then don't report an error when encountering plural or select messages. */
+  private final boolean dontErrorOnPluralSelectMsgs;
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
 
-  /** The new rebuilt list of children for the current parent node (during a pass). */
-  private List<SoyNode> currNewChildren;
+  /** The replacement nodes for the current MsgNode we're visiting (during a pass). */
+  private List<StandaloneNode> currMsgReplacementNodes;
 
 
   /**
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param dontErrorOnPluralSelectMsgs If set to true, then this pass won't report an error when
+   *     encountering a plural or select message. Instead, plural and select messages will simply
+   *     not be replaced ({@code MsgNode} left in the tree as-is). If set to false, then this pass
+   *     will throw an {@link EncounteredPluralSelectMsgException} when encountering a plural or
+   *     select message.
    */
-  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle) {
+  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle, boolean dontErrorOnPluralSelectMsgs) {
     this.msgBundle = msgBundle;
+    this.dontErrorOnPluralSelectMsgs = dontErrorOnPluralSelectMsgs;
   }
 
 
   @Override public Void exec(SoyNode node) {
 
     // Retrieve the node id generator from the root of the parse tree.
-    nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGen();
+    nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
 
     // Execute the pass.
     super.exec(node);
-
-    // The pass may have created consecutive RawTextNodes, so clean them up.
-    (new CombineConsecutiveRawTextNodesVisitor()).exec(node);
 
     return null;
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for concrete classes.
+  // Implementations for specific nodes.
 
 
-  @Override protected void visitInternal(MsgNode node) {
+  @Override protected void visitMsgNode(MsgNode node) {
+
+    // Check for plural or select message. Either report error or don't replace.
+    if (node.numChildren() == 1 &&
+        (node.getChild(0) instanceof MsgSelectNode || node.getChild(0) instanceof MsgPluralNode)) {
+      if (dontErrorOnPluralSelectMsgs) {
+        return;
+      } else {
+        throw new EncounteredPluralSelectMsgException();
+      }
+    }
+
+    // Process the message to build the list of replacement nodes.
+    currMsgReplacementNodes = Lists.newArrayList();
 
     long msgId = MsgUtils.computeMsgId(node);
     SoyMsg soyMsg = (msgBundle == null) ? null : msgBundle.getMsg(msgId);
@@ -99,21 +133,23 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
       for (SoyMsgPart msgPart : soyMsg.getParts()) {
 
         if (msgPart instanceof SoyMsgRawTextPart) {
-          // Append a new RawTextNode to the currNewChildren list.
+          // Append a new RawTextNode to the currMsgReplacementNodes list.
           String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
-          currNewChildren.add(new RawTextNode(nodeIdGen.genStringId(), rawText));
+          currMsgReplacementNodes.add(new RawTextNode(nodeIdGen.genId(), rawText));
 
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
-          // First get the representative placeholder node.
+          // Get the representative placeholder node and iterate through its contents.
           String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
-          MsgPlaceholderNode placeholderNode = node.getPlaceholderNode(placeholderName);
-          // If the representative placeholder node is a MsgHtmlTagNode, it needs to be replaced by
-          // a number of consecutive siblings. This is done by visiting the MsgHtmlTagNode.
-          // Otherwise, we simply add the placeholder node to the currNewChildren list being built.
-          if (placeholderNode instanceof MsgHtmlTagNode) {
-            visit(placeholderNode);
-          } else {
-            currNewChildren.add(placeholderNode);
+          MsgPlaceholderNode placeholderNode = node.getRepPlaceholderNode(placeholderName);
+          for (StandaloneNode contentNode : placeholderNode.getChildren()) {
+            // If the content node is a MsgHtmlTagNode, it needs to be replaced by a number of
+            // consecutive siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we
+            // simply add the content node to the currMsgReplacementNodes list being built.
+            if (contentNode instanceof MsgHtmlTagNode) {
+              visit(contentNode);
+            } else {
+              currMsgReplacementNodes.add(contentNode);
+            }
           }
 
         } else {
@@ -123,67 +159,54 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     } else {
       // Case 2: No msgBundle or message not found. Just use the message from the Soy source.
-      for (SoyNode child : node.getChildren()) {
-        // If the child is a MsgHtmlTagNode, it needs to be replaced by a number of consecutive
-        // siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we simply add the
-        // child to the currNewChildren list being built.
-        if (child instanceof MsgHtmlTagNode) {
-          visit((MsgHtmlTagNode) child);
+      for (StandaloneNode child : node.getChildren()) {
+
+        if (child instanceof RawTextNode) {
+          currMsgReplacementNodes.add(child);
+
+        } else if (child instanceof MsgPlaceholderNode) {
+          for (StandaloneNode contentNode : ((MsgPlaceholderNode) child).getChildren()) {
+            // If the content node is a MsgHtmlTagNode, it needs to be replaced by a number of
+            // consecutive siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we
+            // simply add the content node to the currMsgReplacementNodes list being built.
+            if (contentNode instanceof MsgHtmlTagNode) {
+              visit(contentNode);
+            } else {
+              currMsgReplacementNodes.add(contentNode);
+            }
+          }
+
         } else {
-          currNewChildren.add(child);
+          throw new AssertionError();
         }
       }
     }
+
+    // Replace this MsgNode with the replacement nodes.
+    BlockNode parent = node.getParent();
+    int indexInParent = parent.getChildIndex(node);
+    parent.removeChild(indexInParent);
+    parent.addChildren(indexInParent, currMsgReplacementNodes);
+    currMsgReplacementNodes = null;
   }
 
 
-  @Override protected void visitInternal(MsgHtmlTagNode node) {
+  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
 
-    for (SoyNode child : node.getChildren()) {
-      currNewChildren.add(child);
+    for (StandaloneNode child : node.getChildren()) {
+      currMsgReplacementNodes.add(child);
     }
   }
 
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for interfaces.
+  // Fallback implementation.
 
 
-  @Override protected void visitInternal(ParentSoyNode<? extends SoyNode> node) {
-
-    // Loop through children and (a) check whether there are any MsgNode children, (b) recurse on
-    // ParentSoyNode children (other than MsgNode).
-    boolean hasMsgNodeChild = false;
-    for (SoyNode child : node.getChildren()) {
-      if (child instanceof MsgNode) {
-        hasMsgNodeChild = true;
-      } else if (child instanceof ParentSoyNode) {
-        visit(child);  // recurse
-      }
+  @Override protected void visitSoyNode(SoyNode node) {
+    if ((node instanceof ParentSoyNode<?>)) {
+      visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
     }
-    // If there aren't any MsgNode children, we're done.
-    if (!hasMsgNodeChild) {
-      return;
-    }
-
-    // If there are MsgNode children, then this node must be a ParentSoyNode<SoyNode>.
-    @SuppressWarnings("unchecked")
-    ParentSoyNode<SoyNode> nodeCast = (ParentSoyNode<SoyNode>) node;
-
-    // Build the new children list in currNewChildren. All the children stay the same except for
-    // MsgNode children. Each MsgNode child is replaced by a number of consecutive siblings.
-    currNewChildren = Lists.newArrayList();
-    for (SoyNode child : nodeCast.getChildren()) {
-      if (child instanceof MsgNode) {
-        visit((MsgNode) child);
-      } else {
-        currNewChildren.add(child);
-      }
-    }
-
-    // Set the currNewChildren as the new children of this node.
-    nodeCast.clearChildren();
-    nodeCast.addChildren(currNewChildren);
   }
 
 }

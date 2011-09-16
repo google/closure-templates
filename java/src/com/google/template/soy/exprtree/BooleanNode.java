@@ -16,7 +16,6 @@
 
 package com.google.template.soy.exprtree;
 
-
 /**
  * Node representing a boolean value.
  *
@@ -39,6 +38,21 @@ public class BooleanNode extends AbstractPrimitiveNode {
   }
 
 
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected BooleanNode(BooleanNode orig) {
+    super(orig);
+    this.value = orig.value;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.BOOLEAN_NODE;
+  }
+
+
   /** Returns the boolean value. */
   public boolean getValue() {
     return value;
@@ -47,6 +61,11 @@ public class BooleanNode extends AbstractPrimitiveNode {
 
   @Override public String toSourceString() {
     return value ? "true" : "false";
+  }
+
+
+  @Override public BooleanNode clone() {
+    return new BooleanNode(this);
   }
 
 }

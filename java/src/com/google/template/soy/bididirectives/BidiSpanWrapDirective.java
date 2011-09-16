@@ -20,12 +20,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
+import com.google.template.soy.javasrc.restricted.JavaExpr;
+import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils;
+import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiGlobalDir;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -40,18 +46,19 @@ import java.util.Set;
  * @author Aharon Lanin
  */
 @Singleton
-public class BidiSpanWrapDirective implements SoyTofuPrintDirective, SoyJsSrcPrintDirective {
+public class BidiSpanWrapDirective extends SoyAbstractTofuPrintDirective
+    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective, SanitizedContentOperator {
 
 
   /** Provider for the current bidi global directionality. */
-  private final Provider<Integer> bidiGlobalDirProvider;
+  private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
 
   /**
    * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
    */
   @Inject
-  BidiSpanWrapDirective(@BidiGlobalDir Provider<Integer> bidiGlobalDirProvider) {
+  BidiSpanWrapDirective(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
@@ -71,16 +78,37 @@ public class BidiSpanWrapDirective implements SoyTofuPrintDirective, SoyJsSrcPri
   }
 
 
-  @Override public String applyForTofu(String str, List<SoyData> args) {
-
-    return SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get()).spanWrap(str, true);
+  @Override public String apply(SoyData value, List<SoyData> args) {
+    boolean isHtml = true;
+    return SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
+        .spanWrap(value.toString(), isHtml);
   }
 
 
-  @Override public JsExpr applyForJsSrc(JsExpr str, List<JsExpr> args) {
+  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new JsExpr(
-        "soy.$$bidiSpanWrap(" + bidiGlobalDirProvider.get() + ", " + str.getText() + ")",
+        "soy.$$bidiSpanWrap(" + codeSnippet + ", " + value.getText() + ")",
         Integer.MAX_VALUE);
+  }
+
+
+  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
+    String bidiFunctionName = SoyBidiUtils.class.getName() + ".getBidiFormatter(" +
+        bidiGlobalDirProvider.get().getCodeSnippet() + ").spanWrap";
+
+    return SoyJavaSrcFunctionUtils.toStringJavaExpr(
+        JavaCodeUtils.genNewStringData(
+            JavaCodeUtils.genFunctionCall(
+                bidiFunctionName,
+                JavaCodeUtils.genCoerceString(value),
+                "true")));
+  }
+
+
+  @Override public SanitizedContent.ContentKind getContentKind() {
+    // This directive expects HTML as input and produces HTML as output.
+    return SanitizedContent.ContentKind.HTML;
   }
 
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.msgs.restricted;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
+import com.google.template.soy.internal.base.Pair;
 
 import java.util.List;
 
@@ -54,15 +55,7 @@ public class SoyMsgIdComputer {
     // Note: For people who know what "presentation" means in this context, the joinedParts string
     // is exactly the same as the presentation.
     StringBuilder joinedParts = new StringBuilder();
-    for (SoyMsgPart msgPart : msgParts) {
-      if (msgPart instanceof SoyMsgRawTextPart) {
-        joinedParts.append(((SoyMsgRawTextPart) msgPart).getRawText());
-      } else if (msgPart instanceof SoyMsgPlaceholderPart) {
-        joinedParts.append(((SoyMsgPlaceholderPart) msgPart).getPlaceholderName());
-      } else {
-        throw new AssertionError();
-      }
-    }
+    appendMsgPartsToTcStringBuilder(joinedParts, msgParts);
 
     long fp = SoyMsgIdComputer.fingerprint(joinedParts.toString());
 
@@ -78,6 +71,73 @@ public class SoyMsgIdComputer {
 
     // To avoid negative ids we strip the high-order bit.
     return fp & 0x7fffffffffffffffL;
+  }
+
+
+  /**
+   * Appends a list of SoyMsgParts to the passed StringBuilder.
+   *
+   * @param stringBuilder The StringBuilder to append to.
+   * @param soyMsgParts The list of SoyMsgParts to add.
+   */
+  private static void appendMsgPartsToTcStringBuilder(
+      StringBuilder stringBuilder, List<SoyMsgPart> soyMsgParts) {
+    for (SoyMsgPart msgPart : soyMsgParts) {
+      if (msgPart instanceof SoyMsgRawTextPart) {
+        stringBuilder.append(((SoyMsgRawTextPart) msgPart).getRawText());
+      } else if (msgPart instanceof SoyMsgPlaceholderPart) {
+        stringBuilder.append(((SoyMsgPlaceholderPart) msgPart).getPlaceholderName());
+      } else if (msgPart instanceof SoyMsgPluralRemainderPart) {
+        stringBuilder.append(IcuSyntaxUtils.getPluralRemainderString());
+      } else if (msgPart instanceof SoyMsgPluralPart) {
+        appendPluralToStringBuilder(stringBuilder, (SoyMsgPluralPart) msgPart);
+      } else if (msgPart instanceof SoyMsgSelectPart) {
+        appendSelectToStringBuilder(stringBuilder, (SoyMsgSelectPart) msgPart);
+      }
+    }
+  }
+
+
+  /**
+   * Appends the text representation of a plural part to a StringBuilder.
+   * @param stringBuilder The StringBuilder to append to.
+   * @param soyMsgPluralPart The SoyMsgPluralPart to add.
+   */
+  private static void appendPluralToStringBuilder(
+      StringBuilder stringBuilder, SoyMsgPluralPart soyMsgPluralPart) {
+
+    stringBuilder.append(IcuSyntaxUtils.getPluralOpenString(
+        soyMsgPluralPart.getPluralVarName(), soyMsgPluralPart.getOffset()));
+
+    for (Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>> pluralCase : soyMsgPluralPart.getCases()) {
+      SoyMsgPluralCaseSpec pluralCaseSpec = pluralCase.first;
+      stringBuilder.append(IcuSyntaxUtils.getPluralCaseOpenString(
+          pluralCaseSpec.getType() == SoyMsgPluralCaseSpec.Type.OTHER ?
+              null : pluralCaseSpec.getExplicitValue()));
+      appendMsgPartsToTcStringBuilder(stringBuilder, pluralCase.second);
+      stringBuilder.append(IcuSyntaxUtils.getPluralCaseCloseString());
+    }
+
+    stringBuilder.append(IcuSyntaxUtils.getPluralCloseString());
+  }
+
+  /**
+   * Appends the text representation of a select part to a StringBuilder.
+   * @param stringBuilder The StringBuilder to append to.
+   * @param soyMsgSelectPart The SoyMsgSelectPart to add.
+   */
+  private static void appendSelectToStringBuilder(
+      StringBuilder stringBuilder, SoyMsgSelectPart soyMsgSelectPart) {
+
+    stringBuilder.append(IcuSyntaxUtils.getSelectOpenString(soyMsgSelectPart.getSelectVarName()));
+
+    for (Pair<String, List<SoyMsgPart>> oneSelectCase : soyMsgSelectPart.getCases()) {
+      stringBuilder.append(IcuSyntaxUtils.getSelectCaseOpenString(oneSelectCase.first));
+      appendMsgPartsToTcStringBuilder(stringBuilder, oneSelectCase.second);
+      stringBuilder.append(IcuSyntaxUtils.getSelectCaseCloseString());
+    }
+
+    stringBuilder.append(IcuSyntaxUtils.getSelectCloseString());
   }
 
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.jssrc;
 
 import com.google.template.soy.soytree.AbstractSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 
 /**
@@ -26,31 +27,57 @@ import com.google.template.soy.soytree.AbstractSoyNode;
  *
  * @author Kai Huang
  */
-public class GoogMsgRefNode extends AbstractSoyNode {
+public class GoogMsgRefNode extends AbstractSoyNode implements StandaloneNode {
 
 
   /** The name of the Closure message variable (defined by goog.getMsg). */
-  private final String googMsgName;
+  private final String renderedGoogMsgVarName;
 
 
   /**
    * @param id The id for this node.
-   * @param googMsgName The name of the Closure message variable (defined by goog.getMsg).
+   * @param renderedGoogMsgVarName The name of the Closure message variable
+   * (defined by goog.getMsg).
    */
-  public GoogMsgRefNode(String id, String googMsgName) {
+  public GoogMsgRefNode(int id, String renderedGoogMsgVarName) {
     super(id);
-    this.googMsgName = googMsgName;
+    this.renderedGoogMsgVarName = renderedGoogMsgVarName;
+  }
+
+
+  /**
+   * Copy constructor.
+   * @param orig The node to copy.
+   */
+  protected GoogMsgRefNode(GoogMsgRefNode orig) {
+    super(orig);
+    this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;
+  }
+
+
+  @Override public Kind getKind() {
+    return Kind.GOOG_MSG_REF_NODE;
   }
 
 
   /** Returns the name of the Closure message variable (defined by goog.getMsg). */
-  public String getGoogMsgName() {
-    return googMsgName;
+  public String getRenderedGoogMsgVarName() {
+    return renderedGoogMsgVarName;
   }
 
 
   @Override public String toSourceString() {
-    return "[GoogMsgRefNode " + googMsgName + "]";
+    return "[GoogMsgRefNode " + renderedGoogMsgVarName + "]";
+  }
+
+
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  @Override public GoogMsgRefNode clone() {
+    return new GoogMsgRefNode(this);
   }
 
 }
