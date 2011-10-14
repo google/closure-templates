@@ -176,6 +176,16 @@ Visitor for evaluating the expression rooted at a given ExprNode.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.html#computeFunctionHelper(com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction, java.util.List, com.google.template.soy.exprtree.FunctionNode)">computeFunctionHelper</A></B>(<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimeFunction</A>&nbsp;fn,
+                      <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&nbsp;args,
+                      <A HREF="../../../../../../com/google/template/soy/exprtree/FunctionNode.html" title="class in com.google.template.soy.exprtree">FunctionNode</A>&nbsp;fnNode)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Protected helper for <code>computeFunction</code>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.html#resolveDataRefFirstKey(com.google.template.soy.exprtree.DataRefNode)">resolveDataRefFirstKey</A></B>(<A HREF="../../../../../../com/google/template/soy/exprtree/DataRefNode.html" title="class in com.google.template.soy.exprtree">DataRefNode</A>&nbsp;dataRefNode)</CODE>
 
 <BR>
@@ -835,6 +845,23 @@ protected <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" 
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>fnName</CODE> - The name of the function.<DD><CODE>args</CODE> - The arguments to the function.<DD><CODE>fnNode</CODE> - The function node. Only used for error reporting.
+<DT><B>Returns:</B><DD>The result of the function called on the given arguments.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="computeFunctionHelper(com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction, java.util.List, com.google.template.soy.exprtree.FunctionNode)"><!-- --></A><H3>
+computeFunctionHelper</H3>
+<PRE>
+protected <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>computeFunctionHelper</B>(<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimeFunction</A>&nbsp;fn,
+                                        <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&nbsp;args,
+                                        <A HREF="../../../../../../com/google/template/soy/exprtree/FunctionNode.html" title="class in com.google.template.soy.exprtree">FunctionNode</A>&nbsp;fnNode)</PRE>
+<DL>
+<DD>Protected helper for <code>computeFunction</code>. This helper exists so that subclasses can
+ override it.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>fn</CODE> - The function object.<DD><CODE>args</CODE> - The arguments to the function.<DD><CODE>fnNode</CODE> - The function node. Only used for error reporting.
 <DT><B>Returns:</B><DD>The result of the function called on the given arguments.</DL>
 </DD>
 </DL>

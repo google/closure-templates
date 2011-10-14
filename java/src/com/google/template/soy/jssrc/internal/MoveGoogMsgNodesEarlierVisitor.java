@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.sharedpasses.BuildNearestDependeeMapVisitor;
+import com.google.template.soy.sharedpasses.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -67,9 +67,9 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
 
     // Move each GoogMsgNode to the earliest point it can go.
-    Map<SoyNode, SoyNode> nearestDependeeMap = (new BuildNearestDependeeMapVisitor()).exec(node);
+    Map<SoyNode, List<SoyNode>> allDependeesMap = (new BuildAllDependeesMapVisitor()).exec(node);
     for (GoogMsgNode googMsgNode : googMsgNodes) {
-      moveGoogMsgNodeEarlierHelper(googMsgNode, nearestDependeeMap.get(googMsgNode));
+      moveGoogMsgNodeEarlierHelper(googMsgNode, allDependeesMap.get(googMsgNode));
     }
   }
 
@@ -95,11 +95,12 @@ class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @SuppressWarnings("unchecked")  // casts with generics
-  private void moveGoogMsgNodeEarlierHelper(GoogMsgNode googMsgNode, SoyNode nearestDependee) {
+  private void moveGoogMsgNodeEarlierHelper(GoogMsgNode googMsgNode, List<SoyNode> allDependees) {
 
     BlockNode newParent;
     int indexUnderNewParent;
 
+    SoyNode nearestDependee = allDependees.get(0);
     if (nearestDependee instanceof LocalVarInlineNode) {
       newParent = (BlockNode) nearestDependee.getParent();
       indexUnderNewParent = newParent.getChildIndex((LocalVarInlineNode) nearestDependee) + 1;

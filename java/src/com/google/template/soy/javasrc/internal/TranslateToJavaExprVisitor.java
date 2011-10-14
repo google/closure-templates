@@ -92,7 +92,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
-import com.google.template.soy.shared.internal.ImpureFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 
 import java.util.Deque;
 import java.util.List;
@@ -474,15 +474,15 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
     String fnName = node.getFunctionName();
     int numArgs = node.numChildren();
 
-    // Handle impure functions.
-    ImpureFunction impureFn = ImpureFunction.forFunctionName(fnName);
-    if (impureFn != null) {
-      if (numArgs != impureFn.getNumArgs()) {
+    // Handle nonplugin functions.
+    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
+    if (nonpluginFn != null) {
+      if (numArgs != nonpluginFn.getNumArgs()) {
         throw new SoySyntaxException(
             "Function '" + fnName + "' called with the wrong number of arguments" +
             " (function call \"" + node.toSourceString() + "\").");
       }
-      switch (impureFn) {
+      switch (nonpluginFn) {
         case IS_FIRST:
           return visitIsFirstFunction(node);
         case IS_LAST:
@@ -496,7 +496,7 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
       }
     }
 
-    // Handle pure functions.
+    // Handle plugin functions.
     SoyJavaSrcFunction fn = soyJavaSrcFunctionsMap.get(fnName);
     if (fn != null) {
       if (! fn.getValidArgsSizes().contains(numArgs)) {

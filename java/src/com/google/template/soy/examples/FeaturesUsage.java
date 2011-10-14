@@ -141,58 +141,65 @@ public class FeaturesUsage {
     // converts it to a new SoyMapData on every call).
 
     writeExampleHeader("demoComments");
-    System.out.println(tofu.render(DEMO_COMMENTS, (SoyMapData) null, msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_COMMENTS).setMsgBundle(msgBundle).render());
 
     writeExampleHeader("demoLineJoining");
-    System.out.println(tofu.render(DEMO_LINE_JOINING, (SoyMapData) null, msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_LINE_JOINING).setMsgBundle(msgBundle).render());
 
     writeExampleHeader("demoRawTextCommands");
-    System.out.println(tofu.render(DEMO_RAW_TEXT_COMMANDS, (SoyMapData) null, msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_RAW_TEXT_COMMANDS).setMsgBundle(msgBundle).render());
 
     writeExampleHeader("demoPrint");
-    System.out.println(
-        tofu.render(DEMO_PRINT,
-                    new SoyMapData(DEMO_PRINT.BOO, "Boo!", DEMO_PRINT.TWO, 2),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_PRINT)
+        .setData(new SoyMapData(DEMO_PRINT.BOO, "Boo!", DEMO_PRINT.TWO, 2))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoPrintDirectives");
-    System.out.println(
-        tofu.render(DEMO_PRINT_DIRECTIVES,
-                    ImmutableMap.of(DEMO_PRINT_DIRECTIVES.LONG_VAR_NAME,
-                                        "thisIsSomeRidiculouslyLongVariableName",
-                                    DEMO_PRINT_DIRECTIVES.ELEMENT_ID, "my_element_id",
-                                    DEMO_PRINT_DIRECTIVES.CSS_CLASS, "my_css_class"),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_PRINT_DIRECTIVES)
+        .setData(ImmutableMap.of(DEMO_PRINT_DIRECTIVES.LONG_VAR_NAME,
+                                      "thisIsSomeRidiculouslyLongVariableName",
+                                 DEMO_PRINT_DIRECTIVES.ELEMENT_ID, "my_element_id",
+                                 DEMO_PRINT_DIRECTIVES.CSS_CLASS, "my_css_class"))
+         .setMsgBundle(msgBundle)
+         .render());
 
     writeExampleHeader("demoAutoescapeTrue");
-    System.out.println(
-        tofu.render(DEMO_AUTOESCAPE_TRUE,
-                    new SoyMapData(DEMO_AUTOESCAPE_TRUE.ITALIC_HTML, "<i>italic</i>"),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_AUTOESCAPE_TRUE)
+        .setData(new SoyMapData(DEMO_AUTOESCAPE_TRUE.ITALIC_HTML, "<i>italic</i>"))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoAutoescapeFalse");
-    System.out.println(
-        tofu.render(DEMO_AUTOESCAPE_FALSE,
-                    new SoyMapData(DEMO_AUTOESCAPE_FALSE.ITALIC_HTML, "<i>italic</i>"),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_AUTOESCAPE_FALSE)
+        .setData(new SoyMapData(DEMO_AUTOESCAPE_FALSE.ITALIC_HTML, "<i>italic</i>"))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoMsg");
-    System.out.println(
-        tofu.render(DEMO_MSG,
-                    ImmutableMap.of(DEMO_MSG.NAME, "Ed",
-                                    DEMO_MSG.LABS_URL, "http://labs.google.com"),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_MSG)
+        .setData(ImmutableMap.of(DEMO_MSG.NAME, "Ed",
+                                 DEMO_MSG.LABS_URL, "http://labs.google.com"))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoIf");
-    System.out.println(tofu.render(DEMO_IF, new SoyMapData("pi", 3.14159), msgBundle));
-    System.out.println(tofu.render(DEMO_IF, new SoyMapData("pi", 2.71828), msgBundle));
-    System.out.println(tofu.render(DEMO_IF, new SoyMapData("pi", 1.61803), msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_IF)
+        .setData(new SoyMapData("pi", 3.14159)).setMsgBundle(msgBundle).render());
+    System.out.println(tofu.newRenderer(DEMO_IF)
+        .setData(new SoyMapData("pi", 2.71828)).setMsgBundle(msgBundle).render());
+    System.out.println(tofu.newRenderer(DEMO_IF)
+        .setData(new SoyMapData("pi", 1.61803)).setMsgBundle(msgBundle).render());
 
     writeExampleHeader("demoSwitch");
-    System.out.println(tofu.render(DEMO_SWITCH, ImmutableMap.of("name", "Fay"), msgBundle));
-    System.out.println(tofu.render(DEMO_SWITCH, ImmutableMap.of("name", "Go"), msgBundle));
-    System.out.println(tofu.render(DEMO_SWITCH, ImmutableMap.of("name", "Hal"), msgBundle));
-    System.out.println(tofu.render(DEMO_SWITCH, ImmutableMap.of("name", "Ivy"), msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_SWITCH)
+        .setData(ImmutableMap.of("name", "Fay")).setMsgBundle(msgBundle).render());
+    System.out.println(tofu.newRenderer(DEMO_SWITCH)
+        .setData(ImmutableMap.of("name", "Go")).setMsgBundle(msgBundle).render());
+    System.out.println(tofu.newRenderer(DEMO_SWITCH)
+        .setData(ImmutableMap.of("name", "Hal")).setMsgBundle(msgBundle).render());
+    System.out.println(tofu.newRenderer(DEMO_SWITCH)
+        .setData(ImmutableMap.of("name", "Ivy")).setMsgBundle(msgBundle).render());
 
     writeExampleHeader("demoForeach");
     SoyListData persons = new SoyListData();
@@ -200,37 +207,42 @@ public class FeaturesUsage {
     persons.add(new SoyMapData("name", "Kai", "numWaffles", 3));
     persons.add(new SoyMapData("name", "Lex", "numWaffles", 1));
     persons.add(new SoyMapData("name", "Mel", "numWaffles", 2));
-    System.out.println(
-        tofu.render(DEMO_FOREACH, new SoyMapData(DEMO_FOREACH.PERSONS, persons), msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_FOREACH)
+        .setData(new SoyMapData(DEMO_FOREACH.PERSONS, persons))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoFor");
-    System.out.println(tofu.render(DEMO_FOR, new SoyMapData(DEMO_FOR.NUM_LINES, 3), msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_FOR)
+        .setData(new SoyMapData(DEMO_FOR.NUM_LINES, 3))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoCallWithoutParam");
-    System.out.println(
-        tofu.render(DEMO_CALL_WITHOUT_PARAM,
-                    new SoyMapData(
-                        DEMO_CALL_WITHOUT_PARAM.NAME, "Neo",
-                        DEMO_CALL_WITHOUT_PARAM.TRIP_INFO,
-                            new SoyMapData("name", "Neo", "destination", "The Matrix")),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_CALL_WITHOUT_PARAM)
+        .setData(new SoyMapData(
+                     DEMO_CALL_WITHOUT_PARAM.NAME, "Neo",
+                     DEMO_CALL_WITHOUT_PARAM.TRIP_INFO,
+                         new SoyMapData("name", "Neo", "destination", "The Matrix")))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoCallWithParam");
-    System.out.println(
-        tofu.render(DEMO_CALL_WITH_PARAM,
-                    ImmutableMap.of(
-                        DEMO_CALL_WITH_PARAM.NAME, "Oz",
-                        DEMO_CALL_WITH_PARAM.COMPANION_NAME, "Pip",
-                        DEMO_CALL_WITH_PARAM.DESTINATIONS,
-                            ImmutableList.of("Gillikin Country", "Munchkin Country",
-                                             "Quadling Country", "Winkie Country")),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_CALL_WITH_PARAM)
+        .setData(ImmutableMap.of(
+                 DEMO_CALL_WITH_PARAM.NAME, "Oz",
+                 DEMO_CALL_WITH_PARAM.COMPANION_NAME, "Pip",
+                 DEMO_CALL_WITH_PARAM.DESTINATIONS,
+                 ImmutableList.of("Gillikin Country", "Munchkin Country",
+                                  "Quadling Country", "Winkie Country")))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoCallWithParamBlock");
-    System.out.println(
-        tofu.render(DEMO_CALL_WITH_PARAM_BLOCK,
-                    new SoyMapData(DEMO_CALL_WITH_PARAM_BLOCK.NAME, "Quo"),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_CALL_WITH_PARAM_BLOCK)
+        .setData(new SoyMapData(DEMO_CALL_WITH_PARAM_BLOCK.NAME, "Quo"))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoExpressions");
     SoyListData students = new SoyListData();
@@ -238,35 +250,35 @@ public class FeaturesUsage {
     students.add(new SoyMapData("name", "Sha", "major", "Finance", "year", 1980));
     students.add(new SoyMapData("name", "Tim", "major", "Engineering", "year", 2005));
     students.add(new SoyMapData("name", "Uma", "major", "Biology", "year", 1972));
-    System.out.println(
-        tofu.render(DEMO_EXPRESSIONS,
-                    new SoyMapData(DEMO_EXPRESSIONS.STUDENTS, students,
-                                   DEMO_EXPRESSIONS.CURRENT_YEAR, 2008),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_EXPRESSIONS)
+        .setData(new SoyMapData(DEMO_EXPRESSIONS.STUDENTS, students,
+                                DEMO_EXPRESSIONS.CURRENT_YEAR, 2008))
+        .setMsgBundle(msgBundle)
+        .render());
 
     writeExampleHeader("demoDoubleBraces");
-    System.out.println(
-        tofu.render(DEMO_DOUBLE_BRACES,
-                    ImmutableMap.of(DEMO_DOUBLE_BRACES.SET_NAME, "prime numbers",
-                                    DEMO_DOUBLE_BRACES.SET_MEMBERS,
-                                        ImmutableList.of(2, 3, 5, 7, 11, 13)),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_DOUBLE_BRACES)
+        .setData(ImmutableMap.of(DEMO_DOUBLE_BRACES.SET_NAME, "prime numbers",
+                                 DEMO_DOUBLE_BRACES.SET_MEMBERS,
+                                     ImmutableList.of(2, 3, 5, 7, 11, 13)))
+         .setMsgBundle(msgBundle)
+         .render());
 
     // The Hebrew in the following example comes out as question marks in the output because
     // System.out (and by default stdout generally) is set up to use a Latin encoding. To see
     // this really in action, run the Javascript example.
     writeExampleHeader("demoBidiSupport");
-    System.out.println(
-        tofu.render(DEMO_BIDI_SUPPORT,
-                    ImmutableMap.of(DEMO_BIDI_SUPPORT.TITLE, "2008: A BiDi Odyssey",
-                                    DEMO_BIDI_SUPPORT.AUTHOR, "John Doe, Esq.",
-                                    DEMO_BIDI_SUPPORT.YEAR, "1973",
-                                    DEMO_BIDI_SUPPORT.KEYWORDS,
-                                        ImmutableList.of(
-                                            "Bi(Di)",
-                                            "2008 (\u05E9\u05E0\u05D4)",
-                                            "2008 (year)")),
-                    msgBundle));
+    System.out.println(tofu.newRenderer(DEMO_BIDI_SUPPORT)
+        .setData(ImmutableMap.of(DEMO_BIDI_SUPPORT.TITLE, "2008: A BiDi Odyssey",
+                                 DEMO_BIDI_SUPPORT.AUTHOR, "John Doe, Esq.",
+                                 DEMO_BIDI_SUPPORT.YEAR, "1973",
+                                 DEMO_BIDI_SUPPORT.KEYWORDS,
+                                 ImmutableList.of(
+                                     "Bi(Di)",
+                                     "2008 (\u05E9\u05E0\u05D4)",
+                                     "2008 (year)")))
+        .setMsgBundle(msgBundle)
+        .render());
   }
 
 

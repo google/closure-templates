@@ -24,6 +24,7 @@ import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.jssrc.GoogMsgNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
@@ -66,6 +67,23 @@ class PrerenderVisitor extends RenderVisitor {
     super(
         soyJavaRuntimeDirectivesMap, preevalVisitorFactory, prerenderVisitorFactory, outputSb,
         templateRegistry, data, null, env, null, null, null);
+  }
+
+
+  @Override public Void exec(SoyNode soyNode) {
+
+    // Note: This is a catch-all to turn RuntimeExceptions that aren't RenderExceptions into
+    // RenderExceptions during prerendering.
+
+    try {
+      return super.exec(soyNode);
+
+    } catch (RenderException e) {
+      throw e;
+
+    } catch (RuntimeException e) {
+      throw new RenderException("Failed prerender due to exception: " + e.getMessage());
+    }
   }
 
 

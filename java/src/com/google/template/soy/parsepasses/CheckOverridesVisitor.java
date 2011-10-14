@@ -97,18 +97,26 @@ public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
       TemplateNode prevTemplate = basicTemplatesMap.get(templateName);
       // If this duplicate definition is not an explicit Soy V1 override, report error.
       if (!node.isOverride()) {
-        String prevTemplateFilePath =
-            prevTemplate.getNearestAncestor(SoyFileNode.class).getFilePath();
-        String currTemplateFilePath = node.getNearestAncestor(SoyFileNode.class).getFilePath();
-        if (currTemplateFilePath.equals(prevTemplateFilePath)) {
+        SoyFileNode prevTemplateFile = prevTemplate.getNearestAncestor(SoyFileNode.class);
+        SoyFileNode currTemplateFile = node.getNearestAncestor(SoyFileNode.class);
+        if (currTemplateFile == prevTemplateFile) {
           throw new SoySyntaxException(
               "Found two definitions for template name '" + templateName + "', both in the file " +
-              currTemplateFilePath + ".");
+              currTemplateFile.getFilePath() + ".");
         } else {
-          throw new SoySyntaxException(
-              "Found two definitions for template name '" + templateName +
-              "' in two different files " + prevTemplateFilePath + " and " +
-              currTemplateFilePath + ".");
+          String prevTemplateFilePath = prevTemplateFile.getFilePath();
+          String currTemplateFilePath = currTemplateFile.getFilePath();
+          if (currTemplateFilePath.equals(prevTemplateFilePath)) {
+            throw new SoySyntaxException(
+                "Found two definitions for template name '" + templateName +
+                "' in two different files with the same name " + currTemplateFilePath +
+                " (perhaps the file was accidentally included twice).");
+          } else {
+            throw new SoySyntaxException(
+                "Found two definitions for template name '" + templateName +
+                "' in two different files " + prevTemplateFilePath + " and " +
+                currTemplateFilePath + ".");
+          }
         }
       }
     } else {

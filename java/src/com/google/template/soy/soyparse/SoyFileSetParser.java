@@ -28,7 +28,6 @@ import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.CheckOverridesVisitor;
 import com.google.template.soy.parsepasses.PrependNamespacesToCalleeNamesVisitor;
 import com.google.template.soy.parsepasses.RewriteRemainderNodesVisitor;
-import com.google.template.soy.parsepasses.VerifyNoLetCommandUsagesVisitor;
 import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
 import com.google.template.soy.sharedpasses.AssertSyntaxVersionV2Visitor;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
@@ -247,7 +246,6 @@ public class SoyFileSetParser {
     } else {
       (new RemoveHtmlCommentsVisitor()).exec(soyTree);
     }
-    (new VerifyNoLetCommandUsagesVisitor()).exec(soyTree);
     (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
     (new CheckSoyDocVisitor(doEnforceSyntaxVersionV2)).exec(soyTree);
     if (doCheckOverrides) {

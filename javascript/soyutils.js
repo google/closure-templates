@@ -35,65 +35,370 @@
  * @author Aharon Lenin
  */
 
-/**
- * Base name for the soy utilities, when used outside of Closure Library.
- * Check to see soy is already defined in the current scope before asigning to
- * prevent clobbering if soyutils.js is loaded more than once.
- * @type {Object}
- */
-var soy = soy || {};
-soy.esc = soy.esc || {};
+
+// COPIED FROM nogoog_shim.js
+
+// Create closure namespaces.
+var goog;
+if (typeof goog == "undefined") {
+  goog = {};
+}
+
+goog.inherits = function(childCtor, parentCtor) {
+  /** @constructor */
+  function tempCtor() {}
+  tempCtor.prototype = parentCtor.prototype;
+  childCtor.superClass_ = parentCtor.prototype;
+  childCtor.prototype = new tempCtor();
+  childCtor.prototype.constructor = childCtor;
+};
 
 
 // Just enough browser detection for this file.
-(function() {
-  var ua = navigator.userAgent;
-  var isOpera = ua.indexOf('Opera') == 0;
-  /**
-   * @type {boolean}
-   * @private
-   */
-  soy.$$IS_OPERA_ = isOpera;
-  /**
-   * @type {boolean}
-   * @private
-   */
-  soy.$$IS_IE_ = !isOpera && ua.indexOf('MSIE') != -1;
-  /**
-   * @type {boolean}
-   * @private
-   */
-  soy.$$IS_WEBKIT_ = !isOpera && ua.indexOf('WebKit') != -1;
-})();
+if (!goog.userAgent) {
+  goog.userAgent = (function() {
+    var userAgent = "";
+    if ("undefined" !== typeof navigator && navigator
+        && "string" == typeof navigator.userAgent) {
+      userAgent = navigator.userAgent;
+    }
+    var isOpera = userAgent.indexOf('Opera') == 0;
+    return {
+      /**
+       * @type {boolean}
+       */
+      HAS_JSCRIPT: typeof 'ScriptEngine' in this,
+      /**
+       * @type {boolean}
+       */
+      IS_OPERA: isOpera,
+      /**
+       * @type {boolean}
+       */
+      IS_IE: !isOpera && userAgent.indexOf('MSIE') != -1,
+      /**
+       * @type {boolean}
+       */
+      IS_WEBKIT: !isOpera && userAgent.indexOf('WebKit') != -1
+    };
+  })();
+}
+
+if (!goog.asserts) {
+  goog.asserts = {
+    fail: function () {}
+  };
+}
 
 
-// -----------------------------------------------------------------------------
-// StringBuilder (compatible with the 'stringbuilder' code style).
+// Stub out the document wrapper used by renderAs*.
+if (!goog.dom) {
+  goog.dom = {
+    DomHelper: function (d) {
+      d = d || document;
+      return {
+        createElement: function (name) { return d.createElement(name); },
+        createDocumentFragment: function () {
+          return d.createDocumentFragment();
+        }
+      };
+    }
+  };
+}
+
+
+if (!goog.format) {
+  goog.format = {
+    insertWordBreaks: function(str, maxCharsBetweenWordBreaks) {
+      str = String(str);
+
+      var resultArr = [];
+      var resultArrLen = 0;
+
+      // These variables keep track of important state inside str.
+      var isInTag = false;  // whether we're inside an HTML tag
+      var isMaybeInEntity = false;  // whether we might be inside an HTML entity
+      var numCharsWithoutBreak = 0;  // number of chars since last word break
+      var flushIndex = 0;  // index of first char not yet flushed to resultArr
+
+      for (var i = 0, n = str.length; i < n; ++i) {
+        var charCode = str.charCodeAt(i);
+
+        // If hit maxCharsBetweenWordBreaks, and not space next, then add <wbr>.
+        if (numCharsWithoutBreak >= maxCharsBetweenWordBreaks &&
+            // space
+            charCode != 32) {
+          resultArr[resultArrLen++] = str.substring(flushIndex, i);
+          flushIndex = i;
+          resultArr[resultArrLen++] = goog.format.WORD_BREAK;
+          numCharsWithoutBreak = 0;
+        }
+
+        if (isInTag) {
+          // If inside an HTML tag and we see '>', it's the end of the tag.
+          if (charCode == 62) {
+            isInTag = false;
+          }
+
+        } else if (isMaybeInEntity) {
+          switch (charCode) {
+            // Inside an entity, a ';' is the end of the entity.
+            // The entity that just ended counts as one char, so increment
+            // numCharsWithoutBreak.
+          case 59:  // ';'
+            isMaybeInEntity = false;
+            ++numCharsWithoutBreak;
+            break;
+            // If maybe inside an entity and we see '<', we weren't actually in
+            // an entity. But now we're inside and HTML tag.
+          case 60:  // '<'
+            isMaybeInEntity = false;
+            isInTag = true;
+            break;
+            // If maybe inside an entity and we see ' ', we weren't actually in
+            // an entity. Just correct the state and reset the
+            // numCharsWithoutBreak since we just saw a space.
+          case 32:  // ' '
+            isMaybeInEntity = false;
+            numCharsWithoutBreak = 0;
+            break;
+          }
+
+        } else {  // !isInTag && !isInEntity
+          switch (charCode) {
+            // When not within a tag or an entity and we see '<', we're now
+            // inside an HTML tag.
+          case 60:  // '<'
+            isInTag = true;
+            break;
+            // When not within a tag or an entity and we see '&', we might be
+            // inside an entity.
+          case 38:  // '&'
+            isMaybeInEntity = true;
+            break;
+            // When we see a space, reset the numCharsWithoutBreak count.
+          case 32:  // ' '
+            numCharsWithoutBreak = 0;
+            break;
+            // When we see a non-space, increment the numCharsWithoutBreak.
+          default:
+            ++numCharsWithoutBreak;
+            break;
+          }
+        }
+      }
+
+      // Flush the remaining chars at the end of the string.
+      resultArr[resultArrLen++] = str.substring(flushIndex);
+
+      return resultArr.join('');
+    },
+    /**
+     * String inserted as a word break by insertWordBreaks(). Safari requires
+     * <wbr></wbr>, Opera needs the 'shy' entity, though this will give a
+     * visible hyphen at breaks. Other browsers just use <wbr>.
+     * @type {string}
+     * @private
+     */
+    WORD_BREAK: goog.userAgent.IS_WEBKIT
+        ? '<wbr></wbr>' : goog.userAgent.IS_OPERA ? '&shy;' : '<wbr>'
+  };
+}
+
+
+if (!goog.i18n) {
+  goog.i18n = {
+    /**
+     * Utility class for formatting text for display in a potentially
+     * opposite-directionality context without garbling. Provides the following
+     * functionality:
+     *
+     * @param {goog.i18n.bidi.Dir|number|boolean} contextDir The context
+     *     directionality as a number
+     *     (positive = LRT, negative = RTL, 0 = unknown).
+     * @constructor
+     */
+    BidiFormatter: function (dir) {
+      this.dir_ = dir;
+    },
+    bidi: {
+      /**
+       * Check the directionality of a piece of text, return true if the piece
+       * of text should be laid out in RTL direction.
+       * @param {string} text The piece of text that need to be detected.
+       * @param {boolean=} opt_isHtml Whether {@code text} is HTML/HTML-escaped.
+       *     Default: false.
+       * @return {boolean}
+       * @private
+       */
+      detectRtlDirectionality: function(text, opt_isHtml) {
+        text = soyshim.$$bidiStripHtmlIfNecessary_(text, opt_isHtml);
+        return soyshim.$$bidiRtlWordRatio_(text)
+            > soyshim.$$bidiRtlDetectionThreshold_;
+      }
+    }
+  };
+}
 
 
 /**
- * Utility class to facilitate much faster string concatenation in IE,
- * using Array.join() rather than the '+' operator.  For other browsers
- * we simply use the '+' operator.
+ * Returns "dir=ltr" or "dir=rtl", depending on {@code text}'s estimated
+ * directionality, if it is not the same as the context directionality.
+ * Otherwise, returns the empty string.
  *
- * @param {Object|number|string|boolean=} opt_a1 Optional first initial item
- *     to append.
- * @param {...Object|number|string|boolean} var_args Other initial items to
- *     append, e.g., new soy.StringBuilder('foo', 'bar').
- * @constructor
+ * @param {string} text Text whose directionality is to be estimated.
+ * @param {boolean=} opt_isHtml Whether {@code text} is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR
+ *     text in non-LTR context; else, the empty string.
  */
-soy.StringBuilder = function(opt_a1, var_args) {
+goog.i18n.BidiFormatter.prototype.dirAttr = function (text, opt_isHtml) {
+  var dir = soy.$$bidiTextDir(text, opt_isHtml);
+  return dir && dir != this.dir_ ? dir < 0 ? 'dir=rtl' : 'dir=ltr' : '';
+};
 
+/**
+ * Returns the trailing horizontal edge, i.e. "right" or "left", depending on
+ * the global bidi directionality.
+ * @return {string} "left" for RTL context and "right" otherwise.
+ */
+goog.i18n.BidiFormatter.prototype.endEdge = function () {
+  return this.dir_ < 0 ? 'left' : 'right';
+};
+
+/**
+ * Returns the Unicode BiDi mark matching the context directionality (LRM for
+ * LTR context directionality, RLM for RTL context directionality), or the
+ * empty string for neutral / unknown context directionality.
+ *
+ * @return {string} LRM for LTR context directionality and RLM for RTL context
+ *     directionality.
+ */
+goog.i18n.BidiFormatter.prototype.mark = function () {
+  return (
+      (this.dir_ > 0) ? '\u200E' /*LRM*/ :
+      (this.dir_ < 0) ? '\u200F' /*RLM*/ :
+      '');
+};
+
+/**
+ * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
+ * if the directionality or the exit directionality of {@code text} are opposite
+ * to the context directionality. Otherwise returns the empty string.
+ *
+ * @param {string} text The input text.
+ * @param {boolean=} opt_isHtml Whether {@code text} is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching the global directionality or
+ *     the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.markAfter = function (text, opt_isHtml) {
+  var dir = soy.$$bidiTextDir(text, opt_isHtml);
+  return soyshim.$$bidiMarkAfterKnownDir_(this.dir_, dir, text, opt_isHtml);
+};
+
+/**
+ * Formats a string of unknown directionality for use in HTML output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ *
+ * @param {string} str The input text.
+ * @return {string} Input text after applying the above processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrap = function(str) {
+  str = String(str);
+  var textDir = soy.$$bidiTextDir(str, true);
+  var reset = soyshim.$$bidiMarkAfterKnownDir_(this.dir_, textDir, str, true);
+  if (textDir > 0 && this.dir_ <= 0) {
+    str = '<span dir=ltr>' + str + '</span>';
+  } else if (textDir < 0 && this.dir_ >= 0) {
+    str = '<span dir=rtl>' + str + '</span>';
+  }
+  return str + reset;
+};
+
+/**
+ * Returns the leading horizontal edge, i.e. "left" or "right", depending on
+ * the global bidi directionality.
+ * @return {string} "right" for RTL context and "left" otherwise.
+ */
+goog.i18n.BidiFormatter.prototype.startEdge = function () {
+  return this.dir_ < 0 ? 'right' : 'left';
+};
+
+/**
+ * Formats a string of unknown directionality for use in plain-text output of
+ * the context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * As opposed to {@link #spanWrap}, this makes use of unicode BiDi formatting
+ * characters. In HTML, its *only* valid use is inside of elements that do not
+ * allow mark-up, e.g. an 'option' tag.
+ *
+ * @param {string} str The input text.
+ * @return {string} Input text after applying the above processing.
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrap = function(str) {
+  str = String(str);
+  var textDir = soy.$$bidiTextDir(str, true);
+  var reset = soyshim.$$bidiMarkAfterKnownDir_(this.dir_, textDir, str, true);
+  if (textDir > 0 && this.dir_ <= 0) {
+    str = '\u202A' + str + '\u202C';
+  } else if (textDir < 0 && this.dir_ >= 0) {
+    str = '\u202B' + str + '\u202C';
+  }
+  return str + reset;
+};
+
+
+goog.string = {
   /**
-   * Internal buffer for the string to be concatenated.
-   * @type {string|Array}
+   * Utility class to facilitate much faster string concatenation in IE,
+   * using Array.join() rather than the '+' operator.  For other browsers
+   * we simply use the '+' operator.
+   *
+   * @param {Object|number|string|boolean=} opt_a1 Optional first initial item
+   *     to append.
+   * @param {...Object|number|string|boolean} var_args Other initial items to
+   *     append, e.g., new goog.string.StringBuffer('foo', 'bar').
+   * @constructor
+   */
+  StringBuffer: function(opt_a1, var_args) {
+
+    /**
+     * Internal buffer for the string to be concatenated.
+     * @type {string|Array}
+     * @private
+     */
+    this.buffer_ = goog.userAgent.HAS_JSCRIPT ? [] : '';
+
+    if (opt_a1 != null) {
+      this.append.apply(this, arguments);
+    }
+  },
+  /**
+   * Converts \r\n, \r, and \n to <br>s
+   * @param {*} str The string in which to convert newlines.
+   * @return {string} A copy of {@code str} with converted newlines.
+   */
+  newlineToBr: function(str) {
+
+    str = String(str);
+
+    // This quick test helps in the case when there are no chars to replace,
+    // in the worst case this makes barely a difference to the time taken.
+    if (!goog.string.NEWLINE_TO_BR_RE_.test(str)) {
+      return str;
+    }
+
+    return str.replace(/(\r\n|\r|\n)/g, '<br>');
+  },
+  urlEncode: encodeURIComponent,
+  /**
+   * Regular expression used within newlineToBr().
+   * @type {RegExp}
    * @private
    */
-  this.buffer_ = soy.$$IS_IE_ ? [] : '';
-
-  if (opt_a1 != null) {
-    this.append.apply(this, arguments);
-  }
+  NEWLINE_TO_BR_RE: /[\r\n]/
 };
 
 
@@ -103,8 +408,7 @@ soy.StringBuilder = function(opt_a1, var_args) {
  * @type {number}
  * @private
  */
-soy.StringBuilder.prototype.bufferLength_ = 0;
-
+goog.string.StringBuffer.prototype.bufferLength_ = 0;
 
 /**
  * Appends one or more items to the string.
@@ -115,11 +419,11 @@ soy.StringBuilder.prototype.bufferLength_ = 0;
  * @param {Object|number|string|boolean=} opt_a2 Optional second string.
  * @param {...Object|number|string|boolean} var_args Other items to append,
  *     e.g., sb.append('foo', 'bar', 'baz').
- * @return {soy.StringBuilder} This same StringBuilder object.
+ * @return {goog.string.StringBuffer} This same StringBuilder object.
  */
-soy.StringBuilder.prototype.append = function(a1, opt_a2, var_args) {
+goog.string.StringBuffer.prototype.append = function(a1, opt_a2, var_args) {
 
-  if (soy.$$IS_IE_) {
+  if (goog.userAgent.HAS_JSCRIPT) {
     if (opt_a2 == null) {  // no second argument (note: undefined == null)
       // Array assignment is 2x faster than Array push.  Also, use a1
       // directly to avoid arguments instantiation, another 2x improvement.
@@ -148,9 +452,9 @@ soy.StringBuilder.prototype.append = function(a1, opt_a2, var_args) {
 /**
  * Clears the string.
  */
-soy.StringBuilder.prototype.clear = function() {
+goog.string.StringBuffer.prototype.clear = function() {
 
-  if (soy.$$IS_IE_) {
+  if (goog.userAgent.HAS_JSCRIPT) {
      this.buffer_.length = 0;  // reuse array to avoid creating new object
      this.bufferLength_ = 0;
 
@@ -165,9 +469,9 @@ soy.StringBuilder.prototype.clear = function() {
  *
  * @return {string} The concatenated string.
  */
-soy.StringBuilder.prototype.toString = function() {
+goog.string.StringBuffer.prototype.toString = function() {
 
-  if (soy.$$IS_IE_) {
+  if (goog.userAgent.HAS_JSCRIPT) {
     var str = this.buffer_.join('');
     // Given a string with the entire contents, simplify the StringBuilder by
     // setting its contents to only be this string, rather than many fragments.
@@ -183,82 +487,68 @@ soy.StringBuilder.prototype.toString = function() {
 };
 
 
-// -----------------------------------------------------------------------------
-// Public utilities.
-
-
-/**
- * Immutable object that is passed into templates that are rendered
- * without any data.
- *
- * @type {Object}
- * @private
- */
-soy.$$DEFAULT_TEMPLATE_DATA_ = {};
-
-
-/**
- * Helper function to render a Soy template and then set the output string as
- * the innerHTML of an element. It is recommended to use this helper function
- * instead of directly setting innerHTML in your hand-written code, so that it
- * will be easier to audit the code for cross-site scripting vulnerabilities.
- *
- * @param {Element} element The element whose content we are rendering.
- * @param {Function} template The Soy template defining the element's content.
- * @param {Object=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- */
-soy.renderElement = function(
-    element, template, opt_templateData, opt_injectedData) {
-  element.innerHTML = template(
-      opt_templateData || soy.$$DEFAULT_TEMPLATE_DATA_, undefined,
-      opt_injectedData);
+if (!goog.soy) goog.soy = {
+  /**
+   * Helper function to render a Soy template and then set the
+   * output string as the innerHTML of an element. It is recommended
+   * to use this helper function instead of directly setting
+   * innerHTML in your hand-written code, so that it will be easier
+   * to audit the code for cross-site scripting vulnerabilities.
+   *
+   * @param {Element} element The element whose content we are rendering.
+   * @param {Function} template The Soy template defining element's content.
+   * @param {Object=} opt_templateData The data for the template.
+   * @param {Object=} opt_injectedData The injected data for the template.
+   */
+  renderAsElement: function(
+    template, opt_templateData, opt_injectedData, opt_document) {
+    return /** @type {!Element} */ (soyshim.$$renderWithWrapper_(
+        template, opt_templateData, opt_document, true /* asElement */,
+        opt_injectedData));
+  },
+  /**
+   * Helper function to render a Soy template into a single node or
+   * a document fragment. If the rendered HTML string represents a
+   * single node, then that node is returned (note that this is
+   * *not* a fragment, despite them name of the method). Otherwise a
+   * document fragment is returned containing the rendered nodes.
+   *
+   * @param {Function} template The Soy template defining element's content.
+   * @param {Object=} opt_templateData The data for the template.
+   * @param {Document=} opt_document The document used to create DOM nodes.
+   *     If not specified, global document object is used.
+   * @param {Object=} opt_injectedData The injected data for the template.
+   * @return {!Node} The resulting node or document fragment.
+   */
+  renderAsFragment: function(
+    template, opt_templateData, opt_injectedData, opt_document) {
+    return soyshim.$$renderWithWrapper_(
+        template, opt_templateData, opt_document, false /* asElement */,
+        opt_injectedData);
+  },
+  /**
+   * Helper function to render a Soy template and then set the output string as
+   * the innerHTML of an element. It is recommended to use this helper function
+   * instead of directly setting innerHTML in your hand-written code, so that it
+   * will be easier to audit the code for cross-site scripting vulnerabilities.
+   *
+   * NOTE: New code should consider using goog.soy.renderElement instead.
+   *
+   * @param {Element} element The element whose content we are rendering.
+   * @param {Function} template The Soy template defining the element's content.
+   * @param {Object=} opt_templateData The data for the template.
+   * @param {Object=} opt_injectedData The injected data for the template.
+   */
+  renderElement: function(
+      element, template, opt_templateData, opt_injectedData) {
+    element.innerHTML = template(opt_templateData, null, opt_injectedData);
+  }
 };
 
 
-/**
- * Helper function to render a Soy template into a single node or a document
- * fragment. If the rendered HTML string represents a single node, then that
- * node is returned (note that this is *not* a fragment, despite them name of
- * the method). Otherwise a document fragment is returned containing the
- * rendered nodes.
- *
- * @param {Function} template The Soy template defining the element's content.
- * @param {Object=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @return {!Node} The resulting node or document fragment.
- */
-soy.renderAsFragment = function(
-    template, opt_templateData, opt_document, opt_injectedData) {
-  return soy.$$renderWithWrapper_(
-      template, opt_templateData, opt_document, false /* asElement */,
-      opt_injectedData);
-};
-
-
-/**
- * Helper function to render a Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * @param {Function} template The Soy template defining the element's content.
- * @param {Object=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- */
-soy.renderAsElement = function(
-    template, opt_templateData, opt_document, opt_injectedData) {
-  return /** @type {!Element} */ (soy.$$renderWithWrapper_(
-      template, opt_templateData, opt_document, true /* asElement */,
-      opt_injectedData));
-};
-
-
+var soy = { esc: {} };
+var soydata = {};
+var soyshim = {};
 /**
  * Helper function to render a Soy template into a single node or a document
  * fragment. If the rendered HTML string represents a single node, then that
@@ -267,23 +557,23 @@ soy.renderAsElement = function(
  *
  * @param {Function} template The Soy template defining the element's content.
  * @param {Object=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
+ * @param {Document=} opt_document The document used to create DOM nodes. If
+ *     not specified, global document object is used.
  * @param {boolean=} opt_asElement Whether to wrap the fragment in an
- *     element if the template does not render a single element. If true, result
- *     is always an Element.
+ *     element if the template does not render a single element. If true,
+ *     result is always an Element.
  * @param {Object=} opt_injectedData The injected data for the template.
  * @return {!Node} The resulting node or document fragment.
  * @private
  */
-soy.$$renderWithWrapper_ = function(
+soyshim.$$renderWithWrapper_ = function(
     template, opt_templateData, opt_document, opt_asElement, opt_injectedData) {
 
   var doc = opt_document || document;
   var wrapper = doc.createElement('div');
   wrapper.innerHTML = template(
-      opt_templateData || soy.$$DEFAULT_TEMPLATE_DATA_, undefined,
-      opt_injectedData);
+    opt_templateData || soyshim.$$DEFAULT_TEMPLATE_DATA_, undefined,
+    opt_injectedData);
 
   // If the template renders as a single element, return it.
   if (wrapper.childNodes.length == 1) {
@@ -304,6 +594,440 @@ soy.$$renderWithWrapper_ = function(
     fragment.appendChild(wrapper.firstChild);
   }
   return fragment;
+};
+
+
+/**
+ * Returns a Unicode BiDi mark matching bidiGlobalDir (LRM or RLM) if the
+ * directionality or the exit directionality of text are opposite to
+ * bidiGlobalDir. Otherwise returns the empty string.
+ * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
+ * in text, making the logic suitable for HTML and HTML-escaped text.
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @param {number} dir text's directionality: 1 if ltr, -1 if rtl, 0 if unknown.
+ * @param {string} text The text whose directionality is to be estimated.
+ * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching bidiGlobalDir, or
+ *     the empty string when text's overall and exit directionalities both match
+ *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
+ * @private
+ */
+soyshim.$$bidiMarkAfterKnownDir_ = function(
+    bidiGlobalDir, dir, text, opt_isHtml) {
+  return (
+      bidiGlobalDir > 0 && (dir < 0 ||
+          soyshim.$$bidiIsRtlExitText_(text, opt_isHtml)) ? '\u200E' : // LRM
+      bidiGlobalDir < 0 && (dir > 0 ||
+          soyshim.$$bidiIsLtrExitText_(text, opt_isHtml)) ? '\u200F' : // RLM
+      '');
+};
+
+
+/**
+ * Strips str of any HTML mark-up and escapes. Imprecise in several ways, but
+ * precision is not very important, since the result is only meant to be used
+ * for directionality detection.
+ * @param {string} str The string to be stripped.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} The stripped string.
+ * @private
+ */
+soyshim.$$bidiStripHtmlIfNecessary_ = function(str, opt_isHtml) {
+  return opt_isHtml ? str.replace(soyshim.$$BIDI_HTML_SKIP_RE_, ' ') : str;
+};
+
+
+/**
+ * Simplified regular expression for am HTML tag (opening or closing) or an HTML
+ * escape - the things we want to skip over in order to ignore their ltr
+ * characters.
+ * @type {RegExp}
+ * @private
+ */
+soyshim.$$BIDI_HTML_SKIP_RE_ = /<[^>]*>|&[^;]+;/g;
+
+
+/**
+ * A practical pattern to identify strong LTR character. This pattern is not
+ * theoretically correct according to unicode standard. It is simplified for
+ * performance and small code size.
+ * @type {string}
+ * @private
+ */
+soyshim.$$bidiLtrChars_ =
+    'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' +
+    '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF';
+
+
+/**
+ * A practical pattern to identify strong neutral and weak character. This
+ * pattern is not theoretically correct according to unicode standard. It is
+ * simplified for performance and small code size.
+ * @type {string}
+ * @private
+ */
+soyshim.$$bidiNeutralChars_ =
+    '\u0000-\u0020!-@[-`{-\u00BF\u00D7\u00F7\u02B9-\u02FF\u2000-\u2BFF';
+
+
+/**
+ * A practical pattern to identify strong RTL character. This pattern is not
+ * theoretically correct according to unicode standard. It is simplified for
+ * performance and small code size.
+ * @type {string}
+ * @private
+ */
+soyshim.$$bidiRtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC';
+
+
+/**
+ * Regular expressions to check if a piece of text is of RTL directionality
+ * on first character with strong directionality.
+ * @type {RegExp}
+ * @private
+ */
+soyshim.$$bidiRtlDirCheckRe_ = new RegExp(
+    '^[^' + soyshim.$$bidiLtrChars_ + ']*[' + soyshim.$$bidiRtlChars_ + ']');
+
+
+/**
+ * Regular expressions to check if a piece of text is of neutral directionality.
+ * Url are considered as neutral.
+ * @type {RegExp}
+ * @private
+ */
+soyshim.$$bidiNeutralDirCheckRe_ = new RegExp(
+    '^[' + soyshim.$$bidiNeutralChars_ + ']*$|^http://');
+
+
+/**
+ * Check the directionality of the a piece of text based on the first character
+ * with strong directionality.
+ * @param {string} str string being checked.
+ * @return {boolean} return true if rtl directionality is being detected.
+ * @private
+ */
+soyshim.$$bidiIsRtlText_ = function(str) {
+  return soyshim.$$bidiRtlDirCheckRe_.test(str);
+};
+
+
+/**
+ * Check the directionality of the a piece of text based on the first character
+ * with strong directionality.
+ * @param {string} str string being checked.
+ * @return {boolean} true if all characters have neutral directionality.
+ * @private
+ */
+soyshim.$$bidiIsNeutralText_ = function(str) {
+  return soyshim.$$bidiNeutralDirCheckRe_.test(str);
+};
+
+
+/**
+ * This constant controls threshold of rtl directionality.
+ * @type {number}
+ * @private
+ */
+soyshim.$$bidiRtlDetectionThreshold_ = 0.40;
+
+
+/**
+ * Returns the RTL ratio based on word count.
+ * @param {string} str the string that need to be checked.
+ * @return {number} the ratio of RTL words among all words with directionality.
+ * @private
+ */
+soyshim.$$bidiRtlWordRatio_ = function(str) {
+  var rtlCount = 0;
+  var totalCount = 0;
+  var tokens = str.split(' ');
+  for (var i = 0; i < tokens.length; i++) {
+    if (soyshim.$$bidiIsRtlText_(tokens[i])) {
+      rtlCount++;
+      totalCount++;
+    } else if (!soyshim.$$bidiIsNeutralText_(tokens[i])) {
+      totalCount++;
+    }
+  }
+
+  return totalCount == 0 ? 0 : rtlCount / totalCount;
+};
+
+
+/**
+ * Regular expressions to check if the last strongly-directional character in a
+ * piece of text is LTR.
+ * @type {RegExp}
+ * @private
+ */
+soyshim.$$bidiLtrExitDirCheckRe_ = new RegExp(
+    '[' + soyshim.$$bidiLtrChars_ + '][^' + soyshim.$$bidiRtlChars_ + ']*$');
+
+
+/**
+ * Regular expressions to check if the last strongly-directional character in a
+ * piece of text is RTL.
+ * @type {RegExp}
+ * @private
+ */
+soyshim.$$bidiRtlExitDirCheckRe_ = new RegExp(
+    '[' + soyshim.$$bidiRtlChars_ + '][^' + soyshim.$$bidiLtrChars_ + ']*$');
+
+
+/**
+ * Check if the exit directionality a piece of text is LTR, i.e. if the last
+ * strongly-directional character in the string is LTR.
+ * @param {string} str string being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR exit directionality was detected.
+ * @private
+ */
+soyshim.$$bidiIsLtrExitText_ = function(str, opt_isHtml) {
+  str = soyshim.$$bidiStripHtmlIfNecessary_(str, opt_isHtml);
+  return soyshim.$$bidiLtrExitDirCheckRe_.test(str);
+};
+
+
+/**
+ * Check if the exit directionality a piece of text is RTL, i.e. if the last
+ * strongly-directional character in the string is RTL.
+ * @param {string} str string being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL exit directionality was detected.
+ * @private
+ */
+soyshim.$$bidiIsRtlExitText_ = function(str, opt_isHtml) {
+  str = soyshim.$$bidiStripHtmlIfNecessary_(str, opt_isHtml);
+  return soyshim.$$bidiRtlExitDirCheckRe_.test(str);
+};
+
+
+// =============================================================================
+// COPIED FROM soyutils_usegoog.js
+
+
+// -----------------------------------------------------------------------------
+// StringBuilder (compatible with the 'stringbuilder' code style).
+
+
+/**
+ * Utility class to facilitate much faster string concatenation in IE,
+ * using Array.join() rather than the '+' operator.  For other browsers
+ * we simply use the '+' operator.
+ *
+ * @param {Object} var_args Initial items to append,
+ *     e.g., new soy.StringBuilder('foo', 'bar').
+ * @constructor
+ */
+soy.StringBuilder = goog.string.StringBuffer;
+
+
+// -----------------------------------------------------------------------------
+// soydata: Defines typed strings, e.g. an HTML string {@code "a<b>c"} is
+// semantically distinct from the plain text string {@code "a<b>c"} and smart
+// templates can take that distinction into account.
+
+/**
+ * A type of textual content.
+ * @enum {number}
+ */
+soydata.SanitizedContentKind = {
+
+  /**
+   * A snippet of HTML that does not start or end inside a tag, comment, entity,
+   * or DOCTYPE; and that does not contain any executable code
+   * (JS, {@code <object>}s, etc.) from a different trust domain.
+   */
+  HTML: 0,
+
+  /**
+   * A sequence of code units that can appear between quotes (either kind) in a
+   * JS program without causing a parse error, and without causing any side
+   * effects.
+   * <p>
+   * The content should not contain unescaped quotes, newlines, or anything else
+   * that would cause parsing to fail or to cause a JS parser to finish the
+   * string its parsing inside the content.
+   * <p>
+   * The content must also not end inside an escape sequence ; no partial octal
+   * escape sequences or odd number of '{@code \}'s at the end.
+   */
+  JS_STR_CHARS: 1,
+
+  /** A properly encoded portion of a URI. */
+  URI: 2,
+
+  /** An attribute name and value such as {@code dir="ltr"}. */
+  HTML_ATTRIBUTE: 3
+};
+
+
+/**
+ * A string-like object that carries a content-type.
+ * @param {string} content
+ * @constructor
+ * @private
+ */
+soydata.SanitizedContent = function(content) {
+  /**
+   * The textual content.
+   * @type {string}
+   */
+  this.content = content;
+};
+
+/** @type {soydata.SanitizedContentKind} */
+soydata.SanitizedContent.prototype.contentKind;
+
+/** @override */
+soydata.SanitizedContent.prototype.toString = function() {
+  return this.content;
+};
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.HTML}.
+ * @param {string} content A string of HTML that can safely be embedded in
+ *     a PCDATA context in your app.  If you would be surprised to find that an
+ *     HTML sanitizer produced {@code s} (e.g. it runs code or fetches bad URLs)
+ *     and you wouldn't write a template that produces {@code s} on security or
+ *     privacy grounds, then don't pass {@code s} here.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedHtml = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedHtml, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedHtml.prototype.contentKind = soydata.SanitizedContentKind.HTML;
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.JS_STR_CHARS}.
+ * @param {string} content A string of JS that when evaled, produces a
+ *     value that does not depend on any sensitive data and has no side effects
+ *     <b>OR</b> a string of JS that does not reference any variables or have
+ *     any side effects not known statically to the app authors.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedJsStrChars = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedJsStrChars, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedJsStrChars.prototype.contentKind =
+    soydata.SanitizedContentKind.JS_STR_CHARS;
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.URI}.
+ * @param {string} content A chunk of URI that the caller knows is safe to
+ *     emit in a template.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedUri = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedUri, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedUri.prototype.contentKind = soydata.SanitizedContentKind.URI;
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.HTML_ATTRIBUTE}.
+ * @param {string} content An attribute name and value, such as
+ *     {@code dir="ltr"}.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedHtmlAttribute = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedHtmlAttribute, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedHtmlAttribute.prototype.contentKind =
+    soydata.SanitizedContentKind.HTML_ATTRIBUTE;
+
+
+// -----------------------------------------------------------------------------
+// Public utilities.
+
+
+/**
+ * Helper function to render a Soy template and then set the output string as
+ * the innerHTML of an element. It is recommended to use this helper function
+ * instead of directly setting innerHTML in your hand-written code, so that it
+ * will be easier to audit the code for cross-site scripting vulnerabilities.
+ *
+ * NOTE: New code should consider using goog.soy.renderElement instead.
+ *
+ * @param {Element} element The element whose content we are rendering.
+ * @param {Function} template The Soy template defining the element's content.
+ * @param {Object=} opt_templateData The data for the template.
+ * @param {Object=} opt_injectedData The injected data for the template.
+ */
+soy.renderElement = goog.soy.renderElement;
+
+
+/**
+ * Helper function to render a Soy template into a single node or a document
+ * fragment. If the rendered HTML string represents a single node, then that
+ * node is returned (note that this is *not* a fragment, despite them name of
+ * the method). Otherwise a document fragment is returned containing the
+ * rendered nodes.
+ *
+ * NOTE: New code should consider using goog.soy.renderAsFragment
+ * instead (note that the arguments are different).
+ *
+ * @param {Function} template The Soy template defining the element's content.
+ * @param {Object=} opt_templateData The data for the template.
+ * @param {Document=} opt_document The document used to create DOM nodes. If not
+ *     specified, global document object is used.
+ * @param {Object=} opt_injectedData The injected data for the template.
+ * @return {!Node} The resulting node or document fragment.
+ */
+soy.renderAsFragment = function(
+    template, opt_templateData, opt_document, opt_injectedData) {
+  return goog.soy.renderAsFragment(
+      template, opt_templateData, opt_injectedData,
+      new goog.dom.DomHelper(opt_document));
+};
+
+
+/**
+ * Helper function to render a Soy template into a single node. If the rendered
+ * HTML string represents a single node, then that node is returned. Otherwise,
+ * a DIV element is returned containing the rendered nodes.
+ *
+ * NOTE: New code should consider using goog.soy.renderAsElement
+ * instead (note that the arguments are different).
+ *
+ * @param {Function} template The Soy template defining the element's content.
+ * @param {Object=} opt_templateData The data for the template.
+ * @param {Document=} opt_document The document used to create DOM nodes. If not
+ *     specified, global document object is used.
+ * @param {Object=} opt_injectedData The injected data for the template.
+ * @return {!Element} Rendered template contents, wrapped in a parent DIV
+ *     element if necessary.
+ */
+soy.renderAsElement = function(
+    template, opt_templateData, opt_document, opt_injectedData) {
+  return goog.soy.renderAsElement(
+      template, opt_templateData, opt_injectedData,
+      new goog.dom.DomHelper(opt_document));
 };
 
 
@@ -450,42 +1174,6 @@ soy.$$getDelegateFn = function(delTemplateId) {
 soy.$$EMPTY_TEMPLATE_FN_ = function(opt_data, opt_sb, opt_ijData) {
   return '';
 };
-
-
-/**
- * Used for temporary fix. See GenJsCodeVisitor.java.
- * TODO: Remove when i18n plurals team provides a better # processing option.
- * @param {string} str The string to escape.
- * @return {string} The escaped string.
- */
-soy.$$tempHashEscape = function(str) {
-  return str.replace(soy.$$HASH_RE_, '__HashLit__');
-};
-
-/**
- * Used by soy.$$tempHashEscape().
- * @type {RegExp}
- * @private
- */
-soy.$$HASH_RE_ = /#/g;
-
-
-/**
- * Used for temporary fix. See GenJsCodeVisitor.java.
- * TODO: Remove when i18n plurals team provides a better # processing option.
- * @param {string} str The string to unescape.
- * @return {string} The unescaped string.
- */
-soy.$$tempHashUnescape = function(str) {
-  return str.replace(soy.$$HASH_ESCAPED_RE_, '#');
-};
-
-/**
- * Used by soy.$$tempHashUnescape().
- * @type {RegExp}
- * @private
- */
-soy.$$HASH_ESCAPED_RE_ = /__HashLit__/g;
 
 
 // -----------------------------------------------------------------------------
@@ -687,57 +1375,6 @@ soy.$$escapeJsRegex = function(value) {
 };
 
 
-/**	
- * Takes a character and returns the escaped string for that character. For	
- * example escapeChar(String.fromCharCode(15)) -> "\\x0E".	
- * @param {string} c The character to escape.	
- * @return {string} An escaped string representing {@code c}.	
- */	
-soy.$$escapeChar = function(c) {	
-  if (c in soy.$$escapeCharJs_) {	
-    return soy.$$escapeCharJs_[c];	
-  }	
-  var rv = c;	
-  var cc = c.charCodeAt(0);	
-  if (cc > 31 && cc < 127) {	
-    rv = c;	
-  } else {	
-    // tab is 9 but handled above	
-    if (cc < 256) {	
-      rv = '\\x';	
-      if (cc < 16 || cc > 256) {	
-        rv += '0';	
-      }	
-    } else {	
-      rv = '\\u';	
-      if (cc < 4096) { // \u1000	
-        rv += '0';	
-      }	
-    }	
-    rv += cc.toString(16).toUpperCase();	
-  }	
-	
-  return soy.$$escapeCharJs_[c] = rv;	
-};	
-	
-/**	
- * Character mappings used internally for soy.$$escapeJs	
- * @private	
- * @type {Object}	
- */	
-soy.$$escapeCharJs_ = {	
-  '\b': '\\b',	
-  '\f': '\\f',	
-  '\n': '\\n',	
-  '\r': '\\r',	
-  '\t': '\\t',	
-  '\x0B': '\\x0B', // '\v' is not supported in JScript	
-  '"': '\\"',	
-  '\'': '\\\'',	
-  '\\': '\\\\'	
-};	
-
-
 /**
  * Matches all URI mark characters that conflict with HTML attribute delimiters
  * or that cannot appear in a CSS uri.
@@ -848,24 +1485,8 @@ soy.$$filterCssValue = function(value) {
  * @return {string} A copy of {@code str} with converted newlines.
  */
 soy.$$changeNewlineToBr = function(str) {
-
-  str = String(str);
-
-  // This quick test helps in the case when there are no chars to replace, in
-  // the worst case this makes barely a difference to the time taken.
-  if (!soy.$$CHANGE_NEWLINE_TO_BR_RE_.test(str)) {
-    return str;
-  }
-
-  return str.replace(/(\r\n|\r|\n)/g, '<br>');
+  return goog.string.newLineToBr(String(str), false);
 };
-
-/**
- * Regular expression used within $$changeNewlineToBr().
- * @type {RegExp}
- * @private
- */
-soy.$$CHANGE_NEWLINE_TO_BR_RE_ = /[\r\n]/;
 
 
 /**
@@ -881,112 +1502,8 @@ soy.$$CHANGE_NEWLINE_TO_BR_RE_ = /[\r\n]/;
  * @return {string} The string including word breaks.
  */
 soy.$$insertWordBreaks = function(str, maxCharsBetweenWordBreaks) {
-
-  str = String(str);
-
-  var resultArr = [];
-  var resultArrLen = 0;
-
-  // These variables keep track of important state while looping through str.
-  var isInTag = false;  // whether we're inside an HTML tag
-  var isMaybeInEntity = false;  // whether we might be inside an HTML entity
-  var numCharsWithoutBreak = 0;  // number of characters since last word break
-  var flushIndex = 0;  // index of first char not yet flushed to resultArr
-
-  for (var i = 0, n = str.length; i < n; ++i) {
-    var charCode = str.charCodeAt(i);
-
-    // If hit maxCharsBetweenWordBreaks, and not space next, then add <wbr>.
-    if (numCharsWithoutBreak >= maxCharsBetweenWordBreaks &&
-        charCode != soy.$$CharCode_.SPACE) {
-      resultArr[resultArrLen++] = str.substring(flushIndex, i);
-      flushIndex = i;
-      resultArr[resultArrLen++] = soy.$$WORD_BREAK_;
-      numCharsWithoutBreak = 0;
-    }
-
-    if (isInTag) {
-      // If inside an HTML tag and we see '>', it's the end of the tag.
-      if (charCode == soy.$$CharCode_.GREATER_THAN) {
-        isInTag = false;
-      }
-
-    } else if (isMaybeInEntity) {
-      switch (charCode) {
-        // If maybe inside an entity and we see ';', it's the end of the entity.
-        // The entity that just ended counts as one char, so increment
-        // numCharsWithoutBreak.
-        case soy.$$CharCode_.SEMI_COLON:
-          isMaybeInEntity = false;
-          ++numCharsWithoutBreak;
-          break;
-        // If maybe inside an entity and we see '<', we weren't actually in an
-        // entity. But now we're inside and HTML tag.
-        case soy.$$CharCode_.LESS_THAN:
-          isMaybeInEntity = false;
-          isInTag = true;
-          break;
-        // If maybe inside an entity and we see ' ', we weren't actually in an
-        // entity. Just correct the state and reset the numCharsWithoutBreak
-        // since we just saw a space.
-        case soy.$$CharCode_.SPACE:
-          isMaybeInEntity = false;
-          numCharsWithoutBreak = 0;
-          break;
-      }
-
-    } else {  // !isInTag && !isInEntity
-      switch (charCode) {
-        // When not within a tag or an entity and we see '<', we're now inside
-        // an HTML tag.
-        case soy.$$CharCode_.LESS_THAN:
-          isInTag = true;
-          break;
-        // When not within a tag or an entity and we see '&', we might be inside
-        // an entity.
-        case soy.$$CharCode_.AMPERSAND:
-          isMaybeInEntity = true;
-          break;
-        // When we see a space, reset the numCharsWithoutBreak count.
-        case soy.$$CharCode_.SPACE:
-          numCharsWithoutBreak = 0;
-          break;
-        // When we see a non-space, increment the numCharsWithoutBreak.
-        default:
-          ++numCharsWithoutBreak;
-          break;
-      }
-    }
-  }
-
-  // Flush the remaining chars at the end of the string.
-  resultArr[resultArrLen++] = str.substring(flushIndex);
-
-  return resultArr.join('');
+  return goog.format.insertWordBreaks(String(str), maxCharsBetweenWordBreaks);
 };
-
-/**
- * Special characters used within $$insertWordBreaks().
- * @enum {number}
- * @private
- */
-soy.$$CharCode_ = {
-  SPACE: 32,  // ' '.charCodeAt(0)
-  AMPERSAND: 38,  // '&'.charCodeAt(0)
-  SEMI_COLON: 59,  // ';'.charCodeAt(0)
-  LESS_THAN: 60,  // '<'.charCodeAt(0)
-  GREATER_THAN: 62  // '>'.charCodeAt(0)
-};
-
-/**
- * String inserted as a word break by insertWordBreaks(). Safari requires
- * <wbr></wbr>, Opera needs the 'shy' entity, though this will give a visible
- * hyphen at breaks. Other browsers just use <wbr>.
- * @type {string}
- * @private
- */
-soy.$$WORD_BREAK_ =
-    soy.$$IS_WEBKIT_ ? '<wbr></wbr>' : soy.$$IS_OPERA_ ? '&shy;' : '<wbr>';
 
 
 /**
@@ -1061,26 +1578,25 @@ soy.$$isLowSurrogate_ = function(ch) {
 
 
 /**
- * Returns the leading horizontal edge, i.e. "left" or "right", depending on
- * bidiGlobalDir.
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @return {string} "right" for RTL context and "left" otherwise.
+ * Cache of bidi formatter by context directionality, so we don't keep on
+ * creating new objects.
+ * @type {!Object.<!goog.i18n.BidiFormatter>}
+ * @private
  */
-soy.$$bidiStartEdge = function(bidiGlobalDir) {
-  return bidiGlobalDir < 0 ? 'right' : 'left';
-};
+soy.$$bidiFormatterCache_ = {};
 
 
 /**
- * Returns the trailing horizontal edge, i.e. "right" or "left", depending on
- * bidiGlobalDir.
+ * Returns cached bidi formatter for bidiGlobalDir, or creates a new one.
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
- * @return {string} "left" for RTL context and "right" otherwise.
+ * @return {goog.i18n.BidiFormatter} A formatter for bidiGlobalDir.
+ * @private
  */
-soy.$$bidiEndEdge = function(bidiGlobalDir) {
-  return bidiGlobalDir < 0 ? 'left' : 'right';
+soy.$$getBidiFormatterInstance_ = function(bidiGlobalDir) {
+  return soy.$$bidiFormatterCache_[bidiGlobalDir] ||
+         (soy.$$bidiFormatterCache_[bidiGlobalDir] =
+             new goog.i18n.BidiFormatter(bidiGlobalDir));
 };
 
 
@@ -1094,11 +1610,10 @@ soy.$$bidiEndEdge = function(bidiGlobalDir) {
  * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
  */
 soy.$$bidiTextDir = function(text, opt_isHtml) {
-  text = soy.$$bidiStripHtmlIfNecessary_(text, opt_isHtml);
   if (!text) {
     return 0;
   }
-  return soy.$$bidiDetectRtlDirectionality_(text) ? -1 : 1;
+  return goog.i18n.bidi.detectRtlDirectionality(text, opt_isHtml) ? -1 : 1;
 };
 
 
@@ -1113,29 +1628,13 @@ soy.$$bidiTextDir = function(text, opt_isHtml) {
  * @param {string} text The text whose directionality is to be estimated.
  * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
- * @return {string} "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR
- *     text in non-LTR context; else, the empty string.
+ * @return {soydata.SanitizedHtmlAttribute} "dir=rtl" for RTL text in non-RTL
+ *     context; "dir=ltr" for LTR text in non-LTR context;
+ *     else, the empty string.
  */
 soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
-  var dir = soy.$$bidiTextDir(text, opt_isHtml);
   return new soydata.SanitizedHtmlAttribute(
-      dir && dir != bidiGlobalDir ? dir < 0 ? 'dir=rtl' : 'dir=ltr' : '');
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching bidiGlobalDir (LRM or RLM), or an empty
- * string if bidiGlobalDir is 0 (unknown).
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @return {string} A Unicode bidi mark matching bidiGlobalDir, or the empty
- *     string when bidiGlobalDir is 0 (unknown).
- */
-soy.$$bidiMark = function(bidiGlobalDir) {
-  return (
-      (bidiGlobalDir > 0) ? '\u200E' /*LRM*/ :
-      (bidiGlobalDir < 0) ? '\u200F' /*RLM*/ :
-      '');
+      soy.$$getBidiFormatterInstance_(bidiGlobalDir).dirAttr(text, opt_isHtml));
 };
 
 
@@ -1155,61 +1654,9 @@ soy.$$bidiMark = function(bidiGlobalDir) {
  *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
  */
 soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
-  var dir = soy.$$bidiTextDir(text, opt_isHtml);
-  return soy.$$bidiMarkAfterKnownDir_(bidiGlobalDir, dir, text, opt_isHtml);
+  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
+  return formatter.markAfter(text, opt_isHtml);
 };
-
-
-/**
- * Returns a Unicode BiDi mark matching bidiGlobalDir (LRM or RLM) if the
- * directionality or the exit directionality of text are opposite to
- * bidiGlobalDir. Otherwise returns the empty string.
- * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
- * in text, making the logic suitable for HTML and HTML-escaped text.
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @param {number} dir text's directionality: 1 if ltr, -1 if rtl, 0 if unknown.
- * @param {string} text The text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
- *     Default: false.
- * @return {string} A Unicode bidi mark matching bidiGlobalDir, or
- *     the empty string when text's overall and exit directionalities both match
- *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
- * @private
- */
-soy.$$bidiMarkAfterKnownDir_ = function(bidiGlobalDir, dir, text, opt_isHtml) {
-  return (
-      bidiGlobalDir > 0 && (dir < 0 ||
-          soy.$$bidiIsRtlExitText_(text, opt_isHtml)) ? '\u200E' : // LRM
-      bidiGlobalDir < 0 && (dir > 0 ||
-          soy.$$bidiIsLtrExitText_(text, opt_isHtml)) ? '\u200F' : // RLM
-      '');
-};
-
-
-/**
- * Strips str of any HTML mark-up and escapes. Imprecise in several ways, but
- * precision is not very important, since the result is only meant to be used
- * for directionality detection.
- * @param {string} str The string to be stripped.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} The stripped string.
- * @private
- */
-soy.$$bidiStripHtmlIfNecessary_ = function(str, opt_isHtml) {
-  return opt_isHtml ? str.replace(soy.$$BIDI_HTML_SKIP_RE_, ' ') : str;
-};
-
-
-/**
- * Simplified regular expression for am HTML tag (opening or closing) or an HTML
- * escape - the things we want to skip over in order to ignore their ltr
- * characters.
- * @type {RegExp}
- * @private
- */
-soy.$$BIDI_HTML_SKIP_RE_ = /<[^>]*>|&[^;]+;/g;
 
 
 /**
@@ -1225,15 +1672,8 @@ soy.$$BIDI_HTML_SKIP_RE_ = /<[^>]*>|&[^;]+;/g;
  * @return {string} The wrapped string.
  */
 soy.$$bidiSpanWrap = function(bidiGlobalDir, str) {
-  str = String(str);
-  var textDir = soy.$$bidiTextDir(str, true);
-  var reset = soy.$$bidiMarkAfterKnownDir_(bidiGlobalDir, textDir, str, true);
-  if (textDir > 0 && bidiGlobalDir <= 0) {
-    str = '<span dir=ltr>' + str + '</span>';
-  } else if (textDir < 0 && bidiGlobalDir >= 0) {
-    str = '<span dir=rtl>' + str + '</span>';
-  }
-  return str + reset;
+  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
+  return formatter.spanWrap(str + '', true);
 };
 
 
@@ -1251,186 +1691,8 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, str) {
  * @return {string} The wrapped string.
  */
 soy.$$bidiUnicodeWrap = function(bidiGlobalDir, str) {
-  str = String(str);
-  var textDir = soy.$$bidiTextDir(str, true);
-  var reset = soy.$$bidiMarkAfterKnownDir_(bidiGlobalDir, textDir, str, true);
-  if (textDir > 0 && bidiGlobalDir <= 0) {
-    str = '\u202A' + str + '\u202C';
-  } else if (textDir < 0 && bidiGlobalDir >= 0) {
-    str = '\u202B' + str + '\u202C';
-  }
-  return str + reset;
-};
-
-
-/**
- * A practical pattern to identify strong LTR character. This pattern is not
- * theoretically correct according to unicode standard. It is simplified for
- * performance and small code size.
- * @type {string}
- * @private
- */
-soy.$$bidiLtrChars_ =
-    'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' +
-    '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF';
-
-
-/**
- * A practical pattern to identify strong neutral and weak character. This
- * pattern is not theoretically correct according to unicode standard. It is
- * simplified for performance and small code size.
- * @type {string}
- * @private
- */
-soy.$$bidiNeutralChars_ =
-    '\u0000-\u0020!-@[-`{-\u00BF\u00D7\u00F7\u02B9-\u02FF\u2000-\u2BFF';
-
-
-/**
- * A practical pattern to identify strong RTL character. This pattern is not
- * theoretically correct according to unicode standard. It is simplified for
- * performance and small code size.
- * @type {string}
- * @private
- */
-soy.$$bidiRtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC';
-
-
-/**
- * Regular expressions to check if a piece of text is of RTL directionality
- * on first character with strong directionality.
- * @type {RegExp}
- * @private
- */
-soy.$$bidiRtlDirCheckRe_ = new RegExp(
-    '^[^' + soy.$$bidiLtrChars_ + ']*[' + soy.$$bidiRtlChars_ + ']');
-
-
-/**
- * Regular expressions to check if a piece of text is of neutral directionality.
- * Url are considered as neutral.
- * @type {RegExp}
- * @private
- */
-soy.$$bidiNeutralDirCheckRe_ = new RegExp(
-    '^[' + soy.$$bidiNeutralChars_ + ']*$|^http://');
-
-
-/**
- * Check the directionality of the a piece of text based on the first character
- * with strong directionality.
- * @param {string} str string being checked.
- * @return {boolean} return true if rtl directionality is being detected.
- * @private
- */
-soy.$$bidiIsRtlText_ = function(str) {
-  return soy.$$bidiRtlDirCheckRe_.test(str);
-};
-
-
-/**
- * Check the directionality of the a piece of text based on the first character
- * with strong directionality.
- * @param {string} str string being checked.
- * @return {boolean} true if all characters have neutral directionality.
- * @private
- */
-soy.$$bidiIsNeutralText_ = function(str) {
-  return soy.$$bidiNeutralDirCheckRe_.test(str);
-};
-
-
-/**
- * This constant controls threshold of rtl directionality.
- * @type {number}
- * @private
- */
-soy.$$bidiRtlDetectionThreshold_ = 0.40;
-
-
-/**
- * Returns the RTL ratio based on word count.
- * @param {string} str the string that need to be checked.
- * @return {number} the ratio of RTL words among all words with directionality.
- * @private
- */
-soy.$$bidiRtlWordRatio_ = function(str) {
-  var rtlCount = 0;
-  var totalCount = 0;
-  var tokens = str.split(' ');
-  for (var i = 0; i < tokens.length; i++) {
-    if (soy.$$bidiIsRtlText_(tokens[i])) {
-      rtlCount++;
-      totalCount++;
-    } else if (!soy.$$bidiIsNeutralText_(tokens[i])) {
-      totalCount++;
-    }
-  }
-
-  return totalCount == 0 ? 0 : rtlCount / totalCount;
-};
-
-
-/**
- * Check the directionality of a piece of text, return true if the piece of
- * text should be laid out in RTL direction.
- * @param {string} str The piece of text that need to be detected.
- * @return {boolean} true if this piece of text should be laid out in RTL.
- * @private
- */
-soy.$$bidiDetectRtlDirectionality_ = function(str) {
-  return soy.$$bidiRtlWordRatio_(str) >
-    soy.$$bidiRtlDetectionThreshold_;
-};
-
-
-/**
- * Regular expressions to check if the last strongly-directional character in a
- * piece of text is LTR.
- * @type {RegExp}
- * @private
- */
-soy.$$bidiLtrExitDirCheckRe_ = new RegExp(
-    '[' + soy.$$bidiLtrChars_ + '][^' + soy.$$bidiRtlChars_ + ']*$');
-
-
-/**
- * Regular expressions to check if the last strongly-directional character in a
- * piece of text is RTL.
- * @type {RegExp}
- * @private
- */
-soy.$$bidiRtlExitDirCheckRe_ = new RegExp(
-    '[' + soy.$$bidiRtlChars_ + '][^' + soy.$$bidiLtrChars_ + ']*$');
-
-
-/**
- * Check if the exit directionality a piece of text is LTR, i.e. if the last
- * strongly-directional character in the string is LTR.
- * @param {string} str string being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether LTR exit directionality was detected.
- * @private
- */
-soy.$$bidiIsLtrExitText_ = function(str, opt_isHtml) {
-  str = soy.$$bidiStripHtmlIfNecessary_(str, opt_isHtml);
-  return soy.$$bidiLtrExitDirCheckRe_.test(str);
-};
-
-
-/**
- * Check if the exit directionality a piece of text is RTL, i.e. if the last
- * strongly-directional character in the string is RTL.
- * @param {string} str string being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether RTL exit directionality was detected.
- * @private
- */
-soy.$$bidiIsRtlExitText_ = function(str, opt_isHtml) {
-  str = soy.$$bidiStripHtmlIfNecessary_(str, opt_isHtml);
-  return soy.$$bidiRtlExitDirCheckRe_.test(str);
+  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
+  return formatter.unicodeWrap(str + '', true);
 };
 
 
@@ -1444,7 +1706,7 @@ soy.$$bidiIsRtlExitText_ = function(str, opt_isHtml) {
  * @type {function (*) : string}
  */
 soy.esc.$$escapeUriHelper = function(v) {
-  return encodeURIComponent(String(v));
+  return goog.string.urlEncode(String(v));
 };
 
 /**
@@ -1841,6 +2103,7 @@ soy.esc.$$escapeCssStringHelper = function(value) {
 soy.esc.$$filterCssValueHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterCssValue', [str]);
     return 'zSoyz';
   }
   return str;
@@ -1866,6 +2129,7 @@ soy.esc.$$normalizeUriHelper = function(value) {
 soy.esc.$$filterNormalizeUriHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
     return 'zSoyz';
   }
   return str.replace(
@@ -1881,6 +2145,7 @@ soy.esc.$$filterNormalizeUriHelper = function(value) {
 soy.esc.$$filterHtmlAttributeHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTE_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterHtmlAttribute', [str]);
     return 'zSoyz';
   }
   return str;
@@ -1894,6 +2159,7 @@ soy.esc.$$filterHtmlAttributeHelper = function(value) {
 soy.esc.$$filterHtmlElementNameHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterHtmlElementName', [str]);
     return 'zSoyz';
   }
   return str;

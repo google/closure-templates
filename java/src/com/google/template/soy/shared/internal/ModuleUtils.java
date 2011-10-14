@@ -57,7 +57,7 @@ public class ModuleUtils {
       if (specificSoyFunctionType.isAssignableFrom(fn.getClass())) {
         String fnName = fn.getName();
 
-        if (seenFnNames.contains(fnName) || ImpureFunction.forFunctionName(fnName) != null) {
+        if (seenFnNames.contains(fnName) || NonpluginFunction.forFunctionName(fnName) != null) {
           throw new IllegalStateException(
               "Found two implementations of " + specificSoyFunctionType.getSimpleName() +
               " with the same function name '" + fnName + "'.");

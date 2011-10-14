@@ -64,7 +64,6 @@ import com.google.template.soy.exprtree.VarNode;
 import com.google.template.soy.internal.base.UnescapeUtils;
 
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.List;
 
 

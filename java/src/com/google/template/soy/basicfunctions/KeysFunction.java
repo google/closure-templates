@@ -29,6 +29,7 @@ import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
@@ -47,6 +48,7 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
+@SoyPureFunction
 class KeysFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, SoyJavaSrcFunction {
 
 

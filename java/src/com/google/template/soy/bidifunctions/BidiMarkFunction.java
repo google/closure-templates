@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
@@ -88,8 +89,8 @@ class BidiMarkFunction extends SoyAbstractTofuFunction
           Integer.MAX_VALUE);
     }
     return new JsExpr(
-        "((" + bidiGlobalDir.getCodeSnippet() + ") < 0 ? '\\u200F' : '\\u200E')",
-        Integer.MAX_VALUE);
+        "(" + bidiGlobalDir.getCodeSnippet() + ") < 0 ? '\\u200F' : '\\u200E'",
+        Operator.CONDITIONAL.getPrecedence());
   }
 
 

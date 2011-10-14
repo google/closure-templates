@@ -96,8 +96,9 @@ Compiler passes shared between multiple backends or between frontend and backend
 <TD>Visitor for asserting that all the nodes in a parse tree or subtree conform to Soy V2 syntax.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html" title="class in com.google.template.soy.sharedpasses">BuildNearestDependeeMapVisitor</A></B></TD>
-<TD>Visitor for building a map from each node to its nearest dependee.</TD>
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html" title="class in com.google.template.soy.sharedpasses">BuildAllDependeesMapVisitor</A></B></TD>
+<TD>Visitor for building a map from each node to its list of dependees (ordered by nearest dependee
+ first).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html" title="class in com.google.template.soy.sharedpasses">CheckSoyDocVisitor</A></B></TD>

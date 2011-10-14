@@ -25,7 +25,7 @@ import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.shared.internal.ImpureFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
@@ -106,7 +106,7 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
-   * Used to visit expr nodes to find impure functions and check their signatures.
+   * Used to visit expr nodes to find nonplugin functions and check their signatures.
    */
   private final class CheckFunctionCallsExprVisitor extends AbstractExprNodeVisitor<Void> {
 
@@ -137,16 +137,16 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
       String fnName = node.getFunctionName();
       int numArgs = node.numChildren();
 
-      ImpureFunction impureFn = ImpureFunction.forFunctionName(fnName);
-      if (impureFn != null) {
+      NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
+      if (nonpluginFn != null) {
         // Check arity.
-        if (numArgs != impureFn.getNumArgs()) {
+        if (numArgs != nonpluginFn.getNumArgs()) {
           throw new SoySyntaxException(
               "Function '" + fnName + "' called with the wrong number of arguments" +
               " (function call \"" + node.toSourceString() + "\").");
         }
         // Check argument types.
-        switch (impureFn) {
+        switch (nonpluginFn) {
           case INDEX:
           case IS_FIRST:
           case IS_LAST:
@@ -156,7 +156,7 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
             // No arguments to check.
             return;
         }
-        throw new AssertionError("Unrecognized impure fn " + impureFn);
+        throw new AssertionError("Unrecognized nonplugin fn " + nonpluginFn);
       } else {
         // Check pure functions.
         SoyFunction signature = soyFunctionsByName.get(fnName);

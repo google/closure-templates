@@ -3,7 +3,7 @@
 <HTML>
 <HEAD>
 <TITLE>
-BuildNearestDependeeMapVisitor (Soy Complete)
+BuildAllDependeesMapVisitor (Soy Complete)
 </TITLE>
 
 
@@ -13,7 +13,7 @@ BuildNearestDependeeMapVisitor (Soy Complete)
 function windowTitle()
 {
     if (location.href.indexOf('is-external=true') == -1) {
-        parent.document.title="BuildNearestDependeeMapVisitor (Soy Complete)";
+        parent.document.title="BuildAllDependeesMapVisitor (Soy Complete)";
     }
 }
 </SCRIPT>
@@ -55,8 +55,8 @@ function windowTitle()
 &nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html" title="class in com.google.template.soy.sharedpasses"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="BuildNearestDependeeMapVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+  <A HREF="../../../../../index.html?com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="BuildAllDependeesMapVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
 &nbsp;<SCRIPT type="text/javascript">
   <!--
   if(window==top) {
@@ -87,31 +87,31 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&n
 <FONT SIZE="-1">
 com.google.template.soy.sharedpasses</FONT>
 <BR>
-Class BuildNearestDependeeMapVisitor</H2>
+Class BuildAllDependeesMapVisitor</H2>
 <PRE>
 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
   <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,R&gt;
-      <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">com.google.template.soy.soytree.AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;
-          <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.sharedpasses.BuildNearestDependeeMapVisitor</B>
+      <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">com.google.template.soy.soytree.AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;
+          <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.sharedpasses.BuildAllDependeesMapVisitor</B>
 </PRE>
 <DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</DD>
+<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</DD>
 </DL>
 <HR>
 <DL>
-<DT><PRE>public class <B>BuildNearestDependeeMapVisitor</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</DL>
+<DT><PRE>public class <B>BuildAllDependeesMapVisitor</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</DL>
 </PRE>
 
 <P>
-Visitor for building a map from each node to its nearest dependee. The map built by this visitor
- is useful in optimization passes that move nodes within the tree. In the context of this pass,
- a dependee is a node that appears earlier in the depth-first traversal, and must remain in the
- same traversal relationship with the depender after any modifications to the tree, in order to
- preserve correctness.
+Visitor for building a map from each node to its list of dependees (ordered by nearest dependee
+ first). The map built by this visitor is useful in optimization passes that move nodes within the
+ tree. In the context of this pass, a dependee is a node that appears earlier in the depth-first
+ traversal, and must remain in the same traversal relationship with the depender after any
+ modifications to the tree, in order to preserve correctness.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
 
- <p> <A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#exec(com.google.template.soy.soytree.SoyNode)"><CODE>exec(com.google.template.soy.soytree.SoyNode)</CODE></A> must be called on a <code>TemplateNode</code> or an ancestor of a
+ <p> <A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#exec(com.google.template.soy.soytree.SoyNode)"><CODE>exec(com.google.template.soy.soytree.SoyNode)</CODE></A> must be called on a <code>TemplateNode</code> or an ancestor of a
  <code>TemplateNode</code>.
 
  <p> More specifically, a dependee may be an ancestor of the depender or an older sibling of
@@ -148,7 +148,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#BuildNearestDependeeMapVisitor()">BuildNearestDependeeMapVisitor</A></B>()</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#BuildAllDependeesMapVisitor()">BuildAllDependeesMapVisitor</A></B>()</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -165,8 +165,8 @@ Visitor for building a map from each node to its nearest dependee. The map built
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#exec(com.google.template.soy.soytree.SoyNode)">exec</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#exec(com.google.template.soy.soytree.SoyNode)">exec</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Executes the function defined by this visitor.</TD>
@@ -174,7 +174,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -182,7 +182,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -190,7 +190,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -198,7 +198,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -206,7 +206,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)">visitSoyNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)">visitSoyNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -214,7 +214,7 @@ Visitor for building a map from each node to its nearest dependee. The map built
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -260,10 +260,10 @@ Visitor for building a map from each node to its nearest dependee. The map built
 </TR>
 </TABLE>
 
-<A NAME="BuildNearestDependeeMapVisitor()"><!-- --></A><H3>
-BuildNearestDependeeMapVisitor</H3>
+<A NAME="BuildAllDependeesMapVisitor()"><!-- --></A><H3>
+BuildAllDependeesMapVisitor</H3>
 <PRE>
-public <B>BuildNearestDependeeMapVisitor</B>()</PRE>
+public <B>BuildAllDependeesMapVisitor</B>()</PRE>
 <DL>
 </DL>
 
@@ -280,13 +280,13 @@ public <B>BuildNearestDependeeMapVisitor</B>()</PRE>
 <A NAME="exec(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
 exec</H3>
 <PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt; <B>exec</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt; <B>exec</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html#exec(N)">NodeVisitor</A></CODE></B></DD>
 <DD>Executes the function defined by this visitor.
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html#exec(N)">exec</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE><DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)">exec</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html#exec(N)">exec</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE><DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)">exec</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>node</CODE> - The node to execute the function on.</DL>
@@ -300,7 +300,7 @@ visitSoyFileSetNode</H3>
 protected void <B>visitSoyFileSetNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 </DL>
@@ -314,7 +314,7 @@ visitSoyFileNode</H3>
 protected void <B>visitSoyFileNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 </DL>
@@ -328,7 +328,7 @@ visitTemplateNode</H3>
 protected void <B>visitTemplateNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 </DL>
@@ -342,7 +342,7 @@ visitGoogMsgNode</H3>
 protected void <B>visitGoogMsgNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 </DL>
@@ -356,7 +356,7 @@ visitLetNode</H3>
 protected void <B>visitLetNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 </DL>
@@ -370,7 +370,7 @@ visitSoyNode</H3>
 protected void <B>visitSoyNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)">visitSoyNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;</CODE></DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)">visitSoyNode</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;&gt;&gt;</CODE></DL>
 </DD>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>node</CODE> - the visited node.</DL>
@@ -409,8 +409,8 @@ protected void <B>visitSoyNode</B>(<A HREF="../../../../../com/google/template/s
 &nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html" title="class in com.google.template.soy.sharedpasses"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/sharedpasses/BuildNearestDependeeMapVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="BuildNearestDependeeMapVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+  <A HREF="../../../../../index.html?com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="BuildAllDependeesMapVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
 &nbsp;<SCRIPT type="text/javascript">
   <!--
   if(window==top) {

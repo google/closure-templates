@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
@@ -78,7 +79,10 @@ class BidiGlobalDirFunction extends SoyAbstractTofuFunction
 
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
 
-    return new JsExpr(bidiGlobalDirProvider.get().getCodeSnippet(), Integer.MAX_VALUE);
+    BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
+    return new JsExpr(
+        bidiGlobalDirProvider.get().getCodeSnippet(),
+        bidiGlobalDir.isStaticValue() ? Integer.MAX_VALUE : Operator.CONDITIONAL.getPrecedence());
   }
 
 

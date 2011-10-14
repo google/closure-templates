@@ -58,7 +58,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.shared.internal.ImpureFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 
 import java.util.Deque;
@@ -435,16 +435,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
     String fnName = node.getFunctionName();
     int numArgs = node.numChildren();
 
-    // Handle impure functions.
-    ImpureFunction impureFn = ImpureFunction.forFunctionName(fnName);
-    if (impureFn != null) {
+    // Handle nonplugin functions.
+    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
+    if (nonpluginFn != null) {
       // TODO: Pass to check num args at compile time.
-      if (numArgs != impureFn.getNumArgs()) {
+      if (numArgs != nonpluginFn.getNumArgs()) {
         throw new RenderException(
             "Function '" + fnName + "' called with the wrong number of arguments" +
             " (function call \"" + node.toSourceString() + "\").");
       }
-      switch (impureFn) {
+      switch (nonpluginFn) {
         case IS_FIRST:
           return visitIsFirstFunction(node);
         case IS_LAST:
@@ -458,7 +458,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
       }
     }
 
-    // Handle pure functions.
+    // Handle plugin functions.
     List<SoyData> args = visitChildren(node);
     return computeFunction(fnName, args, node);
   }
@@ -485,6 +485,21 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
     }
 
     // Arity has already been checked by CheckFunctionCallsVisitor.
+
+    return computeFunctionHelper(fn, args, fnNode);
+  }
+
+
+  /**
+   * Protected helper for {@code computeFunction}. This helper exists so that subclasses can
+   * override it.
+   * @param fn The function object.
+   * @param args The arguments to the function.
+   * @param fnNode The function node. Only used for error reporting.
+   * @return The result of the function called on the given arguments.
+   */
+  protected SoyData computeFunctionHelper(
+      SoyJavaRuntimeFunction fn, List<SoyData> args, FunctionNode fnNode) {
 
     try {
       return fn.compute(args);

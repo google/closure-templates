@@ -142,7 +142,7 @@ public interface SoyTofu {
      * will be converted to a {@code SoyMapData} object on each call. This may not be a big deal if
      * you only need to use the data object once. But if you need to reuse the same data object for
      * multiple calls, it's more efficient to build your own {@code SoyMapData} object and reuse it
-     * with {@link # setIjData (SoyMapData)}.
+     * with {@link #setIjData (SoyMapData)}.
      */
     public Renderer setIjData(Map<String, ?> ijData);
 

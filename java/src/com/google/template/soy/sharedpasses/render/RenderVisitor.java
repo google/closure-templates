@@ -462,7 +462,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           " arguments (tag " + printNode.toSourceString() + ").");
     }
 
-    return directive.apply(value, args);
+    try {
+      return directive.apply(value, args);
+
+    } catch (RuntimeException e) {
+      throw new RenderException(String.format(
+          "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
+          directiveName, printNode.toSourceString(), e.getMessage()));
+    }
   }
 
 

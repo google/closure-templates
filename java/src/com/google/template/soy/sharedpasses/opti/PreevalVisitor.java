@@ -20,11 +20,14 @@ import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -71,6 +74,17 @@ class PreevalVisitor extends EvalVisitor {
 
     // Otherwise, super method can handle it.
     return super.visitDataRefNode(node);
+  }
+
+
+  @Override protected SoyData computeFunctionHelper(
+      SoyJavaRuntimeFunction fn, List<SoyData> args, FunctionNode fnNode) {
+
+    if (! fn.getClass().isAnnotationPresent(SoyPureFunction.class)) {
+      throw new RenderException("Cannot prerender impure function.");
+    }
+
+    return super.computeFunctionHelper(fn, args, fnNode);
   }
 
 

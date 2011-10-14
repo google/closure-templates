@@ -49,29 +49,31 @@ public class SimpleUsage {
 
     // Example 1.
     writeExampleHeader();
-    System.out.println(tofu.render("soy.examples.simple.helloWorld", (SoyMapData) null, null));
+    System.out.println(tofu.newRenderer("soy.examples.simple.helloWorld").render());
 
     // Create a namespaced tofu object to make calls more concise.
     SoyTofu simpleTofu = tofu.forNamespace("soy.examples.simple");
 
     // Example 2.
     writeExampleHeader();
-    System.out.println(simpleTofu.render(".helloName", new SoyMapData("name", "Ana"), null));
+    System.out.println(simpleTofu.newRenderer(".helloName")
+        .setData(new SoyMapData("name", "Ana")).render());
 
     // Example 3.
     writeExampleHeader();
-    System.out.println(simpleTofu.render(
-        ".helloNames", new SoyMapData("names", new SoyListData("Bob", "Cid", "Dee")), null));
+    System.out.println(simpleTofu.newRenderer(".helloNames")
+        .setData(new SoyMapData("names", new SoyListData("Bob", "Cid", "Dee")))
+        .render());
   }
 
 
   /**
    * Private helper to write the header for each example.
-     */
-    private static void writeExampleHeader() {
-      numExamples++;
-      System.out.println("----------------------------------------------------------------");
-      System.out.println("[" + numExamples + "]");
-    }
+   */
+  private static void writeExampleHeader() {
+    numExamples++;
+    System.out.println("----------------------------------------------------------------");
+    System.out.println("[" + numExamples + "]");
+  }
 
 }

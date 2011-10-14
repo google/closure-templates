@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 
 
 /**
- * Bidi global direction, which is either a "static" integer value (ltr=1, rtl=-1, unknown=0), or a
+ * Bidi global direction, which is either a "static" integer value (ltr=1, rtl=-1), or a
  * code snippet yielding such a value when evaluated at template runtime.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -119,11 +119,13 @@ public class BidiGlobalDir {
 
 
   /**
-   * The "static" bidi global direction, as an integer: ltr=1, rtl=-1, unknown=0. It is zero if and
-   * only if the bidi global direction is non-static: it has to be determined at template runtime by
-   * evaluating the piece of code returned by getCodeSnippet().
+   * The "static" bidi global direction, as an integer: ltr=1, rtl=-1.
+   * If the bidi global direction is non-static, then calling this method will produce an exception.
    */
   public int getStaticValue() {
+    if (staticValue == 0) {
+      throw new RuntimeException("Cannot get static value for nonstatic BidiGlobalDir object.");
+    }
     return staticValue;
   }
 

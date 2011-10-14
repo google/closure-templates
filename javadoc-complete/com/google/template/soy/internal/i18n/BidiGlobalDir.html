@@ -98,7 +98,7 @@ Class BidiGlobalDir</H2>
 </PRE>
 
 <P>
-Bidi global direction, which is either a "static" integer value (ltr=1, rtl=-1, unknown=0), or a
+Bidi global direction, which is either a "static" integer value (ltr=1, rtl=-1), or a
  code snippet yielding such a value when evaluated at template runtime.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -156,7 +156,7 @@ Bidi global direction, which is either a "static" integer value (ltr=1, rtl=-1, 
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiGlobalDir.html#getStaticValue()">getStaticValue</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The "static" bidi global direction, as an integer: ltr=1, rtl=-1, unknown=0.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The "static" bidi global direction, as an integer: ltr=1, rtl=-1.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -253,9 +253,8 @@ getStaticValue</H3>
 <PRE>
 public int <B>getStaticValue</B>()</PRE>
 <DL>
-<DD>The "static" bidi global direction, as an integer: ltr=1, rtl=-1, unknown=0. It is zero if and
- only if the bidi global direction is non-static: it has to be determined at template runtime by
- evaluating the piece of code returned by getCodeSnippet().
+<DD>The "static" bidi global direction, as an integer: ltr=1, rtl=-1.
+ If the bidi global direction is non-static, then calling this method will produce an exception.
 <P>
 <DD><DL>
 </DL>

@@ -53,11 +53,11 @@ import javax.annotation.Nullable;
 
 
 /**
- * Visitor for building a map from each node to its nearest dependee. The map built by this visitor
- * is useful in optimization passes that move nodes within the tree. In the context of this pass,
- * a dependee is a node that appears earlier in the depth-first traversal, and must remain in the
- * same traversal relationship with the depender after any modifications to the tree, in order to
- * preserve correctness.
+ * Visitor for building a map from each node to its list of dependees (ordered by nearest dependee
+ * first). The map built by this visitor is useful in optimization passes that move nodes within the
+ * tree. In the context of this pass, a dependee is a node that appears earlier in the depth-first
+ * traversal, and must remain in the same traversal relationship with the depender after any
+ * modifications to the tree, in order to preserve correctness.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -85,28 +85,27 @@ import javax.annotation.Nullable;
  *
  * @author Kai Huang
  */
-public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<SoyNode, SoyNode>> {
+public class BuildAllDependeesMapVisitor
+    extends AbstractSoyNodeVisitor<Map<SoyNode, List<SoyNode>>> {
 
 
   /** Stack of frames containing lists of nodes that may be dependees (for the current template). */
   private Deque<List<SoyNode>> potentialDependeeFrames;
 
-  /** Map from each node to the set of all its dependees (for the current template). */
-  private Map<SoyNode, Set<SoyNode>> allDependeesMap;
-
-  /** Map from each node to its nearest dependee (the final result of this pass). */
-  private Map<SoyNode, SoyNode> nearestDependeeMap;
+  /** Map from each node to the list of all its dependees, ordered by distance from the depender
+   *  (nearest dependee is first). */
+  private Map<SoyNode, List<SoyNode>> allDependeesMap;
 
 
-  @Override public Map<SoyNode, SoyNode> exec(SoyNode node) {
+  @Override public Map<SoyNode, List<SoyNode>> exec(SoyNode node) {
 
     Preconditions.checkArgument(
         node instanceof SoyFileSetNode || node instanceof SoyFileNode ||
         node instanceof TemplateNode);
 
-    nearestDependeeMap = Maps.newHashMap();
+    allDependeesMap = Maps.newHashMap();
     visit(node);
-    return nearestDependeeMap;
+    return allDependeesMap;
   }
 
 
@@ -127,7 +126,6 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
   @Override protected void visitTemplateNode(TemplateNode node) {
 
     potentialDependeeFrames = new ArrayDeque<List<SoyNode>>();
-    allDependeesMap = Maps.newHashMap();
 
     // Note: Add to potential dependees while visiting children because descendents can't be moved
     // out of the template.
@@ -196,30 +194,24 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
       topLevelRefs = null;
     }
 
-    // Add mappings for this node to nearestDependeeMap and allDependeesMap.
-    boolean foundNearestDependee = false;
-    Set<SoyNode> allDependees = Sets.newHashSetWithExpectedSize(4);
+    // Add mappings for this node to allDependeesMap.
+    List<SoyNode> allDependees = Lists.newArrayList();
 
     for (List<SoyNode> potentialDependeeFrame : potentialDependeeFrames) {
-      // We must iterate in reverse if we wish to encounter the nearest dependee first.
+      // We must iterate in reverse if we wish to encounter the dependees in distance order (nearest
+      // dependee first).
       for (int i = potentialDependeeFrame.size() - 1; i >= 0; i--) {
         SoyNode potentialDependee = potentialDependeeFrame.get(i);
-
         if (isDependent(potentialDependee, node, topLevelRefs)) {
-          if (!foundNearestDependee) {
-            nearestDependeeMap.put(node, potentialDependee);
-            foundNearestDependee = true;
-          }
           allDependees.add(potentialDependee);
         }
       }
     }
 
-    if (!foundNearestDependee) {
+    allDependeesMap.put(node, allDependees);
+    if (allDependees.size() == 0) {
       throw new AssertionError();
     }
-
-    allDependeesMap.put(node, allDependees);
   }
 
 
@@ -265,7 +257,7 @@ public class BuildNearestDependeeMapVisitor extends AbstractSoyNodeVisitor<Map<S
       // Check whether any child depends on the local var.
       if (node instanceof ParentSoyNode<?>) {
         for (SoyNode child : ((ParentSoyNode<?>) node).getChildren()) {
-          Set<SoyNode> allDependeesOfChild = allDependeesMap.get(child);
+          List<SoyNode> allDependeesOfChild = allDependeesMap.get(child);
           if (allDependeesOfChild == null) {
             throw new AssertionError("Child has not been visited.");
           }

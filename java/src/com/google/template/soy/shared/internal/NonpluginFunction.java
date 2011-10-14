@@ -23,13 +23,13 @@ import java.util.Map;
 
 
 /**
- * Enum of impure functions supported in Soy expressions.
+ * Enum of nonplugin functions supported in Soy expressions.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @author Kai Huang
  */
-public enum ImpureFunction {
+public enum NonpluginFunction {
 
 
   IS_FIRST(1),
@@ -38,23 +38,23 @@ public enum ImpureFunction {
   HAS_DATA(0);
 
 
-  /** Map of ImpureFunctions by function name. */
-  private static final Map<String, ImpureFunction> IMPURE_FUNCTIONS_BY_NAME;
+  /** Map of NonpluginFunctions by function name. */
+  private static final Map<String, NonpluginFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
   static {
-    ImmutableMap.Builder<String, ImpureFunction> mapBuilder = ImmutableMap.builder();
-    for (ImpureFunction impureFn : ImpureFunction.values()) {
-      mapBuilder.put(impureFn.getFunctionName(), impureFn);
+    ImmutableMap.Builder<String, NonpluginFunction> mapBuilder = ImmutableMap.builder();
+    for (NonpluginFunction nonpluginFn : values()) {
+      mapBuilder.put(nonpluginFn.getFunctionName(), nonpluginFn);
     }
-    IMPURE_FUNCTIONS_BY_NAME = mapBuilder.build();
+    NONPLUGIN_FUNCTIONS_BY_NAME = mapBuilder.build();
   }
 
 
   /**
-   * Returns the ImpureFunction for the given function name, or null if not found.
+   * Returns the NonpluginFunction for the given function name, or null if not found.
    * @param functionName The function name to retrieve.
    */
-  public static ImpureFunction forFunctionName(String functionName) {
-    return IMPURE_FUNCTIONS_BY_NAME.get(functionName);
+  public static NonpluginFunction forFunctionName(String functionName) {
+    return NONPLUGIN_FUNCTIONS_BY_NAME.get(functionName);
   }
 
 
@@ -65,7 +65,7 @@ public enum ImpureFunction {
   private final int numArgs;
 
 
-  private ImpureFunction(int numArgs) {
+  private NonpluginFunction(int numArgs) {
     this.functionName = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
     this.numArgs = numArgs;
   }

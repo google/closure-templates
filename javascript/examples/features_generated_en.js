@@ -150,7 +150,19 @@ soy.examples.features.demoCallWithParam = function(opt_data, opt_sb) {
 
 soy.examples.features.demoCallWithParamBlock = function(opt_data, opt_sb) {
   var output = opt_sb || new soy.StringBuilder();
-  soy.examples.features.tripReport_({name: opt_data.name, destination: 'Boston'}, output);
+  var param193 = new soy.StringBuilder();
+  switch (Math.floor(Math.random() * 3)) {
+    case 0:
+      param193.append('Boston');
+      break;
+    case 1:
+      param193.append('Singapore');
+      break;
+    case 2:
+      param193.append('Zurich');
+      break;
+  }
+  soy.examples.features.tripReport_({name: opt_data.name, destination: param193.toString()}, output);
   output.append('<br>');
   return opt_sb ? '' : output.toString();
 };
@@ -213,7 +225,7 @@ soy.examples.features.demoBidiSupport = function(opt_data, opt_sb) {
 
 soy.examples.features.bidiGlobalDir = function(opt_data, opt_sb) {
   var output = opt_sb || new soy.StringBuilder();
-  output.append('1');
+  output.append(soy.$$escapeHtml(1));
   return opt_sb ? '' : output.toString();
 };
 

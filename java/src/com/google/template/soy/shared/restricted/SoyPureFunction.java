@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Google Inc.
+ * Copyright 2011 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,20 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.internal;
+package com.google.template.soy.shared.restricted;
 
-import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import com.google.inject.ScopeAnnotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 
 /**
- * Guice scope for a Soy API method call. Only used in some API methods where it would be useful
- * to be able to inject API call parameters (such as the message bundle) directly into lower-level
- * objects (such as passes) created during the handling of the API call.
+ * Annotation for a Soy function that's pure (e.g. can be preevaluated during optimization).
  *
- * <p> Important: This may only be used in implementing plugins (e.g. functions, directives).
+ * @author Kai Huang
  */
-@ScopeAnnotation
-@Target({TYPE, METHOD})
+@Target(TYPE)
 @Retention(RUNTIME)
-public @interface ApiCallScope {}
+public @interface SoyPureFunction {}

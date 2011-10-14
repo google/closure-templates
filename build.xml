@@ -73,6 +73,8 @@ Author: Neil Sanchala
           <include name="*.jar" />
         </fileset>
       </classpath>
+      <compilerarg value="-Werror"/>  <!-- warnings become errors -->
+      <compilerarg value="-Xlint:deprecation"/>
     </javac>
 
   </target>
@@ -640,7 +642,7 @@ Author: Neil Sanchala
     <zip destfile="${release.dir}/closure-templates-for-javascript-${release.stamp}.zip">
       <fileset file="COPYING" />
       <fileset file="${build.dir}/javascript/README" />
-      <fileset file="${build.dir}/SoyParseInfoGenerator.jar" />
+      <fileset file="${build.dir}/SoyToJsSrcCompiler.jar" />
       <fileset dir="${build.dir}/javascript" includes="soyutils.js,soyutils_usegoog.js" />
     </zip>
   </target>

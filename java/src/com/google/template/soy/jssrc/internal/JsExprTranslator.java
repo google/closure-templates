@@ -25,7 +25,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.TranslateToJsExprVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.shared.internal.ImpureFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 
 import java.util.Deque;
 import java.util.Map;
@@ -116,7 +116,7 @@ class JsExprTranslator {
     @Override protected void visitFunctionNode(FunctionNode node) {
 
       String fnName = node.getFunctionName();
-      if (ImpureFunction.forFunctionName(fnName) == null &&
+      if (NonpluginFunction.forFunctionName(fnName) == null &&
           ! soyJsSrcFunctionsMap.containsKey(fnName)) {
         areAllFunctionsSupported = false;
         return;  // already found an unsupported function, so don't keep looking

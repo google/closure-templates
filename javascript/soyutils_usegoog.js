@@ -38,6 +38,11 @@
 goog.provide('soy');
 goog.provide('soy.StringBuilder');
 goog.provide('soy.esc');
+goog.provide('soydata');
+goog.provide('soydata.SanitizedHtml');
+goog.provide('soydata.SanitizedHtmlAttribute');
+goog.provide('soydata.SanitizedJsStrChars');
+goog.provide('soydata.SanitizedUri');
 
 goog.require('goog.asserts');
 goog.require('goog.dom.DomHelper');
@@ -47,7 +52,6 @@ goog.require('goog.i18n.bidi');
 goog.require('goog.soy');
 goog.require('goog.string');
 goog.require('goog.string.StringBuffer');
-goog.require('soydata');
 
 
 // -----------------------------------------------------------------------------
@@ -64,6 +68,140 @@ goog.require('soydata');
  * @constructor
  */
 soy.StringBuilder = goog.string.StringBuffer;
+
+
+// -----------------------------------------------------------------------------
+// soydata: Defines typed strings, e.g. an HTML string {@code "a<b>c"} is
+// semantically distinct from the plain text string {@code "a<b>c"} and smart
+// templates can take that distinction into account.
+
+/**
+ * A type of textual content.
+ * @enum {number}
+ */
+soydata.SanitizedContentKind = {
+
+  /**
+   * A snippet of HTML that does not start or end inside a tag, comment, entity,
+   * or DOCTYPE; and that does not contain any executable code
+   * (JS, {@code <object>}s, etc.) from a different trust domain.
+   */
+  HTML: 0,
+
+  /**
+   * A sequence of code units that can appear between quotes (either kind) in a
+   * JS program without causing a parse error, and without causing any side
+   * effects.
+   * <p>
+   * The content should not contain unescaped quotes, newlines, or anything else
+   * that would cause parsing to fail or to cause a JS parser to finish the
+   * string its parsing inside the content.
+   * <p>
+   * The content must also not end inside an escape sequence ; no partial octal
+   * escape sequences or odd number of '{@code \}'s at the end.
+   */
+  JS_STR_CHARS: 1,
+
+  /** A properly encoded portion of a URI. */
+  URI: 2,
+
+  /** An attribute name and value such as {@code dir="ltr"}. */
+  HTML_ATTRIBUTE: 3
+};
+
+
+/**
+ * A string-like object that carries a content-type.
+ * @param {string} content
+ * @constructor
+ * @private
+ */
+soydata.SanitizedContent = function(content) {
+  /**
+   * The textual content.
+   * @type {string}
+   */
+  this.content = content;
+};
+
+/** @type {soydata.SanitizedContentKind} */
+soydata.SanitizedContent.prototype.contentKind;
+
+/** @override */
+soydata.SanitizedContent.prototype.toString = function() {
+  return this.content;
+};
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.HTML}.
+ * @param {string} content A string of HTML that can safely be embedded in
+ *     a PCDATA context in your app.  If you would be surprised to find that an
+ *     HTML sanitizer produced {@code s} (e.g. it runs code or fetches bad URLs)
+ *     and you wouldn't write a template that produces {@code s} on security or
+ *     privacy grounds, then don't pass {@code s} here.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedHtml = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedHtml, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedHtml.prototype.contentKind = soydata.SanitizedContentKind.HTML;
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.JS_STR_CHARS}.
+ * @param {string} content A string of JS that when evaled, produces a
+ *     value that does not depend on any sensitive data and has no side effects
+ *     <b>OR</b> a string of JS that does not reference any variables or have
+ *     any side effects not known statically to the app authors.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedJsStrChars = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedJsStrChars, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedJsStrChars.prototype.contentKind =
+    soydata.SanitizedContentKind.JS_STR_CHARS;
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.URI}.
+ * @param {string} content A chunk of URI that the caller knows is safe to
+ *     emit in a template.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedUri = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedUri, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedUri.prototype.contentKind = soydata.SanitizedContentKind.URI;
+
+
+/**
+ * Content of type {@link soydata.SanitizedContentKind.HTML_ATTRIBUTE}.
+ * @param {string} content An attribute name and value, such as
+ *     {@code dir="ltr"}.
+ * @constructor
+ * @extends {soydata.SanitizedContent}
+ */
+soydata.SanitizedHtmlAttribute = function(content) {
+  soydata.SanitizedContent.call(this, content);
+};
+goog.inherits(soydata.SanitizedHtmlAttribute, soydata.SanitizedContent);
+
+/** @override */
+soydata.SanitizedHtmlAttribute.prototype.contentKind =
+    soydata.SanitizedContentKind.HTML_ATTRIBUTE;
 
 
 // -----------------------------------------------------------------------------
@@ -278,42 +416,6 @@ soy.$$getDelegateFn = function(delTemplateId) {
 soy.$$EMPTY_TEMPLATE_FN_ = function(opt_data, opt_sb, opt_ijData) {
   return '';
 };
-
-
-/**
- * Used for temporary fix. See GenJsCodeVisitor.java.
- * TODO: Remove when i18n plurals team provides a better # processing option.
- * @param {string} str The string to escape.
- * @return {string} The escaped string.
- */
-soy.$$tempHashEscape = function(str) {
-  return str.replace(soy.$$HASH_RE_, '__HashLit__');
-};
-
-/**
- * Used by soy.$$tempHashEscape().
- * @type {RegExp}
- * @private
- */
-soy.$$HASH_RE_ = /#/g;
-
-
-/**
- * Used for temporary fix. See GenJsCodeVisitor.java.
- * TODO: Remove when i18n plurals team provides a better # processing option.
- * @param {string} str The string to unescape.
- * @return {string} The unescaped string.
- */
-soy.$$tempHashUnescape = function(str) {
-  return str.replace(soy.$$HASH_ESCAPED_RE_, '#');
-};
-
-/**
- * Used by soy.$$tempHashUnescape().
- * @type {RegExp}
- * @private
- */
-soy.$$HASH_ESCAPED_RE_ = /__HashLit__/g;
 
 
 // -----------------------------------------------------------------------------
@@ -741,30 +843,6 @@ soy.$$getBidiFormatterInstance_ = function(bidiGlobalDir) {
 
 
 /**
- * Returns the leading horizontal edge, i.e. "left" or "right", depending on
- * bidiGlobalDir.
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @return {string} "right" for RTL context and "left" otherwise.
- */
-soy.$$bidiStartEdge = function(bidiGlobalDir) {
-  return soy.$$getBidiFormatterInstance_(bidiGlobalDir).startEdge();
-};
-
-
-/**
- * Returns the trailing horizontal edge, i.e. "right" or "left", depending on
- * bidiGlobalDir.
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @return {string} "left" for RTL context and "right" otherwise.
- */
-soy.$$bidiEndEdge = function(bidiGlobalDir) {
-  return soy.$$getBidiFormatterInstance_(bidiGlobalDir).endEdge();
-};
-
-
-/**
  * Estimate the overall directionality of text. If opt_isHtml, makes sure to
  * ignore the LTR nature of the mark-up and escapes in text, making the logic
  * suitable for HTML and HTML-escaped text.
@@ -799,19 +877,6 @@ soy.$$bidiTextDir = function(text, opt_isHtml) {
 soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
   return new soydata.SanitizedHtmlAttribute(
       soy.$$getBidiFormatterInstance_(bidiGlobalDir).dirAttr(text, opt_isHtml));
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching bidiGlobalDir (LRM or RLM), or an empty
- * string if bidiGlobalDir is 0 (unknown).
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @return {string} A Unicode bidi mark matching bidiGlobalDir, or the empty
- *     string when bidiGlobalDir is 0 (unknown).
- */
-soy.$$bidiMark = function(bidiGlobalDir) {
-  return soy.$$getBidiFormatterInstance_(bidiGlobalDir).mark();
 };
 
 

@@ -558,14 +558,11 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (googMsgCodeGenInfo.pluralSelectVarCodeBits.size() > 0) {
       // Pass the ICU message to goog.i18n.MessageFormat and capture the formatted
       // string in another variable.
-      // TODO: Remove the temporary fix soy.$$tempHashEscape() and soy.$$tempHashUnescape() after
-      // i18n plurals team provides a better # processing option.
       jsCodeBuilder.indent().append(
           "var ", node.getRenderedGoogMsgVarName(),
-          " = soy.$$tempHashUnescape((new goog.i18n.MessageFormat(soy.$$tempHashEscape(",
-          googMsgName, "))).format(");
+          " = (new goog.i18n.MessageFormat(", googMsgName, ")).formatIgnoringPound(");
       appendCodeBits(googMsgCodeGenInfo.pluralSelectVarCodeBits);
-      jsCodeBuilder.append("));\n");
+      jsCodeBuilder.append(");\n");
     }
   }
 

@@ -47,7 +47,6 @@ import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.base.IncrementingIdGenerator;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -509,7 +508,7 @@ TOKEN_MGR_DECLS:
  */
 private SoyFileNode SoyFile() throws SoySyntaxException :
 {
-  Token delpackageTag, namespaceTag, eof;
+  Token delpackageTag, namespaceTag;
   TemplateNode template;
 }
 {
