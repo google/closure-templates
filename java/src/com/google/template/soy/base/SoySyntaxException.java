@@ -125,4 +125,12 @@ public class SoySyntaxException extends RuntimeException {
     }
   }
 
+  
+  /**
+   * @return The original error message from the Soy compiler without any
+   *     metadata about the location where the error appears.  
+   */
+  public String getOriginalMessage() {
+    return super.getMessage();
+  }
 }

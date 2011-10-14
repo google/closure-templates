@@ -971,6 +971,10 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder.popOutputVar();
     localVarTranslations.pop();
 
+    if (jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
+      jsCodeBuilder.appendLine(generatedVarName, " = ", generatedVarName, ".toString();");
+    }
+
     // Add a mapping for generating future references to this local var.
     localVarTranslations.peek().put(
         node.getVarName(), new JsExpr(generatedVarName, Integer.MAX_VALUE));

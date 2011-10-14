@@ -373,12 +373,21 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 
     // Generate code to define the local var.
     localVarTranslations.push(Maps.<String, JavaExpr>newHashMap());
-    javaCodeBuilder.pushOutputVar(generatedVarName);
+    if (javaSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
+      javaCodeBuilder.pushOutputVar(generatedVarName + "_sb");
+    } else {
+      javaCodeBuilder.pushOutputVar(generatedVarName);
+    }
 
     visitChildren(node);
 
     javaCodeBuilder.popOutputVar();
     localVarTranslations.pop();
+
+    if (javaSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
+      javaCodeBuilder.appendLine(
+          "String ", generatedVarName, " = ", generatedVarName, "_sb.toString();");
+    }
 
     // Add a mapping for generating future references to this local var.
     localVarTranslations.peek().put(
