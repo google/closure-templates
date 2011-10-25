@@ -18,8 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.inject.AbstractModule;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.sharedpasses.opti.PreevalVisitorFactory;
-import com.google.template.soy.sharedpasses.opti.PrerenderVisitorFactory;
+import com.google.template.soy.sharedpasses.opti.OptiModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderVisitor.RenderVisitorFactory;
@@ -41,9 +40,10 @@ public class SharedPassesModule extends AbstractModule {
     // Install requisite modules.
     install(new SharedModule());
 
-    // Bindings for when explicit dependencies are required.
-    bind(PreevalVisitorFactory.class);
-    bind(PrerenderVisitorFactory.class);
+    // Install OptiModule, which explicitly binds classes in the opti package.
+    // We use a separate module rather than inlining the classes here to allow
+    // classes in the package to be package-private.
+    install(new OptiModule());
 
     // Bind factories.
     bind(EvalVisitorFactory.class).to(EvalVisitorFactoryImpl.class);

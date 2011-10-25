@@ -39,10 +39,8 @@
 // COPIED FROM nogoog_shim.js
 
 // Create closure namespaces.
-var goog;
-if (typeof goog == "undefined") {
-  goog = {};
-}
+var goog = goog || {};
+
 
 goog.inherits = function(childCtor, parentCtor) {
   /** @constructor */
@@ -208,19 +206,6 @@ if (!goog.format) {
 
 if (!goog.i18n) {
   goog.i18n = {
-    /**
-     * Utility class for formatting text for display in a potentially
-     * opposite-directionality context without garbling. Provides the following
-     * functionality:
-     *
-     * @param {goog.i18n.bidi.Dir|number|boolean} contextDir The context
-     *     directionality as a number
-     *     (positive = LRT, negative = RTL, 0 = unknown).
-     * @constructor
-     */
-    BidiFormatter: function (dir) {
-      this.dir_ = dir;
-    },
     bidi: {
       /**
        * Check the directionality of a piece of text, return true if the piece
@@ -239,6 +224,54 @@ if (!goog.i18n) {
     }
   };
 }
+
+/**
+ * Directionality enum.
+ * @enum {number}
+ */
+goog.i18n.bidi.Dir = {
+  RTL: -1,
+  UNKNOWN: 0,
+  LTR: 1
+};
+
+
+/**
+ * Convert a directionality given in various formats to a goog.i18n.bidi.Dir
+ * constant. Useful for interaction with different standards of directionality
+ * representation.
+ *
+ * @param {goog.i18n.bidi.Dir|number|boolean} givenDir Directionality given in
+ *     one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant.
+ *     2. A number (positive = LRT, negative = RTL, 0 = unknown).
+ *     3. A boolean (true = RTL, false = LTR).
+ * @return {goog.i18n.bidi.Dir} A goog.i18n.bidi.Dir constant matching the given
+ *     directionality.
+ */
+goog.i18n.bidi.toDir = function(givenDir) {
+  if (typeof givenDir == 'number') {
+    return givenDir > 0 ? goog.i18n.bidi.Dir.LTR :
+        givenDir < 0 ? goog.i18n.bidi.Dir.RTL : goog.i18n.bidi.Dir.UNKNOWN;
+  } else {
+    return givenDir ? goog.i18n.bidi.Dir.RTL : goog.i18n.bidi.Dir.LTR;
+  }
+};
+
+
+/**
+ * Utility class for formatting text for display in a potentially
+ * opposite-directionality context without garbling. Provides the following
+ * functionality:
+ *
+ * @param {goog.i18n.bidi.Dir|number|boolean} dir The context
+ *     directionality as a number
+ *     (positive = LRT, negative = RTL, 0 = unknown).
+ * @constructor
+ */
+goog.i18n.BidiFormatter = function(dir) {
+  this.dir_ = goog.i18n.bidi.toDir(dir);
+};
 
 
 /**
@@ -303,9 +336,11 @@ goog.i18n.BidiFormatter.prototype.markAfter = function (text, opt_isHtml) {
  * garbled nor garbles what follows it.
  *
  * @param {string} str The input text.
+ * @param {boolean=} placeholder This argument exists for consistency with the
+ *     Closure Library. Specifying it has no effect.
  * @return {string} Input text after applying the above processing.
  */
-goog.i18n.BidiFormatter.prototype.spanWrap = function(str) {
+goog.i18n.BidiFormatter.prototype.spanWrap = function(str, placeholder) {
   str = String(str);
   var textDir = soy.$$bidiTextDir(str, true);
   var reset = soyshim.$$bidiMarkAfterKnownDir_(this.dir_, textDir, str, true);
@@ -335,9 +370,11 @@ goog.i18n.BidiFormatter.prototype.startEdge = function () {
  * allow mark-up, e.g. an 'option' tag.
  *
  * @param {string} str The input text.
+ * @param {boolean=} placeholder This argument exists for consistency with the
+ *     Closure Library. Specifying it has no effect.
  * @return {string} Input text after applying the above processing.
  */
-goog.i18n.BidiFormatter.prototype.unicodeWrap = function(str) {
+goog.i18n.BidiFormatter.prototype.unicodeWrap = function(str, placeholder) {
   str = String(str);
   var textDir = soy.$$bidiTextDir(str, true);
   var reset = soyshim.$$bidiMarkAfterKnownDir_(this.dir_, textDir, str, true);
@@ -351,36 +388,14 @@ goog.i18n.BidiFormatter.prototype.unicodeWrap = function(str) {
 
 
 goog.string = {
-  /**
-   * Utility class to facilitate much faster string concatenation in IE,
-   * using Array.join() rather than the '+' operator.  For other browsers
-   * we simply use the '+' operator.
-   *
-   * @param {Object|number|string|boolean=} opt_a1 Optional first initial item
-   *     to append.
-   * @param {...Object|number|string|boolean} var_args Other initial items to
-   *     append, e.g., new goog.string.StringBuffer('foo', 'bar').
-   * @constructor
-   */
-  StringBuffer: function(opt_a1, var_args) {
 
-    /**
-     * Internal buffer for the string to be concatenated.
-     * @type {string|Array}
-     * @private
-     */
-    this.buffer_ = goog.userAgent.HAS_JSCRIPT ? [] : '';
-
-    if (opt_a1 != null) {
-      this.append.apply(this, arguments);
-    }
-  },
   /**
    * Converts \r\n, \r, and \n to <br>s
    * @param {*} str The string in which to convert newlines.
+   * @param {boolean=} opt_xml Whether to use XML compatible tags.
    * @return {string} A copy of {@code str} with converted newlines.
    */
-  newlineToBr: function(str) {
+  newLineToBr: function(str, opt_xml) {
 
     str = String(str);
 
@@ -390,7 +405,7 @@ goog.string = {
       return str;
     }
 
-    return str.replace(/(\r\n|\r|\n)/g, '<br>');
+    return str.replace(/(\r\n|\r|\n)/g, opt_xml ? '<br />' : '<br>');
   },
   urlEncode: encodeURIComponent,
   /**
@@ -398,7 +413,32 @@ goog.string = {
    * @type {RegExp}
    * @private
    */
-  NEWLINE_TO_BR_RE: /[\r\n]/
+  NEWLINE_TO_BR_RE_: /[\r\n]/
+};
+
+
+/**
+ * Utility class to facilitate much faster string concatenation in IE,
+ * using Array.join() rather than the '+' operator.  For other browsers
+ * we simply use the '+' operator.
+ *
+ * @param {Object|number|string|boolean=} opt_a1 Optional first initial item
+ *     to append.
+ * @param {...Object|number|string|boolean} var_args Other initial items to
+ *     append, e.g., new goog.string.StringBuffer('foo', 'bar').
+ * @constructor
+ */
+goog.string.StringBuffer = function(opt_a1, var_args) {
+  /**
+   * Internal buffer for the string to be concatenated.
+   * @type {string|Array}
+   * @private
+   */
+  this.buffer_ = goog.userAgent.HAS_JSCRIPT ? [] : '';
+
+  if (opt_a1 != null) {
+    this.append.apply(this, arguments);
+  }
 };
 
 
@@ -495,10 +535,11 @@ if (!goog.soy) goog.soy = {
    * innerHTML in your hand-written code, so that it will be easier
    * to audit the code for cross-site scripting vulnerabilities.
    *
-   * @param {Element} element The element whose content we are rendering.
    * @param {Function} template The Soy template defining element's content.
    * @param {Object=} opt_templateData The data for the template.
    * @param {Object=} opt_injectedData The injected data for the template.
+   * @param {Document=} opt_document The document used to create DOM nodes. If
+   *     not specified, global document object is used.
    */
   renderAsElement: function(
     template, opt_templateData, opt_injectedData, opt_document) {
@@ -548,7 +589,7 @@ if (!goog.soy) goog.soy = {
 
 var soy = { esc: {} };
 var soydata = {};
-var soyshim = {};
+var soyshim = { $$DEFAULT_TEMPLATE_DATA_: {} };
 /**
  * Helper function to render a Soy template into a single node or a document
  * fragment. If the rendered HTML string represents a single node, then that

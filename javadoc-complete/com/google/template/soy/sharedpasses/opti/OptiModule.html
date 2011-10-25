@@ -3,7 +3,7 @@
 <HTML>
 <HEAD>
 <TITLE>
-PreevalVisitorFactory (Soy Complete)
+OptiModule (Soy Complete)
 </TITLE>
 
 
@@ -13,7 +13,7 @@ PreevalVisitorFactory (Soy Complete)
 function windowTitle()
 {
     if (location.href.indexOf('is-external=true') == -1) {
-        parent.document.title="PreevalVisitorFactory (Soy Complete)";
+        parent.document.title="OptiModule (Soy Complete)";
     }
 }
 </SCRIPT>
@@ -52,11 +52,11 @@ function windowTitle()
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/OptiModule.html" title="class in com.google.template.soy.sharedpasses.opti"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PrerenderVisitorFactory.html" title="class in com.google.template.soy.sharedpasses.opti"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;PREV CLASS&nbsp;
+&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html" title="class in com.google.template.soy.sharedpasses.opti"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="PreevalVisitorFactory.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+  <A HREF="../../../../../../index.html?com/google/template/soy/sharedpasses/opti/OptiModule.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="OptiModule.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
 &nbsp;<SCRIPT type="text/javascript">
   <!--
   if(window==top) {
@@ -87,22 +87,22 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&n
 <FONT SIZE="-1">
 com.google.template.soy.sharedpasses.opti</FONT>
 <BR>
-Class PreevalVisitorFactory</H2>
+Class OptiModule</H2>
 <PRE>
 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.sharedpasses.opti.PreevalVisitorFactory</B>
+  <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by ">com.google.inject.AbstractModule
+      <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.sharedpasses.opti.OptiModule</B>
 </PRE>
 <DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A></DD>
+<DT><B>All Implemented Interfaces:</B> <DD>com.google.inject.Module</DD>
 </DL>
 <HR>
 <DL>
-<DT><PRE><FONT SIZE="-1">@Singleton
-</FONT>public class <B>PreevalVisitorFactory</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A><DT>implements <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A></DL>
+<DT><PRE>public class <B>OptiModule</B><DT>extends com.google.inject.AbstractModule</DL>
 </PRE>
 
 <P>
-A factory for creating PreevalVisitor objects.
+Guice module for optimization passes.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
 <P>
@@ -121,7 +121,7 @@ A factory for creating PreevalVisitor objects.
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html#PreevalVisitorFactory(java.util.Map)">PreevalVisitorFactory</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimeFunction</A>&gt;&nbsp;soyJavaRuntimeFunctionsMap)</CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/OptiModule.html#OptiModule()">OptiModule</A></B>()</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -138,22 +138,20 @@ A factory for creating PreevalVisitor objects.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;com.google.template.soy.sharedpasses.opti.PreevalVisitor</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html#create(com.google.template.soy.data.SoyMapData, java.util.Deque)">create</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
-       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env)</CODE>
+<CODE>protected &nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/OptiModule.html#configure()">configure</A></B>()</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
+</TABLE>
+&nbsp;<A NAME="methods_inherited_from_class_com.google.inject.AbstractModule"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
+<TH ALIGN="left"><B>Methods inherited from class com.google.inject.AbstractModule</B></TH>
+</TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;com.google.template.soy.sharedpasses.opti.PreevalVisitor</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html#create(com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque)">create</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
-       <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData,
-       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates an EvalVisitor.</TD>
+<TD><CODE>addError, addError, addError, bind, bind, bind, bindConstant, binder, bindInterceptor, bindListener, bindScope, configure, convertToTypes, currentStage, getMembersInjector, getMembersInjector, getProvider, getProvider, install, requestInjection, requestStaticInjection, requireBinding, requireBinding</CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -178,14 +176,11 @@ A factory for creating PreevalVisitor objects.
 </TR>
 </TABLE>
 
-<A NAME="PreevalVisitorFactory(java.util.Map)"><!-- --></A><H3>
-PreevalVisitorFactory</H3>
+<A NAME="OptiModule()"><!-- --></A><H3>
+OptiModule</H3>
 <PRE>
-<FONT SIZE="-1">@Inject
-</FONT>public <B>PreevalVisitorFactory</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimeFunction</A>&gt;&nbsp;soyJavaRuntimeFunctionsMap)</PRE>
+public <B>OptiModule</B>()</PRE>
 <DL>
-<DL>
-<DT><B>Parameters:</B><DD><CODE>soyJavaRuntimeFunctionsMap</CODE> - Map of all SoyJavaRuntimeFunctions (name to function).</DL>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -198,40 +193,16 @@ PreevalVisitorFactory</H3>
 </TR>
 </TABLE>
 
-<A NAME="create(com.google.template.soy.data.SoyMapData, java.util.Deque)"><!-- --></A><H3>
-create</H3>
+<A NAME="configure()"><!-- --></A><H3>
+configure</H3>
 <PRE>
-public com.google.template.soy.sharedpasses.opti.PreevalVisitor <B>create</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                       <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
-                                                                       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env)</PRE>
+protected void <B>configure</B>()</PRE>
 <DL>
 <DD><DL>
-</DL>
+<DT><B>Specified by:</B><DD><CODE>configure</CODE> in class <CODE>com.google.inject.AbstractModule</CODE></DL>
 </DD>
 <DD><DL>
 </DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="create(com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque)"><!-- --></A><H3>
-create</H3>
-<PRE>
-public com.google.template.soy.sharedpasses.opti.PreevalVisitor <B>create</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                       <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
-                                                                       <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                       <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData,
-                                                                       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env)</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html#create(com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque)">EvalVisitor.EvalVisitorFactory</A></CODE></B></DD>
-<DD>Creates an EvalVisitor.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html#create(com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque)">create</A></CODE> in interface <CODE><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A></CODE></DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>data</CODE> - The current template data.<DD><CODE>ijData</CODE> - The current injected data.<DD><CODE>env</CODE> - The current environment.
-<DT><B>Returns:</B><DD>The newly created EvalVisitor instance.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->
@@ -264,11 +235,11 @@ public com.google.template.soy.sharedpasses.opti.PreevalVisitor <B>create</B>(<F
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/OptiModule.html" title="class in com.google.template.soy.sharedpasses.opti"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PrerenderVisitorFactory.html" title="class in com.google.template.soy.sharedpasses.opti"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;PREV CLASS&nbsp;
+&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html" title="class in com.google.template.soy.sharedpasses.opti"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/sharedpasses/opti/PreevalVisitorFactory.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="PreevalVisitorFactory.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+  <A HREF="../../../../../../index.html?com/google/template/soy/sharedpasses/opti/OptiModule.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="OptiModule.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
 &nbsp;<SCRIPT type="text/javascript">
   <!--
   if(window==top) {

@@ -25,6 +25,7 @@ import com.google.template.soy.bididirectives.BidiDirectivesModule;
 import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.javasrc.internal.JavaSrcModule;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
+import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor;
 import com.google.template.soy.parsepasses.PerformAutoescapeVisitor;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -48,6 +49,7 @@ public class SoyModule extends AbstractModule {
     install(new JavaSrcModule());
 
     // Bindings for when explicit dependencies are required.
+    bind(CheckFunctionCallsVisitor.class);
     bind(ContextualAutoescaper.class);
     bind(PerformAutoescapeVisitor.class);
 
