@@ -125,7 +125,7 @@ Builder for a <code>SoyFileSet</code>.
  can be modified via methods on the builder).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#SoyFileSet.Builder(com.google.template.soy.shared.SoyGeneralOptions)">SoyFileSet.Builder</A></B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>&nbsp;options)</CODE>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#SoyFileSet.Builder(com.google.template.soy.shared.SoyGeneralOptions)">SoyFileSet.Builder</A></B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>&nbsp;generalOptions)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructs a builder with a specified <A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object.</TD>
@@ -205,6 +205,14 @@ Builder for a <code>SoyFileSet</code>.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setAllowExternalCalls(boolean)">setAllowExternalCalls</A></B>(boolean&nbsp;allowExternalCalls)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets whether to allow external calls (calls to undefined templates).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.io.File)">setCompileTimeGlobals</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;compileTimeGlobalsFile)</CODE>
 
 <BR>
@@ -272,12 +280,12 @@ SoyFileSet.Builder</H3>
 <A NAME="SoyFileSet.Builder(com.google.template.soy.shared.SoyGeneralOptions)"><!-- --></A><H3>
 SoyFileSet.Builder</H3>
 <PRE>
-public <B>SoyFileSet.Builder</B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>&nbsp;options)</PRE>
+public <B>SoyFileSet.Builder</B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>&nbsp;generalOptions)</PRE>
 <DL>
 <DD>Constructs a builder with a specified <A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>options</CODE> - The <code>SoyGeneralOptions</code> object to use.</DL>
+<DT><B>Parameters:</B><DD><CODE>generalOptions</CODE> - The <code>SoyGeneralOptions</code> object to use.</DL>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -393,6 +401,20 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>content</CODE> - The Soy file content.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
+<DT><B>Returns:</B><DD>This builder.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setAllowExternalCalls(boolean)"><!-- --></A><H3>
+setAllowExternalCalls</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>setAllowExternalCalls</B>(boolean&nbsp;allowExternalCalls)</PRE>
+<DL>
+<DD>Sets whether to allow external calls (calls to undefined templates).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>allowExternalCalls</CODE> - Whether to allow external calls (calls to undefined templates).
 <DT><B>Returns:</B><DD>This builder.</DL>
 </DD>
 </DL>

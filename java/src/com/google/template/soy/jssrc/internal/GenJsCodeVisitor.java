@@ -279,10 +279,25 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Add code to define JS namespaces or add provide/require calls for Closure Library.
     jsCodeBuilder.appendLine();
+
     if (jsSrcOptions.shouldProvideRequireSoyNamespaces()) {
-      addCodeToProvideRequireSoyNamespaces(node);
+      addCodeToProvideSoyNamespace(node);
+      if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
+        addCodeToProvideJsFunctions(node);
+      }
+      jsCodeBuilder.appendLine();
+      addCodeToRequireGeneralDeps(node);
+      addCodeToRequireSoyNamespaces(node);
+
     } else if (jsSrcOptions.shouldProvideRequireJsFunctions()) {
-      addCodeToProvideRequireJsFunctions(node);
+      if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
+        addCodeToProvideSoyNamespace(node);
+      }
+      addCodeToProvideJsFunctions(node);
+      jsCodeBuilder.appendLine();
+      addCodeToRequireGeneralDeps(node);
+      addCodeToRequireJsFunctions(node);
+
     } else {
       addCodeToDefineJsNamespaces(node);
     }
@@ -330,19 +345,60 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
 
   /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to provide/require Soy namespaces.
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to provide Soy namespaces.
    * @param soyFile The node we're visiting.
    */
-  private void addCodeToProvideRequireSoyNamespaces(SoyFileNode soyFile) {
-
+  private void addCodeToProvideSoyNamespace(SoyFileNode soyFile) {
     jsCodeBuilder.appendLine("goog.provide('", soyFile.getNamespace(), "');");
+  }
 
-    jsCodeBuilder.appendLine();
+
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to provide template JS functions.
+   * @param soyFile The node we're visiting.
+   */
+  private void addCodeToProvideJsFunctions(SoyFileNode soyFile) {
+
+    SortedSet<String> templateNames = Sets.newTreeSet();
+    for (TemplateNode template : soyFile.getChildren()) {
+      if (template instanceof TemplateBasicNode && ((TemplateBasicNode) template).isOverride()) {
+        continue;  // generated function name already provided
+      }
+      templateNames.add(template.getTemplateName());
+    }
+    for (String templateName : templateNames) {
+      jsCodeBuilder.appendLine("goog.provide('", templateName, "');");
+    }
+  }
+
+
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to require general dependencies.
+   * @param soyFile The node we're visiting.
+   */
+  private void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
 
     jsCodeBuilder.appendLine("goog.require('soy');");
     if (jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
       jsCodeBuilder.appendLine("goog.require('soy.StringBuilder');");
     }
+
+    if (jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
+      jsCodeBuilder.appendLine("goog.require('", GOOG_IS_RTL_NAMESPACE, "');");
+    }
+
+    if ((new HasPluralSelectMsgVisitor()).exec(soyFile)) {
+      jsCodeBuilder.appendLine("goog.require('", GOOG_MESSAGE_FORMAT_NAMESPACE, "');");
+    }
+  }
+
+
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to require Soy namespaces.
+   * @param soyFile The node we're visiting.
+   */
+  private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
+
     String prevCalleeNamespace = null;
     for (String calleeNotInFile : (new FindCalleesNotInFileVisitor()).exec(soyFile)) {
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
@@ -357,46 +413,17 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         prevCalleeNamespace = calleeNamespace;
       }
     }
-    if ((new HasPluralSelectMsgVisitor()).exec(soyFile)) {
-      jsCodeBuilder.appendLine("goog.require('", GOOG_MESSAGE_FORMAT_NAMESPACE, "');");
-    }
-    if (jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
-      jsCodeBuilder.appendLine("goog.require('", GOOG_IS_RTL_NAMESPACE, "');");
-    }
   }
 
 
   /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to provide/require template JS functions.
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to require template JS functions.
    * @param soyFile The node we're visiting.
    */
-  private void addCodeToProvideRequireJsFunctions(SoyFileNode soyFile) {
+  private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
 
-    SortedSet<String> templateNames = Sets.newTreeSet();
-    for (TemplateNode template : soyFile.getChildren()) {
-      if (template instanceof TemplateBasicNode && ((TemplateBasicNode) template).isOverride()) {
-        continue;  // generated function name already provided
-      }
-      templateNames.add(template.getTemplateName());
-    }
-    for (String templateName : templateNames) {
-      jsCodeBuilder.appendLine("goog.provide('", templateName, "');");
-    }
-
-    jsCodeBuilder.appendLine();
-
-    jsCodeBuilder.appendLine("goog.require('soy');");
-    if (jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
-      jsCodeBuilder.appendLine("goog.require('soy.StringBuilder');");
-    }
     for (String calleeNotInFile : (new FindCalleesNotInFileVisitor()).exec(soyFile)) {
       jsCodeBuilder.appendLine("goog.require('", calleeNotInFile, "');");
-    }
-    if ((new HasPluralSelectMsgVisitor()).exec(soyFile)) {
-      jsCodeBuilder.appendLine("goog.require('", GOOG_MESSAGE_FORMAT_NAMESPACE, "');");
-    }
-    if (jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
-      jsCodeBuilder.appendLine("goog.require('", GOOG_IS_RTL_NAMESPACE, "');");
     }
   }
 

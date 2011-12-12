@@ -51,6 +51,7 @@ import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.parsepasses.contextautoesc.SoyAutoescapeException;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
+import com.google.template.soy.sharedpasses.AssertNoExternalCallsVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -60,6 +61,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.tofu.SoyTofu;
+import com.google.template.soy.tofu.SoyTofuOptions;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
@@ -112,7 +114,7 @@ public final class SoyFileSet {
     private final ImmutableList.Builder<SoyFileSupplier> listBuilder;
 
     /** The general compiler options. */
-    private SoyGeneralOptions options;
+    private SoyGeneralOptions generalOptions;
 
 
     /**
@@ -127,12 +129,12 @@ public final class SoyFileSet {
 
     /**
      * Constructs a builder with a specified {@link SoyGeneralOptions} object.
-     * @param options The {@code SoyGeneralOptions} object to use.
+     * @param generalOptions The {@code SoyGeneralOptions} object to use.
      */
-    public Builder(SoyGeneralOptions options) {
+    public Builder(SoyGeneralOptions generalOptions) {
 
       this.listBuilder = ImmutableList.builder();
-      this.options = options.clone();
+      this.generalOptions = generalOptions.clone();
 
       // Bootstrap Guice for Soy API users that don't use Guice. This is done by statically
       // injecting an instance of SoyFileSetFactory into this Builder class. Everything derived
@@ -146,7 +148,7 @@ public final class SoyFileSet {
      * @return The new {@code SoyFileSet}.
      */
     public SoyFileSet build() {
-      return soyFileSetFactory.create(listBuilder.build(), options);
+      return soyFileSetFactory.create(listBuilder.build(), generalOptions);
     }
 
 
@@ -234,13 +236,25 @@ public final class SoyFileSet {
 
 
     /**
+     * Sets whether to allow external calls (calls to undefined templates).
+     *
+     * @param allowExternalCalls Whether to allow external calls (calls to undefined templates).
+     * @return This builder.
+     */
+    public Builder setAllowExternalCalls(boolean allowExternalCalls) {
+      this.generalOptions.setAllowExternalCalls(allowExternalCalls);
+      return this;
+    }
+
+
+    /**
      * Sets the scheme for handling {@code css} commands.
      *
      * @param cssHandlingScheme The scheme for handling {@code css} commands.
      * @return This builder.
      */
     public Builder setCssHandlingScheme(CssHandlingScheme cssHandlingScheme) {
-      this.options.setCssHandlingScheme(cssHandlingScheme);
+      this.generalOptions.setCssHandlingScheme(cssHandlingScheme);
       return this;
     }
 
@@ -257,7 +271,7 @@ public final class SoyFileSet {
      * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
      */
     public Builder setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
-      this.options.setCompileTimeGlobals(compileTimeGlobalsMap);
+      this.generalOptions.setCompileTimeGlobals(compileTimeGlobalsMap);
       return this;
     }
 
@@ -281,7 +295,7 @@ public final class SoyFileSet {
      * @throws IOException If there is an error reading the compile-time globals file.
      */
     public Builder setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
-      this.options.setCompileTimeGlobals(compileTimeGlobalsFile);
+      this.generalOptions.setCompileTimeGlobals(compileTimeGlobalsFile);
       return this;
     }
 
@@ -305,7 +319,7 @@ public final class SoyFileSet {
      * @throws IOException If there is an error reading the compile-time globals file.
      */
     public Builder setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
-      this.options.setCompileTimeGlobals(compileTimeGlobalsResource);
+      this.generalOptions.setCompileTimeGlobals(compileTimeGlobalsResource);
       return this;
     }
 
@@ -345,7 +359,7 @@ public final class SoyFileSet {
   private final List<SoyFileSupplier> soyFileSuppliers;
 
   /** The general compiler options. */
-  private final SoyGeneralOptions options;
+  private final SoyGeneralOptions generalOptions;
 
 
   /**
@@ -356,7 +370,7 @@ public final class SoyFileSet {
    * @param contextualAutoescaper The instance of ContextualAutoescaper to use.
    * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param soyFileSuppliers The suppliers for the input Soy files.
-   * @param options The general compiler options.
+   * @param generalOptions The general compiler options.
    */
   @Inject
   SoyFileSet(
@@ -364,7 +378,8 @@ public final class SoyFileSet {
       Provider<JavaSrcMain> javaSrcMainProvider, PerformAutoescapeVisitor performAutoescapeVisitor,
       ContextualAutoescaper contextualAutoescaper, SimplifyVisitor simplifyVisitor,
       CheckFunctionCallsVisitor checkFunctionCallsVisitor,
-      @Assisted List<SoyFileSupplier> soyFileSuppliers, @Assisted SoyGeneralOptions options) {
+      @Assisted List<SoyFileSupplier> soyFileSuppliers,
+      @Assisted SoyGeneralOptions generalOptions) {
 
     // Default value is optionally replaced using method injection.
     this.msgBundleHandlerProvider = DEFAULT_SOY_MSG_BUNDLE_HANDLER_PROVIDER;
@@ -380,7 +395,7 @@ public final class SoyFileSet {
     Preconditions.checkArgument(
         soyFileSuppliers.size() > 0, "Must have non-zero number of input Soy files.");
     this.soyFileSuppliers = soyFileSuppliers;
-    this.options = options;
+    this.generalOptions = generalOptions.clone();
   }
 
 
@@ -397,7 +412,7 @@ public final class SoyFileSet {
 
   /** Returns the general compiler options. For testing use only! */
   @VisibleForTesting SoyGeneralOptions getOptionsForTesting() {
-    return options;
+    return generalOptions;
   }
 
 
@@ -443,14 +458,62 @@ public final class SoyFileSet {
    * compiled templates. The resulting {@code SoyTofu} does not cache intermediate results after
    * substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
    *
-   * @see #compileToJavaObj(boolean)
+   * @see #compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)
+   *
+   * @return The resulting {@code SoyTofu} object.
+   * @throws SoySyntaxException If a syntax error is found.
+   */
+  public SoyTofu compileToTofu() throws SoySyntaxException {
+    return compileToTofu(new SoyTofuOptions());
+  }
+
+
+  /**
+   * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
+   * compiled templates.
+   *
+   * @param tofuOptions The compilation options for the Tofu backend.
+   * @return The resulting {@code SoyTofu} object.
+   * @throws SoySyntaxException If a syntax error is found.
+   */
+  public SoyTofu compileToTofu(SoyTofuOptions tofuOptions) throws SoySyntaxException {
+
+    // Defensive copy of options. (Doesn't matter now, but might forget later when it matters.)
+    tofuOptions = tofuOptions.clone();
+
+    // TODO: Allow binding a SoyTofu instance to volatile inputs.
+    SoyFileSetNode soyTree = (new SoyFileSetParser(soyFileSuppliers)).parse();
+    runMiddleendPasses(soyTree, true);
+
+    // If allowExternalCalls is not explicitly set, then disallow by default for Tofu backend.
+    if (generalOptions.allowExternalCalls() == null) {
+      // TODO: Enable this check when all Google internal projects are compliant.
+      //(new AssertNoExternalCallsVisitor()).exec(soyTree);
+    }
+
+    // Note: Globals should have been substituted already. The pass below is just a check.
+    (new SubstituteGlobalsVisitor(generalOptions.getCompileTimeGlobals(), true)).exec(soyTree);
+
+    // Clear the SoyDoc strings because they use unnecessary memory.
+    (new ClearSoyDocStringsVisitor()).exec(soyTree);
+
+    return baseTofuFactory.create(soyTree, tofuOptions.useCaching());
+  }
+
+
+  /**
+   * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
+   * compiled templates. The resulting {@code SoyTofu} does not cache intermediate results after
+   * substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
+   *
+   * @see #compileToTofu()
    *
    * @return The result of compiling this Soy file set into a Java object.
    * @throws SoySyntaxException If a syntax error is found.
+   * @deprecated Use {@link #compileToTofu()}.
    */
-  public SoyTofu compileToJavaObj() throws SoySyntaxException {
-    // TODO: If people like compileToJavaObj(boolean), then deprecate this method.
-    return compileToJavaObj(false);
+  @Deprecated public SoyTofu compileToJavaObj() throws SoySyntaxException {
+    return compileToTofu(new SoyTofuOptions());
   }
 
 
@@ -475,22 +538,16 @@ public final class SoyFileSet {
    *     SoyCssRenamingMap). If you find memory usage to be a problem, you can manually control the
    *     contents of the cache. See {@link SoyTofu.Renderer#setDontAddToCache} for details.
    *
+   * @see #compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)
+   *
    * @return The result of compiling this Soy file set into a Java object.
    * @throws SoySyntaxException If a syntax error is found.
+   * @deprecated Use {@link #compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)}.
    */
-  public SoyTofu compileToJavaObj(boolean useCaching) throws SoySyntaxException {
-
-    // TODO: Allow binding a SoyTofu instance to volatile inputs.
-    SoyFileSetNode soyTree = (new SoyFileSetParser(soyFileSuppliers)).parse();
-    runMiddleendPasses(soyTree, true);
-
-    // Note: Globals should have been substituted already. The pass below is just a check.
-    (new SubstituteGlobalsVisitor(options.getCompileTimeGlobals(), true)).exec(soyTree);
-
-    // Clear the SoyDoc strings because they use unnecessary memory.
-    (new ClearSoyDocStringsVisitor()).exec(soyTree);
-
-    return baseTofuFactory.create(soyTree, useCaching);
+  @Deprecated public SoyTofu compileToJavaObj(boolean useCaching) throws SoySyntaxException {
+    SoyTofuOptions options = new SoyTofuOptions();
+    options.setUseCaching(useCaching);
+    return compileToTofu(options);
   }
 
 
@@ -506,7 +563,7 @@ public final class SoyFileSet {
       final String bundleName, SoyJavaSrcOptions options, final SoyMsgBundle msgBundle) {
 
     // Defensively copy options so that changes to them can't affect lazily compiled modules.
-    final SoyJavaSrcOptions copyOfOptions = new SoyJavaSrcOptions(options);
+    final SoyJavaSrcOptions copyOfOptions = options.clone();
     copyOfOptions.setCodeStyle(SoyJavaSrcOptions.CodeStyle.STRINGBUILDER);
 
     return new SoyTemplateRuntimes() {
@@ -592,7 +649,7 @@ public final class SoyFileSet {
   /**
    * Warning: The Java Src backend is experimental (incomplete, repetitive, untested, undocumented).
    *
-   * <p> To use Soy from Java, you should call {@link #compileToJavaObj()} to obtain a
+   * <p> To use Soy from Java, you should call {@link #compileToTofu()} to obtain a
    * {@code SoyTofu} object that will be able to render any public template in this Soy file set.
    *
    * @param javaSrcOptions The compilation options for the Java Src output target.
@@ -624,7 +681,7 @@ public final class SoyFileSet {
       SoyFileSetNode soyTree, SoyJavaSrcOptions javaSrcOptions, SoyMsgBundle msgBundle) {
 
     // Note: Globals should have been substituted already. The pass below is just a check.
-    (new SubstituteGlobalsVisitor(options.getCompileTimeGlobals(), true)).exec(soyTree);
+    (new SubstituteGlobalsVisitor(generalOptions.getCompileTimeGlobals(), true)).exec(soyTree);
 
     return javaSrcMainProvider.get().genJavaSrc(soyTree, javaSrcOptions, msgBundle);
   }
@@ -720,10 +777,15 @@ public final class SoyFileSet {
   private void runMiddleendPasses(SoyFileSetNode soyTree, boolean doEnforceSyntaxVersionV2)
       throws SoySyntaxException {
 
+    // If diallowing external calls, perform the check.
+    if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
+      (new AssertNoExternalCallsVisitor()).exec(soyTree);
+    }
+
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
-    (new HandleCssCommandVisitor(options.getCssHandlingScheme())).exec(soyTree);
-    if (options.getCompileTimeGlobals() != null) {
-      (new SubstituteGlobalsVisitor(options.getCompileTimeGlobals(), false)).exec(soyTree);
+    (new HandleCssCommandVisitor(generalOptions.getCssHandlingScheme())).exec(soyTree);
+    if (generalOptions.getCompileTimeGlobals() != null) {
+      (new SubstituteGlobalsVisitor(generalOptions.getCompileTimeGlobals(), false)).exec(soyTree);
     }
 
     // Soy version 1 allowed calling functions that are not backed by any SoyFunction definition.

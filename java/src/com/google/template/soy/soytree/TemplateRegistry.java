@@ -229,7 +229,12 @@ public class TemplateRegistry {
       String delTemplateName, Set<String> activeDelPackageNames)
       throws DelegateTemplateConflictException {
 
-    for (DelegateTemplateDivision division : delTemplatesMap.get(delTemplateName)) {
+    List<DelegateTemplateDivision> divisions = delTemplatesMap.get(delTemplateName);
+    if (divisions == null) {
+      return null;
+    }
+
+    for (DelegateTemplateDivision division : divisions) {
 
       TemplateDelegateNode delTemplate = null;
 

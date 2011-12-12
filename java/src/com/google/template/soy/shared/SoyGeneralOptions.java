@@ -46,17 +46,38 @@ public class SoyGeneralOptions implements Cloneable {
   }
 
 
+  /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
+  private Boolean allowExternalCalls;
+
   /** Scheme for handling 'css' commands. */
   private CssHandlingScheme cssHandlingScheme;
-
 
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
 
   public SoyGeneralOptions() {
+    allowExternalCalls = null;
     cssHandlingScheme = CssHandlingScheme.LITERAL;
     compileTimeGlobals = null;
+  }
+
+
+  /**
+   * Sets whether to allow external calls (calls to undefined templates).
+   * @param allowExternalCalls The value to set.
+   */
+  public void setAllowExternalCalls(boolean allowExternalCalls) {
+    this.allowExternalCalls = allowExternalCalls;
+  }
+
+
+  /**
+   * Returns whether to allow external calls (calls to undefined templates). If this option was
+   * never explicitly set, then returns null.
+   */
+  public Boolean allowExternalCalls() {
+    return allowExternalCalls;
   }
 
 
@@ -164,7 +185,7 @@ public class SoyGeneralOptions implements Cloneable {
     try {
       return (SoyGeneralOptions) super.clone();
     } catch (CloneNotSupportedException cnse) {
-      throw new RuntimeException("Cloneable interface removed from SoyGeneralOptions");
+      throw new RuntimeException("Cloneable interface removed from SoyGeneralOptions.");
     }
   }
 

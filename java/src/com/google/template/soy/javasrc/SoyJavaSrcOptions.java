@@ -25,7 +25,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
  *
  * @author Kai Huang
  */
-public class SoyJavaSrcOptions {
+public class SoyJavaSrcOptions implements Cloneable {
 
 
   /**
@@ -75,22 +75,13 @@ public class SoyJavaSrcOptions {
 
 
   /**
-   * Produces a copy of the input.
-   */
-  public SoyJavaSrcOptions(SoyJavaSrcOptions options) {
-    this.codeStyle = options.codeStyle;
-    this.bidiGlobalDir = options.bidiGlobalDir;
-    this.cssRenamingHints = options.cssRenamingHints;
-  }
-
-
-  /**
    * Sets the output variable code style to use.
    * @param codeStyle The code style to set.
    */
   public void setCodeStyle(CodeStyle codeStyle) {
     this.codeStyle = codeStyle;
   }
+
 
   /** Returns the currently set code style. */
   public CodeStyle getCodeStyle() {
@@ -135,11 +126,21 @@ public class SoyJavaSrcOptions {
     this.cssRenamingHints = cssRenamingHints;
   }
 
+
   /**
    * Returns the CSS renaming map that specifies at compile time how to rename CSS selectors.
    */
   public SoyCssRenamingMap getCssRenamingHints() {
     return cssRenamingHints;
+  }
+
+
+  @Override public SoyJavaSrcOptions clone() {
+    try {
+      return (SoyJavaSrcOptions) super.clone();
+    } catch (CloneNotSupportedException cnse) {
+      throw new RuntimeException("Cloneable interface removed from SoyJavaSrcOptions.");
+    }
   }
 
 }

@@ -46,7 +46,7 @@ import java.util.SortedSet;
  *
  * @author Kai Huang
  */
-class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<String>> {
+class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
 
 
   /** The names of templates defined in this file. */
@@ -56,7 +56,7 @@ class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<String>> {
   private SortedSet<String> calleesNotInFile;
 
 
-  @Override public Set<String> exec(SoyNode node) {
+  @Override public SortedSet<String> exec(SoyNode node) {
     visit(node);
     return calleesNotInFile;
   }

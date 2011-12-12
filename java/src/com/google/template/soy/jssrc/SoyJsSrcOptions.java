@@ -53,6 +53,9 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Whether we should generate code to provide/require template JS functions. */
   private boolean shouldProvideRequireJsFunctions;
 
+  /** Whether we should generate code to provide both Soy namespaces and JS functions. */
+  private boolean shouldProvideBothSoyNamespacesAndJsFunctions;
+
   /** Whether we should generate code to declare the top level namespace. */
   private boolean shouldDeclareTopLevelNamespaces;
 
@@ -85,6 +88,7 @@ public class SoyJsSrcOptions implements Cloneable {
     shouldGenerateJsdoc = false;
     shouldProvideRequireSoyNamespaces = false;
     shouldProvideRequireJsFunctions = false;
+    shouldProvideBothSoyNamespacesAndJsFunctions = false;
     shouldDeclareTopLevelNamespaces = true;
     shouldGenerateGoogMsgDefs = false;
     googMsgsAreExternal = false;
@@ -101,6 +105,7 @@ public class SoyJsSrcOptions implements Cloneable {
     this.shouldAllowDeprecatedSyntax = shouldAllowDeprecatedSyntax;
   }
 
+
   /** Returns whether we're set to allow deprecated syntax (semi backwards compatible mode). */
   public boolean shouldAllowDeprecatedSyntax() {
     return shouldAllowDeprecatedSyntax;
@@ -114,6 +119,7 @@ public class SoyJsSrcOptions implements Cloneable {
   public void setIsUsingIjData(boolean isUsingIjData) {
     this.isUsingIjData = isUsingIjData;
   }
+
 
   /** Returns whether use of injected data is currently enabled. */
   public boolean isUsingIjData() {
@@ -129,6 +135,7 @@ public class SoyJsSrcOptions implements Cloneable {
     this.codeStyle = codeStyle;
   }
 
+
   /** Returns the currently set code style. */
   public CodeStyle getCodeStyle() {
     return codeStyle;
@@ -142,6 +149,7 @@ public class SoyJsSrcOptions implements Cloneable {
   public void setShouldGenerateJsdoc(boolean shouldGenerateJsdoc) {
     this.shouldGenerateJsdoc = shouldGenerateJsdoc;
   }
+
 
   /** Returns whether we should generate JSDoc with type info for the Closure Compiler. */
   public boolean shouldGenerateJsdoc() {
@@ -166,6 +174,7 @@ public class SoyJsSrcOptions implements Cloneable {
         " shouldProvideRequireSoyNamespaces is enabled.");
   }
 
+
   /** Returns whether we're set to generate code to provide/require Soy namespaces. */
   public boolean shouldProvideRequireSoyNamespaces() {
     return shouldProvideRequireSoyNamespaces;
@@ -189,9 +198,33 @@ public class SoyJsSrcOptions implements Cloneable {
         " shouldProvideRequireJsFunctions is enabled.");
   }
 
+
   /** Returns whether we're set to generate code to provide/require template JS functions. */
   public boolean shouldProvideRequireJsFunctions() {
     return shouldProvideRequireJsFunctions;
+  }
+
+
+  /**
+   * Sets whether we should generate code to provide both Soy namespaces and JS functions.
+   * @param shouldProvideBothSoyNamespacesAndJsFunctions The value to set.
+   */
+  public void setShouldProvideBothSoyNamespacesAndJsFunctions(
+      boolean shouldProvideBothSoyNamespacesAndJsFunctions) {
+    this.shouldProvideBothSoyNamespacesAndJsFunctions =
+        shouldProvideBothSoyNamespacesAndJsFunctions;
+    if (shouldProvideBothSoyNamespacesAndJsFunctions) {
+      Preconditions.checkState(
+          this.shouldProvideRequireSoyNamespaces || this.shouldProvideRequireJsFunctions,
+          "Must only enable shouldProvideBothSoyNamespacesAndJsFunctions after enabling either" +
+          " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
+    }
+  }
+
+
+  /** Returns whether we should generate code to provide both Soy namespaces and JS functions. */
+  public boolean shouldProvideBothSoyNamespacesAndJsFunctions() {
+    return shouldProvideBothSoyNamespacesAndJsFunctions;
   }
 
 
@@ -212,6 +245,7 @@ public class SoyJsSrcOptions implements Cloneable {
         " shouldProvideRequireJsFunctions is enabled.");
   }
 
+
   /** Returns whether we should attempt to declare the top level namespace. */
   public boolean shouldDeclareTopLevelNamespaces() {
     return shouldDeclareTopLevelNamespaces;
@@ -225,6 +259,7 @@ public class SoyJsSrcOptions implements Cloneable {
   public void setShouldGenerateGoogMsgDefs(boolean shouldGenerateGoogMsgDefs) {
     this.shouldGenerateGoogMsgDefs = shouldGenerateGoogMsgDefs;
   }
+
 
   /** Returns whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
   public boolean shouldGenerateGoogMsgDefs() {
@@ -246,6 +281,7 @@ public class SoyJsSrcOptions implements Cloneable {
   public void setGoogMsgsAreExternal(boolean googMsgsAreExternal) {
     this.googMsgsAreExternal = googMsgsAreExternal;
   }
+
 
   /**
    * Returns whether the generated Closure Library message definitions are for external messages
@@ -328,7 +364,7 @@ public class SoyJsSrcOptions implements Cloneable {
     try {
       return (SoyJsSrcOptions) super.clone();
     } catch (CloneNotSupportedException cnse) {
-      throw new RuntimeException("Cloneable interface removed from SoyJsSrcOptions");
+      throw new RuntimeException("Cloneable interface removed from SoyJsSrcOptions.");
     }
   }
 

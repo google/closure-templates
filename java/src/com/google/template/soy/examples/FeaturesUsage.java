@@ -117,7 +117,7 @@ public class FeaturesUsage {
         .add(Resources.getResource("features.soy"))
         .setCompileTimeGlobals(Resources.getResource("FeaturesUsage_globals.txt"))
         .build();
-    SoyTofu tofu = sfs.compileToJavaObj().forNamespace("soy.examples.features");
+    SoyTofu tofu = sfs.compileToTofu().forNamespace("soy.examples.features");
 
     SoyMsgBundle msgBundle;
     if (locale.length() > 0) {

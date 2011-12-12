@@ -468,6 +468,9 @@ Static variable in interface com.google.template.soy.soyparse.<A HREF="./com/goo
 <DT><A HREF="./com/google/template/soy/soyparse/TemplateParserConstants.html#AFTER_SOY_TAG_OPEN"><B>AFTER_SOY_TAG_OPEN</B></A> - 
 Static variable in interface com.google.template.soy.soyparse.<A HREF="./com/google/template/soy/soyparse/TemplateParserConstants.html" title="interface in com.google.template.soy.soyparse">TemplateParserConstants</A>
 <DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html#allowExternalCalls()"><B>allowExternalCalls()</B></A> - 
+Method in class com.google.template.soy.shared.<A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>
+<DD>Returns whether to allow external calls (calls to undefined templates).
 <DT><A HREF="./com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_CHAR"><B>ANY_CHAR</B></A> - 
 Static variable in interface com.google.template.soy.soyparse.<A HREF="./com/google/template/soy/soyparse/SoyFileParserConstants.html" title="interface in com.google.template.soy.soyparse">SoyFileParserConstants</A>
 <DD>&nbsp;
@@ -674,6 +677,9 @@ Method in class com.google.template.soy.data.internal.<A HREF="./com/google/temp
 <DT><A HREF="./com/google/template/soy/data/SoyMapData.html#asMap()"><B>asMap()</B></A> - 
 Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>
 <DD>Important: Please treat this method as superpackage-private.
+<DT><A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>AssertNoExternalCallsVisitor</B></A> - Class in <A HREF="./com/google/template/soy/sharedpasses/package-summary.html">com.google.template.soy.sharedpasses</A><DD>Visitor to check that there are no external calls.<DT><A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html#AssertNoExternalCallsVisitor()"><B>AssertNoExternalCallsVisitor()</B></A> - 
+Constructor for class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses">AssertNoExternalCallsVisitor</A>
+<DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html" title="class in com.google.template.soy.sharedpasses"><B>AssertSyntaxVersionV2Visitor</B></A> - Class in <A HREF="./com/google/template/soy/sharedpasses/package-summary.html">com.google.template.soy.sharedpasses</A><DD>Visitor for asserting that all the nodes in a parse tree or subtree conform to Soy V2 syntax.<DT><A HREF="./com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html#AssertSyntaxVersionV2Visitor()"><B>AssertSyntaxVersionV2Visitor()</B></A> - 
 Constructor for class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html" title="class in com.google.template.soy.sharedpasses">AssertSyntaxVersionV2Visitor</A>
 <DD>&nbsp;
@@ -1091,6 +1097,9 @@ Method in class com.google.template.soy.exprtree.<A HREF="./com/google/template/
 <DT><A HREF="./com/google/template/soy/exprtree/VarNode.html#clone()"><B>clone()</B></A> - 
 Method in class com.google.template.soy.exprtree.<A HREF="./com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</A>
 <DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html#clone()"><B>clone()</B></A> - 
+Method in class com.google.template.soy.javasrc.<A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A>
+<DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#clone()"><B>clone()</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>&nbsp;
@@ -1213,6 +1222,9 @@ Method in class com.google.template.soy.soytree.<A HREF="./com/google/template/s
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/soytree/TemplateDelegateNode.html#clone()"><B>clone()</B></A> - 
 Method in class com.google.template.soy.soytree.<A HREF="./com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</A>
+<DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html#clone()"><B>clone()</B></A> - 
+Method in class com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html" title="class in com.google.template.soy.tofu">SoyTofuOptions</A>
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/soytree/SoytreeUtils.html#cloneWithNewIds(T)"><B>cloneWithNewIds(T)</B></A> - 
 Static method in class com.google.template.soy.soytree.<A HREF="./com/google/template/soy/soytree/SoytreeUtils.html" title="class in com.google.template.soy.soytree">SoytreeUtils</A>
@@ -1383,12 +1395,10 @@ Static method in class com.google.template.soy.javasrc.dyncompile.<A HREF="./com
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/SoyFileSet.html#compileToJavaObj()"><B>compileToJavaObj()</B></A> - 
 Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A>
-<DD>Compiles this Soy file set into a Java object (type <code>SoyTofu</code>) capable of rendering the
- compiled templates.
+<DD><B>Deprecated.</B>&nbsp;<I>Use <A HREF="./com/google/template/soy/SoyFileSet.html#compileToTofu()"><CODE>SoyFileSet.compileToTofu()</CODE></A>.</I>
 <DT><A HREF="./com/google/template/soy/SoyFileSet.html#compileToJavaObj(boolean)"><B>compileToJavaObj(boolean)</B></A> - 
 Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A>
-<DD>Compiles this Soy file set into a Java object (type <code>SoyTofu</code>) capable of rendering the
- compiled templates.
+<DD><B>Deprecated.</B>&nbsp;<I>Use <A HREF="./com/google/template/soy/SoyFileSet.html#compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)"><CODE>SoyFileSet.compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)</CODE></A>.</I>
 <DT><A HREF="./com/google/template/soy/SoyFileSet.html#compileToJavaSrc(com.google.template.soy.javasrc.SoyJavaSrcOptions, com.google.template.soy.msgs.SoyMsgBundle)"><B>compileToJavaSrc(SoyJavaSrcOptions, SoyMsgBundle)</B></A> - 
 Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A>
 <DD>Warning: The Java Src backend is experimental (incomplete, repetitive, untested, undocumented).
@@ -1399,6 +1409,14 @@ Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFi
 <DT><A HREF="./com/google/template/soy/SoyFileSet.html#compileToRuntimes(java.lang.String, com.google.template.soy.javasrc.SoyJavaSrcOptions, com.google.template.soy.msgs.SoyMsgBundle)"><B>compileToRuntimes(String, SoyJavaSrcOptions, SoyMsgBundle)</B></A> - 
 Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A>
 <DD>Warning: The Java Src backend is experimental (incomplete, repetitive, untested, undocumented).
+<DT><A HREF="./com/google/template/soy/SoyFileSet.html#compileToTofu()"><B>compileToTofu()</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A>
+<DD>Compiles this Soy file set into a Java object (type <code>SoyTofu</code>) capable of rendering the
+ compiled templates.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.html#compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)"><B>compileToTofu(SoyTofuOptions)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A>
+<DD>Compiles this Soy file set into a Java object (type <code>SoyTofu</code>) capable of rendering the
+ compiled templates.
 <DT><A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html#compute(java.util.List)"><B>compute(List&lt;SoyData&gt;)</B></A> - 
 Method in interface com.google.template.soy.shared.restricted.<A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimeFunction</A>
 <DD>Computes this function on the given arguments.
@@ -2252,6 +2270,9 @@ Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/templa
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/parsepasses/PrependNamespacesToCalleeNamesVisitor.html#exec(com.google.template.soy.soytree.SoyNode)"><B>exec(SoyNode)</B></A> - 
 Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/template/soy/parsepasses/PrependNamespacesToCalleeNamesVisitor.html" title="class in com.google.template.soy.parsepasses">PrependNamespacesToCalleeNamesVisitor</A>
+<DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html#exec(com.google.template.soy.soytree.SoyNode)"><B>exec(SoyNode)</B></A> - 
+Method in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses">AssertNoExternalCallsVisitor</A>
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html#exec(com.google.template.soy.soytree.SoyNode)"><B>exec(SoyNode)</B></A> - 
 Method in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html" title="class in com.google.template.soy.sharedpasses">BuildAllDependeesMapVisitor</A>
@@ -5847,6 +5868,12 @@ Static variable in class com.google.template.soy.examples.<A HREF="./com/google/
 <DT><A HREF="./com/google/template/soy/tofu/SoyTofu.Renderer.html#setActiveDelegatePackageNames(java.util.Set)"><B>setActiveDelegatePackageNames(Set&lt;String&gt;)</B></A> - 
 Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A>
 <DD>Sets the set of active delegate package names.
+<DT><A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html#setAllowExternalCalls(boolean)"><B>setAllowExternalCalls(boolean)</B></A> - 
+Method in class com.google.template.soy.shared.<A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>
+<DD>Sets whether to allow external calls (calls to undefined templates).
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#setAllowExternalCalls(boolean)"><B>setAllowExternalCalls(boolean)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Sets whether to allow external calls (calls to undefined templates).
 <DT><A HREF="./com/google/template/soy/parsepasses/CheckFunctionCallsVisitor.html#setAllowExternallyDefinedFunctions(boolean)"><B>setAllowExternallyDefinedFunctions(boolean)</B></A> - 
 Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/template/soy/parsepasses/CheckFunctionCallsVisitor.html" title="class in com.google.template.soy.parsepasses">CheckFunctionCallsVisitor</A>
 <DD>Specifies whether we allow external function definitions.
@@ -6027,6 +6054,9 @@ Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#setShouldGenerateJsdoc(boolean)"><B>setShouldGenerateJsdoc(boolean)</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Sets whether we should generate JSDoc with type info for the Closure Compiler.
+<DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#setShouldProvideBothSoyNamespacesAndJsFunctions(boolean)"><B>setShouldProvideBothSoyNamespacesAndJsFunctions(boolean)</B></A> - 
+Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
+<DD>Sets whether we should generate code to provide both Soy namespaces and JS functions.
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#setShouldProvideRequireJsFunctions(boolean)"><B>setShouldProvideRequireJsFunctions(boolean)</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Sets whether we should generate code to provide/require template JS functions.
@@ -6057,6 +6087,10 @@ Method in exception com.google.template.soy.sharedpasses.render.<A HREF="./com/g
 <DT><A HREF="./com/google/template/soy/tofu/SoyTofuException.html#setTemplateName(java.lang.String)"><B>setTemplateName(String)</B></A> - 
 Method in exception com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu">SoyTofuException</A>
 <DD>Sets the template name for this error.
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html#setUseCaching(boolean)"><B>setUseCaching(boolean)</B></A> - 
+Method in class com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html" title="class in com.google.template.soy.tofu">SoyTofuOptions</A>
+<DD>Sets whether the resulting SoyTofu instance should cache intermediate results after
+ substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#setUseGoogIsRtlForBidiGlobalDir(boolean)"><B>setUseGoogIsRtlForBidiGlobalDir(boolean)</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Sets the Javascript code snippet that will evaluate at template runtime to a boolean value
@@ -6110,6 +6144,9 @@ Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#shouldGenerateJsdoc()"><B>shouldGenerateJsdoc()</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Returns whether we should generate JSDoc with type info for the Closure Compiler.
+<DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#shouldProvideBothSoyNamespacesAndJsFunctions()"><B>shouldProvideBothSoyNamespacesAndJsFunctions()</B></A> - 
+Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
+<DD>Returns whether we should generate code to provide both Soy namespaces and JS functions.
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#shouldProvideRequireJsFunctions()"><B>shouldProvideRequireJsFunctions()</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Returns whether we're set to generate code to provide/require template JS functions.
@@ -6302,9 +6339,6 @@ Constructor for class com.google.template.soy.shared.<A HREF="./com/google/templ
 <DT><A HREF="./com/google/template/soy/shared/SoyGeneralOptions.CssHandlingScheme.html" title="enum in com.google.template.soy.shared"><B>SoyGeneralOptions.CssHandlingScheme</B></A> - Enum in <A HREF="./com/google/template/soy/shared/package-summary.html">com.google.template.soy.shared</A><DD>Schemes for handling <code>css</code> commands.<DT><A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted"><B>SoyJavaRuntimeFunction</B></A> - Interface in <A HREF="./com/google/template/soy/shared/restricted/package-summary.html">com.google.template.soy.shared.restricted</A><DD>Interface for a Soy function implemented for Java runtime rendering.<DT><A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunctionUtils.html" title="class in com.google.template.soy.shared.restricted"><B>SoyJavaRuntimeFunctionUtils</B></A> - Class in <A HREF="./com/google/template/soy/shared/restricted/package-summary.html">com.google.template.soy.shared.restricted</A><DD>Utilities for implementing <A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunction.html" title="interface in com.google.template.soy.shared.restricted"><CODE>SoyJavaRuntimeFunction</CODE></A>s.<DT><A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimePrintDirective.html" title="interface in com.google.template.soy.shared.restricted"><B>SoyJavaRuntimePrintDirective</B></A> - Interface in <A HREF="./com/google/template/soy/shared/restricted/package-summary.html">com.google.template.soy.shared.restricted</A><DD>Interface for a Soy print directive implemented for Java runtime rendering.<DT><A HREF="./com/google/template/soy/javasrc/restricted/SoyJavaSrcFunction.html" title="interface in com.google.template.soy.javasrc.restricted"><B>SoyJavaSrcFunction</B></A> - Interface in <A HREF="./com/google/template/soy/javasrc/restricted/package-summary.html">com.google.template.soy.javasrc.restricted</A><DD>Interface for a Soy function implemented for the Java Source backend.<DT><A HREF="./com/google/template/soy/javasrc/restricted/SoyJavaSrcFunctionUtils.html" title="class in com.google.template.soy.javasrc.restricted"><B>SoyJavaSrcFunctionUtils</B></A> - Class in <A HREF="./com/google/template/soy/javasrc/restricted/package-summary.html">com.google.template.soy.javasrc.restricted</A><DD>Utilities for implementing <A HREF="./com/google/template/soy/javasrc/restricted/SoyJavaSrcFunction.html" title="interface in com.google.template.soy.javasrc.restricted"><CODE>SoyJavaSrcFunction</CODE></A>s.<DT><A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc"><B>SoyJavaSrcOptions</B></A> - Class in <A HREF="./com/google/template/soy/javasrc/package-summary.html">com.google.template.soy.javasrc</A><DD>Compilation options for the Java Src output target (backend).<DT><A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html#SoyJavaSrcOptions()"><B>SoyJavaSrcOptions()</B></A> - 
 Constructor for class com.google.template.soy.javasrc.<A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A>
 <DD>&nbsp;
-<DT><A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html#SoyJavaSrcOptions(com.google.template.soy.javasrc.SoyJavaSrcOptions)"><B>SoyJavaSrcOptions(SoyJavaSrcOptions)</B></A> - 
-Constructor for class com.google.template.soy.javasrc.<A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A>
-<DD>Produces a copy of the input.
 <DT><A HREF="./com/google/template/soy/javasrc/SoyJavaSrcOptions.CodeStyle.html" title="enum in com.google.template.soy.javasrc"><B>SoyJavaSrcOptions.CodeStyle</B></A> - Enum in <A HREF="./com/google/template/soy/javasrc/package-summary.html">com.google.template.soy.javasrc</A><DD>The two supported code styles.<DT><A HREF="./com/google/template/soy/javasrc/restricted/SoyJavaSrcPrintDirective.html" title="interface in com.google.template.soy.javasrc.restricted"><B>SoyJavaSrcPrintDirective</B></A> - Interface in <A HREF="./com/google/template/soy/javasrc/restricted/package-summary.html">com.google.template.soy.javasrc.restricted</A><DD>Interface for a Soy print directive implemented for the Java Source backend.<DT><A HREF="./com/google/template/soy/jssrc/restricted/SoyJsCodeUtils.html" title="class in com.google.template.soy.jssrc.restricted"><B>SoyJsCodeUtils</B></A> - Class in <A HREF="./com/google/template/soy/jssrc/restricted/package-summary.html">com.google.template.soy.jssrc.restricted</A><DD>Utilities for building code for the JS Source backend.<DT><A HREF="./com/google/template/soy/jssrc/restricted/SoyJsSrcFunction.html" title="interface in com.google.template.soy.jssrc.restricted"><B>SoyJsSrcFunction</B></A> - Interface in <A HREF="./com/google/template/soy/jssrc/restricted/package-summary.html">com.google.template.soy.jssrc.restricted</A><DD>Interface for a Soy function implemented for the JS Source backend.<DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc"><B>SoyJsSrcOptions</B></A> - Class in <A HREF="./com/google/template/soy/jssrc/package-summary.html">com.google.template.soy.jssrc</A><DD>Compilation options for the JS Src output target (backend).<DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#SoyJsSrcOptions()"><B>SoyJsSrcOptions()</B></A> - 
 Constructor for class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>&nbsp;
@@ -6399,7 +6433,10 @@ Constructor for exception com.google.template.soy.tofu.<A HREF="./com/google/tem
 Constructor for exception com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu">SoyTofuException</A>
 <DD>Creates an instance by copying a RenderException.
 <DT><A HREF="./com/google/template/soy/tofu/restricted/SoyTofuFunction.html" title="interface in com.google.template.soy.tofu.restricted"><B>SoyTofuFunction</B></A> - Interface in <A HREF="./com/google/template/soy/tofu/restricted/package-summary.html">com.google.template.soy.tofu.restricted</A><DD>Interface for a Soy function implemented for the Tofu backend (a.k.a.<DT><A HREF="./com/google/template/soy/tofu/restricted/SoyTofuFunctionUtils.html" title="class in com.google.template.soy.tofu.restricted"><B>SoyTofuFunctionUtils</B></A> - Class in <A HREF="./com/google/template/soy/tofu/restricted/package-summary.html">com.google.template.soy.tofu.restricted</A><DD><B>Deprecated.</B>&nbsp;<I>Plese use
-     <A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunctionUtils.html" title="class in com.google.template.soy.shared.restricted"><CODE>SoyJavaRuntimeFunctionUtils</CODE></A> instead.</I><DT><A HREF="./com/google/template/soy/tofu/restricted/SoyTofuPrintDirective.html" title="interface in com.google.template.soy.tofu.restricted"><B>SoyTofuPrintDirective</B></A> - Interface in <A HREF="./com/google/template/soy/tofu/restricted/package-summary.html">com.google.template.soy.tofu.restricted</A><DD>Interface for a Soy print directive implemented for the Tofu backend (a.k.a.<DT><A HREF="./com/google/template/soy/javasrc/dyncompile/SoyToJavaDynamicCompiler.html" title="class in com.google.template.soy.javasrc.dyncompile"><B>SoyToJavaDynamicCompiler</B></A> - Class in <A HREF="./com/google/template/soy/javasrc/dyncompile/package-summary.html">com.google.template.soy.javasrc.dyncompile</A><DD>Dynamically compiles Soy templates to Java classes that are exposed as
+     <A HREF="./com/google/template/soy/shared/restricted/SoyJavaRuntimeFunctionUtils.html" title="class in com.google.template.soy.shared.restricted"><CODE>SoyJavaRuntimeFunctionUtils</CODE></A> instead.</I><DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html" title="class in com.google.template.soy.tofu"><B>SoyTofuOptions</B></A> - Class in <A HREF="./com/google/template/soy/tofu/package-summary.html">com.google.template.soy.tofu</A><DD>Compilation options for the Tofu backend.<DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html#SoyTofuOptions()"><B>SoyTofuOptions()</B></A> - 
+Constructor for class com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html" title="class in com.google.template.soy.tofu">SoyTofuOptions</A>
+<DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/tofu/restricted/SoyTofuPrintDirective.html" title="interface in com.google.template.soy.tofu.restricted"><B>SoyTofuPrintDirective</B></A> - Interface in <A HREF="./com/google/template/soy/tofu/restricted/package-summary.html">com.google.template.soy.tofu.restricted</A><DD>Interface for a Soy print directive implemented for the Tofu backend (a.k.a.<DT><A HREF="./com/google/template/soy/javasrc/dyncompile/SoyToJavaDynamicCompiler.html" title="class in com.google.template.soy.javasrc.dyncompile"><B>SoyToJavaDynamicCompiler</B></A> - Class in <A HREF="./com/google/template/soy/javasrc/dyncompile/package-summary.html">com.google.template.soy.javasrc.dyncompile</A><DD>Dynamically compiles Soy templates to Java classes that are exposed as
  <A HREF="./com/google/template/soy/javasrc/SoyTemplateRuntimes.html" title="interface in com.google.template.soy.javasrc"><CODE>SoyTemplateRuntimes</CODE></A>.<DT><A HREF="./com/google/template/soy/SoyToJavaSrcCompilerExperimental.html" title="class in com.google.template.soy"><B>SoyToJavaSrcCompilerExperimental</B></A> - Class in <A HREF="./com/google/template/soy/package-summary.html">com.google.template.soy</A><DD>Experimental Soy to Java Src compiler.<DT><A HREF="./com/google/template/soy/SoyToJsSrcCompiler.html" title="class in com.google.template.soy"><B>SoyToJsSrcCompiler</B></A> - Class in <A HREF="./com/google/template/soy/package-summary.html">com.google.template.soy</A><DD>Executable for compiling a set of Soy files into corresponding JS source files.<DT><A HREF="./com/google/template/soy/soytree/SoytreeUtils.html" title="class in com.google.template.soy.soytree"><B>SoytreeUtils</B></A> - Class in <A HREF="./com/google/template/soy/soytree/package-summary.html">com.google.template.soy.soytree</A><DD>Shared utilities for the 'soytree' package.<DT><A HREF="./com/google/template/soy/soytree/SoytreeUtils.html#SoytreeUtils()"><B>SoytreeUtils()</B></A> - 
 Constructor for class com.google.template.soy.soytree.<A HREF="./com/google/template/soy/soytree/SoytreeUtils.html" title="class in com.google.template.soy.soytree">SoytreeUtils</A>
 <DD>&nbsp;
@@ -7121,6 +7158,10 @@ Static method in class com.google.template.soy.internal.base.<A HREF="./com/goog
 Static method in class com.google.template.soy.internal.base.<A HREF="./com/google/template/soy/internal/base/CharEscapers.html" title="class in com.google.template.soy.internal.base">CharEscapers</A>
 <DD>Returns an <A HREF="./com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
  safely included in URI query string segments.
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html#useCaching()"><B>useCaching()</B></A> - 
+Method in class com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html" title="class in com.google.template.soy.tofu">SoyTofuOptions</A>
+<DD>Returns whether the resulting SoyTofu instance should cache intermediate results after
+ substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
 <DT><A HREF="./com/google/template/soy/sharedpasses/FindUsedIjParamsVisitor.UsedIjParamsInfo.html#usedIjParamToCalleesMultimap"><B>usedIjParamToCalleesMultimap</B></A> - 
 Variable in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/FindUsedIjParamsVisitor.UsedIjParamsInfo.html" title="class in com.google.template.soy.sharedpasses">FindUsedIjParamsVisitor.UsedIjParamsInfo</A>
 <DD>Multimap from used injected param key to transitive callees that use the param.
@@ -7356,6 +7397,9 @@ Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/templa
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/parsepasses/PrependNamespacesToCalleeNamesVisitor.html#visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)"><B>visitCallBasicNode(CallBasicNode)</B></A> - 
 Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/template/soy/parsepasses/PrependNamespacesToCalleeNamesVisitor.html" title="class in com.google.template.soy.parsepasses">PrependNamespacesToCalleeNamesVisitor</A>
+<DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html#visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)"><B>visitCallBasicNode(CallBasicNode)</B></A> - 
+Method in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses">AssertNoExternalCallsVisitor</A>
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html#visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)"><B>visitCallBasicNode(CallBasicNode)</B></A> - 
 Method in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html" title="class in com.google.template.soy.sharedpasses">FindIndirectParamsVisitor</A>
@@ -8219,6 +8263,9 @@ Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/templa
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/parsepasses/VerifyPhnameAttrOnlyOnPlaceholdersVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)"><B>visitSoyNode(SoyNode)</B></A> - 
 Method in class com.google.template.soy.parsepasses.<A HREF="./com/google/template/soy/parsepasses/VerifyPhnameAttrOnlyOnPlaceholdersVisitor.html" title="class in com.google.template.soy.parsepasses">VerifyPhnameAttrOnlyOnPlaceholdersVisitor</A>
+<DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)"><B>visitSoyNode(SoyNode)</B></A> - 
+Method in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses">AssertNoExternalCallsVisitor</A>
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)"><B>visitSoyNode(SoyNode)</B></A> - 
 Method in class com.google.template.soy.sharedpasses.<A HREF="./com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html" title="class in com.google.template.soy.sharedpasses">AssertSyntaxVersionV2Visitor</A>

@@ -118,12 +118,46 @@ public final class SoyToJsSrcCompiler {
                   " an extension matching the message file format (case-insensitive).")
   private String messageFilePathFormat = "";
 
+  @Option(name = "--shouldGenerateGoogMsgDefs",
+          usage = "When this option is used, all 'msg' blocks will be turned into goog.getMsg" +
+                  " definitions and corresponding usages. Must be used with either" +
+                  " --bidiGlobalDir, or --useGoogIsRtlForBidiGlobalDir, usually the latter." +
+                  " Also see --googMsgsAreExternal.")
+  private boolean shouldGenerateGoogMsgDefs = false;
+
+  @Option(name = "--googMsgsAreExternal",
+          usage = "[Only applicable if --shouldGenerateGoogMsgDefs is true]" +
+                  " If this option is true, then we generate" +
+                  " \"var MSG_EXTERNAL_<soyGeneratedMsgId> = goog.getMsg(...);\"." +
+                  " If this option is false, then we generate" +
+                  " \"var MSG_UNNAMED_<uniquefier> = goog.getMsg(...);\"." +
+                  "  [Explanation of true value]" +
+                  " Set this option to true if your project is having Closure Templates do" +
+                  " message extraction (e.g. with SoyMsgExtractor) and then having the Closure" +
+                  " Compiler do translated message insertion." +
+                  "  [Explanation of false value]" +
+                  " Set this option to false if your project is having the Closure Compiler do" +
+                  " all of its localization, i.e. if you want the Closure Compiler to do both" +
+                  " message extraction and translated message insertion. A significant drawback" +
+                  " to this setup is that, if your templates are used from both JS and Java, you" +
+                  " will end up with two separate and possibly different sets of translations" +
+                  " for your messages.")
+  private boolean googMsgsAreExternal = false;
+
   @Option(name = "--bidiGlobalDir",
           usage = "The bidi global directionality (ltr=1, rtl=-1). Only applicable if your Soy" +
                   " code uses bidi functions/directives. Also note that this flag is usually not" +
                   " necessary if a message file is provided, because by default the bidi global" +
                   " directionality is simply inferred from the message file.")
   private int bidiGlobalDir = 0;
+
+  @Option(name = "--useGoogIsRtlForBidiGlobalDir",
+          usage = "[Only applicable if both --shouldGenerateGoogMsgDefs and" +
+                  " --shouldProvideRequireSoyNamespaces" +
+                  " is true]" +
+                  " Whether to determine the bidi global direction at template runtime by" +
+                  " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir.")
+  private boolean useGoogIsRtlForBidiGlobalDir = false;
 
   @Option(name = "--cssHandlingScheme",
           usage = "The scheme to use for handling 'css' commands. Specifying 'literal' will" +
@@ -196,7 +230,10 @@ public final class SoyToJsSrcCompiler {
     jsSrcOptions.setShouldGenerateJsdoc(shouldGenerateJsdoc);
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
     jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);
+    jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);
+    jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
+    jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
 
     // Create SoyFileSet.
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);

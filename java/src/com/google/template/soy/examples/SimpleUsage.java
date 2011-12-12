@@ -45,7 +45,7 @@ public class SimpleUsage {
 
     // Compile the template.
     SoyFileSet sfs = (new SoyFileSet.Builder()).add(Resources.getResource("simple.soy")).build();
-    SoyTofu tofu = sfs.compileToJavaObj();
+    SoyTofu tofu = sfs.compileToTofu();
 
     // Example 1.
     writeExampleHeader();

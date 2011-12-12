@@ -92,9 +92,12 @@ Class SoyJavaSrcOptions</H2>
 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
   <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.javasrc.SoyJavaSrcOptions</B>
 </PRE>
+<DL>
+<DT><B>All Implemented Interfaces:</B> <DD><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Cloneable.html?is-external=true" title="class or interface in java.lang">Cloneable</A></DD>
+</DL>
 <HR>
 <DL>
-<DT><PRE>public class <B>SoyJavaSrcOptions</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></DL>
+<DT><PRE>public class <B>SoyJavaSrcOptions</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A><DT>implements <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Cloneable.html?is-external=true" title="class or interface in java.lang">Cloneable</A></DL>
 </PRE>
 
 <P>
@@ -137,12 +140,6 @@ Compilation options for the Java Src output target (backend).
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions.html#SoyJavaSrcOptions(com.google.template.soy.javasrc.SoyJavaSrcOptions)">SoyJavaSrcOptions</A></B>(<A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A>&nbsp;options)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Produces a copy of the input.</TD>
-</TR>
 </TABLE>
 &nbsp;
 <!-- ========== METHOD SUMMARY =========== -->
@@ -152,6 +149,14 @@ Compilation options for the Java Src output target (backend).
 <TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
 <TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
 <B>Method Summary</B></FONT></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions.html#clone()">clone</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -208,7 +213,7 @@ Compilation options for the Java Src output target (backend).
 <TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
+<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -230,16 +235,6 @@ SoyJavaSrcOptions</H3>
 public <B>SoyJavaSrcOptions</B>()</PRE>
 <DL>
 </DL>
-<HR>
-
-<A NAME="SoyJavaSrcOptions(com.google.template.soy.javasrc.SoyJavaSrcOptions)"><!-- --></A><H3>
-SoyJavaSrcOptions</H3>
-<PRE>
-public <B>SoyJavaSrcOptions</B>(<A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A>&nbsp;options)</PRE>
-<DL>
-<DD>Produces a copy of the input.
-<P>
-</DL>
 
 <!-- ============ METHOD DETAIL ========== -->
 
@@ -259,6 +254,9 @@ public void <B>setCodeStyle</B>(<A HREF="../../../../../com/google/template/soy/
 <DD>Sets the output variable code style to use.
 <P>
 <DD><DL>
+</DL>
+</DD>
+<DD><DL>
 <DT><B>Parameters:</B><DD><CODE>codeStyle</CODE> - The code style to set.</DL>
 </DD>
 </DL>
@@ -271,6 +269,9 @@ public <A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions
 <DL>
 <DD>Returns the currently set code style.
 <P>
+<DD><DL>
+</DL>
+</DD>
 <DD><DL>
 </DL>
 </DD>
@@ -287,6 +288,9 @@ public void <B>setBidiGlobalDir</B>(int&nbsp;bidiGlobalDir)</PRE>
  recommended mode of operation. Thus, THERE IS USUALLY NO NEED TO USE THIS METHOD!
 <P>
 <DD><DL>
+</DL>
+</DD>
+<DD><DL>
 <DT><B>Parameters:</B><DD><CODE>bidiGlobalDir</CODE> - 1: ltr, -1: rtl, 0: unspecified. Checks that no other value is used.</DL>
 </DD>
 </DL>
@@ -299,6 +303,9 @@ public int <B>getBidiGlobalDir</B>()</PRE>
 <DL>
 <DD>Returns the static bidi global directionality, 1: ltr, -1: rtl, 0: unspecified.
 <P>
+<DD><DL>
+</DL>
+</DD>
 <DD><DL>
 </DL>
 </DD>
@@ -317,6 +324,9 @@ public void <B>setCssRenamingHints</B>(<A HREF="../../../../../com/google/templa
  <A HREF="../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html#IDENTITY"><CODE>identity renamer</CODE></A>.
 <P>
 <DD><DL>
+</DL>
+</DD>
+<DD><DL>
 <DT><B>Parameters:</B><DD><CODE>cssRenamingHints</CODE> - Returns <code>null</code> to indicate that a given CSS selector cannot be
      renamed at compile time.</DL>
 </DD>
@@ -330,6 +340,23 @@ public <A HREF="../../../../../com/google/template/soy/shared/SoyCssRenamingMap.
 <DL>
 <DD>Returns the CSS renaming map that specifies at compile time how to rename CSS selectors.
 <P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="clone()"><!-- --></A><H3>
+clone</H3>
+<PRE>
+public <A HREF="../../../../../com/google/template/soy/javasrc/SoyJavaSrcOptions.html" title="class in com.google.template.soy.javasrc">SoyJavaSrcOptions</A> <B>clone</B>()</PRE>
+<DL>
+<DD><DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A></CODE> in class <CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></CODE></DL>
+</DD>
 <DD><DL>
 </DL>
 </DD>

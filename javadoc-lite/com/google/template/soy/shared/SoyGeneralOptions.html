@@ -152,6 +152,14 @@ Compilation options applicable to the Soy frontend and/or to multiple Soy backen
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/shared/SoyGeneralOptions.html#allowExternalCalls()">allowExternalCalls</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns whether to allow external calls (calls to undefined templates).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/shared/SoyGeneralOptions.html#clone()">clone</A></B>()</CODE>
 
@@ -173,6 +181,14 @@ Compilation options applicable to the Soy frontend and/or to multiple Soy backen
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the scheme for handling <code>css</code> commands.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/shared/SoyGeneralOptions.html#setAllowExternalCalls(boolean)">setAllowExternalCalls</A></B>(boolean&nbsp;allowExternalCalls)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets whether to allow external calls (calls to undefined templates).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -245,6 +261,39 @@ public <B>SoyGeneralOptions</B>()</PRE>
 <B>Method Detail</B></FONT></TH>
 </TR>
 </TABLE>
+
+<A NAME="setAllowExternalCalls(boolean)"><!-- --></A><H3>
+setAllowExternalCalls</H3>
+<PRE>
+public void <B>setAllowExternalCalls</B>(boolean&nbsp;allowExternalCalls)</PRE>
+<DL>
+<DD>Sets whether to allow external calls (calls to undefined templates).
+<P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>allowExternalCalls</CODE> - The value to set.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="allowExternalCalls()"><!-- --></A><H3>
+allowExternalCalls</H3>
+<PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</A> <B>allowExternalCalls</B>()</PRE>
+<DL>
+<DD>Returns whether to allow external calls (calls to undefined templates). If this option was
+ never explicitly set, then returns null.
+<P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
 
 <A NAME="setCssHandlingScheme(com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme)"><!-- --></A><H3>
 setCssHandlingScheme</H3>
