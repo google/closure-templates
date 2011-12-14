@@ -34,7 +34,6 @@ import java.util.Map;
 /**
  * Translator of Soy expressions to their equivalent JS expressions.
  *
- * @author Kai Huang
  */
 class JsExprTranslator {
 

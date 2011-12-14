@@ -30,8 +30,6 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
- * @author Mohamed Eldawy
  */
 public class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 

@@ -33,8 +33,6 @@ import javax.inject.Singleton;
 /**
  * Implementation of EvalVisitorFactory for Tofu backend.
  *
- * @author Mark Knichel
- * @author Kai Huang
  */
 @Singleton
 class TofuEvalVisitorFactory implements EvalVisitorFactory {

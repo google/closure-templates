@@ -29,8 +29,6 @@ import java.io.Reader;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
- * @author Mike Samuel
  */
 public class StableSoyFileSupplier implements SoyFileSupplier {
 

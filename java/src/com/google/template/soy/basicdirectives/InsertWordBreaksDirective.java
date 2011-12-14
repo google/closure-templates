@@ -38,7 +38,6 @@ import java.util.Set;
  * A directive that inserts word breaks as necessary.
  * It takes a single argument : an integer specifying the max number of characters between breaks.
  *
- * @author Kai Huang
  */
 @Singleton
 public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective

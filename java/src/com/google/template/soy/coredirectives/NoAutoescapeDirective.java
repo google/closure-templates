@@ -33,7 +33,6 @@ import java.util.Set;
 /**
  * A directive that turns off autoescape for this 'print' tag (if it's on for the template).
  *
- * @author Kai Huang
  */
 @Singleton
 public class NoAutoescapeDirective extends SoyAbstractTofuPrintDirective

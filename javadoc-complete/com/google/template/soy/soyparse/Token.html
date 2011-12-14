@@ -92,9 +92,12 @@ Class Token</H2>
 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
   <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.soyparse.Token</B>
 </PRE>
+<DL>
+<DT><B>All Implemented Interfaces:</B> <DD><A HREF="http://java.sun.com/javase/6/docs/api/java/io/Serializable.html?is-external=true" title="class or interface in java.io">Serializable</A></DD>
+</DL>
 <HR>
 <DL>
-<DT><PRE>public class <B>Token</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></DL>
+<DT><PRE>public class <B>Token</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A><DT>implements <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Serializable.html?is-external=true" title="class or interface in java.io">Serializable</A></DL>
 </PRE>
 
 <P>
@@ -102,6 +105,8 @@ Describes the input token stream.
 <P>
 
 <P>
+<DL>
+<DT><B>See Also:</B><DD><A HREF="../../../../../serialized-form.html#com.google.template.soy.soyparse.Token">Serialized Form</A></DL>
 <HR>
 
 <P>
@@ -119,9 +124,7 @@ Describes the input token stream.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#beginColumn">beginColumn</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The column number of the first character of this Token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -129,9 +132,7 @@ Describes the input token stream.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#beginLine">beginLine</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The line number of the first character of this Token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -139,9 +140,7 @@ Describes the input token stream.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#endColumn">endColumn</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The column number of the last character of this Token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -149,9 +148,7 @@ Describes the input token stream.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#endLine">endLine</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The line number of the last character of this Token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -201,7 +198,20 @@ Describes the input token stream.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#Token()">Token</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;No-argument constructor</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#Token(int)">Token</A></B>(int&nbsp;kind)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructs a new token for the specified Image.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#Token(int, java.lang.String)">Token</A></B>(int&nbsp;kind,
+      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;image)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructs a new token for the specified Image and Kind.</TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -215,8 +225,25 @@ Describes the input token stream.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#getValue()">getValue</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An optional attribute value of the Token.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#newToken(int)">newToken</A></B>(int&nbsp;ofKind)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/Token.html#newToken(int, java.lang.String)">newToken</A></B>(int&nbsp;ofKind,
+         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;image)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a new Token object, by default.</TD>
@@ -271,9 +298,7 @@ beginLine</H3>
 <PRE>
 public int <B>beginLine</B></PRE>
 <DL>
-<DD>beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.
+<DD>The line number of the first character of this Token.
 <P>
 <DL>
 </DL>
@@ -285,9 +310,7 @@ beginColumn</H3>
 <PRE>
 public int <B>beginColumn</B></PRE>
 <DL>
-<DD>beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.
+<DD>The column number of the first character of this Token.
 <P>
 <DL>
 </DL>
@@ -299,9 +322,7 @@ endLine</H3>
 <PRE>
 public int <B>endLine</B></PRE>
 <DL>
-<DD>beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.
+<DD>The line number of the last character of this Token.
 <P>
 <DL>
 </DL>
@@ -313,9 +334,7 @@ endColumn</H3>
 <PRE>
 public int <B>endColumn</B></PRE>
 <DL>
-<DD>beginLine and beginColumn describe the position of the first character
- of this token; endLine and endColumn describe the position of the
- last character of this token.
+<DD>The column number of the last character of this Token.
 <P>
 <DL>
 </DL>
@@ -386,6 +405,29 @@ Token</H3>
 <PRE>
 public <B>Token</B>()</PRE>
 <DL>
+<DD>No-argument constructor
+<P>
+</DL>
+<HR>
+
+<A NAME="Token(int)"><!-- --></A><H3>
+Token</H3>
+<PRE>
+public <B>Token</B>(int&nbsp;kind)</PRE>
+<DL>
+<DD>Constructs a new token for the specified Image.
+<P>
+</DL>
+<HR>
+
+<A NAME="Token(int, java.lang.String)"><!-- --></A><H3>
+Token</H3>
+<PRE>
+public <B>Token</B>(int&nbsp;kind,
+             <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;image)</PRE>
+<DL>
+<DD>Constructs a new token for the specified Image and Kind.
+<P>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -397,6 +439,27 @@ public <B>Token</B>()</PRE>
 <B>Method Detail</B></FONT></TH>
 </TR>
 </TABLE>
+
+<A NAME="getValue()"><!-- --></A><H3>
+getValue</H3>
+<PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A> <B>getValue</B>()</PRE>
+<DL>
+<DD>An optional attribute value of the Token.
+ Tokens which are not used as syntactic sugar will often contain
+ meaningful values that will be used later on by the compiler or
+ interpreter. This attribute value is often different from the image.
+ Any subclass of Token that actually wants to return a non-null value can
+ override this method as appropriate.
+<P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
 
 <A NAME="toString()"><!-- --></A><H3>
 toString</H3>
@@ -414,22 +477,40 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 </DL>
 <HR>
 
-<A NAME="newToken(int)"><!-- --></A><H3>
+<A NAME="newToken(int, java.lang.String)"><!-- --></A><H3>
 newToken</H3>
 <PRE>
-public static final <A HREF="../../../../../com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A> <B>newToken</B>(int&nbsp;ofKind)</PRE>
+public static <A HREF="../../../../../com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A> <B>newToken</B>(int&nbsp;ofKind,
+                             <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;image)</PRE>
 <DL>
 <DD>Returns a new Token object, by default. However, if you want, you
  can create and return subclass objects based on the value of ofKind.
  Simply add the cases to the switch for all those special cases.
  For example, if you have a subclass of Token called IDToken that
- you want to create if ofKind is ID, simlpy add something like :
+ you want to create if ofKind is ID, simply add something like :
 
-    case MyParserConstants.ID : return new IDToken();
+    case MyParserConstants.ID : return new IDToken(ofKind, image);
 
  to the following switch statement. Then you can cast matchedToken
- variable to the appropriate type and use it in your lexical actions.
+ variable to the appropriate type and use sit in your lexical actions.
 <P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="newToken(int)"><!-- --></A><H3>
+newToken</H3>
+<PRE>
+public static <A HREF="../../../../../com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A> <B>newToken</B>(int&nbsp;ofKind)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
 <DD><DL>
 </DL>
 </DD>

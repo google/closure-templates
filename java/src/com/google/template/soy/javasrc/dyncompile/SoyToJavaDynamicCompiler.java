@@ -48,7 +48,6 @@ import javax.tools.ToolProvider;
  * Dynamically compiles Soy templates to Java classes that are exposed as
  * {@link SoyTemplateRuntimes}.
  *
- * @author Mike Samuel
  */
 public final class SoyToJavaDynamicCompiler {
 

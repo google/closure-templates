@@ -73,7 +73,6 @@ import javax.inject.Inject;
  *
  * <p> {@link #exec} should be called on a full Soy tree.
  *
- * @author Kai Huang
  */
 public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 

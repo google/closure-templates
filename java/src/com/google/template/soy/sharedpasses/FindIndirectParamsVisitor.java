@@ -60,7 +60,6 @@ import javax.annotation.Nullable;
  *
  * <p> {@link #exec} should be called on a {@code TemplateNode}.
  *
- * @author Kai Huang
  */
 public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectParamsInfo> {
 

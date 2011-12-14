@@ -65,7 +65,6 @@ import javax.annotation.Nullable;
  *   different contexts.
  * </ul>
  *
- * @author Mike Samuel
  */
 final class InferenceEngine {
 

@@ -36,7 +36,6 @@ import javax.tools.JavaFileObject;
  * <p>
  * Since this is loaded from the class path, it is read-only.
  *
- * @author Mike Samuel
  */
 final class ClasspathJavaFileObject implements JavaFileObject {
 

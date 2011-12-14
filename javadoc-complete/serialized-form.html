@@ -184,6 +184,9 @@ dataPath</H3>
 </TABLE>
 
 <P>
+<B>serialVersionUID:&nbsp;</B>1L
+
+<P>
 <A NAME="serializedForm"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
 <TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
@@ -192,19 +195,6 @@ dataPath</H3>
 </TR>
 </TABLE>
 
-<H3>
-specialConstructor</H3>
-<PRE>
-boolean <B>specialConstructor</B></PRE>
-<DL>
-<DD>This variable determines which constructor was used to create
- this object and thereby affects the semantics of the
- "getMessage" method (see below).
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
 <H3>
 currentToken</H3>
 <PRE>
@@ -256,6 +246,131 @@ eol</H3>
 </DL>
 
 <P>
+<A NAME="com.google.template.soy.exprparse.Token"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableSubHeadingColor">
+<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
+<B>Class <A HREF="com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">com.google.template.soy.exprparse.Token</A> extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A> implements Serializable</B></FONT></TH>
+</TR>
+</TABLE>
+
+<P>
+<B>serialVersionUID:&nbsp;</B>1L
+
+<P>
+<A NAME="serializedForm"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
+<B>Serialized Fields</B></FONT></TH>
+</TR>
+</TABLE>
+
+<H3>
+kind</H3>
+<PRE>
+int <B>kind</B></PRE>
+<DL>
+<DD>An integer that describes the kind of this token.  This numbering
+ system is determined by JavaCCParser, and a table of these numbers is
+ stored in the file ...Constants.java.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+beginLine</H3>
+<PRE>
+int <B>beginLine</B></PRE>
+<DL>
+<DD>The line number of the first character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+beginColumn</H3>
+<PRE>
+int <B>beginColumn</B></PRE>
+<DL>
+<DD>The column number of the first character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+endLine</H3>
+<PRE>
+int <B>endLine</B></PRE>
+<DL>
+<DD>The line number of the last character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+endColumn</H3>
+<PRE>
+int <B>endColumn</B></PRE>
+<DL>
+<DD>The column number of the last character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+image</H3>
+<PRE>
+<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>image</B></PRE>
+<DL>
+<DD>The string image of the token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+next</H3>
+<PRE>
+<A HREF="com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>next</B></PRE>
+<DL>
+<DD>A reference to the next regular (non-special) token from the input
+ stream.  If this is the last token from the input stream, or if the
+ token manager has not read tokens beyond this one, this field is
+ set to null.  This is true only if this token is also a regular
+ token.  Otherwise, see below for a description of the contents of
+ this field.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+specialToken</H3>
+<PRE>
+<A HREF="com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>specialToken</B></PRE>
+<DL>
+<DD>This field is used to access special tokens that occur prior to this
+ token, but after the immediately preceding regular (non-special) token.
+ If there are no such special tokens, this field is set to null.
+ When there are more than one such special token, this field refers
+ to the last of these special tokens, which in turn refers to the next
+ previous special token through its specialToken field, and so on
+ until the first special token (whose specialToken field is null).
+ The next fields of special tokens refer to other special tokens that
+ immediately follow it (without an intervening regular token).  If there
+ is no such token, this field is null.
+<P>
+<DL>
+</DL>
+</DL>
+
+<P>
 <A NAME="com.google.template.soy.exprparse.TokenMgrError"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
 <TR BGCOLOR="#CCCCFF" CLASS="TableSubHeadingColor">
@@ -263,6 +378,9 @@ eol</H3>
 <B>Class <A HREF="com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">com.google.template.soy.exprparse.TokenMgrError</A> extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Error.html?is-external=true" title="class or interface in java.lang">Error</A> implements Serializable</B></FONT></TH>
 </TR>
 </TABLE>
+
+<P>
+<B>serialVersionUID:&nbsp;</B>1L
 
 <P>
 <A NAME="serializedForm"><!-- --></A>
@@ -415,6 +533,9 @@ templateName</H3>
 </TABLE>
 
 <P>
+<B>serialVersionUID:&nbsp;</B>1L
+
+<P>
 <A NAME="serializedForm"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
 <TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
@@ -423,19 +544,6 @@ templateName</H3>
 </TR>
 </TABLE>
 
-<H3>
-specialConstructor</H3>
-<PRE>
-boolean <B>specialConstructor</B></PRE>
-<DL>
-<DD>This variable determines which constructor was used to create
- this object and thereby affects the semantics of the
- "getMessage" method (see below).
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
 <H3>
 currentToken</H3>
 <PRE>
@@ -487,6 +595,131 @@ eol</H3>
 </DL>
 
 <P>
+<A NAME="com.google.template.soy.soyparse.Token"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableSubHeadingColor">
+<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
+<B>Class <A HREF="com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">com.google.template.soy.soyparse.Token</A> extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A> implements Serializable</B></FONT></TH>
+</TR>
+</TABLE>
+
+<P>
+<B>serialVersionUID:&nbsp;</B>1L
+
+<P>
+<A NAME="serializedForm"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
+<B>Serialized Fields</B></FONT></TH>
+</TR>
+</TABLE>
+
+<H3>
+kind</H3>
+<PRE>
+int <B>kind</B></PRE>
+<DL>
+<DD>An integer that describes the kind of this token.  This numbering
+ system is determined by JavaCCParser, and a table of these numbers is
+ stored in the file ...Constants.java.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+beginLine</H3>
+<PRE>
+int <B>beginLine</B></PRE>
+<DL>
+<DD>The line number of the first character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+beginColumn</H3>
+<PRE>
+int <B>beginColumn</B></PRE>
+<DL>
+<DD>The column number of the first character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+endLine</H3>
+<PRE>
+int <B>endLine</B></PRE>
+<DL>
+<DD>The line number of the last character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+endColumn</H3>
+<PRE>
+int <B>endColumn</B></PRE>
+<DL>
+<DD>The column number of the last character of this Token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+image</H3>
+<PRE>
+<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>image</B></PRE>
+<DL>
+<DD>The string image of the token.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+next</H3>
+<PRE>
+<A HREF="com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A> <B>next</B></PRE>
+<DL>
+<DD>A reference to the next regular (non-special) token from the input
+ stream.  If this is the last token from the input stream, or if the
+ token manager has not read tokens beyond this one, this field is
+ set to null.  This is true only if this token is also a regular
+ token.  Otherwise, see below for a description of the contents of
+ this field.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+<H3>
+specialToken</H3>
+<PRE>
+<A HREF="com/google/template/soy/soyparse/Token.html" title="class in com.google.template.soy.soyparse">Token</A> <B>specialToken</B></PRE>
+<DL>
+<DD>This field is used to access special tokens that occur prior to this
+ token, but after the immediately preceding regular (non-special) token.
+ If there are no such special tokens, this field is set to null.
+ When there are more than one such special token, this field refers
+ to the last of these special tokens, which in turn refers to the next
+ previous special token through its specialToken field, and so on
+ until the first special token (whose specialToken field is null).
+ The next fields of special tokens refer to other special tokens that
+ immediately follow it (without an intervening regular token).  If there
+ is no such token, this field is null.
+<P>
+<DL>
+</DL>
+</DL>
+
+<P>
 <A NAME="com.google.template.soy.soyparse.TokenMgrError"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
 <TR BGCOLOR="#CCCCFF" CLASS="TableSubHeadingColor">
@@ -494,6 +727,9 @@ eol</H3>
 <B>Class <A HREF="com/google/template/soy/soyparse/TokenMgrError.html" title="class in com.google.template.soy.soyparse">com.google.template.soy.soyparse.TokenMgrError</A> extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Error.html?is-external=true" title="class or interface in java.lang">Error</A> implements Serializable</B></FONT></TH>
 </TR>
 </TABLE>
+
+<P>
+<B>serialVersionUID:&nbsp;</B>1L
 
 <P>
 <A NAME="serializedForm"><!-- --></A>

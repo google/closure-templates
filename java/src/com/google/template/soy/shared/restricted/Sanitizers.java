@@ -37,7 +37,6 @@ import java.util.regex.Matcher;
  * These correspond to the {@code soy.$$escape*}, {@code soy.$$normalize*}, and
  * {@code soy.$$filter*} functions defined in "soyutils.js".
  *
- * @author Mike Samuel
  */
 public final class Sanitizers {
 

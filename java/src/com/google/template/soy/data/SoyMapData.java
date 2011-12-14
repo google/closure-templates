@@ -27,7 +27,6 @@ import java.util.Set;
 /**
  * A map data node in a Soy data tree.
  *
- * @author Kai Huang
  */
 public class SoyMapData extends CollectionData {
 

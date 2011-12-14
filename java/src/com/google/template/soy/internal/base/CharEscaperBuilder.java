@@ -26,7 +26,6 @@ import java.util.Map;
  * a sparse array, just a pseudo sparse array).  The builder can also
  * return a CharEscaper based on the generated array.
  *
- * @author Sven Mawson
  */
 public class CharEscaperBuilder {
 

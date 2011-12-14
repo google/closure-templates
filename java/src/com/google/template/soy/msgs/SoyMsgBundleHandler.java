@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
  * <p> Uses a {@code SoyMsgPlugin} to do the actual generation of the output data and the actual
  * parsing of the input data. The {@code SoyMsgPlugin} implements the specific message file format.
  *
- * @author Kai Huang
  */
 public class SoyMsgBundleHandler {
 

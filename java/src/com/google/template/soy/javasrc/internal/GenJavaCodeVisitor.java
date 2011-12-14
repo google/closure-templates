@@ -75,7 +75,6 @@ import java.util.regex.Pattern;
  * all the Soy files. The return value is a list of strings, each string being the content of one
  * generated Java file (corresponding to one Soy file).
  *
- * @author Kai Huang
  */
 class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 

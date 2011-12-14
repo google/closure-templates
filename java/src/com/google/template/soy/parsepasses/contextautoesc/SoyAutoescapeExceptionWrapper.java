@@ -19,7 +19,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 /**
  * A runtime exception that helps us shuttle exceptions through visitors.
  *
- * @author Mike Samuel
  */
 final class SoyAutoescapeExceptionWrapper extends RuntimeException {
   private final SoyAutoescapeException ex;

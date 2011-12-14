@@ -102,7 +102,6 @@ import javax.annotation.Nullable;
  *
  * <p> The rendered output will be appended to the {@code outputSb} provided to the constructor.
  *
- * @author Kai Huang
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 

@@ -52,7 +52,6 @@ import java.util.List;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractSoyNodeVisitor
- * @author Kai Huang
  */
 public abstract class AbstractReturningSoyNodeVisitor<R>
     extends AbstractReturningNodeVisitor<SoyNode, R> {

@@ -32,7 +32,6 @@ import com.google.template.soy.soytree.SoytreeUtils;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @see MarkLocalVarDataRefsVisitor
- * @author Kai Huang
  */
 public class UnmarkLocalVarDataRefsVisitor extends AbstractSoyNodeVisitor<Void> {
 

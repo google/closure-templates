@@ -62,7 +62,6 @@ import java.util.List;
  * }  // the end
  * </pre>
  *
- * @author Kai Huang
  */
 class JavaCodeBuilder {
 

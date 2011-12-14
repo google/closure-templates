@@ -42,7 +42,6 @@ import javax.annotation.Nullable;
  * com.google.common.labs.misc.ComparisonKeys} or {@link
  * com.google.common.labs.misc.ValueType} to help you with this instead.
  *
- * @author Kevin Bourrillion
  */
 public class Pair<A, B> {
 

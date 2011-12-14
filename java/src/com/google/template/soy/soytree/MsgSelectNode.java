@@ -34,8 +34,6 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
- * @author Mohamed Eldawy
  */
 public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
@@ -95,7 +93,7 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     return selectExpr.toSourceString();
   }
 
-  
+
   /** Returns the parsed expression. */
   public ExprRootNode<?> getExpr() {
     return selectExpr;

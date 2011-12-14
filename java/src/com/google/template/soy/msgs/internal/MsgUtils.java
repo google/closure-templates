@@ -46,7 +46,6 @@ import java.util.List;
 /**
  * Soy-specific utilities for working with messages.
  *
- * @author Kai Huang
  */
 public class MsgUtils {
 

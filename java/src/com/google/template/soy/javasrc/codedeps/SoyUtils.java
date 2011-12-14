@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
 /**
  * Library of utilities needed by the generated code. Do not use these from hand-written code.
  *
- * @author Kai Huang
  */
 public class SoyUtils {
 

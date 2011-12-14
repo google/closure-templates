@@ -62,7 +62,6 @@ import java.util.Set;
  * {@code SoySyntaxException} is thrown if the parameters declared in some template's SoyDoc do not
  * match the data keys referenced in that template.
  *
- * @author Kai Huang
  */
 public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -113,7 +112,7 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     // Build templateRegistry.
     templateRegistry = new TemplateRegistry(node);
 
-    // Run pass only on the Soy files that are all in V2 syntax. 
+    // Run pass only on the Soy files that are all in V2 syntax.
     for (SoyFileNode soyFile : node.getChildren()) {
       // First determine if Soy file is all in V2 syntax.
       boolean isFileAllV2;

@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
  * <p> To do substitution only, set {@code shouldAssertNoUnboundGlobals} to false in the
  * constructor. To do substitution and checking, set  {@code shouldAssertNoUnboundGlobals} to true.
  *
- * @author Kai Huang
  */
 public class SubstituteGlobalsVisitor {
 

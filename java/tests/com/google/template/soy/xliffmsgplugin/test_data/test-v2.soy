@@ -1,0 +1,52 @@
+// Copyright 2008 Google Inc. All Rights Reserved.
+// Author: Kai Huang
+
+{namespace boo.foo}
+
+
+/**
+ * Print information about cow and moose.
+ * @param cow Don't have one.
+ * @param moose The moose to print info about.
+ */
+{template name=".mooseTemplate"}
+
+  {foreach $moo in $moose}
+    {if isFirst($moo)}
+      {call name=".mooHelper_"}
+        {param key="moo" value="$moo" /}
+      {/call}
+    {else}
+      {call .mooHelper_}
+        {param moo: $moo /}
+      {/call}
+    {/if}
+  {/foreach}
+  {msg desc="Tells what a moose says."}
+    Moose <i>also</i> says {$moose.0}.  // oops, "forgot" the noAutoescape directive
+  {/msg}{\n}
+
+  {if $cow > length($moose)}
+    {msg meaning="dromedary" desc="We really mean dromedary."}
+      Camels
+    {/msg}
+    {msg meaning="camel" desc="Ok, we mean camel here."}
+      Camels
+    {/msg}
+  {else}
+    {msg desc="Our secret location." hidden="true"}
+      Moscow
+    {/msg}
+  {/if}{\n}
+
+  {sleepy.SHEEP}{\n}
+
+{/template}
+
+
+/** @param moo One moo. */
+{template .mooHelper_ private="true" autoescape="false"}
+  {msg desc="Tells what a cow says."}
+    Cow says {$moo}.
+  {/msg}{\n}
+{/template}

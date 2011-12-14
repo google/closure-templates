@@ -39,7 +39,6 @@ import java.util.List;
  * <p> {@link #exec} should be called on a full parse tree. All messages will be extracted and
  * returned in a {@code SoyMsgBundle} (locale "en").
  *
- * @author Kai Huang
  */
 public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 

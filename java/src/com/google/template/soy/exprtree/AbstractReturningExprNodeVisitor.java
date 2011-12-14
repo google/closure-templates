@@ -67,7 +67,6 @@ import java.util.List;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractExprNodeVisitor
- * @author Kai Huang
  */
 public abstract class AbstractReturningExprNodeVisitor<R>
     extends AbstractReturningNodeVisitor<ExprNode, R> {

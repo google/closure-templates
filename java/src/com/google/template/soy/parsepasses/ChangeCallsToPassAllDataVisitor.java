@@ -43,7 +43,6 @@ import com.google.template.soy.soytree.TemplateNode;
  * <p> This visitor must be called on a SoyFileSetNode, SoyFileNode, or TemplateNode (i.e. template
  * or ancestor of a template).
  *
- * @author Kai Huang
  */
 public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
 

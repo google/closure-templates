@@ -34,7 +34,6 @@ import java.util.Set;
  * A directive that marks an identifier such as an HTML id or CSS class name. This directive turns
  * off autoescape for the 'print' tag (if it's on for the template).
  *
- * @author Kai Huang
  */
 @Singleton
 public class IdDirective extends SoyAbstractTofuPrintDirective

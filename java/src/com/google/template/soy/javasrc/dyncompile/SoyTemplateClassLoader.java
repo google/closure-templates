@@ -24,7 +24,6 @@ package com.google.template.soy.javasrc.dyncompile;
  * ClassLoader, then every template that caller compiled would persist as long as the
  * application even if the resulting SoyTemplateRuntime was garbage collected.
  *
- * @author Mike Samuel
  */
 final class SoyTemplateClassLoader extends ClassLoader {
 

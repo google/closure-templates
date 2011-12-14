@@ -38,8 +38,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  *
  * <p> {@link #exec} should be called on a full parse tree. There is no return value.
  *
- * @author Mohamed Eldawy
- * @author Kai Huang
  */
 public class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 

@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class JsSrcUtils {
 
@@ -92,7 +91,7 @@ public class JsSrcUtils {
    * category "Cf") changed to valid JavaScript Unicode escapes (i.e. &92;u####).
    */
   public static String escapeUnicodeFormatChars(String str) {
-    
+
     int len = str.length();
 
     // Do a quick check first, because most strings do not contain Unicode format characters.

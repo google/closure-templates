@@ -44,7 +44,6 @@ import java.util.Map;
  * <p> {@link #exec} should be called on a full parse tree. The directives on 'print' nodes may be
  * modified. There is no return value.
  *
- * @author Kai Huang
  */
 public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
 

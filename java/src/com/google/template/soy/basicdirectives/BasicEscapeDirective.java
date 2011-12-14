@@ -37,7 +37,6 @@ import java.util.Set;
  * See {@link com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode} which
  * creates the JS code that backs escaping directives.
  *
- * @author Mike Samuel
  */
 public abstract class BasicEscapeDirective extends SoyAbstractTofuPrintDirective
     implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {

@@ -32,7 +32,6 @@ import java.lang.annotation.Target;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * @author Kai Huang
  */
 public class ApiCallScopeBindingAnnotations {
 

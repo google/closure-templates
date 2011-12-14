@@ -33,7 +33,6 @@ import java.util.List;
 /**
  * A list data node in a Soy data tree.
  *
- * @author Kai Huang
  */
 public class SoyListData extends CollectionData implements Iterable<SoyData> {
 

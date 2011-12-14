@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
  *
  * <p> Adapted from Soy V1 code.
  *
- * @author Kai Huang
  */
 class V1JsExprTranslator {
 

@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableSortedSet;
 /**
  * Parsed info about a Soy file.
  *
- * @author Kai Huang
  */
 public class SoyFileInfo {
 

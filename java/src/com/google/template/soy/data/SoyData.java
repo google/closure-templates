@@ -29,7 +29,6 @@ import java.util.Map;
 /**
  * Abstract base class for all nodes in a Soy data tree.
  *
- * @author Kai Huang
  */
 public abstract class SoyData {
 

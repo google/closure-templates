@@ -23,7 +23,6 @@ import java.util.List;
 
 
 /**
- * @author kai@google.com (Kai Huang)
  */
 public abstract class SoyAbstractTofuPrintDirective
     implements SoyJavaRuntimePrintDirective, SoyTofuPrintDirective {

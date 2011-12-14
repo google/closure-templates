@@ -103,6 +103,10 @@ Class TokenMgrError</H2>
 </PRE>
 
 <P>
+Token Manager Error.
+<P>
+
+<P>
 <DL>
 <DT><B>See Also:</B><DD><A HREF="../../../../../serialized-form.html#com.google.template.soy.soyparse.TokenMgrError">Serialized Form</A></DL>
 <HR>
@@ -121,7 +125,7 @@ Class TokenMgrError</H2>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/TokenMgrError.html#TokenMgrError()">TokenMgrError</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;No arg constructor.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/TokenMgrError.html#TokenMgrError(boolean, int, int, int, java.lang.String, char, int)">TokenMgrError</A></B>(boolean&nbsp;EOFSeen,
@@ -133,14 +137,14 @@ Class TokenMgrError</H2>
               int&nbsp;reason)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Full Constructor.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/TokenMgrError.html#TokenMgrError(java.lang.String, int)">TokenMgrError</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
               int&nbsp;reason)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with message and reason.</TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -158,7 +162,7 @@ Class TokenMgrError</H2>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/TokenMgrError.html#addEscapes(java.lang.String)">addEscapes</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Replaces unprintable characters by their espaced (or unicode escaped)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Replaces unprintable characters by their escaped (or unicode escaped)
  equivalents in the given string</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
@@ -220,6 +224,8 @@ TokenMgrError</H3>
 <PRE>
 public <B>TokenMgrError</B>()</PRE>
 <DL>
+<DD>No arg constructor.
+<P>
 </DL>
 <HR>
 
@@ -229,6 +235,8 @@ TokenMgrError</H3>
 public <B>TokenMgrError</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
                      int&nbsp;reason)</PRE>
 <DL>
+<DD>Constructor with message and reason.
+<P>
 </DL>
 <HR>
 
@@ -243,6 +251,8 @@ public <B>TokenMgrError</B>(boolean&nbsp;EOFSeen,
                      char&nbsp;curChar,
                      int&nbsp;reason)</PRE>
 <DL>
+<DD>Full Constructor.
+<P>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -260,7 +270,7 @@ addEscapes</H3>
 <PRE>
 protected static final <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>addEscapes</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
 <DL>
-<DD>Replaces unprintable characters by their espaced (or unicode escaped)
+<DD>Replaces unprintable characters by their escaped (or unicode escaped)
  equivalents in the given string
 <P>
 <DD><DL>
@@ -281,12 +291,12 @@ protected static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String
 <DL>
 <DD>Returns a detailed message for the Error when it is thrown by the
  token manager to indicate a lexical error.
- Parameters : 
-    EOFSeen     : indicates if EOF caused the lexicl error
-    curLexState : lexical state in which this error occured
-    errorLine   : line number when the error occured
-    errorColumn : column number when the error occured
-    errorAfter  : prefix that was seen before this error occured
+ Parameters :
+    EOFSeen     : indicates if EOF caused the lexical error
+    curLexState : lexical state in which this error occurred
+    errorLine   : line number when the error occurred
+    errorColumn : column number when the error occurred
+    errorAfter  : prefix that was seen before this error occurred
     curchar     : the offending character
  Note: You can customize the lexical error message by modifying this method.
 <P>
@@ -303,7 +313,7 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 <DL>
 <DD>You can also modify the body of this method to customize your error messages.
  For example, cases like LOOP_DETECTED and INVALID_LEXICAL_STATE are not
- of end-users concern, so you can return something like : 
+ of end-users concern, so you can return something like :
 
      "Internal Error : Please file a bug report .... "
 

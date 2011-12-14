@@ -40,8 +40,6 @@ import java.util.Set;
 /**
  * Soy function that returns the current global bidi directionality (1 for LTR or -1 for RTL).
  *
- * @author Aharon Lanin
- * @author Kai Huang
  */
 @Singleton
 class BidiGlobalDirFunction extends SoyAbstractTofuFunction

@@ -27,7 +27,6 @@ import java.util.Set;
 /**
  * Visitor for determining whether any code in a Soy tree uses injected data.
  *
- * @author Kai Huang
  */
 public class IsUsingIjDataVisitor {
 

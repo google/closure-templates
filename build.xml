@@ -20,14 +20,16 @@ Author: Neil Sanchala
 -->
 <project name="Soy" basedir="." default="jar">
 
-
   <property name="java.src.dir" value="${basedir}/java/src" />
+  <property name="java.tests.dir" value="${basedir}/java/tests" />
   <property name="java.lib.dir" value="${basedir}/java/lib" />
 
   <property name="build.dir" value="${basedir}/build" />
   <property name="soy.jar.file" value="${build.dir}/soy.jar" />
   <property name="build.classes.dir" value="${build.dir}/classes" />
+  <property name="build.testclasses.dir" value="${build.dir}/tests" />
   <property name="build.genfiles.dir" value="${build.dir}/genfiles" />
+  <property name="includeDebugInfo" value="true" />
 
   <property name="javadoc.lite.dir" value="${basedir}/javadoc-lite" />
   <property name="javadoc.complete.dir" value="${basedir}/javadoc-complete" />
@@ -36,6 +38,12 @@ Author: Neil Sanchala
        -Drelease.stamp=latest when running ant. -->
   <property name="release.dir" value="${basedir}/release" />
   <property name="release.stamp" value="unstable" />
+
+  <path id="classpath.path">
+    <fileset dir="${java.lib.dir}">
+      <include name="*.jar" />
+    </fileset>
+  </path>
 
   <!-- Target to delete the generated files. -->
   <target name="clean"
@@ -67,12 +75,11 @@ Author: Neil Sanchala
     <!-- Java compilation. -->
     <javac srcdir="${java.src.dir}:${build.genfiles.dir}"
            destdir="${build.classes.dir}"
-           source="1.6" target="1.6">
-      <classpath>
-        <fileset dir="${java.lib.dir}">
-          <include name="*.jar" />
-        </fileset>
-      </classpath>
+           source="1.6"
+           target="1.6"
+           includeAntRuntime="true"
+           debug="${includeDebugInfo}">
+      <classpath refid="classpath.path" />
       <compilerarg value="-Werror"/>  <!-- warnings become errors -->
       <compilerarg value="-Xlint:deprecation"/>
     </javac>
@@ -125,8 +132,8 @@ Author: Neil Sanchala
                   excludes="LICENSE,NOTICE" />
       <zipfileset src="${java.lib.dir}/guice-assistedinject-3.0.jar"
                   excludes="LICENSE,NOTICE" />
-      <zipfileset src="${java.lib.dir}/args4j-2.0.12.jar" />
-      <zipfileset src="${java.lib.dir}/icu4j-core.jar" />
+      <zipfileset src="${java.lib.dir}/args4j-2.0.17.jar" />
+      <zipfileset src="${java.lib.dir}/icu4j-4_8_1_1.jar" />
     </jar>
   </target>
 
@@ -551,8 +558,8 @@ Author: Neil Sanchala
                    java-simple-example,
                    parse-info-generation-example,
                    java-features-example,
-                   msg-extraction-example" />
-
+                   msg-extraction-example,
+                   test-forkless" />
 
   <!--
   Builds a set of zip files containing releaseable bundles of code. These zip files may be uploaded
@@ -645,6 +652,67 @@ Author: Neil Sanchala
       <fileset file="${build.dir}/SoyToJsSrcCompiler.jar" />
       <fileset dir="${build.dir}/javascript" includes="soyutils.js,soyutils_usegoog.js" />
     </zip>
+  </target>
+
+
+  <target name="compile-tests"
+          depends="compile"
+          description="Compiles the tests.">
+    <mkdir dir="${build.testclasses.dir}" />
+    <javac srcdir="${java.tests.dir}"
+           destdir="${build.testclasses.dir}"
+           source="1.6"
+           target="1.6"
+           includeAntRuntime="false"
+           debug="${includeDebugInfo}">
+      <classpath refid="classpath.path" />
+      <classpath>
+        <pathelement location="${build.classes.dir}" />
+      </classpath>
+    </javac>
+  </target>
+
+
+  <macrodef name="testing">
+    <attribute name="printsummary" default="off" />
+    <attribute name="fork" default="off" />
+    <attribute name="forkmode" default="perTest" />
+    <sequential>
+      <antcall target="compile-tests" />
+      <junit printsummary="@{printsummary}"
+             fork="@{fork}"
+             forkmode="@{forkmode}"
+             showoutput="true">
+        <classpath refid="classpath.path" />
+        <classpath>
+          <pathelement location="${build.classes.dir}" />
+          <pathelement location="${build.testclasses.dir}" />
+          <!--
+            Include the test directory on the classpath so that static resources loaded via
+            Resources.getResource() do not need to be copied to ${build.testclasses.dir}.
+          -->
+          <pathelement location="${java.tests.dir}" />
+        </classpath>
+        <formatter type="plain" usefile="false" />
+        <batchtest haltonfailure="true">
+          <fileset dir="${build.testclasses.dir}">
+            <include name="**/*Test.class" />
+          </fileset>
+        </batchtest>
+      </junit>
+    </sequential>
+  </macrodef>
+
+
+  <target name="test"
+          description="Runs all of the tests.">
+    <testing printsummary="on" fork="on" forkmode="once" />
+  </target>
+
+
+  <target name="test-forkless"
+          description="Runs all of the tests without forking the process.">
+    <testing />
   </target>
 
 </project>

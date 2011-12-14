@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 /**
  * SoyTofu is the public interface for a Java object that represents a compiled Soy file set.
  *
- * @author Kai Huang
  */
 public interface SoyTofu {
 

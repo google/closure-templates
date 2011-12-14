@@ -47,7 +47,6 @@ import java.util.Set;
  * <p> {@link #exec} should be called on a full parse tree. There is no return value. A
  * {@code SoySyntaxException} is thrown if an error is found.
  *
- * @author Kai Huang
  */
 public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 

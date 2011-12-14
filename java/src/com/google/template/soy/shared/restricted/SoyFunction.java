@@ -25,7 +25,6 @@ import java.util.Set;
  * <p> Important: Implementing this interface by itself does nothing. Your function implementation
  * class needs to implement some of all of this interface's subinterfaces.
  *
- * @author Kai Huang
  */
 public interface SoyFunction {
 

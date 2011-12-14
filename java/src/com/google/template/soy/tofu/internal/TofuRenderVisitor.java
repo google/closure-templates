@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
  * <p> Uses {@code SoyTofuFunction}s and {@code SoyTofuPrintDirective}s instead of
  * {@code SoyJavaRuntimeFunction}s and {@code SoyJavaRuntimePrintDirective}s.
  *
- * @author Kai Huang
  */
 class TofuRenderVisitor extends RenderVisitor {
 

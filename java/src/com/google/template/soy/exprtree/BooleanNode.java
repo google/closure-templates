@@ -21,7 +21,6 @@ package com.google.template.soy.exprtree;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class BooleanNode extends AbstractPrimitiveNode {
 

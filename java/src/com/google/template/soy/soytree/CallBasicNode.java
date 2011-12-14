@@ -35,7 +35,6 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author kai@google.com (Kai Huang)
  */
 public class CallBasicNode extends CallNode {
 

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file original="SoyMsgBundle" datatype="x-soy-msg-bundle" xml:space="preserve" source-language="en" target-language="x-zz">
+    <body>
+      <trans-unit id="626010707674174792" datatype="html">
+        <source>Moscow</source>
+        <target>Zmoscow</target>
+        <note priority="1" from="description">Our secret location.</note>
+      </trans-unit>
+      <trans-unit id="948230478248061386" datatype="html">
+        <source>Camels</source>
+        <target>Zcamels</target>
+        <note priority="1" from="description">We really mean dromedary.</note>
+        <note priority="1" from="meaning">dromedary</note>
+      </trans-unit>
+      <trans-unit id="2764913337766789440" datatype="html">
+        <source>Moose <x id="START_ITALIC"/>also<x id="END_ITALIC"/> says <x id="XXX"/>.</source>
+        <target>Zmoose <x id="START_ITALIC"/>zalso<x id="END_ITALIC"/> zsays <x id="XXX"/>.</target>
+        <note priority="1" from="description">Tells what a moose says.</note>
+      </trans-unit>
+      <trans-unit id="6632711700686641662" datatype="html">
+        <source>Cow says <x id="MOO"/>.</source>
+        <target>Zcow zsays <x id="MOO"/>.</target>
+        <note priority="1" from="description">Tells what a cow says.</note>
+      </trans-unit>
+      <trans-unit id="8577643341484516105" datatype="html">
+        <source>Camels</source>
+        <target>Zcamels</target>
+        <note priority="1" from="description">Ok, we mean camel here.</note>
+        <note priority="1" from="meaning">camel</note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.SoyNode;
  *
  * <p> Precondition: MsgNode should not exist in the tree.
  *
- * @author Kai Huang
  */
 class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 

@@ -43,8 +43,6 @@ import java.util.Set;
  * curret global directionality, then the appropriate HTML attribute is inserted. Otherwise, nothing
  * is inserted.
  *
- * @author Aharon Lanin
- * @author Kai Huang
  */
 @Singleton
 class BidiDirAttrFunction extends SoyAbstractTofuFunction

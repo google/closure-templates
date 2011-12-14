@@ -45,7 +45,6 @@ import com.google.template.soy.internal.base.UnescapeUtils;
  * <tr><td>{@code >}</td><td>{@link Context.State#HTML_PCDATA}</td></tr>
  * </table>
  *
- * @author Mike Samuel
  */
 final class RawTextContextUpdater {
 

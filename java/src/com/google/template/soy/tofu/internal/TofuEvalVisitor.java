@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
  *
  * <p> Uses {@code SoyTofuFunction}s instead of {@code SoyJavaRuntimeFunction}s.
  *
- * @author Kai Huang
  */
 class TofuEvalVisitor extends EvalVisitor {
 

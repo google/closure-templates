@@ -37,8 +37,6 @@ import javax.inject.Singleton;
 /**
  * Implementation of RenderVisitorFactory for Tofu backend.
  *
- * @author Mark Knichel
- * @author Kai Huang
  */
 @Singleton
 class TofuRenderVisitorFactory implements RenderVisitorFactory {

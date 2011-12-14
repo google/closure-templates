@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
  * print command, it may clone a template for each context in which it is called, using the
  * {@link Context#packedBits bitpacked} form of the context to generate a unique template name.
  *
- * @author Mike Samuel
  */
 public final class Context {
 

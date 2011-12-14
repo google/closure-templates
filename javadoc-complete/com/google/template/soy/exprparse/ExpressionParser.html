@@ -211,15 +211,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#jj_nt">jj_nt</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#lookingAhead">lookingAhead</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Next token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -227,7 +219,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#token">token</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Current token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -235,7 +227,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#token_source">token_source</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generated Token Manager.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="fields_inherited_from_class_com.google.template.soy.exprparse.ExpressionParserConstants"><!-- --></A>
@@ -260,26 +252,26 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(com.google.template.soy.exprparse.ExpressionParserTokenManager)">ExpressionParser</A></B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with generated Token Manager.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.InputStream)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with InputStream.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.InputStream, java.lang.String)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
                  <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with InputStream and supplied encoding</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.Reader)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.lang.String)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;input)</CODE>
@@ -303,7 +295,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#disable_tracing()">disable_tracing</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Disable tracing.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -311,7 +303,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#enable_tracing()">enable_tracing</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enable tracing.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -319,7 +311,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#generateParseException()">generateParseException</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generate ParseException.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -327,7 +319,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#getNextToken()">getNextToken</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Get the next Token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -335,7 +327,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#getToken(int)">getToken</A></B>(int&nbsp;index)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Get the specific Token.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -383,7 +375,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(com.google.template.soy.exprparse.ExpressionParserTokenManager)">ReInit</A></B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -391,7 +383,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.InputStream)">ReInit</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -400,7 +392,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -408,7 +400,7 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.Reader)">ReInit</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -438,6 +430,8 @@ token_source</H3>
 <PRE>
 public <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A> <B>token_source</B></PRE>
 <DL>
+<DD>Generated Token Manager.
+<P>
 <DL>
 </DL>
 </DL>
@@ -448,6 +442,8 @@ token</H3>
 <PRE>
 public <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>token</B></PRE>
 <DL>
+<DD>Current token.
+<P>
 <DL>
 </DL>
 </DL>
@@ -458,16 +454,8 @@ jj_nt</H3>
 <PRE>
 public <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>jj_nt</B></PRE>
 <DL>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="lookingAhead"><!-- --></A><H3>
-lookingAhead</H3>
-<PRE>
-public boolean <B>lookingAhead</B></PRE>
-<DL>
+<DD>Next token.
+<P>
 <DL>
 </DL>
 </DL>
@@ -499,6 +487,8 @@ ExpressionParser</H3>
 <PRE>
 public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</PRE>
 <DL>
+<DD>Constructor with InputStream.
+<P>
 </DL>
 <HR>
 
@@ -508,6 +498,8 @@ ExpressionParser</H3>
 public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
                         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</PRE>
 <DL>
+<DD>Constructor with InputStream and supplied encoding
+<P>
 </DL>
 <HR>
 
@@ -516,6 +508,8 @@ ExpressionParser</H3>
 <PRE>
 public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</PRE>
 <DL>
+<DD>Constructor.
+<P>
 </DL>
 <HR>
 
@@ -524,6 +518,8 @@ ExpressionParser</H3>
 <PRE>
 public <B>ExpressionParser</B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</PRE>
 <DL>
+<DD>Constructor with generated Token Manager.
+<P>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -646,6 +642,8 @@ ReInit</H3>
 <PRE>
 public void <B>ReInit</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</PRE>
 <DL>
+<DD>Reinitialise.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -661,6 +659,8 @@ ReInit</H3>
 public void <B>ReInit</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
                    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</PRE>
 <DL>
+<DD>Reinitialise.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -675,6 +675,8 @@ ReInit</H3>
 <PRE>
 public void <B>ReInit</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</PRE>
 <DL>
+<DD>Reinitialise.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -689,6 +691,8 @@ ReInit</H3>
 <PRE>
 public void <B>ReInit</B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</PRE>
 <DL>
+<DD>Reinitialise.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -703,6 +707,8 @@ getNextToken</H3>
 <PRE>
 public final <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>getNextToken</B>()</PRE>
 <DL>
+<DD>Get the next Token.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -717,6 +723,8 @@ getToken</H3>
 <PRE>
 public final <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>getToken</B>(int&nbsp;index)</PRE>
 <DL>
+<DD>Get the specific Token.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -731,6 +739,8 @@ generateParseException</H3>
 <PRE>
 public <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A> <B>generateParseException</B>()</PRE>
 <DL>
+<DD>Generate ParseException.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -745,6 +755,8 @@ enable_tracing</H3>
 <PRE>
 public final void <B>enable_tracing</B>()</PRE>
 <DL>
+<DD>Enable tracing.
+<P>
 <DD><DL>
 </DL>
 </DD>
@@ -759,6 +771,8 @@ disable_tracing</H3>
 <PRE>
 public final void <B>disable_tracing</B>()</PRE>
 <DL>
+<DD>Disable tracing.
+<P>
 <DD><DL>
 </DL>
 </DD>

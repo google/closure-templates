@@ -42,7 +42,6 @@ import java.util.List;
  *
  * <p> Warning: The Java Src backend is experimental (repetitive, untested, undocumented).
  *
- * @author Kai Huang
  */
 public class SoyToJavaSrcCompilerExperimental {
 

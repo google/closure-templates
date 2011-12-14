@@ -47,7 +47,6 @@ import java.util.regex.Pattern;
 /**
  * Public utilities for Soy users.
  *
- * @author Kai Huang
  */
 public class SoyUtils {
 
@@ -68,7 +67,7 @@ public class SoyUtils {
    * @param output The object to append the generated text to.
    * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
-   * @see #generateCompileTimeGlobalsFile(Map, File) 
+   * @see #generateCompileTimeGlobalsFile(Map, File)
    */
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, Appendable output) throws IOException {

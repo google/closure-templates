@@ -32,8 +32,6 @@ import javax.inject.Singleton;
 /**
  * Default implementation of EvalVisitorFactory.
  *
- * @author Mark Knichel
- * @author Kai Huang
  */
 @Singleton
 public class EvalVisitorFactoryImpl implements EvalVisitorFactory {

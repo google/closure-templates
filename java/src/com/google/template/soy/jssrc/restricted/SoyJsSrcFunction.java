@@ -26,13 +26,12 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing function plugins.
  *
- * @author Kai Huang
  */
 public interface SoyJsSrcFunction extends SoyFunction {
 
 
   /**
-   * Computes this function on the given arguments for the JS Source backend. 
+   * Computes this function on the given arguments for the JS Source backend.
    *
    * @param args The function arguments.
    * @return The computed result of this function.

@@ -32,7 +32,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p> Note: Doesn't check HTML tags since we don't parse HTML tags outside of messages anyway. Only
  * checks PrintNode and CallNode.
  *
- * @author Kai Huang
  */
 public class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVisitor<Void> {
 

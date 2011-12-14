@@ -57,7 +57,6 @@ package com.google.template.soy.msgs.restricted;
  * This string needs to be generated in several places in Soy code, so the general
  * functions are provided here.
  *
- * @author Mohamed Eldawy
  */
 public class IcuSyntaxUtils {
 

@@ -35,7 +35,6 @@ import javax.inject.Singleton;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 @Singleton
 public class PreevalVisitorFactory implements EvalVisitorFactory {

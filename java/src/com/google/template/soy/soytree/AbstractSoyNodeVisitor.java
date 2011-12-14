@@ -50,7 +50,6 @@ import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractReturningSoyNodeVisitor
- * @author Kai Huang
  */
 public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyNode, R> {
 

@@ -30,7 +30,6 @@ import com.google.template.soy.data.restricted.StringData;
  *
  * <p> Feel free to static import these helpers in your function implementation classes.
  *
- * @author Kai Huang
  */
 public class SoyJavaRuntimeFunctionUtils {
 

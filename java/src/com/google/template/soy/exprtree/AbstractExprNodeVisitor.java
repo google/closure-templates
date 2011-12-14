@@ -65,7 +65,6 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractReturningExprNodeVisitor
- * @author Kai Huang
  */
 public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<ExprNode, R> {
 

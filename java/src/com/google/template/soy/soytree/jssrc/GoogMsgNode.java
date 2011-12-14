@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class GoogMsgNode extends AbstractMsgNode implements LocalVarInlineNode {
 
@@ -63,11 +62,11 @@ public class GoogMsgNode extends AbstractMsgNode implements LocalVarInlineNode {
     this.sourceString =
         "[GoogMsgNode " + getVarName() + " " + origMsgNode.toSourceString() + "]";
     this.googMsgVarName = googMsgVarName;
-    
-    if (origMsgNode.getChildren().size() > 0 && 
-        (origMsgNode.getChild(0) instanceof MsgPluralNode || 
+
+    if (origMsgNode.getChildren().size() > 0 &&
+        (origMsgNode.getChild(0) instanceof MsgPluralNode ||
          origMsgNode.getChild(0) instanceof MsgSelectNode)) {
-      this.renderedGoogMsgVarName = "rendered_" + googMsgVarName;    
+      this.renderedGoogMsgVarName = "rendered_" + googMsgVarName;
     } else {
       this.renderedGoogMsgVarName = googMsgVarName;
     }

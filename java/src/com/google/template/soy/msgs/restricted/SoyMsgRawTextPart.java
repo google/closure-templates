@@ -20,7 +20,6 @@ package com.google.template.soy.msgs.restricted;
 /**
  * Represents a raw text string within a message (the stuff that translators change).
  *
- * @author Kai Huang
  */
 public class SoyMsgRawTextPart extends SoyMsgPart {
 

@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 /**
  * Compilation options for the JS Src output target (backend).
  *
- * @author Kai Huang
  */
 public class SoyJsSrcOptions implements Cloneable {
 

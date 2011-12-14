@@ -40,7 +40,6 @@ import java.io.IOException;
  * CharEscaperBuilder}, or extend this class and implement the {@link
  * #escape(char)} method.
  *
- * @author Sven Mawson
  */
 public abstract class CharEscaper implements Escaper {
 

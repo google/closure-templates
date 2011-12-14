@@ -163,7 +163,6 @@ import java.util.regex.*;
  *      {namespace ...}   {template ...}   {/template}
  * </pre>
  *
- * @author Kai Huang
  */
 public class TemplateParser {
 

@@ -37,7 +37,6 @@ import java.util.Map;
 /**
  * Utilities for generating JS code for calls.
  *
- * @author Kai Huang
  */
 class GenCallCodeUtils {
 

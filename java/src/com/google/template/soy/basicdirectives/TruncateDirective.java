@@ -35,9 +35,8 @@ import javax.inject.Singleton;
 
 /**
  * A directive that truncates a string to a maximum length if it is too long, optionally adding
- * ellipsis. 
+ * ellipsis.
  *
- * @author Kai Huang
  */
 @Singleton
 public class TruncateDirective extends SoyAbstractTofuPrintDirective

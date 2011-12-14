@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p> {@link #exec} should be called on a {@code SoyFileNode}. It returns whether the file
  * has at least one template with a plural/select message.
  *
- * @author Umesh Nair
  *
  */
 public class HasPluralSelectMsgVisitor extends AbstractSoyNodeVisitor<Boolean> {

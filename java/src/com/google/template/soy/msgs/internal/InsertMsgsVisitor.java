@@ -57,7 +57,6 @@ import javax.annotation.Nullable;
  * contains consecutive RawTextNodes). It's usually advisable to run a simplification pass after
  * this pass.
  *
- * @author Kai Huang
  */
 public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 

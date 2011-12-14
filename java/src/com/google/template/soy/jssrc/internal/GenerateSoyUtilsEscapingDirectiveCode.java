@@ -74,7 +74,6 @@ import org.apache.tools.ant.Task;
  * There may be zero or more {@code <jsdefined>} elements which specify which functions should be
  * available in the context in which {@code <output>} is run.
  *
- * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {

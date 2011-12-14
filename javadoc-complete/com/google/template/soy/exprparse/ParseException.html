@@ -73,9 +73,9 @@ function windowTitle()
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#methods_inherited_from_class_java.lang.Throwable">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;METHOD</FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_top"></A>
@@ -152,16 +152,6 @@ This exception is thrown when parse errors are encountered.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html#specialConstructor">specialConstructor</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This variable determines which constructor was used to create
- this object and thereby affects the semantics of the
- "getMessage" method (see below).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>[]</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html#tokenImage">tokenImage</A></B></CODE>
 
@@ -190,7 +180,7 @@ This exception is thrown when parse errors are encountered.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html#ParseException(java.lang.String)">ParseException</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with message.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html#ParseException(com.google.template.soy.exprparse.Token, int[][], java.lang.String[])">ParseException</A></B>(<A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A>&nbsp;currentTokenVal,
@@ -211,25 +201,6 @@ This exception is thrown when parse errors are encountered.
 <TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
 <B>Method Summary</B></FONT></TH>
 </TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html#add_escapes(java.lang.String)">add_escapes</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Used to convert raw characters to their escaped version
- when these raw version cannot be used as part of an ASCII
- string literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html#getMessage()">getMessage</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This method has the standard behavior when this object has been
- created using the standard constructors.</TD>
-</TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Throwable"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
@@ -237,7 +208,7 @@ This exception is thrown when parse errors are encountered.
 <TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#fillInStackTrace()" title="class or interface in java.lang">fillInStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getCause()" title="class or interface in java.lang">getCause</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getLocalizedMessage()" title="class or interface in java.lang">getLocalizedMessage</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getStackTrace()" title="class or interface in java.lang">getStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#initCause(java.lang.Throwable)" title="class or interface in java.lang">initCause</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#printStackTrace()" title="class or interface in java.lang">printStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#printStackTrace(java.io.PrintStream)" title="class or interface in java.lang">printStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#printStackTrace(java.io.PrintWriter)" title="class or interface in java.lang">printStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#setStackTrace(java.lang.StackTraceElement[])" title="class or interface in java.lang">setStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#toString()" title="class or interface in java.lang">toString</A></CODE></TD>
+<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#fillInStackTrace()" title="class or interface in java.lang">fillInStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getCause()" title="class or interface in java.lang">getCause</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getLocalizedMessage()" title="class or interface in java.lang">getLocalizedMessage</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getMessage()" title="class or interface in java.lang">getMessage</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getStackTrace()" title="class or interface in java.lang">getStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#initCause(java.lang.Throwable)" title="class or interface in java.lang">initCause</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#printStackTrace()" title="class or interface in java.lang">printStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#printStackTrace(java.io.PrintStream)" title="class or interface in java.lang">printStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#printStackTrace(java.io.PrintWriter)" title="class or interface in java.lang">printStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#setStackTrace(java.lang.StackTraceElement[])" title="class or interface in java.lang">setStackTrace</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#toString()" title="class or interface in java.lang">toString</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -261,20 +232,6 @@ This exception is thrown when parse errors are encountered.
 <B>Field Detail</B></FONT></TH>
 </TR>
 </TABLE>
-
-<A NAME="specialConstructor"><!-- --></A><H3>
-specialConstructor</H3>
-<PRE>
-protected boolean <B>specialConstructor</B></PRE>
-<DL>
-<DD>This variable determines which constructor was used to create
- this object and thereby affects the semantics of the
- "getMessage" method (see below).
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
 
 <A NAME="currentToken"><!-- --></A><H3>
 currentToken</H3>
@@ -349,13 +306,7 @@ public <B>ParseException</B>(<A HREF="../../../../../com/google/template/soy/exp
 <DD>This constructor is used by the method "generateParseException"
  in the generated parser.  Calling this constructor generates
  a new object of this type with the fields "currentToken",
- "expectedTokenSequences", and "tokenImage" set.  The boolean
- flag "specialConstructor" is also set to true to indicate that
- this constructor was used to create this object.
- This constructor calls its super class with the empty string
- to force the "toString" method of parent class "Throwable" to
- print the error message in the form:
-     ParseException: <result of getMessage>
+ "expectedTokenSequences", and "tokenImage" set.
 <P>
 </DL>
 <HR>
@@ -381,53 +332,8 @@ ParseException</H3>
 <PRE>
 public <B>ParseException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
 <DL>
-</DL>
-
-<!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="getMessage()"><!-- --></A><H3>
-getMessage</H3>
-<PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getMessage</B>()</PRE>
-<DL>
-<DD>This method has the standard behavior when this object has been
- created using the standard constructors.  Otherwise, it uses
- "currentToken" and "expectedTokenSequences" to generate a parse
- error message and returns it.  If this object has been created
- due to a parse error, and you do not catch it (it gets thrown
- from the parser), then this method is called during the printing
- of the final stack trace, and hence the correct error message
- gets displayed.
+<DD>Constructor with message.
 <P>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true#getMessage()" title="class or interface in java.lang">getMessage</A></CODE> in class <CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A></CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="add_escapes(java.lang.String)"><!-- --></A><H3>
-add_escapes</H3>
-<PRE>
-protected <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>add_escapes</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
-<DL>
-<DD>Used to convert raw characters to their escaped version
- when these raw version cannot be used as part of an ASCII
- string literal.
-<P>
-<DD><DL>
-</DL>
-</DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->
 <HR>
@@ -480,9 +386,9 @@ protected <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?i
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#methods_inherited_from_class_java.lang.Throwable">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;METHOD</FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_bottom"></A>

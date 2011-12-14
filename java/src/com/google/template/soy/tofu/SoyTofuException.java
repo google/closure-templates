@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 /**
  * Exception thrown when an error occurs during template rendering.
  *
- * @author Kai Huang
  */
 public class SoyTofuException extends RuntimeException {
 

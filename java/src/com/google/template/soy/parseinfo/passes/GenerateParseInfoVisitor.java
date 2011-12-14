@@ -73,7 +73,6 @@ import java.util.regex.Pattern;
  *     [tests_dir]/com/google/template/soy/test_data/AaaBbbCccSoyInfo.java
  * </pre>
  *
- * @author Kai Huang
  */
 public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMap<String, String>> {
 

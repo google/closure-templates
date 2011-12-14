@@ -42,8 +42,6 @@ import java.util.Set;
  * Soy function that inserts a bidi mark character (LRM or RLM) for the current global bidi
  * directionality.
  *
- * @author Aharon Lanin
- * @author Kai Huang
  */
 @Singleton
 class BidiMarkFunction extends SoyAbstractTofuFunction

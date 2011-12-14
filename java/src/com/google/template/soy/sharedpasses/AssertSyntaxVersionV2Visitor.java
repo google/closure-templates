@@ -36,7 +36,6 @@ import com.google.template.soy.soytree.TemplateNode;
  * <p> {@link #exec} may be called on any node. There is no return value. However, a
  * {@code SoySyntaxException} is thrown if the given node or a descendent is not in Soy V2 syntax.
  *
- * @author Kai Huang
  */
 public class AssertSyntaxVersionV2Visitor extends AbstractSoyNodeVisitor<Void> {
 

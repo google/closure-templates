@@ -59,7 +59,6 @@ import javax.annotation.Nullable;
  * inferences into the parent until it ends up with a final set of rewriting decisions that the
  * {@link Rewriter} applies to the input Soy parse tree.
  *
- * @author Mike Samuel
  */
 final class Inferences {
 

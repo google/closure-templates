@@ -37,8 +37,6 @@ import javax.inject.Singleton;
 /**
  * Default implementation of RenderVisitorFactory.
  *
- * @author Mark Knichel
- * @author Kai Huang
  */
 @Singleton
 public class RenderVisitorFactoryImpl implements RenderVisitorFactory {

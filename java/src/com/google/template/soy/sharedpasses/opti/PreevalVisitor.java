@@ -43,7 +43,6 @@ import javax.annotation.Nullable;
  * the context of the {@code data} and {@code env} passed into the constructor) is returned as a
  * {@code SoyData} object.
  *
- * @author Kai Huang
  */
 class PreevalVisitor extends EvalVisitor {
 

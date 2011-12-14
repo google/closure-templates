@@ -29,7 +29,6 @@ import java.util.List;
  * SoyFileSetNode N is SoyFileNode, for SoyFileNode N is TemplateNode, etc; for a Soy expression
  * parse tree, N is usually ExprNode.
  *
- * @author Kai Huang
  */
 public interface ParentNode<N extends Node> extends Node {
 
@@ -64,7 +63,7 @@ public interface ParentNode<N extends Node> extends Node {
    * the other methods in this class that are intended for modifying children. Also, if you're
    * iterating over the children list as you're modifying it, then you should first make a copy of
    * the children list to iterate over, in order to avoid ConcurrentModificationException.
-   * 
+   *
    * @return The list of children.
    */
   public List<N> getChildren();

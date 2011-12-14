@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Mohamed Eldawy
  */
 public class MsgPluralRemainderNode extends AbstractSoyNode implements StandaloneNode {
 

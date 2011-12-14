@@ -35,7 +35,6 @@ import com.google.template.soy.tofu.internal.TofuModule;
 /**
  * Guice module for Soy's programmatic interface.
  *
- * @author Kai Huang
  */
 public class SoyModule extends AbstractModule {
 

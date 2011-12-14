@@ -35,7 +35,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * <p> {@link #exec} should be called on a {@code SoyFileSetNode} or a {@code SoyFileNode}. There is
  * no return value. A {@code SoySyntaxException} is thrown if an error is found.
  *
- * @author Kai Huang
  */
 public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 

@@ -30,7 +30,6 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class LetValueNode extends LetNode implements ExprHolderNode {
 
@@ -58,7 +57,7 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
 
     if (valueExpr == null) {
       throw new SoySyntaxException(
-          "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" + 
+          "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
           " contains a value (invalid tag is {let " + commandText + " /}).");
     }
   }

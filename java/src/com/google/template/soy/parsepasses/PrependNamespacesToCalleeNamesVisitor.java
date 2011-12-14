@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p> {@link #exec} should be called on a full parse tree or a Soy file. This pass mutates
  * {@code CallBasicNode}s. There is no return value.
  *
- * @author Kai Huang
  */
 public class PrependNamespacesToCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 

@@ -44,7 +44,6 @@ import java.util.SortedSet;
  * then the returned set consists of the full names of all templates in U called by any template
  * in T.
  *
- * @author Kai Huang
  */
 class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
 

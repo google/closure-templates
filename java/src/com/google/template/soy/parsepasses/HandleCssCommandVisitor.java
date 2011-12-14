@@ -48,7 +48,6 @@ import java.util.List;
  * (b) REFERENCE: Turn each CssNode into a PrintNode.
  * (c) BACKEND_SPECIFIC: Don't change anything. Let backend handle 'css' commands.
  *
- * @author Kai Huang
  */
 public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
 

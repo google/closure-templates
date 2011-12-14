@@ -23,7 +23,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 /**
  * A compiled Soy template.
  *
- * @author Mike Samuel
  */
 public interface SoyTemplateRuntime {
 

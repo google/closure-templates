@@ -34,11 +34,10 @@ import java.util.Map;
 /**
  * Visitor for moving {@code GoogMsgNode}s to earlier locations in the template. This allows for
  * more efficient code generation because the associated {@code GoogMsgRefNode}s can then be
- * combined with neighboring nodes for output code generation. 
+ * combined with neighboring nodes for output code generation.
  *
  * <p> {@link #exec} must be called on a full parse tree.
  *
- * @author Kai Huang
  */
 class MoveGoogMsgNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
 

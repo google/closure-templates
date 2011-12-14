@@ -27,7 +27,6 @@ import java.util.Set;
  * Specifies how the outputs of <code>{print}</code> commands that lack escaping directives are
  * encoded.
  *
- * @author Mike Samuel
  */
 public enum AutoescapeMode {
 

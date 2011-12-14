@@ -56,7 +56,6 @@ import java.util.Set;
  * {/template}
  * </xmp>
  *
- * @author Mike Samuel
  */
 public final class ContextualAutoescaper {
 

@@ -25,7 +25,6 @@ package com.google.template.soy.exprtree;
  * The children of the node are the parts of the data reference. Each child may be a DataRefKeyNode,
  * DataRefIndexNode, or any type of ExprNode. The first child must be a DataRefKeyNode.
  *
- * @author Kai Huang
  */
 public class DataRefNode extends AbstractParentExprNode {
 

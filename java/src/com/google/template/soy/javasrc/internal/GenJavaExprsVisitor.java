@@ -59,7 +59,6 @@ import java.util.Map;
  *
  * <p> Precondition: MsgNode should not exist in the tree.
  *
- * @author Kai Huang
  */
 public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> {
 

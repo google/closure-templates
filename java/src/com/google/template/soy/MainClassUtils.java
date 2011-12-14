@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 /**
  * Private utils for classes with a main() method.
  *
- * @author Kai Huang
  */
 class MainClassUtils {
 

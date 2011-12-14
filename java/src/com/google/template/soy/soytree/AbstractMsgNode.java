@@ -42,7 +42,6 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public abstract class AbstractMsgNode extends AbstractBlockCommandNode
     implements StandaloneNode, MsgBlockNode {
