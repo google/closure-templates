@@ -81,23 +81,44 @@ if (!goog.userAgent) {
 
 if (!goog.asserts) {
   goog.asserts = {
-    fail: function () {}
+    /**
+     * @param {...*} var_args
+     */
+    fail: function (var_args) {}
   };
 }
 
 
 // Stub out the document wrapper used by renderAs*.
 if (!goog.dom) {
-  goog.dom = {
-    DomHelper: function (d) {
-      d = d || document;
-      return {
-        createElement: function (name) { return d.createElement(name); },
-        createDocumentFragment: function () {
-          return d.createDocumentFragment();
-        }
-      };
-    }
+  goog.dom = {};
+  /**
+   * @param {Document=} d
+   * @constructor
+   */
+  goog.dom.DomHelper = function(d) {
+    this.document_ = d || document;
+  };
+  /**
+   * @return {!Document}
+   */
+  goog.dom.DomHelper.prototype.getDocument = function() {
+    return this.document_;
+  };
+  /**
+   * Creates a new element.
+   * @param {string} name Tag name.
+   * @return {!Element}
+   */
+  goog.dom.DomHelper.prototype.createElement = function(name) {
+    return this.document_.createElement(name);
+  };
+  /**
+   * Creates a new document fragment.
+   * @return {!DocumentFragment}
+   */
+  goog.dom.DomHelper.prototype.createDocumentFragment = function() {
+    return this.document_.createDocumentFragment();
   };
 }
 
@@ -535,13 +556,13 @@ if (!goog.soy) goog.soy = {
    * @param {Function} template The Soy template defining element's content.
    * @param {Object=} opt_templateData The data for the template.
    * @param {Object=} opt_injectedData The injected data for the template.
-   * @param {Document=} opt_document The document used to create DOM nodes. If
-   *     not specified, global document object is used.
+   * @param {(goog.dom.DomHelper|Document)=} opt_dom The context in which DOM
+   *     nodes will be created.
    */
   renderAsElement: function(
-    template, opt_templateData, opt_injectedData, opt_document) {
+    template, opt_templateData, opt_injectedData, opt_dom) {
     return /** @type {!Element} */ (soyshim.$$renderWithWrapper_(
-        template, opt_templateData, opt_document, true /* asElement */,
+        template, opt_templateData, opt_dom, true /* asElement */,
         opt_injectedData));
   },
   /**
@@ -553,15 +574,15 @@ if (!goog.soy) goog.soy = {
    *
    * @param {Function} template The Soy template defining element's content.
    * @param {Object=} opt_templateData The data for the template.
-   * @param {Document=} opt_document The document used to create DOM nodes.
-   *     If not specified, global document object is used.
    * @param {Object=} opt_injectedData The injected data for the template.
+   * @param {(goog.dom.DomHelper|Document)=} opt_dom The context in which DOM
+   *     nodes will be created.
    * @return {!Node} The resulting node or document fragment.
    */
   renderAsFragment: function(
-    template, opt_templateData, opt_injectedData, opt_document) {
+    template, opt_templateData, opt_injectedData, opt_dom) {
     return soyshim.$$renderWithWrapper_(
-        template, opt_templateData, opt_document, false /* asElement */,
+        template, opt_templateData, opt_dom, false /* asElement */,
         opt_injectedData);
   },
   /**
@@ -595,8 +616,8 @@ var soyshim = { $$DEFAULT_TEMPLATE_DATA_: {} };
  *
  * @param {Function} template The Soy template defining the element's content.
  * @param {Object=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If
- *     not specified, global document object is used.
+ * @param {(goog.dom.DomHelper|Document)=} opt_dom The context in which DOM
+ *     nodes will be created.
  * @param {boolean=} opt_asElement Whether to wrap the fragment in an
  *     element if the template does not render a single element. If true,
  *     result is always an Element.
@@ -605,10 +626,10 @@ var soyshim = { $$DEFAULT_TEMPLATE_DATA_: {} };
  * @private
  */
 soyshim.$$renderWithWrapper_ = function(
-    template, opt_templateData, opt_document, opt_asElement, opt_injectedData) {
+    template, opt_templateData, opt_dom, opt_asElement, opt_injectedData) {
 
-  var doc = opt_document || document;
-  var wrapper = doc.createElement('div');
+  var dom = opt_dom || document;
+  var wrapper = dom.createElement('div');
   wrapper.innerHTML = template(
     opt_templateData || soyshim.$$DEFAULT_TEMPLATE_DATA_, undefined,
     opt_injectedData);
@@ -627,7 +648,7 @@ soyshim.$$renderWithWrapper_ = function(
   }
 
   // Otherwise, create and return a fragment.
-  var fragment = doc.createDocumentFragment();
+  var fragment = dom.createDocumentFragment();
   while (wrapper.firstChild) {
     fragment.appendChild(wrapper.firstChild);
   }
