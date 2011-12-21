@@ -52,7 +52,7 @@ class PrerenderVisitor extends RenderVisitor {
    *     directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param prerenderVisitorFactory Factory for creating an instance of PrerenderVisitor.
-   * @param outputSb The StringBuilder to append the output to.
+   * @param outputSb The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
    * @param env The current environment, or null if this is the initial call.
@@ -60,7 +60,7 @@ class PrerenderVisitor extends RenderVisitor {
   PrerenderVisitor(
       Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory, PrerenderVisitorFactory prerenderVisitorFactory,
-      StringBuilder outputSb, @Nullable TemplateRegistry templateRegistry,
+      Appendable outputSb, @Nullable TemplateRegistry templateRegistry,
       @Nullable SoyMapData data, @Nullable Deque<Map<String, SoyData>> env) {
 
     super(

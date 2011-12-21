@@ -189,6 +189,12 @@ public interface SoyTofu {
      * Renders the template using the data, injected data, and message bundle previously set.
      */
     public String render();
+
+    /**
+     * Renders the template using the data, injected data, and message bundle previously set
+     * into the given Appendable.
+     */
+    public void render(Appendable out);
   }
 
 

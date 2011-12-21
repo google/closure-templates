@@ -71,7 +71,7 @@ public class PrerenderVisitorFactory implements RenderVisitorFactory {
 
 
   @Override
-  public PrerenderVisitor create(StringBuilder outputSb,
+  public PrerenderVisitor create(Appendable outputSb,
       TemplateRegistry templateRegistry, @Nullable SoyMapData data,
       @Nullable SoyMapData ijData, @Nullable Deque<Map<String, SoyData>> env,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,

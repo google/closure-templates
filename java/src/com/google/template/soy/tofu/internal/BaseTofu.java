@@ -249,12 +249,35 @@ public class BaseTofu implements SoyTofu {
       String templateName, @Nullable SoyMapData data, @Nullable SoyMapData ijData,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyCssRenamingMap cssRenamingMap, boolean doAddToCache) {
+    StringBuilder outputSb = new StringBuilder();
+    renderMain(templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
+        doAddToCache, outputSb);
+    return outputSb.toString();
+  }
+
+
+  /**
+   * @param templateName The full name of the template to render.
+   * @param data The data to call the template with. Can be null if the template has no parameters.
+   * @param ijData The injected data to call the template with. Can be null if not used.
+   * @param activeDelPackageNames The set of active delegate package names, or null if none.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
+   * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
+   * @param doAddToCache Whether to add the current combination of msgBundle and cssRenamingMap to
+   *     the cache if it's not already there. If set to false, then falls back to the no-caching
+   *     mode of rendering when not found in cache. Only applicable if isCaching is true for this
+   *     BaseTofu instance.
+   * @param outputSb The Appendable to write the output to.
+   */
+  private void renderMain(
+      String templateName, @Nullable SoyMapData data, @Nullable SoyMapData ijData,
+      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
+      @Nullable SoyCssRenamingMap cssRenamingMap, boolean doAddToCache, Appendable outputSb) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = Collections.emptySet();
     }
-
-    StringBuilder outputSb = new StringBuilder();
 
     apiCallScope.enter();
 
@@ -282,8 +305,6 @@ public class BaseTofu implements SoyTofu {
     } finally {
       apiCallScope.exit();
     }
-
-    return outputSb.toString();
   }
 
 
@@ -291,7 +312,7 @@ public class BaseTofu implements SoyTofu {
    * Renders a template and appends the result to a StringBuilder.
    *
    * @param templateRegistry A registry of all templates.
-   * @param outputSb The StringBuilder to append the rendered text to.
+   * @param outputSb The Appendable to append the rendered text to.
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
    * @param ijData The injected data to call the template with. Can be null if not used.
@@ -301,7 +322,7 @@ public class BaseTofu implements SoyTofu {
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
    */
   private void renderMainHelper(
-      TemplateRegistry templateRegistry, StringBuilder outputSb, String templateName,
+      TemplateRegistry templateRegistry, Appendable outputSb, String templateName,
       @Nullable SoyMapData data, @Nullable SoyMapData ijData, Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
@@ -400,6 +421,11 @@ public class BaseTofu implements SoyTofu {
       return baseTofu.renderMain(
           templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
           doAddToCache);
+    }
+
+    @Override public void render(Appendable out) {
+      baseTofu.renderMain(templateName, data, ijData, activeDelPackageNames, msgBundle,
+          cssRenamingMap, doAddToCache, out);
     }
   }
 

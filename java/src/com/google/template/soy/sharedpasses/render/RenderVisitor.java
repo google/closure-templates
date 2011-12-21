@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyData;
@@ -86,6 +87,7 @@ import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.util.ULocale;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -115,7 +117,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     /**
      * Creates a RenderVisitor.
-     * @param outputSb The StringBuilder to append the output to.
+     * @param outputSb The Appendable to append the output to.
      * @param templateRegistry A registry of all templates.
      * @param data The current template data.
      * @param ijData The current injected data.
@@ -128,7 +130,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
      * @return The newly created RenderVisitor instance.
      */
     public RenderVisitor create(
-        StringBuilder outputSb, TemplateRegistry templateRegistry,
+        Appendable outputSb, TemplateRegistry templateRegistry,
         @Nullable SoyMapData data, @Nullable SoyMapData ijData,
         @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
         @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap);
@@ -144,8 +146,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Factory for creating an instance of RenderVisitor. */
   private final RenderVisitorFactory renderVisitorFactory;
 
-  /** The StringBuilder to append the output to. */
-  private final StringBuilder outputSb;
+  /** The Appendable to append the output to. */
+  private final Appendable outputSb;
 
   /** The bundle containing all the templates that may be rendered. */
   private final TemplateRegistry templateRegistry;
@@ -185,7 +187,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    *     the default implementation of {@code applyDirective()}.
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
    * @param renderVisitorFactory Factory for creating an instance of EvalVisitor.
-   * @param outputSb The StringBuilder to append the output to.
+   * @param outputSb The Appendable to append the output to.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
    *     tests).
    * @param data The current template data.
@@ -200,7 +202,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected RenderVisitor(
       @Nullable Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap,
       EvalVisitorFactory evalVisitorFactory, RenderVisitorFactory renderVisitorFactory,
-      StringBuilder outputSb, @Nullable TemplateRegistry templateRegistry,
+      Appendable outputSb, @Nullable TemplateRegistry templateRegistry,
       @Nullable SoyMapData data, @Nullable SoyMapData ijData,
       @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
@@ -237,7 +239,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitRawTextNode(RawTextNode node) {
-    outputSb.append(node.getRawText());
+    append(outputSb, node.getRawText());
   }
 
 
@@ -276,8 +278,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           for (SoyMsgPart msgPart : msgParts) {
 
             if (msgPart instanceof SoyMsgRawTextPart) {
-              outputSb.append(((SoyMsgRawTextPart) msgPart).getRawText());
-
+              append(outputSb, ((SoyMsgRawTextPart) msgPart).getRawText());
             } else if (msgPart instanceof SoyMsgPlaceholderPart) {
               String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
               visit(node.getRepPlaceholderNode(placeholderName));
@@ -345,7 +346,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitMsgPluralRemainderNode(MsgPluralRemainderNode node) {
-    outputSb.append(currPluralRemainderValue);
+    append(outputSb, String.valueOf(currPluralRemainderValue));
   }
 
 
@@ -427,7 +428,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       result = StringData.forValue(directiveResult);
     }
 
-    outputSb.append(result);
+    append(outputSb, String.valueOf(result));
   }
 
 
@@ -475,7 +476,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitCssNode(CssNode node) {
     ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
-      outputSb.append(eval(componentNameExpr).toString()).append("-");
+      append(outputSb, eval(componentNameExpr).toString());
+      append(outputSb, "-");
     }
     //
     // CSS statements are of the form {css selector} or {css $component, selector}.
@@ -502,7 +504,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         selectorText = mappedText;
       }
     }
-    outputSb.append(selectorText);
+    append(outputSb, selectorText);
   }
 
 
@@ -809,6 +811,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return StringData.forValue(output.toString());
   }
 
+  /**
+   * Private helper to conveniently handle exceptions if any while appending
+   * text to the output.
+   * @throws a RuntimeException wrapping the IOException handled.
+   */
+  private void append(Appendable out, CharSequence csq) {
+    try {
+      out.append(csq);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Helper class for traversing a translated plural/select message.
@@ -1011,7 +1025,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
      */
     @SuppressWarnings("UnusedDeclaration")  // for IntelliJ
     private void visitPart(SoyMsgPluralRemainderPart remainderPart) {
-      outputSb.append(currentPluralRemainderValue);
+      append(outputSb, String.valueOf(currentPluralRemainderValue));
     }
 
 
@@ -1033,7 +1047,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
      * @param rawTextPart The raw text part.
      */
     private void visitPart(SoyMsgRawTextPart rawTextPart) {
-      outputSb.append(rawTextPart.getRawText());
+      append(outputSb, rawTextPart.getRawText());
     }
 
   }

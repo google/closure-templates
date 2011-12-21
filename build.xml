@@ -124,7 +124,7 @@ Author: Neil Sanchala
     <jar destfile="${soy.jar.file}" update="true">
       <fileset dir="${build.classes.dir}" />
       <zipfileset src="${java.lib.dir}/jsr305.jar" />
-      <zipfileset src="${java.lib.dir}/guava-r09.jar" />
+      <zipfileset src="${java.lib.dir}/guava-10.0.1.jar" />
       <zipfileset src="${java.lib.dir}/javax.inject.jar" />
       <zipfileset src="${java.lib.dir}/aopalliance.jar" />
       <zipfileset src="${java.lib.dir}/guice-3.0.jar" />

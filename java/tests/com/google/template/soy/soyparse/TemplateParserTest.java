@@ -1427,8 +1427,39 @@ public class TemplateParserTest extends TestCase {
     // Outer select: Default: Inner select: Default: RawText
     RawTextNode rtn6 = (RawTextNode) dn3.getChild(3);
     assertEquals(" and his friends to his circle.", rtn6.getRawText());
- }
+  }
 
+  public void testMaybeWhitespaceEmitsLineNumberOnError() {
+
+    // Check that the line number is included.
+    try {
+      parseMaybeWhitespace("ErrorMessage", "foo");
+      fail("Should have failed with a ParseException");
+    } catch (ParseException pe) {
+      assertTrue("Expected [Found on line 1], received: " + pe.getMessage(),
+          pe.getMessage().contains("Found on line 1"));
+    }
+
+    // The line number is correct following a newline.
+    try {
+      parseMaybeWhitespace("ErrorMessage", "\nfoo");
+      fail("Should have failed with a ParseException");
+    } catch (ParseException pe) {
+      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
+          pe.getMessage().contains("Found on line 2"));
+    }
+
+    // The line number is correct even when the template doesn't start on line 1.
+    try {
+      IdGenerator nodeIdGen = new IncrementingIdGenerator();
+      (new TemplateParser("foo", "test.soy", /* start line number */ 2, nodeIdGen))
+          .MaybeWhitespace("ErrorMessage");
+      fail("Should have failed with a ParseException");
+    } catch (ParseException pe) {
+      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
+          pe.getMessage().contains("Found on line 2"));
+    }
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Helpers.
@@ -1447,6 +1478,23 @@ public class TemplateParserTest extends TestCase {
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     return (new TemplateParser(input, "test.soy", /* start line number */ 1, nodeIdGen))
         .parseTemplateBody();
+  }
+
+
+  /**
+   * Parses the given input using the MaybeWhitespace rule.
+   * @param errorMessage The error message MaybeWhitespace should emit when it fails.
+   * @param input The input string to parse.
+   * @throws SoySyntaxException When the given input has a syntax error.
+   * @throws TokenMgrError When the given input has a token error.
+   * @throws ParseException When the given input has a parse error.
+   * @return The parse tree nodes created.
+   */
+  private static void parseMaybeWhitespace(String errorMessage, String input)
+      throws SoySyntaxException, TokenMgrError, ParseException {
+    IdGenerator nodeIdGen = new IncrementingIdGenerator();
+    (new TemplateParser(input, "test.soy", /* start line number */ 1, nodeIdGen))
+        .MaybeWhitespace(errorMessage);
   }
 
 

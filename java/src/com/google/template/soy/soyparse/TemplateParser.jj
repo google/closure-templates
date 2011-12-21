@@ -1094,8 +1094,10 @@ private SourceItemInfo<String> BasicRawText() :
  * Used for areas that should not have any content (e.g. between 'call' and 'param' tags).
  *
  * MaybeWhitespace -> [ BasicRawText ]
+ *
+ * Package visible for testing.
  */
-private void MaybeWhitespace(String errorMessage) :
+void MaybeWhitespace(String errorMessage) :
 {
   SourceItemInfo<String> basicRawText;
 }
@@ -1104,7 +1106,8 @@ private void MaybeWhitespace(String errorMessage) :
     basicRawText = BasicRawText()
     { if (basicRawText.parsedContent.trim().length() != 0) {
 
-        throw new ParseException(errorMessage);
+        throw new ParseException(errorMessage + " Found on line " +
+            (basicRawText.lineNum + lineNumOffset) );
       }
     }
   ]

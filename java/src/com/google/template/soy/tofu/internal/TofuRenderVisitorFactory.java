@@ -60,7 +60,7 @@ class TofuRenderVisitorFactory implements RenderVisitorFactory {
 
   @Override
   public RenderVisitor create(
-      StringBuilder outputSb, TemplateRegistry templateRegistry,
+      Appendable outputSb, TemplateRegistry templateRegistry,
       @Nullable SoyMapData data, @Nullable SoyMapData ijData,
       @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {

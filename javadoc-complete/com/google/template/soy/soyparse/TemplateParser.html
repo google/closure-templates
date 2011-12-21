@@ -322,6 +322,14 @@ This parser's specification is in TemplateParser.jj, which is read by JavaCC and
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/TemplateParser.html#MaybeWhitespace(java.lang.String)">MaybeWhitespace</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;errorMessage)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Matches empty string or BasicRawText, and if the latter, then ensures it's all whitespace.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>&gt;</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/TemplateParser.html#parseTemplateBody()">parseTemplateBody</A></B>()</CODE>
 
@@ -528,6 +536,30 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-ext
 <DD><CODE><A HREF="../../../../../com/google/template/soy/soyparse/TokenMgrError.html" title="class in com.google.template.soy.soyparse">TokenMgrError</A></CODE> - When the input has a token error.
 <DD><CODE><A HREF="../../../../../com/google/template/soy/soyparse/ParseException.html" title="class in com.google.template.soy.soyparse">ParseException</A></CODE> - When the input has a parse error.
 <DD><CODE><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="MaybeWhitespace(java.lang.String)"><!-- --></A><H3>
+MaybeWhitespace</H3>
+<PRE>
+public final void <B>MaybeWhitespace</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;errorMessage)
+                           throws <A HREF="../../../../../com/google/template/soy/soyparse/ParseException.html" title="class in com.google.template.soy.soyparse">ParseException</A></PRE>
+<DL>
+<DD>Matches empty string or BasicRawText, and if the latter, then ensures it's all whitespace.
+ Used for areas that should not have any content (e.g. between 'call' and 'param' tags).
+
+ MaybeWhitespace -> [ BasicRawText ]
+
+ Package visible for testing.
+<P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+
+<DT><B>Throws:</B>
+<DD><CODE><A HREF="../../../../../com/google/template/soy/soyparse/ParseException.html" title="class in com.google.template.soy.soyparse">ParseException</A></CODE></DL>
 </DD>
 </DL>
 <HR>
