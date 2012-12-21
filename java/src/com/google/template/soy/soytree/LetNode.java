@@ -16,18 +16,22 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -35,16 +39,47 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 
 
-  /** Regex pattern for the command text. */
-  // Note: group 1 = local var name, group 2 = value expr (or null).
-  private static final Pattern COMMAND_TEXT_PATTERN =
-      Pattern.compile(
-          "( [$] \\w+ ) (?: \\s* : \\s* (\\S .*) )?", Pattern.COMMENTS | Pattern.DOTALL);
+  /**
+   * Return value for {@code parseCommandTextHelper()}.
+   */
+  protected static class CommandTextParseResult {
+
+    /** The parsed local var name (without '$'). */
+    public final String localVarName;
+    /** The parsed value expr, or null if none. */
+    @Nullable public final ExprRootNode<?> valueExpr;
+    /** The parsed param's content kind, or null if none. */
+    @Nullable public final ContentKind contentKind;
+
+    private CommandTextParseResult(
+        String localVarName, @Nullable ExprRootNode<?> valueExpr,
+        @Nullable ContentKind contentKind) {
+      this.localVarName = localVarName;
+      this.valueExpr = valueExpr;
+      this.contentKind = contentKind;
+    }
+  }
+
+
+  /** Pattern for a variable name plus optional value or attributes (but not both). */
+  // Note: group 1 = local var name, group 2 = value expr (or null), group 3 = trailing attributes
+  // (or null).
+  private static final Pattern COMMAND_TEXT_PATTERN = Pattern.compile(
+      "( [$] \\w+ ) (?: \\s* : \\s* (\\S .*) | \\s+ (\\S .*) )?",
+      Pattern.COMMENTS | Pattern.DOTALL);
+
+
+  /** Parser for optional attributes in the command text. */
+  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
+      new CommandTextAttributesParser(
+          "let",
+          new Attribute("kind", NodeContentKinds.getAttributeValues(), null));
 
 
   /** Whether the local var name is already unique (e.g. node id has already been appended). */
@@ -76,53 +111,44 @@ public abstract class LetNode extends AbstractCommandNode
   /**
    * Helper used by subclass constructors to parse the command text.
    * @param commandText The command text.
-   * @return A pair containing the parsed local var name (without '$') and the value expression (or
-   *     null if the command text doesn't include a value expression).
+   * @return An info object containing the parse results.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  protected Pair<String, ExprRootNode<?>> parseCommandTextHelper(String commandText)
+  protected CommandTextParseResult parseCommandTextHelper(String commandText)
       throws SoySyntaxException {
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      throw new SoySyntaxException("Invalid 'let' command text \"" + commandText + "\".");
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Invalid 'let' command text \"" + commandText + "\".");
     }
 
     String localVarName;
-    try {
-      localVarName = (new ExpressionParser(matcher.group(1))).parseVariable().getChild(0).getName();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText("variable name", tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText("variable name", pe);
-    }
+    localVarName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(
+        matcher.group(1), "Invalid variable name in 'let' command text \"" + commandText + "\".");
 
     ExprRootNode<?> valueExpr;
-    if (matcher.group(2) != null) {
-      try {
-        valueExpr = (new ExpressionParser(matcher.group(2))).parseExpression();
-      } catch (TokenMgrError tme) {
-        throw createExceptionForInvalidCommandText("value expression", tme);
-      } catch (ParseException pe) {
-        throw createExceptionForInvalidCommandText("value expression", pe);
-      }
+    if (matcher.group(2 /* value expression */) != null) {
+      valueExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+          matcher.group(2),
+          "Invalid value expression in 'let' command text \"" + commandText + "\".");
     } else {
       valueExpr = null;
     }
 
-    return Pair.<String, ExprRootNode<?>>of(localVarName, valueExpr);
-  }
+    ContentKind contentKind;
+    if (matcher.group(3 /* optional attributes */) != null) {
+      Preconditions.checkState(matcher.group(2) == null,
+          "Match groups for value expression and optional attributes should be mutually exclusive");
+      // Parse optional attributes
+      Map<String, String> attributes = ATTRIBUTES_PARSER.parse(matcher.group(3));
+      contentKind = (attributes.get("kind") != null)
+          ? NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
+    } else {
+      contentKind = null;
+    }
 
-
-  /**
-   * Private helper for parseCommandTextHelper.
-   * @param desc Description of the invalid item.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidCommandText(String desc, Throwable cause) {
-    return new SoySyntaxException(
-        "Invalid " + desc + " in 'let' command text \"" + getCommandText() + "\".", cause);
+    return new CommandTextParseResult(localVarName, valueExpr, contentKind);
   }
 
 

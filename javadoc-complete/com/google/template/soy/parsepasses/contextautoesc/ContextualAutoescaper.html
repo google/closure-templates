@@ -102,7 +102,7 @@ Inserts directives into print commands by looking at the context in which a prin
  derives templates and rewrites calls so that each template is entered only in contexts
  consistent with its escaping conventions.
 
- E.g. it will <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#rewrite(com.google.template.soy.soytree.SoyFileSetNode)"><CODE>rewrite</CODE></A>
+ E.g. it will <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#rewrite(com.google.template.soy.soytree.SoyFileSetNode, boolean)"><CODE>rewrite</CODE></A>
  <xmp class=prettyprint>
  {template example autoescape="contextual"}
    <p>Hello, {$world}!</p>
@@ -130,7 +130,7 @@ Inserts directives into print commands by looking at the context in which a prin
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#ContextualAutoescaper(java.lang.Iterable, java.util.Map)">ContextualAutoescaper</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Iterable.html?is-external=true" title="class or interface in java.lang">Iterable</A>&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;soyEscapingDirectives,
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#ContextualAutoescaper(java.lang.Iterable, java.util.Map)">ContextualAutoescaper</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Iterable.html?is-external=true" title="class or interface in java.lang">Iterable</A>&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;autoescapeCancellingDirectives,
                       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,? extends <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&gt;&nbsp;sanitizedContentOperators)</CODE>
 
 <BR>
@@ -148,6 +148,14 @@ Inserts directives into print commands by looking at the context in which a prin
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Integer.html?is-external=true" title="class or interface in java.lang">Integer</A>,<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#getPrintNodeStartContexts()">getPrintNodeStartContexts</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each print node, maps its node ID to the context in which it starts.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#getTemplateEndContext(java.lang.String)">getTemplateEndContext</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</CODE>
 
@@ -158,7 +166,8 @@ Inserts directives into print commands by looking at the context in which a prin
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#rewrite(com.google.template.soy.soytree.SoyFileSetNode)">rewrite</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;fileSet)</CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html#rewrite(com.google.template.soy.soytree.SoyFileSetNode, boolean)">rewrite</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;fileSet,
+        boolean&nbsp;assumeNoExternalCalls)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rewrites the given Soy files so that dynamic output is properly escaped according to the
@@ -190,12 +199,12 @@ Inserts directives into print commands by looking at the context in which a prin
 <A NAME="ContextualAutoescaper(java.lang.Iterable, java.util.Map)"><!-- --></A><H3>
 ContextualAutoescaper</H3>
 <PRE>
-public <B>ContextualAutoescaper</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Iterable.html?is-external=true" title="class or interface in java.lang">Iterable</A>&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;soyEscapingDirectives,
+public <B>ContextualAutoescaper</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Iterable.html?is-external=true" title="class or interface in java.lang">Iterable</A>&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;autoescapeCancellingDirectives,
                              <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,? extends <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&gt;&nbsp;sanitizedContentOperators)</PRE>
 <DL>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>soyEscapingDirectives</CODE> - The Soy directives that
-     <A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyPrintDirective.html#shouldCancelAutoescape()"><CODE>cancel</CODE></A> autoescaping.<DD><CODE>sanitizedContentOperators</CODE> - Maps print directive names to the content kinds they
+<DT><B>Parameters:</B><DD><CODE>autoescapeCancellingDirectives</CODE> - The Soy directives that cancel autoescaping (see
+     <A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyPrintDirective.html#shouldCancelAutoescape()"><CODE>SoyPrintDirective.shouldCancelAutoescape()</CODE></A>).<DD><CODE>sanitizedContentOperators</CODE> - Maps print directive names to the content kinds they
      consume and produce.</DL>
 </DL>
 
@@ -209,17 +218,20 @@ public <B>ContextualAutoescaper</B>(<A HREF="http://java.sun.com/javase/6/docs/a
 </TR>
 </TABLE>
 
-<A NAME="rewrite(com.google.template.soy.soytree.SoyFileSetNode)"><!-- --></A><H3>
+<A NAME="rewrite(com.google.template.soy.soytree.SoyFileSetNode, boolean)"><!-- --></A><H3>
 rewrite</H3>
 <PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt; <B>rewrite</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;fileSet)
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt; <B>rewrite</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;fileSet,
+                                  boolean&nbsp;assumeNoExternalCalls)
                            throws <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></PRE>
 <DL>
 <DD>Rewrites the given Soy files so that dynamic output is properly escaped according to the
  context in which it appears.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>fileSet</CODE> - Modified in place.
+<DT><B>Parameters:</B><DD><CODE>fileSet</CODE> - Modified in place.<DD><CODE>assumeNoExternalCalls</CODE> - Whether it's safe to assume this SoyFileSet gives a complete set
+     of templates that could ever get called at runtime; in other words, whether this is a
+     monolithic compile versus separately linked compiles.
 <DT><B>Returns:</B><DD>Extra templates which were derived from templates under fileSet and which must be
      compiled with fileSet to produce a correct output.  See <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/DerivedTemplateUtils.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><CODE>DerivedTemplateUtils</CODE></A> for an
      explanation of these.
@@ -247,6 +259,19 @@ public <A HREF="../../../../../../com/google/template/soy/parsepasses/contextaut
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>templateName</CODE> - A qualified template name.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getPrintNodeStartContexts()"><!-- --></A><H3>
+getPrintNodeStartContexts</H3>
+<PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Integer.html?is-external=true" title="class or interface in java.lang">Integer</A>,<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&gt; <B>getPrintNodeStartContexts</B>()</PRE>
+<DL>
+<DD>For each print node, maps its node ID to the context in which it starts.
+<P>
+<DD><DL>
+</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

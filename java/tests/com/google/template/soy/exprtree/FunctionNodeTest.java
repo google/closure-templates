@@ -22,6 +22,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for FunctionNode.
  *
+ * @author Kai Huang
  */
 public class FunctionNodeTest extends TestCase {
 

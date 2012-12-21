@@ -18,8 +18,6 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyMapData;
@@ -37,10 +35,6 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -61,7 +55,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -73,13 +66,9 @@ import javax.inject.Inject;
  *
  * <p> {@link #exec} should be called on a full Soy tree.
  *
+ * @author Kai Huang
  */
 public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
-
-
-  /** Max length for the rerendered output string to replace a CallNode. If the prerendered output
-   *  is longer than this number of chars, then we do not replace the CallNode. */
-  private static final int MAX_LEN_FOR_PRERENDERED_CALL = 300;
 
 
   /** SimplifyExprVisitor instance used by this visitor. */
@@ -92,9 +81,6 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** A registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
-
-  /** Template names that we've tried and failed to preprerender. */
-  private Set<String> templatesThatFailedPrerender;
 
 
   @Inject
@@ -116,7 +102,6 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
     // Setup.
     nodeIdGen = nodeAsRoot.getNodeIdGenerator();
     templateRegistry = new TemplateRegistry(nodeAsRoot);
-    templatesThatFailedPrerender = Sets.newHashSet();
 
     // Simpify the subtree.
     super.exec(nodeAsRoot);
@@ -161,7 +146,7 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
     StringBuilder prerenderOutputSb = new StringBuilder();
     try {
-      prerenderVisitorFactory.create(prerenderOutputSb, templateRegistry, null, null)
+      prerenderVisitorFactory.create(prerenderOutputSb, templateRegistry, new SoyMapData(), null)
           .exec(node);
     } catch (RenderException pe) {
       return;  // cannot prerender for some other reason not checked above
@@ -289,77 +274,9 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
 
-  @Override protected void visitCallBasicNode(CallBasicNode node) {
-
-    // Recurse.
-    visitSoyNode(node);
-
-    // See if we can prerender this call. We only attempt to prerender if it:
-    // (a) didn't fail prerender previously,
-    // (b) is not a child of a MsgBlockNode,
-    // (c) does not pass data other than params,
-    // (d) has only constant params (CallParamValueNodes with constant values).
-    // In addition, the prerender may fail for a number of reasons due to the callee or the callee's
-    // dependencies (e.g. use of injected data, MsgNodes, CssNodes, nodes in V1 syntax). In such
-    // cases, a RenderException will be thrown.
-
-    if (templatesThatFailedPrerender.contains(node.getCalleeName())) {
-      return;  // previously failed (could work this time, but unlikely)
-    }
-
-    if (node.getParent() instanceof MsgBlockNode) {
-      return;  // don't prerender
-    }
-
-    if (node.isPassingData()) {
-      return;  // cannot prerender
-    }
-
-    for (CallParamNode param : node.getChildren()) {
-      if (! (param instanceof CallParamValueNode &&
-             isConstant(((CallParamValueNode) param).getValueExprUnion().getExpr()))) {
-        return;  // cannot prerender
-      }
-    }
-
-    // Try to prerender this call.
-    SoyMapData callData = new SoyMapData();
-    for (CallParamNode param : node.getChildren()) {
-      SoyData value = getConstantOrNull(((CallParamValueNode) param).getValueExprUnion().getExpr());
-      callData.putSingle(param.getKey(), value);
-    }
-    StringBuilder prerenderOutputSb = new StringBuilder();
-    try {
-      prerenderVisitorFactory.create(prerenderOutputSb, templateRegistry, callData, null)
-          .exec(node);
-    } catch (RenderException e) {
-      templatesThatFailedPrerender.add(node.getCalleeName());
-      return;
-    }
-
-    // If the prerendered output is not too large, replace this call with its prerendered output.
-    if (prerenderOutputSb.length() <= MAX_LEN_FOR_PRERENDERED_CALL) {
-      node.getParent().replaceChild(
-          node, new RawTextNode(nodeIdGen.genId(), prerenderOutputSb.toString()));
-    }
-  }
-
-
-  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
-
-    // Recurse (and combine RawTextNode children).
-    visitSoyNode(node);
-
-    // If there's only one child left and it's a RawTextNode, then replace this node with a
-    // CallParamValueNode.
-    if (node.numChildren() == 1 && node.getChild(0) instanceof RawTextNode) {
-      String rawText = ((RawTextNode) node.getChild(0)).getRawText();
-      String newNodeCommandText =
-          node.getKey() + ": " + BaseUtils.escapeToSoyString(rawText, false);
-      CallParamValueNode newNode = new CallParamValueNode(nodeIdGen.genId(), newNodeCommandText);
-      node.getParent().replaceChild(node, newNode);
-    }
-  }
+  // Note (Sep-2012): We removed prerendering of calls (visitCallBasicNode) due to development
+  // issues. We decided it was better to remove it than to add another rarely-used option to the Soy
+  // compiler.
 
 
   // -----------------------------------------------------------------------------------------------

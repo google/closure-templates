@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * Represents a plural statement within a message.
  *
+ * @author Mohamed Eldawy
  */
 public class SoyMsgPluralPart extends SoyMsgPart {
 

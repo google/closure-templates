@@ -30,6 +30,8 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BidiGlobalDirFunction.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 public class BidiGlobalDirFunctionTest extends TestCase {
 

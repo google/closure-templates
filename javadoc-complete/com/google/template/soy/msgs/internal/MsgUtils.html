@@ -52,8 +52,8 @@ function windowTitle()
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/InsertMsgsVisitor.EncounteredPluralSelectMsgException.html" title="class in com.google.template.soy.msgs.internal"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;NEXT CLASS</FONT></TD>
+&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/InsertMsgsVisitor.EncounteredPlrselMsgException.html" title="class in com.google.template.soy.msgs.internal"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.MsgPartsAndIds.html" title="class in com.google.template.soy.msgs.internal"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../../index.html?com/google/template/soy/msgs/internal/MsgUtils.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="MsgUtils.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -73,7 +73,7 @@ function windowTitle()
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
 DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
@@ -105,7 +105,24 @@ Soy-specific utilities for working with messages.
 <HR>
 
 <P>
+<!-- ======== NESTED CLASS SUMMARY ======== -->
 
+<A NAME="nested_class_summary"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
+<B>Nested Class Summary</B></FONT></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;class</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.MsgPartsAndIds.html" title="class in com.google.template.soy.msgs.internal">MsgUtils.MsgPartsAndIds</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Value class for the return value of <code>buildMsgPartsAndComputeMsgId()</code>.</TD>
+</TR>
+</TABLE>
+&nbsp;
 <!-- ========== METHOD SUMMARY =========== -->
 
 <A NAME="method_summary"><!-- --></A>
@@ -116,27 +133,20 @@ Soy-specific utilities for working with messages.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.html#buildMsgParts(com.google.template.soy.soytree.MsgNode)">buildMsgParts</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</CODE>
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.MsgPartsAndIds.html" title="class in com.google.template.soy.msgs.internal">MsgUtils.MsgPartsAndIds</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.html#buildMsgPartsAndComputeMsgIdForDualFormat(com.google.template.soy.soytree.MsgNode)">buildMsgPartsAndComputeMsgIdForDualFormat</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds the list of SoyMsgParts for the given MsgNode.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Pair.html" title="class in com.google.template.soy.internal.base">Pair</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;,<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Long.html?is-external=true" title="class or interface in java.lang">Long</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.html#buildMsgPartsAndComputeMsgId(com.google.template.soy.soytree.MsgNode)">buildMsgPartsAndComputeMsgId</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds the list of SoyMsgParts and computes the unique message id for the given MsgNode.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds the list of SoyMsgParts and computes the unique message id for the given MsgNode,
+ assuming a specific dual format.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;long</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.html#computeMsgId(com.google.template.soy.soytree.MsgNode)">computeMsgId</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.html#computeMsgIdForDualFormat(com.google.template.soy.soytree.MsgNode)">computeMsgIdForDualFormat</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Computes the unique message id for the given MsgNode.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Computes the unique message id for the given MsgNode, assuming a specific dual format.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -161,44 +171,34 @@ Soy-specific utilities for working with messages.
 </TR>
 </TABLE>
 
-<A NAME="buildMsgPartsAndComputeMsgId(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
-buildMsgPartsAndComputeMsgId</H3>
+<A NAME="buildMsgPartsAndComputeMsgIdForDualFormat(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
+buildMsgPartsAndComputeMsgIdForDualFormat</H3>
 <PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/Pair.html" title="class in com.google.template.soy.internal.base">Pair</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;,<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Long.html?is-external=true" title="class or interface in java.lang">Long</A>&gt; <B>buildMsgPartsAndComputeMsgId</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.MsgPartsAndIds.html" title="class in com.google.template.soy.msgs.internal">MsgUtils.MsgPartsAndIds</A> <B>buildMsgPartsAndComputeMsgIdForDualFormat</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</PRE>
 <DL>
-<DD>Builds the list of SoyMsgParts and computes the unique message id for the given MsgNode.
+<DD>Builds the list of SoyMsgParts and computes the unique message id for the given MsgNode,
+ assuming a specific dual format.
+
+ Note: The field <code>idUsingBracedPhs</code> in the return value is simply set to -1L.
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>msgNode</CODE> - The message parsed from the Soy source.
-<DT><B>Returns:</B><DD>A pair whose first item is the list of SoyMsgParts and second item is the message id.</DL>
+<DT><B>Returns:</B><DD>A <code>MsgPartsAndIds</code> object, asssuming a specific dual format, with field
+     <code>idUsingBracedPhs</code> set to -1L.</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="buildMsgParts(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
-buildMsgParts</H3>
+<A NAME="computeMsgIdForDualFormat(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
+computeMsgIdForDualFormat</H3>
 <PRE>
-public static <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt; <B>buildMsgParts</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</PRE>
+public static long <B>computeMsgIdForDualFormat</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</PRE>
 <DL>
-<DD>Builds the list of SoyMsgParts for the given MsgNode.
+<DD>Computes the unique message id for the given MsgNode, assuming a specific dual format.
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>msgNode</CODE> - The message parsed from the Soy source.
-<DT><B>Returns:</B><DD>The list of SoyMsgParts.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="computeMsgId(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
-computeMsgId</H3>
-<PRE>
-public static long <B>computeMsgId</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;msgNode)</PRE>
-<DL>
-<DD>Computes the unique message id for the given MsgNode.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>msgNode</CODE> - The message parsed from the Soy source.
-<DT><B>Returns:</B><DD>The message id.</DL>
+<DT><B>Returns:</B><DD>The message id, assuming a specific dual format.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->
@@ -231,8 +231,8 @@ public static long <B>computeMsgId</B>(<A HREF="../../../../../../com/google/tem
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/InsertMsgsVisitor.EncounteredPluralSelectMsgException.html" title="class in com.google.template.soy.msgs.internal"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;NEXT CLASS</FONT></TD>
+&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/InsertMsgsVisitor.EncounteredPlrselMsgException.html" title="class in com.google.template.soy.msgs.internal"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/internal/MsgUtils.MsgPartsAndIds.html" title="class in com.google.template.soy.msgs.internal"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../../index.html?com/google/template/soy/msgs/internal/MsgUtils.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="MsgUtils.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -252,7 +252,7 @@ public static long <B>computeMsgId</B>(<A HREF="../../../../../../com/google/tem
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
 DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>

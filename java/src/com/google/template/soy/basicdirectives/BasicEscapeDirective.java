@@ -37,6 +37,7 @@ import java.util.Set;
  * See {@link com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode} which
  * creates the JS code that backs escaping directives.
  *
+ * @author Mike Samuel
  */
 public abstract class BasicEscapeDirective extends SoyAbstractTofuPrintDirective
     implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
@@ -68,6 +69,21 @@ public abstract class BasicEscapeDirective extends SoyAbstractTofuPrintDirective
 
     @Override protected String escape(SoyData value) {
       return Sanitizers.filterCssValue(value);
+    }
+  }
+
+
+  /**
+   * Implements the |cleanHtml directive.
+   */
+  static final class CleanHtml extends BasicEscapeDirective {
+
+    CleanHtml() {
+      super("|cleanHtml");
+    }
+
+    @Override protected String escape(SoyData value) {
+      return Sanitizers.cleanHtml(value);
     }
   }
 
@@ -118,16 +134,16 @@ public abstract class BasicEscapeDirective extends SoyAbstractTofuPrintDirective
 
 
   /**
-   * Implements the |filterHtmlAttribute directive.
+   * Implements the |filterHtmlAttributes directive.
    */
-  static final class FilterHtmlAttribute extends BasicEscapeDirective {
+  static final class FilterHtmlAttributes extends BasicEscapeDirective {
 
-    FilterHtmlAttribute() {
-      super("|filterHtmlAttribute");
+    FilterHtmlAttributes() {
+      super("|filterHtmlAttributes");
     }
 
     @Override protected String escape(SoyData value) {
-      return Sanitizers.filterHtmlAttribute(value);
+      return Sanitizers.filterHtmlAttributes(value);
     }
   }
 
@@ -143,6 +159,21 @@ public abstract class BasicEscapeDirective extends SoyAbstractTofuPrintDirective
 
     @Override protected String escape(SoyData value) {
       return Sanitizers.filterHtmlElementName(value);
+    }
+  }
+
+
+  /**
+   * Implements the |escapeJsRegex directive.
+   */
+  static final class EscapeJsRegex extends BasicEscapeDirective {
+
+    EscapeJsRegex() {
+      super("|escapeJsRegex");
+    }
+
+    @Override protected String escape(SoyData value) {
+      return Sanitizers.escapeJsRegex(value);
     }
   }
 
@@ -263,8 +294,8 @@ public abstract class BasicEscapeDirective extends SoyAbstractTofuPrintDirective
 
 
   @Override
-  public final String apply(SoyData value, List<SoyData> args) {
-    return escape(value);
+  public final SoyData apply(SoyData value, List<SoyData> args) {
+    return SoyData.createFromExistingData(escape(value));
   }
 
 

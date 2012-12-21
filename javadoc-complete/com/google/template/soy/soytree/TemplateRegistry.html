@@ -130,7 +130,7 @@ A registry or index of all templates in a Soy tree.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Represents a set of delegate templates with the same name and same priority.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Represents a set of delegate templates with the same key (name and variant) and same priority.</TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -176,31 +176,57 @@ A registry or index of all templates in a Soy tree.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt;&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getDelegateTemplatesMap()">getDelegateTemplatesMap</A></B>()</CODE>
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getDelTemplateDivisionsForAllVariants(java.lang.String)">getDelTemplateDivisionsForAllVariants</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a map from delegate template name to list of <code>DelegateTemplateDivision</code>s, where
- each list is sorted in descending priority order.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Retrieves the set of <code>DelegateTemplateDivision</code>s for all variants of a given a delegate
+ template name.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getDelTemplateKeysForAllVariants(java.lang.String)">getDelTemplateKeysForAllVariants</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Retrieves the set of key (name and variant) strings for all variants of a given delegate
+ template name.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&gt;&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getDelTemplateNameToKeysMap()">getDelTemplateNameToKeysMap</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a map from delegate template name to set of keys.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt;&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getDelTemplatesMap()">getDelTemplatesMap</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a map from delegate template key (name and variant) to list of
+ <code>DelegateTemplateDivision</code>s, where each list is sorted in descending priority order.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getSortedDelegateTemplateDivisions(java.lang.String)">getSortedDelegateTemplateDivisions</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#getSortedDelTemplateDivisions(com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey)">getSortedDelTemplateDivisions</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&nbsp;delTemplateKey)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Retrieves the list of <code>DelegateTemplateDivision</code>s (sorted in descencing priority order)
- given the delegate template name.</TD>
+ given a delegate template key (name and variant).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#selectDelegateTemplate(java.lang.String, java.util.Set)">selectDelegateTemplate</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName,
-                       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelPackageNames)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.html#selectDelTemplate(com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey, java.util.Set)">selectDelTemplate</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&nbsp;delTemplateKey,
+                  <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelPackageNames)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Selects a delegate template based on the rendering rules, given the delegate template name and
- the set of active delegate package names.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Selects a delegate template based on the rendering rules, given the delegate template key (name
+ and variant) and the set of active delegate package names.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -273,13 +299,12 @@ public <A HREF="../../../../../com/google/template/soy/soytree/TemplateBasicNode
 </DL>
 <HR>
 
-<A NAME="getDelegateTemplatesMap()"><!-- --></A><H3>
-getDelegateTemplatesMap</H3>
+<A NAME="getDelTemplateNameToKeysMap()"><!-- --></A><H3>
+getDelTemplateNameToKeysMap</H3>
 <PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt;&gt; <B>getDelegateTemplatesMap</B>()</PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&gt;&gt; <B>getDelTemplateNameToKeysMap</B>()</PRE>
 <DL>
-<DD>Returns a map from delegate template name to list of <code>DelegateTemplateDivision</code>s, where
- each list is sorted in descending priority order.
+<DD>Returns a map from delegate template name to set of keys.
 <P>
 <DD><DL>
 </DL>
@@ -287,34 +312,79 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-exte
 </DL>
 <HR>
 
-<A NAME="getSortedDelegateTemplateDivisions(java.lang.String)"><!-- --></A><H3>
-getSortedDelegateTemplateDivisions</H3>
+<A NAME="getDelTemplatesMap()"><!-- --></A><H3>
+getDelTemplatesMap</H3>
 <PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt; <B>getSortedDelegateTemplateDivisions</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName)</PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt;&gt; <B>getDelTemplatesMap</B>()</PRE>
 <DL>
-<DD>Retrieves the list of <code>DelegateTemplateDivision</code>s (sorted in descencing priority order)
- given the delegate template name.
+<DD>Returns a map from delegate template key (name and variant) to list of
+ <code>DelegateTemplateDivision</code>s, where each list is sorted in descending priority order.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getDelTemplateKeysForAllVariants(java.lang.String)"><!-- --></A><H3>
+getDelTemplateKeysForAllVariants</H3>
+<PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&gt; <B>getDelTemplateKeysForAllVariants</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName)</PRE>
+<DL>
+<DD>Retrieves the set of key (name and variant) strings for all variants of a given delegate
+ template name.
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>delTemplateName</CODE> - The delegate template name to retrieve.
-<DT><B>Returns:</B><DD>The corresponding list of <code>DelegateTemplateDivision</code>s (sorted in descencing
-     priority order), or null if the delegate template name is not implemented.</DL>
+<DT><B>Returns:</B><DD>The set of keys for all variants.</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="selectDelegateTemplate(java.lang.String, java.util.Set)"><!-- --></A><H3>
-selectDelegateTemplate</H3>
+<A NAME="getDelTemplateDivisionsForAllVariants(java.lang.String)"><!-- --></A><H3>
+getDelTemplateDivisionsForAllVariants</H3>
 <PRE>
-public <A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</A> <B>selectDelegateTemplate</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName,
-                                                   <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelPackageNames)
-                                            throws <A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateConflictException.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateConflictException</A></PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt; <B>getDelTemplateDivisionsForAllVariants</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delTemplateName)</PRE>
 <DL>
-<DD>Selects a delegate template based on the rendering rules, given the delegate template name and
- the set of active delegate package names.
+<DD>Retrieves the set of <code>DelegateTemplateDivision</code>s for all variants of a given a delegate
+ template name.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>delTemplateName</CODE> - The delegate template name to select an implementation for.<DD><CODE>activeDelPackageNames</CODE> - The set of active delegate package names.
+<DT><B>Parameters:</B><DD><CODE>delTemplateName</CODE> - The delegate template name to retrieve.
+<DT><B>Returns:</B><DD>The set of <code>DelegateTemplateDivision</code>s for all variants.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getSortedDelTemplateDivisions(com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey)"><!-- --></A><H3>
+getSortedDelTemplateDivisions</H3>
+<PRE>
+public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A>&gt; <B>getSortedDelTemplateDivisions</B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&nbsp;delTemplateKey)</PRE>
+<DL>
+<DD>Retrieves the list of <code>DelegateTemplateDivision</code>s (sorted in descencing priority order)
+ given a delegate template key (name and variant).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>delTemplateKey</CODE> - The delegate template key (name and variant) to retrieve.
+<DT><B>Returns:</B><DD>The corresponding list of <code>DelegateTemplateDivision</code>s (sorted in descencing
+     priority order), or null if the delegate template key is not implemented.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="selectDelTemplate(com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey, java.util.Set)"><!-- --></A><H3>
+selectDelTemplate</H3>
+<PRE>
+public <A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</A> <B>selectDelTemplate</B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A>&nbsp;delTemplateKey,
+                                              <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelPackageNames)
+                                       throws <A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateConflictException.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateConflictException</A></PRE>
+<DL>
+<DD>Selects a delegate template based on the rendering rules, given the delegate template key (name
+ and variant) and the set of active delegate package names.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>delTemplateKey</CODE> - The delegate template key (name and variant) to select an implementation
+     for.<DD><CODE>activeDelPackageNames</CODE> - The set of active delegate package names.
 <DT><B>Returns:</B><DD>The selected delegate template, or null if there are no active implementations.
 <DT><B>Throws:</B>
 <DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateConflictException.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateConflictException</A></CODE> - If there are two or more active implementations with

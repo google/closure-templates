@@ -31,6 +31,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class AbstractOperatorNode extends AbstractParentExprNode implements OperatorNode {
 
@@ -71,7 +72,8 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
       if (syntaxEl instanceof Operand) {
         Operand operand = (Operand) syntaxEl;
         // If left (right) associative, first (last) operand doesn't need protection if it's an
-        // operator of equal precedence to this one.
+        // operator of equal precedence to this one. (Note: Actually, the middle operand of our only
+        // ternary operator doesn't need protection either, but we do it anyway for readability.)
         if (i == (isLeftAssociative ? 0 : n-1)) {
           sourceSb.append(getOperandProtectedForLowerPrec(operand.getIndex()));
         } else {

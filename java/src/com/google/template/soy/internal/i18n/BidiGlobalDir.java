@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Aharon Lanin
  */
 public class BidiGlobalDir {
 

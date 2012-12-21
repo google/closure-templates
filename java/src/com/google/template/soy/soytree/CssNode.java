@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -37,6 +35,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 // TODO: Figure out why the CSS @component syntax doesn't support
 // injected data ($ij.foo).  It looks like Soy is not checking CssNodes for
@@ -70,17 +69,10 @@ public class CssNode extends AbstractCommandNode
     int delimPos = commandText.lastIndexOf(',');
     if (delimPos != -1) {
       String componentNameText = commandText.substring(0, delimPos).trim();
-
-      try {
-        componentNameExpr = (new ExpressionParser(componentNameText)).parseExpression();
-      } catch (TokenMgrError tme) {
-        throw new SoySyntaxException(
-            "Token error processing " +  componentNameText + " in CSS node.");
-      } catch (ParseException pe) {
-        throw new SoySyntaxException(
-            "Parse exception processing " +  componentNameText + " in CSS node");
-      }
-
+      componentNameExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+          componentNameText,
+          "Invalid component name expression in 'css' command text \"" +
+              componentNameText + "\".");
       selectorText = commandText.substring(delimPos + 1).trim();
     } else {
       componentNameExpr = null;

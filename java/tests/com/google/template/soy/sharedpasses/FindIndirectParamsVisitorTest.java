@@ -33,6 +33,7 @@ import java.util.Map;
 /**
  * Unit tests for FindIndirectParamsVisitor.
  *
+ * @author Kai Huang
  */
 public class FindIndirectParamsVisitorTest extends TestCase {
 
@@ -126,31 +127,32 @@ public class FindIndirectParamsVisitorTest extends TestCase {
     TemplateNode b3 = b.getChild(3);
     TemplateNode b4 = b.getChild(4);
 
-    IndirectParamsInfo ipi2 = (new FindIndirectParamsVisitor(null)).exec(a0);
-    assertEquals(false, ipi2.mayHaveExternalIndirectParams);
+    IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(null)).exec(a0);
+    assertEquals(false, ipi.mayHaveIndirectParamsInExternalCalls);
+    assertEquals(false, ipi.mayHaveIndirectParamsInExternalDelCalls);
 
-    Map<String, SoyDocParam> ip2 = ipi2.indirectParams;
-    assertEquals(6, ip2.size());
-    assertFalse(ip2.containsKey("a0"));
-    assertTrue(ip2.containsKey("a1"));
-    assertFalse(ip2.containsKey("a2"));
-    assertTrue(ip2.containsKey("a3"));
-    assertFalse(ip2.containsKey("a4"));
-    assertFalse(ip2.containsKey("a5"));
-    assertTrue(ip2.containsKey("a6"));
-    assertFalse(ip2.containsKey("b0"));
-    assertTrue(ip2.containsKey("b1"));
-    assertFalse(ip2.containsKey("b2"));
-    assertTrue(ip2.containsKey("b3"));
-    assertTrue(ip2.containsKey("b4"));
+    Map<String, SoyDocParam> ipMap = ipi.indirectParams;
+    assertEquals(6, ipMap.size());
+    assertFalse(ipMap.containsKey("a0"));
+    assertTrue(ipMap.containsKey("a1"));
+    assertFalse(ipMap.containsKey("a2"));
+    assertTrue(ipMap.containsKey("a3"));
+    assertFalse(ipMap.containsKey("a4"));
+    assertFalse(ipMap.containsKey("a5"));
+    assertTrue(ipMap.containsKey("a6"));
+    assertFalse(ipMap.containsKey("b0"));
+    assertTrue(ipMap.containsKey("b1"));
+    assertFalse(ipMap.containsKey("b2"));
+    assertTrue(ipMap.containsKey("b3"));
+    assertTrue(ipMap.containsKey("b4"));
 
-    Multimap<String, TemplateNode> pktcm2 = ipi2.paramKeyToCalleesMultimap;
-    assertEquals(ImmutableSet.of(a1), pktcm2.get("a1"));
-    assertEquals(ImmutableSet.of(a3), pktcm2.get("a3"));
-    assertEquals(ImmutableSet.of(a6), pktcm2.get("a6"));
-    assertEquals(ImmutableSet.of(b1), pktcm2.get("b1"));
-    assertEquals(ImmutableSet.of(b3), pktcm2.get("b3"));
-    assertEquals(ImmutableSet.of(a5, b4), pktcm2.get("b4"));  // 'b4' listed by alpha.five
+    Multimap<String, TemplateNode> pktcm = ipi.paramKeyToCalleesMultimap;
+    assertEquals(ImmutableSet.of(a1), pktcm.get("a1"));
+    assertEquals(ImmutableSet.of(a3), pktcm.get("a3"));
+    assertEquals(ImmutableSet.of(a6), pktcm.get("a6"));
+    assertEquals(ImmutableSet.of(b1), pktcm.get("b1"));
+    assertEquals(ImmutableSet.of(b3), pktcm.get("b3"));
+    assertEquals(ImmutableSet.of(a5, b4), pktcm.get("b4"));  // 'b4' listed by alpha.five
   }
 
 }

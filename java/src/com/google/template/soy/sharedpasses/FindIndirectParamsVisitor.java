@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -53,13 +54,9 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> Note that we can only recurse on non-external non-delegate callees to find indirect
- * params. (We can't recurse on delegates because we can't tell at compile time which delegate will
- * be called, if any.) Thus we return a {@code IndirectParamsInfo} object that includes a field
- * indicating whether we encountered any external/delegate callees that we couldn't recurse on.
- *
  * <p> {@link #exec} should be called on a {@code TemplateNode}.
  *
+ * @author Kai Huang
  */
 public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectParamsInfo> {
 
@@ -76,23 +73,32 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
      *  param. */
     public final Multimap<String, TemplateNode> paramKeyToCalleesMultimap;
 
-    /** Whether the template (that the pass was run on) may have indirect params in external calls
-     *  or delegate calls. */
-    public final boolean mayHaveExternalIndirectParams;
+    /** Whether the template (that the pass was run on) may have indirect params in external
+     *  basic calls. */
+    public final boolean mayHaveIndirectParamsInExternalCalls;
+
+    /** Whether the template (that the pass was run on) may have indirect params in external
+     *  delegate calls. */
+    public final boolean mayHaveIndirectParamsInExternalDelCalls;
 
     /**
      * @param indirectParams  Indirect params of the template (that the pass was run on).
      * @param paramKeyToCalleesMultimap Multimap from param key to callees that explicitly list the
      *     param.
-     * @param mayHaveExternalIndirectParams Whether the template (that the pass was run on) may have
-     *     indirect params in external calls or delegate calls.
+     * @param mayHaveIndirectParamsInExternalCalls Whether the template (that the pass was run
+     *     on) may have indirect params in external basic calls.
+     * @param mayHaveIndirectParamsInExternalDelCalls Whether the template (that the pass was run
+     *     on) may have indirect params in external delegate calls.
      */
-    public IndirectParamsInfo(SortedMap<String, SoyDocParam> indirectParams,
+    public IndirectParamsInfo(
+        SortedMap<String, SoyDocParam> indirectParams,
         Multimap<String, TemplateNode> paramKeyToCalleesMultimap,
-        boolean mayHaveExternalIndirectParams) {
+        boolean mayHaveIndirectParamsInExternalCalls,
+        boolean mayHaveIndirectParamsInExternalDelCalls) {
       this.indirectParams = indirectParams;
       this.paramKeyToCalleesMultimap = paramKeyToCalleesMultimap;
-      this.mayHaveExternalIndirectParams = mayHaveExternalIndirectParams;
+      this.mayHaveIndirectParamsInExternalCalls = mayHaveIndirectParamsInExternalCalls;
+      this.mayHaveIndirectParamsInExternalDelCalls = mayHaveIndirectParamsInExternalDelCalls;
     }
   }
 
@@ -206,9 +212,13 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
   /** Multimap from param key (direct or indirect) to callees that explicitly list the param. */
   private Multimap<String, TemplateNode> paramKeyToCalleesMultimap;
 
-  /** Whether the template (that the pass was run on) may have indirect params in external calls
-   *  or delegate calls. */
-  private boolean mayHaveExternalIndirectParams;
+  /** Whether the template (that the pass was run on) may have indirect params in external
+   *  basic calls. */
+  private boolean mayHaveIndirectParamsInExternalCalls;
+
+  /** Whether the template (that the pass was run on) may have indirect params in external
+   *  delegate calls. */
+  private boolean mayHaveIndirectParamsInExternalDelCalls;
 
 
   /**
@@ -221,6 +231,8 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
   @Override public IndirectParamsInfo exec(SoyNode node) {
 
+    Preconditions.checkArgument(node instanceof TemplateNode);
+
     isStartOfPass = true;
     visitedCallSituations = Sets.newHashSet();
     currTemplate = null;
@@ -229,12 +241,14 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
         new CallerFrame(null, ImmutableSet.<TemplateNode>of(), ImmutableSet.<String>of()));
     indirectParams = Maps.newHashMap();
     paramKeyToCalleesMultimap = HashMultimap.create();
-    mayHaveExternalIndirectParams = false;
+    mayHaveIndirectParamsInExternalCalls = false;
+    mayHaveIndirectParamsInExternalDelCalls = false;
 
     visit(node);
 
-    return new IndirectParamsInfo(ImmutableSortedMap.copyOf(indirectParams),
-        paramKeyToCalleesMultimap, mayHaveExternalIndirectParams);
+    return new IndirectParamsInfo(
+        ImmutableSortedMap.copyOf(indirectParams), paramKeyToCalleesMultimap,
+        mayHaveIndirectParamsInExternalCalls, mayHaveIndirectParamsInExternalDelCalls);
   }
 
 
@@ -246,7 +260,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
     // Build templateRegistry if necessary.
     if (templateRegistry == null) {
-      SoyFileSetNode soyTree = (SoyFileSetNode) node.getParent().getParent();
+      SoyFileSetNode soyTree = node.getParent().getParent();
       templateRegistry = new TemplateRegistry(soyTree);
     }
 
@@ -255,14 +269,20 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
     } else {
       // Add the params listed by this template.
-      for (SoyDocParam param : node.getSoyDocParams()) {
-        if (callerStack.peek().allCallParamKeys.contains(param.key)) {
-          continue;  // param is actually not being passed by data="all"
+      List<SoyDocParam> soyDocParams = node.getSoyDocParams();
+      if (soyDocParams == null) {
+        // We can't tell what's going on because this template doesn't have SoyDoc.
+        mayHaveIndirectParamsInExternalCalls = true;
+      } else {
+        for (SoyDocParam param : soyDocParams) {
+          if (callerStack.peek().allCallParamKeys.contains(param.key)) {
+            continue;  // param is actually not being passed by data="all"
+          }
+          if (! indirectParams.containsKey(param.key)) {
+            indirectParams.put(param.key, param);
+          }
+          paramKeyToCalleesMultimap.put(param.key, node);
         }
-        if (! indirectParams.containsKey(param.key)) {
-          indirectParams.put(param.key, param);
-        }
-        paramKeyToCalleesMultimap.put(param.key, node);
       }
     }
 
@@ -288,7 +308,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     // Note the template may be null because we allow calls to external templates not within this
     // Soy file set.
     if (callee == null) {
-      mayHaveExternalIndirectParams = true;
+      mayHaveIndirectParamsInExternalCalls = true;
       return;
     }
 
@@ -307,13 +327,13 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
       return;
     }
 
-    // Important: There may be other delegate implementations not being compiled together with this
-    // delegate call. Thus, we need to take the same precautions as for external calls.
-    mayHaveExternalIndirectParams = true;
+    // The current Soy file bundle may not contain all the delegate implementations that could
+    // potentially be used.
+    mayHaveIndirectParamsInExternalDelCalls = true;
 
     // Visit all the possible callee templates.
-    List<DelegateTemplateDivision> delTemplateDivisions =
-        templateRegistry.getSortedDelegateTemplateDivisions(node.getDelCalleeName());
+    Set<DelegateTemplateDivision> delTemplateDivisions =
+        templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
     if (delTemplateDivisions != null) {
       for (DelegateTemplateDivision division : delTemplateDivisions) {
         for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {

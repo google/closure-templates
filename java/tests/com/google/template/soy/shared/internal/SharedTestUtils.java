@@ -16,14 +16,17 @@
 
 package com.google.template.soy.shared.internal;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoyFileSupplier;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soyparse.SoyFileSetParser;
+import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -38,6 +41,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class SharedTestUtils {
 
@@ -147,7 +151,8 @@ public class SharedTestUtils {
 
     List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
     for (String soyFileContent : soyFileContents) {
-      soyFileSuppliers.add(SoyFileSupplier.Factory.create(soyFileContent, "no-path"));
+      soyFileSuppliers.add(SoyFileSupplier.Factory.create(
+          soyFileContent, SoyFileKind.SRC, "no-path"));
     }
 
     SoyFileSetNode soyTree =
@@ -192,4 +197,29 @@ public class SharedTestUtils {
     return getNode(parseSoyCode(soyCode), indicesToNode);
   }
 
+
+  /**
+   * Retrieves all nodes in a tree that are an instance of a particular class.
+   *
+   * @param <T> The type of node to retrieve.
+   * @param rootSoyNode The parse tree to search.
+   * @param classObject The class whose instances to search for.
+   * @return The nodes in the order they appear.
+   */
+  public static <T> List<T> getAllNodesOfType(SoyNode rootSoyNode, final Class<T> classObject) {
+    final ImmutableList.Builder<T> builder = ImmutableList.builder();
+    AbstractSoyNodeVisitor<Void> visitor = new AbstractSoyNodeVisitor<Void>() {
+      @SuppressWarnings("unchecked") // Casting safe after isAssignableFrom check.
+      @Override public void visitSoyNode(SoyNode soyNode) {
+        if (classObject.isAssignableFrom(soyNode.getClass())) {
+          builder.add((T) soyNode);
+        }
+        if (soyNode instanceof ParentSoyNode<?>) {
+          visitChildren((ParentSoyNode<?>) soyNode);
+        }
+      }
+    };
+    visitor.exec(rootSoyNode);
+    return builder.build();
+  }
 }

@@ -17,7 +17,8 @@
 package com.google.template.soy.exprparse;
 
 import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.DataRefIndexNode;
+import com.google.template.soy.exprtree.DataRefAccessExprNode;
+import com.google.template.soy.exprtree.DataRefAccessIndexNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -30,6 +31,7 @@ import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
@@ -45,6 +47,7 @@ import java.util.List;
 /**
  * Unit tests for the Soy expression parser.
  *
+ * @author Kai Huang
  */
 public class ExpressionParserTest extends TestCase {
 
@@ -74,17 +77,14 @@ public class ExpressionParserTest extends TestCase {
 
     String[] dataRefs =
         {"$aaa", "$ij.aaa", "$a0a0.b1b1", "$aaa.0.bbb.12", "$aaa[0].bbb['ccc'][$eee]",
+         "$aaa?.bbb", "$aaa.bbb?[0]?.ccc?['ddd']", "$ij?.aaa",
          "$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]"};
     for (String dataRef : dataRefs) {
       (new ExpressionParser(dataRef)).parseDataReference();
     }
 
-    DataRefNode ijDataRef = (new ExpressionParser("$ij.aaa.bbb")).parseDataReference().getChild(0);
-    assertTrue(ijDataRef.isIjDataRef());
-    assertEquals("aaa", ijDataRef.getFirstKey());
-
     String[] nonDataRefs =
-        {"$", "$ aaa", "aaa", "$1a1a", "$0", "$[12]", "$[$aaa]", "$aaa[]", "$ij[4]"};
+        {"$", "$ aaa", "aaa", "$1a1a", "$0", "$[12]", "$[$aaa]", "$aaa[]", "$ij[4]", "$aaa.?bbb"};
     for (String nonDataRef : nonDataRefs) {
       try {
         (new ExpressionParser(nonDataRef)).parseDataReference();
@@ -177,6 +177,7 @@ public class ExpressionParserTest extends TestCase {
     assertIsExpression("$a or null");
     assertIsNotExpression("$a || null");
     // Level 1.
+    assertIsExpression("$boo?:-1", "$a ?: $b ?: $c");
     assertIsExpression("false?4:-3", "$a ? $b : $c ? $d : $e");
     // Parentheses.
     assertIsExpression("($a)", "( 4- $b *$c )");
@@ -227,10 +228,43 @@ public class ExpressionParserTest extends TestCase {
   public void testParseDataReference() throws Exception {
 
     DataRefNode dataRef = (new ExpressionParser("$boo.0[$foo]")).parseDataReference().getChild(0);
-    assertEquals(3, dataRef.numChildren());
+    assertFalse(dataRef.isIjDataRef());
+    assertFalse(dataRef.isNullSafeIjDataRef());
     assertEquals("boo", dataRef.getFirstKey());
-    assertEquals(0, ((DataRefIndexNode) dataRef.getChild(1)).getIndex());
-    assertEquals("$foo", ((DataRefNode) dataRef.getChild(2)).toSourceString());
+    assertEquals(2, dataRef.numChildren());
+    DataRefAccessIndexNode access0 = (DataRefAccessIndexNode) dataRef.getChild(0);
+    assertFalse(access0.isNullSafe());
+    assertEquals(0, access0.getIndex());
+    DataRefAccessExprNode access1 = (DataRefAccessExprNode) dataRef.getChild(1);
+    assertFalse(access1.isNullSafe());
+    assertEquals("$foo", access1.getChild(0).toSourceString());
+
+    dataRef = (new ExpressionParser("$boo?.0?[$foo]")).parseDataReference().getChild(0);
+    assertFalse(dataRef.isIjDataRef());
+    assertFalse(dataRef.isNullSafeIjDataRef());
+    assertEquals("boo", dataRef.getFirstKey());
+    assertEquals(2, dataRef.numChildren());
+    access0 = (DataRefAccessIndexNode) dataRef.getChild(0);
+    assertTrue(access0.isNullSafe());
+    assertEquals(0, access0.getIndex());
+    access1 = (DataRefAccessExprNode) dataRef.getChild(1);
+    assertTrue(access1.isNullSafe());
+    assertEquals("$foo", access1.getChild(0).toSourceString());
+
+    dataRef = (new ExpressionParser("$ij?.boo?.0[$ij.foo]")).parseDataReference().getChild(0);
+    assertTrue(dataRef.isIjDataRef());
+    assertTrue(dataRef.isNullSafeIjDataRef());
+    assertEquals("boo", dataRef.getFirstKey());
+    assertEquals(2, dataRef.numChildren());
+    access0 = (DataRefAccessIndexNode) dataRef.getChild(0);
+    assertTrue(access0.isNullSafe());
+    assertEquals(0, access0.getIndex());
+    access1 = (DataRefAccessExprNode) dataRef.getChild(1);
+    assertFalse(access1.isNullSafe());
+    DataRefNode childDataRef = (DataRefNode) access1.getChild(0);
+    assertTrue(childDataRef.isIjDataRef());
+    assertFalse(childDataRef.isNullSafeIjDataRef());
+    assertEquals("$ij.foo", childDataRef.toSourceString());
   }
 
 
@@ -328,11 +362,20 @@ public class ExpressionParserTest extends TestCase {
 
     expr = (new ExpressionParser("$a or true")).parseExpression();
     OrOpNode orOp = (OrOpNode) expr.getChild(0);
-    assertEquals("$a", ((DataRefNode) orOp.getChild(0)).toSourceString());
+    assertEquals("$a", orOp.getChild(0).toSourceString());
     assertEquals(true, ((BooleanNode) orOp.getChild(1)).getValue());
 
-    expr = (new ExpressionParser("$a==null?0*1:0x1")).parseExpression();
-    ConditionalOpNode condOp = (ConditionalOpNode) expr.getChild(0);
+    expr = (new ExpressionParser("$a ?: $b ?: $c")).parseExpression();
+    NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) expr.getChild(0);
+    assertEquals("$a", nullCoalOp0.getChild(0).toSourceString());
+    NullCoalescingOpNode nullCoalOp1 = (NullCoalescingOpNode) nullCoalOp0.getChild(1);
+    assertEquals("$b", nullCoalOp1.getChild(0).toSourceString());
+    assertEquals("$c", nullCoalOp1.getChild(1).toSourceString());
+
+    expr = (new ExpressionParser("$a?:$b==null?0*1:0x1")).parseExpression();
+    NullCoalescingOpNode nullCoalOp = (NullCoalescingOpNode) expr.getChild(0);
+    assertEquals("$a", nullCoalOp.getChild(0).toSourceString());
+    ConditionalOpNode condOp = (ConditionalOpNode) nullCoalOp.getChild(1);
     assertTrue(condOp.getChild(0) instanceof EqualOpNode);
     assertTrue(condOp.getChild(1) instanceof TimesOpNode);
     assertTrue(condOp.getChild(2) instanceof IntegerNode);

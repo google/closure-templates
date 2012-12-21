@@ -27,6 +27,7 @@ import java.util.Set;
 /**
  * Visitor for determining whether any code in a Soy tree uses injected data.
  *
+ * @author Kai Huang
  */
 public class IsUsingIjDataVisitor {
 
@@ -36,7 +37,7 @@ public class IsUsingIjDataVisitor {
    */
   public boolean exec(SoyFileSetNode soyTree) {
 
-    FindUsedIjParamsInExprHelperVisitor helperVisitor = new FindUsedIjParamsInExprHelperVisitor();
+    FindIjParamsInExprHelperVisitor helperVisitor = new FindIjParamsInExprHelperVisitor();
 
     // We only care whether the result set is empty, so shortcircuit the pass as soon as the result
     // set is nonempty.
@@ -46,7 +47,7 @@ public class IsUsingIjDataVisitor {
         new Shortcircuiter<Set<String>>() {
           @Override
           public boolean shouldShortcircuit(AbstractExprNodeVisitor<Set<String>> exprNodeVisitor) {
-            return ((FindUsedIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().size() > 0;
+            return ((FindIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().size() > 0;
           }
         });
 

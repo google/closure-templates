@@ -33,6 +33,7 @@ import com.google.inject.Inject;
  *     be called. This method creates a Guice injector containing only the {@code SoyModule},
  *     which serves to bind the default Soy plugins (e.g. basic functions).
  *
+ * @author Kai Huang
  */
 class GuiceInitializer {
 

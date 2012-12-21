@@ -18,9 +18,12 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.MixinParentNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -28,8 +31,9 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
-public class CallParamContentNode extends CallParamNode implements BlockNode {
+public class CallParamContentNode extends CallParamNode implements RenderUnitNode {
 
 
   /** The mixin object that implements the ParentNode functionality. */
@@ -37,6 +41,9 @@ public class CallParamContentNode extends CallParamNode implements BlockNode {
 
   /** The param key. */
   private final String key;
+
+  /** The param's content kind, or null if no 'kind' attribute was present. */
+  @Nullable private final ContentKind contentKind;
 
 
   /**
@@ -50,11 +57,12 @@ public class CallParamContentNode extends CallParamNode implements BlockNode {
 
     CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
     key = parseResult.key;
+    contentKind = parseResult.contentKind;
 
     if (parseResult.valueExprUnion != null) {
-      throw new SoySyntaxException(
+      throw SoySyntaxException.createWithoutMetaInfo(
           "A 'param' tag should contain a value if and only if it is also self-ending (with a" +
-          " trailing '/') (invalid tag is {param " + commandText + "}).");
+              " trailing '/') (invalid tag is {param " + commandText + "}).");
     }
   }
 
@@ -67,6 +75,7 @@ public class CallParamContentNode extends CallParamNode implements BlockNode {
     super(orig);
     this.parentMixin = new MixinParentNode<StandaloneNode>(orig.parentMixin, this);
     this.key = orig.key;
+    this.contentKind = orig.contentKind;
   }
 
 
@@ -77,6 +86,11 @@ public class CallParamContentNode extends CallParamNode implements BlockNode {
 
   @Override public String getKey() {
     return key;
+  }
+
+
+  @Override @Nullable public ContentKind getContentKind() {
+    return contentKind;
   }
 
 
@@ -91,7 +105,7 @@ public class CallParamContentNode extends CallParamNode implements BlockNode {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
-    sb.append("{/").append(getCommandName()).append("}");
+    sb.append("{/").append(getCommandName()).append('}');
     return sb.toString();
   }
 

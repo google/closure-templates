@@ -26,6 +26,7 @@ import java.util.List;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
+ * @author Kai Huang
  */
 public class JavaExprUtils {
 
@@ -69,7 +70,7 @@ public class JavaExprUtils {
       }
 
       if (needsProtection) {
-        resultSb.append("(").append(javaExpr.getText()).append(")");
+        resultSb.append('(').append(javaExpr.getText()).append(')');
       } else {
         resultSb.append(javaExpr.getText());
       }

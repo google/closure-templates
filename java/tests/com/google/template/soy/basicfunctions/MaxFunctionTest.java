@@ -30,6 +30,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MaxFunction.
  *
+ * @author Kai Huang
  */
 public class MaxFunctionTest extends TestCase {
 

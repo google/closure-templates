@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import java.util.Locale;
 import java.util.Set;
@@ -27,6 +26,7 @@ import java.util.Set;
  * Specifies how the outputs of <code>{print}</code> commands that lack escaping directives are
  * encoded.
  *
+ * @author Mike Samuel
  */
 public enum AutoescapeMode {
 
@@ -39,6 +39,15 @@ public enum AutoescapeMode {
    * on the surrounding context.
    */
   CONTEXTUAL,
+  /**
+   * Strict form of contextual autoescaping in which no autoescape-cancelling print directives nor
+   * calls to non-strict templates are allowed.
+   *
+   * TODO: The initial implementation of strict mode does not allow any calls, and is only intended
+   * for internal use when parsing {param} and {let} blocks of non-text kind. Once fully implemented
+   * change the name.
+   */
+  STRICT,
   ;
 
 
@@ -67,16 +76,6 @@ public enum AutoescapeMode {
       values.add(value.getAttributeValue());
     }
     return values.build();
-  }
-
-
-  /**
-   * Contains all of {@link #getAttributeValues} and {@code null}. but nothing else.
-   */
-  static Set<String> getAttributeValuesAndNull() {
-    Set<String> values = Sets.newHashSet(getAttributeValues());
-    values.add(null);
-    return values;
   }
 
 

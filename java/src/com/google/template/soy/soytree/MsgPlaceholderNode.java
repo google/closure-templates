@@ -18,14 +18,13 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
-import javax.annotation.Nullable;
-
 
 /**
  * A node that is the direct child of a MsgBlockNode and will turn into a placeholder.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class MsgPlaceholderNode extends AbstractBlockNode implements StandaloneNode {
 
@@ -34,25 +33,25 @@ public class MsgPlaceholderNode extends AbstractBlockNode implements StandaloneN
   private final String basePlaceholderName;
 
   /** The initial child's SoyNode kind. */
-  private final SoyNode.Kind initialContentKind;
+  private final SoyNode.Kind initialNodeKind;
 
   /** Key object for determining whether this node and another node should be represented by the
    *  same placeholder. */
-  @Nullable private final Object samenessKey;
+  private final Object samenessKey;
 
 
   /**
    * @param id The id for this node.
-   * @param initialContent Will be set as the only child of this node being created. The child is
-   *     the node that represents the content of this placeholder. It is called the initial content
+   * @param initialNode Will be set as the only child of this node being created. The child is
+   *     the node that represents the content of this placeholder. It is called the initial node
    *     because it may be modified/replaced later by compiler passes.
    */
-  public MsgPlaceholderNode(int id, MsgPlaceholderInitialContentNode initialContent) {
+  public MsgPlaceholderNode(int id, MsgPlaceholderInitialNode initialNode) {
     super(id);
-    this.basePlaceholderName = initialContent.genBasePlaceholderName();
-    this.initialContentKind = initialContent.getKind();
-    this.samenessKey = initialContent.genSamenessKey();
-    this.addChild(initialContent);
+    this.basePlaceholderName = initialNode.genBasePlaceholderName();
+    this.initialNodeKind = initialNode.getKind();
+    this.samenessKey = initialNode.genSamenessKey();
+    this.addChild(initialNode);
   }
 
 
@@ -63,7 +62,7 @@ public class MsgPlaceholderNode extends AbstractBlockNode implements StandaloneN
   protected MsgPlaceholderNode(MsgPlaceholderNode orig) {
     super(orig);
     this.basePlaceholderName = orig.basePlaceholderName;
-    this.initialContentKind = orig.initialContentKind;
+    this.initialNodeKind = orig.initialNodeKind;
     this.samenessKey = orig.samenessKey;
   }
 
@@ -90,9 +89,8 @@ public class MsgPlaceholderNode extends AbstractBlockNode implements StandaloneN
    */
   public boolean isSamePlaceholderAs(MsgPlaceholderNode other) {
     return
-        (this.initialContentKind == other.initialContentKind) &&
-        ((this.samenessKey == null) ?
-            other.samenessKey == null : this.samenessKey.equals(other.samenessKey));
+        this.initialNodeKind == other.initialNodeKind &&
+        this.samenessKey.equals(other.samenessKey);
   }
 
 

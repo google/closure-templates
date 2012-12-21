@@ -22,13 +22,13 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 
-import java.util.List;
 import java.util.Map;
 
 
 /**
  * Abstract base class for all nodes in a Soy data tree.
  *
+ * @author Kai Huang
  */
 public abstract class SoyData {
 
@@ -74,8 +74,8 @@ public abstract class SoyData {
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
       return new SoyMapData(objCast);
-    } else if (obj instanceof List<?>) {
-      return new SoyListData((List<?>) obj);
+    } else if (obj instanceof Iterable<?>) {
+      return new SoyListData((Iterable<?>) obj);
     } else if (obj instanceof Double) {
       return FloatData.forValue((Double) obj);
     } else if (obj instanceof Float) {
@@ -85,6 +85,16 @@ public abstract class SoyData {
       throw new SoyDataException(
           "Attempting to convert unrecognized object to Soy data (object type " +
           obj.getClass().getName() + ").");
+    }
+  }
+
+
+  /** A special case of {@link #createFromExistingData(Object)}. */
+  public static SoyData createFromExistingData(String str) {
+    if (str == null) {
+      return NullData.INSTANCE;
+    } else {
+      return StringData.forValue(str);
     }
   }
 
@@ -122,7 +132,8 @@ public abstract class SoyData {
    * @throws SoyDataException If this object is not actually a boolean.
    */
   public boolean booleanValue() {
-    throw new SoyDataException("Non-boolean found when expecting boolean value.");
+    throw new SoyDataException("Expecting boolean value but instead encountered type "
+        + getClass().getSimpleName());
   }
 
 
@@ -133,7 +144,8 @@ public abstract class SoyData {
    * @throws SoyDataException If this object is not actually an integer.
    */
   public int integerValue() {
-    throw new SoyDataException("Non-integer found when expecting integer value.");
+    throw new SoyDataException("Expecting integer value but instead encountered type "
+        + getClass().getSimpleName());
   }
 
 
@@ -144,7 +156,8 @@ public abstract class SoyData {
    * @throws SoyDataException If this object is not actually a float.
    */
   public double floatValue() {
-    throw new SoyDataException("Non-float found when expecting float value.");
+    throw new SoyDataException("Expecting float value but instead encountered type "
+        + getClass().getSimpleName());
   }
 
 
@@ -156,7 +169,8 @@ public abstract class SoyData {
    * @throws SoyDataException If this object is not actually a number.
    */
   public double numberValue() {
-    throw new SoyDataException("Non-number found when expecting number value.");
+    throw new SoyDataException("Expecting number value but instead encountered type "
+        + getClass().getSimpleName());
   }
 
 
@@ -167,7 +181,8 @@ public abstract class SoyData {
    * @throws SoyDataException If this object is not actually a string.
    */
   public String stringValue() {
-    throw new SoyDataException("Non-string found when expecting string value.");
+    throw new SoyDataException("Expecting string value but instead encountered type "
+        + getClass().getSimpleName());
   }
 
 }

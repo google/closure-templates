@@ -97,11 +97,11 @@ Class PrintNode</H2>
                   <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.soytree.PrintNode</B>
 </PRE>
 <DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A></DD>
+<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A></DD>
 </DL>
 <HR>
 <DL>
-<DT><PRE>public class <B>PrintNode</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentCommandNode.html" title="class in com.google.template.soy.soytree">AbstractParentCommandNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;<DT>implements <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></DL>
+<DT><PRE>public class <B>PrintNode</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentCommandNode.html" title="class in com.google.template.soy.soytree">AbstractParentCommandNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;<DT>implements <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></DL>
 </PRE>
 
 <P>
@@ -220,7 +220,7 @@ Node representing a 'print' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/PrintNode.html#getAllExprUnions()">getAllExprUnions</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the list of expressions in this node.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the list of expressions in this node.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -252,7 +252,7 @@ Node representing a 'print' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/PrintNode.html#getKind()">getKind</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets this node's kind (corresponding to this node's specific type).</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns this node's kind (corresponding to this node's specific type).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -319,7 +319,7 @@ Node representing a 'print' statement.
 <TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getLocation()">getLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setLocation(com.google.template.soy.base.SourceLocation)">setLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNode"><!-- --></A>
@@ -454,14 +454,13 @@ getKind</H3>
 public <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</A> <B>getKind</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">SoyNode</A></CODE></B></DD>
-<DD>Gets this node's kind (corresponding to this node's specific type).
+<DD>Returns this node's kind (corresponding to this node's specific type).
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">getKind</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>This node's kind (corresponding to this node's specific type).</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -519,12 +518,12 @@ getUserSuppliedPlaceholderName</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getUserSuppliedPlaceholderName</B>()</PRE>
 <DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#getUserSuppliedPlaceholderName()">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></B></DD>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#getUserSuppliedPlaceholderName()">SoyNode.MsgPlaceholderInitialNode</A></CODE></B></DD>
 <DD>Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
  this raw name can be any identifier (not necessarily in upper-underscore format).
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#getUserSuppliedPlaceholderName()">getUserSuppliedPlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#getUserSuppliedPlaceholderName()">getUserSuppliedPlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></CODE></DL>
 </DD>
 <DD><DL>
 
@@ -538,11 +537,11 @@ genBasePlaceholderName</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>genBasePlaceholderName</B>()</PRE>
 <DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genBasePlaceholderName()">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></B></DD>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genBasePlaceholderName()">SoyNode.MsgPlaceholderInitialNode</A></CODE></B></DD>
 <DD>Generates the base placeholder name for this node.
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genBasePlaceholderName()">genBasePlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genBasePlaceholderName()">genBasePlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></CODE></DL>
 </DD>
 <DD><DL>
 
@@ -556,12 +555,12 @@ genSamenessKey</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A> <B>genSamenessKey</B>()</PRE>
 <DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genSamenessKey()">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></B></DD>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genSamenessKey()">SoyNode.MsgPlaceholderInitialNode</A></CODE></B></DD>
 <DD>Generates the key object used in comparisons to determine whether two placeholder nodes
  should be represented by the same placeholder.
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genSamenessKey()">genSamenessKey</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genSamenessKey()">genSamenessKey</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></CODE></DL>
 </DD>
 <DD><DL>
 
@@ -577,14 +576,13 @@ getAllExprUnions</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/ExprUnion.html" title="class in com.google.template.soy.soytree">ExprUnion</A>&gt; <B>getAllExprUnions</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html#getAllExprUnions()">SoyNode.ExprHolderNode</A></CODE></B></DD>
-<DD>Gets the list of expressions in this node.
+<DD>Returns the list of expressions in this node.
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html#getAllExprUnions()">getAllExprUnions</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>The list of expressions in this node.</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -601,8 +599,7 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html#getCommandText()">getCommandText</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A></CODE><DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractCommandNode.html#getCommandText()">getCommandText</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractCommandNode.html" title="class in com.google.template.soy.soytree">AbstractCommandNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>The command text (may be the empty string).</DL>
+</DL>
 </DD>
 </DL>
 <HR>

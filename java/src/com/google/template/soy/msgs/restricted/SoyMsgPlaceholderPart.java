@@ -20,6 +20,7 @@ package com.google.template.soy.msgs.restricted;
 /**
  * Represents a placeholder within a message.
  *
+ * @author Kai Huang
  */
 public class SoyMsgPlaceholderPart extends SoyMsgPart {
 

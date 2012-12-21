@@ -146,6 +146,25 @@ Base utilities for Soy code.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/BaseUtils.html#computePartialSha1AsHexString(java.lang.String, int)">computePartialSha1AsHexString</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;strToHash,
+                              int&nbsp;numBits)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the first
+ numBits bits of the result as a hex value in string form.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/BaseUtils.html#computeSha1AsHexString(java.lang.String)">computeSha1AsHexString</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;strToHash)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the result
+ as a hex value in string form.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/BaseUtils.html#convertToUpperUnderscore(java.lang.String)">convertToUpperUnderscore</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;ident)</CODE>
 
 <BR>
@@ -167,6 +186,14 @@ Base utilities for Soy code.
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds a Soy string literal for this string value (including the surrounding single quotes).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/BaseUtils.html#extractPartAfterLastDot(java.lang.String)">extractPartAfterLastDot</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;dottedIdent)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the part after the last dot in a dotted identifier.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -299,6 +326,21 @@ public static boolean <B>isDottedIdentifier</B>(<A HREF="http://java.sun.com/jav
 </DL>
 <HR>
 
+<A NAME="extractPartAfterLastDot(java.lang.String)"><!-- --></A><H3>
+extractPartAfterLastDot</H3>
+<PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>extractPartAfterLastDot</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;dottedIdent)</PRE>
+<DL>
+<DD>Gets the part after the last dot in a dotted identifier. If there are no dots, returns the
+ whole input string.
+ <p> Important: The input must be a dotted identifier. This is not checked.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
 <A NAME="convertToUpperUnderscore(java.lang.String)"><!-- --></A><H3>
 convertToUpperUnderscore</H3>
 <PRE>
@@ -351,6 +393,38 @@ public static void <B>appendHexEscape</B>(<A HREF="http://java.sun.com/javase/6/
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>out</CODE> - The StringBuilder to append to.<DD><CODE>codePoint</CODE> - The Unicode code point whose hex escape sequence to append.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="computeSha1AsHexString(java.lang.String)"><!-- --></A><H3>
+computeSha1AsHexString</H3>
+<PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>computeSha1AsHexString</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;strToHash)</PRE>
+<DL>
+<DD>Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the result
+ as a hex value in string form.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>strToHash</CODE> - The string to compute SHA-1 of.
+<DT><B>Returns:</B><DD>The SHA-1 hash value as a hex string.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="computePartialSha1AsHexString(java.lang.String, int)"><!-- --></A><H3>
+computePartialSha1AsHexString</H3>
+<PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>computePartialSha1AsHexString</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;strToHash,
+                                                   int&nbsp;numBits)</PRE>
+<DL>
+<DD>Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the first
+ numBits bits of the result as a hex value in string form.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>strToHash</CODE> - The string to compute SHA-1 of.<DD><CODE>numBits</CODE> - The number of bits worth to return. Must be a positive number at most 160 and
+     divisible by 8 (since we process the result 8 bits at a time).
+<DT><B>Returns:</B><DD>The partial SHA-1 hash value as a hex string.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

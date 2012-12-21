@@ -16,64 +16,141 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
-import javax.annotation.ParametersAreNullableByDefault;
+import javax.annotation.Nullable;
+
 
 /**
  * Indicates failure to propagate contexts through a template or an existing escaping directive on a
- * <code>{print}</code> that is inconsistent with the contexts in which it appears.
+ * 'print' tag that is inconsistent with the contexts in which it appears.
  */
-@ParametersAreNullableByDefault
 public final class SoyAutoescapeException extends SoySyntaxException {
 
 
   /**
-   * @param node The node at which the problem was noticed or null.
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message The error message.
+   * @return The new SoyAutoescapeException object.
    */
-  public SoyAutoescapeException(SoyNode node, String message, Throwable cause) {
-    super(message, cause);
-    if (node != null) {
-      setContextNode(node);
-    }
+  public static SoyAutoescapeException createWithoutMetaInfo(String message) {
+    return new SoyAutoescapeException(message);
   }
 
-  public SoyAutoescapeException(SoyNode node, String message) {
-    this(node, message, null);
-  }
-
-  public SoyAutoescapeException(String message, Throwable cause) {
-    this(null, message, cause);
-  }
-
-  public SoyAutoescapeException(String message) {
-    this(null, message, null);
-  }
 
   /**
-   * Associates useful debugging information (file location, template name) with this exception.
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message The error message, or null to use the message from the cause.
+   * @param cause The cause of this exception.
+   * @return The new SoyAutoescapeException object.
    */
-  public void setContextNode(SoyNode contextNode) {
-    TemplateNode containingTemplate = contextNode.getNearestAncestor(TemplateNode.class);
-    if (containingTemplate != null) {
-      setTemplateName(containingTemplate.getTemplateNameForUserMsgs());
-    }
-    SourceLocation location = contextNode.getLocation();
-    if (location.isKnown()) {
-      setSourceLocation(location);
+  public static SoyAutoescapeException createCausedWithoutMetaInfo(
+      @Nullable String message, Throwable cause) {
+
+    Preconditions.checkNotNull(cause);
+    if (message != null) {
+      return new SoyAutoescapeException(message, cause);
     } else {
-      SoyFileNode containingFile = contextNode.getNearestAncestor(SoyFileNode.class);
-      setFilePath(containingFile.getFilePath());
+      return new SoyAutoescapeException(cause);
     }
   }
 
-  public void maybeSetContextNode(SoyNode contextNode) {
-    if (!getSourceLocation().isKnown()) {
-      setContextNode(contextNode);
-    }
+
+  /**
+   * Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message The error message.
+   * @param node The node from which to derive the exception meta info.
+   * @return The new SoyAutoescapeException object.
+   */
+  public static SoyAutoescapeException createWithNode(String message, SoyNode node) {
+
+    return SoyAutoescapeException.createWithoutMetaInfo(message).associateNode(node);
   }
+
+
+  /**
+   * Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message The error message, or null to use the message from the cause.
+   * @param cause The cause of this exception.
+   * @param node The node from which to derive the exception meta info.
+   * @return The new SoyAutoescapeException object.
+   */
+  public static SoyAutoescapeException createCausedWithNode(
+      @Nullable String message, Throwable cause, SoyNode node) {
+
+    return SoyAutoescapeException.createCausedWithoutMetaInfo(message, cause).associateNode(node);
+  }
+
+
+  /**
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message A detailed description of what the error is.
+   */
+  @SuppressWarnings({"deprecation"})
+  private SoyAutoescapeException(String message) {
+    super(message);
+  }
+
+
+  /**
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message A detailed description of what the error is.
+   * @param cause The Throwable underlying this error.
+   */
+  private SoyAutoescapeException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+
+  /**
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * <p> Note: For this constructor, the message will be set to the cause's message.
+   *
+   * @param cause The Throwable underlying this error.
+   */
+  private SoyAutoescapeException(Throwable cause) {
+    super(cause.getMessage(), cause);
+  }
+
+
+  /**
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param node The node from which to derive the exception meta info.
+   * @return This same SoyAutoescapeException object, for convenience.
+   */
+  public SoyAutoescapeException associateNode(SoyNode node) {
+    SoySyntaxExceptionUtils.associateNode(this, node);
+    return this;
+  }
+
+
+  /**
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param node The node from which to derive the exception meta info.
+   * @return This same SoyAutoescapeException object, for convenience.
+   */
+  public SoyAutoescapeException maybeAssociateNode(SoyNode node) {
+    if (getSourceLocation() == SourceLocation.UNKNOWN) {
+      associateNode(node);
+    }
+    return this;
+  }
+
 }

@@ -22,6 +22,7 @@ package com.google.template.soy.base;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public interface IdGenerator {
 

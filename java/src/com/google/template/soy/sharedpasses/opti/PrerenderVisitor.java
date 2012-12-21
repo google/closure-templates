@@ -23,6 +23,8 @@ import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -41,8 +43,9 @@ import javax.annotation.Nullable;
  *
  * Package-private helper for {@link SimplifyVisitor}.
  *
- * <p> The rendered output will be appended to the {@code outputSb} provided to the constructor.
+ * <p> The rendered output will be appended to the Appendable provided to the constructor.
  *
+ * @author Kai Huang
  */
 class PrerenderVisitor extends RenderVisitor {
 
@@ -51,21 +54,28 @@ class PrerenderVisitor extends RenderVisitor {
    * @param soyJavaRuntimeDirectivesMap Map of all SoyJavaRuntimePrintDirectives (name to
    *     directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
-   * @param prerenderVisitorFactory Factory for creating an instance of PrerenderVisitor.
-   * @param outputSb The Appendable to append the output to.
+   * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
    * @param env The current environment, or null if this is the initial call.
    */
   PrerenderVisitor(
       Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap,
-      PreevalVisitorFactory preevalVisitorFactory, PrerenderVisitorFactory prerenderVisitorFactory,
-      Appendable outputSb, @Nullable TemplateRegistry templateRegistry,
-      @Nullable SoyMapData data, @Nullable Deque<Map<String, SoyData>> env) {
+      PreevalVisitorFactory preevalVisitorFactory, Appendable outputBuf,
+      @Nullable TemplateRegistry templateRegistry, SoyMapData data,
+      @Nullable Deque<Map<String, SoyData>> env) {
 
     super(
-        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, prerenderVisitorFactory, outputSb,
+        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, outputBuf,
         templateRegistry, data, null, env, null, null, null);
+  }
+
+
+  @Override protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyMapData data) {
+
+    return new PrerenderVisitor(
+        soyJavaRuntimeDirectivesMap, (PreevalVisitorFactory) evalVisitorFactory, outputBuf,
+        templateRegistry, data, null);
   }
 
 
@@ -112,6 +122,16 @@ class PrerenderVisitor extends RenderVisitor {
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
     throw new RenderException("Cannot prerender CallDelegateNode.");
+  }
+
+
+  @Override protected void visitLogNode(LogNode node) {
+    throw new RenderException("Cannot prerender LogNode.");
+  }
+
+
+  @Override protected void visitDebuggerNode(DebuggerNode node) {
+    throw new RenderException("Cannot prerender DebuggerNode.");
   }
 
 }

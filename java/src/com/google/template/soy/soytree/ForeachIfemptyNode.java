@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class ForeachIfemptyNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
 

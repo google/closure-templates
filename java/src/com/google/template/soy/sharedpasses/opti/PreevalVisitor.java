@@ -30,8 +30,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 
 /**
  * Visitor for preevaluating expressions in which all data values known at compile time.
@@ -43,6 +41,7 @@ import javax.annotation.Nullable;
  * the context of the {@code data} and {@code env} passed into the constructor) is returned as a
  * {@code SoyData} object.
  *
+ * @author Kai Huang
  */
 class PreevalVisitor extends EvalVisitor {
 
@@ -53,7 +52,7 @@ class PreevalVisitor extends EvalVisitor {
    * @param env The current environment.
    */
   PreevalVisitor(
-      Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap, @Nullable SoyMapData data,
+      Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap, SoyMapData data,
       Deque<Map<String, SoyData>> env) {
 
     super(soyJavaRuntimeFunctionsMap, data, null, env);
@@ -80,7 +79,7 @@ class PreevalVisitor extends EvalVisitor {
       SoyJavaRuntimeFunction fn, List<SoyData> args, FunctionNode fnNode) {
 
     if (! fn.getClass().isAnnotationPresent(SoyPureFunction.class)) {
-      throw new RenderException("Cannot prerender impure function.");
+      throw new RenderException("Cannot preevaluate impure function.");
     }
 
     return super.computeFunctionHelper(fn, args, fnNode);
@@ -94,7 +93,7 @@ class PreevalVisitor extends EvalVisitor {
   @Override protected SoyData resolveDataRefFirstKey(DataRefNode dataRefNode) {
 
     SoyData value = super.resolveDataRefFirstKey(dataRefNode);
-    if (value == UndefinedData.INSTANCE) {
+    if (value instanceof UndefinedData) {
       throw new RenderException("Encountered undefined reference during preevaluation.");
     }
     return value;

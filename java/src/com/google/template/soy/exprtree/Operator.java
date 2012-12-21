@@ -16,14 +16,15 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
-import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import static com.google.template.soy.exprtree.Operator.Constants.OPERAND_0;
 import static com.google.template.soy.exprtree.Operator.Constants.OPERAND_1;
 import static com.google.template.soy.exprtree.Operator.Constants.OPERAND_2;
 import static com.google.template.soy.exprtree.Operator.Constants.SP;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -37,6 +38,7 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
@@ -52,6 +54,7 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public enum Operator {
 
@@ -108,6 +111,9 @@ public enum Operator {
       ImmutableList.of(OPERAND_0, SP, new Token("or"), SP, OPERAND_1),
       2, Associativity.LEFT, OrOpNode.class),
 
+  NULL_COALESCING(
+      ImmutableList.of(OPERAND_0, SP, new Token("?:"), SP, OPERAND_1),
+      1, Associativity.RIGHT, NullCoalescingOpNode.class),
   CONDITIONAL(
       ImmutableList.of(
           OPERAND_0, SP, new Token("?"), SP, OPERAND_1, SP, new Token(":"), SP, OPERAND_2),

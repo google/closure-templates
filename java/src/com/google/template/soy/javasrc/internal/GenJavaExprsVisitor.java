@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
@@ -45,6 +44,7 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Deque;
@@ -59,6 +59,7 @@ import java.util.Map;
  *
  * <p> Precondition: MsgNode should not exist in the tree.
  *
+ * @author Kai Huang
  */
 public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> {
 
@@ -193,17 +194,19 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
       // Get directive.
       SoyJavaSrcPrintDirective directive = soyJavaSrcDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
-        throw new SoySyntaxException(
+        throw SoySyntaxExceptionUtils.createWithNode(
             "Failed to find SoyJavaSrcPrintDirective with name '" + directiveNode.getName() + "'" +
-            " (tag " + node.toSourceString() +")");
+                " (tag " + node.toSourceString() + ")",
+            directiveNode);
       }
 
       // Get directive args.
       List<ExprRootNode<?>> args = directiveNode.getArgs();
       if (! directive.getValidArgsSizes().contains(args.size())) {
-        throw new SoySyntaxException(
+        throw SoySyntaxExceptionUtils.createWithNode(
             "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
-            " arguments (tag " + node.toSourceString() + ").");
+                " arguments (tag " + node.toSourceString() + ").",
+            directiveNode);
       }
 
       // Translate directive args.
@@ -253,7 +256,7 @@ public class GenJavaExprsVisitor extends AbstractSoyNodeVisitor<List<JavaExpr>> 
         JavaExpr condJavaExpr =
             translateToJavaExprVisitorFactory.create(localVarTranslations)
                 .exec(icn.getExprUnion().getExpr());
-        javaExprTextSb.append("(").append(genCoerceBoolean(condJavaExpr)).append(") ? ");
+        javaExprTextSb.append('(').append(genCoerceBoolean(condJavaExpr)).append(") ? ");
 
         List<JavaExpr> condBlockJavaExprs = genJavaExprsVisitor.exec(icn);
         javaExprTextSb.append(

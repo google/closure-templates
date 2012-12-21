@@ -24,6 +24,7 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
+ * @author Kai Huang
  */
 @Immutable
 public class IntegerData extends NumberData {
@@ -31,40 +32,40 @@ public class IntegerData extends NumberData {
 
   // Note: ZERO, ONE, and MINUS_ONE are public. The rest are private.
 
-  /** Static instance of BooleanData with value 0. */
+  /** Static instance of IntegerData with value 0. */
   public static final IntegerData ZERO = new IntegerData(0);
 
-  /** Static instance of BooleanData with value 1. */
+  /** Static instance of IntegerData with value 1. */
   public static final IntegerData ONE = new IntegerData(1);
 
-  /** Static instance of BooleanData with value -1. */
+  /** Static instance of IntegerData with value -1. */
   public static final IntegerData MINUS_ONE = new IntegerData(-1);
 
-  /** Static instance of BooleanData with value 2. */
+  /** Static instance of IntegerData with value 2. */
   private static final IntegerData TWO = new IntegerData(2);
 
-  /** Static instance of BooleanData with value 3. */
+  /** Static instance of IntegerData with value 3. */
   private static final IntegerData THREE = new IntegerData(3);
 
-  /** Static instance of BooleanData with value 4. */
+  /** Static instance of IntegerData with value 4. */
   private static final IntegerData FOUR = new IntegerData(4);
 
-  /** Static instance of BooleanData with value 5. */
+  /** Static instance of IntegerData with value 5. */
   private static final IntegerData FIVE = new IntegerData(5);
 
-  /** Static instance of BooleanData with value 6. */
+  /** Static instance of IntegerData with value 6. */
   private static final IntegerData SIX = new IntegerData(6);
 
-  /** Static instance of BooleanData with value 7. */
+  /** Static instance of IntegerData with value 7. */
   private static final IntegerData SEVEN = new IntegerData(7);
 
-  /** Static instance of BooleanData with value 8. */
+  /** Static instance of IntegerData with value 8. */
   private static final IntegerData EIGHT = new IntegerData(8);
 
-  /** Static instance of BooleanData with value 9. */
+  /** Static instance of IntegerData with value 9. */
   private static final IntegerData NINE = new IntegerData(9);
 
-  /** Static instance of BooleanData with value 10. */
+  /** Static instance of IntegerData with value 10. */
   private static final IntegerData TEN = new IntegerData(10);
 
 

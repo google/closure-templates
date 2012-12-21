@@ -16,6 +16,7 @@
 
 package com.google.template.soy;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SoySyntaxException;
@@ -36,6 +37,7 @@ import java.util.List;
 /**
  * Executable for compiling a set of Soy files into corresponding JS source files.
  *
+ * @author Kai Huang
  */
 public final class SoyToJsSrcCompiler {
 
@@ -45,7 +47,7 @@ public final class SoyToJsSrcCompiler {
       "Usage:\n" +
       "java com.google.template.soy.SoyToJsSrcCompiler  \\\n" +
       "     [<flag1> <flag2> ...] --outputPathFormat <formatString>  \\\n" +
-      "     <soyFile1> <soyFile2> ...\n";
+      "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
 
   @Option(name = "--inputPrefix",
@@ -53,6 +55,25 @@ public final class SoyToJsSrcCompiler {
                   " listed on the command line. This is a literal string prefix, so you'll need" +
                   " to include a trailing slash if necessary.")
   private String inputPrefix = "";
+
+  @Option(name = "--srcs",
+          usage = "[Required] The list of source Soy files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> srcs = Lists.newArrayList();
+
+  @Option(name = "--deps",
+          usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
+                  " analysis/checking, but will not generate code for dep files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> deps = Lists.newArrayList();
+
+  @Option(name = "--allowExternalCalls",
+          usage = "Whether to allow external calls. New projects should set this to false, and" +
+                  " existing projects should remove existing external calls and then set this" +
+                  " to false. It will save you a lot of headaches. Currently defaults to true" +
+                  " for backward compatibility.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
+  private boolean allowExternalCalls = true;
 
   @Option(name = "--outputPathFormat",
           required = true,
@@ -74,7 +95,7 @@ public final class SoyToJsSrcCompiler {
 
   @Option(name = "--codeStyle",
           usage = "The code style to use when generating JS code ('stringbuilder' or 'concat').")
-  private CodeStyle codeStyle = CodeStyle.STRINGBUILDER;
+  private CodeStyle codeStyle = CodeStyle.CONCAT;
 
   @Option(name = "--shouldGenerateJsdoc",
           usage = "Whether we should generate JSDoc with type info for the Closure Compiler." +
@@ -211,16 +232,35 @@ public final class SoyToJsSrcCompiler {
 
   private void execMain(String[] args) throws IOException, SoySyntaxException {
 
-    CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-    if (arguments.size() == 0) {
-      MainClassUtils.exitWithError("Must provide list of Soy files.", cmdLineParser, USAGE_PREFIX);
-    }
+    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
+
+    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
+      @Override public Void apply(String errorMsg) {
+        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
+        return null;
+      }
+    };
+
     if (outputPathFormat.length() == 0) {
       MainClassUtils.exitWithError(
           "Must provide the output path format.", cmdLineParser, USAGE_PREFIX);
     }
 
     Injector injector = MainClassUtils.createInjector(messagePluginModule, pluginModules);
+
+    // Create SoyFileSet.
+    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+    MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments, deps,
+        exitWithErrorFn);
+    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
+    String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
+    sfsBuilder.setCssHandlingScheme(
+        cssHandlingSchemeUc.equals("GOOG") ?
+        CssHandlingScheme.BACKEND_SPECIFIC : CssHandlingScheme.valueOf(cssHandlingSchemeUc));
+    if (compileTimeGlobalsFile.length() > 0) {
+      sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
+    }
+    SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
@@ -233,21 +273,6 @@ public final class SoyToJsSrcCompiler {
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
-
-    // Create SoyFileSet.
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    String inputPrefixStr = inputPrefix;
-    for (String arg : arguments) {
-      sfsBuilder.add(new File(inputPrefixStr + arg));
-    }
-    String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
-    sfsBuilder.setCssHandlingScheme(
-        cssHandlingSchemeUc.equals("GOOG") ?
-        CssHandlingScheme.BACKEND_SPECIFIC : CssHandlingScheme.valueOf(cssHandlingSchemeUc));
-    if (compileTimeGlobalsFile.length() > 0) {
-      sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
-    }
-    SoyFileSet sfs = sfsBuilder.build();
 
     // Compile.
     if (locales.size() == 0) {

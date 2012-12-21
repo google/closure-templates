@@ -123,17 +123,19 @@ Author: Neil Sanchala
           description="Creates a standalone jar of all Java class files and dependencies.">
     <jar destfile="${soy.jar.file}" update="true">
       <fileset dir="${build.classes.dir}" />
-      <zipfileset src="${java.lib.dir}/jsr305.jar" />
-      <zipfileset src="${java.lib.dir}/guava-10.0.1.jar" />
-      <zipfileset src="${java.lib.dir}/javax.inject.jar" />
-      <zipfileset src="${java.lib.dir}/aopalliance.jar" />
+      <zipgroupfileset dir="${java.lib.dir}">
+        <include name="aopalliance.jar" />
+        <include name="args4j*.jar" />
+        <include name="guava*.jar" />
+        <include name="icu4j*.jar" />
+        <include name="javax.inject.jar" />
+        <include name="jsr305.jar" />
+      </zipgroupfileset>
       <zipfileset src="${java.lib.dir}/guice-3.0.jar" />
       <zipfileset src="${java.lib.dir}/guice-multibindings-3.0.jar"
                   excludes="LICENSE,NOTICE" />
       <zipfileset src="${java.lib.dir}/guice-assistedinject-3.0.jar"
                   excludes="LICENSE,NOTICE" />
-      <zipfileset src="${java.lib.dir}/args4j-2.0.17.jar" />
-      <zipfileset src="${java.lib.dir}/icu4j-4_8_1_1.jar" />
     </jar>
   </target>
 
@@ -266,6 +268,7 @@ Author: Neil Sanchala
           description="Generates complete javadoc (for developers and plugin writers).">
     <mkdir dir="${javadoc.complete.dir}" />
     <javadoc sourcepath="${java.src.dir}:${build.genfiles.dir}"
+             packagenames="com.google.template.soy.*"
              additionalparam="-notimestamp"
              destdir="${javadoc.complete.dir}"
              author="false"
@@ -540,7 +543,7 @@ Author: Neil Sanchala
 
     <RunBuiltJarAndLookForExpectedError
       jar="SoyMsgExtractor"
-      expectederror="Error: Must provide list of Soy files." />
+      expectederror="Error: Must provide list of source Soy files (--srcs)." />
   </target>
 
 

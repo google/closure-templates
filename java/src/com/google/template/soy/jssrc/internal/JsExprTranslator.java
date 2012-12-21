@@ -34,6 +34,7 @@ import java.util.Map;
 /**
  * Translator of Soy expressions to their equivalent JS expressions.
  *
+ * @author Kai Huang
  */
 class JsExprTranslator {
 
@@ -54,7 +55,8 @@ class JsExprTranslator {
    * @param translateToJsExprVisitorFactory Factory for creating an instance of
    *     TranslateToJsExprVisitor.
    */
-  @Inject JsExprTranslator(
+  @Inject
+  JsExprTranslator(
       Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, SoyJsSrcOptions jsSrcOptions,
       TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory) {
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;

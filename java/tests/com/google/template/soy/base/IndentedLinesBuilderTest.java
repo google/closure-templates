@@ -22,6 +22,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for IndentedLinesBuilder.
  *
+ * @author Kai Huang
  */
 public class IndentedLinesBuilderTest extends TestCase {
 
@@ -32,8 +33,8 @@ public class IndentedLinesBuilderTest extends TestCase {
     ilb.appendLine("Line 1");
     ilb.increaseIndent();
     ilb.appendLine("Line", ' ', 2);
-    ilb.setIndentLen(6);
-    ilb.appendIndent().append("Line ").append('3').appendLineEnd();
+    ilb.increaseIndent(2);
+    ilb.appendLineStart("Line ").appendLineEnd('3');
     ilb.decreaseIndent();
     ilb.sb().append("Line 4 not indented\n");
     ilb.appendLine("Line 5");

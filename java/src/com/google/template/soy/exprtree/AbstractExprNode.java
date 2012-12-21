@@ -24,6 +24,7 @@ import com.google.template.soy.basetree.AbstractNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class AbstractExprNode extends AbstractNode implements ExprNode {
 
@@ -33,7 +34,7 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
   }
 
 
-  public AbstractExprNode() {}
+  protected AbstractExprNode() {}
 
 
   /**

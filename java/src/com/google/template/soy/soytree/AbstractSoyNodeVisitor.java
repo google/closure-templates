@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractReturningSoyNodeVisitor
+ * @author Kai Huang
  */
 public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyNode, R> {
 
@@ -66,10 +67,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
 
       case RAW_TEXT_NODE: visitRawTextNode((RawTextNode) node); break;
 
-      case MSG_NODE: visitMsgNode((MsgNode) node); break;
-      case MSG_PLACEHOLDER_NODE: visitMsgPlaceholderNode((MsgPlaceholderNode) node); break;
       case GOOG_MSG_NODE: visitGoogMsgNode((GoogMsgNode) node); break;
       case GOOG_MSG_REF_NODE: visitGoogMsgRefNode((GoogMsgRefNode) node); break;
+
+      case MSG_NODE: visitMsgNode((MsgNode) node); break;
       case MSG_PLURAL_NODE: visitMsgPluralNode((MsgPluralNode) node); break;
       case MSG_PLURAL_CASE_NODE: visitMsgPluralCaseNode((MsgPluralCaseNode) node); break;
       case MSG_PLURAL_DEFAULT_NODE: visitMsgPluralDefaultNode((MsgPluralDefaultNode) node); break;
@@ -78,6 +79,7 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case MSG_SELECT_NODE: visitMsgSelectNode((MsgSelectNode) node); break;
       case MSG_SELECT_CASE_NODE: visitMsgSelectCaseNode((MsgSelectCaseNode) node); break;
       case MSG_SELECT_DEFAULT_NODE: visitMsgSelectDefaultNode((MsgSelectDefaultNode) node); break;
+      case MSG_PLACEHOLDER_NODE: visitMsgPlaceholderNode((MsgPlaceholderNode) node); break;
       case MSG_HTML_TAG_NODE: visitMsgHtmlTagNode((MsgHtmlTagNode) node); break;
 
       case PRINT_NODE: visitPrintNode((PrintNode) node); break;
@@ -106,6 +108,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case CALL_DELEGATE_NODE: visitCallDelegateNode((CallDelegateNode) node); break;
       case CALL_PARAM_VALUE_NODE: visitCallParamValueNode((CallParamValueNode) node); break;
       case CALL_PARAM_CONTENT_NODE: visitCallParamContentNode((CallParamContentNode) node); break;
+
+      case LOG_NODE: visitLogNode((LogNode) node); break;
+      case DEBUGGER_NODE: visitDebuggerNode((DebuggerNode) node); break;
 
       default: throw new UnsupportedOperationException();
     }
@@ -164,19 +169,15 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-  protected void visitMsgNode(MsgNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
-    visitSoyNode(node);
-  }
-
   protected void visitGoogMsgNode(GoogMsgNode node) {
     visitSoyNode(node);
   }
 
   protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitMsgNode(MsgNode node) {
     visitSoyNode(node);
   }
 
@@ -205,6 +206,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
     visitSoyNode(node);
   }
 
@@ -301,6 +306,14 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitCallParamNode(CallParamNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitLogNode(LogNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitDebuggerNode(DebuggerNode node) {
     visitSoyNode(node);
   }
 

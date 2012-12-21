@@ -134,7 +134,7 @@ public class EscapingConventionsTest extends TestCase {
   public final void testFilterHtmlAttributeDirective() throws Exception {
     assertEscaping(
         "<h1 id=foo on{$s}='foo()'>",
-        "filterHtmlAttribute",
+        "filterHtmlAttributes",
         HTML_LEXER,
         "<h1", " ", "id=", "foo", " ", null, "'foo()'", ">");
   }

@@ -27,6 +27,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CheckDelegatesVisitor.
  *
+ * @author Kai Huang
  */
 public class CheckDelegatesVisitorTest extends TestCase {
 
@@ -130,7 +131,7 @@ public class CheckDelegatesVisitorTest extends TestCase {
 
     assertInvalidSoyFiles(
         "Found delegate templates with same name 'MagicButton' but different param declarations" +
-            " in delegate packages 'SecretFeature' and 'none'.",
+            " in delegate packages 'SecretFeature' and '<default>'.",
         "" +
             "{namespace ns1}\n" +
             "\n" +
@@ -154,7 +155,7 @@ public class CheckDelegatesVisitorTest extends TestCase {
 
     assertInvalidSoyFiles(
         "Found delegate templates with same name 'MagicButton' but different param declarations" +
-            " in delegate packages 'SecretFeature' and 'none'.",
+            " in delegate packages 'SecretFeature' and '<default>'.",
         "" +
             "{namespace ns1}\n" +
             "\n" +
@@ -272,6 +273,65 @@ public class CheckDelegatesVisitorTest extends TestCase {
             "{/template}\n");
   }
 
+  
+  public void testStrictModeContentKindMatches() {
+
+    // One is strict and the other is not.
+    assertInvalidSoyFiles(
+        "In file no-path:5, template foo: " +
+        "If one deltemplate has strict autoescaping, all its peers must also be strictly " +
+        "autoescaped with the same content kind: null != HTML " +
+        "(delegate packages dp1 and dp2)",
+        "" +
+            "{namespace ns}\n\n" +
+            "{template main autoescape=\"contextual\"}\n" +
+              "{delcall foo}\n" +
+                "{param x: '' /}\n" +
+              "{/delcall}\n" +
+            "{/template}",
+        "" +
+            "{delpackage dp1}\n" +
+            "{namespace ns}\n\n" +
+            "/** @param x */\n" +
+            "{deltemplate foo autoescape=\"contextual\"}\n" +
+              "<b>{$x}</b>\n" +
+            "{/deltemplate}",
+        "" +
+            "{delpackage dp2}\n" +
+            "{namespace ns}\n\n" +
+            "/** @param x */\n" +
+            "{deltemplate foo autoescape=\"strict\" kind=\"html\"}\n" +
+              "<i>{$x}</i>\n" +
+            "{/deltemplate}");
+
+    // Both are strict, but have non-matching kinds.
+    assertInvalidSoyFiles(
+        "In file no-path:5, template foo: " +
+        "If one deltemplate has strict autoescaping, all its peers must also be strictly " +
+        "autoescaped with the same content kind: TEXT != HTML " +
+        "(delegate packages dp2 and <default>)",
+        "" +
+            "{namespace ns}\n\n" +
+            "{template main autoescape=\"contextual\"}\n" +
+              "{delcall foo}\n" +
+                "{param x: '' /}\n" +
+              "{/delcall}\n" +
+            "{/template}",
+        "" +
+            "{namespace ns.default}\n\n" +
+            "/** @param x */\n" +
+            "{deltemplate foo autoescape=\"strict\" kind=\"html\"}\n" +
+              "<b>{$x}</b>\n" +
+            "{/deltemplate}",
+        "" +
+            "{delpackage dp2}\n" +
+            "{namespace ns}\n\n" +
+            "/** @param x */\n" +
+            "{deltemplate foo autoescape=\"strict\" kind=\"text\"}\n" +
+              "<i>{$x}</i>\n" +
+            "{/deltemplate}");
+  }
+
 
   private void assertValidSoyFiles(String... soyFileContents) {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
@@ -287,7 +347,9 @@ public class CheckDelegatesVisitorTest extends TestCase {
     try {
       (new CheckDelegatesVisitor()).exec(soyTree);
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(expectedErrorMsgSubstr));
+      assertTrue(
+          "Message [" + sse.getMessage() + "] should contain [" + expectedErrorMsgSubstr + "]",
+          sse.getMessage().contains(expectedErrorMsgSubstr));
       return;  // test passes
     }
     fail();

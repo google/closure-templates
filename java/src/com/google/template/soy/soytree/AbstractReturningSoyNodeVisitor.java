@@ -52,6 +52,7 @@ import java.util.List;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractSoyNodeVisitor
+ * @author Kai Huang
  */
 public abstract class AbstractReturningSoyNodeVisitor<R>
     extends AbstractReturningNodeVisitor<SoyNode, R> {
@@ -68,10 +69,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
       case RAW_TEXT_NODE: return visitRawTextNode((RawTextNode) node);
 
-      case MSG_NODE: return visitMsgNode((MsgNode) node);
-      case MSG_PLACEHOLDER_NODE: return visitMsgPlaceholderNode((MsgPlaceholderNode) node);
       case GOOG_MSG_NODE: return visitGoogMsgNode((GoogMsgNode) node);
       case GOOG_MSG_REF_NODE: return visitGoogMsgRefNode((GoogMsgRefNode) node);
+
+      case MSG_NODE: return visitMsgNode((MsgNode) node);
       case MSG_PLURAL_NODE: return visitMsgPluralNode((MsgPluralNode) node);
       case MSG_PLURAL_CASE_NODE: return visitMsgPluralCaseNode((MsgPluralCaseNode) node);
       case MSG_PLURAL_DEFAULT_NODE: return visitMsgPluralDefaultNode((MsgPluralDefaultNode) node);
@@ -80,6 +81,7 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case MSG_SELECT_NODE: return visitMsgSelectNode((MsgSelectNode) node);
       case MSG_SELECT_CASE_NODE: return visitMsgSelectCaseNode((MsgSelectCaseNode) node);
       case MSG_SELECT_DEFAULT_NODE: return visitMsgSelectDefaultNode((MsgSelectDefaultNode) node);
+      case MSG_PLACEHOLDER_NODE: return visitMsgPlaceholderNode((MsgPlaceholderNode) node);
       case MSG_HTML_TAG_NODE: return visitMsgHtmlTagNode((MsgHtmlTagNode) node);
 
       case PRINT_NODE: return visitPrintNode((PrintNode) node);
@@ -108,6 +110,9 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case CALL_DELEGATE_NODE: return visitCallDelegateNode((CallDelegateNode) node);
       case CALL_PARAM_VALUE_NODE: return visitCallParamValueNode((CallParamValueNode) node);
       case CALL_PARAM_CONTENT_NODE: return visitCallParamContentNode((CallParamContentNode) node);
+
+      case LOG_NODE: return visitLogNode((LogNode) node);
+      case DEBUGGER_NODE: return visitDebuggerNode((DebuggerNode) node);
 
       default: throw new UnsupportedOperationException();
     }
@@ -168,19 +173,15 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitSoyNode(node);
   }
 
-  protected R visitMsgNode(MsgNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitMsgPlaceholderNode(MsgPlaceholderNode node) {
-    return visitSoyNode(node);
-  }
-
   protected R visitGoogMsgNode(GoogMsgNode node) {
     return visitSoyNode(node);
   }
 
   protected R visitGoogMsgRefNode(GoogMsgRefNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitMsgNode(MsgNode node) {
     return visitSoyNode(node);
   }
 
@@ -209,6 +210,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitMsgPlaceholderNode(MsgPlaceholderNode node) {
     return visitSoyNode(node);
   }
 
@@ -305,6 +310,14 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitCallParamNode(CallParamNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitLogNode(LogNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitDebuggerNode(DebuggerNode node) {
     return visitSoyNode(node);
   }
 

@@ -56,11 +56,15 @@ import java.util.Set;
  * {/template}
  * </xmp>
  *
+ * @author Mike Samuel
  */
 public final class ContextualAutoescaper {
 
-  /** Soy directives that {@link SoyPrintDirective#shouldCancelAutoescape cancel} autoescaping. */
-  private final ImmutableSet<String> soyEscapingDirectives;
+  /**
+   * Soy directives that cancel autoescaping (see
+   * {@link SoyPrintDirective#shouldCancelAutoescape()}).
+   */
+  private final ImmutableSet<String> autoescapeCancellingDirectives;
 
   /** Maps print directive names to the content kinds they consume and produce. */
   private final Map<String, SanitizedContent.ContentKind> sanitizedContentOperators;
@@ -93,15 +97,15 @@ public final class ContextualAutoescaper {
   }
 
   /**
-   * @param soyEscapingDirectives The Soy directives that
-   *     {@link SoyPrintDirective#shouldCancelAutoescape cancel} autoescaping.
+   * @param autoescapeCancellingDirectives The Soy directives that cancel autoescaping (see
+   *     {@link SoyPrintDirective#shouldCancelAutoescape()}).
    * @param sanitizedContentOperators Maps print directive names to the content kinds they
    *     consume and produce.
    */
   public ContextualAutoescaper(
-      Iterable<? extends String> soyEscapingDirectives,
+      Iterable<? extends String> autoescapeCancellingDirectives,
       Map<? extends String, ? extends SanitizedContent.ContentKind> sanitizedContentOperators) {
-    this.soyEscapingDirectives = ImmutableSet.copyOf(soyEscapingDirectives);
+    this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);
   }
 
@@ -111,6 +115,9 @@ public final class ContextualAutoescaper {
    * context in which it appears.
    *
    * @param fileSet Modified in place.
+   * @param assumeNoExternalCalls Whether it's safe to assume this SoyFileSet gives a complete set
+   *     of templates that could ever get called at runtime; in other words, whether this is a
+   *     monolithic compile versus separately linked compiles.
    * @return Extra templates which were derived from templates under fileSet and which must be
    *     compiled with fileSet to produce a correct output.  See {@link DerivedTemplateUtils} for an
    *     explanation of these.
@@ -123,7 +130,8 @@ public final class ContextualAutoescaper {
    *     //<textarea><script></script><textarea></textarea>
    *     </xmp>
    */
-  public List<TemplateNode> rewrite(SoyFileSetNode fileSet) throws SoyAutoescapeException {
+  public List<TemplateNode> rewrite(SoyFileSetNode fileSet, boolean assumeNoExternalCalls)
+      throws SoyAutoescapeException {
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
 
@@ -132,7 +140,8 @@ public final class ContextualAutoescaper {
     // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
     // we choose.
     Inferences inferences = new Inferences(
-        soyEscapingDirectives, fileSet.getNodeIdGenerator(), templatesByName);
+        autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(),
+        templatesByName, assumeNoExternalCalls);
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
     TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
     // Generate a call graph, creating a dummy root that calls all non-private template in
@@ -144,13 +153,15 @@ public final class ContextualAutoescaper {
     // not by this algorithm.
     Set<TemplateNode> templateNodesToType = callGraph.callersOf(
         Collections2.filter(allTemplates, IS_CONTEXTUAL));
-    templateNodesToType.addAll(Collections2.filter(allTemplates, IS_PUBLIC_CONTEXTUAL));
+    templateNodesToType.addAll(Collections2.filter(allTemplates, REQUIRES_INFERENCE));
     for (TemplateNode templateNode : templateNodesToType) {
-      // TODO: In the future we may want to let authors specify a different starting context
-      // via {template autoescape="contextual-js"} or a similar notation.  When that happens,
-      // change Context.HTML_PCDATA below as appropriate, and the derived name code in
-      // DerivedTemplates.
-      InferenceEngine.inferTemplateEndContext(templateNode, Context.HTML_PCDATA, inferences);
+      // In strict mode, the author specifies the kind of SanitizedContent to produce, and thus the
+      // context in which to escape.
+      Context startContext = (templateNode.getContentKind() != null) ?
+          Context.getStartContextForContentKind(templateNode.getContentKind()) :
+          Context.HTML_PCDATA;
+      InferenceEngine.inferTemplateEndContext(
+          templateNode, startContext, inferences, autoescapeCancellingDirectives);
     }
 
     // Store inferences so that after processing, clients can access the output contexts for
@@ -171,6 +182,13 @@ public final class ContextualAutoescaper {
    */
   public Context getTemplateEndContext(String templateName) {
     return inferences.getTemplateEndContext(templateName);
+  }
+
+  /**
+   * For each print node, maps its node ID to the context in which it starts.
+   */
+  public Map<Integer, Context> getPrintNodeStartContexts() {
+    return inferences.getPrintNodeStartContexts();
   }
 
 
@@ -207,17 +225,21 @@ public final class ContextualAutoescaper {
   private static final Predicate<TemplateNode> IS_CONTEXTUAL = new Predicate<TemplateNode>() {
     @Override
     public boolean apply(TemplateNode templateNode) {
-      return templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL;
+      return templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL
+          || templateNode.getAutoescapeMode() == AutoescapeMode.STRICT;
     }
   };
 
-  private static final Predicate<TemplateNode> IS_PUBLIC_CONTEXTUAL
+  private static final Predicate<TemplateNode> REQUIRES_INFERENCE
       = new Predicate<TemplateNode>() {
-    @Override
-    public boolean apply(TemplateNode templateNode) {
-      return templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL &&
-          !templateNode.isPrivate();
-    }
+        @Override
+        public boolean apply(TemplateNode templateNode) {
+          // All strict templates should be inferred, since inference doesn't descend into strict
+          // templates.
+          return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT ||
+              (templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL &&
+                  !templateNode.isPrivate());
+        }
   };
 
 

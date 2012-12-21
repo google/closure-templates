@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 /**
  * Exception thrown when a rendering or evaluation attempt fails.
  *
+ * @author Kai Huang
  */
 public class RenderException extends RuntimeException {
 
@@ -35,6 +36,16 @@ public class RenderException extends RuntimeException {
    */
   public RenderException(String message) {
     super(message);
+    this.templateName = null;
+  }
+
+
+  /**
+   * @param message A detailed description of the error.
+   * @param cause The underlying error.
+   */
+  public RenderException(String message, Throwable cause) {
+    super(message, cause);
     this.templateName = null;
   }
 

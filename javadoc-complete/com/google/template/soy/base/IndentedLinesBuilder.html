@@ -172,14 +172,6 @@ A wrapped StringBuilder used for building text with indented lines.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendIndent()">appendIndent</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends the start-of-line indent (assuming the line will be nonempty).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;void</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendLine(java.lang.Object...)">appendLine</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A>...&nbsp;parts)</CODE>
 
@@ -188,32 +180,24 @@ A wrapped StringBuilder used for building text with indented lines.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendLine(java.lang.String...)">appendLine</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>...&nbsp;parts)</CODE>
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendLineEnd(java.lang.Object...)">appendLineEnd</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A>...&nbsp;parts)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends a line.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends the given strings, then a newline.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendLineEnd()">appendLineEnd</A></B>()</CODE>
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendLineStart(java.lang.Object...)">appendLineStart</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A>...&nbsp;parts)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends the end-of-line terminator.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends the current indent, then the given strings.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendParts(java.lang.Object...)">appendParts</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A>...&nbsp;parts)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends some parts to the current line.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html#appendParts(java.lang.String...)">appendParts</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>...&nbsp;parts)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Appends some parts to the current line.</TD>
@@ -501,40 +485,6 @@ public void <B>setIndentLen</B>(int&nbsp;indentLen)</PRE>
 </DL>
 <HR>
 
-<A NAME="appendLine(java.lang.String...)"><!-- --></A><H3>
-appendLine</H3>
-<PRE>
-public void <B>appendLine</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>...&nbsp;parts)</PRE>
-<DL>
-<DD>Appends a line. The indent at the start is automatically added whenever the line is nonempty
- (nonzero number of params). The newline char at the end is always added.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>parts</CODE> - The parts that make up the line.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="appendParts(java.lang.String...)"><!-- --></A><H3>
-appendParts</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A> <B>appendParts</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>...&nbsp;parts)</PRE>
-<DL>
-<DD>Appends some parts to the current line.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>parts</CODE> - The parts to append.
-<DT><B>Returns:</B><DD>This object.</DL>
-</DD>
-</DL>
-<HR>
-
 <A NAME="appendLine(java.lang.Object...)"><!-- --></A><H3>
 appendLine</H3>
 <PRE>
@@ -569,35 +519,36 @@ public <A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder
 </DL>
 <HR>
 
-<A NAME="appendIndent()"><!-- --></A><H3>
-appendIndent</H3>
+<A NAME="appendLineStart(java.lang.Object...)"><!-- --></A><H3>
+appendLineStart</H3>
 <PRE>
-public <A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A> <B>appendIndent</B>()</PRE>
+public <A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A> <B>appendLineStart</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A>...&nbsp;parts)</PRE>
 <DL>
-<DD>Appends the start-of-line indent (assuming the line will be nonempty).
+<DD>Appends the current indent, then the given strings.
 <P>
 <DD><DL>
 </DL>
 </DD>
 <DD><DL>
-
+<DT><B>Parameters:</B><DD><CODE>parts</CODE> - The parts to append.
 <DT><B>Returns:</B><DD>This object.</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="appendLineEnd()"><!-- --></A><H3>
+<A NAME="appendLineEnd(java.lang.Object...)"><!-- --></A><H3>
 appendLineEnd</H3>
 <PRE>
-public void <B>appendLineEnd</B>()</PRE>
+public <A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base">IndentedLinesBuilder</A> <B>appendLineEnd</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A>...&nbsp;parts)</PRE>
 <DL>
-<DD>Appends the end-of-line terminator.
+<DD>Appends the given strings, then a newline.
 <P>
 <DD><DL>
 </DL>
 </DD>
 <DD><DL>
-</DL>
+<DT><B>Parameters:</B><DD><CODE>parts</CODE> - The parts to append.
+<DT><B>Returns:</B><DD>This object.</DL>
 </DD>
 </DL>
 <HR>

@@ -136,6 +136,14 @@ Private helper class used by constructors. Encapsulates all the info derived fro
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.CommandTextInfo.html#contentKind">contentKind</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;boolean</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.CommandTextInfo.html#isPrivate">isPrivate</A></B></CODE>
 
@@ -177,11 +185,12 @@ Private helper class used by constructors. Encapsulates all the info derived fro
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.CommandTextInfo.html#TemplateNode.CommandTextInfo(java.lang.String, java.lang.String, java.lang.String, boolean, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.soytree.SoyNode.SyntaxVersion)">TemplateNode.CommandTextInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandText,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.CommandTextInfo.html#TemplateNode.CommandTextInfo(java.lang.String, java.lang.String, java.lang.String, boolean, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.soytree.SoyNode.SyntaxVersion)">TemplateNode.CommandTextInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandText,
                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName,
                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;partialTemplateName,
                              boolean&nbsp;isPrivate,
                              <A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</A>&nbsp;autoescapeMode,
+                             <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
                              <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A>&nbsp;syntaxVersion)</CODE>
 
 <BR>
@@ -271,6 +280,17 @@ public final <A HREF="../../../../../com/google/template/soy/soytree/AutoescapeM
 </DL>
 <HR>
 
+<A NAME="contentKind"><!-- --></A><H3>
+contentKind</H3>
+<PRE>
+<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A>
+</FONT>public final <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A> <B>contentKind</B></PRE>
+<DL>
+<DL>
+</DL>
+</DL>
+<HR>
+
 <A NAME="syntaxVersion"><!-- --></A><H3>
 syntaxVersion</H3>
 <PRE>
@@ -290,7 +310,7 @@ public final <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Syn
 </TR>
 </TABLE>
 
-<A NAME="TemplateNode.CommandTextInfo(java.lang.String, java.lang.String, java.lang.String, boolean, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.soytree.SoyNode.SyntaxVersion)"><!-- --></A><H3>
+<A NAME="TemplateNode.CommandTextInfo(java.lang.String, java.lang.String, java.lang.String, boolean, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.soytree.SoyNode.SyntaxVersion)"><!-- --></A><H3>
 TemplateNode.CommandTextInfo</H3>
 <PRE>
 public <B>TemplateNode.CommandTextInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandText,
@@ -299,6 +319,7 @@ public <B>TemplateNode.CommandTextInfo</B>(<A HREF="http://java.sun.com/javase/6
                                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;partialTemplateName,
                                     boolean&nbsp;isPrivate,
                                     <A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</A>&nbsp;autoescapeMode,
+                                    <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
                                     <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A>&nbsp;syntaxVersion)</PRE>
 <DL>
 </DL>

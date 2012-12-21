@@ -42,6 +42,8 @@ import java.util.Set;
  * Soy function that gets the name of the end edge ('left' or 'right') for the current global bidi
  * directionality.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 @Singleton
 class BidiEndEdgeFunction extends SoyAbstractTofuFunction

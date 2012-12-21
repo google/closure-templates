@@ -17,11 +17,15 @@
 package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.template.soy.SoyFileSet.Builder;
+import com.google.template.soy.base.SoyFileKind;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -30,6 +34,8 @@ import org.kohsuke.args4j.spi.OptionHandler;
 import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
 
+import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -38,6 +44,7 @@ import javax.annotation.Nullable;
 /**
  * Private utils for classes with a main() method.
  *
+ * @author Kai Huang
  */
 class MainClassUtils {
 
@@ -230,6 +237,41 @@ class MainClassUtils {
       throw new RuntimeException("Cannot access plugin module \"" + moduleName + "\".", e);
     } catch (InstantiationException e) {
       throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);
+    }
+  }
+
+
+  /**
+   * Helper to add srcs and deps Soy files to a SoyFileSet builder. Also does sanity checks.
+   * @param sfsBuilder The SoyFileSet builder to add to.
+   * @param inputPrefix The input path prefix to prepend to all the file paths.
+   * @param srcs The srcs from the --srcs flag. Exactly one of 'srcs' and 'args' must be nonempty.
+   * @param args The old-style srcs from the command line (that's how they were specified before we
+   *     added the --srcs flag). Exactly one of 'srcs' and 'args' must be nonempty.
+   * @param deps The deps from the --deps flag, or empty list if not applicable.
+   * @param exitWithErrorFn A function that exits with an error message followed by a usage message.
+   */
+  public static void addSoyFilesToBuilder(
+      Builder sfsBuilder, String inputPrefix, Collection<String> srcs, Collection<String> args,
+      Collection<String> deps, Function<String, Void> exitWithErrorFn) {
+
+    if (srcs.size() == 0 && args.size() == 0) {
+      exitWithErrorFn.apply("Must provide list of source Soy files (--srcs).");
+    }
+    if (srcs.size() != 0 && args.size() != 0) {
+      exitWithErrorFn.apply(
+          "Found source Soy files from --srcs and from args (please use --srcs only).");
+    }
+
+    for (String src : srcs) {
+      sfsBuilder.addWithKind(new File(inputPrefix + src), SoyFileKind.SRC);
+    }
+    // TODO: Maybe stop supporting old style (srcs from command line args) at some point.
+    for (String src : args) {
+      sfsBuilder.addWithKind(new File(inputPrefix + src), SoyFileKind.SRC);
+    }
+    for (String dep : deps) {
+      sfsBuilder.addWithKind(new File(inputPrefix + dep), SoyFileKind.DEP);
     }
   }
 

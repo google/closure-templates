@@ -75,7 +75,7 @@ function windowTitle()
 <A NAME="skip-navbar_top"></A>
 <!-- ========= END OF TOP NAVBAR ========= -->
 
-<A HREF="#_A_">A</A> <A HREF="#_B_">B</A> <A HREF="#_C_">C</A> <A HREF="#_E_">E</A> <A HREF="#_F_">F</A> <A HREF="#_G_">G</A> <A HREF="#_H_">H</A> <A HREF="#_I_">I</A> <A HREF="#_L_">L</A> <A HREF="#_M_">M</A> <A HREF="#_N_">N</A> <A HREF="#_P_">P</A> <A HREF="#_R_">R</A> <A HREF="#_S_">S</A> <A HREF="#_T_">T</A> <A HREF="#_U_">U</A> <A HREF="#_V_">V</A> <A HREF="#_W_">W</A> <A HREF="#_X_">X</A> <HR>
+<A HREF="#_A_">A</A> <A HREF="#_B_">B</A> <A HREF="#_C_">C</A> <A HREF="#_E_">E</A> <A HREF="#_F_">F</A> <A HREF="#_G_">G</A> <A HREF="#_H_">H</A> <A HREF="#_I_">I</A> <A HREF="#_L_">L</A> <A HREF="#_M_">M</A> <A HREF="#_N_">N</A> <A HREF="#_O_">O</A> <A HREF="#_P_">P</A> <A HREF="#_R_">R</A> <A HREF="#_S_">S</A> <A HREF="#_T_">T</A> <A HREF="#_U_">U</A> <A HREF="#_V_">V</A> <A HREF="#_W_">W</A> <A HREF="#_X_">X</A> <HR>
 <A NAME="_A_"><!-- --></A><H2>
 <B>A</B></H2>
 <DL>
@@ -121,6 +121,27 @@ Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/
 <DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addVolatile(java.io.File)"><B>addVolatile(File)</B></A> - 
 Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
 <DD>Adds an input Soy file that the system will watch for changes, given a <code>File</code>.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addVolatileWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)"><B>addVolatileWithKind(File, SoyFileKind)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Adds an input Soy file that the system will watch for changes, given a <code>File</code>.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)"><B>addWithKind(InputSupplier&lt;? extends Reader&gt;, SoyFileKind, String)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)"><B>addWithKind(File, SoyFileKind)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Adds an input Soy file, given a <code>File</code>.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><B>addWithKind(URL, SoyFileKind, String)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind)"><B>addWithKind(URL, SoyFileKind)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Adds an input Soy file, given a resource <code>URL</code>.
+<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)"><B>addWithKind(CharSequence, SoyFileKind, String)</B></A> - 
+Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
+<DD>Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.
 <DT><A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html#allowExternalCalls()"><B>allowExternalCalls()</B></A> - 
 Method in class com.google.template.soy.shared.<A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>
 <DD>Returns whether to allow external calls (calls to undefined templates).
@@ -130,6 +151,9 @@ Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/
 <DT><A HREF="./com/google/template/soy/data/SoyMapData.html#asMap()"><B>asMap()</B></A> - 
 Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>
 <DD>Important: Please treat this method as superpackage-private.
+<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#associateMetaInfo(com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)"><B>associateMetaInfo(SourceLocation, String, String)</B></A> - 
+Method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
 </DL>
 <HR>
 <A NAME="_B_"><!-- --></A><H2>
@@ -190,16 +214,31 @@ Method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyMo
 <DT><A HREF="./com/google/template/soy/xliffmsgplugin/XliffMsgPluginModule.html#configure()"><B>configure()</B></A> - 
 Method in class com.google.template.soy.xliffmsgplugin.<A HREF="./com/google/template/soy/xliffmsgplugin/XliffMsgPluginModule.html" title="class in com.google.template.soy.xliffmsgplugin">XliffMsgPluginModule</A>
 <DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#createCausedWithMetaInfo(java.lang.String, java.lang.Throwable, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)"><B>createCausedWithMetaInfo(String, Throwable, SourceLocation, String, String)</B></A> - 
+Static method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
+<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#createCausedWithoutMetaInfo(java.lang.String, java.lang.Throwable)"><B>createCausedWithoutMetaInfo(String, Throwable)</B></A> - 
+Static method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
 <DT><A HREF="./com/google/template/soy/data/SoyData.html#createFromExistingData(java.lang.Object)"><B>createFromExistingData(Object)</B></A> - 
 Static method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>
 <DD>Creation function for creating a SoyData object out of any existing primitive, data object, or
  data structure.
+<DT><A HREF="./com/google/template/soy/data/SoyData.html#createFromExistingData(java.lang.String)"><B>createFromExistingData(String)</B></A> - 
+Static method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>
+<DD>A special case of <A HREF="./com/google/template/soy/data/SoyData.html#createFromExistingData(java.lang.Object)"><CODE>SoyData.createFromExistingData(Object)</CODE></A>.
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.html#createFromFile(java.io.File)"><B>createFromFile(File)</B></A> - 
 Method in class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.html" title="class in com.google.template.soy.msgs">SoyMsgBundleHandler</A>
 <DD>Reads an input messages file and creates a SoyMsgBundle.
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.html#createFromResource(java.net.URL)"><B>createFromResource(URL)</B></A> - 
 Method in class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.html" title="class in com.google.template.soy.msgs">SoyMsgBundleHandler</A>
 <DD>Reads an input messages resource and creates a SoyMsgBundle.
+<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#createWithMetaInfo(java.lang.String, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)"><B>createWithMetaInfo(String, SourceLocation, String, String)</B></A> - 
+Static method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
+<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#createWithoutMetaInfo(java.lang.String)"><B>createWithoutMetaInfo(String)</B></A> - 
+Static method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
 </DL>
 <HR>
 <A NAME="_E_"><!-- --></A><H2>
@@ -208,6 +247,9 @@ Method in class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundle.html#EMPTY"><B>EMPTY</B></A> - 
 Static variable in interface com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A>
 <DD>Null object for SoyMsgBundle.
+<DT><A HREF="./com/google/template/soy/data/SanitizedContents.html#emptyString(com.google.template.soy.data.SanitizedContent.ContentKind)"><B>emptyString(SanitizedContent.ContentKind)</B></A> - 
+Static method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SanitizedContents.html" title="class in com.google.template.soy.data">SanitizedContents</A>
+<DD>Creates an empty string constant.
 <DT><A HREF="./com/google/template/soy/data/SanitizedContent.html#equals(java.lang.Object)"><B>equals(Object)</B></A> - 
 Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</A>
 <DD>&nbsp;
@@ -236,6 +278,9 @@ Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/
 <DT><A HREF="./com/google/template/soy/tofu/SoyTofu.html#forNamespace(java.lang.String)"><B>forNamespace(String)</B></A> - 
 Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A>
 <DD>Gets a new SoyTofu instance with a different namespace (or no namespace).
+<DT><A HREF="./com/google/template/soy/data/SanitizedContents.html#fromResource(java.lang.Class, java.lang.String, java.nio.charset.Charset, com.google.template.soy.data.SanitizedContent.ContentKind)"><B>fromResource(Class&lt;?&gt;, String, Charset, SanitizedContent.ContentKind)</B></A> - 
+Static method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SanitizedContents.html" title="class in com.google.template.soy.data">SanitizedContents</A>
+<DD>Loads assumed-safe content from a Java resource.
 </DL>
 <HR>
 <A NAME="_G_"><!-- --></A><H2>
@@ -375,6 +420,9 @@ Method in class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/
 <DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#getSourceLocation()"><B>getSourceLocation()</B></A> - 
 Method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
 <DD>The source location at which the error occurred or <CODE>SourceLocation.UNKNOWN</CODE>.
+<DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleLoader.html#getSoyMsgBundleForLocale(java.util.Locale)"><B>getSoyMsgBundleForLocale(Locale)</B></A> - 
+Method in interface com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundleLoader.html" title="interface in com.google.template.soy.msgs">SoyMsgBundleLoader</A>
+<DD>Gets the Message bundle for a particular locale.
 <DT><A HREF="./com/google/template/soy/data/SoyListData.html#getString(int)"><B>getString(int)</B></A> - 
 Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyListData.html" title="class in com.google.template.soy.data">SoyListData</A>
 <DD>Precondition: The specified index contains a string.
@@ -393,6 +441,12 @@ Method in class com.google.template.soy.parseinfo.<A HREF="./com/google/template
 <DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html#getUsedIjParams()"><B>getUsedIjParams()</B></A> - 
 Method in class com.google.template.soy.parseinfo.<A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>
 <DD>Returns the set of injected params used by this template (or a transitive callee).
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofu.html#getUsedIjParamsForTemplate(com.google.template.soy.parseinfo.SoyTemplateInfo)"><B>getUsedIjParamsForTemplate(SoyTemplateInfo)</B></A> - 
+Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A>
+<DD>Gets the set of injected param keys used by a template (and its transitive callees).
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofu.html#getUsedIjParamsForTemplate(java.lang.String)"><B>getUsedIjParamsForTemplate(String)</B></A> - 
+Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A>
+<DD>Gets the set of injected param keys used by a template (and its transitive callees).
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#getUseGoogIsRtlForBidiGlobalDir()"><B>getUseGoogIsRtlForBidiGlobalDir()</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Returns whether to determine the bidi global direction at template runtime by evaluating
@@ -422,7 +476,7 @@ Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/
 <DD>Precondition: Only call this method if you know that this SoyData object is an integer.
 <DT><A HREF="./com/google/template/soy/tofu/SoyTofu.html#isCaching()"><B>isCaching()</B></A> - 
 Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A>
-<DD>Getter for whether this instance caches intermediate Soy trees after substitutions from the
+<DD>Gets whether this instance caches intermediate Soy trees after substitutions from the
  SoyMsgBundle and the SoyCssRenamingMap.
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#isUsingIjData()"><B>isUsingIjData()</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
@@ -458,6 +512,14 @@ Static method in class com.google.template.soy.<A HREF="./com/google/template/so
 <DT><A HREF="./com/google/template/soy/SoyToJsSrcCompiler.html#main(java.lang.String[])"><B>main(String[])</B></A> - 
 Static method in class com.google.template.soy.<A HREF="./com/google/template/soy/SoyToJsSrcCompiler.html" title="class in com.google.template.soy">SoyToJsSrcCompiler</A>
 <DD>Compiles a set of Soy files into corresponding JS source files.
+<DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html#mayHaveIjParamsInExternalCalls()"><B>mayHaveIjParamsInExternalCalls()</B></A> - 
+Method in class com.google.template.soy.parseinfo.<A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>
+<DD>Returns whether this template may have injected params indirectly used in external basic calls
+ (i.e.
+<DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html#mayHaveIjParamsInExternalDelCalls()"><B>mayHaveIjParamsInExternalDelCalls()</B></A> - 
+Method in class com.google.template.soy.parseinfo.<A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>
+<DD>Returns whether this template may have injected params indirectly used in external delegate
+ calls (i.e.
 </DL>
 <HR>
 <A NAME="_N_"><!-- --></A><H2>
@@ -475,6 +537,14 @@ Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/
 <DT><A HREF="./com/google/template/soy/data/SoyData.html#numberValue()"><B>numberValue()</B></A> - 
 Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>
 <DD>Precondition: Only call this method if you know that this SoyData object is a number.
+</DL>
+<HR>
+<A NAME="_O_"><!-- --></A><H2>
+<B>O</B></H2>
+<DL>
+<DT><A HREF="./com/google/template/soy/data/UnsafeSanitizedContentOrdainer.html#ordainAsSafe(java.lang.String, com.google.template.soy.data.SanitizedContent.ContentKind)"><B>ordainAsSafe(String, SanitizedContent.ContentKind)</B></A> - 
+Static method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/UnsafeSanitizedContentOrdainer.html" title="class in com.google.template.soy.data">UnsafeSanitizedContentOrdainer</A>
+<DD>Faithfully assumes the provided value is "safe" and marks it not to be re-escaped.
 </DL>
 <HR>
 <A NAME="_P_"><!-- --></A><H2>
@@ -542,16 +612,17 @@ Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/
 Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A>
 <DD>Renders the template using the data, injected data, and message bundle previously set
  into the given Appendable.
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofu.Renderer.html#renderAsSanitizedContent()"><B>renderAsSanitizedContent()</B></A> - 
+Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A>
+<DD>Renders the strict-mode template as a SanitizedContent object, which can be used as an input
+ to another Soy template, or used to verify that the output type is correct.
 </DL>
 <HR>
 <A NAME="_S_"><!-- --></A><H2>
 <B>S</B></H2>
 <DL>
-<DT><A HREF="./com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><B>SanitizedContent</B></A> - Class in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>A chunk of sanitized content of a known kind, e.g.<DT><A HREF="./com/google/template/soy/data/SanitizedContent.html#SanitizedContent(java.lang.String, com.google.template.soy.data.SanitizedContent.ContentKind)"><B>SanitizedContent(String, SanitizedContent.ContentKind)</B></A> - 
-Constructor for class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</A>
-<DD>&nbsp;
-<DT><A HREF="./com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data"><B>SanitizedContent.ContentKind</B></A> - Enum in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>A kind of textual content.<DT><A HREF="./com/google/template/soy/data/SanitizedContentOperator.html" title="interface in com.google.template.soy.data"><B>SanitizedContentOperator</B></A> - Interface in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>An operator that takes sanitized content of a particular kind and produces sanitized content of
- the same kind.<DT><A HREF="./com/google/template/soy/data/SoyListData.html#set(int, com.google.template.soy.data.SoyData)"><B>set(int, SoyData)</B></A> - 
+<DT><A HREF="./com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><B>SanitizedContent</B></A> - Class in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>A chunk of sanitized content of a known kind, e.g.<DT><A HREF="./com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data"><B>SanitizedContent.ContentKind</B></A> - Enum in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>A kind of textual content.<DT><A HREF="./com/google/template/soy/data/SanitizedContentOperator.html" title="interface in com.google.template.soy.data"><B>SanitizedContentOperator</B></A> - Interface in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>An operator that takes sanitized content of a particular kind and produces sanitized content of
+ the same kind.<DT><A HREF="./com/google/template/soy/data/SanitizedContents.html" title="class in com.google.template.soy.data"><B>SanitizedContents</B></A> - Class in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>Creation utilities for SanitizedContent objects for common use cases.<DT><A HREF="./com/google/template/soy/data/SoyListData.html#set(int, com.google.template.soy.data.SoyData)"><B>set(int, SoyData)</B></A> - 
 Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/data/SoyListData.html" title="class in com.google.template.soy.data">SoyListData</A>
 <DD>Sets a data value at a given index.
 <DT><A HREF="./com/google/template/soy/data/SoyListData.html#set(int, boolean)"><B>set(int, boolean)</B></A> - 
@@ -636,9 +707,6 @@ Method in interface com.google.template.soy.tofu.<A HREF="./com/google/template/
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgException.html#setFileOrResourceName(java.lang.String)"><B>setFileOrResourceName(String)</B></A> - 
 Method in exception com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgException.html" title="class in com.google.template.soy.msgs">SoyMsgException</A>
 <DD>Sets the name of the file or resource associated with this error.
-<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#setFilePath(java.lang.String)"><B>setFilePath(String)</B></A> - 
-Method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
-<DD>Sets the file name for this SoySyntaxException instance.
 <DT><A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html#setGoogMsgsAreExternal(boolean)"><B>setGoogMsgsAreExternal(boolean)</B></A> - 
 Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy/jssrc/SoyJsSrcOptions.html" title="class in com.google.template.soy.jssrc">SoyJsSrcOptions</A>
 <DD>Sets whether the generated Closure Library message definitions are for external messages
@@ -682,15 +750,9 @@ Method in class com.google.template.soy.jssrc.<A HREF="./com/google/template/soy
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html#setSourceLocaleString(java.lang.String)"><B>setSourceLocaleString(String)</B></A> - 
 Method in class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html" title="class in com.google.template.soy.msgs">SoyMsgBundleHandler.OutputFileOptions</A>
 <DD>Sets the source locale string for an output message bundle file.
-<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#setSourceLocation(com.google.template.soy.base.SourceLocation)"><B>setSourceLocation(SourceLocation)</B></A> - 
-Method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
-<DD>Sets the source location at which the problem occurred.
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html#setTargetLocaleString(java.lang.String)"><B>setTargetLocaleString(String)</B></A> - 
 Method in class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html" title="class in com.google.template.soy.msgs">SoyMsgBundleHandler.OutputFileOptions</A>
 <DD>Sets the target locale string f0or an output message bundle file.
-<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#setTemplateName(java.lang.String)"><B>setTemplateName(String)</B></A> - 
-Method in exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
-<DD>Sets the template name for this SoySyntaxException instance.
 <DT><A HREF="./com/google/template/soy/tofu/SoyTofuException.html#setTemplateName(java.lang.String)"><B>setTemplateName(String)</B></A> - 
 Method in exception com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu">SoyTofuException</A>
 <DD>Sets the template name for this error.
@@ -740,7 +802,7 @@ Constructor for exception com.google.template.soy.data.<A HREF="./com/google/tem
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/parseinfo/SoyFileInfo.html" title="class in com.google.template.soy.parseinfo"><B>SoyFileInfo</B></A> - Class in <A HREF="./com/google/template/soy/parseinfo/package-summary.html">com.google.template.soy.parseinfo</A><DD>Parsed info about a Soy file.<DT><A HREF="./com/google/template/soy/parseinfo/SoyFileInfo.html#SoyFileInfo(java.lang.String, java.lang.String, com.google.common.collect.ImmutableSortedSet, com.google.common.collect.ImmutableList, com.google.common.collect.ImmutableMap)"><B>SoyFileInfo(String, String, ImmutableSortedSet&lt;String&gt;, ImmutableList&lt;SoyTemplateInfo&gt;, ImmutableMap&lt;String, SoyFileInfo.CssTagsPrefixPresence&gt;)</B></A> - 
 Constructor for class com.google.template.soy.parseinfo.<A HREF="./com/google/template/soy/parseinfo/SoyFileInfo.html" title="class in com.google.template.soy.parseinfo">SoyFileInfo</A>
-<DD>&nbsp;
+<DD>Constructor for internal use only.
 <DT><A HREF="./com/google/template/soy/parseinfo/SoyFileInfo.CssTagsPrefixPresence.html" title="enum in com.google.template.soy.parseinfo"><B>SoyFileInfo.CssTagsPrefixPresence</B></A> - Enum in <A HREF="./com/google/template/soy/parseinfo/package-summary.html">com.google.template.soy.parseinfo</A><DD>Enum for whether there are prefix expressions in the 'css' tags that a CSS name appears in.<DT><A HREF="./com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy"><B>SoyFileSet</B></A> - Class in <A HREF="./com/google/template/soy/package-summary.html">com.google.template.soy</A><DD>Represents a complete set of Soy files for compilation as one bundle.<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy"><B>SoyFileSet.Builder</B></A> - Class in <A HREF="./com/google/template/soy/package-summary.html">com.google.template.soy</A><DD>Builder for a <code>SoyFileSet</code>.<DT><A HREF="./com/google/template/soy/SoyFileSet.Builder.html#SoyFileSet.Builder()"><B>SoyFileSet.Builder()</B></A> - 
 Constructor for class com.google.template.soy.<A HREF="./com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A>
 <DD>Constructs a builder that starts with a default <A HREF="./com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object (options
@@ -785,7 +847,7 @@ Constructor for class com.google.template.soy.msgs.<A HREF="./com/google/templat
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html" title="class in com.google.template.soy.msgs"><B>SoyMsgBundleHandler.OutputFileOptions</B></A> - Class in <A HREF="./com/google/template/soy/msgs/package-summary.html">com.google.template.soy.msgs</A><DD>Options for generating an output message bundle file.<DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html#SoyMsgBundleHandler.OutputFileOptions()"><B>SoyMsgBundleHandler.OutputFileOptions()</B></A> - 
 Constructor for class com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgBundleHandler.OutputFileOptions.html" title="class in com.google.template.soy.msgs">SoyMsgBundleHandler.OutputFileOptions</A>
 <DD>This constructor sets default values for the source locale string and target locale string.
-<DT><A HREF="./com/google/template/soy/msgs/SoyMsgException.html" title="class in com.google.template.soy.msgs"><B>SoyMsgException</B></A> - Exception in <A HREF="./com/google/template/soy/msgs/package-summary.html">com.google.template.soy.msgs</A><DD>Exception for errors related to messages/translation.<DT><A HREF="./com/google/template/soy/msgs/SoyMsgException.html#SoyMsgException(java.lang.String)"><B>SoyMsgException(String)</B></A> - 
+<DT><A HREF="./com/google/template/soy/msgs/SoyMsgBundleLoader.html" title="interface in com.google.template.soy.msgs"><B>SoyMsgBundleLoader</B></A> - Interface in <A HREF="./com/google/template/soy/msgs/package-summary.html">com.google.template.soy.msgs</A><DD>Contract for any object that can load a SoyMsgBundle given a locale.<DT><A HREF="./com/google/template/soy/msgs/SoyMsgException.html" title="class in com.google.template.soy.msgs"><B>SoyMsgException</B></A> - Exception in <A HREF="./com/google/template/soy/msgs/package-summary.html">com.google.template.soy.msgs</A><DD>Exception for errors related to messages/translation.<DT><A HREF="./com/google/template/soy/msgs/SoyMsgException.html#SoyMsgException(java.lang.String)"><B>SoyMsgException(String)</B></A> - 
 Constructor for exception com.google.template.soy.msgs.<A HREF="./com/google/template/soy/msgs/SoyMsgException.html" title="class in com.google.template.soy.msgs">SoyMsgException</A>
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/msgs/SoyMsgException.html#SoyMsgException(java.lang.String, java.lang.Throwable)"><B>SoyMsgException(String, Throwable)</B></A> - 
@@ -796,20 +858,25 @@ Constructor for exception com.google.template.soy.msgs.<A HREF="./com/google/tem
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/SoyMsgExtractor.html" title="class in com.google.template.soy"><B>SoyMsgExtractor</B></A> - Class in <A HREF="./com/google/template/soy/package-summary.html">com.google.template.soy</A><DD>Executable for extracting messages from a set of Soy files into an output messages file.<DT><A HREF="./com/google/template/soy/msgs/SoyMsgPlugin.html" title="interface in com.google.template.soy.msgs"><B>SoyMsgPlugin</B></A> - Interface in <A HREF="./com/google/template/soy/msgs/package-summary.html">com.google.template.soy.msgs</A><DD>Plugin for implementing a specific message file format.<DT><A HREF="./com/google/template/soy/SoyParseInfoGenerator.html" title="class in com.google.template.soy"><B>SoyParseInfoGenerator</B></A> - Class in <A HREF="./com/google/template/soy/package-summary.html">com.google.template.soy</A><DD>Executable for generating Java classes containing Soy parse info.<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base"><B>SoySyntaxException</B></A> - Exception in <A HREF="./com/google/template/soy/base/package-summary.html">com.google.template.soy.base</A><DD>Exception for Soy syntax errors.<DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.String)"><B>SoySyntaxException(String)</B></A> - 
 Constructor for exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
-<DD>&nbsp;
+<DD><B>Deprecated.</B>&nbsp;<I>Do not use outside of Soy code (treat as superpackage-private).</I>
 <DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.String, java.lang.Throwable)"><B>SoySyntaxException(String, Throwable)</B></A> - 
 Constructor for exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
-<DD>&nbsp;
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
 <DT><A HREF="./com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.Throwable)"><B>SoySyntaxException(Throwable)</B></A> - 
 Constructor for exception com.google.template.soy.base.<A HREF="./com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A>
-<DD>Note: For this constructor, the message will be set to the cause's message.
+<DD> Important: Do not use outside of Soy code (treat as superpackage-private).
 <DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo"><B>SoyTemplateInfo</B></A> - Class in <A HREF="./com/google/template/soy/parseinfo/package-summary.html">com.google.template.soy.parseinfo</A><DD>Parsed info about a template.<DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html#SoyTemplateInfo(java.lang.String, com.google.common.collect.ImmutableMap)"><B>SoyTemplateInfo(String, ImmutableMap&lt;String, SoyTemplateInfo.ParamRequisiteness&gt;)</B></A> - 
 Constructor for class com.google.template.soy.parseinfo.<A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>
-<DD>Constructor for info for a template that doesn't use injected data (even transitively).
-<DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html#SoyTemplateInfo(java.lang.String, com.google.common.collect.ImmutableMap, com.google.common.collect.ImmutableSortedSet)"><B>SoyTemplateInfo(String, ImmutableMap&lt;String, SoyTemplateInfo.ParamRequisiteness&gt;, ImmutableSortedSet&lt;String&gt;)</B></A> - 
+<DD><B>Deprecated.</B>&nbsp;<I>Users should not be creating SoyTemplateInfo objects. If you're constructing
+     SoyTemplateInfo objects from non-Soy-internal code, your code will be broken by future
+     Soy changes.</I>
+<DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html#SoyTemplateInfo(java.lang.String, com.google.common.collect.ImmutableMap, com.google.common.collect.ImmutableSortedSet, boolean, boolean)"><B>SoyTemplateInfo(String, ImmutableMap&lt;String, SoyTemplateInfo.ParamRequisiteness&gt;, ImmutableSortedSet&lt;String&gt;, boolean, boolean)</B></A> - 
 Constructor for class com.google.template.soy.parseinfo.<A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>
-<DD>General constructor.
+<DD>Constructor for internal use only, for the general case.
 <DT><A HREF="./com/google/template/soy/parseinfo/SoyTemplateInfo.ParamRequisiteness.html" title="enum in com.google.template.soy.parseinfo"><B>SoyTemplateInfo.ParamRequisiteness</B></A> - Enum in <A HREF="./com/google/template/soy/parseinfo/package-summary.html">com.google.template.soy.parseinfo</A><DD>Enum for whether a param is required or optional for a specific template.<DT><A HREF="./com/google/template/soy/javasrc/SoyTemplateRuntime.html" title="interface in com.google.template.soy.javasrc"><B>SoyTemplateRuntime</B></A> - Interface in <A HREF="./com/google/template/soy/javasrc/package-summary.html">com.google.template.soy.javasrc</A><DD>A compiled Soy template.<DT><A HREF="./com/google/template/soy/javasrc/SoyTemplateRuntimes.html" title="interface in com.google.template.soy.javasrc"><B>SoyTemplateRuntimes</B></A> - Interface in <A HREF="./com/google/template/soy/javasrc/package-summary.html">com.google.template.soy.javasrc</A><DD>A compiled bundle of templates.<DT><A HREF="./com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu"><B>SoyTofu</B></A> - Interface in <A HREF="./com/google/template/soy/tofu/package-summary.html">com.google.template.soy.tofu</A><DD>SoyTofu is the public interface for a Java object that represents a compiled Soy file set.<DT><A HREF="./com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu"><B>SoyTofu.Renderer</B></A> - Interface in <A HREF="./com/google/template/soy/tofu/package-summary.html">com.google.template.soy.tofu</A><DD>Renderer for a template.<DT><A HREF="./com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu"><B>SoyTofuException</B></A> - Exception in <A HREF="./com/google/template/soy/tofu/package-summary.html">com.google.template.soy.tofu</A><DD>Exception thrown when an error occurs during template rendering.<DT><A HREF="./com/google/template/soy/tofu/SoyTofuException.html#SoyTofuException(java.lang.String)"><B>SoyTofuException(String)</B></A> - 
+Constructor for exception com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu">SoyTofuException</A>
+<DD>&nbsp;
+<DT><A HREF="./com/google/template/soy/tofu/SoyTofuException.html#SoyTofuException(java.lang.String, java.lang.Throwable)"><B>SoyTofuException(String, Throwable)</B></A> - 
 Constructor for exception com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuException.html" title="class in com.google.template.soy.tofu">SoyTofuException</A>
 <DD>&nbsp;
 <DT><A HREF="./com/google/template/soy/tofu/SoyTofuException.html#SoyTofuException(com.google.template.soy.sharedpasses.render.RenderException)"><B>SoyTofuException(RenderException)</B></A> - 
@@ -858,7 +925,7 @@ Method in class com.google.template.soy.data.<A HREF="./com/google/template/soy/
 <A NAME="_U_"><!-- --></A><H2>
 <B>U</B></H2>
 <DL>
-<DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html#useCaching()"><B>useCaching()</B></A> - 
+<DT><A HREF="./com/google/template/soy/data/UnsafeSanitizedContentOrdainer.html" title="class in com.google.template.soy.data"><B>UnsafeSanitizedContentOrdainer</B></A> - Class in <A HREF="./com/google/template/soy/data/package-summary.html">com.google.template.soy.data</A><DD>Restricted class to create SanitizedContent objects.<DT><A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html#useCaching()"><B>useCaching()</B></A> - 
 Method in class com.google.template.soy.tofu.<A HREF="./com/google/template/soy/tofu/SoyTofuOptions.html" title="class in com.google.template.soy.tofu">SoyTofuOptions</A>
 <DD>Returns whether the resulting SoyTofu instance should cache intermediate results after
  substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
@@ -933,7 +1000,7 @@ Constructor for class com.google.template.soy.xliffmsgplugin.<A HREF="./com/goog
 <DD>&nbsp;
 </DL>
 <HR>
-<A HREF="#_A_">A</A> <A HREF="#_B_">B</A> <A HREF="#_C_">C</A> <A HREF="#_E_">E</A> <A HREF="#_F_">F</A> <A HREF="#_G_">G</A> <A HREF="#_H_">H</A> <A HREF="#_I_">I</A> <A HREF="#_L_">L</A> <A HREF="#_M_">M</A> <A HREF="#_N_">N</A> <A HREF="#_P_">P</A> <A HREF="#_R_">R</A> <A HREF="#_S_">S</A> <A HREF="#_T_">T</A> <A HREF="#_U_">U</A> <A HREF="#_V_">V</A> <A HREF="#_W_">W</A> <A HREF="#_X_">X</A> 
+<A HREF="#_A_">A</A> <A HREF="#_B_">B</A> <A HREF="#_C_">C</A> <A HREF="#_E_">E</A> <A HREF="#_F_">F</A> <A HREF="#_G_">G</A> <A HREF="#_H_">H</A> <A HREF="#_I_">I</A> <A HREF="#_L_">L</A> <A HREF="#_M_">M</A> <A HREF="#_N_">N</A> <A HREF="#_O_">O</A> <A HREF="#_P_">P</A> <A HREF="#_R_">R</A> <A HREF="#_S_">S</A> <A HREF="#_T_">T</A> <A HREF="#_U_">U</A> <A HREF="#_V_">V</A> <A HREF="#_W_">W</A> <A HREF="#_X_">X</A> 
 
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
 <A NAME="navbar_bottom"><!-- --></A>

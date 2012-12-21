@@ -115,6 +115,21 @@ Represents a message in some language/locale. Contains information relevant to t
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsg.html#SoyMsg(long, long, java.lang.String, java.lang.String, java.lang.String, boolean, java.lang.String, java.lang.String, boolean, java.util.List)">SoyMsg</A></B>(long&nbsp;id,
+       long&nbsp;altId,
+       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;localeString,
+       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;meaning,
+       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;desc,
+       boolean&nbsp;isHidden,
+       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;contentType,
+       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath,
+       boolean&nbsp;isPlrselMsg,
+       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;&nbsp;parts)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsg.html#SoyMsg(long, java.lang.String, java.lang.String, java.lang.String, boolean, java.lang.String, java.lang.String, java.util.List)">SoyMsg</A></B>(long&nbsp;id,
        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;localeString,
        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;meaning,
@@ -144,6 +159,14 @@ Represents a message in some language/locale. Contains information relevant to t
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;long</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsg.html#getAltId()">getAltId</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the alternate unique id for this message, or -1L if not applicable.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -209,6 +232,14 @@ Represents a message in some language/locale. Contains information relevant to t
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns whether this message should be hiddens.</TD>
 </TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;boolean</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsg.html#isPlrselMsg()">isPlrselMsg</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns whether this is a plural/select message.</TD>
+</TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
@@ -231,6 +262,40 @@ Represents a message in some language/locale. Contains information relevant to t
 <B>Constructor Detail</B></FONT></TH>
 </TR>
 </TABLE>
+
+<A NAME="SoyMsg(long, long, java.lang.String, java.lang.String, java.lang.String, boolean, java.lang.String, java.lang.String, boolean, java.util.List)"><!-- --></A><H3>
+SoyMsg</H3>
+<PRE>
+public <B>SoyMsg</B>(long&nbsp;id,
+              long&nbsp;altId,
+              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;localeString,
+              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;meaning,
+              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;desc,
+              boolean&nbsp;isHidden,
+              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;contentType,
+              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath,
+              boolean&nbsp;isPlrselMsg,
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;&nbsp;parts)</PRE>
+<DL>
+<DL>
+<DT><B>Parameters:</B><DD><CODE>id</CODE> - A unique id for this message (same across all translations).<DD><CODE>altId</CODE> - An alternate unique id for this message, or -1L if not applicable.<DD><CODE>localeString</CODE> - The language/locale string, or null if unknown. Should only be null for
+     messages newly extracted from source files. Should always be set for messages parsed from
+     message files/resources.<DD><CODE>meaning</CODE> - The meaning string, or null if not necessary (usually null). This is a string
+     to create unique messages for two otherwise identical messages. This is usually done for
+     messages used in different contexts. (For example, the same word can be used as a noun in
+     one location and as a verb in another location, and the message texts would be the same
+     but the messages would have meanings of "noun" and "verb".). May not be applicable to all
+     message plugins.<DD><CODE>desc</CODE> - The description for translators.<DD><CODE>isHidden</CODE> - Whether this message should be hidden. May not be applicable to all message
+     plugins.<DD><CODE>contentType</CODE> - Content type of the document that this message will appear in
+     (e.g. "<code>text/html</code>"). May not be applicable to all message plugins.<DD><CODE>sourcePath</CODE> - Location of a source file that this message comes from. More sources can
+     be added using <code>addSourcePath()</code>. May not be applicable to all message plugins.<DD><CODE>isPlrselMsg</CODE> - Whether this is a plural/select message.<DD><CODE>parts</CODE> - The parts that make up the message content.</DL>
+</DL>
+<HR>
 
 <A NAME="SoyMsg(long, java.lang.String, java.lang.String, java.lang.String, boolean, java.lang.String, java.lang.String, java.util.List)"><!-- --></A><H3>
 SoyMsg</H3>
@@ -292,6 +357,19 @@ getId</H3>
 public long <B>getId</B>()</PRE>
 <DL>
 <DD>Returns the unique id for this message (same across all translations).
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getAltId()"><!-- --></A><H3>
+getAltId</H3>
+<PRE>
+public long <B>getAltId</B>()</PRE>
+<DL>
+<DD>Returns the alternate unique id for this message, or -1L if not applicable.
 <P>
 <DD><DL>
 </DL>
@@ -368,6 +446,19 @@ getSourcePaths</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>getSourcePaths</B>()</PRE>
 <DL>
 <DD>Returns the location(s) of the source file(s) that this message comes from.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="isPlrselMsg()"><!-- --></A><H3>
+isPlrselMsg</H3>
+<PRE>
+public boolean <B>isPlrselMsg</B>()</PRE>
+<DL>
+<DD>Returns whether this is a plural/select message.
 <P>
 <DD><DL>
 </DL>

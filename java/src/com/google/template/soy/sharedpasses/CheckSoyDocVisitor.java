@@ -23,8 +23,6 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -34,7 +32,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
@@ -49,12 +47,10 @@ import java.util.Set;
  * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
  * keys referenced in the template.
  *
- * <p> Also checks for unnecessary usages of {@code hasData()}.
- *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p> Precondition: All template and callee names should be full names (i.e. you must execute
- * {@code PrependNamespacesVisitor} before executing this visitor).
+ * {@code SetFullCalleeNamesVisitor} before executing this visitor).
  *
  * <p> Note this visitor only works for code in Soy V2 syntax.
  *
@@ -62,6 +58,7 @@ import java.util.Set;
  * {@code SoySyntaxException} is thrown if the parameters declared in some template's SoyDoc do not
  * match the data keys referenced in that template.
  *
+ * @author Kai Huang
  */
 public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -71,12 +68,6 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
-
-  /** Whether the current file specifies optional parameters "{@code @param?}" (during pass). */
-  private boolean currFileHasOptParams;
-
-  /** Whether the current template uses the function {@code hasData()} (during pass). */
-  private boolean usesFunctionHasData;
 
   /** The GetDataKeysInExprVisitor to use for expressions in the current template (during pass). */
   private GetDataKeysInExprVisitor getDataKeysInExprVisitor;
@@ -112,7 +103,7 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     // Build templateRegistry.
     templateRegistry = new TemplateRegistry(node);
 
-    // Run pass only on the Soy files that are all in V2 syntax.
+    // Run pass only on the Soy files that are all in V2 syntax. 
     for (SoyFileNode soyFile : node.getChildren()) {
       // First determine if Soy file is all in V2 syntax.
       boolean isFileAllV2;
@@ -139,32 +130,8 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * @throws SoySyntaxException If the parameters declared in some template's SoyDoc do not match
    *     the data keys referenced in that template.
    */
-  @Override protected void visitSoyFileNode(SoyFileNode node) {
-
-    // Set currFileHasOptParams to true if this file uses '@param?' anywhere.
-    currFileHasOptParams = false;
-    OUTER: for (TemplateNode template : node.getChildren()) {
-      INNER: for (SoyDocParam param : template.getSoyDocParams()) {
-        if (!param.isRequired) {
-          // Found an optional param.
-          currFileHasOptParams = true;
-          break OUTER;
-        }
-      }
-    }
-
-    visitChildren(node);
-  }
-
-
-  /**
-   * {@inheritDoc}
-   * @throws SoySyntaxException If the parameters declared in some template's SoyDoc do not match
-   *     the data keys referenced in that template.
-   */
   @Override protected void visitTemplateNode(TemplateNode node) {
 
-    usesFunctionHasData = false;
     Set<String> dataKeys = Sets.newHashSet();  // data keys referenced in this template
     getDataKeysInExprVisitor = new GetDataKeysInExprVisitor(dataKeys);
 
@@ -180,9 +147,11 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
         // but not declared in SoyDoc.
         dataKeys.remove(param.key);
       } else if (ipi.paramKeyToCalleesMultimap.containsKey(param.key) ||
-                 ipi.mayHaveExternalIndirectParams) {
+                 ipi.mayHaveIndirectParamsInExternalCalls ||
+                 ipi.mayHaveIndirectParamsInExternalDelCalls) {
         // Good: Declared in SoyDoc and either (a) used in a call that passes all data or (b) used
-        // in an external call that passes all data, which may need the param (we can't verify).
+        // in an external call or delcall that passes all data, which may need the param (we can't
+        // verify).
       } else {
         // Bad: Declared in SoyDoc but not referenced in template.
         unusedParams.add(param.key);
@@ -197,26 +166,15 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     if (undeclaredDataKeys.size() > 0) {
-      throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+      throw SoySyntaxExceptionUtils.createWithNode(
           "Found references to data keys that are not declared in SoyDoc: " + undeclaredDataKeys,
-          null, node);
+          node);
     }
     if (unusedParams.size() > 0 && ! (node instanceof TemplateDelegateNode)) {
       // Note: The reason we allow delegate templates to declare unused params (in the if-condition
       // above) is that other implementations of the same delegate may need to use those params.
-      throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
-          "Found params declared in SoyDoc but not used in template: " + unusedParams, null, node);
-    }
-
-    // Check for unnecessary calls to function hasData().
-    if (currFileHasOptParams && usesFunctionHasData) {
-      for (SoyDocParam param : node.getSoyDocParams()) {
-        if (param.isRequired) {
-          throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
-              "Unnecessary usage of hasData() since template has at least one required parameter.",
-              null, node);
-        }
-      }
+      throw SoySyntaxExceptionUtils.createWithNode(
+          "Found params declared in SoyDoc but not used in template: " + unusedParams, node);
     }
   }
 
@@ -257,59 +215,15 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
-   * Helper for visiting a node that holds one or more expressions. For each expression, (a) checks
-   * whether it uses the function hasData() (if necessary), and (b) collects data keys referenced.
+   * Helper for visiting a node that holds one or more expressions. For each expression, collects
+   * data keys referenced.
    * @param exprHolder The node holding the expressions to be visited.
    */
   private void visitExprHolderHelper(ExprHolderNode exprHolder) {
 
     for (ExprUnion exprUnion : exprHolder.getAllExprUnions()) {
-      ExprRootNode<?> expr = exprUnion.getExpr();
-
-      if (currFileHasOptParams && !usesFunctionHasData &&
-          (new UsesFunctionHasDataVisitor()).exec(expr)) {
-        usesFunctionHasData = true;
-      }
-
-      getDataKeysInExprVisitor.exec(expr);
+      getDataKeysInExprVisitor.exec(exprUnion.getExpr());
     }
-  }
-
-
-  /**
-   * Helper to determine whether the function {@code hasData()} is called in an expression.
-   */
-  private static class UsesFunctionHasDataVisitor extends AbstractExprNodeVisitor<Boolean> {
-
-    private boolean usesFunctionHasData;
-
-    @Override public Boolean exec(ExprNode node) {
-      usesFunctionHasData = false;
-      visit(node);
-      return usesFunctionHasData;
-    }
-
-    // ------ Implementations for specific nodes. ------
-
-    @Override protected void visitFunctionNode(FunctionNode node) {
-      if (node.getFunctionName().equals("hasData")) {
-        usesFunctionHasData = true;
-      }
-    }
-
-    // ------ Fallback implementation. ------
-
-    @Override protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        for (ExprNode child : ((ParentExprNode) node).getChildren()) {
-          if (usesFunctionHasData) {
-            return;  // no need to keep searching if already found a call to hasData()
-          }
-          visit(child);
-        }
-      }
-    }
-
   }
 
 

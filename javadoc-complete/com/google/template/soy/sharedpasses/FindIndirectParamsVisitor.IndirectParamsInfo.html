@@ -53,7 +53,7 @@ function windowTitle()
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/FindUsedIjParamsVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/IsUsingIjDataVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="FindIndirectParamsVisitor.IndirectParamsInfo.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -127,11 +127,20 @@ Return value for <code>FindIndirectParamsVisitor</code>.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html#mayHaveExternalIndirectParams">mayHaveExternalIndirectParams</A></B></CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html#mayHaveIndirectParamsInExternalCalls">mayHaveIndirectParamsInExternalCalls</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Whether the template (that the pass was run on) may have indirect params in external calls
-  or delegate calls.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Whether the template (that the pass was run on) may have indirect params in external
+  basic calls.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;boolean</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html#mayHaveIndirectParamsInExternalDelCalls">mayHaveIndirectParamsInExternalDelCalls</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Whether the template (that the pass was run on) may have indirect params in external
+  delegate calls.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -153,9 +162,10 @@ Return value for <code>FindIndirectParamsVisitor</code>.
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html#FindIndirectParamsVisitor.IndirectParamsInfo(java.util.SortedMap, com.google.common.collect.Multimap, boolean)">FindIndirectParamsVisitor.IndirectParamsInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/SortedMap.html?is-external=true" title="class or interface in java.util">SortedMap</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.SoyDocParam.html" title="class in com.google.template.soy.soytree">TemplateNode.SoyDocParam</A>&gt;&nbsp;indirectParams,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html#FindIndirectParamsVisitor.IndirectParamsInfo(java.util.SortedMap, com.google.common.collect.Multimap, boolean, boolean)">FindIndirectParamsVisitor.IndirectParamsInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/SortedMap.html?is-external=true" title="class or interface in java.util">SortedMap</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.SoyDocParam.html" title="class in com.google.template.soy.soytree">TemplateNode.SoyDocParam</A>&gt;&nbsp;indirectParams,
                                              com.google.common.collect.Multimap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;&nbsp;paramKeyToCalleesMultimap,
-                                             boolean&nbsp;mayHaveExternalIndirectParams)</CODE>
+                                             boolean&nbsp;mayHaveIndirectParamsInExternalCalls,
+                                             boolean&nbsp;mayHaveIndirectParamsInExternalDelCalls)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -218,13 +228,26 @@ public final com.google.common.collect.Multimap&lt;<A HREF="http://java.sun.com/
 </DL>
 <HR>
 
-<A NAME="mayHaveExternalIndirectParams"><!-- --></A><H3>
-mayHaveExternalIndirectParams</H3>
+<A NAME="mayHaveIndirectParamsInExternalCalls"><!-- --></A><H3>
+mayHaveIndirectParamsInExternalCalls</H3>
 <PRE>
-public final boolean <B>mayHaveExternalIndirectParams</B></PRE>
+public final boolean <B>mayHaveIndirectParamsInExternalCalls</B></PRE>
 <DL>
-<DD>Whether the template (that the pass was run on) may have indirect params in external calls
-  or delegate calls.
+<DD>Whether the template (that the pass was run on) may have indirect params in external
+  basic calls.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="mayHaveIndirectParamsInExternalDelCalls"><!-- --></A><H3>
+mayHaveIndirectParamsInExternalDelCalls</H3>
+<PRE>
+public final boolean <B>mayHaveIndirectParamsInExternalDelCalls</B></PRE>
+<DL>
+<DD>Whether the template (that the pass was run on) may have indirect params in external
+  delegate calls.
 <P>
 <DL>
 </DL>
@@ -240,17 +263,19 @@ public final boolean <B>mayHaveExternalIndirectParams</B></PRE>
 </TR>
 </TABLE>
 
-<A NAME="FindIndirectParamsVisitor.IndirectParamsInfo(java.util.SortedMap, com.google.common.collect.Multimap, boolean)"><!-- --></A><H3>
+<A NAME="FindIndirectParamsVisitor.IndirectParamsInfo(java.util.SortedMap, com.google.common.collect.Multimap, boolean, boolean)"><!-- --></A><H3>
 FindIndirectParamsVisitor.IndirectParamsInfo</H3>
 <PRE>
 public <B>FindIndirectParamsVisitor.IndirectParamsInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/SortedMap.html?is-external=true" title="class or interface in java.util">SortedMap</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.SoyDocParam.html" title="class in com.google.template.soy.soytree">TemplateNode.SoyDocParam</A>&gt;&nbsp;indirectParams,
                                                     com.google.common.collect.Multimap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;&nbsp;paramKeyToCalleesMultimap,
-                                                    boolean&nbsp;mayHaveExternalIndirectParams)</PRE>
+                                                    boolean&nbsp;mayHaveIndirectParamsInExternalCalls,
+                                                    boolean&nbsp;mayHaveIndirectParamsInExternalDelCalls)</PRE>
 <DL>
 <DL>
 <DT><B>Parameters:</B><DD><CODE>indirectParams</CODE> - Indirect params of the template (that the pass was run on).<DD><CODE>paramKeyToCalleesMultimap</CODE> - Multimap from param key to callees that explicitly list the
-     param.<DD><CODE>mayHaveExternalIndirectParams</CODE> - Whether the template (that the pass was run on) may have
-     indirect params in external calls or delegate calls.</DL>
+     param.<DD><CODE>mayHaveIndirectParamsInExternalCalls</CODE> - Whether the template (that the pass was run
+     on) may have indirect params in external basic calls.<DD><CODE>mayHaveIndirectParamsInExternalDelCalls</CODE> - Whether the template (that the pass was run
+     on) may have indirect params in external delegate calls.</DL>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->
 <HR>
@@ -283,7 +308,7 @@ public <B>FindIndirectParamsVisitor.IndirectParamsInfo</B>(<A HREF="http://java.
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/FindUsedIjParamsVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../com/google/template/soy/sharedpasses/IsUsingIjDataVisitor.html" title="class in com.google.template.soy.sharedpasses"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.IndirectParamsInfo.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="FindIndirectParamsVisitor.IndirectParamsInfo.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;

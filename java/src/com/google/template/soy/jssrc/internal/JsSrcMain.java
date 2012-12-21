@@ -34,7 +34,7 @@ import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
-import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPluralSelectMsgException;
+import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPlrselMsgException;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
@@ -43,6 +43,7 @@ import com.google.template.soy.sharedpasses.IsUsingIjDataVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +59,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class JsSrcMain {
 
@@ -153,10 +155,11 @@ public class JsSrcMain {
             "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
         try {
           (new InsertMsgsVisitor(msgBundle, false)).exec(soyTree);
-        } catch (EncounteredPluralSelectMsgException e) {
-          throw new SoySyntaxException(
+        } catch (EncounteredPlrselMsgException e) {
+          throw SoySyntaxExceptionUtils.createWithNode(
               "JS code generation currently only supports plural/select messages when" +
-              " shouldGenerateGoogMsgDefs is true.");
+                  " shouldGenerateGoogMsgDefs is true.",
+              e.msgNode);
         }
       }
 

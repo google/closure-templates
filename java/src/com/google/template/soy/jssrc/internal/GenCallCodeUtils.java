@@ -16,11 +16,15 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
+import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -30,16 +34,21 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 
 /**
  * Utilities for generating JS code for calls.
  *
+ * @author Kai Huang
  */
 class GenCallCodeUtils {
 
+
+  /** All registered JS print directives. */
+  private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
 
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
@@ -66,19 +75,71 @@ class GenCallCodeUtils {
    */
   @Inject
   GenCallCodeUtils(
-      SoyJsSrcOptions jsSrcOptions, @IsUsingIjData boolean isUsingIjData,
-      JsExprTranslator jsExprTranslator, IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
+      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap, SoyJsSrcOptions jsSrcOptions,
+      @IsUsingIjData boolean isUsingIjData, JsExprTranslator jsExprTranslator,
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
     this.jsSrcOptions = jsSrcOptions;
     this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
+    this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
   }
 
 
   /**
    * Generates the JS expression for a given call (the version that doesn't pass a StringBuilder).
+   *
+   * <p> Important: If there are CallParamContentNode children whose contents are not computable as
+   * JS expressions, then this function assumes that, elsewhere, code has been generated to define
+   * their respective 'param<n>' temporary variables.
+   *
+   * @see #genCallExprHelper for code gen examples.
+   *
+   * @param callNode The call to generate code for.
+   * @param localVarTranslations The current stack of replacement JS expressions for the local
+   *     variables (and foreach-loop special functions) current in scope.
+   * @return The JS expression for the call (the version that doesn't pass a StringBuilder).
+   */
+  public JsExpr genCallExpr(
+      CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations) {
+    return genCallExprHelper(callNode, localVarTranslations, null);
+  }
+
+
+  /**
+   * Generates the JS statement for a given call (the version that passes a StringBuilder) and
+   * appends it to the given jsCodeBuilder. This method is only applicable for code style
+   * 'stringbuilder'.
+   *
+   * <p> Important: If there are CallParamContentNode children whose contents are not computable as
+   * JS expressions, then this function assumes that, elsewhere, code has been generated to define
+   * their respective 'param<n>' temporary variables.
+   *
+   * @see #genCallExprHelper for code gen examples.
+   *
+   * @param jsCodeBuilder The code builder to append the call to.
+   * @param callNode The call to generate code for.
+   * @param localVarTranslations The current stack of replacement JS expressions for the local
+   *     variables (and foreach-loop special functions) current in scope.
+   */
+  public void genAndAppendCallStmt(
+      JsCodeBuilder jsCodeBuilder, CallNode callNode,
+      Deque<Map<String, JsExpr>> localVarTranslations) {
+
+    if (jsSrcOptions.getCodeStyle() != SoyJsSrcOptions.CodeStyle.STRINGBUILDER) {
+      throw new AssertionError();
+    }
+
+    JsExpr callExpr =
+        genCallExprHelper(callNode, localVarTranslations, jsCodeBuilder.getOutputVarName());
+    jsCodeBuilder.indent().append(callExpr.getText(), ";\n");
+  }
+
+
+  /**
+   * Private helper for {@code genCallExpr()} and {@code genAndAppendCallStmt()}.
    *
    * <p> Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
@@ -105,7 +166,7 @@ class GenCallCodeUtils {
    *   some.func(opt_data)
    *   some.func(opt_data.boo.foo)
    *   some.func({goo: opt_data.moo})
-   *   some.func(soy.$$augmentData(opt_data.boo, {goo: 'Blah'}))
+   *   some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))
    *   some.func({goo: param65})
    * </pre>
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
@@ -114,19 +175,68 @@ class GenCallCodeUtils {
    * @param callNode The call to generate code for.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
+   * @param outputVarNameForStringbuilder If set to null, then this method generates a call
+   *     expression that returns the output. If nonnull, then this method generates a a call
+   *     expression that passes this given stringbuilder object to receive the output. (Note that if
+   *     this param is nonnull, then this method will assume the code style is stringbuilder without
+   *     checking it.)
    * @return The JS expression for the call (the version that doesn't pass a StringBuilder).
    */
-  public JsExpr genCallExpr(CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations) {
+  private JsExpr genCallExprHelper(
+      CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations,
+      @Nullable String outputVarNameForStringbuilder) {
 
-    String calleeExprText = (callNode instanceof CallBasicNode) ?
-        ((CallBasicNode) callNode).getCalleeName() :
-        "soy.$$getDelegateFn(soy.$$getDelegateId('" +
-            ((CallDelegateNode) callNode).getDelCalleeName() + "'))";
     JsExpr objToPass = genObjToPass(callNode, localVarTranslations);
-    return new JsExpr(
-        calleeExprText + "(" + objToPass.getText() +
-            (isUsingIjData ? ", null, opt_ijData" : "") + ")",
-        Integer.MAX_VALUE);
+
+    // Build the JS expr text for the callee.
+    String calleeExprText;
+    if (callNode instanceof CallBasicNode) {
+      // Case 1: Basic call.
+      calleeExprText = ((CallBasicNode) callNode).getCalleeName();
+    } else {
+      // Case 2: Delegate call.
+      CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
+      String calleeIdExprText =
+          "soy.$$getDelTemplateId('" + callDelegateNode.getDelCalleeName() + "')";
+      ExprRootNode<?> variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
+      String variantJsExprText;
+      if (variantSoyExpr == null) {
+        // Case 2a: Delegate call with empty variant.
+        variantJsExprText = "''";
+      } else {
+        // Case 2b: Delegate call with variant expression.
+        JsExpr variantJsExpr = jsExprTranslator.translateToJsExpr(
+            variantSoyExpr, variantSoyExpr.toSourceString(), localVarTranslations);
+        variantJsExprText = variantJsExpr.getText();
+      }
+      calleeExprText =
+          "soy.$$getDelegateFn(" +
+              calleeIdExprText + ", " + variantJsExprText + ", " +
+              (callDelegateNode.allowsEmptyDefault() ? "true" : "false") + ")";
+    }
+
+    // Generate the main call expression.
+    String callExprText;
+    if (outputVarNameForStringbuilder != null) {
+      callExprText = calleeExprText + "(" +
+          objToPass.getText() + ", " + outputVarNameForStringbuilder +
+          (isUsingIjData ? ", opt_ijData" : "") + ")";
+    } else {
+      callExprText = calleeExprText + "(" +
+          objToPass.getText() + (isUsingIjData ? ", null, opt_ijData" : "") + ")";
+    }
+
+    JsExpr result = new JsExpr(callExprText, Integer.MAX_VALUE);
+
+    // In strict mode, escaping directives may apply to the call site.
+    for (String directiveName : callNode.getEscapingDirectiveNames()) {
+      SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveName);
+      Preconditions.checkNotNull(directive,
+          "Contextual autoescaping produced a bogus directive: " + directiveName);
+      result = directive.applyForJsSrc(result, ImmutableList.<JsExpr>of());
+    }
+
+    return result;
   }
 
 
@@ -158,7 +268,7 @@ class GenCallCodeUtils {
    *   opt_data
    *   opt_data.boo.foo
    *   {goo: opt_data.moo}
-   *   soy.$$augmentData(opt_data.boo, {goo: 'Blah'})
+   *   soy.$$augmentMap(opt_data.boo, {goo: 'Blah'})
    *   {goo: param65}
    * </pre>
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
@@ -177,7 +287,7 @@ class GenCallCodeUtils {
       dataToPass = new JsExpr("opt_data", Integer.MAX_VALUE);
     } else if (callNode.isPassingData()) {
       dataToPass = jsExprTranslator.translateToJsExpr(
-          callNode.getExpr(), callNode.getExprText(), localVarTranslations);
+          callNode.getDataExpr(), null, localVarTranslations);
     } else {
       dataToPass = new JsExpr("null", Integer.MAX_VALUE);
     }
@@ -189,7 +299,7 @@ class GenCallCodeUtils {
 
     // ------ Build an object literal containing the additional params ------
     StringBuilder paramsObjSb = new StringBuilder();
-    paramsObjSb.append("{");
+    paramsObjSb.append('{');
 
     boolean isFirst = true;
     for (CallParamNode child : callNode.getChildren()) {
@@ -211,31 +321,38 @@ class GenCallCodeUtils {
 
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;
-
+        JsExpr valueJsExpr;
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
-          List<JsExpr> cpcnJsExprs =
-              genJsExprsVisitorFactory.create(localVarTranslations).exec(cpcn);
-          JsExpr valueJsExpr = JsExprUtils.concatJsExprs(cpcnJsExprs);
-          paramsObjSb.append(valueJsExpr.getText());
-
+          valueJsExpr = JsExprUtils.concatJsExprs(
+              genJsExprsVisitorFactory.create(localVarTranslations).exec(cpcn));
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.
+          String paramExpr = "param" + cpcn.getId();
           if (jsSrcOptions.getCodeStyle() == SoyJsSrcOptions.CodeStyle.STRINGBUILDER) {
-            paramsObjSb.append("param").append(cpcn.getId()).append(".toString()");
-          } else {
-            paramsObjSb.append("param").append(cpcn.getId());
+            paramExpr += ".toString()";
           }
+          valueJsExpr = new JsExpr(paramExpr, Integer.MAX_VALUE);
         }
+
+        // If the param node had a content kind specified, it was autoescaped in the
+        // corresponding context. Hence the result of evaluating the param block is wrapped
+        // in a SanitizedContent instance of the appropriate kind.
+
+        // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
+        // "new SanitizedHtml"), or null if the node has no 'kind' attribute.
+        valueJsExpr = JsExprUtils.maybeWrapAsSanitizedContent(cpcn.getContentKind(), valueJsExpr);
+
+        paramsObjSb.append(valueJsExpr.getText());
       }
     }
 
-    paramsObjSb.append("}");
+    paramsObjSb.append('}');
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.isPassingData()) {
       return new JsExpr(
-          "soy.$$augmentData(" + dataToPass.getText() + ", " + paramsObjSb.toString() + ")",
+          "soy.$$augmentMap(" + dataToPass.getText() + ", " + paramsObjSb.toString() + ")",
           Integer.MAX_VALUE);
     } else {
       return new JsExpr(paramsObjSb.toString(), Integer.MAX_VALUE);

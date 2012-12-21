@@ -98,7 +98,7 @@ Class ForNode</H2>
                       <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.soytree.ForNode</B>
 </PRE>
 <DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ConditionalBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ConditionalBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A></DD>
+<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockCommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockCommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ConditionalBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ConditionalBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A></DD>
 </DL>
 <HR>
 <DL>
@@ -183,7 +183,7 @@ Node representing a 'for' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/ForNode.html#getAllExprUnions()">getAllExprUnions</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the list of expressions in this node.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the list of expressions in this node.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -191,7 +191,7 @@ Node representing a 'for' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/ForNode.html#getKind()">getKind</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets this node's kind (corresponding to this node's specific type).</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns this node's kind (corresponding to this node's specific type).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -223,7 +223,7 @@ Node representing a 'for' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/ForNode.html#getVarName()">getVarName</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the name of this node's local variable (without the preceding '$').</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the name of this node's local variable (without the preceding '$').</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.soytree.AbstractParentCommandNode"><!-- --></A>
@@ -250,7 +250,7 @@ Node representing a 'for' statement.
 <TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getLocation()">getLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setLocation(com.google.template.soy.base.SourceLocation)">setLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNode"><!-- --></A>
@@ -296,6 +296,15 @@ Node representing a 'for' statement.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#getNearestAncestor(java.lang.Class)">getNearestAncestor</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#hasAncestor(java.lang.Class)">hasAncestor</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#setParent(com.google.template.soy.basetree.ParentNode)">setParent</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#toSourceString()">toSourceString</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#toTreeString(int)">toTreeString</A></CODE></TD>
+</TR>
+</TABLE>
+&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.soytree.SoyNode.CommandNode"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
+<TH ALIGN="left"><B>Methods inherited from interface com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A></B></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html#getCommandName()">getCommandName</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html#getCommandText()">getCommandText</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html#getTagString()">getTagString</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -352,14 +361,13 @@ getKind</H3>
 public <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</A> <B>getKind</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">SoyNode</A></CODE></B></DD>
-<DD>Gets this node's kind (corresponding to this node's specific type).
+<DD>Returns this node's kind (corresponding to this node's specific type).
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">getKind</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>This node's kind (corresponding to this node's specific type).</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -370,14 +378,13 @@ getVarName</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getVarName</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html#getVarName()">SoyNode.LocalVarNode</A></CODE></B></DD>
-<DD>Gets the name of this node's local variable (without the preceding '$').
+<DD>Returns the name of this node's local variable (without the preceding '$').
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html#getVarName()">getVarName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>The name of this node's local variable (without the preceding '$').</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -420,14 +427,13 @@ getAllExprUnions</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/ExprUnion.html" title="class in com.google.template.soy.soytree">ExprUnion</A>&gt; <B>getAllExprUnions</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html#getAllExprUnions()">SoyNode.ExprHolderNode</A></CODE></B></DD>
-<DD>Gets the list of expressions in this node.
+<DD>Returns the list of expressions in this node.
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html#getAllExprUnions()">getAllExprUnions</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>The list of expressions in this node.</DL>
+</DL>
 </DD>
 </DL>
 <HR>

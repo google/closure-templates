@@ -26,6 +26,7 @@ import com.google.template.soy.basetree.AbstractNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
@@ -33,8 +34,8 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   /** The id for this node. */
   private int id;
 
-  /** The first line of the node in the file from which it was parsed or derived. */
-  private SourceLocation location = SourceLocation.UNKNOWN;
+  /** The first line in the file from which this node was parsed or derived. */
+  private SourceLocation srcLoc;
 
   /** The syntax version of this node. Not final -- may be adjusted by subclass constructors. */
   private SyntaxVersion syntaxVersion;
@@ -46,6 +47,7 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   protected AbstractSoyNode(int id) {
     Preconditions.checkNotNull(id);
     this.id = id;
+    srcLoc = SourceLocation.UNKNOWN;
     // Assumes this node follows V2 syntax. Subclass constructors can modify this value.
     syntaxVersion = SyntaxVersion.V2;
   }
@@ -58,7 +60,7 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   protected AbstractSoyNode(AbstractSoyNode orig) {
     super(orig);
     this.id = orig.id;
-    this.location = orig.location;
+    this.srcLoc = orig.srcLoc;
     this.syntaxVersion = orig.syntaxVersion;
   }
 
@@ -74,16 +76,14 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
 
   /** The first line of the node in the file from which it was parsed or derived. */
-  @Override public SourceLocation getLocation() {
-    return location;
+  @Override public SourceLocation getSourceLocation() {
+    return srcLoc;
   }
 
 
-  @Override public void setLocation(SourceLocation location) {
-    if (location == null) {
-      throw new NullPointerException();
-    }
-    this.location = location;
+  @Override public void setSourceLocation(SourceLocation srcLoc) {
+    Preconditions.checkNotNull(srcLoc);
+    this.srcLoc = srcLoc;
   }
 
 

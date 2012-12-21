@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 
@@ -27,6 +28,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SoyData.
  *
+ * @author Kai Huang
  */
 public class SoyDataTest extends TestCase {
 
@@ -46,6 +48,11 @@ public class SoyDataTest extends TestCase {
         "goo",
         ((SoyListData) SoyData.createFromExistingData(ImmutableList.of("goo")))
             .getString(0));
+    assertEquals(
+        "hoo",
+        ((SoyListData) SoyData.createFromExistingData(ImmutableSet.of("hoo")))
+            .getString(0));
+
     assertEquals(3.14, SoyData.createFromExistingData(3.14).floatValue());
     assertEquals(3.14F, (float) SoyData.createFromExistingData(3.14F).floatValue());
   }

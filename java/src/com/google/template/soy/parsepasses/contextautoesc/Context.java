@@ -16,8 +16,13 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+
 import java.util.List;
+
 import javax.annotation.Nullable;
 
 /**
@@ -39,6 +44,7 @@ import javax.annotation.Nullable;
  * print command, it may clone a template for each context in which it is called, using the
  * {@link Context#packedBits bitpacked} form of the context to generate a unique template name.
  *
+ * @author Mike Samuel
  */
 public final class Context {
 
@@ -131,6 +137,12 @@ public final class Context {
 
   /** Inside a {@code <script>} element body.  The same caveat applies here as to {@link #CSS}. */
   public static final Context JS = new Context(State.JS).derive(JsFollowingSlash.REGEX);
+
+  /** Plain text, with no escaping. */
+  public static final Context TEXT = new Context(State.TEXT);
+
+  /** Start of a URI. */
+  public static final Context URI_START = new Context(State.URI).derive(UriPart.START);
 
   /** A special state transitioned to if the CSS/HTML/JS parser cannot compute the next context. */
   public static final Context ERROR = new Context(State.ERROR);
@@ -335,6 +347,7 @@ public final class Context {
         }
         break;
       case SINGLE_QUOTE:
+      case DOUBLE_QUOTE:
         if (!escapingMode.isHtmlEmbeddable) {
           // Some modes, like JS and CSS value modes, might insert quotes to make
           // a quoted string, so make sure to escape those as HTML.
@@ -347,7 +360,6 @@ public final class Context {
           extraEscapingMode = EscapingMode.ESCAPE_HTML_ATTRIBUTE;
         }
         break;
-      case DOUBLE_QUOTE:
       case NONE:
         break;
     }
@@ -371,6 +383,10 @@ public final class Context {
         default:
           return true;
       }
+    } else if (mode == EscapingMode.TEXT) {
+      // The TEXT directive may only be used in TEXT mode; in any other context, it would act as
+      // autoescape-cancelling.
+      return this.equals(TEXT);
     } else if (delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
       // Need ESCAPE_HTML_ATTRIBUTE_NOSPACE instead.
       if (mode == EscapingMode.ESCAPE_HTML || mode == EscapingMode.ESCAPE_HTML_ATTRIBUTE ||
@@ -465,6 +481,7 @@ public final class Context {
    * @return {@link #ERROR} when there is no such context consistent with both.
    */
   public static Context union(Context a, Context b) {
+    // TODO(gboyer): Add a test that TEXT doesn't union with any other type.
     if (a.equals(b)) {
       return a;
     }
@@ -534,6 +551,139 @@ public final class Context {
     return sb.append(')').toString();
   }
 
+  /**
+   * A map from {@link ContentKind} to {@link Context} such that contextual autoescaping of a block
+   * of Soy code with the corresponding start context results in a value that adheres to the
+   * contract of {@link com.google.template.soy.data.SanitizedContent} of this kind.
+   */
+  private static final ImmutableMap<ContentKind, Context> CONTENT_KIND_TO_START_CONTEXT_MAP =
+      ImmutableMap.<ContentKind, Context>builder()
+          .put(ContentKind.CSS, CSS)
+          .put(ContentKind.HTML, HTML_PCDATA)
+          .put(ContentKind.ATTRIBUTES, new Context(State.HTML_TAG))
+          .put(ContentKind.JS, JS)
+          .put(ContentKind.URI, URI_START)
+          .put(ContentKind.TEXT, TEXT)
+          .build();
+
+
+  /**
+   * Returns the autoescacpe {@link Context} that produces sanitized content of the given
+   * {@link ContentKind}.
+   *
+   * <p>
+   * Given a {@link ContentKind}, returns the corresponding {@link Context} such that contextual
+   * autoescaping of a block of Soy code with that context as the start context results in a value
+   * that adheres to the contract of {@link com.google.template.soy.data.SanitizedContent} of the
+   * given kind.
+   */
+  public static Context getStartContextForContentKind(ContentKind contentKind) {
+    return Preconditions.checkNotNull(Context.CONTENT_KIND_TO_START_CONTEXT_MAP.get(contentKind));
+  }
+
+
+  /**
+   * Determines whether a particular context is valid at the start of a block of a particular
+   * content kind.
+   */
+  public static boolean isValidStartContextForContentKind(
+      ContentKind contentKind, Context context) {
+    switch (contentKind) {
+      case ATTRIBUTES:
+        // Allow HTML attribute names, regardless of the kind of attribute (e.g. plain text)
+        // or immediately after an open tag.
+        return context.state == State.HTML_ATTRIBUTE_NAME || context.state == State.HTML_TAG;
+      case URI:
+        // Ensure it's at the start, but don't worry about single versus double quotes.
+        return context.state == State.URI && context.uriPart == UriPart.START;
+      default:
+        return context.equals(getStartContextForContentKind(contentKind));
+    }
+  }
+
+
+  /**
+   * Determines whether a particular context is valid for the end of a block of a particular
+   * content kind.
+   */
+  public static boolean isValidEndContextForContentKind(ContentKind contentKind, Context context) {
+    switch (contentKind) {
+      case CSS:
+        return context.equals(CSS);
+      case HTML:
+        return context.equals(HTML_PCDATA);
+      case ATTRIBUTES:
+        // Allow any html attribute context or html tag context. HTML_TAG is needed for constructs
+        // like "checked" that don't require an attribute value. Explicitly disallow
+        // HTML_NORMAL_ATTR_VALUE (e.g. foo={$x} without quotes) to help catch cases where
+        // attributes aren't safely composable (e.g. foo={$x}checked would end up with one long
+        // attribute value, whereas foo="{$x}"checked would be parsed as intended).
+        return context.state == State.HTML_ATTRIBUTE_NAME || context.state == State.HTML_TAG;
+      case JS:
+        // Just ensure the state is JS -- don't worry about whether a regex is coming or not.
+        return context.state == State.JS;
+      case URI:
+        // Ensure that the URI content is non-empty.
+        return context.state == State.URI && context.uriPart != UriPart.START;
+      case TEXT:
+        return context.equals(TEXT);
+      default:
+        throw new IllegalArgumentException("Specified content kind has no associated end context.");
+    }
+  }
+
+
+  /**
+   * Returns a plausible human-readable description of a context mismatch;
+   *
+   * This assumes that the provided context is an invalid end context for the particular content
+   * kind.
+   */
+  public static String getLikelyEndContextMismatchCause(ContentKind contentKind, Context context) {
+    Preconditions.checkArgument(!isValidEndContextForContentKind(contentKind, context));
+    if (contentKind == ContentKind.ATTRIBUTES) {
+      // Special error message for ATTRIBUTES since it has some specific logic.
+      return "an unterminated attribute value, or ending with an unquoted attribute";
+    }
+    switch (context.state) {
+      case HTML_TAG_NAME:
+      case HTML_TAG:
+      case HTML_ATTRIBUTE_NAME:
+      case HTML_NORMAL_ATTR_VALUE:
+        return "an unterminated HTML tag or attribute";
+
+      case CSS:
+        return "an unclosed style block or attribute";
+
+      case JS:
+        return "an unclosed script block or attribute";
+
+      case CSS_COMMENT:
+      case HTML_COMMENT:
+      case JS_LINE_COMMENT:
+      case JS_BLOCK_COMMENT:
+        return "an unterminated comment";
+
+      case CSS_DQ_STRING:
+      case CSS_SQ_STRING:
+      case JS_DQ_STRING:
+      case JS_SQ_STRING:
+        return "an unterminated string literal";
+
+      case URI:
+      case CSS_URI:
+      case CSS_DQ_URI:
+      case CSS_SQ_URI:
+        return "an unterminated or empty URI";
+
+      case JS_REGEX:
+        return "an unterminated regular expression";
+
+      default:
+        return "unknown to compiler";
+    }
+  }
+
 
   /**
    * A state in the parse of an HTML document.
@@ -559,11 +709,11 @@ public final class Context {
     HTML_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
 
     /** Before an HTML attribute or the end of a tag. */
-    HTML_TAG(EscapingMode.FILTER_HTML_ATTRIBUTE),
+    HTML_TAG(EscapingMode.FILTER_HTML_ATTRIBUTES),
     // TODO: Do we need to filter out names that look like JS/CSS/URI attribute names.
 
     /** Inside an HTML attribute name. */
-    HTML_ATTRIBUTE_NAME(EscapingMode.FILTER_HTML_ATTRIBUTE),
+    HTML_ATTRIBUTE_NAME(EscapingMode.FILTER_HTML_ATTRIBUTES),
 
     /** Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag. */
     HTML_BEFORE_ATTRIBUTE_VALUE,
@@ -616,14 +766,17 @@ public final class Context {
     /** In an HTML attribute whose content is a URI. */
     URI(EscapingMode.ESCAPE_HTML_ATTRIBUTE),
 
+    /** Plain text; no escaping. */
+    TEXT(EscapingMode.TEXT),
+
     /** Not inside any valid HTML/CSS/JS construct. */
     ERROR,
     ;
 
     /**
      * The escaping mode appropriate for dynamic content inserted at this state.
-     * Null if there is no appropriate escaping convention to use as for comments which do not have
-     * escaping conventions.
+     * Null if there is no appropriate escaping convention to use as for comments or plain text
+     * which do not have escaping conventions.
      */
     private final @Nullable EscapingMode escapingMode;
 

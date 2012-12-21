@@ -212,7 +212,7 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitDataRefIndexNode(com.google.template.soy.exprtree.DataRefIndexNode)">visitDataRefIndexNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefIndexNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitDataRefAccessExprNode(com.google.template.soy.exprtree.DataRefAccessExprNode)">visitDataRefAccessExprNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -220,7 +220,23 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitDataRefKeyNode(com.google.template.soy.exprtree.DataRefKeyNode)">visitDataRefKeyNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefKeyNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitDataRefAccessIndexNode(com.google.template.soy.exprtree.DataRefAccessIndexNode)">visitDataRefAccessIndexNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitDataRefAccessKeyNode(com.google.template.soy.exprtree.DataRefAccessKeyNode)">visitDataRefAccessKeyNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitDataRefAccessNode(com.google.template.soy.exprtree.DataRefAccessNode)">visitDataRefAccessNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -381,6 +397,14 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitNotOpNode(com.google.template.soy.exprtree.OperatorNodes.NotOpNode)">visitNotOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotOpNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html#visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)">visitNullCoalescingOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -667,10 +691,10 @@ protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractRetur
 </DL>
 <HR>
 
-<A NAME="visitDataRefKeyNode(com.google.template.soy.exprtree.DataRefKeyNode)"><!-- --></A><H3>
-visitDataRefKeyNode</H3>
+<A NAME="visitDataRefAccessKeyNode(com.google.template.soy.exprtree.DataRefAccessKeyNode)"><!-- --></A><H3>
+visitDataRefAccessKeyNode</H3>
 <PRE>
-protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitDataRefKeyNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefKeyNode</A>&nbsp;node)</PRE>
+protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitDataRefAccessKeyNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -678,10 +702,32 @@ protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractRetur
 </DL>
 <HR>
 
-<A NAME="visitDataRefIndexNode(com.google.template.soy.exprtree.DataRefIndexNode)"><!-- --></A><H3>
-visitDataRefIndexNode</H3>
+<A NAME="visitDataRefAccessIndexNode(com.google.template.soy.exprtree.DataRefAccessIndexNode)"><!-- --></A><H3>
+visitDataRefAccessIndexNode</H3>
 <PRE>
-protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitDataRefIndexNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefIndexNode</A>&nbsp;node)</PRE>
+protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitDataRefAccessIndexNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitDataRefAccessExprNode(com.google.template.soy.exprtree.DataRefAccessExprNode)"><!-- --></A><H3>
+visitDataRefAccessExprNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitDataRefAccessExprNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitDataRefAccessNode(com.google.template.soy.exprtree.DataRefAccessNode)"><!-- --></A><H3>
+visitDataRefAccessNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitDataRefAccessNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -869,6 +915,17 @@ protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractRetur
 visitConditionalOpNode</H3>
 <PRE>
 protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitConditionalOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.ConditionalOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ConditionalOpNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)"><!-- --></A><H3>
+visitNullCoalescingOpNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="type parameter in AbstractReturningExprNodeVisitor">R</A> <B>visitNullCoalescingOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>

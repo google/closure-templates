@@ -124,6 +124,15 @@ Common utilities for dealing with JS expressions.
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds one JS expression that computes the concatenation of the given JS expressions.</TD>
 </TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/jssrc/restricted/JsExpr.html" title="class in com.google.template.soy.jssrc.restricted">JsExpr</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/jssrc/restricted/JsExprUtils.html#maybeWrapAsSanitizedContent(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.jssrc.restricted.JsExpr)">maybeWrapAsSanitizedContent</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                            <A HREF="../../../../../../com/google/template/soy/jssrc/restricted/JsExpr.html" title="class in com.google.template.soy.jssrc.restricted">JsExpr</A>&nbsp;jsExpr)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Wraps with the proper SanitizedContent constructor if contentKind is non-null.</TD>
+</TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
@@ -159,6 +168,21 @@ public static <A HREF="../../../../../../com/google/template/soy/jssrc/restricte
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>jsExprs</CODE> - The JS expressions to concatentate.
 <DT><B>Returns:</B><DD>One JS expression that computes the concatenation of the given JS expressions.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="maybeWrapAsSanitizedContent(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.jssrc.restricted.JsExpr)"><!-- --></A><H3>
+maybeWrapAsSanitizedContent</H3>
+<PRE>
+public static <A HREF="../../../../../../com/google/template/soy/jssrc/restricted/JsExpr.html" title="class in com.google.template.soy.jssrc.restricted">JsExpr</A> <B>maybeWrapAsSanitizedContent</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                 <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                                 <A HREF="../../../../../../com/google/template/soy/jssrc/restricted/JsExpr.html" title="class in com.google.template.soy.jssrc.restricted">JsExpr</A>&nbsp;jsExpr)</PRE>
+<DL>
+<DD>Wraps with the proper SanitizedContent constructor if contentKind is non-null.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>contentKind</CODE> - The kind of sanitized content.<DD><CODE>jsExpr</CODE> - The expression to wrap.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

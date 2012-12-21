@@ -33,6 +33,8 @@ import javax.inject.Singleton;
 /**
  * Implementation of EvalVisitorFactory for Tofu backend.
  *
+ * @author Mark Knichel
+ * @author Kai Huang
  */
 @Singleton
 class TofuEvalVisitorFactory implements EvalVisitorFactory {
@@ -50,7 +52,7 @@ class TofuEvalVisitorFactory implements EvalVisitorFactory {
 
   @Override
   public EvalVisitor create(
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+      SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
 
     return new TofuEvalVisitor(soyTofuFunctionsMap, data, ijData, env);
   }

@@ -16,16 +16,22 @@
 
 package com.google.template.soy.jssrc.restricted;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
 
 /**
  * Common utilities for dealing with JS expressions.
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
+ * @author Kai Huang
  */
 public class JsExprUtils {
 
@@ -69,7 +75,7 @@ public class JsExprUtils {
       }
 
       if (needsProtection) {
-        resultSb.append("(").append(jsExpr.getText()).append(")");
+        resultSb.append('(').append(jsExpr.getText()).append(')');
       } else {
         resultSb.append(jsExpr.getText());
       }
@@ -78,4 +84,35 @@ public class JsExprUtils {
     return new JsExpr(resultSb.toString(), plusOpPrec);
   }
 
+
+  /**
+   * Wraps an expression in a function call.
+   *
+   * @param functionExprText expression for the function to invoke, such as a function name or
+   *     constructor phrase (such as "new SomeClass").
+   * @param jsExpr the expression to compute the argument to the function
+   * @return a JS expression consisting of a call to the specified function, applied to the
+   *     provided expression.
+   */
+  @VisibleForTesting
+  static JsExpr wrapWithFunction(String functionExprText, JsExpr jsExpr) {
+    Preconditions.checkNotNull(functionExprText);
+    return new JsExpr(functionExprText + "(" + jsExpr.getText() + ")", Integer.MAX_VALUE);
+  }
+
+
+  /**
+   * Wraps with the proper SanitizedContent constructor if contentKind is non-null.
+   *
+   * @param contentKind The kind of sanitized content.
+   * @param jsExpr The expression to wrap.
+   */
+  public static JsExpr maybeWrapAsSanitizedContent(
+      @Nullable ContentKind contentKind, JsExpr jsExpr) {
+    if (contentKind == null) {
+      return jsExpr;
+    } else {
+      return wrapWithFunction(NodeContentKinds.toJsSanitizedContentOrdainer(contentKind), jsExpr);
+    }
+  }
 }

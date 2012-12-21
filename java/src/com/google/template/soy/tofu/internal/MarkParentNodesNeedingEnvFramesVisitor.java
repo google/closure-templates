@@ -28,6 +28,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * Visitor for marking which parent nodes need env frames during interpretation (using
  * {@code ParentNode.setNeedsEnvFrameDuringInterp()}. This should slightly improve rendering speed.
  *
+ * @author Kai Huang
  */
 class MarkParentNodesNeedingEnvFramesVisitor extends AbstractSoyNodeVisitor<Void> {
 

@@ -43,7 +43,7 @@ public class EscapingModeTest extends TestCase {
   public final void testEscapingModesExist() throws Throwable {
     for (EscapingMode mode : EscapingMode.values()) {
       assertTrue("Bad directive " + mode.directiveName, mode.directiveName.startsWith("|"));
-      if (mode == EscapingMode.NO_AUTOESCAPE) {
+      if (mode == EscapingMode.NO_AUTOESCAPE || mode == EscapingMode.TEXT) {
         continue;
       }
       // Some sanity checks.
@@ -56,7 +56,7 @@ public class EscapingModeTest extends TestCase {
 
   public final void testHtmlEmbeddable() throws Throwable {
     for (EscapingMode mode : EscapingMode.values()) {
-      if (mode == EscapingMode.NO_AUTOESCAPE) {
+      if (mode == EscapingMode.NO_AUTOESCAPE || mode == EscapingMode.TEXT) {
         continue;
       }
 

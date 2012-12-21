@@ -19,14 +19,11 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.BaseUtils;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -43,10 +40,11 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     implements StandaloneNode, SplitLevelTopNode<CallParamNode>, StatementNode, ExprHolderNode,
-    MsgPlaceholderInitialContentNode {
+    MsgPlaceholderInitialNode {
 
 
   /**
@@ -58,17 +56,17 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
     private final String commandText;
     private final boolean isPassingData;
-    @Nullable private final String exprText;
+    @Nullable private final ExprRootNode<?> dataExpr;
     @Nullable private final String userSuppliedPlaceholderName;
-    private final SyntaxVersion syntaxVersion;
+    protected final SyntaxVersion syntaxVersion;
 
     public CommandTextInfo(
-        String commandText, boolean isPassingData, @Nullable String exprText,
+        String commandText, boolean isPassingData, @Nullable ExprRootNode<?> dataExpr,
         @Nullable String userSuppliedPlaceholderName, SyntaxVersion syntaxVersion) {
-      Preconditions.checkArgument(isPassingData || exprText == null);
+      Preconditions.checkArgument(isPassingData || dataExpr == null);
       this.commandText = commandText;
       this.isPassingData = isPassingData;
-      this.exprText = exprText;
+      this.dataExpr = dataExpr;
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
       this.syntaxVersion = syntaxVersion;
     }
@@ -86,10 +84,17 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   private final boolean isPassingAllData;
 
   /** The expression for the data to pass, or null if not applicable. */
-  @Nullable private final ExprRootNode<?> expr;
+  @Nullable private final ExprRootNode<?> dataExpr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
+
+  /**
+   * Escaping directives names (including the vertical bar) to apply to the return value. With
+   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if
+   * the template's return value is the correct SanitizedContent object.
+   */
+  private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
 
 
   /**
@@ -97,63 +102,50 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    *
    * @param id The id for this node.
    * @param commandTextInfo All the info derived from the command text.
+   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
+   *     This is inferred by the autoescaper and not part of the syntax, and thus is not in the
+   *     CommandTextInfo.
    */
-  protected CallNode(int id, String commandName, CommandTextInfo commandTextInfo) {
+  protected CallNode(int id, String commandName, CommandTextInfo commandTextInfo,
+      ImmutableList<String> escapingDirectiveNames) {
 
     super(id, commandName, commandTextInfo.commandText);
 
     this.isPassingData = commandTextInfo.isPassingData;
-    this.isPassingAllData = commandTextInfo.isPassingData && commandTextInfo.exprText == null;
-    maybeSetSyntaxVersion(commandTextInfo.syntaxVersion);
-
-    if (commandTextInfo.exprText != null) {
-      try {
-        this.expr = (new ExpressionParser(commandTextInfo.exprText)).parseExpression();
-      } catch (TokenMgrError tme) {
-        throw createExceptionForInvalidExpr(commandTextInfo.commandText, tme);
-      } catch (ParseException pe) {
-        throw createExceptionForInvalidExpr(commandTextInfo.commandText, pe);
-      }
-    } else {
-      this.expr = null;
-    }
-
+    this.isPassingAllData = commandTextInfo.isPassingData && commandTextInfo.dataExpr == null;
+    this.dataExpr = commandTextInfo.dataExpr;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
-  }
-
-
-  /**
-   * Private helper for constructor {@link #CallNode(int, String, CommandTextInfo)}.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidExpr(String commandText, Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid expression in 'call' command text \"" + commandText + "\".", cause);
+    this.escapingDirectiveNames = escapingDirectiveNames;
+    maybeSetSyntaxVersion(commandTextInfo.syntaxVersion);
   }
 
 
   /**
    * Private helper function for subclass constructors to parse the 'data' attribute.
+   *
    * @param dataAttr The 'data' attribute in a call.
-   * @return A pair (isPassingData, exprText) where exprText may be null.
+   * @param commandTextForErrorMsgs The call command text for use in error messages.
+   * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
-  protected static final Pair<Boolean, String> parseDataAttributeHelper(String dataAttr) {
+  protected static final Pair<Boolean, ExprRootNode<?>> parseDataAttributeHelper(
+      String dataAttr, String commandTextForErrorMsgs) {
 
     boolean isPassingData;
-    String exprText;
+    ExprRootNode<?> dataExpr;
     if (dataAttr == null) {
       isPassingData = false;
-      exprText = null;
+      dataExpr = null;
     } else if (dataAttr.equals("all")) {
       isPassingData = true;
-      exprText = null;
+      dataExpr = null;
     } else {
       isPassingData = true;
-      exprText = dataAttr;
+      dataExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+          dataAttr,
+          "Invalid expression in call command text \"" + commandTextForErrorMsgs + "\".");
     }
-    return Pair.of(isPassingData, exprText);
+
+    return Pair.<Boolean, ExprRootNode<?>>of(isPassingData, dataExpr);
   }
 
 
@@ -165,8 +157,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     super(orig);
     this.isPassingData = orig.isPassingData;
     this.isPassingAllData = orig.isPassingAllData;
-    this.expr = (orig.expr != null) ? orig.expr.clone() : null;
+    this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.clone() : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+    this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }
 
 
@@ -179,19 +172,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** Returns whether we're passing all of the data (i.e. data="all"). */
   public boolean isPassingAllData() {
     return isPassingAllData;
-
-  }
-
-
-  /** Returns the expression text for the data to pass, or null if not applicable. */
-  public String getExprText() {
-    return (expr != null) ? expr.toSourceString() : null;
+  
   }
 
 
   /** Returns the expression for the data to pass, or null if not applicable. */
-  public ExprRootNode<?> getExpr() {
-    return expr;
+  @Nullable public ExprRootNode<?> getDataExpr() {
+    return dataExpr;
   }
 
 
@@ -211,8 +198,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
 
   @Override public List<ExprUnion> getAllExprUnions() {
-    return (expr != null) ?
-        ImmutableList.of(new ExprUnion(expr)) : Collections.<ExprUnion>emptyList();
+    return (dataExpr != null) ?
+        ImmutableList.of(new ExprUnion(dataExpr)) : Collections.<ExprUnion>emptyList();
   }
 
 
@@ -237,4 +224,21 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return (BlockNode) super.getParent();
   }
 
+
+  /**
+   * Sets the inferred escaping directives.
+   */
+  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
+    this.escapingDirectiveNames = escapingDirectiveNames;
+  }
+
+
+  /**
+   * Returns the escaping directives, applied from left to right.
+   *
+   * It is an error to call this before the contextual rewriter has been run.
+   */
+  public ImmutableList<String> getEscapingDirectiveNames() {
+    return escapingDirectiveNames;
+  }
 }

@@ -35,8 +35,9 @@ import javax.inject.Singleton;
 
 /**
  * A directive that truncates a string to a maximum length if it is too long, optionally adding
- * ellipsis.
+ * ellipsis. 
  *
+ * @author Kai Huang
  */
 @Singleton
 public class TruncateDirective extends SoyAbstractTofuPrintDirective
@@ -62,7 +63,7 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
 
     int maxLen;
     try {
@@ -75,7 +76,7 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
 
     String str = value.toString();
     if (str.length() <= maxLen) {
-      return str;  // no need to truncate
+      return SoyData.createFromExistingData(str);  // no need to truncate
     }
 
     boolean doAddEllipsis;
@@ -114,7 +115,7 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
       str += "...";
     }
 
-    return str;
+    return SoyData.createFromExistingData(str);
   }
 
 

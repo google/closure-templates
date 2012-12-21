@@ -22,6 +22,7 @@ import junit.framework.*;
 /**
  * Unit tests for RawTextNode.
  *
+ * @author Kai Huang
  */
 public class RawTextNodeTest extends TestCase {
 

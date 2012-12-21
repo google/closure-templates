@@ -24,18 +24,21 @@ import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
+import junit.framework.TestCase;
+
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 
 /**
+ * @author Mike Samuel
  */
 public class CheckFunctionCallsVisitorTest extends TestCase {
 
+
   public final void testPureFunctionOk() throws Exception {
     applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
+        "{namespace ns}\n",
         "/**",
         " * @param x",
         " * @param y",
@@ -48,9 +51,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testIncorrectArity() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:5:" +
-        " Function 'min' called with the wrong number of arguments (function call \"min($x)\").",
+        "In file no-path:7, template ns.foo:" +
+            " Function 'min' called with the wrong number of arguments" +
+            " (function call \"min($x)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -58,10 +63,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             "  {print min($x)}",
             "{/template}"));
     assertFunctionCallsInvalid(
-        "In file no-path:4:" +
-        " Function 'index' called with the wrong number of arguments" +
-        " (function call \"index()\").",
+        "In file no-path:6, template ns.foo:" +
+            " Function 'index' called with the wrong number of arguments" +
+            " (function call \"index()\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " */",
             "{template .foo}",
@@ -72,9 +78,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testNestedFunctionCall() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:6:" +
-        " Function 'min' called with the wrong number of arguments (function call \"min($x)\").",
+        "In file no-path:8, template ns.foo:" +
+            " Function 'min' called with the wrong number of arguments (function call" +
+            " \"min($x)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " * @param y",
@@ -87,9 +95,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testNotALoopVariable1() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:5:" +
-        " Error in function call \"index($x)\".  It takes a foreach loop variable.",
+        "In file no-path:7, template ns.foo:" +
+            " Function 'index' must have a foreach loop variable as its argument" +
+            " (encountered \"index($x)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -101,9 +111,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testNotALoopVariable2() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:5:" +
-        " Error in function call \"index($x.y)\".  It takes a foreach loop variable.",
+        "In file no-path:7, template ns.foo:" +
+            " Function 'index' must have a foreach loop variable as its argument" +
+            " (encountered \"index($x.y)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -115,9 +127,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testNotALoopVariable3() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:4:" +
-        " Error in function call \"index($ij.data)\".  It takes a foreach loop variable.",
+        "In file no-path:6, template ns.foo:" +
+            " Function 'index' must have a foreach loop variable as its argument" +
+            " (encountered \"index($ij.data)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " */",
             "{template .foo}",
@@ -129,9 +143,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testNotAVariable() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:5:" +
-        " Error in function call \"index($x + 1)\".  It takes a foreach loop variable.",
+        "In file no-path:7, template ns.foo:" +
+            " Function 'index' must have a foreach loop variable as its argument" +
+            " (encountered \"index($x + 1)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -143,6 +159,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testLoopVariableOk() throws Exception {
     applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
+        "{namespace ns}\n",
         "/**",
         " * @param elements",
         " */",
@@ -156,9 +173,11 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testLoopVariableNotInScopeWhenEmpty() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:8:" +
-        " Error in function call \"index($z)\".  It takes a foreach loop variable.",
+        "In file no-path:10, template ns.foo:" +
+            " Function 'index' must have a foreach loop variable as its argument" +
+            " (encountered \"index($z)\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " * @param elements",
             " */",
@@ -172,11 +191,35 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
+  public final void testQuoteKeysIfJsFunction() throws Exception {
+
+    applyCheckFunctionCallsVisitor(
+        Joiner.on('\n').join(
+            "{namespace ns}\n",
+            "/***/",
+            "{template .foo}",
+            "  {let $m: quoteKeysIfJs(['a': 1, 'b': 'blah']) /}",
+            "{/template}"));
+
+    assertFunctionCallsInvalid(
+        "In file no-path:5, template ns.foo:" +
+            " Function quoteKeysIfJs() must have a map literal as its arg" +
+            " (encountered \"quoteKeysIfJs('blah')\").",
+        Joiner.on('\n').join(
+            "{namespace ns}\n",
+            "/***/",
+            "{template .foo}",
+            "  {let $m: quoteKeysIfJs('blah') /}",
+            "{/template}"));
+  }
+
+
   public final void testUnrecognizedFunction() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:4:" +
-        " Unrecognized function 'bogus' (function call \"bogus()\").",
+        "In file no-path:6, template ns.foo:" +
+            " Unrecognized function 'bogus' (encountered function call \"bogus()\").",
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "/**",
             " */",
             "{template .foo}",
@@ -188,6 +231,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   public final void testUnrecognizedFunctionOkInV1() throws Exception {
     applyCheckFunctionCallsVisitor(
         Joiner.on('\n').join(
+            "{namespace ns}\n",
             "{template .foo}",
             "  {print bogus()}",
             "{/template}"),
@@ -198,6 +242,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   private void applyCheckFunctionCallsVisitor(String soyContent) throws Exception {
     applyCheckFunctionCallsVisitor(soyContent, false);
   }
+
 
   private void applyCheckFunctionCallsVisitor(String soyContent, boolean allowExterns)
       throws Exception {

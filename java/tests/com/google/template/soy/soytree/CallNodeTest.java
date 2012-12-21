@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 
 import junit.framework.TestCase;
@@ -24,9 +25,13 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CallNode.
  *
+ * @author Mike Samuel
  */
 public class CallNodeTest extends TestCase {
 
+
+  /** Escaping list of directive names. */
+  private static final ImmutableList<String> NO_ESCAPERS = ImmutableList.<String>of();
 
   public void testCommandText() throws SoySyntaxException {
 
@@ -44,6 +49,16 @@ public class CallNodeTest extends TestCase {
   }
 
 
+  public void testSetEscapingDirectiveNames() throws SoySyntaxException {
+    CallBasicNode callNode = new CallBasicNode(0, ".foo", null);
+    assertEquals(ImmutableList.<String>of(), callNode.getEscapingDirectiveNames());
+    callNode.setEscapingDirectiveNames(ImmutableList.of("hello", "world"));
+    assertEquals(ImmutableList.of("hello", "world"), callNode.getEscapingDirectiveNames());
+    callNode.setEscapingDirectiveNames(ImmutableList.of("bye", "world"));
+    assertEquals(ImmutableList.of("bye", "world"), callNode.getEscapingDirectiveNames());
+  }
+
+
   private void checkCommandText(String commandText) {
     checkCommandText(commandText, commandText);
   }
@@ -53,13 +68,14 @@ public class CallNodeTest extends TestCase {
 
     CallBasicNode callNode = new CallBasicNode(0, commandText, null);
     if (callNode.getCalleeName() == null) {
-      callNode.setCalleeName("testNamespace" + callNode.getPartialCalleeName());
+      callNode.setCalleeName("testNamespace" + callNode.getSrcCalleeName());
     }
 
     CallBasicNode normCallNode = new CallBasicNode(
-        0, callNode.getCalleeName(), callNode.getPartialCalleeName(), false,
-        callNode.isPassingData(), callNode.isPassingAllData(), callNode.getExprText(),
-        callNode.getUserSuppliedPlaceholderName(), callNode.getSyntaxVersion());
+        0, callNode.getCalleeName(), callNode.getSrcCalleeName(), false,
+        callNode.isPassingData(), callNode.isPassingAllData(), callNode.getDataExpr(),
+        callNode.getUserSuppliedPlaceholderName(), callNode.getSyntaxVersion(),
+        NO_ESCAPERS);
 
     assertEquals(expectedCommandText, normCallNode.getCommandText());
 
@@ -67,7 +83,7 @@ public class CallNodeTest extends TestCase {
     assertEquals(callNode.getCalleeName(), normCallNode.getCalleeName());
     assertEquals(callNode.isPassingData(), normCallNode.isPassingData());
     assertEquals(callNode.isPassingAllData(), normCallNode.isPassingAllData());
-    assertEquals(callNode.getExprText(), normCallNode.getExprText());
+    assertEquals(callNode.getDataExpr(), normCallNode.getDataExpr());
   }
 
 }

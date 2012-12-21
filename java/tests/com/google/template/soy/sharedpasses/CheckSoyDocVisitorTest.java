@@ -26,6 +26,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CheckSoyDocVisitor.
  *
+ * @author Kai Huang
  */
 public class CheckSoyDocVisitorTest extends TestCase {
 
@@ -278,6 +279,22 @@ public class CheckSoyDocVisitorTest extends TestCase {
   }
 
 
+  public void testDelegateCallVariant() throws SoySyntaxException {
+
+    String fileContent = "" +
+        "{namespace boo}\n" +
+        "\n" +
+        "/**\n" +
+        " * @param variant\n" +
+        " */\n" +
+        "{template .foo}\n" +
+        "  {delcall MagicButton variant=\"$variant\" /}\n" +
+        "{/template}\n";
+
+    runSoyFilesTestHelper(fileContent);
+  }
+
+
   public void testOnlyCheckFilesInV2() throws SoySyntaxException {
 
     String fileContent0 =
@@ -310,20 +327,6 @@ public class CheckSoyDocVisitorTest extends TestCase {
     } catch (SoySyntaxException sse) {
       assertTrue(sse.getMessage().contains(
           "Found references to data keys that are not declared in SoyDoc: [goo2]"));
-    }
-  }
-
-
-  public void testUnnecessaryUsageOfFunctionHasData() throws SoySyntaxException {
-
-    String soyDoc = "@param boo @param? foo";
-    String templateBody = "{if hasData() and $foo}{$boo}{/if}";
-    try {
-      runTemplateTestHelper(soyDoc, templateBody);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Unnecessary usage of hasData() since template has at least one required parameter."));
     }
   }
 

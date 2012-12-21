@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 /**
  * Annotation for a Soy function that's pure (e.g. can be preevaluated during optimization).
  *
+ * @author Kai Huang
  */
 @Target(TYPE)
 @Retention(RUNTIME)

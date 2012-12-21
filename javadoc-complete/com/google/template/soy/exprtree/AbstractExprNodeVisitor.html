@@ -209,7 +209,7 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefIndexNode(com.google.template.soy.exprtree.DataRefIndexNode)">visitDataRefIndexNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefIndexNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessExprNode(com.google.template.soy.exprtree.DataRefAccessExprNode)">visitDataRefAccessExprNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -217,7 +217,23 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefKeyNode(com.google.template.soy.exprtree.DataRefKeyNode)">visitDataRefKeyNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefKeyNode</A>&nbsp;node)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessIndexNode(com.google.template.soy.exprtree.DataRefAccessIndexNode)">visitDataRefAccessIndexNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessKeyNode(com.google.template.soy.exprtree.DataRefAccessKeyNode)">visitDataRefAccessKeyNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessNode(com.google.template.soy.exprtree.DataRefAccessNode)">visitDataRefAccessNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -378,6 +394,14 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNotOpNode(com.google.template.soy.exprtree.OperatorNodes.NotOpNode)">visitNotOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotOpNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)">visitNullCoalescingOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -662,10 +686,10 @@ protected void <B>visitDataRefNode</B>(<A HREF="../../../../../com/google/templa
 </DL>
 <HR>
 
-<A NAME="visitDataRefKeyNode(com.google.template.soy.exprtree.DataRefKeyNode)"><!-- --></A><H3>
-visitDataRefKeyNode</H3>
+<A NAME="visitDataRefAccessKeyNode(com.google.template.soy.exprtree.DataRefAccessKeyNode)"><!-- --></A><H3>
+visitDataRefAccessKeyNode</H3>
 <PRE>
-protected void <B>visitDataRefKeyNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefKeyNode</A>&nbsp;node)</PRE>
+protected void <B>visitDataRefAccessKeyNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -673,10 +697,32 @@ protected void <B>visitDataRefKeyNode</B>(<A HREF="../../../../../com/google/tem
 </DL>
 <HR>
 
-<A NAME="visitDataRefIndexNode(com.google.template.soy.exprtree.DataRefIndexNode)"><!-- --></A><H3>
-visitDataRefIndexNode</H3>
+<A NAME="visitDataRefAccessIndexNode(com.google.template.soy.exprtree.DataRefAccessIndexNode)"><!-- --></A><H3>
+visitDataRefAccessIndexNode</H3>
 <PRE>
-protected void <B>visitDataRefIndexNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefIndexNode</A>&nbsp;node)</PRE>
+protected void <B>visitDataRefAccessIndexNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitDataRefAccessExprNode(com.google.template.soy.exprtree.DataRefAccessExprNode)"><!-- --></A><H3>
+visitDataRefAccessExprNode</H3>
+<PRE>
+protected void <B>visitDataRefAccessExprNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitDataRefAccessNode(com.google.template.soy.exprtree.DataRefAccessNode)"><!-- --></A><H3>
+visitDataRefAccessNode</H3>
+<PRE>
+protected void <B>visitDataRefAccessNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -853,6 +899,17 @@ protected void <B>visitAndOpNode</B>(<A HREF="../../../../../com/google/template
 visitOrOpNode</H3>
 <PRE>
 protected void <B>visitOrOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.OrOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.OrOpNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)"><!-- --></A><H3>
+visitNullCoalescingOpNode</H3>
+<PRE>
+protected void <B>visitNullCoalescingOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>

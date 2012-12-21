@@ -121,6 +121,18 @@ A kind of textual content.
 <B>Enum Constant Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#ATTRIBUTES">ATTRIBUTES</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An attribute name and value, such as <code>dir="ltr"</code>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#CSS">CSS</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A CSS3 declaration, property, value or group of semicolon separated declarations.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML">HTML</A></B></CODE>
 
 <BR>
@@ -129,10 +141,11 @@ A kind of textual content.
  trust domain.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML_ATTRIBUTE">HTML_ATTRIBUTE</A></B></CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#JS">JS</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An attribute name and value, such as <code>dir="ltr"</code>.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Executable Javascript code or expression, safe for insertion in a script-tag or event
+ handler context, known to be free of any attacker-controlled scripts.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#JS_STR_CHARS">JS_STR_CHARS</A></B></CODE>
@@ -140,6 +153,12 @@ A kind of textual content.
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A sequence of code units that can appear between quotes (either single or double) in a JS
  program without causing a parse error, and without causing any side effects.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#TEXT">TEXT</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unsanitized plain-text content.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#URI">URI</A></B></CODE>
@@ -220,6 +239,21 @@ public static final <A HREF="../../../../../com/google/template/soy/data/Sanitiz
 </DL>
 <HR>
 
+<A NAME="JS"><!-- --></A><H3>
+JS</H3>
+<PRE>
+public static final <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A> <B>JS</B></PRE>
+<DL>
+<DD>Executable Javascript code or expression, safe for insertion in a script-tag or event
+ handler context, known to be free of any attacker-controlled scripts. This can either be
+ side-effect-free Javascript (such as JSON) or Javascript that entirely under Google's
+ control.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
 <A NAME="JS_STR_CHARS"><!-- --></A><H3>
 JS_STR_CHARS</H3>
 <PRE>
@@ -252,12 +286,40 @@ public static final <A HREF="../../../../../com/google/template/soy/data/Sanitiz
 </DL>
 <HR>
 
-<A NAME="HTML_ATTRIBUTE"><!-- --></A><H3>
-HTML_ATTRIBUTE</H3>
+<A NAME="ATTRIBUTES"><!-- --></A><H3>
+ATTRIBUTES</H3>
 <PRE>
-public static final <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A> <B>HTML_ATTRIBUTE</B></PRE>
+public static final <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A> <B>ATTRIBUTES</B></PRE>
 <DL>
 <DD>An attribute name and value, such as <code>dir="ltr"</code>.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="CSS"><!-- --></A><H3>
+CSS</H3>
+<PRE>
+public static final <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A> <B>CSS</B></PRE>
+<DL>
+<DD>A CSS3 declaration, property, value or group of semicolon separated declarations.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="TEXT"><!-- --></A><H3>
+TEXT</H3>
+<PRE>
+public static final <A HREF="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A> <B>TEXT</B></PRE>
+<DL>
+<DD>Unsanitized plain-text content.
+
+ This is effectively the "null" entry of this enum, and is sometimes used to explicitly mark
+ content that should never be used unescaped. Since any string is safe to use as text, being
+ of ContentKind.TEXT makes no guarantees about its safety in any other context such as HTML.
 <P>
 <DL>
 </DL>

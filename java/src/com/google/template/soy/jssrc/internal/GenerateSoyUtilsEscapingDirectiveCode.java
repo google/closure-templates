@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 import com.google.template.soy.shared.restricted.EscapingConventions;
+import com.google.template.soy.shared.restricted.TagWhitelist;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -74,6 +75,7 @@ import org.apache.tools.ant.Task;
  * There may be zero or more {@code <jsdefined>} elements which specify which functions should be
  * available in the context in which {@code <output>} is run.
  *
+ * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {
@@ -312,13 +314,17 @@ public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {
       /** The prefix to use for non-ASCII characters not in the escape map. */
       final @Nullable String nonAsciiPrefix;
 
+      /** Innocuous output for this context. */
+      final String innocuousOutput;
+
       DirectiveDigest(String directiveName, int escapesVar, int matcherVar, int filterVar,
-                      @Nullable String nonAsciiPrefix) {
+                      @Nullable String nonAsciiPrefix, String innocuousOutput) {
         this.directiveName = directiveName;
         this.escapesVar = escapesVar;
         this.matcherVar = matcherVar;
         this.filterVar = filterVar;
         this.nonAsciiPrefix = nonAsciiPrefix;
+        this.innocuousOutput = innocuousOutput;
       }
     }
 
@@ -447,7 +453,8 @@ public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {
       }
 
       digests.add(new DirectiveDigest(
-          escapeDirectiveIdent, escapesVar, matcherVar, filterVar, escaper.getNonAsciiPrefix()));
+          escapeDirectiveIdent, escapesVar, matcherVar, filterVar, escaper.getNonAsciiPrefix(),
+          escaper.getInnocuousOutput()));
     }
 
 
@@ -543,7 +550,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {
               .append("', [str]);\n");
         }
         outputJs
-            .append("    return '").append(EscapingConventions.INNOCUOUS_OUTPUT).append("';\n")
+            .append("    return '").append(digest.innocuousOutput).append("';\n")
             .append("  }\n");
       }
 
@@ -569,13 +576,35 @@ public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {
     outputJs.append('\n')
         .append("/**\n")
         .append(" * Matches all tags, HTML comments, and DOCTYPEs in tag soup HTML.\n")
+        .append(" * By removing these, and replacing any '<' or '>' characters with\n")
+        .append(" * entities we guarantee that the result can be embedded into a\n")
+        .append(" * an attribute without introducing a tag boundary.\n")
         .append(" *\n")
         .append(" * @type {RegExp}\n")
         .append(" * @private\n")
         .append(" */\n")
         .append("soy.esc.$$HTML_TAG_REGEX_ = ")
         .append(javaRegexToJs(EscapingConventions.HTML_TAG_CONTENT))
-        .append("g;\n");
+        .append("g;\n")
+        .append("\n")
+        .append("/**\n")
+        .append(" * Matches all occurrences of '<'.\n")
+        .append(" *\n")
+        .append(" * @type {RegExp}\n")
+        .append(" * @private\n")
+        .append(" */\n")
+        .append("soy.esc.$$LT_REGEX_ = /</g;\n");
+
+    outputJs.append('\n')
+        .append("/**\n")
+        .append(" * Maps lower-case names of innocuous tags to 1.\n")
+        .append(" *\n")
+        .append(" * @type {Object.<string,number>}\n")
+        .append(" * @private\n")
+        .append(" */\n")
+        .append("soy.esc.$$SAFE_TAG_WHITELIST_ = ")
+        .append(toJsStringSet(TagWhitelist.FORMATTING.asSet()))
+        .append(";\n");
 
     outputJs.append('\n').append(GENERATED_CODE_END_MARKER).append('\n');
   }
@@ -695,6 +724,21 @@ public final class GenerateSoyUtilsEscapingDirectiveCode extends Task {
       buffer.append('m');
     }
     return buffer.toString();
+  }
+
+  /** ["foo", "bar"] -> '{"foo": 1, "bar": 1}' */
+  private static String toJsStringSet(Iterable<? extends String> strings) {
+    StringBuilder sb = new StringBuilder();
+    boolean isFirst = true;
+    sb.append('{');
+    for (String str : strings) {
+      if (!isFirst) { sb.append(", "); }
+      isFirst = false;
+      writeJsString(str, sb);
+      sb.append(": 1");
+    }
+    sb.append('}');
+    return sb.toString();
   }
 
   /** Matches named character classes in Java regular expressions. */

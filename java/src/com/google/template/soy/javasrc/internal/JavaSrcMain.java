@@ -24,12 +24,13 @@ import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.javasrc.SoyJavaSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
-import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPluralSelectMsgException;
+import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPlrselMsgException;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import javax.annotation.Nullable;
 
@@ -39,6 +40,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class JavaSrcMain {
 
@@ -93,8 +95,9 @@ public class JavaSrcMain {
 
     try {
       (new InsertMsgsVisitor(msgBundle, false)).exec(soyTree);
-    } catch (EncounteredPluralSelectMsgException e) {
-      throw new SoySyntaxException("JavaSrc backend doesn't support plural/select messages.");
+    } catch (EncounteredPlrselMsgException e) {
+      throw SoySyntaxExceptionUtils.createWithNode(
+          "JavaSrc backend doesn't support plural/select messages.", e.msgNode);
     }
 
     apiCallScope.enter();

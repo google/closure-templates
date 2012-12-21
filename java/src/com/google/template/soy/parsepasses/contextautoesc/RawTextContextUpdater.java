@@ -45,6 +45,7 @@ import com.google.template.soy.internal.base.UnescapeUtils;
  * <tr><td>{@code >}</td><td>{@link Context.State#HTML_PCDATA}</td></tr>
  * </table>
  *
+ * @author Mike Samuel
  */
 final class RawTextContextUpdater {
 
@@ -610,10 +611,10 @@ final class RawTextContextUpdater {
                 default:
                   StringBuffer rest = new StringBuffer();
                   matcher.appendTail(rest);
-                  throw new SoyAutoescapeException(
+                  throw SoyAutoescapeException.createWithoutMetaInfo(
                       "Slash (/) cannot follow the preceding branches since it is unclear " +
-                      "whether the slash is a RegExp literal or division operator.  " +
-                      "Please add parentheses in the branches leading to `" + rest + "`");
+                          "whether the slash is a RegExp literal or division operator.  " +
+                          "Please add parentheses in the branches leading to `" + rest + "`");
               }
             }
           },
@@ -700,6 +701,8 @@ final class RawTextContextUpdater {
             }
           },
           TRANSITION_TO_SELF))
+      // Text context has no edges except to itself.
+      .put(Context.State.TEXT, ImmutableList.of(TRANSITION_TO_SELF))
       .build();
 
   // TODO: If we need to deal with untrusted templates, then we need to make sure that tokens like

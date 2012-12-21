@@ -59,6 +59,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <i>"URI producers and normalizers should use uppercase hexadecimal digits
  * for all percent-encodings."</i>
  *
+ * @author David Beaumont
  */
 public class PercentEscaper extends UnicodeEscaper {
 

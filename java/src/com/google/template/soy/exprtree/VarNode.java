@@ -27,6 +27,7 @@ package com.google.template.soy.exprtree;
  * explicitly parse an input as a variable using ExpressionParser.parseVariable().
  *
  * @see DataRefNode
+ * @author Kai Huang
  */
 public class VarNode extends AbstractExprNode {
 

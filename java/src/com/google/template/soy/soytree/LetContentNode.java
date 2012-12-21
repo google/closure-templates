@@ -18,11 +18,12 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.MixinParentNode;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -30,8 +31,9 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
-public class LetContentNode extends LetNode implements BlockNode {
+public class LetContentNode extends LetNode implements RenderUnitNode {
 
 
   /** The mixin object that implements the ParentNode functionality. */
@@ -39,6 +41,9 @@ public class LetContentNode extends LetNode implements BlockNode {
 
   /** The local variable name (without preceding '$'). */
   private final String varName;
+
+  /** The let node's content kind, or null if no 'kind' attribute was present. */
+  @Nullable private final ContentKind contentKind;
 
 
   /**
@@ -52,13 +57,14 @@ public class LetContentNode extends LetNode implements BlockNode {
     super(id, isLocalVarNameUniquified, commandText);
     parentMixin = new MixinParentNode<StandaloneNode>(this);
 
-    Pair<String, ExprRootNode<?>> parseResult = parseCommandTextHelper(commandText);
-    varName = parseResult.first;
+    CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
+    varName = parseResult.localVarName;
+    contentKind = parseResult.contentKind;
 
-    if (parseResult.second != null) {
-      throw new SoySyntaxException(
+    if (parseResult.valueExpr != null) {
+      throw SoySyntaxException.createWithoutMetaInfo(
           "A 'let' tag should contain a value if and only if it is also self-ending (with a" +
-          " trailing '/') (invalid tag is {let " + commandText + "}).");
+              " trailing '/') (invalid tag is {let " + commandText + "}).");
     }
   }
 
@@ -71,6 +77,7 @@ public class LetContentNode extends LetNode implements BlockNode {
     super(orig);
     this.parentMixin = new MixinParentNode<StandaloneNode>(orig.parentMixin, this);
     this.varName = orig.varName;
+    this.contentKind = orig.contentKind;
   }
 
 
@@ -81,6 +88,11 @@ public class LetContentNode extends LetNode implements BlockNode {
 
   @Override public String getVarName() {
     return varName;
+  }
+
+
+  @Override @Nullable public ContentKind getContentKind() {
+    return contentKind;
   }
 
 

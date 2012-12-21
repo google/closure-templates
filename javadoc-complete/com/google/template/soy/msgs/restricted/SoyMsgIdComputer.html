@@ -125,6 +125,17 @@ Static methods to compute the unique message id for a message.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Computes the unique message id for a message, given the message parts, the meaning string (if
  any), and the content type (if any).</TD>
 </TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;long</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgIdComputer.html#computeMsgIdUsingBracedPhs(java.util.List, java.lang.String, java.lang.String)">computeMsgIdUsingBracedPhs</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;&nbsp;msgParts,
+                           <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;meaning,
+                           <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;contentType)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Computes an alternate unique message id for a message, given the message parts, the meaning
+ string (if any), and the content type (if any).</TD>
+</TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
@@ -165,7 +176,34 @@ public static long <B>computeMsgId</B>(<A HREF="http://java.sun.com/javase/6/doc
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>msgParts</CODE> - The parts of the message.<DD><CODE>meaning</CODE> - The meaning string, or null if none (usually null).<DD><CODE>contentType</CODE> - Content type of the document that this message will appear in (e.g.
-     "<code>text/html</code>", or null if not used..</DL>
+     "<code>text/html</code>", or null if not used.
+<DT><B>Returns:</B><DD>The computed message id.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="computeMsgIdUsingBracedPhs(java.util.List, java.lang.String, java.lang.String)"><!-- --></A><H3>
+computeMsgIdUsingBracedPhs</H3>
+<PRE>
+public static long <B>computeMsgIdUsingBracedPhs</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgPart.html" title="class in com.google.template.soy.msgs.restricted">SoyMsgPart</A>&gt;&nbsp;msgParts,
+                                              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;meaning,
+                                              <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;contentType)</PRE>
+<DL>
+<DD>Computes an alternate unique message id for a message, given the message parts, the meaning
+ string (if any), and the content type (if any). These are the only elements incorporated into
+ the message id.
+
+ <p> In particular, note that the id of a message does not change when its desc changes.
+
+ <p> Important: This is an alternate message id computation using braced placeholders. Only use
+ this function instead of <A HREF="../../../../../../com/google/template/soy/msgs/restricted/SoyMsgIdComputer.html#computeMsgId(java.util.List, java.lang.String, java.lang.String)"><CODE>computeMsgId(java.util.List<com.google.template.soy.msgs.restricted.SoyMsgPart>, java.lang.String, java.lang.String)</CODE></A> if you know that you need this alternate format.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>msgParts</CODE> - The parts of the message.<DD><CODE>meaning</CODE> - The meaning string, or null if none (usually null).<DD><CODE>contentType</CODE> - Content type of the document that this message will appear in (e.g.
+     "<code>text/html</code>", or null if not used..
+<DT><B>Returns:</B><DD>The computed message id.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

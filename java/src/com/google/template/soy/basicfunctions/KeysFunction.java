@@ -45,6 +45,7 @@ import java.util.Set;
  * <p> This enables iteration over the keys in a map, e.g.
  *     {foreach $key in keys($myMap)} ... {/foreach}
  *
+ * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

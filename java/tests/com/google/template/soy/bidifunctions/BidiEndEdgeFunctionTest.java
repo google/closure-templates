@@ -30,6 +30,8 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BidiEndEdgeFunction.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 public class BidiEndEdgeFunctionTest extends TestCase {
 

@@ -20,6 +20,7 @@ package com.google.template.soy.data;
 /**
  * Exception thrown when an error occurs in the data package.
  *
+ * @author Kai Huang
  */
 public class SoyDataException extends RuntimeException {
 

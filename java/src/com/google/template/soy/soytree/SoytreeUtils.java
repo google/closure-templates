@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -31,51 +30,12 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class SoytreeUtils {
 
 
-  /**
-   * Creates a SoySyntaxException with template name and file name filled in based on the given
-   * Soy parse tree node. The Soy node must be part of a full parse tree.
-   *
-   * @param message The exception message, or null to use the messge from the cause. Parameters
-   *     'message' and 'cause' may not both be null.
-   * @param cause The cause of this exception, or null if not applicable. Parameters 'message' and
-   *     'cause' may not both be null.
-   * @param soyNode The Soy node to get the template name and file name from.
-   * @return The new SoySyntaxException object.
-   */
-  @SuppressWarnings("ThrowableInstanceNeverThrown")  // this function returns the exception object
-  public static SoySyntaxException createSoySyntaxExceptionWithMetaInfo(
-      @Nullable String message, @Nullable Throwable cause, SoyNode soyNode) {
-
-    SoySyntaxException sse;
-    if (message != null && cause != null) {
-      sse = new SoySyntaxException(message, cause);
-    } else if (message != null) {
-      sse = new SoySyntaxException(message);
-    } else if (cause != null) {
-      sse = new SoySyntaxException(cause);
-    } else {
-      throw new AssertionError();
-    }
-
-    associateMetaInfoWithException(soyNode, sse);
-
-    return sse;
-  }
-
-
-  private static void associateMetaInfoWithException(SoyNode soyNode, SoySyntaxException sse) {
-    TemplateNode template = soyNode.getNearestAncestor(TemplateNode.class);
-    if (sse.getSourceLocation() == SourceLocation.UNKNOWN) {
-      sse.setSourceLocation(soyNode.getLocation());
-    }
-    if (sse.getTemplateName() == null && template != null) {
-      sse.setTemplateName(template.getTemplateNameForUserMsgs());
-    }
-  }
+  private SoytreeUtils() {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -169,9 +129,7 @@ public class SoytreeUtils {
       }
 
       if (node instanceof ExprHolderNode) {
-        ExprHolderNode nodeAsExprHolder = (ExprHolderNode) node;
-
-        for (ExprUnion exprUnion : nodeAsExprHolder.getAllExprUnions()) {
+        for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
           if (exprUnion.getExpr() == null) {
             continue;
           }
@@ -179,8 +137,7 @@ public class SoytreeUtils {
           try {
             exprNodeVisitor.exec(exprUnion.getExpr());
           } catch (SoySyntaxException sse) {
-            associateMetaInfoWithException(nodeAsExprHolder, sse);
-            throw sse;
+            throw SoySyntaxExceptionUtils.associateNode(sse, node);
           }
         }
       }

@@ -22,6 +22,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SoyBidiUtils.
  *
+ * @author Aharon Lanin
  */
 public class SoyBidiUtilsTest extends TestCase {
 

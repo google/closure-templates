@@ -24,6 +24,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 /**
  * Guice module for bidi Soy functions.
  *
+ * @author Kai Huang
  */
 public class BidiFunctionsModule extends AbstractModule {
 

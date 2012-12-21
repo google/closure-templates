@@ -23,6 +23,7 @@ import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
 import com.google.template.soy.bidifunctions.BidiFunctionsModule;
+import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.javasrc.internal.JavaSrcModule;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor;
@@ -35,6 +36,7 @@ import com.google.template.soy.tofu.internal.TofuModule;
 /**
  * Guice module for Soy's programmatic interface.
  *
+ * @author Kai Huang
  */
 public class SoyModule extends AbstractModule {
 
@@ -57,6 +59,7 @@ public class SoyModule extends AbstractModule {
     install(new BidiDirectivesModule());
     install(new BasicFunctionsModule());
     install(new BidiFunctionsModule());
+    install(new I18nDirectivesModule());
 
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(SoyFileSetFactory.class));

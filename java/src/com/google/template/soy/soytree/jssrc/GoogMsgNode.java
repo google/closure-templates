@@ -18,8 +18,6 @@ package com.google.template.soy.soytree.jssrc;
 
 import com.google.template.soy.soytree.AbstractMsgNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 
 
@@ -28,6 +26,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class GoogMsgNode extends AbstractMsgNode implements LocalVarInlineNode {
 
@@ -38,8 +37,8 @@ public class GoogMsgNode extends AbstractMsgNode implements LocalVarInlineNode {
   /** The name of the Closure message variable ("MSG_UNNAMED_..." or "MSG_EXTERNAL..."). */
   private final String googMsgVarName;
 
-  /** The JS var name of the rendered goog msg (usually same as googMsgVarName,
-   * except when there's plural/select postprocessing). */
+  /** The JS var name of the rendered goog msg (usually same as googMsgVarName, except when there's
+   *  plural/select postprocessing). */
   private final String renderedGoogMsgVarName;
 
 
@@ -61,15 +60,10 @@ public class GoogMsgNode extends AbstractMsgNode implements LocalVarInlineNode {
 
     this.sourceString =
         "[GoogMsgNode " + getVarName() + " " + origMsgNode.toSourceString() + "]";
-    this.googMsgVarName = googMsgVarName;
 
-    if (origMsgNode.getChildren().size() > 0 &&
-        (origMsgNode.getChild(0) instanceof MsgPluralNode ||
-         origMsgNode.getChild(0) instanceof MsgSelectNode)) {
-      this.renderedGoogMsgVarName = "rendered_" + googMsgVarName;
-    } else {
-      this.renderedGoogMsgVarName = googMsgVarName;
-    }
+    this.googMsgVarName = googMsgVarName;
+    this.renderedGoogMsgVarName =
+        origMsgNode.isPlrselMsg() ? "rendered_" + googMsgVarName : googMsgVarName;
   }
 
 

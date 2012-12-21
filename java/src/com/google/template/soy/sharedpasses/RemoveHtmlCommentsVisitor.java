@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
  * Currently, we only remove HTML comments that are completely contained within a single
  * RawTextNode.
  *
+ * @author Kai Huang
  */
 public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
 

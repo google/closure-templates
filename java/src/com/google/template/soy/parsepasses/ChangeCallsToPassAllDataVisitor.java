@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.TemplateNode;
  * <p> This visitor must be called on a SoyFileSetNode, SoyFileNode, or TemplateNode (i.e. template
  * or ancestor of a template).
  *
+ * @author Kai Huang
  */
 public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -108,12 +109,15 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
     if (node instanceof CallBasicNode) {
       CallBasicNode nodeCast = (CallBasicNode) node;
       newCallNode = new CallBasicNode(
-          node.getId(), nodeCast.getCalleeName(), nodeCast.getPartialCalleeName(), false, true,
-          true, null, node.getUserSuppliedPlaceholderName(), SyntaxVersion.V2);
+          node.getId(), nodeCast.getCalleeName(), nodeCast.getSrcCalleeName(), false, true,
+          true, null, node.getUserSuppliedPlaceholderName(), SyntaxVersion.V2,
+          node.getEscapingDirectiveNames());
     } else {
+      CallDelegateNode nodeCast = (CallDelegateNode) node;
       newCallNode = new CallDelegateNode(
-          node.getId(), ((CallDelegateNode) node).getDelCalleeName(), false, true, true, null,
-          node.getUserSuppliedPlaceholderName());
+          node.getId(), nodeCast.getDelCalleeName(), nodeCast.getDelCalleeVariantExpr(), false,
+          nodeCast.allowsEmptyDefault(), true, true, null, node.getUserSuppliedPlaceholderName(),
+          node.getEscapingDirectiveNames());
     }
     node.getParent().replaceChild(node, newCallNode);
   }

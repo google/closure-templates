@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class RawTextNode extends AbstractSoyNode implements StandaloneNode {
 

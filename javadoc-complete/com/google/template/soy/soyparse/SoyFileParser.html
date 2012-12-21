@@ -121,9 +121,19 @@ This parser's specification is in SoyFileParser.jj, which is read by JavaCC and 
     + The file must contain exactly one namespace declaration.
     + It must appear before any templates.
     + It must appear on its own line and start at the start of a line.
-    Example:   {namespace boo.foo}
+    Examples:
+    {namespace boo.foo}
+    {namespace boo.foo autoescape="..."}
 
- 3. SoyDoc:
+ 3. Alias:
+    + Alias declarations must appear after the namespace declaration.
+    + They must appear before any templates.
+    + Each must appear on its own line and start at the start of a line.
+    Examples:
+    {alias boo.foo.goo.moo}
+    {alias boo.foo.goo.moo as zoo}    // currently disabled
+
+ 4. SoyDoc:
     + Starts with slash-star-star (/**) and ends with star-slash (*&#47;) like JavaDoc.
     + SoyDoc must appear on its own line(s) and start at the start of a line.
     + Currently recognizes two tags: "&#64;param keyName" and "&#64;param? optionalKeyName".
@@ -133,24 +143,31 @@ This parser's specification is in SoyFileParser.jj, which is read by JavaCC and 
      * &#64;param? goo Something slimy (optional).
      *&#47;
 
- 4. Template:
+ 5. Template:
     + Each template must be immediately preceded by a SoyDoc block.
     + The 'template' tag and the '/template' tag much each appear on its own line(s) and start
       at the start of a line.
     + The template body is not parsed by this parser. The body will be saved and returned for
       parsing by the template parser.
-    Example:
+    Examples:
     /**
+     * New style.
      * &#64;param boo Something scary.
      * &#64;param? goo Something slimy (optional).
      *&#47;
-    {template name="foo"}
+    {template .foo autoescape="..."}
       {msg desc=""}
         {$boo} has a friend named {$goo.firstName}.
       {/msg}
     {/template}
+    /**
+     * Old style.
+     *&#47;
+    {template name="foo"}
+      ...
+    {/template}
 
- 5. Misc:
+ 6. Misc:
     + Other than the items specified above, everything else is ignored.
     + SoyDoc blocks not immediately followed by a template are ignored.
     + The file must end with a newline.
@@ -200,7 +217,7 @@ This parser's specification is in SoyFileParser.jj, which is read by JavaCC and 
 <TH ALIGN="left"><B>Fields inherited from interface com.google.template.soy.soyparse.<A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html" title="interface in com.google.template.soy.soyparse">SoyFileParserConstants</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_CHAR">ANY_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_TEMPLATE_CMD_NAME">ANY_TEMPLATE_CMD_NAME</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_TEMPLATE_TAG">ANY_TEMPLATE_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#DEFAULT">DEFAULT</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#DELPACKAGE_TAG">DELPACKAGE_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#DOTTED_IDENT">DOTTED_IDENT</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#EOF">EOF</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#IDENT">IDENT</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#IN_SOY_DOC">IN_SOY_DOC</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#IN_TEMPLATE">IN_TEMPLATE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NAMESPACE_TAG">NAMESPACE_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NEWLINE">NEWLINE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NOT_BRACE">NOT_BRACE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NOT_EOL">NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NOT_SOL">NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SKIPPED_CHAR">SKIPPED_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SKIPPED_NEWLINE">SKIPPED_NEWLINE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_CHAR">SOY_DOC_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_END">SOY_DOC_END</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_NEWLINE">SOY_DOC_NEWLINE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_START">SOY_DOC_START</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#TEMPLATE_BODY">TEMPLATE_BODY</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#TEMPLATE_BODY_CHAR">TEMPLATE_BODY_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#tokenImage">tokenImage</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#WS">WS</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#WS_UNTIL_EOL">WS_UNTIL_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_DELPACKAGE_INVALID">XXX_DELPACKAGE_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_DELPACKAGE_TAG_NOT_EOL">XXX_DELPACKAGE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_DELPACKAGE_TAG_NOT_SOL">XXX_DELPACKAGE_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_END_TEMPLATE_TAG_INVALID">XXX_END_TEMPLATE_TAG_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_END_TEMPLATE_TAG_NOT_EOL">XXX_END_TEMPLATE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_END_TEMPLATE_TAG_NOT_SOL">XXX_END_TEMPLATE_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_NAMESPACE_INVALID">XXX_NAMESPACE_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_NAMESPACE_TAG_NOT_EOL">XXX_NAMESPACE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_NAMESPACE_TAG_NOT_SOL">XXX_NAMESPACE_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_SOY_DOC_END_NOT_EOL">XXX_SOY_DOC_END_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_SOY_DOC_START_NOT_SOL">XXX_SOY_DOC_START_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_TEMPLATE_TAG_INVALID">XXX_TEMPLATE_TAG_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_TEMPLATE_TAG_NOT_EOL">XXX_TEMPLATE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_TEMPLATE_TAG_NOT_SOL">XXX_TEMPLATE_TAG_NOT_SOL</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ALIAS_TAG">ALIAS_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_CHAR">ANY_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_TEMPLATE_CMD_NAME">ANY_TEMPLATE_CMD_NAME</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#ANY_TEMPLATE_TAG">ANY_TEMPLATE_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#DEFAULT">DEFAULT</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#DELPACKAGE_TAG">DELPACKAGE_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#DOTTED_IDENT">DOTTED_IDENT</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#EOF">EOF</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#IDENT">IDENT</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#IN_SOY_DOC">IN_SOY_DOC</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#IN_TEMPLATE">IN_TEMPLATE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NAMESPACE_TAG">NAMESPACE_TAG</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NEWLINE">NEWLINE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NOT_BRACE">NOT_BRACE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NOT_EOL">NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#NOT_SOL">NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SKIPPED_CHAR">SKIPPED_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SKIPPED_NEWLINE">SKIPPED_NEWLINE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_CHAR">SOY_DOC_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_END">SOY_DOC_END</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_NEWLINE">SOY_DOC_NEWLINE</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#SOY_DOC_START">SOY_DOC_START</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#TEMPLATE_BODY">TEMPLATE_BODY</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#TEMPLATE_BODY_CHAR">TEMPLATE_BODY_CHAR</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#tokenImage">tokenImage</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#WS">WS</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#WS_UNTIL_EOL">WS_UNTIL_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_ALIAS_INVALID">XXX_ALIAS_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_ALIAS_TAG_NOT_EOL">XXX_ALIAS_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_ALIAS_TAG_NOT_SOL">XXX_ALIAS_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_ALIAS_TAG_WITH_AS">XXX_ALIAS_TAG_WITH_AS</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_DELPACKAGE_INVALID">XXX_DELPACKAGE_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_DELPACKAGE_TAG_NOT_EOL">XXX_DELPACKAGE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_DELPACKAGE_TAG_NOT_SOL">XXX_DELPACKAGE_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_END_TEMPLATE_TAG_INVALID">XXX_END_TEMPLATE_TAG_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_END_TEMPLATE_TAG_NOT_EOL">XXX_END_TEMPLATE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_END_TEMPLATE_TAG_NOT_SOL">XXX_END_TEMPLATE_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_NAMESPACE_INVALID">XXX_NAMESPACE_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_NAMESPACE_TAG_NOT_EOL">XXX_NAMESPACE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_NAMESPACE_TAG_NOT_SOL">XXX_NAMESPACE_TAG_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_SOY_DOC_END_NOT_EOL">XXX_SOY_DOC_END_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_SOY_DOC_START_NOT_SOL">XXX_SOY_DOC_START_NOT_SOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_TEMPLATE_TAG_INVALID">XXX_TEMPLATE_TAG_INVALID</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_TEMPLATE_TAG_NOT_EOL">XXX_TEMPLATE_TAG_NOT_EOL</A>, <A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParserConstants.html#XXX_TEMPLATE_TAG_NOT_SOL">XXX_TEMPLATE_TAG_NOT_SOL</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -232,9 +249,10 @@ This parser's specification is in SoyFileParser.jj, which is read by JavaCC and 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParser.html#SoyFileParser(java.io.Reader, com.google.template.soy.base.IdGenerator, java.lang.String)">SoyFileParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;input,
-              <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen,
-              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParser.html#SoyFileParser(java.io.Reader, com.google.template.soy.base.SoyFileKind, java.lang.String, com.google.template.soy.base.IdGenerator)">SoyFileParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;input,
+              <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+              <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor that takes a reader object providing the input.</TD>
@@ -246,9 +264,10 @@ This parser's specification is in SoyFileParser.jj, which is read by JavaCC and 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with generated Token Manager.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParser.html#SoyFileParser(java.lang.String, com.google.template.soy.base.IdGenerator, java.lang.String)">SoyFileParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;input,
-              <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen,
-              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soyparse/SoyFileParser.html#SoyFileParser(java.lang.String, com.google.template.soy.base.SoyFileKind, java.lang.String, com.google.template.soy.base.IdGenerator)">SoyFileParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;input,
+              <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+              <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor that takes a string input.</TD>
@@ -420,31 +439,33 @@ public <A HREF="../../../../../com/google/template/soy/soyparse/Token.html" titl
 </TR>
 </TABLE>
 
-<A NAME="SoyFileParser(java.io.Reader, com.google.template.soy.base.IdGenerator, java.lang.String)"><!-- --></A><H3>
+<A NAME="SoyFileParser(java.io.Reader, com.google.template.soy.base.SoyFileKind, java.lang.String, com.google.template.soy.base.IdGenerator)"><!-- --></A><H3>
 SoyFileParser</H3>
 <PRE>
 public <B>SoyFileParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;input,
-                     <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen,
-                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath)</PRE>
+                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                     <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen)</PRE>
 <DL>
 <DD>Constructor that takes a reader object providing the input.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>input</CODE> - The input to parse.<DD><CODE>nodeIdGen</CODE> - The node id generator for the tree being built.<DD><CODE>sourcePath</CODE> - The path of the source being parsed. Used for reporting.</DL>
+<DT><B>Parameters:</B><DD><CODE>input</CODE> - The input to parse.<DD><CODE>soyFileKind</CODE> - The kind of this Soy file.<DD><CODE>filePath</CODE> - The path of the source being parsed. Used for reporting.<DD><CODE>nodeIdGen</CODE> - The node id generator for the tree being built.</DL>
 </DL>
 <HR>
 
-<A NAME="SoyFileParser(java.lang.String, com.google.template.soy.base.IdGenerator, java.lang.String)"><!-- --></A><H3>
+<A NAME="SoyFileParser(java.lang.String, com.google.template.soy.base.SoyFileKind, java.lang.String, com.google.template.soy.base.IdGenerator)"><!-- --></A><H3>
 SoyFileParser</H3>
 <PRE>
 public <B>SoyFileParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;input,
-                     <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen,
-                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath)</PRE>
+                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                     <A HREF="../../../../../com/google/template/soy/base/IdGenerator.html" title="interface in com.google.template.soy.base">IdGenerator</A>&nbsp;nodeIdGen)</PRE>
 <DL>
 <DD>Constructor that takes a string input.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>input</CODE> - The input to parse.<DD><CODE>nodeIdGen</CODE> - The node id generator for the tree being built.<DD><CODE>sourcePath</CODE> - The path of the source being parsed. Used for reporting.</DL>
+<DT><B>Parameters:</B><DD><CODE>input</CODE> - The input to parse.<DD><CODE>soyFileKind</CODE> - The kind of this Soy file.<DD><CODE>filePath</CODE> - The path of the source being parsed. Used for reporting.<DD><CODE>nodeIdGen</CODE> - The node id generator for the tree being built.</DL>
 </DL>
 <HR>
 

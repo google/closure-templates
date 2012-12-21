@@ -17,13 +17,15 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-
 
 /**
  * Unit tests for NoAutoescapeDirective.
  *
+ * @author Kai Huang
  */
 public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
@@ -37,6 +39,11 @@ public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase
     assertTofuOutput(
         "not.html { font-name: \"Arial\" 'Helvetica' }",
         "not.html { font-name: \"Arial\" 'Helvetica' }", noAutoescapeDirective);
+    // Explicitly reject "text".
+    assertTofuOutput(
+        "zSoyz",
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("xyz", SanitizedContent.ContentKind.TEXT),
+        noAutoescapeDirective);
   }
 
 
@@ -45,7 +52,7 @@ public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase
     NoAutoescapeDirective noAutoescapeDirective = new NoAutoescapeDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     assertEquals(
-        "opt_data.myKey",
+        "soy.$$filterNoAutoescape(opt_data.myKey)",
         noAutoescapeDirective.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText());
   }
 

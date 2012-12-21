@@ -13,8 +13,9 @@
 // limitations under the License.
 
 
-// Compile-time globals for JS usage of the features examples.
+// Compile-time globals for the features examples.
 
+GLOBAL_STR = 'This is a compile-time global.'
 GLOBAL_INT = 26
 GLOBAL_BOOL = true
 GLOBAL_UNUSED = 'This is unused.'

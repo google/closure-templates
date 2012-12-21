@@ -29,6 +29,7 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing print directive plugins.
  *
+ * @author Kai Huang
  */
 public interface SoyJavaRuntimePrintDirective extends SoyPrintDirective {
 
@@ -40,6 +41,6 @@ public interface SoyJavaRuntimePrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public String apply(SoyData value, List<SoyData> args);
+  public SoyData apply(SoyData value, List<SoyData> args);
 
 }

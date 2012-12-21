@@ -16,14 +16,14 @@
 
 package com.google.template.soy.parsepasses;
 
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 
 /**
@@ -32,6 +32,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p> Note: Doesn't check HTML tags since we don't parse HTML tags outside of messages anyway. Only
  * checks PrintNode and CallNode.
  *
+ * @author Kai Huang
  */
 public class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -47,11 +48,12 @@ public class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVi
   }
 
 
-  private void visitMsgPlaceholderInitialContentNodeHelper(MsgPlaceholderInitialContentNode node) {
+  private void visitMsgPlaceholderInitialContentNodeHelper(MsgPlaceholderInitialNode node) {
     if (node.getUserSuppliedPlaceholderName() != null &&
         ! (node.getParent() instanceof MsgPlaceholderNode)) {
-      throw new SoySyntaxException(
-          "Found 'phname' attribute not on a msg placeholder (tag " + node.toSourceString() + ").");
+      throw SoySyntaxExceptionUtils.createWithNode(
+          "Found 'phname' attribute not on a msg placeholder (tag " + node.toSourceString() + ").",
+          node);
     }
   }
 

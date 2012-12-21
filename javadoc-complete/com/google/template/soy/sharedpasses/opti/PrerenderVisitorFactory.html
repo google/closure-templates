@@ -92,13 +92,10 @@ Class PrerenderVisitorFactory</H2>
 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
   <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.sharedpasses.opti.PrerenderVisitorFactory</B>
 </PRE>
-<DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">RenderVisitor.RenderVisitorFactory</A></DD>
-</DL>
 <HR>
 <DL>
 <DT><PRE><FONT SIZE="-1">@Singleton
-</FONT>public class <B>PrerenderVisitorFactory</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A><DT>implements <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">RenderVisitor.RenderVisitorFactory</A></DL>
+</FONT>public class <B>PrerenderVisitorFactory</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></DL>
 </PRE>
 
 <P>
@@ -140,28 +137,13 @@ A factory for creating PrerenderVisitor objects.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;com.google.template.soy.sharedpasses.opti.PrerenderVisitor</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PrerenderVisitorFactory.html#create(java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputSb,
-       <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A>&nbsp;templateRegistry,
-       <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
-       <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData,
-       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env,
-       <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelPackageNames,
-       <A HREF="../../../../../../com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A>&nbsp;msgBundle,
-       <A HREF="../../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html" title="interface in com.google.template.soy.shared">SoyCssRenamingMap</A>&nbsp;cssRenamingMap)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a RenderVisitor.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;com.google.template.soy.sharedpasses.opti.PrerenderVisitor</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PrerenderVisitorFactory.html#create(java.lang.StringBuilder, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, java.util.Deque)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</A>&nbsp;outputSb,
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/opti/PrerenderVisitorFactory.html#create(java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, java.util.Deque)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputBuf,
        <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A>&nbsp;templateRegistry,
        <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
        <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a PrerenderVisitor.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -205,54 +187,20 @@ PrerenderVisitorFactory</H3>
 </TR>
 </TABLE>
 
-<A NAME="create(java.lang.StringBuilder, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, java.util.Deque)"><!-- --></A><H3>
+<A NAME="create(java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, java.util.Deque)"><!-- --></A><H3>
 create</H3>
 <PRE>
-public com.google.template.soy.sharedpasses.opti.PrerenderVisitor <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</A>&nbsp;outputSb,
+public com.google.template.soy.sharedpasses.opti.PrerenderVisitor <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputBuf,
                                                                          <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A>&nbsp;templateRegistry,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                                                                          <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
                                                                          <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env)</PRE>
 <DL>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="create(java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)"><!-- --></A><H3>
-create</H3>
-<PRE>
-public com.google.template.soy.sharedpasses.opti.PrerenderVisitor <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputSb,
-                                                                         <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A>&nbsp;templateRegistry,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                         <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                         <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                         <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;&nbsp;env,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                         <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelPackageNames,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                         <A HREF="../../../../../../com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A>&nbsp;msgBundle,
-                                                                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                         <A HREF="../../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html" title="interface in com.google.template.soy.shared">SoyCssRenamingMap</A>&nbsp;cssRenamingMap)</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html#create(java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)">RenderVisitor.RenderVisitorFactory</A></CODE></B></DD>
-<DD>Creates a RenderVisitor.
+<DD>Creates a PrerenderVisitor.
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html#create(java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)">create</A></CODE> in interface <CODE><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">RenderVisitor.RenderVisitorFactory</A></CODE></DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>outputSb</CODE> - The Appendable to append the output to.<DD><CODE>templateRegistry</CODE> - A registry of all templates.<DD><CODE>data</CODE> - The current template data.<DD><CODE>ijData</CODE> - The current injected data.<DD><CODE>env</CODE> - The current environment, or null if this is the initial call.<DD><CODE>activeDelPackageNames</CODE> - The set of active delegate package names. Allowed to be null
-     when known to be irrelevant, i.e. when not using delegates feature.<DD><CODE>msgBundle</CODE> - The bundle of translated messages, or null to use the messages from the
-     Soy source.<DD><CODE>cssRenamingMap</CODE> - The CSS renaming map, or null if not applicable.
-<DT><B>Returns:</B><DD>The newly created RenderVisitor instance.</DL>
+<DT><B>Parameters:</B><DD><CODE>outputBuf</CODE> - The Appendable to append the output to.<DD><CODE>templateRegistry</CODE> - A registry of all templates.<DD><CODE>data</CODE> - The current template data.<DD><CODE>env</CODE> - The current environment, or null if this is the initial call.
+<DT><B>Returns:</B><DD>The newly created PrerenderVisitor instance.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

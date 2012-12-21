@@ -24,7 +24,7 @@
 // =================================================================================================
 
 options {
-  JDK_VERSION = "1.6";
+  JDK_VERSION = "1.7";
   STATIC = false;
   UNICODE_INPUT = true;
 }
@@ -46,6 +46,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.base.IncrementingIdGenerator;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -80,9 +81,19 @@ import java.util.regex.*;
  *    + The file must contain exactly one namespace declaration.
  *    + It must appear before any templates.
  *    + It must appear on its own line and start at the start of a line.
- *    Example:   {namespace boo.foo}
+ *    Examples:
+ *    {namespace boo.foo}
+ *    {namespace boo.foo autoescape="..."}
  *
- * 3. SoyDoc:
+ * 3. Alias:
+ *    + Alias declarations must appear after the namespace declaration.
+ *    + They must appear before any templates.
+ *    + Each must appear on its own line and start at the start of a line.
+ *    Examples:
+ *    {alias boo.foo.goo.moo}
+ *    {alias boo.foo.goo.moo as zoo}    // currently disabled
+ *
+ * 4. SoyDoc:
  *    + Starts with slash-star-star (/**) and ends with star-slash (*&#47;) like JavaDoc.
  *    + SoyDoc must appear on its own line(s) and start at the start of a line.
  *    + Currently recognizes two tags: "&#64;param keyName" and "&#64;param? optionalKeyName".
@@ -92,29 +103,37 @@ import java.util.regex.*;
  *     * &#64;param? goo Something slimy (optional).
  *     *&#47;
  *
- * 4. Template:
+ * 5. Template:
  *    + Each template must be immediately preceded by a SoyDoc block.
  *    + The 'template' tag and the '/template' tag much each appear on its own line(s) and start
  *      at the start of a line.
  *    + The template body is not parsed by this parser. The body will be saved and returned for
  *      parsing by the template parser.
- *    Example:
+ *    Examples:
  *    /**
+ *     * New style.
  *     * &#64;param boo Something scary.
  *     * &#64;param? goo Something slimy (optional).
  *     *&#47;
- *    {template name="foo"}
+ *    {template .foo autoescape="..."}
  *      {msg desc=""}
  *        {$boo} has a friend named {$goo.firstName}.
  *      {/msg}
  *    {/template}
+ *    /**
+ *     * Old style.
+ *     *&#47;
+ *    {template name="foo"}
+ *      ...
+ *    {/template}
  *
- * 5. Misc:
+ * 6. Misc:
  *    + Other than the items specified above, everything else is ignored.
  *    + SoyDoc blocks not immediately followed by a template are ignored.
  *    + The file must end with a newline.
  * </pre>
  *
+ * @author Kai Huang
  */
 public class SoyFileParser {
 
@@ -128,30 +147,38 @@ public class SoyFileParser {
   private IdGenerator nodeIdGen;
 
   /** Path of source being parsed. This is descriptive, not a means to refetch source. */
-  private String sourcePath = SourceLocation.UNKNOWN.getSourcePath();
+  private String filePath = SourceLocation.UNKNOWN.getFilePath();
+
+  /** The kind of this Soy file. */
+  private SoyFileKind soyFileKind;
 
 
   /**
    * Constructor that takes a reader object providing the input.
    * @param input The input to parse.
+   * @param soyFileKind The kind of this Soy file.
+   * @param filePath The path of the source being parsed. Used for reporting.
    * @param nodeIdGen The node id generator for the tree being built.
-   * @param sourcePath The path of the source being parsed. Used for reporting.
    */
-  public SoyFileParser(Reader input, IdGenerator nodeIdGen, String sourcePath) {
+  public SoyFileParser(
+      Reader input, SoyFileKind soyFileKind, String filePath, IdGenerator nodeIdGen) {
     this(input);
+    this.soyFileKind = soyFileKind;
+    this.filePath = filePath;
     this.nodeIdGen = nodeIdGen;
-    this.sourcePath = sourcePath;
   }
 
 
   /**
    * Constructor that takes a string input.
    * @param input The input to parse.
+   * @param soyFileKind The kind of this Soy file.
+   * @param filePath The path of the source being parsed. Used for reporting.
    * @param nodeIdGen The node id generator for the tree being built.
-   * @param sourcePath The path of the source being parsed. Used for reporting.
    */
-  public SoyFileParser(String input, IdGenerator nodeIdGen, String sourcePath) {
-    this(new StringReader(input), nodeIdGen, sourcePath);
+  public SoyFileParser(
+      String input, SoyFileKind soyFileKind, String filePath, IdGenerator nodeIdGen) {
+    this(new StringReader(input), soyFileKind, filePath, nodeIdGen);
   }
 
 
@@ -170,7 +197,8 @@ public class SoyFileParser {
     } catch (UnsupportedEncodingException e) {
       throw new AssertionError();
     }
-    (new SoyFileParser(stdinReader, new IncrementingIdGenerator(), "stdin")).SoyFile();
+    (new SoyFileParser(stdinReader, SoyFileKind.SRC, "stdin", new IncrementingIdGenerator()))
+        .SoyFile();
     System.out.println("Valid input.");
   }
 
@@ -227,6 +255,9 @@ TOKEN_MGR_DECLS:
   /** Whether we have encountered a namespace declaration. */
   private boolean seenNamespace = false;
 
+  /** Whether we have encountered a alias declaration. */
+  private boolean seenAlias = false;
+
   /** Whether we have already encountered a template. */
   private boolean seenTemplate = false;
 
@@ -273,6 +304,10 @@ TOKEN_MGR_DECLS:
       throwTokenMgrError(
           "The 'delpackage' declaration must appear before the 'namespace' declaration.");
     }
+    if (seenAlias) {
+      throwTokenMgrError(
+          "The 'delpackage' declaration must appear before any 'alias' declarations.");
+    }
     if (seenTemplate) {
       throwTokenMgrError("The 'delpackage' declaration must appear before any templates.");
     }
@@ -307,6 +342,10 @@ TOKEN_MGR_DECLS:
   { if (seenNamespace) {
       throwTokenMgrError("Found multiple 'namespace' declarations.");
     }
+    if (seenAlias) {
+      throwTokenMgrError(
+          "The 'namespace' declaration must appear before any 'alias' declarations.");
+    }
     if (seenTemplate) {
       throwTokenMgrError("The 'namespace' declaration must appear before any templates.");
     }
@@ -329,6 +368,44 @@ TOKEN_MGR_DECLS:
 {
   < XXX_NAMESPACE_INVALID: "{namespace" >
   { throwTokenMgrError("Invalid 'namespace' tag", matchedToken); }
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// Alias.
+
+<DEFAULT> TOKEN:
+{
+  < ALIAS_TAG: "{alias" (<WS>)+ <DOTTED_IDENT> (<WS>)* "}" >
+  { if (! seenNamespace) {
+      throwTokenMgrError("The 'alias' declarations must appear after the 'namespace' declaration.");
+    }
+    if (seenTemplate) {
+      throwTokenMgrError("The 'alias' declarations must appear before any templates.");
+    }
+    seenAlias = true;
+  }
+}
+
+// Specific invalid 'alias' tags.
+<DEFAULT> TOKEN:
+{
+  < XXX_ALIAS_TAG_WITH_AS:
+      "{alias" (<WS>)+ <DOTTED_IDENT> (<WS>)+ "as" (<WS>)+ ( <NOT_BRACE> )* "}" >
+  { throwTokenMgrError("The form of the 'alias' tag with \"as ...\" is currently disabled."); }
+|
+  < XXX_ALIAS_TAG_NOT_SOL: <NOT_SOL> "{alias" >
+  { throwTokenMgrError("Tag 'alias' not at start of line."); }
+|
+  < XXX_ALIAS_TAG_NOT_EOL: "{alias" ( <NOT_BRACE> )* "}" <NOT_EOL> >
+  { throwTokenMgrError("End of tag 'alias' not at end of line."); }
+}
+
+// Catch all other errors.
+<DEFAULT, IN_TEMPLATE> TOKEN:
+{
+  < XXX_ALIAS_INVALID: "{alias" >
+  { throwTokenMgrError("Invalid 'alias' tag", matchedToken); }
 }
 
 
@@ -503,11 +580,11 @@ TOKEN_MGR_DECLS:
 /**
  * Matches the whole input if it is a valid Soy file.
  *
- * SoyFile -> [ DelpackageTag ] [ NamespaceTag ] ( Template )* EOF
+ * SoyFile -> [ DelpackageTag ] [ NamespaceTag ] ( AliasTag )* ( Template )* EOF
  */
 private SoyFileNode SoyFile() throws SoySyntaxException :
 {
-  Token delpackageTag, namespaceTag;
+  Token delpackageTag, namespaceTag, aliasTag;
   TemplateNode template;
 }
 {
@@ -531,10 +608,21 @@ private SoyFileNode SoyFile() throws SoySyntaxException :
     }
   ]
 
-  { SoyFileNode soyFileNode =
-        new SoyFileNode(nodeIdGen.genId(), delpackageCmdText, namespaceCmdText);
-    soyFileNode.setLocation(new SourceLocation(sourcePath, 0));
-    soyFileNode.setFilePath(sourcePath);
+  { List<String> aliasCmdTexts = null; }
+  (
+    aliasTag = <ALIAS_TAG>
+    { int start = "{alias".length();
+      int end = aliasTag.image.length() - 1;
+      if (aliasCmdTexts == null) {
+        aliasCmdTexts = Lists.newArrayList();
+      }
+      aliasCmdTexts.add(aliasTag.image.substring(start, end));
+    }
+  )*
+
+  { SoyFileNode soyFileNode = new SoyFileNode(
+        nodeIdGen.genId(), soyFileKind, delpackageCmdText, namespaceCmdText, aliasCmdTexts);
+    soyFileNode.setFilePath(filePath);
     SoyFileHeaderInfo soyFileHeaderInfo = new SoyFileHeaderInfo(soyFileNode);
   }
 
@@ -588,25 +676,25 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) throws SoySyn
     TemplateNode templateNode = isBasicTemplate ?
         new TemplateBasicNode(nodeIdGen.genId(), soyFileHeaderInfo, cmdText, soyDoc) :
         new TemplateDelegateNode(nodeIdGen.genId(), soyFileHeaderInfo, cmdText, soyDoc);
-    templateNode.setLocation(new SourceLocation(sourcePath, templateTag.beginLine));
+    templateNode.setSourceLocation(new SourceLocation(filePath, templateTag.beginLine));
   }
 
   templateBody = <TEMPLATE_BODY>
   { List<StandaloneNode> templateBodyNodes;
     try {
       templateBodyNodes = new TemplateParser(
-          templateBody.image, sourcePath, templateBody.beginLine, nodeIdGen)
+          templateBody.image, filePath, templateBody.beginLine, nodeIdGen)
           .parseTemplateBody();
     } catch (TokenMgrError tme) {
       String adjustedErrorMsg = adjustLineNumInErrorMsg(tme.getMessage(), templateTag.beginLine);
-      throw (new SoySyntaxException(adjustedErrorMsg, tme))
-                .setTemplateName(templateNode.getTemplateNameForUserMsgs());
+      throw SoySyntaxException.createCausedWithMetaInfo(
+          adjustedErrorMsg, tme, null, filePath, templateNode.getTemplateNameForUserMsgs());
     } catch (ParseException pe) {
       String adjustedErrorMsg = adjustLineNumInErrorMsg(pe.getMessage(), templateTag.beginLine);
-      throw (new SoySyntaxException(adjustedErrorMsg, pe))
-                .setTemplateName(templateNode.getTemplateNameForUserMsgs());
+      throw SoySyntaxException.createCausedWithMetaInfo(
+          adjustedErrorMsg, pe, null, filePath, templateNode.getTemplateNameForUserMsgs());
     } catch (SoySyntaxException sse) {
-      throw sse.setTemplateName(templateNode.getTemplateNameForUserMsgs());
+      throw sse.associateMetaInfo(null, filePath, templateNode.getTemplateNameForUserMsgs());
     }
     templateNode.addChildren(templateBodyNodes);
   }

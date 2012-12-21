@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSortedSet;
 /**
  * Parsed info about a Soy file.
  *
+ * @author Kai Huang
  */
 public class SoyFileInfo {
 
@@ -53,10 +54,15 @@ public class SoyFileInfo {
   private final ImmutableList<SoyTemplateInfo> templates;
 
   /** Map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
-  private final ImmutableMap<String, CssTagsPrefixPresence> cssNamesMap;
+  private final ImmutableMap<String, CssTagsPrefixPresence> cssNameMap;
 
 
   /**
+   * Constructor for internal use only.
+   *
+   * <p> Important: Do not construct SoyFileInfo objects outside of Soy internal or Soy-generated
+   * code. User code that constructs SoyFileInfo objects will be broken by future Soy changes.
+   *
    * @param fileName The source Soy file's name.
    * @param namespace The Soy file's namespace.
    * @param paramsFromAllTemplates Sorted list of params from all templates in this Soy file.
@@ -65,12 +71,12 @@ public class SoyFileInfo {
   public SoyFileInfo(
       String fileName, String namespace, ImmutableSortedSet<String> paramsFromAllTemplates,
       ImmutableList<SoyTemplateInfo> templates,
-      ImmutableMap<String, CssTagsPrefixPresence> cssNamesMap) {
+      ImmutableMap<String, CssTagsPrefixPresence> cssNameMap) {
     this.fileName = fileName;
     this.namespace = namespace;
     this.paramsFromAllTemplates = paramsFromAllTemplates;
     this.templates = templates;
-    this.cssNamesMap = cssNamesMap;
+    this.cssNameMap = cssNameMap;
   }
 
 
@@ -96,7 +102,7 @@ public class SoyFileInfo {
 
   /** Returns a map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
   public ImmutableMap<String, CssTagsPrefixPresence> getCssNames() {
-    return cssNamesMap;
+    return cssNameMap;
   }
 
 }

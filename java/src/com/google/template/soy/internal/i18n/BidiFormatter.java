@@ -33,7 +33,7 @@ import java.util.Locale;
  * and the text following it may be displayed incorrectly unless the inserted string is explicitly
  * separated from the surrounding text in a "wrapper" that declares its directionality at the start
  * and then resets it back at the end. This wrapping can be done in HTML mark-up (e.g. a
- * 'span dir=rtl' tag) or - only in contexts where mark-up cannot be used - in Unicode BiDi
+ * 'span dir=\"rtl\"' tag) or - only in contexts where mark-up cannot be used - in Unicode BiDi
  * formatting codes (LRE|RLE and PDF). Optionally, the mark-upp can be inserted even when the
  * directionality the same, in order to keep the DOM structure more stable. Providing such wrapping
  * services is the basic purpose of the BiDi formatter.
@@ -211,14 +211,14 @@ public class BidiFormatter {
   }
 
   /**
-   * Returns "dir=ltr" or "dir=rtl", depending on {@code str}'s estimated directionality, if it is
-   * not the same as the context directionality.
+   * Returns "dir=\"ltr\"" or "dir=\"rtl\"", depending on {@code str}'s estimated directionality,
+   * if it is not the same as the context directionality.
    * Otherwise, returns the empty string.
    *
    * @param str String whose directionality is to be estimated
    * @param isHtml Whether {@code str} is HTML / HTML-escaped
-   * @return "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
-   *     else, the empty string.
+   * @return "dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
+   *     context; else, the empty string.
    */
   public String dirAttr(String str, boolean isHtml) {
     return knownDirAttr(estimateDirection(str, isHtml));
@@ -228,25 +228,26 @@ public class BidiFormatter {
    * Operates like {@link #dirAttr(String, boolean)}, but assumes {@code isHtml} is false.
    *
    * @param str String whose directionality is to be estimated
-   * @return "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
-   *     else, the empty string.
+   * @return "dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
+   *     context; else, the empty string.
    */
   public String dirAttr(String str) {
     return dirAttr(str, false);
   }
 
   /**
-   * Returns "dir=ltr" or "dir=rtl", depending on the given directionality, if it is not
+   * Returns "dir=\"ltr\"" or "dir=\"rtl\"", depending on the given directionality, if it is not
    * the same as the context directionality.
    * Otherwise, returns the empty string.
    *
    * @param dir Given directionality
-   * @return "dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
-   *     else, the empty string.
+   * @return "dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
+   *     context; else, the empty string.
    */
   public String knownDirAttr(BidiUtils.Dir dir) {
     if (dir != contextDir) {
-      return dir == BidiUtils.Dir.LTR ? "dir=ltr" : dir == BidiUtils.Dir.RTL ? "dir=rtl" : "";
+      return dir == BidiUtils.Dir.LTR ? "dir=\"ltr\""
+          : dir == BidiUtils.Dir.RTL ? "dir=\"rtl\"" : "";
     }
     return "";
   }
@@ -257,7 +258,7 @@ public class BidiFormatter {
    * follows it.<p>
    * The algorithm: estimates the directionality of input argument {@code str}. In case its
    * directionality doesn't match the context directionality, wraps it with a 'span' tag and adds a
-   * "dir" attribute (either 'dir=rtl' or 'dir=ltr').<p>
+   * "dir" attribute (either 'dir=\"rtl\"' or 'dir=\"ltr\"').<p>
    * If {@code setAlwaysSpan(true)} was used, the input is always wrapped with 'span', skipping just
    * the dir attribute when it's not needed.
    * <p>
@@ -307,7 +308,7 @@ public class BidiFormatter {
    * so an opposite-directionality string is neither garbled nor garbles what follows it.<p>
    * The algorithm: estimates the directionality of input argument {@code str}. In case its
    * directionality doesn't match the context directionality, wraps it with a 'span' tag and adds a
-   * "dir" attribute (either 'dir=rtl' or 'dir=ltr').<p>
+   * "dir" attribute (either 'dir=\"rtl\"' or 'dir=\"ltr\"').<p>
    * If {@code setAlwaysSpan(true)} was used, the input is always wrapped with 'span', skipping just
    * the dir attribute when it's not needed.
    * <p>
@@ -337,10 +338,10 @@ public class BidiFormatter {
     if (alwaysSpan || dirCondition) {
       result.append("<span");
       if (dirCondition) {
-        result.append(" ");
-        result.append(dir == BidiUtils.Dir.RTL ? "dir=rtl" : "dir=ltr");
+        result.append(' ');
+        result.append(dir == BidiUtils.Dir.RTL ? "dir=\"rtl\"" : "dir=\"ltr\"");
       }
-      result.append(">" + str + "</span>");
+      result.append('>').append(str).append("</span>");
     } else {
       result.append(str);
     }
@@ -577,12 +578,12 @@ public class BidiFormatter {
    * @return A unicode BiDi mark or the empty string.
    */
   private String dirResetIfNeeded(String str, BidiUtils.Dir dir, boolean isHtml, boolean dirReset) {
-    // endsWithRtl and endsWithLtr are called only if needed (short-circuit).
+    // getExitDir() is called only if needed (short-circuit).
     if (dirReset &&
         ((contextDir == BidiUtils.Dir.LTR &&
-          (dir == BidiUtils.Dir.RTL || BidiUtils.endsWithRtl(str, isHtml))) ||
+          (dir == BidiUtils.Dir.RTL || BidiUtils.getExitDir(str, isHtml) == BidiUtils.Dir.RTL)) ||
          (contextDir == BidiUtils.Dir.RTL &&
-          (dir == BidiUtils.Dir.LTR || BidiUtils.endsWithLtr(str, isHtml))))) {
+          (dir == BidiUtils.Dir.LTR || BidiUtils.getExitDir(str, isHtml) == BidiUtils.Dir.LTR)))) {
      return contextDir == BidiUtils.Dir.LTR ? BidiUtils.Format.LRM_STRING :
                                               BidiUtils.Format.RLM_STRING;
     } else {

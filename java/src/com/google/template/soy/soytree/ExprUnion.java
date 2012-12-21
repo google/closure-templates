@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
  * tree. If this expression is in V1 syntax, then {@code #getExpr()} will return null. In either
  * case, the expression text can be obtained from {@link #getExprText()}.
  *
+ * @author Kai Huang
  */
 public class ExprUnion {
 

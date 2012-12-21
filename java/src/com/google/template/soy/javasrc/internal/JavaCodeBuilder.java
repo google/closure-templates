@@ -62,6 +62,7 @@ import java.util.List;
  * }  // the end
  * </pre>
  *
+ * @author Kai Huang
  */
 class JavaCodeBuilder {
 
@@ -111,7 +112,7 @@ class JavaCodeBuilder {
   public void increaseIndent() throws SoySyntaxException {
     int newIndentDepth = indent.length() + 2;
     if (newIndentDepth > 20) {
-      throw new SoySyntaxException("Indent is more than 20 spaces!");
+      throw SoySyntaxException.createWithoutMetaInfo("Indent is more than 20 spaces!");
     }
     indent = SPACES.substring(0, newIndentDepth);
   }
@@ -124,7 +125,7 @@ class JavaCodeBuilder {
   public void decreaseIndent() throws SoySyntaxException {
     int newIndentDepth = indent.length() - 2;
     if (newIndentDepth < 0) {
-      throw new SoySyntaxException("Indent is less than 0 spaces!");
+      throw SoySyntaxException.createWithoutMetaInfo("Indent is less than 0 spaces!");
     }
     indent = SPACES.substring(0, newIndentDepth);
   }

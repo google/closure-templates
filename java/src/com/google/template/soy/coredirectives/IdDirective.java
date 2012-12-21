@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -34,6 +35,7 @@ import java.util.Set;
  * A directive that marks an identifier such as an HTML id or CSS class name. This directive turns
  * off autoescape for the 'print' tag (if it's on for the template).
  *
+ * @author Kai Huang
  */
 @Singleton
 public class IdDirective extends SoyAbstractTofuPrintDirective
@@ -62,8 +64,10 @@ public class IdDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
-    return value.toString();
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+    return value instanceof StringData
+      ? value
+      : SoyData.createFromExistingData(value.toString());
   }
 
 

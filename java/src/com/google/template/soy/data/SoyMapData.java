@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +28,7 @@ import java.util.Set;
 /**
  * A map data node in a Soy data tree.
  *
+ * @author Kai Huang
  */
 public class SoyMapData extends CollectionData {
 
@@ -36,7 +38,7 @@ public class SoyMapData extends CollectionData {
 
 
   public SoyMapData() {
-    map = Maps.newHashMap();
+    map = Maps.newLinkedHashMap();
   }
 
 
@@ -46,7 +48,7 @@ public class SoyMapData extends CollectionData {
    */
   public SoyMapData(Map<String, ?> data) {
 
-    map = Maps.newHashMapWithExpectedSize(data.size());
+    map = new LinkedHashMap<String, SoyData>(data.size());
 
     for (Map.Entry<String, ?> entry : data.entrySet()) {
 
@@ -132,7 +134,7 @@ public class SoyMapData extends CollectionData {
       mapStr.append(entry.getKey()).append(": ").append(entry.getValue().toString());
     }
 
-    mapStr.append("}");
+    mapStr.append('}');
     return mapStr.toString();
   }
 

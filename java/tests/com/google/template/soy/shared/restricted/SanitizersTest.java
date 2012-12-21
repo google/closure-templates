@@ -18,8 +18,9 @@ package com.google.template.soy.shared.restricted;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyData;
-import junit.framework.TestCase;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 
+import junit.framework.TestCase;
 
 public class SanitizersTest extends TestCase {
   private static final String ASCII_CHARS;
@@ -112,6 +113,15 @@ public class SanitizersTest extends TestCase {
     assertEquals(
         " null ",
         Sanitizers.escapeJsValue(SoyData.createFromExistingData(null)));
+    assertEquals(
+        "foo() + bar",
+        Sanitizers.escapeJsValue(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "foo() + bar", SanitizedContent.ContentKind.JS)));
+    // Wrong content kind should be wrapped in a string.
+    assertEquals(
+        "'foo() + bar'",
+        Sanitizers.escapeJsValue(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "foo() + bar", SanitizedContent.ContentKind.HTML)));
   }
 
   public final void testEscapeCssString() {
@@ -157,26 +167,50 @@ public class SanitizersTest extends TestCase {
     assertEquals("zSoyz", Sanitizers.filterCssValue("\\65 xpression"));
     assertEquals("zSoyz", Sanitizers.filterCssValue("-moz-binding"));
     assertEquals("zSoyz", Sanitizers.filterCssValue("</style><script>alert('foo')</script>/*"));
+    assertEquals("zSoyz", Sanitizers.filterCssValue("color:expression('whatever')"));
+    assertEquals("color:expression('whatever')", Sanitizers.filterCssValue(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "color:expression('whatever')", SanitizedContent.ContentKind.CSS)));
 
     for (String hazard : EMBEDDING_HAZARDS) {
       assertFalse(hazard, Sanitizers.filterCssValue(hazard).contains(hazard));
     }
   }
 
-  public final void testFilterHtmlAttribute() {
-    assertEquals("dir", Sanitizers.filterHtmlAttribute("dir"));
-    assertEquals("dir", Sanitizers.filterHtmlAttribute(SoyData.createFromExistingData("dir")));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttribute("><script>alert('foo')</script"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttribute("style"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttribute("onclick"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttribute("href"));
+  public final void testFilterHtmlAttributes() {
+    assertEquals("dir", Sanitizers.filterHtmlAttributes("dir"));
+    assertEquals("dir", Sanitizers.filterHtmlAttributes(SoyData.createFromExistingData("dir")));
+    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("><script>alert('foo')</script"));
+    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("style"));
+    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("onclick"));
+    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("href"));
+
     assertEquals(
-        "dir=\"ltr\"",
-        Sanitizers.filterHtmlAttribute(SoyData.createFromExistingData(
-            new SanitizedContent("dir=ltr", SanitizedContent.ContentKind.HTML_ATTRIBUTE))));
+        "a=1 b=2 dir=\"ltr\"",
+        Sanitizers.filterHtmlAttributes(SoyData.createFromExistingData(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "a=1 b=2 dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES))));
+    assertEquals(
+        "Should append a space to parse correctly",
+        "foo=\"bar\" dir=ltr ",
+        Sanitizers.filterHtmlAttributes(SoyData.createFromExistingData(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "foo=\"bar\" dir=ltr", SanitizedContent.ContentKind.ATTRIBUTES))));
+    assertEquals(
+        "Should append a space to parse correctly",
+        "foo=\"bar\" checked ",
+        Sanitizers.filterHtmlAttributes(SoyData.createFromExistingData(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "foo=\"bar\" checked", SanitizedContent.ContentKind.ATTRIBUTES))));
+    assertEquals(
+        "No duplicate space should be added",
+        "foo=\"bar\" checked ",
+        Sanitizers.filterHtmlAttributes(SoyData.createFromExistingData(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "foo=\"bar\" checked ", SanitizedContent.ContentKind.ATTRIBUTES))));
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.filterHtmlAttribute(hazard).contains(hazard));
+      assertFalse(hazard, Sanitizers.filterHtmlAttributes(hazard).contains(hazard));
     }
   }
 
@@ -220,6 +254,16 @@ public class SanitizersTest extends TestCase {
     assertEquals("%EF%BC%83%EF%BC%9A", Sanitizers.escapeUri("\uff03\uff1a"));
     // Test other unicode codepoints.
     assertEquals("%C2%85%E2%80%A8", Sanitizers.escapeUri("\u0085\u2028"));
+    // Test Sanitized Content of the right kind. Note that some characters are still normalized --
+    // specifically, ones that are allowed in URI's but not attributes but don't change meaning
+    // (and parentheses since they're technically reserved).
+    assertEquals("foo%28%27&%27%29", Sanitizers.escapeUri(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "foo(%27&')", SanitizedContent.ContentKind.URI)));
+    // Test SanitizedContent of the wrong kind -- it should be completely escaped.
+    assertEquals("%2528%2529", Sanitizers.escapeUri(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "%28%29", SanitizedContent.ContentKind.HTML)));
   }
 
   public final void testNormalizeUriAndFilterNormalizeUri() {
@@ -301,6 +345,12 @@ public class SanitizersTest extends TestCase {
     assertEquals("#", Sanitizers.filterNormalizeUri("#"));
     assertEquals("/", Sanitizers.filterNormalizeUri("/"));
     assertEquals("", Sanitizers.filterNormalizeUri(""));
+    assertEquals("javascript:handleClick%28%29", Sanitizers.filterNormalizeUri(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "javascript:handleClick()", SanitizedContent.ContentKind.URI)));
+    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "javascript:handleClick()", SanitizedContent.ContentKind.HTML)));
   }
 
   public final void testEscapeHtml() {
@@ -381,17 +431,90 @@ public class SanitizersTest extends TestCase {
     assertEquals(escapedAscii, Sanitizers.normalizeHtmlNospace(ASCII_CHARS_SOYDATA));
   }
 
-  public final void testStripHtmlTags() {
-    assertEquals("", Sanitizers.stripHtmlTags("", true));
-    assertEquals("Hello, World!", Sanitizers.stripHtmlTags("Hello, World!", true));
-    assertEquals("Hello,&#32;World!", Sanitizers.stripHtmlTags("Hello, World!", false));
-    assertEquals("Hello, World!", Sanitizers.stripHtmlTags("<b>Hello, World!</b>", true));
-    assertEquals(
-        "Hello, &quot;World!&quot;", Sanitizers.stripHtmlTags("<b>Hello, \"World!\"</b>", true));
-    assertEquals(
-        "Hello,&#32;&quot;World!&quot;",
-        Sanitizers.stripHtmlTags("<b>Hello, \"World!\"</b>", false));
-    assertEquals("42", Sanitizers.stripHtmlTags("42", true));
+  private static final String stripHtmlTags(String html, boolean spacesOk) {
+    return Sanitizers.stripHtmlTags(html, null, spacesOk);
   }
 
+  public final void testStripHtmlTags() {
+    assertEquals("", stripHtmlTags("", true));
+    assertEquals("Hello, World!", stripHtmlTags("Hello, World!", true));
+    assertEquals("Hello,&#32;World!", stripHtmlTags("Hello, World!", false));
+    assertEquals("Hello, World!", stripHtmlTags("<b>Hello, World!</b>", true));
+    assertEquals(
+        "Hello, &quot;World!&quot;", stripHtmlTags("<b>Hello, \"World!\"</b>", true));
+    assertEquals(
+        "Hello,&#32;&quot;World!&quot;",
+        stripHtmlTags("<b>Hello, \"World!\"</b>", false));
+    assertEquals("42", stripHtmlTags("42", true));
+    // Don't merge content around tags into an entity.
+    assertEquals("&amp;amp;", stripHtmlTags("&<hr>amp;", true));
+  }
+
+  private static final TagWhitelist TEST_WHITELIST = new TagWhitelist(
+      "b", "br", "ul", "li", "table", "tr", "td");
+
+  private static final String cleanHtml(String html) {
+    return Sanitizers.stripHtmlTags(html, TEST_WHITELIST, true);
+  }
+
+  public final void testTagWhitelisting() {
+    assertEquals("<b>Hello, World!</b>", cleanHtml("<b>Hello, World!</b>"));
+    assertEquals("<b>Hello, World!</b>", cleanHtml("<b onclick='evil()'>Hello, World!</b>"));
+    assertEquals("<b>Hello, <br> World!</b>", cleanHtml("<b>Hello, <br/> World!</b>"));
+    // Don't add end tags for void elements.
+    assertEquals("<b>Hello, <br> World!</b>", cleanHtml("<b>Hello, <br/> World!"));
+    assertEquals("<b>Hello, <br> World!</b>", cleanHtml("<b>Hello, <br> World!"));
+    // Missing open tag.
+    assertEquals("Hello, <br> World!", cleanHtml("Hello, <br/> World!"));
+    // A truncated tag is not a tag.
+    assertEquals("Hello, &lt;br", cleanHtml("Hello, <br"));
+    // Test boundary conditions at end of input.
+    assertEquals("Hello, &lt;", cleanHtml("Hello, <"));
+    assertEquals("Hello, &lt;/", cleanHtml("Hello, </"));
+    assertEquals("Hello, &lt; World", cleanHtml("Hello, < World"));
+    // Don't be confused by attributes that merge into the tag name.
+    assertEquals("", cleanHtml("<img/onload=alert(1337)>"));
+    assertEquals("foo", cleanHtml("<i/onmouseover=alert(1337)>foo</i>"));
+    assertEquals("AB", cleanHtml("A<img/onload=alert(1337)>B"));
+    // Don't create new tags from parts that were not originally adjacent.
+    assertEquals(
+        "&lt;img onload=alert(1337)",
+        cleanHtml("<<img/onload=alert(1337)>img onload=alert(1337)"));
+    // Test external layout breakers.
+    // <ul><li>Foo</ul></li> would be bad since it is equivalent to
+    // <ul><li>Foo</li></ul></li>
+    assertEquals("<ul><li>Foo</li></ul>", cleanHtml("<ul><li>Foo</ul>"));
+    // We put the close tags in the wrong place but in a way that is safe.
+    assertEquals("<ul><li>1<li>2</li></li></ul>", cleanHtml("<ul><li>1<li>2</ul>"));
+    assertEquals("<table><tr><td></td></tr></table>", cleanHtml("<table><tr><td>"));
+    // Don't merge content around tags into an entity.
+    assertEquals("&amp;amp;", cleanHtml("&<hr>amp;"));
+  }
+
+  public final void testFilterNoAutoescape() {
+    // Filter out anything marked with sanitized content of kind "text" which indicates it
+    // previously was constructed without any escaping.
+    assertEquals(SoyData.createFromExistingData("zSoyz"), Sanitizers.filterNoAutoescape(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("x", SanitizedContent.ContentKind.TEXT)));
+    assertEquals(SoyData.createFromExistingData("zSoyz"),
+        Sanitizers.filterNoAutoescape(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "<!@*!@(*!@(>", SanitizedContent.ContentKind.TEXT)));
+
+    // Everything else should be let through. Hope it's safe!
+    assertEquals(SoyData.createFromExistingData("<div>test</div>"),
+        Sanitizers.filterNoAutoescape(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "<div>test</div>", SanitizedContent.ContentKind.HTML)));
+    assertEquals(SoyData.createFromExistingData("foo='bar'"),
+        Sanitizers.filterNoAutoescape(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "foo='bar'", SanitizedContent.ContentKind.ATTRIBUTES)));
+    assertEquals(SoyData.createFromExistingData(".foo{color:green}"),
+        Sanitizers.filterNoAutoescape(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            ".foo{color:green}", SanitizedContent.ContentKind.CSS)));
+    assertEquals(SoyData.createFromExistingData("<div>test</div>"),
+        Sanitizers.filterNoAutoescape(SoyData.createFromExistingData("<div>test</div>")));
+    assertEquals(SoyData.createFromExistingData("null"),
+        Sanitizers.filterNoAutoescape(SoyData.createFromExistingData(null)));
+    assertEquals(SoyData.createFromExistingData("123"),
+        Sanitizers.filterNoAutoescape(SoyData.createFromExistingData(123)));
+  }
 }

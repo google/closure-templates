@@ -28,8 +28,10 @@ import javax.annotation.Nullable;
 /**
  * Static methods to compute the unique message id for a message.
  *
+ * @author Kai Huang
  */
 public class SoyMsgIdComputer {
+
 
   private SoyMsgIdComputer() {}
 
@@ -44,17 +46,59 @@ public class SoyMsgIdComputer {
    * @param msgParts The parts of the message.
    * @param meaning The meaning string, or null if none (usually null).
    * @param contentType Content type of the document that this message will appear in (e.g.
-   *     "{@code text/html}", or null if not used..
+   *     "{@code text/html}", or null if not used.
+   * @return The computed message id.
    */
   public static long computeMsgId(
       List<SoyMsgPart> msgParts, @Nullable String meaning, @Nullable String contentType) {
+    return computeMsgIdHelper(msgParts, meaning, contentType, false);
+  }
+
+
+  /**
+   * Computes an alternate unique message id for a message, given the message parts, the meaning
+   * string (if any), and the content type (if any). These are the only elements incorporated into
+   * the message id.
+   *
+   * <p> In particular, note that the id of a message does not change when its desc changes.
+   *
+   * <p> Important: This is an alternate message id computation using braced placeholders. Only use
+   * this function instead of {@link #computeMsgId} if you know that you need this alternate format.
+   *
+   * @param msgParts The parts of the message.
+   * @param meaning The meaning string, or null if none (usually null).
+   * @param contentType Content type of the document that this message will appear in (e.g.
+   *     "{@code text/html}", or null if not used..
+   * @return The computed message id.
+   */
+  public static long computeMsgIdUsingBracedPhs(
+      List<SoyMsgPart> msgParts, @Nullable String meaning, @Nullable String contentType) {
+    return computeMsgIdHelper(msgParts, meaning, contentType, true);
+  }
+
+
+  /**
+   * Computes the unique message id for a message, given the message parts, the meaning string (if
+   * any), and the content type (if any). These are the only elements incorporated into the message
+   * id.
+   *
+   * <p> In particular, note that the id of a message does not change when its desc changes.
+   *
+   * @param msgParts The parts of the message.
+   * @param meaning The meaning string, or null if none (usually null).
+   * @param contentType Content type of the document that this message will appear in (e.g.
+   *     "{@code text/html}", or null if not used..
+   */
+  private static long computeMsgIdHelper(
+      List<SoyMsgPart> msgParts, @Nullable String meaning, @Nullable String contentType,
+      boolean doUseBracedPhs) {
 
     // Important: Do not change this algorithm. Doing so will break backwards compatibility.
 
     // Note: For people who know what "presentation" means in this context, the joinedParts string
     // is exactly the same as the presentation.
     StringBuilder joinedParts = new StringBuilder();
-    appendMsgPartsToTcStringBuilder(joinedParts, msgParts);
+    appendMsgPartsToTcStringBuilder(joinedParts, msgParts, doUseBracedPhs);
 
     long fp = SoyMsgIdComputer.fingerprint(joinedParts.toString());
 
@@ -78,20 +122,33 @@ public class SoyMsgIdComputer {
    *
    * @param stringBuilder The StringBuilder to append to.
    * @param soyMsgParts The list of SoyMsgParts to add.
+   * @param doUseBracedPhs Whether to use braced placeholders.
    */
   private static void appendMsgPartsToTcStringBuilder(
-      StringBuilder stringBuilder, List<SoyMsgPart> soyMsgParts) {
+      StringBuilder stringBuilder, List<SoyMsgPart> soyMsgParts, boolean doUseBracedPhs) {
+
     for (SoyMsgPart msgPart : soyMsgParts) {
+
       if (msgPart instanceof SoyMsgRawTextPart) {
         stringBuilder.append(((SoyMsgRawTextPart) msgPart).getRawText());
+
       } else if (msgPart instanceof SoyMsgPlaceholderPart) {
+        if (doUseBracedPhs) {
+          stringBuilder.append('{');
+        }
         stringBuilder.append(((SoyMsgPlaceholderPart) msgPart).getPlaceholderName());
+        if (doUseBracedPhs) {
+          stringBuilder.append('}');
+        }
+
       } else if (msgPart instanceof SoyMsgPluralRemainderPart) {
         stringBuilder.append(IcuSyntaxUtils.getPluralRemainderString());
+
       } else if (msgPart instanceof SoyMsgPluralPart) {
-        appendPluralToStringBuilder(stringBuilder, (SoyMsgPluralPart) msgPart);
+        appendPluralToStringBuilder(stringBuilder, (SoyMsgPluralPart) msgPart, doUseBracedPhs);
+
       } else if (msgPart instanceof SoyMsgSelectPart) {
-        appendSelectToStringBuilder(stringBuilder, (SoyMsgSelectPart) msgPart);
+        appendSelectToStringBuilder(stringBuilder, (SoyMsgSelectPart) msgPart, doUseBracedPhs);
       }
     }
   }
@@ -101,9 +158,10 @@ public class SoyMsgIdComputer {
    * Appends the text representation of a plural part to a StringBuilder.
    * @param stringBuilder The StringBuilder to append to.
    * @param soyMsgPluralPart The SoyMsgPluralPart to add.
+   * @param doUseBracedPhs Whether to use braced placeholders.
    */
   private static void appendPluralToStringBuilder(
-      StringBuilder stringBuilder, SoyMsgPluralPart soyMsgPluralPart) {
+      StringBuilder stringBuilder, SoyMsgPluralPart soyMsgPluralPart, boolean doUseBracedPhs) {
 
     stringBuilder.append(IcuSyntaxUtils.getPluralOpenString(
         soyMsgPluralPart.getPluralVarName(), soyMsgPluralPart.getOffset()));
@@ -113,26 +171,28 @@ public class SoyMsgIdComputer {
       stringBuilder.append(IcuSyntaxUtils.getPluralCaseOpenString(
           pluralCaseSpec.getType() == SoyMsgPluralCaseSpec.Type.OTHER ?
               null : pluralCaseSpec.getExplicitValue()));
-      appendMsgPartsToTcStringBuilder(stringBuilder, pluralCase.second);
+      appendMsgPartsToTcStringBuilder(stringBuilder, pluralCase.second, doUseBracedPhs);
       stringBuilder.append(IcuSyntaxUtils.getPluralCaseCloseString());
     }
 
     stringBuilder.append(IcuSyntaxUtils.getPluralCloseString());
   }
 
+
   /**
    * Appends the text representation of a select part to a StringBuilder.
    * @param stringBuilder The StringBuilder to append to.
    * @param soyMsgSelectPart The SoyMsgSelectPart to add.
+   * @param doUseBracedPhs Whether to use braced placeholders.
    */
   private static void appendSelectToStringBuilder(
-      StringBuilder stringBuilder, SoyMsgSelectPart soyMsgSelectPart) {
+      StringBuilder stringBuilder, SoyMsgSelectPart soyMsgSelectPart, boolean doUseBracedPhs) {
 
     stringBuilder.append(IcuSyntaxUtils.getSelectOpenString(soyMsgSelectPart.getSelectVarName()));
 
     for (Pair<String, List<SoyMsgPart>> oneSelectCase : soyMsgSelectPart.getCases()) {
       stringBuilder.append(IcuSyntaxUtils.getSelectCaseOpenString(oneSelectCase.first));
-      appendMsgPartsToTcStringBuilder(stringBuilder, oneSelectCase.second);
+      appendMsgPartsToTcStringBuilder(stringBuilder, oneSelectCase.second, doUseBracedPhs);
       stringBuilder.append(IcuSyntaxUtils.getSelectCaseCloseString());
     }
 
@@ -140,7 +200,8 @@ public class SoyMsgIdComputer {
   }
 
 
-  @VisibleForTesting static long fingerprint(String str) {
+  @VisibleForTesting
+  static long fingerprint(String str) {
 
     byte[] strBytes = str.getBytes(Charsets.UTF_8);
     int hi = hash32(strBytes, 0, strBytes.length, 0);
@@ -150,7 +211,7 @@ public class SoyMsgIdComputer {
       hi ^= 0x130f9bef;
       lo ^= 0x94a0a928;
     }
-    return (((long)hi) << 32) | (lo & 0xffffffffl);
+    return (((long)hi) << 32) | (lo & 0xffffffffL);
   }
 
 

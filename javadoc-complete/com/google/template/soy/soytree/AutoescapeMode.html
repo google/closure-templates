@@ -132,6 +132,13 @@ Specifies how the outputs of <code>{print}</code> commands that lack escaping di
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Auto-escaping is off for the template.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html#STRICT">STRICT</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strict form of contextual autoescaping in which no autoescape-cancelling print directives nor
+ calls to non-strict templates are allowed.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html#TRUE">TRUE</A></B></CODE>
 
 <BR>
@@ -251,6 +258,23 @@ public static final <A HREF="../../../../../com/google/template/soy/soytree/Auto
 <DL>
 <DD>Contextual auto-escaping is on for the template so directiveless prints will be escaped based
  on the surrounding context.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="STRICT"><!-- --></A><H3>
+STRICT</H3>
+<PRE>
+public static final <A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</A> <B>STRICT</B></PRE>
+<DL>
+<DD>Strict form of contextual autoescaping in which no autoescape-cancelling print directives nor
+ calls to non-strict templates are allowed.
+
+ TODO: The initial implementation of strict mode does not allow any calls, and is only intended
+ for internal use when parsing {param} and {let} blocks of non-text kind. Once fully implemented
+ change the name.
 <P>
 <DL>
 </DL>

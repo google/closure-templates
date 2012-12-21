@@ -31,6 +31,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for RoundFunction.
  *
+ * @author Kai Huang
  */
 public class RoundFunctionTest extends TestCase {
 

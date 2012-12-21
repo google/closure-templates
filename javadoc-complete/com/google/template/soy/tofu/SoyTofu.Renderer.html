@@ -132,6 +132,15 @@ Renderer for a template.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#renderAsSanitizedContent()">renderAsSanitizedContent</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Renders the strict-mode template as a SanitizedContent object, which can be used as an input
+ to another Soy template, or used to verify that the output type is correct.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html" title="interface in com.google.template.soy.tofu">SoyTofu.Renderer</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setActiveDelegatePackageNames(java.util.Set)">setActiveDelegatePackageNames</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;activeDelegatePackageNames)</CODE>
 
@@ -252,7 +261,7 @@ setIjData</H3>
  will be converted to a <code>SoyMapData</code> object on each call. This may not be a big deal if
  you only need to use the data object once. But if you need to reuse the same data object for
  multiple calls, it's more efficient to build your own <code>SoyMapData</code> object and reuse it
- with <A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setIjData(java.util.Map)"><CODE>(SoyMapData)</CODE></A>.
+ with <A HREF="../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.html#setIjData(com.google.template.soy.data.SoyMapData)"><CODE>setIjData(SoyMapData)</CODE></A>.
 <P>
 <DD><DL>
 </DL>
@@ -349,6 +358,25 @@ render</H3>
 <P>
 <DD><DL>
 </DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="renderAsSanitizedContent()"><!-- --></A><H3>
+renderAsSanitizedContent</H3>
+<PRE>
+<A HREF="../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</A> <B>renderAsSanitizedContent</B>()</PRE>
+<DL>
+<DD>Renders the strict-mode template as a SanitizedContent object, which can be used as an input
+ to another Soy template, or used to verify that the output type is correct.
+
+ Strict-autoescaped templates will return a SanitizedContent object corresponding to the
+ kind="..." attribute of the template.
+<P>
+<DD><DL>
+
+<DT><B>Throws:</B>
+<DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/IllegalArgumentException.html?is-external=true" title="class or interface in java.lang">IllegalArgumentException</A></CODE> - If the template is non-strict.</DL>
 </DD>
 </DL>
 <HR>

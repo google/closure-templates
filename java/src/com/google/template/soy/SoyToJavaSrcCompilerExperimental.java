@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.inject.Injector;
@@ -42,6 +43,7 @@ import java.util.List;
  *
  * <p> Warning: The Java Src backend is experimental (repetitive, untested, undocumented).
  *
+ * @author Kai Huang
  */
 public class SoyToJavaSrcCompilerExperimental {
 
@@ -53,7 +55,7 @@ public class SoyToJavaSrcCompilerExperimental {
       "Usage:\n" +
       "java com.google.template.soy.SoyToJavaSrcCompilerExperimental  \\\n" +
       "     [<flag1> <flag2> ...] --outputPath <outputPath>  \\\n" +
-      "     <soyFile1> <soyFile2> ...\n";
+      "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
 
   @Option(name = "--inputPrefix",
@@ -61,6 +63,25 @@ public class SoyToJavaSrcCompilerExperimental {
                   " listed on the command line. This is a literal string prefix, so you'll need" +
                   " to include a trailing slash if necessary.")
   private String inputPrefix = "";
+
+  @Option(name = "--srcs",
+          usage = "[Required] The list of source Soy files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> srcs = Lists.newArrayList();
+
+  @Option(name = "--deps",
+          usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
+                  " analysis/checking, but will not generate code for dep files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> deps = Lists.newArrayList();
+
+  @Option(name = "--allowExternalCalls",
+          usage = "Whether to allow external calls. New projects should set this to false, and" +
+                  " existing projects should remove existing external calls and then set this" +
+                  " to false. It will save you a lot of headaches. Currently defaults to true" +
+                  " for backward compatibility.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
+  private boolean allowExternalCalls = true;
 
   @Option(name = "--outputPath",
           usage = "The path to the output file (if exists, will be overwritten).")
@@ -124,28 +145,32 @@ public class SoyToJavaSrcCompilerExperimental {
 
   private void execMain(String[] args) throws IOException, SoySyntaxException {
 
-    CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-    if (arguments.size() == 0) {
-      MainClassUtils.exitWithError("Must provide list of Soy files.", cmdLineParser, USAGE_PREFIX);
-    }
+    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
+
+    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
+      @Override public Void apply(String errorMsg) {
+        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
+        return null;
+      }
+    };
 
     Injector injector = MainClassUtils.createInjector(messagePluginModule, pluginModules);
 
-    // Create SoyJavaSrcOptions.
-    SoyJavaSrcOptions javaSrcOptions = new SoyJavaSrcOptions();
-    javaSrcOptions.setCodeStyle(codeStyle);
-    javaSrcOptions.setBidiGlobalDir(bidiGlobalDir);
-
     // Create SoyFileSet.
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    for (String arg : arguments) {
-      sfsBuilder.add(new File(inputPrefix + arg));
-    }
+    MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments, deps,
+        exitWithErrorFn);
+    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     sfsBuilder.setCssHandlingScheme(CssHandlingScheme.valueOf(cssHandlingScheme.toUpperCase()));
     if (compileTimeGlobalsFile.length() > 0) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
     SoyFileSet sfs = sfsBuilder.build();
+
+    // Create SoyJavaSrcOptions.
+    SoyJavaSrcOptions javaSrcOptions = new SoyJavaSrcOptions();
+    javaSrcOptions.setCodeStyle(codeStyle);
+    javaSrcOptions.setBidiGlobalDir(bidiGlobalDir);
 
     // Create SoyMsgBundle.
     SoyMsgBundle msgBundle = null;

@@ -52,7 +52,7 @@ function windowTitle()
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoySyntaxExceptionUtils.html" title="class in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoytreeUtils.Shortcircuiter.html" title="interface in com.google.template.soy.soytree"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/soytree/SoytreeUtils.html" target="_top"><B>FRAMES</B></A>  &nbsp;
@@ -73,9 +73,9 @@ function windowTitle()
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_top"></A>
@@ -125,22 +125,6 @@ Shared utilities for the 'soytree' package.
 </TR>
 </TABLE>
 &nbsp;
-<!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoytreeUtils.html#SoytreeUtils()">SoytreeUtils</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-</TABLE>
-&nbsp;
 <!-- ========== METHOD SUMMARY =========== -->
 
 <A NAME="method_summary"><!-- --></A>
@@ -166,17 +150,6 @@ T</CODE></FONT></TD>
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clones the given node and then generates and sets new ids on all the cloned nodes (by default,
  SoyNode.clone() creates cloned nodes with the same ids as the original nodes).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoytreeUtils.html#createSoySyntaxExceptionWithMetaInfo(java.lang.String, java.lang.Throwable, com.google.template.soy.soytree.SoyNode)">createSoySyntaxExceptionWithMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause,
-                                     <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;soyNode)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a SoySyntaxException with template name and file name filled in based on the given
- Soy parse tree node.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -226,23 +199,6 @@ T</CODE></FONT></TD>
 &nbsp;
 <P>
 
-<!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="SoytreeUtils()"><!-- --></A><H3>
-SoytreeUtils</H3>
-<PRE>
-public <B>SoytreeUtils</B>()</PRE>
-<DL>
-</DL>
-
 <!-- ============ METHOD DETAIL ========== -->
 
 <A NAME="method_detail"><!-- --></A>
@@ -252,27 +208,6 @@ public <B>SoytreeUtils</B>()</PRE>
 <B>Method Detail</B></FONT></TH>
 </TR>
 </TABLE>
-
-<A NAME="createSoySyntaxExceptionWithMetaInfo(java.lang.String, java.lang.Throwable, com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
-createSoySyntaxExceptionWithMetaInfo</H3>
-<PRE>
-public static <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>createSoySyntaxExceptionWithMetaInfo</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                                                                      <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause,
-                                                                      <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;soyNode)</PRE>
-<DL>
-<DD>Creates a SoySyntaxException with template name and file name filled in based on the given
- Soy parse tree node. The Soy node must be part of a full parse tree.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>message</CODE> - The exception message, or null to use the messge from the cause. Parameters
-     'message' and 'cause' may not both be null.<DD><CODE>cause</CODE> - The cause of this exception, or null if not applicable. Parameters 'message' and
-     'cause' may not both be null.<DD><CODE>soyNode</CODE> - The Soy node to get the template name and file name from.
-<DT><B>Returns:</B><DD>The new SoySyntaxException object.</DL>
-</DD>
-</DL>
-<HR>
 
 <A NAME="execOnAllV2Exprs(com.google.template.soy.soytree.SoyNode, com.google.template.soy.exprtree.AbstractExprNodeVisitor)"><!-- --></A><H3>
 execOnAllV2Exprs</H3>
@@ -363,7 +298,7 @@ public static &lt;T extends <A HREF="../../../../../com/google/template/soy/soyt
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoySyntaxExceptionUtils.html" title="class in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoytreeUtils.Shortcircuiter.html" title="interface in com.google.template.soy.soytree"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/soytree/SoytreeUtils.html" target="_top"><B>FRAMES</B></A>  &nbsp;
@@ -384,9 +319,9 @@ public static &lt;T extends <A HREF="../../../../../com/google/template/soy/soyt
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_bottom"></A>

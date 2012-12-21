@@ -16,7 +16,7 @@
 // Author: Kai Huang
 
 {delpackage alpha}
-{namespace soy.examples.delegates1}
+{namespace soy.examples.delegates}
 
 
 /**
@@ -29,8 +29,8 @@
 
 /**
  * Delegate package 'alpha' implementation of 'myDelegates.foo'.
- * @param moo Note: Must list same params for all implementations, even if not all
- *     implementations use a param.
+ * @param moo Note: Must list same params for all implementations, even if not all implementations
+ *     use a param.
  */
 {deltemplate myDelegates.foo}
   myDelegates.foo from delegate package alpha (moo = {$moo}).

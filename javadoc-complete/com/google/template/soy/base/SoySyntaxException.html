@@ -103,12 +103,16 @@ Class SoySyntaxException</H2>
 </DL>
 <HR>
 <DL>
-<DT><PRE><FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/ParametersAreNullableByDefault.html?is-external=true" title="class or interface in javax.annotation">@ParametersAreNullableByDefault</A>
-</FONT>public class <B>SoySyntaxException</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/RuntimeException.html?is-external=true" title="class or interface in java.lang">RuntimeException</A></DL>
+<DT><PRE>public class <B>SoySyntaxException</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/RuntimeException.html?is-external=true" title="class or interface in java.lang">RuntimeException</A></DL>
 </PRE>
 
 <P>
 Exception for Soy syntax errors.
+
+ <p> Important: Users outside of Soy code may call the getters on a SoySyntaxException object
+ created by the Soy compiler, but should not create or mutate SoySyntaxException objects
+ themselves (treat constructors, creation functions, and mutating methods as
+ superpackage-private).
 <P>
 
 <P>
@@ -127,23 +131,29 @@ Exception for Soy syntax errors.
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.String)">SoySyntaxException</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>Deprecated.</B>&nbsp;<I>Do not use outside of Soy code (treat as superpackage-private).</I></TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected </CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.String, java.lang.Throwable)">SoySyntaxException</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
                    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected </CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.Throwable)">SoySyntaxException</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Note: For this constructor, the message will be set to the cause's message.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -154,6 +164,56 @@ Exception for Soy syntax errors.
 <TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
 <TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
 <B>Method Summary</B></FONT></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#associateMetaInfo(com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)">associateMetaInfo</A></B>(<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc,
+                  <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                  <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#createCausedWithMetaInfo(java.lang.String, java.lang.Throwable, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)">createCausedWithMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause,
+                         <A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc,
+                         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#createCausedWithoutMetaInfo(java.lang.String, java.lang.Throwable)">createCausedWithoutMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#createWithMetaInfo(java.lang.String, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)">createWithMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                   <A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc,
+                   <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                   <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#createWithoutMetaInfo(java.lang.String)">createWithoutMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -186,30 +246,6 @@ Exception for Soy syntax errors.
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The name of the template in which the problem occurred or <code>null</code> if not known.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#setFilePath(java.lang.String)">setFilePath</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the file name for this SoySyntaxException instance.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A></B>(<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;sourceLocation)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the source location at which the problem occurred.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html#setTemplateName(java.lang.String)">setTemplateName</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the template name for this SoySyntaxException instance.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Throwable"><!-- --></A>
@@ -246,8 +282,13 @@ Exception for Soy syntax errors.
 <A NAME="SoySyntaxException(java.lang.String)"><!-- --></A><H3>
 SoySyntaxException</H3>
 <PRE>
-public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
+<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Deprecated.html?is-external=true" title="class or interface in java.lang">@Deprecated</A>
+</FONT>public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
 <DL>
+<DD><B>Deprecated.</B>&nbsp;<I>Do not use outside of Soy code (treat as superpackage-private).</I>
+<P>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
 <DL>
 <DT><B>Parameters:</B><DD><CODE>message</CODE> - A detailed description of what the syntax error is.</DL>
 </DL>
@@ -256,9 +297,11 @@ public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/
 <A NAME="SoySyntaxException(java.lang.String, java.lang.Throwable)"><!-- --></A><H3>
 SoySyntaxException</H3>
 <PRE>
-public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
+protected <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                             <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
 <DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
 <DL>
 <DT><B>Parameters:</B><DD><CODE>message</CODE> - A detailed description of what the syntax error is.<DD><CODE>cause</CODE> - The Throwable underlying this syntax error.</DL>
 </DL>
@@ -267,9 +310,11 @@ public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/
 <A NAME="SoySyntaxException(java.lang.Throwable)"><!-- --></A><H3>
 SoySyntaxException</H3>
 <PRE>
-public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
+protected <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
 <DL>
-<DD>Note: For this constructor, the message will be set to the cause's message.
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+
+ <p> Note: For this constructor, the message will be set to the cause's message.
 <P>
 <DL>
 <DT><B>Parameters:</B><DD><CODE>cause</CODE> - The Throwable underlying this syntax error.</DL>
@@ -284,6 +329,103 @@ public <B>SoySyntaxException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/
 <B>Method Detail</B></FONT></TH>
 </TR>
 </TABLE>
+
+<A NAME="createWithoutMetaInfo(java.lang.String)"><!-- --></A><H3>
+createWithoutMetaInfo</H3>
+<PRE>
+public static <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>createWithoutMetaInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message.
+<DT><B>Returns:</B><DD>The new SoySyntaxException object.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="createCausedWithoutMetaInfo(java.lang.String, java.lang.Throwable)"><!-- --></A><H3>
+createCausedWithoutMetaInfo</H3>
+<PRE>
+public static <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>createCausedWithoutMetaInfo</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                             <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                                                             <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message, or null to use the message from the cause.<DD><CODE>cause</CODE> - The cause of this exception.
+<DT><B>Returns:</B><DD>The new SoySyntaxException object.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="createWithMetaInfo(java.lang.String, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)"><!-- --></A><H3>
+createWithMetaInfo</H3>
+<PRE>
+public static <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>createWithMetaInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                                                    <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                    <A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc,
+                                                    <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                                                    <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message.<DD><CODE>srcLoc</CODE> - The source location of the error, or null if unknown. At most one of srcLoc and
+     filePath may be nonnull (prefer srcLoc since it contains more info).<DD><CODE>filePath</CODE> - The file path of the file containing the error. At most one of srcLoc and
+     filePath may be nonnull (prefer srcLoc since it contains more info).<DD><CODE>templateName</CODE> - The name of the template containing the error, or null if not available.
+<DT><B>Returns:</B><DD>The new SoySyntaxException object.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="createCausedWithMetaInfo(java.lang.String, java.lang.Throwable, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)"><!-- --></A><H3>
+createCausedWithMetaInfo</H3>
+<PRE>
+public static <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>createCausedWithMetaInfo</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause,
+                                                          <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                          <A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc,
+                                                          <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                                                          <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message, or null to use the message from the cause.<DD><CODE>cause</CODE> - The cause of this exception.<DD><CODE>srcLoc</CODE> - The source location of the error, or null if unknown. At most one of srcLoc and
+     filePath may be nonnull (prefer srcLoc since it contains more info).<DD><CODE>filePath</CODE> - The file path of the file containing the error. At most one of srcLoc and
+     filePath may be nonnull (prefer srcLoc since it contains more info).<DD><CODE>templateName</CODE> - The name of the template containing the error, or null if not available.
+<DT><B>Returns:</B><DD>The new SoySyntaxException object.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="associateMetaInfo(com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)"><!-- --></A><H3>
+associateMetaInfo</H3>
+<PRE>
+public <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>associateMetaInfo</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                            <A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc,
+                                            <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
+                                            <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>srcLoc</CODE> - The source location of the error, or null if unknown. At most one of srcLoc and
+     filePath may be nonnull (prefer srcLoc since it contains more info).<DD><CODE>filePath</CODE> - The file path of the file containing the error. At most one of srcLoc and
+     filePath may be nonnull (prefer srcLoc since it contains more info).<DD><CODE>templateName</CODE> - The name of the template containing the error, or null if not available.
+<DT><B>Returns:</B><DD>This same SoySyntaxException object, for convenience.</DL>
+</DD>
+</DL>
+<HR>
 
 <A NAME="getSourceLocation()"><!-- --></A><H3>
 getSourceLocation</H3>
@@ -308,48 +450,6 @@ getTemplateName</H3>
 <P>
 <DD><DL>
 </DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setFilePath(java.lang.String)"><!-- --></A><H3>
-setFilePath</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>setFilePath</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Sets the file name for this SoySyntaxException instance.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>filePath</CODE> - The path of the file containing the syntax error.
-<DT><B>Returns:</B><DD>This same instance.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setSourceLocation(com.google.template.soy.base.SourceLocation)"><!-- --></A><H3>
-setSourceLocation</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>setSourceLocation</B>(<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;sourceLocation)</PRE>
-<DL>
-<DD>Sets the source location at which the problem occurred.
-<P>
-<DD><DL>
-
-<DT><B>Returns:</B><DD>This same instance.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setTemplateName(java.lang.String)"><!-- --></A><H3>
-setTemplateName</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A> <B>setTemplateName</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</PRE>
-<DL>
-<DD>Sets the template name for this SoySyntaxException instance.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>templateName</CODE> - The name of the template containing the syntax error.
-<DT><B>Returns:</B><DD>This same instance.</DL>
 </DD>
 </DL>
 <HR>

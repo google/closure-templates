@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.internal.base.Pair;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 
 import java.util.List;
 import java.util.Locale;
@@ -36,8 +36,9 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
-public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialContentNode {
+public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
 
   /** Pattern for matching the 'phname' attribute. */
@@ -106,16 +107,16 @@ public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderI
 
         if (matcher.find()) {
           if (userSuppliedPlaceholderName != null) {
-            throw new SoySyntaxException(
+            throw SoySyntaxException.createWithoutMetaInfo(
                 "Found multiple 'phname' attributes in HTML tag (phname=\"" +
-                userSuppliedPlaceholderName + "\" and phname=\"" + matcher.group(1) + "\").");
+                    userSuppliedPlaceholderName + "\" and phname=\"" + matcher.group(1) + "\").");
           }
 
           userSuppliedPlaceholderName = matcher.group(1);
           if (! BaseUtils.isIdentifier(userSuppliedPlaceholderName)) {
-            throw new SoySyntaxException(
+            throw SoySyntaxException.createWithoutMetaInfo(
                 "Found 'phname' attribute in HTML tag that is not a valid identifier (phname=\"" +
-                userSuppliedPlaceholderName + "\").");
+                    userSuppliedPlaceholderName + "\").");
           }
 
           RawTextNode replacementChild =
@@ -139,9 +140,10 @@ public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderI
     Matcher matcher = TAG_NAME_PATTERN.matcher(firstChildText);
     if (!matcher.find()) {
       if (firstChildText.startsWith("<!--")) {
-        throw new SoySyntaxException("Found HTML comment within 'msg' block: " + firstChildText);
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Found HTML comment within 'msg' block: " + firstChildText);
       } else {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createWithoutMetaInfo(
             "HTML tag within 'msg' block has no tag name: " + firstChildText);
       }
     }

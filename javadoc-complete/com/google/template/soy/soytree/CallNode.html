@@ -97,14 +97,14 @@ Class CallNode</H2>
                   <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.soytree.CallNode</B>
 </PRE>
 <DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A></DD>
+<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A></DD>
 </DL>
 <DL>
 <DT><B>Direct Known Subclasses:</B> <DD><A HREF="../../../../../com/google/template/soy/soytree/CallBasicNode.html" title="class in com.google.template.soy.soytree">CallBasicNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/CallDelegateNode.html" title="class in com.google.template.soy.soytree">CallDelegateNode</A></DD>
 </DL>
 <HR>
 <DL>
-<DT><PRE>public abstract class <B>CallNode</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentCommandNode.html" title="class in com.google.template.soy.soytree">AbstractParentCommandNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;<DT>implements <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></DL>
+<DT><PRE>public abstract class <B>CallNode</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentCommandNode.html" title="class in com.google.template.soy.soytree">AbstractParentCommandNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;<DT>implements <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></DL>
 </PRE>
 
 <P>
@@ -180,9 +180,10 @@ Node representing a call.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected </CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#CallNode(int, java.lang.String, com.google.template.soy.soytree.CallNode.CommandTextInfo)">CallNode</A></B>(int&nbsp;id,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#CallNode(int, java.lang.String, com.google.template.soy.soytree.CallNode.CommandTextInfo, com.google.common.collect.ImmutableList)">CallNode</A></B>(int&nbsp;id,
          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandName,
-         <A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html" title="class in com.google.template.soy.soytree">CallNode.CommandTextInfo</A>&nbsp;commandTextInfo)</CODE>
+         <A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html" title="class in com.google.template.soy.soytree">CallNode.CommandTextInfo</A>&nbsp;commandTextInfo,
+         com.google.common.collect.ImmutableList&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;escapingDirectiveNames)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Protected constructor for use by subclasses.</TD>
@@ -220,23 +221,23 @@ Node representing a call.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#getAllExprUnions()">getAllExprUnions</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the list of expressions in this node.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the list of expressions in this node.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#getExpr()">getExpr</A></B>()</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#getDataExpr()">getDataExpr</A></B>()</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the expression for the data to pass, or null if not applicable.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#getExprText()">getExprText</A></B>()</CODE>
+<CODE>&nbsp;com.google.common.collect.ImmutableList&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#getEscapingDirectiveNames()">getEscapingDirectiveNames</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the expression text for the data to pass, or null if not applicable.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the escaping directives, applied from left to right.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -280,11 +281,20 @@ Node representing a call.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected static&nbsp;<A HREF="../../../../../com/google/template/soy/internal/base/Pair.html" title="class in com.google.template.soy.internal.base">Pair</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#parseDataAttributeHelper(java.lang.String)">parseDataAttributeHelper</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;dataAttr)</CODE>
+<CODE>protected static&nbsp;<A HREF="../../../../../com/google/template/soy/internal/base/Pair.html" title="class in com.google.template.soy.internal.base">Pair</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</A>,<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#parseDataAttributeHelper(java.lang.String, java.lang.String)">parseDataAttributeHelper</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;dataAttr,
+                         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandTextForErrorMsgs)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Private helper function for subclass constructors to parse the 'data' attribute.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.html#setEscapingDirectiveNames(com.google.common.collect.ImmutableList)">setEscapingDirectiveNames</A></B>(com.google.common.collect.ImmutableList&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;escapingDirectiveNames)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the inferred escaping directives.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -319,7 +329,7 @@ Node representing a call.
 <TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#clone()">clone</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getLocation()">getLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setLocation(com.google.template.soy.base.SourceLocation)">setLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#clone()">clone</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNode"><!-- --></A>
@@ -392,17 +402,20 @@ public static final <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Str
 </TR>
 </TABLE>
 
-<A NAME="CallNode(int, java.lang.String, com.google.template.soy.soytree.CallNode.CommandTextInfo)"><!-- --></A><H3>
+<A NAME="CallNode(int, java.lang.String, com.google.template.soy.soytree.CallNode.CommandTextInfo, com.google.common.collect.ImmutableList)"><!-- --></A><H3>
 CallNode</H3>
 <PRE>
 protected <B>CallNode</B>(int&nbsp;id,
                    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandName,
-                   <A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html" title="class in com.google.template.soy.soytree">CallNode.CommandTextInfo</A>&nbsp;commandTextInfo)</PRE>
+                   <A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html" title="class in com.google.template.soy.soytree">CallNode.CommandTextInfo</A>&nbsp;commandTextInfo,
+                   com.google.common.collect.ImmutableList&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;escapingDirectiveNames)</PRE>
 <DL>
 <DD>Protected constructor for use by subclasses.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>id</CODE> - The id for this node.<DD><CODE>commandTextInfo</CODE> - All the info derived from the command text.</DL>
+<DT><B>Parameters:</B><DD><CODE>id</CODE> - The id for this node.<DD><CODE>commandTextInfo</CODE> - All the info derived from the command text.<DD><CODE>escapingDirectiveNames</CODE> - Call-site escaping directives used by strict autoescaping.
+     This is inferred by the autoescaper and not part of the syntax, and thus is not in the
+     CommandTextInfo.</DL>
 </DL>
 <HR>
 
@@ -427,10 +440,11 @@ protected <B>CallNode</B>(<A HREF="../../../../../com/google/template/soy/soytre
 </TR>
 </TABLE>
 
-<A NAME="parseDataAttributeHelper(java.lang.String)"><!-- --></A><H3>
+<A NAME="parseDataAttributeHelper(java.lang.String, java.lang.String)"><!-- --></A><H3>
 parseDataAttributeHelper</H3>
 <PRE>
-protected static final <A HREF="../../../../../com/google/template/soy/internal/base/Pair.html" title="class in com.google.template.soy.internal.base">Pair</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>parseDataAttributeHelper</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;dataAttr)</PRE>
+protected static final <A HREF="../../../../../com/google/template/soy/internal/base/Pair.html" title="class in com.google.template.soy.internal.base">Pair</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</A>,<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&gt; <B>parseDataAttributeHelper</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;dataAttr,
+                                                                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandTextForErrorMsgs)</PRE>
 <DL>
 <DD>Private helper function for subclass constructors to parse the 'data' attribute.
 <P>
@@ -438,8 +452,8 @@ protected static final <A HREF="../../../../../com/google/template/soy/internal/
 </DL>
 </DD>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>dataAttr</CODE> - The 'data' attribute in a call.
-<DT><B>Returns:</B><DD>A pair (isPassingData, exprText) where exprText may be null.</DL>
+<DT><B>Parameters:</B><DD><CODE>dataAttr</CODE> - The 'data' attribute in a call.<DD><CODE>commandTextForErrorMsgs</CODE> - The call command text for use in error messages.
+<DT><B>Returns:</B><DD>A pair (isPassingData, dataExpr) where dataExpr may be null.</DL>
 </DD>
 </DL>
 <HR>
@@ -476,26 +490,11 @@ public boolean <B>isPassingAllData</B>()</PRE>
 </DL>
 <HR>
 
-<A NAME="getExprText()"><!-- --></A><H3>
-getExprText</H3>
+<A NAME="getDataExpr()"><!-- --></A><H3>
+getDataExpr</H3>
 <PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getExprText</B>()</PRE>
-<DL>
-<DD>Returns the expression text for the data to pass, or null if not applicable.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getExpr()"><!-- --></A><H3>
-getExpr</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt; <B>getExpr</B>()</PRE>
+<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A>
+</FONT>public <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt; <B>getDataExpr</B>()</PRE>
 <DL>
 <DD>Returns the expression for the data to pass, or null if not applicable.
 <P>
@@ -513,12 +512,12 @@ getUserSuppliedPlaceholderName</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getUserSuppliedPlaceholderName</B>()</PRE>
 <DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#getUserSuppliedPlaceholderName()">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></B></DD>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#getUserSuppliedPlaceholderName()">SoyNode.MsgPlaceholderInitialNode</A></CODE></B></DD>
 <DD>Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
  this raw name can be any identifier (not necessarily in upper-underscore format).
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#getUserSuppliedPlaceholderName()">getUserSuppliedPlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#getUserSuppliedPlaceholderName()">getUserSuppliedPlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></CODE></DL>
 </DD>
 <DD><DL>
 
@@ -574,14 +573,13 @@ getAllExprUnions</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/ExprUnion.html" title="class in com.google.template.soy.soytree">ExprUnion</A>&gt; <B>getAllExprUnions</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html#getAllExprUnions()">SoyNode.ExprHolderNode</A></CODE></B></DD>
-<DD>Gets the list of expressions in this node.
+<DD>Returns the list of expressions in this node.
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html#getAllExprUnions()">getAllExprUnions</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>The list of expressions in this node.</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -591,11 +589,11 @@ genBasePlaceholderName</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>genBasePlaceholderName</B>()</PRE>
 <DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genBasePlaceholderName()">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></B></DD>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genBasePlaceholderName()">SoyNode.MsgPlaceholderInitialNode</A></CODE></B></DD>
 <DD>Generates the base placeholder name for this node.
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genBasePlaceholderName()">genBasePlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genBasePlaceholderName()">genBasePlaceholderName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></CODE></DL>
 </DD>
 <DD><DL>
 
@@ -609,12 +607,12 @@ genSamenessKey</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A> <B>genSamenessKey</B>()</PRE>
 <DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genSamenessKey()">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></B></DD>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genSamenessKey()">SoyNode.MsgPlaceholderInitialNode</A></CODE></B></DD>
 <DD>Generates the key object used in comparisons to determine whether two placeholder nodes
  should be represented by the same placeholder.
 <P>
 <DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html#genSamenessKey()">genSamenessKey</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></CODE></DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html#genSamenessKey()">genSamenessKey</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></CODE></DL>
 </DD>
 <DD><DL>
 
@@ -638,6 +636,40 @@ public <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockNode
 <DD><DL>
 
 <DT><B>Returns:</B><DD>This node's parent.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="setEscapingDirectiveNames(com.google.common.collect.ImmutableList)"><!-- --></A><H3>
+setEscapingDirectiveNames</H3>
+<PRE>
+public void <B>setEscapingDirectiveNames</B>(com.google.common.collect.ImmutableList&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;escapingDirectiveNames)</PRE>
+<DL>
+<DD>Sets the inferred escaping directives.
+<P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getEscapingDirectiveNames()"><!-- --></A><H3>
+getEscapingDirectiveNames</H3>
+<PRE>
+public com.google.common.collect.ImmutableList&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>getEscapingDirectiveNames</B>()</PRE>
+<DL>
+<DD>Returns the escaping directives, applied from left to right.
+
+ It is an error to call this before the contextual rewriter has been run.
+<P>
+<DD><DL>
+</DL>
+</DD>
+<DD><DL>
+</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

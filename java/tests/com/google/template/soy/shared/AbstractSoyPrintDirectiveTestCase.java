@@ -45,6 +45,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * Utilities for testing Soy print directives.
  *
+ * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
@@ -58,6 +59,18 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
    */
   protected void assertTofuOutput(
       String expectedOutput, Object value, SoyTofuPrintDirective directive, Object... args) {
+    assertTofuOutput(SoyData.createFromExistingData(expectedOutput), value, directive, args);
+  }
+
+
+  /**
+   * @param expectedOutput The expected result of applying directive to value with args.
+   * @param value The test input.
+   * @param directive The directive whose {@link SoyTofuPrintDirective#applyForTofu} is under test.
+   * @param args Arguments to the Soy directive.
+   */
+  protected void assertTofuOutput(
+      SoyData expectedOutput, Object value, SoyTofuPrintDirective directive, Object... args) {
     ImmutableList.Builder<SoyData> argsData = ImmutableList.builder();
     for (Object arg : args) {
       argsData.add(SoyData.createFromExistingData(arg));

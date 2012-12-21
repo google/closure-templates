@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -38,6 +36,8 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
+ * @author Mohamed Eldawy
  */
 public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
@@ -71,16 +71,12 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
 
     if (!matcher.matches()) {
-      throw new SoySyntaxException("Invalid 'plural' command text \"" + commandText + "\".");
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Invalid 'plural' command text \"" + commandText + "\".");
     }
 
-    try {
-      pluralExpr = (new ExpressionParser(matcher.group(1))).parseExpression();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText("expression", tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText("expression", pe);
-    }
+    pluralExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+        matcher.group(1), "Invalid expression in 'plural' command text \"" + commandText + "\".");
 
     // If attributes were given, parse them.
     if (matcher.group(2) != null) {
@@ -89,10 +85,12 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
         String offsetAttribute = attributes.get("offset");
         offset = Integer.parseInt(offsetAttribute);
         if (offset < 0) {
-          throw new SoySyntaxException("The 'offset' for plural must be a nonnegative integer.");
+          throw SoySyntaxException.createWithoutMetaInfo(
+              "The 'offset' for plural must be a nonnegative integer.");
         }
       } catch (NumberFormatException nfe) {
-        throw createExceptionForInvalidCommandText("offset", nfe);
+        throw SoySyntaxException.createCausedWithoutMetaInfo(
+            "Invalid offset in 'plural' command text \"" + commandText + "\".", nfe);
       }
     } else {
       offset = 0;
@@ -108,19 +106,6 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     super(orig);
     this.offset = orig.offset;
     this.pluralExpr = orig.pluralExpr.clone();
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param desc Description of the invalid item.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidCommandText(String desc, Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid " + desc + " in 'plural' command text \"" + getCommandText() + "\".", cause);
   }
 
 

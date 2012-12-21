@@ -27,6 +27,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 /**
  * Ways of escaping dynamic content in a template.
  *
+ * @author Mike Samuel
  */
 public enum EscapingMode {
 
@@ -60,7 +61,7 @@ public enum EscapingMode {
    * or a subset of attribute value pairs.
    * Throw a runtime exception otherwise.
    */
-  FILTER_HTML_ATTRIBUTE(true, null),
+  FILTER_HTML_ATTRIBUTES(true, null),
 
   /**
    * Encode all HTML special characters and quotes, and JS newlines as if to allow them to appear
@@ -89,9 +90,9 @@ public enum EscapingMode {
   /**
    * If the value is numeric, renders it as a numeric value so that <code>{$n}px</code> works as
    * expected, otherwise if it is a valid CSS identifier, outputs it without escaping, otherwise
-   * surrounds in quotes and escapes like {@link #ESCAPE_CSS_STRING}.
+   * replaces with "zSoyz" to indicate the value was rejected.
    */
-  FILTER_CSS_VALUE(false, null),
+  FILTER_CSS_VALUE(false, ContentKind.CSS),
 
   /**
    * Percent encode all URI special characters and characters that cannot appear unescaped in a URI
@@ -117,7 +118,14 @@ public enum EscapingMode {
   /**
    * The explicit rejection of escaping.
    */
-  NO_AUTOESCAPE(false, null),
+  NO_AUTOESCAPE(false, ContentKind.TEXT),
+
+  /**
+   * Outputs plain text and performs no escaping. Unlike noAutoescape, this will not fail if passed
+   * SanitizedContent of kind TEXT, but this may never be used manually by the developer. This has
+   * no escaping.
+   */
+  TEXT(false, ContentKind.TEXT, true /* internal-only */)
   ;
 
   /** The Soy <code>{print}</code> directive that specifies this escaping mode. */
@@ -129,11 +137,19 @@ public enum EscapingMode {
   /** The kind of content produced by the escaping directive associated with this escaping mode. */
   public final @Nullable ContentKind contentKind;
 
+  /** Whether this directive is only for internal use by the contextual autoescaper. */
+  public final boolean isInternalOnly;
 
-  EscapingMode(boolean escapesQuotes, @Nullable ContentKind contentKind) {
+
+  EscapingMode(boolean escapesQuotes, @Nullable ContentKind contentKind, boolean internalOnly) {
     this.directiveName = "|" + CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
     this.isHtmlEmbeddable = escapesQuotes;
     this.contentKind = contentKind;
+    this.isInternalOnly = internalOnly;
+  }
+
+  EscapingMode(boolean escapesQuotes, @Nullable ContentKind contentKind) {
+    this(escapesQuotes, contentKind, false /* internal-only */);
   }
 
 

@@ -31,6 +31,7 @@ import java.util.Map;
 /**
  * Unit tests for AbstractExprNodeVisitor.
  *
+ * @author Kai Huang
  */
 public class AbstractExprNodeVisitorTest extends TestCase {
 
@@ -49,8 +50,7 @@ public class AbstractExprNodeVisitorTest extends TestCase {
     MinusOpNode expr = new MinusOpNode();
     expr.addChild(new IntegerNode(17));
 
-    DataRefNode dataRef = new DataRefNode(false);
-    dataRef.addChild(new DataRefKeyNode("boo"));
+    DataRefNode dataRef = new DataRefNode(false, false, "boo");
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
@@ -67,8 +67,7 @@ public class AbstractExprNodeVisitorTest extends TestCase {
     MinusOpNode expr = new MinusOpNode();
     expr.addChild(new FloatNode(17.0));
 
-    DataRefNode dataRef = new DataRefNode(false);
-    dataRef.addChild(new DataRefKeyNode("boo"));
+    DataRefNode dataRef = new DataRefNode(false, false, "boo");
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
@@ -103,7 +102,7 @@ public class AbstractExprNodeVisitorTest extends TestCase {
     }
 
     @Override protected void visitDataRefNode(DataRefNode node) {
-      if (node.numChildren() != 1) {
+      if (node.numChildren() > 0) {
         throw new UnsupportedOperationException();
       }
       resultStack.push(env.get(node.getFirstKey()));

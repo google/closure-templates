@@ -53,7 +53,7 @@ function windowTitle()
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderException.html" title="class in com.google.template.soy.sharedpasses.render"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitorFactory.html" title="class in com.google.template.soy.sharedpasses.render"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../../index.html?com/google/template/soy/sharedpasses/render/RenderVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="RenderVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -73,9 +73,9 @@ function windowTitle()
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_top"></A>
@@ -107,28 +107,100 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
 
- <p> The rendered output will be appended to the <code>outputSb</code> provided to the constructor.
+ <p> The rendered output will be appended to the Appendable provided to the constructor.
 <P>
 
 <P>
 <HR>
 
 <P>
-<!-- ======== NESTED CLASS SUMMARY ======== -->
+<!-- =========== FIELD SUMMARY =========== -->
 
-<A NAME="nested_class_summary"><!-- --></A>
+<A NAME="field_summary"><!-- --></A>
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
 <TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
 <TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Nested Class Summary</B></FONT></TH>
+<B>Field Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;interface</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">RenderVisitor.RenderVisitorFactory</A></B></CODE>
+<CODE>protected &nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#activeDelPackageNames">activeDelPackageNames</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Interface for a factory that creates an RenderVisitor.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The set of active delegate package names.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html" title="interface in com.google.template.soy.shared">SoyCssRenamingMap</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#cssRenamingMap">cssRenamingMap</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CSS renaming map.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#data">data</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The current template data.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#env">env</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The current environment.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#evalVisitorFactory">evalVisitorFactory</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Factory for creating an instance of EvalVisitor.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#ijData">ijData</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The current injected data.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#msgBundle">msgBundle</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The bundle of translated messages, or null to use the messages from the Soy source.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#outputBufStack">outputBufStack</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The stack of output Appendables (current output buffer is top of stack).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimePrintDirective.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimePrintDirective</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#soyJavaRuntimeDirectivesMap">soyJavaRuntimeDirectivesMap</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Map of all SoyJavaRuntimePrintDirectives (name to directive).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#templateRegistry">templateRegistry</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The bundle containing all the templates that may be rendered.</TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -143,10 +215,9 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected </CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#RenderVisitor(java.util.Map, com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory, com.google.template.soy.sharedpasses.render.RenderVisitor.RenderVisitorFactory, java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)">RenderVisitor</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimePrintDirective.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimePrintDirective</A>&gt;&nbsp;soyJavaRuntimeDirectivesMap,
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#RenderVisitor(java.util.Map, com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory, java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)">RenderVisitor</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimePrintDirective.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimePrintDirective</A>&gt;&nbsp;soyJavaRuntimeDirectivesMap,
               <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A>&nbsp;evalVisitorFactory,
-              <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">RenderVisitor.RenderVisitorFactory</A>&nbsp;renderVisitorFactory,
-              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputSb,
+              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputBuf,
               <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A>&nbsp;templateRegistry,
               <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
               <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData,
@@ -170,14 +241,23 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#applyDirective(java.lang.String, com.google.template.soy.data.SoyData, java.util.List, com.google.template.soy.soytree.PrintNode)">applyDirective</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;directiveName,
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#applyDirective(java.lang.String, com.google.template.soy.data.SoyData, java.util.List, com.google.template.soy.soytree.SoyNode)">applyDirective</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;directiveName,
                <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value,
                <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&nbsp;args,
-               <A HREF="../../../../../../com/google/template/soy/soytree/PrintNode.html" title="class in com.google.template.soy.soytree">PrintNode</A>&nbsp;printNode)</CODE>
+               <A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Protected helper for visitPrintNode() to apply a directive.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Protected helper to apply a print directive.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html" title="class in com.google.template.soy.sharedpasses.render">RenderVisitor</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#createHelperInstance(java.lang.Appendable, com.google.template.soy.data.SoyMapData)">createHelperInstance</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputBuf,
+                     <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a helper instance for rendering a subtemplate.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -214,6 +294,14 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)">visitDebuggerNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;void</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitForeachNode(com.google.template.soy.soytree.ForeachNode)">visitForeachNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/ForeachNode.html" title="class in com.google.template.soy.soytree">ForeachNode</A>&nbsp;node)</CODE>
 
 <BR>
@@ -222,31 +310,7 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)">visitForeachNonemptyNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html" title="class in com.google.template.soy.soytree">ForeachNonemptyNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitForNode(com.google.template.soy.soytree.ForNode)">visitForNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/ForNode.html" title="class in com.google.template.soy.soytree">ForNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)">visitGoogMsgRefNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -278,6 +342,14 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitLogNode(com.google.template.soy.soytree.LogNode)">visitLogNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;void</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgHtmlTagNode(com.google.template.soy.soytree.MsgHtmlTagNode)">visitMsgHtmlTagNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgHtmlTagNode.html" title="class in com.google.template.soy.soytree">MsgHtmlTagNode</A>&nbsp;node)</CODE>
 
 <BR>
@@ -287,62 +359,6 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;void</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgNode(com.google.template.soy.soytree.MsgNode)">visitMsgNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)">visitMsgPluralCaseNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralCaseNode.html" title="class in com.google.template.soy.soytree">MsgPluralCaseNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)">visitMsgPluralDefaultNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralDefaultNode.html" title="class in com.google.template.soy.soytree">MsgPluralDefaultNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)">visitMsgPluralNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralNode.html" title="class in com.google.template.soy.soytree">MsgPluralNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)">visitMsgPluralRemainderNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralRemainderNode.html" title="class in com.google.template.soy.soytree">MsgPluralRemainderNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)">visitMsgSelectCaseNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgSelectCaseNode.html" title="class in com.google.template.soy.soytree">MsgSelectCaseNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)">visitMsgSelectDefaultNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html#visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)">visitMsgSelectNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgSelectNode.html" title="class in com.google.template.soy.soytree">MsgSelectNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -394,7 +410,7 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 <TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visit(com.google.template.soy.soytree.SoyNode)">visit</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallNode(com.google.template.soy.soytree.CallNode)">visitCallNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamContentNode(com.google.template.soy.soytree.CallParamContentNode)">visitCallParamContentNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamValueNode(com.google.template.soy.soytree.CallParamValueNode)">visitCallParamValueNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildren</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildrenAllowingConcurrentModification</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)">visitForeachIfemptyNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfCondNode(com.google.template.soy.soytree.IfCondNode)">visitIfCondNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfElseNode(com.google.template.soy.soytree.IfElseNode)">visitIfElseNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLoopNode(com.google.template.soy.soytree.SoyNode.LoopNode)">visitLoopNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)">visitMsgPlaceholderNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitPrintDirectiveNode(com.google.template.soy.soytree.PrintDirectiveNode)">visitPrintDirectiveNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchCaseNode(com.google.template.soy.soytree.SwitchCaseNode)">visitSwitchCaseNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchDefaultNode(com.google.template.soy.soytree.SwitchDefaultNode)">visitSwitchDefaultNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateBasicNode(com.google.template.soy.soytree.TemplateBasicNode)">visitTemplateBasicNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateDelegateNode(com.google.template.soy.soytree.TemplateDelegateNode)">visitTemplateDelegateNode</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visit(com.google.template.soy.soytree.SoyNode)">visit</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallNode(com.google.template.soy.soytree.CallNode)">visitCallNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamContentNode(com.google.template.soy.soytree.CallParamContentNode)">visitCallParamContentNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamValueNode(com.google.template.soy.soytree.CallParamValueNode)">visitCallParamValueNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildren</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildrenAllowingConcurrentModification</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)">visitForeachIfemptyNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)">visitForeachNonemptyNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)">visitGoogMsgRefNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfCondNode(com.google.template.soy.soytree.IfCondNode)">visitIfCondNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfElseNode(com.google.template.soy.soytree.IfElseNode)">visitIfElseNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLoopNode(com.google.template.soy.soytree.SoyNode.LoopNode)">visitLoopNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)">visitMsgPlaceholderNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)">visitMsgPluralCaseNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)">visitMsgPluralDefaultNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)">visitMsgPluralNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)">visitMsgPluralRemainderNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)">visitMsgSelectCaseNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)">visitMsgSelectDefaultNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)">visitMsgSelectNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitPrintDirectiveNode(com.google.template.soy.soytree.PrintDirectiveNode)">visitPrintDirectiveNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchCaseNode(com.google.template.soy.soytree.SwitchCaseNode)">visitSwitchCaseNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchDefaultNode(com.google.template.soy.soytree.SwitchDefaultNode)">visitSwitchDefaultNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateBasicNode(com.google.template.soy.soytree.TemplateBasicNode)">visitTemplateBasicNode</A>, <A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateDelegateNode(com.google.template.soy.soytree.TemplateDelegateNode)">visitTemplateDelegateNode</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNodeVisitor"><!-- --></A>
@@ -418,6 +434,135 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 &nbsp;
 <P>
 
+<!-- ============ FIELD DETAIL =========== -->
+
+<A NAME="field_detail"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
+<B>Field Detail</B></FONT></TH>
+</TR>
+</TABLE>
+
+<A NAME="soyJavaRuntimeDirectivesMap"><!-- --></A><H3>
+soyJavaRuntimeDirectivesMap</H3>
+<PRE>
+protected final <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimePrintDirective.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimePrintDirective</A>&gt; <B>soyJavaRuntimeDirectivesMap</B></PRE>
+<DL>
+<DD>Map of all SoyJavaRuntimePrintDirectives (name to directive).
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="evalVisitorFactory"><!-- --></A><H3>
+evalVisitorFactory</H3>
+<PRE>
+protected final <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A> <B>evalVisitorFactory</B></PRE>
+<DL>
+<DD>Factory for creating an instance of EvalVisitor.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="templateRegistry"><!-- --></A><H3>
+templateRegistry</H3>
+<PRE>
+protected final <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A> <B>templateRegistry</B></PRE>
+<DL>
+<DD>The bundle containing all the templates that may be rendered.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="data"><!-- --></A><H3>
+data</H3>
+<PRE>
+protected final <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A> <B>data</B></PRE>
+<DL>
+<DD>The current template data.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="ijData"><!-- --></A><H3>
+ijData</H3>
+<PRE>
+protected final <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A> <B>ijData</B></PRE>
+<DL>
+<DD>The current injected data.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="env"><!-- --></A><H3>
+env</H3>
+<PRE>
+protected final <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&gt; <B>env</B></PRE>
+<DL>
+<DD>The current environment.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="activeDelPackageNames"><!-- --></A><H3>
+activeDelPackageNames</H3>
+<PRE>
+protected final <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Set.html?is-external=true" title="class or interface in java.util">Set</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>activeDelPackageNames</B></PRE>
+<DL>
+<DD>The set of active delegate package names.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="msgBundle"><!-- --></A><H3>
+msgBundle</H3>
+<PRE>
+protected final <A HREF="../../../../../../com/google/template/soy/msgs/SoyMsgBundle.html" title="interface in com.google.template.soy.msgs">SoyMsgBundle</A> <B>msgBundle</B></PRE>
+<DL>
+<DD>The bundle of translated messages, or null to use the messages from the Soy source.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="cssRenamingMap"><!-- --></A><H3>
+cssRenamingMap</H3>
+<PRE>
+protected final <A HREF="../../../../../../com/google/template/soy/shared/SoyCssRenamingMap.html" title="interface in com.google.template.soy.shared">SoyCssRenamingMap</A> <B>cssRenamingMap</B></PRE>
+<DL>
+<DD>CSS renaming map.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="outputBufStack"><!-- --></A><H3>
+outputBufStack</H3>
+<PRE>
+protected <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Deque.html?is-external=true" title="class or interface in java.util">Deque</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&gt; <B>outputBufStack</B></PRE>
+<DL>
+<DD>The stack of output Appendables (current output buffer is top of stack).
+<P>
+<DL>
+</DL>
+</DL>
+
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 
 <A NAME="constructor_detail"><!-- --></A>
@@ -428,17 +573,15 @@ Visitor for rendering the template subtree rooted at a given SoyNode.
 </TR>
 </TABLE>
 
-<A NAME="RenderVisitor(java.util.Map, com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory, com.google.template.soy.sharedpasses.render.RenderVisitor.RenderVisitorFactory, java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)"><!-- --></A><H3>
+<A NAME="RenderVisitor(java.util.Map, com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory, java.lang.Appendable, com.google.template.soy.soytree.TemplateRegistry, com.google.template.soy.data.SoyMapData, com.google.template.soy.data.SoyMapData, java.util.Deque, java.util.Set, com.google.template.soy.msgs.SoyMsgBundle, com.google.template.soy.shared.SoyCssRenamingMap)"><!-- --></A><H3>
 RenderVisitor</H3>
 <PRE>
 protected <B>RenderVisitor</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                         <A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../../com/google/template/soy/shared/restricted/SoyJavaRuntimePrintDirective.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaRuntimePrintDirective</A>&gt;&nbsp;soyJavaRuntimeDirectivesMap,
                         <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/EvalVisitor.EvalVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">EvalVisitor.EvalVisitorFactory</A>&nbsp;evalVisitorFactory,
-                        <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render">RenderVisitor.RenderVisitorFactory</A>&nbsp;renderVisitorFactory,
-                        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputSb,
+                        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputBuf,
                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                         <A HREF="../../../../../../com/google/template/soy/soytree/TemplateRegistry.html" title="class in com.google.template.soy.soytree">TemplateRegistry</A>&nbsp;templateRegistry,
-                        <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                         <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data,
                         <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                         <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;ijData,
@@ -454,10 +597,10 @@ protected <B>RenderVisitor</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/java
 <DL>
 <DT><B>Parameters:</B><DD><CODE>soyJavaRuntimeDirectivesMap</CODE> - Map of all SoyJavaRuntimePrintDirectives (name to
      directive). Can be null if the subclass that is calling this constructor plans to override
-     the default implementation of <code>applyDirective()</code>.<DD><CODE>evalVisitorFactory</CODE> - Factory for creating an instance of EvalVisitor.<DD><CODE>renderVisitorFactory</CODE> - Factory for creating an instance of EvalVisitor.<DD><CODE>outputSb</CODE> - The Appendable to append the output to.<DD><CODE>templateRegistry</CODE> - A registry of all templates. Should never be null (except in some unit
+     the default implementation of <code>applyDirective()</code>.<DD><CODE>evalVisitorFactory</CODE> - Factory for creating an instance of EvalVisitor.<DD><CODE>outputBuf</CODE> - The Appendable to append the output to.<DD><CODE>templateRegistry</CODE> - A registry of all templates. Should never be null (except in some unit
      tests).<DD><CODE>data</CODE> - The current template data.<DD><CODE>ijData</CODE> - The current injected data.<DD><CODE>env</CODE> - The current environment, or null if this is the initial call.<DD><CODE>activeDelPackageNames</CODE> - The set of active delegate package names. Allowed to be null when
-     known to be irrelevant.<DD><CODE>msgBundle</CODE> - The bundle of translated messages, or null to use the messages from the
-     Soy source.<DD><CODE>cssRenamingMap</CODE> - The CSS renaming map, or null if not applicable.</DL>
+     known to be irrelevant.<DD><CODE>msgBundle</CODE> - The bundle of translated messages, or null to use the messages from the Soy
+     source.<DD><CODE>cssRenamingMap</CODE> - The CSS renaming map, or null if not applicable.</DL>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -469,6 +612,21 @@ protected <B>RenderVisitor</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/java
 <B>Method Detail</B></FONT></TH>
 </TR>
 </TABLE>
+
+<A NAME="createHelperInstance(java.lang.Appendable, com.google.template.soy.data.SoyMapData)"><!-- --></A><H3>
+createHelperInstance</H3>
+<PRE>
+protected <A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html" title="class in com.google.template.soy.sharedpasses.render">RenderVisitor</A> <B>createHelperInstance</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Appendable.html?is-external=true" title="class or interface in java.lang">Appendable</A>&nbsp;outputBuf,
+                                             <A HREF="../../../../../../com/google/template/soy/data/SoyMapData.html" title="class in com.google.template.soy.data">SoyMapData</A>&nbsp;data)</PRE>
+<DL>
+<DD>Creates a helper instance for rendering a subtemplate.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>outputBuf</CODE> - The Appendable to append the output to.<DD><CODE>data</CODE> - The template data.
+<DT><B>Returns:</B><DD>The newly created RenderVisitor instance.</DL>
+</DD>
+</DL>
+<HR>
 
 <A NAME="visitTemplateNode(com.google.template.soy.soytree.TemplateNode)"><!-- --></A><H3>
 visitTemplateNode</H3>
@@ -512,132 +670,6 @@ protected void <B>visitMsgNode</B>(<A HREF="../../../../../../com/google/templat
 </DL>
 <HR>
 
-<A NAME="visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)"><!-- --></A><H3>
-visitMsgPluralNode</H3>
-<PRE>
-protected void <B>visitMsgPluralNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralNode.html" title="class in com.google.template.soy.soytree">MsgPluralNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)">visitMsgPluralNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)"><!-- --></A><H3>
-visitMsgPluralCaseNode</H3>
-<PRE>
-protected void <B>visitMsgPluralCaseNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralCaseNode.html" title="class in com.google.template.soy.soytree">MsgPluralCaseNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)">visitMsgPluralCaseNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)"><!-- --></A><H3>
-visitMsgPluralDefaultNode</H3>
-<PRE>
-protected void <B>visitMsgPluralDefaultNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralDefaultNode.html" title="class in com.google.template.soy.soytree">MsgPluralDefaultNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)">visitMsgPluralDefaultNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)"><!-- --></A><H3>
-visitMsgPluralRemainderNode</H3>
-<PRE>
-protected void <B>visitMsgPluralRemainderNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgPluralRemainderNode.html" title="class in com.google.template.soy.soytree">MsgPluralRemainderNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)">visitMsgPluralRemainderNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)"><!-- --></A><H3>
-visitMsgSelectNode</H3>
-<PRE>
-protected void <B>visitMsgSelectNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgSelectNode.html" title="class in com.google.template.soy.soytree">MsgSelectNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)">visitMsgSelectNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)"><!-- --></A><H3>
-visitMsgSelectCaseNode</H3>
-<PRE>
-protected void <B>visitMsgSelectCaseNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgSelectCaseNode.html" title="class in com.google.template.soy.soytree">MsgSelectCaseNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)">visitMsgSelectCaseNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)"><!-- --></A><H3>
-visitMsgSelectDefaultNode</H3>
-<PRE>
-protected void <B>visitMsgSelectDefaultNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)">visitMsgSelectDefaultNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)"><!-- --></A><H3>
-visitGoogMsgNode</H3>
-<PRE>
-protected void <B>visitGoogMsgNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)"><!-- --></A><H3>
-visitGoogMsgRefNode</H3>
-<PRE>
-protected void <B>visitGoogMsgRefNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)">visitGoogMsgRefNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
 <A NAME="visitMsgHtmlTagNode(com.google.template.soy.soytree.MsgHtmlTagNode)"><!-- --></A><H3>
 visitMsgHtmlTagNode</H3>
 <PRE>
@@ -662,26 +694,6 @@ protected void <B>visitPrintNode</B>(<A HREF="../../../../../../com/google/templ
 </DD>
 <DD><DL>
 </DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="applyDirective(java.lang.String, com.google.template.soy.data.SoyData, java.util.List, com.google.template.soy.soytree.PrintNode)"><!-- --></A><H3>
-applyDirective</H3>
-<PRE>
-protected <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>applyDirective</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;directiveName,
-                                <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value,
-                                <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&nbsp;args,
-                                <A HREF="../../../../../../com/google/template/soy/soytree/PrintNode.html" title="class in com.google.template.soy.soytree">PrintNode</A>&nbsp;printNode)</PRE>
-<DL>
-<DD>Protected helper for visitPrintNode() to apply a directive.
-
- <p> This default implementation can be overridden by subclasses (such as TofuRenderVisitor)
- that have access to a potentially larger set of print directives.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>directiveName</CODE> - The name of the directive.<DD><CODE>value</CODE> - The value to apply the directive on.<DD><CODE>args</CODE> - The arguments to the directive.<DD><CODE>printNode</CODE> - The containing PrintNode. Only used for error reporting.
-<DT><B>Returns:</B><DD>The result of applying the directive with the given arguments to the given value.</DL>
 </DD>
 </DL>
 <HR>
@@ -770,20 +782,6 @@ protected void <B>visitForeachNode</B>(<A HREF="../../../../../../com/google/tem
 </DL>
 <HR>
 
-<A NAME="visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)"><!-- --></A><H3>
-visitForeachNonemptyNode</H3>
-<PRE>
-protected void <B>visitForeachNonemptyNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html" title="class in com.google.template.soy.soytree">ForeachNonemptyNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)">visitForeachNonemptyNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
 <A NAME="visitForNode(com.google.template.soy.soytree.ForNode)"><!-- --></A><H3>
 visitForNode</H3>
 <PRE>
@@ -840,6 +838,34 @@ protected void <B>visitCallParamNode</B>(<A HREF="../../../../../../com/google/t
 </DL>
 <HR>
 
+<A NAME="visitLogNode(com.google.template.soy.soytree.LogNode)"><!-- --></A><H3>
+visitLogNode</H3>
+<PRE>
+protected void <B>visitLogNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLogNode(com.google.template.soy.soytree.LogNode)">visitLogNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)"><!-- --></A><H3>
+visitDebuggerNode</H3>
+<PRE>
+protected void <B>visitDebuggerNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+<DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)">visitDebuggerNode</A></CODE> in class <CODE><A HREF="../../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="class in com.google.template.soy.soytree">AbstractSoyNodeVisitor</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Void.html?is-external=true" title="class or interface in java.lang">Void</A>&gt;</CODE></DL>
+</DD>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
 <A NAME="visitSoyNode(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
 visitSoyNode</H3>
 <PRE>
@@ -850,6 +876,26 @@ protected void <B>visitSoyNode</B>(<A HREF="../../../../../../com/google/templat
 </DD>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>node</CODE> - the visited node.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="applyDirective(java.lang.String, com.google.template.soy.data.SoyData, java.util.List, com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
+applyDirective</H3>
+<PRE>
+protected <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>applyDirective</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;directiveName,
+                                 <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value,
+                                 <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&gt;&nbsp;args,
+                                 <A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
+<DL>
+<DD>Protected helper to apply a print directive.
+
+ <p> This default implementation can be overridden by subclasses (such as TofuRenderVisitor)
+ that have access to a potentially larger set of print directives.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>directiveName</CODE> - The name of the directive.<DD><CODE>value</CODE> - The value to apply the directive on.<DD><CODE>args</CODE> - The arguments to the directive.<DD><CODE>node</CODE> - The node with the escaping. Only used for error reporting.
+<DT><B>Returns:</B><DD>The result of applying the directive with the given arguments to the given value.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->
@@ -883,7 +929,7 @@ protected void <B>visitSoyNode</B>(<A HREF="../../../../../../com/google/templat
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderException.html" title="class in com.google.template.soy.sharedpasses.render"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.RenderVisitorFactory.html" title="interface in com.google.template.soy.sharedpasses.render"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../../com/google/template/soy/sharedpasses/render/RenderVisitorFactory.html" title="class in com.google.template.soy.sharedpasses.render"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../../index.html?com/google/template/soy/sharedpasses/render/RenderVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="RenderVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -903,9 +949,9 @@ protected void <B>visitSoyNode</B>(<A HREF="../../../../../../com/google/templat
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;<A HREF="#nested_class_summary">NESTED</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_bottom"></A>

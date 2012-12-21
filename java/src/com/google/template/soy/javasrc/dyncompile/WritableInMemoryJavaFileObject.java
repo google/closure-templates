@@ -31,6 +31,7 @@ import java.io.Writer;
 /**
  * An in-memory file that stores the result of compiling Java source to Java bytecode.
  *
+ * @author Mike Samuel
  */
 final class WritableInMemoryJavaFileObject extends InMemoryJavaFileObject {
 

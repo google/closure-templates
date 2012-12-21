@@ -57,6 +57,7 @@ package com.google.template.soy.msgs.restricted;
  * This string needs to be generated in several places in Soy code, so the general
  * functions are provided here.
  *
+ * @author Mohamed Eldawy
  */
 public class IcuSyntaxUtils {
 
@@ -73,9 +74,9 @@ public class IcuSyntaxUtils {
    */
   public static String getPluralOpenString(String varName, int offset) {
     StringBuilder openingPartSb = new StringBuilder();
-    openingPartSb.append("{").append(varName).append(",plural,");
+    openingPartSb.append('{').append(varName).append(",plural,");
     if (offset != 0) {
-      openingPartSb.append("offset:").append(offset).append(" ");
+      openingPartSb.append("offset:").append(offset).append(' ');
     }
     return openingPartSb.toString();
   }

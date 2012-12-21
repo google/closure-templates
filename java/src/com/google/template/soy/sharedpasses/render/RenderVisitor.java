@@ -16,30 +16,24 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.AugmentedSoyMapData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
@@ -50,8 +44,8 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -60,15 +54,9 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.MsgPluralCaseNode;
-import com.google.template.soy.soytree.MsgPluralDefaultNode;
-import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgPluralRemainderNode;
-import com.google.template.soy.soytree.MsgSelectCaseNode;
-import com.google.template.soy.soytree.MsgSelectDefaultNode;
-import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -78,14 +66,11 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateConflictException;
-import com.google.template.soy.soytree.jssrc.GoogMsgNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
-
-import com.ibm.icu.text.PluralRules;
-import com.ibm.icu.util.ULocale;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -96,89 +81,57 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for rendering the template subtree rooted at a given SoyNode.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> The rendered output will be appended to the {@code outputSb} provided to the constructor.
+ * <p> The rendered output will be appended to the Appendable provided to the constructor.
  *
+ * @author Kai Huang
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
-  /**
-   * Interface for a factory that creates an RenderVisitor.
-   *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
-  public static interface RenderVisitorFactory {
-
-    /**
-     * Creates a RenderVisitor.
-     * @param outputSb The Appendable to append the output to.
-     * @param templateRegistry A registry of all templates.
-     * @param data The current template data.
-     * @param ijData The current injected data.
-     * @param env The current environment, or null if this is the initial call.
-     * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
-     *     when known to be irrelevant, i.e. when not using delegates feature.
-     * @param msgBundle The bundle of translated messages, or null to use the messages from the
-     *     Soy source.
-     * @param cssRenamingMap The CSS renaming map, or null if not applicable.
-     * @return The newly created RenderVisitor instance.
-     */
-    public RenderVisitor create(
-        Appendable outputSb, TemplateRegistry templateRegistry,
-        @Nullable SoyMapData data, @Nullable SoyMapData ijData,
-        @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
-        @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap);
-  }
-
-
   /** Map of all SoyJavaRuntimePrintDirectives (name to directive). */
-  private final Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap;
+  protected final Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap;
 
   /** Factory for creating an instance of EvalVisitor. */
-  private final EvalVisitorFactory evalVisitorFactory;
-
-  /** Factory for creating an instance of RenderVisitor. */
-  private final RenderVisitorFactory renderVisitorFactory;
-
-  /** The Appendable to append the output to. */
-  private final Appendable outputSb;
+  protected final EvalVisitorFactory evalVisitorFactory;
 
   /** The bundle containing all the templates that may be rendered. */
-  private final TemplateRegistry templateRegistry;
+  protected final TemplateRegistry templateRegistry;
 
   /** The current template data. */
-  private final SoyMapData data;
+  protected final SoyMapData data;
 
   /** The current injected data. */
-  private final SoyMapData ijData;
+  protected final SoyMapData ijData;
 
   /** The current environment. */
-  private final Deque<Map<String, SoyData>> env;
+  protected final Deque<Map<String, SoyData>> env;
 
   /** The set of active delegate package names. */
-  private final Set<String> activeDelPackageNames;
+  protected final Set<String> activeDelPackageNames;
 
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
-  private final SoyMsgBundle msgBundle;
+  protected final SoyMsgBundle msgBundle;
 
   /** CSS renaming map. */
-  private final SoyCssRenamingMap cssRenamingMap;
+  protected final SoyCssRenamingMap cssRenamingMap;
 
   /** The EvalVisitor for this instance (can reuse since 'data' and 'env' references stay same). */
   // Note: Don't use directly. Call eval() instead.
   private EvalVisitor evalVisitor;
 
-  /** The 'foreach' list to iterate over (only defined while rendering 'foreach'). */
-  private SoyListData foreachList;
+  /** The assistant visitor for msgs (lazily initialized). */
+  private RenderVisitorAssistantForMsgs assistantForMsgs;
 
-  /** Holds the value of the remainder for the current enclosing plural node. */
-  private int currPluralRemainderValue;
+  /** The stack of output Appendables (current output buffer is top of stack). */
+  protected Deque<Appendable> outputBufStack;
+
+  /** The current Appendable to append the output to. Equals the top element of outputStack. */
+  private Appendable currOutputBuf;
 
 
   /**
@@ -186,8 +139,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    *     directive). Can be null if the subclass that is calling this constructor plans to override
    *     the default implementation of {@code applyDirective()}.
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
-   * @param renderVisitorFactory Factory for creating an instance of EvalVisitor.
-   * @param outputSb The Appendable to append the output to.
+   * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
    *     tests).
    * @param data The current template data.
@@ -195,22 +147,21 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param env The current environment, or null if this is the initial call.
    * @param activeDelPackageNames The set of active delegate package names. Allowed to be null when
    *     known to be irrelevant.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    */
   protected RenderVisitor(
       @Nullable Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap,
-      EvalVisitorFactory evalVisitorFactory, RenderVisitorFactory renderVisitorFactory,
-      Appendable outputSb, @Nullable TemplateRegistry templateRegistry,
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData,
+      EvalVisitorFactory evalVisitorFactory, Appendable outputBuf,
+      @Nullable TemplateRegistry templateRegistry, SoyMapData data, @Nullable SoyMapData ijData,
       @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
+    Preconditions.checkNotNull(data);
+
     this.soyJavaRuntimeDirectivesMap = soyJavaRuntimeDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;
-    this.renderVisitorFactory = renderVisitorFactory;
-    this.outputSb = outputSb;
     this.templateRegistry = templateRegistry;
     this.data = data;
     this.ijData = ijData;
@@ -220,7 +171,34 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.cssRenamingMap = cssRenamingMap;
 
     this.evalVisitor = null;  // lazily initialized
-    this.currPluralRemainderValue = -1;
+    this.assistantForMsgs = null;  // lazily initialized
+
+    this.outputBufStack = new ArrayDeque<Appendable>();
+    pushOutputBuf(outputBuf);
+  }
+
+
+  /**
+   * Creates a helper instance for rendering a subtemplate.
+   *
+   * @param outputBuf The Appendable to append the output to.
+   * @param data The template data.
+   * @return The newly created RenderVisitor instance.
+   */
+  protected RenderVisitor createHelperInstance(Appendable outputBuf, SoyMapData data) {
+
+    return new RenderVisitor(
+        soyJavaRuntimeDirectivesMap, evalVisitorFactory, outputBuf, templateRegistry,
+        data, ijData, null, activeDelPackageNames, msgBundle, cssRenamingMap);
+  }
+
+
+  /**
+   * This method must only be called by assistant visitors, in particular
+   * RenderVisitorAssistantForMsgs.
+   */
+  void visitForUseByAssistants(SoyNode node) {
+    visit(node);
   }
 
 
@@ -239,169 +217,20 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitRawTextNode(RawTextNode node) {
-    append(outputSb, node.getRawText());
+    append(currOutputBuf, node.getRawText());
   }
 
 
   @Override protected void visitMsgNode(MsgNode node) {
-
-    boolean doAddEnvFrame = node.needsEnvFrameDuringInterp() != Boolean.FALSE /*true or unknown*/;
-    if (doAddEnvFrame) {
-      env.push(Maps.<String, SoyData>newHashMap());
+    if (assistantForMsgs == null) {
+      assistantForMsgs = new RenderVisitorAssistantForMsgs(this, env, msgBundle);
     }
-
-    SoyMsg soyMsg;
-    if (msgBundle != null) {
-      long msgId = MsgUtils.computeMsgId(node);
-      soyMsg = msgBundle.getMsg(msgId);
-    } else {
-      soyMsg = null;
-    }
-
-    if (soyMsg != null) {
-      // Case 1: Localized message is provided by the msgBundle.
-
-      List<SoyMsgPart> msgParts = soyMsg.getParts();
-
-      if (msgParts.size() > 0) {
-        SoyMsgPart firstPart = msgParts.get(0);
-
-        if (firstPart instanceof SoyMsgPluralPart) {
-          new PluralSelectMsgPartsVisitor(node, new ULocale(soyMsg.getLocaleString()))
-              .visitPart((SoyMsgPluralPart) firstPart);
-
-        } else if (firstPart instanceof SoyMsgSelectPart) {
-          new PluralSelectMsgPartsVisitor(node, new ULocale(soyMsg.getLocaleString()))
-              .visitPart((SoyMsgSelectPart) firstPart);
-
-        } else {
-          for (SoyMsgPart msgPart : msgParts) {
-
-            if (msgPart instanceof SoyMsgRawTextPart) {
-              append(outputSb, ((SoyMsgRawTextPart) msgPart).getRawText());
-            } else if (msgPart instanceof SoyMsgPlaceholderPart) {
-              String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
-              visit(node.getRepPlaceholderNode(placeholderName));
-
-            } else {
-              throw new AssertionError();
-            }
-          }
-
-        }
-      }
-
-    } else {
-      // Case 2: No msgBundle or message not found. Just use the message from the Soy source.
-      visitChildren(node);
-    }
-
-    if (doAddEnvFrame) {
-      env.pop();
-    }
-  }
-
-
-  @Override protected void visitMsgPluralNode(MsgPluralNode node) {
-    ExprRootNode<?> pluralExpr = node.getExpr();
-    int pluralValue;
-    try {
-      pluralValue = eval(pluralExpr).integerValue();
-    } catch (SoyDataException e) {
-      throw new RenderException(
-            String.format("Plural expression \"%s\" doesn't evaluate to integer.",
-                pluralExpr.toSourceString()));
-    }
-
-    currPluralRemainderValue = pluralValue - node.getOffset();
-
-    // Check each case.
-    for (CaseOrDefaultNode child : node.getChildren()) {
-      if (child instanceof MsgPluralDefaultNode) {
-        // This means it didn't match any other case.
-        visitChildren(child);
-        break;
-
-      } else {
-        if (((MsgPluralCaseNode) child).getCaseNumber() == pluralValue) {
-          visitChildren(child);
-          break;
-
-        }
-      }
-    }
-
-    currPluralRemainderValue = -1;
-  }
-
-
-  @Override protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
-    throw new AssertionError();
-  }
-
-
-  @Override protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
-    throw new AssertionError();
-  }
-
-
-  @Override protected void visitMsgPluralRemainderNode(MsgPluralRemainderNode node) {
-    append(outputSb, String.valueOf(currPluralRemainderValue));
-  }
-
-
-  @Override protected void visitMsgSelectNode(MsgSelectNode node) {
-    ExprRootNode<?> selectExpr = node.getExpr();
-    String selectValue;
-    try {
-      selectValue = eval(selectExpr).stringValue();
-    } catch (SoyDataException e) {
-      throw new RenderException(
-          String.format("Select expression \"%s\" doesn't evaluate to string.",
-                        selectExpr.toSourceString()));
-    }
-
-    // Check each case.
-    for (CaseOrDefaultNode child : node.getChildren()) {
-      if (child instanceof MsgSelectDefaultNode) {
-        // This means it didn't match any other case.
-        visitChildren(child);
-
-      } else {
-        if (((MsgSelectCaseNode) child).getCaseValue().equals(selectValue)) {
-          visitChildren(child);
-          return;
-
-        }
-      }
-    }
-  }
-
-
-  @Override protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
-    throw new AssertionError();
-  }
-
-
-  @Override protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
-    throw new AssertionError();
-  }
-
-
-  @Override protected void visitGoogMsgNode(GoogMsgNode node) {
-    throw new AssertionError();
-  }
-
-
-  @Override protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
-    throw new AssertionError();
+    assistantForMsgs.visitForUseByMaster(node);
   }
 
 
   @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-    // Note: We don't default to the fallback implementation because we don't need to add
-    // another frame to the environment.
-    visitChildren(node);
+    throw new AssertionError();
   }
 
 
@@ -424,62 +253,21 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       }
 
       // Apply directive.
-      String directiveResult = applyDirective(directiveNode.getName(), result, argsSoyDatas, node);
-      result = StringData.forValue(directiveResult);
+      result = applyDirective(directiveNode.getName(), result, argsSoyDatas, node);
     }
 
-    append(outputSb, String.valueOf(result));
-  }
-
-
-  /**
-   * Protected helper for visitPrintNode() to apply a directive.
-   *
-   * <p> This default implementation can be overridden by subclasses (such as TofuRenderVisitor)
-   * that have access to a potentially larger set of print directives.
-   *
-   * @param directiveName The name of the directive.
-   * @param value The value to apply the directive on.
-   * @param args The arguments to the directive.
-   * @param printNode The containing PrintNode. Only used for error reporting.
-   * @return The result of applying the directive with the given arguments to the given value.
-   */
-  protected String applyDirective(
-      String directiveName, SoyData value, List<SoyData> args, PrintNode printNode) {
-
-    // Get directive.
-    SoyJavaRuntimePrintDirective directive = soyJavaRuntimeDirectivesMap.get(directiveName);
-    if (directive == null) {
-      throw new RenderException(
-          "Failed to find Soy print directive with name '" + directiveName + "'" +
-          " (tag " + printNode.toSourceString() + ")");
-    }
-
-    // TODO: Add a pass to check num args at compile time.
-    if (! directive.getValidArgsSizes().contains(args.size())) {
-      throw new RenderException(
-          "Print directive '" + directiveName + "' used with the wrong number of" +
-          " arguments (tag " + printNode.toSourceString() + ").");
-    }
-
-    try {
-      return directive.apply(value, args);
-
-    } catch (RuntimeException e) {
-      throw new RenderException(String.format(
-          "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
-          directiveName, printNode.toSourceString(), e.getMessage()));
-    }
+    append(currOutputBuf, result.toString());
   }
 
 
   @Override protected void visitCssNode(CssNode node) {
+
     ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
-      append(outputSb, eval(componentNameExpr).toString());
-      append(outputSb, "-");
+      append(currOutputBuf, eval(componentNameExpr).toString());
+      append(currOutputBuf, "-");
     }
-    //
+
     // CSS statements are of the form {css selector} or {css $component, selector}.
     // We only rename the selector text. The component must derive from a previous
     // css expression and thus is already renamed.
@@ -496,7 +284,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     //   {template .helper}
     //     {css $base, hover}
     //   {/template}
-    //
+
     String selectorText = node.getSelectorText();
     if (cssRenamingMap != null) {
       String mappedText = cssRenamingMap.get(selectorText);
@@ -504,7 +292,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         selectorText = mappedText;
       }
     }
-    append(outputSb, selectorText);
+    append(currOutputBuf, selectorText);
   }
 
 
@@ -514,7 +302,19 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitLetContentNode(LetContentNode node) {
-    env.peek().put(node.getVarName(), renderChildren(node));
+    SoyData renderedBlock = renderBlock(node);
+
+    // If the let node has a content kind attribute, it will have been autoescaped in the
+    // corresponding context by the strict contextual autoescaper. Hence, the result of evaluating
+    // the let block is wrapped in SanitizedContent of the specified kind.
+    // TODO: Consider adding mutable state to nodes that allows the contextual escaper to tag
+    // nodes it has processed, and assert presence of this tag here.
+    if (node.getContentKind() != null) {
+      renderedBlock = UnsafeSanitizedContentOrdainer.ordainAsSafe(
+          renderedBlock.stringValue(), node.getContentKind());
+    }
+
+    env.peek().put(node.getVarName(), renderedBlock);
   }
 
 
@@ -574,11 +374,24 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           "In 'foreach' command " + node.toSourceString() +
           ", the data reference does not resolve to a SoyListData.");
     }
-    foreachList = (SoyListData) dataRefValue;
+    SoyListData foreachList = (SoyListData) dataRefValue;
 
     if (foreachList.length() > 0) {
       // Case 1: Nonempty list.
-      visit(node.getChild(0));
+      String varName = node.getVarName();
+
+      Map<String, SoyData> newEnvFrame = Maps.newHashMap();
+      // Note: No need to save firstIndex as it's always 0.
+      newEnvFrame.put(varName + "__lastIndex", IntegerData.forValue(foreachList.length() - 1));
+      env.push(newEnvFrame);
+
+      for (int i = 0; i < foreachList.length(); ++i) {
+        newEnvFrame.put(varName + "__index", IntegerData.forValue(i));
+        newEnvFrame.put(varName, foreachList.get(i));
+        visitChildren((ForeachNonemptyNode) node.getChild(0));
+      }
+
+      env.pop();
 
     } else {
       // Case 2: Empty list. If the 'ifempty' node exists, visit it.
@@ -586,30 +399,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         visit(node.getChild(1));
       }
     }
-  }
-
-
-  @Override protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
-
-    // Important: Save the value of foreachList to a local variable because the field might be
-    // reused when this node's subtree is visited (i.e. if there are other 'foreach' loops nested
-    // within this one).
-    SoyListData foreachList = this.foreachList;
-    this.foreachList = null;
-
-    String varName = node.getVarName();
-    Map<String, SoyData> newEnvFrame = Maps.newHashMap();
-    // Note: No need to save firstIndex as it's always 0.
-    newEnvFrame.put(varName + "__lastIndex", IntegerData.forValue(foreachList.length() - 1));
-    env.push(newEnvFrame);
-
-    for (int i = 0; i < foreachList.length(); ++i) {
-      newEnvFrame.put(varName + "__index", IntegerData.forValue(i));
-      newEnvFrame.put(varName, foreachList.get(i));
-      visitChildren(node);
-    }
-
-    env.pop();
   }
 
 
@@ -658,19 +447,39 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
 
-    TemplateNode callee;
+    ExprRootNode<?> variantExpr = node.getDelCalleeVariantExpr();
+    String variant;
+    if (variantExpr == null) {
+      variant = "";
+    } else {
+      try {
+        variant = eval(variantExpr).stringValue();
+      } catch (SoyDataException e) {
+        throw new RenderException(String.format(
+            "Variant expression \"%s\" doesn't evaluate to a string.",
+            variantExpr.toSourceString()));
+      }
+    }
+    DelTemplateKey delegateKey = new DelTemplateKey(node.getDelCalleeName(), variant);
+
+    TemplateDelegateNode callee;
     try {
-      callee =
-          templateRegistry.selectDelegateTemplate(node.getDelCalleeName(), activeDelPackageNames);
+      callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageNames);
     } catch (DelegateTemplateConflictException e) {
       throw new RenderException(e.getMessage());
     }
 
-    if (callee == null) {
-      return;  // no active delegate implementation, so the call output is empty string
-    }
+    if (callee != null) {
+      visitCallNodeHelper(node, callee);
 
-    visitCallNodeHelper(node, callee);
+    } else if (node.allowsEmptyDefault()) {
+      return;  // no active delegate implementation, so the call output is empty string
+
+    } else {
+      throw new RenderException(
+          "Found no active impl for delegate call to '" + node.getDelCalleeName() +
+          "' (and no attribute allowemptydefault=\"true\").");
+    }
   }
 
 
@@ -682,7 +491,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (node.isPassingAllData()) {
       dataToPass = data;
     } else if (node.isPassingData()) {
-      SoyData dataRefValue = eval(node.getExpr());
+      SoyData dataRefValue = eval(node.getDataExpr());
       if (!(dataRefValue instanceof SoyMapData)) {
         throw new RenderException(
             "In 'call' command " + node.toSourceString() +
@@ -712,7 +521,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             child.getKey(), eval(((CallParamValueNode) child).getValueExprUnion().getExpr()));
 
       } else if (child instanceof CallParamContentNode) {
-        callData.putSingle(child.getKey(), renderChildren((CallParamContentNode) child));
+        CallParamContentNode childCpcn = (CallParamContentNode) child;
+        SoyData renderedBlock = renderBlock(childCpcn);
+
+        // If the param node has a content kind attribute, it will have been autoescaped in the
+        // corresponding context by the strict contextual autoescaper. Hence, the result of
+        // evaluating the param block is wrapped in SanitizedContent of the specified kind.
+        if (childCpcn.getContentKind() != null) {
+          renderedBlock = UnsafeSanitizedContentOrdainer.ordainAsSafe(
+              renderedBlock.stringValue(), childCpcn.getContentKind());
+        }
+
+        callData.putSingle(child.getKey(), renderedBlock);
 
       } else {
         throw new AssertionError();
@@ -720,16 +540,46 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // ------ Render the callee template with the callData built above. ------
-    RenderVisitor rv = renderVisitorFactory.create(
-        outputSb, templateRegistry, callData, ijData, null, activeDelPackageNames, msgBundle,
-        cssRenamingMap);
-    rv.exec(callee);
+
+    if (node.getEscapingDirectiveNames().isEmpty()) {
+      // No escaping at the call site -- render directly into the output buffer.
+      RenderVisitor rv = createHelperInstance(currOutputBuf, callData);
+      rv.exec(callee);
+    } else {
+      // Escaping the call site's result, such as at a strict template boundary.
+      // TODO: Some optimization is needed here before Strict Soy can be widely used:
+      // - Only create this temporary buffer when contexts mismatch. We could run a pre-pass that
+      // eliminates escaping directives when all callers are known.
+      // - Instead of creating a temporary buffer and copying, wrap with an escaping StringBuilder.
+      StringBuilder calleeBuilder = new StringBuilder();
+      RenderVisitor rv = createHelperInstance(calleeBuilder, callData);
+      rv.exec(callee);
+      SoyData resultData = (callee.getContentKind() != null) ?
+          UnsafeSanitizedContentOrdainer.ordainAsSafe(
+              calleeBuilder.toString(), callee.getContentKind()) :
+          StringData.forValue(calleeBuilder.toString());
+      for (String directiveName : node.getEscapingDirectiveNames()) {
+        resultData = applyDirective(directiveName, resultData, ImmutableList.<SoyData>of(), node);
+      }
+      append(currOutputBuf, resultData.toString());
+    }
   }
 
 
   @Override protected void visitCallParamNode(CallParamNode node) {
     // In this visitor, we never directly visit a CallParamNode.
     throw new AssertionError();
+  }
+
+
+  @Override protected void visitLogNode(LogNode node) {
+    System.out.println(renderBlock(node));
+  }
+
+
+  @Override protected void visitDebuggerNode(DebuggerNode node) {
+    // The 'debugger' statement does nothing in Java rendering, but the user could theoretically
+    // place a breakpoint at this method.
   }
 
 
@@ -756,6 +606,34 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
+   * Pushes the given output buffer onto the stack (it becomes the current output buffer).
+   */
+  private void pushOutputBuf(Appendable outputBuf) {
+    outputBufStack.push(outputBuf);
+    currOutputBuf = outputBuf;
+  }
+
+
+  /**
+   * Pops the top output buffer off the stack and returns it (changes the current output buffer).
+   */
+  private Appendable popOutputBuf() {
+    Appendable poppedOutputBuf = outputBufStack.pop();
+    currOutputBuf = outputBufStack.peek();
+    return poppedOutputBuf;
+  }
+
+
+  /**
+   * This method must only be called by assistant visitors, in particular
+   * RenderVisitorAssistantForMsgs.
+   */
+  Appendable getCurrOutputBufForUseByAssistants() {
+    return currOutputBuf;
+  }
+
+
+  /**
    * Helper for recursing on a block.
    * @param node The BlockNode to recurse on.
    */
@@ -769,6 +647,21 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     } else {
       visitChildren(node);
     }
+  }
+
+
+  /**
+   * Private helper to render the children of a block into a separate string (not directly appended
+   * to the current output buffer).
+   * @param block The block whose children are to be rendered.
+   * @return The result of rendering the block's children, as StringData.
+   */
+  private StringData renderBlock(BlockNode block) {
+
+    pushOutputBuf(new StringBuilder());
+    visitBlockHelper(block);
+    Appendable outputBuf = popOutputBuf();
+    return StringData.forValue(outputBuf.toString());
   }
 
 
@@ -790,266 +683,72 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     try {
       return evalVisitor.exec(expr);
     } catch (Exception e) {
+      Throwable cause = (e instanceof RenderException) ? e.getCause() : e;
       throw new RenderException(
-          "When evaluating \"" + expr.toSourceString() + "\": " + e.getMessage());
+          "When evaluating \"" + expr.toSourceString() + "\": " + e.getMessage(), cause);
     }
   }
 
 
   /**
-   * Private helper to render the children of a block.
-   * @param block The block whose children are to be rendered.
-   * @return The result of rendering the block's children, as StringData.
+   * This method must only be called by assistant visitors, in particular
+   * RenderVisitorAssistantForMsgs.
    */
-  private StringData renderChildren(BlockNode block) {
-
-    StringBuilder output = new StringBuilder();
-    RenderVisitor rv = renderVisitorFactory.create(
-        output, templateRegistry, data, ijData, env, activeDelPackageNames, msgBundle,
-        cssRenamingMap);
-    rv.visitChildren(block);  // note: using visitChildren(), not exec()
-    return StringData.forValue(output.toString());
+  SoyData evalForUseByAssistants(ExprNode expr) {
+    return eval(expr);
   }
 
+
   /**
-   * Private helper to conveniently handle exceptions if any while appending
-   * text to the output.
-   * @throws a RuntimeException wrapping the IOException handled.
+   * Helper to append text to the output, propagating any exceptions.
    */
-  private void append(Appendable out, CharSequence csq) {
+  static void append(Appendable outputBuf, CharSequence cs) {
     try {
-      out.append(csq);
+      outputBuf.append(cs);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // Helper class for traversing a translated plural/select message.
-
 
   /**
-   * Visitor for processing {@code SoyMsgPluralPart} and {@code SoyMsgSelectPart} objects.
+   * Protected helper to apply a print directive.
    *
-   * Visits the parts hierarchy, evaluates each part and appends the result into the
-   * parent class' StringBuffer object.
+   * <p> This default implementation can be overridden by subclasses (such as TofuRenderVisitor)
+   * that have access to a potentially larger set of print directives.
    *
-   * In addition to writing to outputSb, this inner class uses the outer class' eval() method to
-   * evaluate the expressions associated with the nodes.
+   * @param directiveName The name of the directive.
+   * @param value The value to apply the directive on.
+   * @param args The arguments to the directive.
+   * @param node The node with the escaping. Only used for error reporting.
+   * @return The result of applying the directive with the given arguments to the given value.
    */
-  private class PluralSelectMsgPartsVisitor {
+  protected SoyData applyDirective(
+      String directiveName, SoyData value, List<SoyData> args, SoyNode node) {
 
-
-    /** The parent message node for the parts dealt here. */
-    private final MsgNode msgNode;
-
-    /** The locale for the translated message considered. */
-    private final ULocale locale;
-
-    /** Holds the value of the remainder for the current enclosing plural part. */
-    private int currentPluralRemainderValue;
-
-
-    /**
-     * Constructor.
-     * @param msgNode The parent message node for the parts dealt here.
-     * @param locale The locale of the Soy message.
-     */
-    public PluralSelectMsgPartsVisitor(MsgNode msgNode, ULocale locale) {
-      this.msgNode = msgNode;
-      this.locale = locale;
+    // Get directive.
+    SoyJavaRuntimePrintDirective directive = soyJavaRuntimeDirectivesMap.get(directiveName);
+    if (directive == null) {
+      throw new RenderException(
+          "Failed to find Soy print directive with name '" + directiveName + "'" +
+          " (tag " + node.toSourceString() + ")");
     }
 
-
-    /**
-     * Processes a {@code SoyMsgSelectPart} and appends the rendered output to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.
-     * @param selectPart The Select part.
-     */
-    private void visitPart(SoyMsgSelectPart selectPart) {
-
-      String selectVarName = selectPart.getSelectVarName();
-      MsgSelectNode repSelectNode = msgNode.getRepSelectNode(selectVarName);
-
-      // Associate the select variable with the value.
-      String correctSelectValue;
-      ExprRootNode<?> selectExpr = repSelectNode.getExpr();
-      try {
-        correctSelectValue = eval(selectExpr).stringValue();
-      } catch (SoyDataException e) {
-        throw new RenderException(
-            String.format("Select expression \"%s\" doesn't evaluate to string.",
-                selectExpr.toSourceString()));
-      }
-
-      List<SoyMsgPart> caseParts = null;
-      List<SoyMsgPart> defaultParts = null;
-
-      // Handle cases.
-      for (Pair<String, List<SoyMsgPart>> case0 : selectPart.getCases()) {
-        if (case0.first == null) {
-          defaultParts = case0.second;
-        } else if (case0.first.equals(correctSelectValue)) {
-          caseParts = case0.second;
-          break;
-        }
-      }
-
-      if (caseParts == null) {
-        caseParts = defaultParts;
-      }
-
-      if (caseParts != null) {
-
-        for (SoyMsgPart casePart : caseParts) {
-
-          if (casePart instanceof SoyMsgSelectPart) {
-            visitPart((SoyMsgSelectPart) casePart);
-
-          } else if (casePart instanceof SoyMsgPluralPart) {
-            visitPart((SoyMsgPluralPart) casePart);
-
-          } else if (casePart instanceof SoyMsgPlaceholderPart) {
-            visitPart((SoyMsgPlaceholderPart) casePart);
-
-          } else if (casePart instanceof SoyMsgRawTextPart) {
-            visitPart((SoyMsgRawTextPart) casePart);
-
-          } else {
-            throw new RenderException("Unsupported part of type " + casePart.getClass().getName() +
-                " under a select case.");
-
-          }
-        }
-      }
+    // TODO: Add a pass to check num args at compile time.
+    if (! directive.getValidArgsSizes().contains(args.size())) {
+      throw new RenderException(
+          "Print directive '" + directiveName + "' used with the wrong number of" +
+          " arguments (tag " + node.toSourceString() + ").");
     }
 
+    try {
+      return directive.apply(value, args);
 
-    /**
-     * Processes a {@code SoyMsgPluralPart} and appends the rendered output to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.
-     * It uses the message node cached in this object to get the corresponding
-     * Plural node, gets its variable value and offset, and computes the remainder value to
-     * be used to render the {@code SoyMsgPluralRemainderPart} later.
-     * @param pluralPart The Plural part.
-     */
-    private void visitPart(SoyMsgPluralPart pluralPart) {
-
-      MsgPluralNode repPluralNode = msgNode.getRepPluralNode(pluralPart.getPluralVarName());
-      int correctPluralValue;
-      ExprRootNode<?> pluralExpr = repPluralNode.getExpr();
-      try {
-        correctPluralValue = eval(pluralExpr).integerValue();
-      } catch (SoyDataException e) {
-        throw new RenderException(
-            String.format("Plural expression \"%s\" doesn't evaluate to integer.",
-                pluralExpr.toSourceString()));
-      }
-
-      currentPluralRemainderValue = correctPluralValue - repPluralNode.getOffset();
-
-      // Handle cases.
-      List<SoyMsgPart> caseParts = null;
-
-      // Check whether the plural value matches any explicit numeric value.
-      boolean hasNonExplicitCases = false;
-      List<SoyMsgPart> otherCaseParts = null;
-      for (Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>> case0 : pluralPart.getCases()) {
-
-        SoyMsgPluralCaseSpec pluralCaseSpec = case0.first;
-        SoyMsgPluralCaseSpec.Type caseType = pluralCaseSpec.getType();
-        if (caseType == SoyMsgPluralCaseSpec.Type.EXPLICIT) {
-          if (pluralCaseSpec.getExplicitValue() == correctPluralValue) {
-            caseParts = case0.second;
-            break;
-          }
-
-        } else if (caseType == SoyMsgPluralCaseSpec.Type.OTHER) {
-          otherCaseParts = case0.second;
-
-        } else {
-          hasNonExplicitCases = true;
-
-        }
-      }
-
-      if (caseParts == null && !hasNonExplicitCases) {
-        caseParts = otherCaseParts;
-      }
-
-      if (caseParts == null) {
-        // Didn't match any numeric value.  Check which plural rule it matches.
-        String pluralKeyword = PluralRules.forLocale(locale).select(currentPluralRemainderValue);
-        SoyMsgPluralCaseSpec.Type correctCaseType =
-            new SoyMsgPluralCaseSpec(pluralKeyword).getType();
-
-
-        // Iterate the cases once again for non-numeric keywords.
-        for (Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>> case0 : pluralPart.getCases()) {
-
-          if (case0.first.getType() == correctCaseType) {
-            caseParts = case0.second;
-            break;
-          }
-        }
-      }
-
-      if (caseParts != null) {
-        for (SoyMsgPart casePart : caseParts) {
-
-          if (casePart instanceof SoyMsgPlaceholderPart) {
-            visitPart((SoyMsgPlaceholderPart) casePart);
-
-          } else if (casePart instanceof SoyMsgRawTextPart) {
-            visitPart((SoyMsgRawTextPart) casePart);
-
-          } else if (casePart instanceof SoyMsgPluralRemainderPart) {
-            visitPart((SoyMsgPluralRemainderPart) casePart);
-
-          } else {
-            // Plural parts will not have nested plural/select parts.  So, this is an error.
-            throw new RenderException("Unsupported part of type " + casePart.getClass().getName() +
-                " under a plural case.");
-
-          }
-        }
-      }
+    } catch (RuntimeException e) {
+      throw new RenderException(String.format(
+          "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
+          directiveName, node.toSourceString(), e.getMessage()));
     }
-
-
-    /**
-     * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.  Since this is precomputed
-     * when visiting the {@code SoyMsgPluralPart} object, it is directly used here.
-     * @param remainderPart The {@code SoyMsgPluralRemainderPart} object.
-     */
-    @SuppressWarnings("UnusedDeclaration")  // for IntelliJ
-    private void visitPart(SoyMsgPluralRemainderPart remainderPart) {
-      append(outputSb, String.valueOf(currentPluralRemainderValue));
-    }
-
-
-    /**
-     * Process a {@code SoyMsgPlaceholderPart} and updates the internal data structures.
-     * @param msgPlaceholderPart the Placeholder part.
-     */
-    private void visitPart(SoyMsgPlaceholderPart msgPlaceholderPart) {
-
-      // Since the content of a placeholder is not altered by translation, just render
-      // the corresponding placeholder node.
-      visit(msgNode.getRepPlaceholderNode(msgPlaceholderPart.getPlaceholderName()));
-    }
-
-
-    /**
-     * Processes a {@code SoyMsgRawTextPart} and appends the contained text to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.
-     * @param rawTextPart The raw text part.
-     */
-    private void visitPart(SoyMsgRawTextPart rawTextPart) {
-      append(outputSb, rawTextPart.getRawText());
-    }
-
   }
 
 }

@@ -140,13 +140,19 @@ Enum of specific node kinds (coresponding to specific node types).
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#DATA_REF_INDEX_NODE">DATA_REF_INDEX_NODE</A></B></CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#DATA_REF_ACCESS_EXPR_NODE">DATA_REF_ACCESS_EXPR_NODE</A></B></CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#DATA_REF_KEY_NODE">DATA_REF_KEY_NODE</A></B></CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#DATA_REF_ACCESS_INDEX_NODE">DATA_REF_ACCESS_INDEX_NODE</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#DATA_REF_ACCESS_KEY_NODE">DATA_REF_ACCESS_KEY_NODE</A></B></CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -261,6 +267,12 @@ Enum of specific node kinds (coresponding to specific node types).
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#NOT_OP_NODE">NOT_OP_NODE</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html#NULL_COALESCING_OP_NODE">NULL_COALESCING_OP_NODE</A></B></CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -460,20 +472,30 @@ public static final <A HREF="../../../../../com/google/template/soy/exprtree/Exp
 </DL>
 <HR>
 
-<A NAME="DATA_REF_KEY_NODE"><!-- --></A><H3>
-DATA_REF_KEY_NODE</H3>
+<A NAME="DATA_REF_ACCESS_KEY_NODE"><!-- --></A><H3>
+DATA_REF_ACCESS_KEY_NODE</H3>
 <PRE>
-public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>DATA_REF_KEY_NODE</B></PRE>
+public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>DATA_REF_ACCESS_KEY_NODE</B></PRE>
 <DL>
 <DL>
 </DL>
 </DL>
 <HR>
 
-<A NAME="DATA_REF_INDEX_NODE"><!-- --></A><H3>
-DATA_REF_INDEX_NODE</H3>
+<A NAME="DATA_REF_ACCESS_INDEX_NODE"><!-- --></A><H3>
+DATA_REF_ACCESS_INDEX_NODE</H3>
 <PRE>
-public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>DATA_REF_INDEX_NODE</B></PRE>
+public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>DATA_REF_ACCESS_INDEX_NODE</B></PRE>
+<DL>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="DATA_REF_ACCESS_EXPR_NODE"><!-- --></A><H3>
+DATA_REF_ACCESS_EXPR_NODE</H3>
+<PRE>
+public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>DATA_REF_ACCESS_EXPR_NODE</B></PRE>
 <DL>
 <DL>
 </DL>
@@ -634,6 +656,16 @@ public static final <A HREF="../../../../../com/google/template/soy/exprtree/Exp
 OR_OP_NODE</H3>
 <PRE>
 public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>OR_OP_NODE</B></PRE>
+<DL>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="NULL_COALESCING_OP_NODE"><!-- --></A><H3>
+NULL_COALESCING_OP_NODE</H3>
+<PRE>
+public static final <A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.Kind.html" title="enum in com.google.template.soy.exprtree">ExprNode.Kind</A> <B>NULL_COALESCING_OP_NODE</B></PRE>
 <DL>
 <DL>
 </DL>

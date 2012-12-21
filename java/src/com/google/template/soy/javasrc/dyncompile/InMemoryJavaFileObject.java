@@ -31,6 +31,7 @@ import javax.tools.JavaFileObject;
 /**
  * A java file object whose content is stored in-memory.
  *
+ * @author Mike Samuel
  */
 abstract class InMemoryJavaFileObject implements JavaFileObject {
 

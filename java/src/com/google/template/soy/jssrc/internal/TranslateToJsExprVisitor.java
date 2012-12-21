@@ -19,12 +19,15 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
+import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefIndexNode;
-import com.google.template.soy.exprtree.DataRefKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessIndexNode;
+import com.google.template.soy.exprtree.DataRefAccessKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ConstantNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -37,6 +40,7 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -53,6 +57,7 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<JsExpr> {
 
@@ -73,6 +78,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   /** Map of all SoyJsSrcFunctions (name to function). */
   private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
 
+  /** The options for generating JS source code. */
+  private final SoyJsSrcOptions jsSrcOptions;
+
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
   private final Deque<Map<String, JsExpr>> localVarTranslations;
@@ -85,9 +93,10 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    */
   @AssistedInject
   TranslateToJsExprVisitor(
-      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
+      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, SoyJsSrcOptions jsSrcOptions,
       @Assisted Deque<Map<String, JsExpr>> localVarTranslations) {
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
+    this.jsSrcOptions = jsSrcOptions;
     this.localVarTranslations = localVarTranslations;
   }
 
@@ -137,7 +146,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   @Override protected JsExpr visitListLiteralNode(ListLiteralNode node) {
 
     StringBuilder exprTextSb = new StringBuilder();
-    exprTextSb.append("[");
+    exprTextSb.append('[');
 
     boolean isFirst = true;
     for (ExprNode child : node.getChildren()) {
@@ -149,28 +158,91 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
       exprTextSb.append(visit(child).getText());
     }
 
-    exprTextSb.append("]");
+    exprTextSb.append(']');
 
     return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
   }
 
 
   @Override protected JsExpr visitMapLiteralNode(MapLiteralNode node) {
+    return visitMapLiteralNodeHelper(node, false);
+  }
 
-    StringBuilder exprTextSb = new StringBuilder();
-    exprTextSb.append("{");
+
+  /**
+   * Helper to visit a MapLiteralNode, with the extra option of whether to quote keys.
+   */
+  private JsExpr visitMapLiteralNodeHelper(MapLiteralNode node, boolean doQuoteKeys) {
+
+    // If there are only string keys, then the expression will be
+    //     {aa: 11, bb: 22}    or    {'aa': 11, 'bb': 22}
+    // where the former is with unquoted keys and the latter with quoted keys.
+    // If there are both string and nonstring keys, then the expression will be
+    //     (function() { var map_s = {'aa': 11}; map_s[opt_data.bb] = 22; return map_s; })()
+
+    StringBuilder strKeysEntriesSnippet = new StringBuilder();
+    StringBuilder nonstrKeysEntriesSnippet = new StringBuilder();
+
+    boolean isProbablyUsingClosureCompiler =
+        jsSrcOptions.shouldGenerateJsdoc() ||
+        jsSrcOptions.shouldProvideRequireSoyNamespaces() ||
+        jsSrcOptions.shouldProvideRequireJsFunctions();
 
     for (int i = 0, n = node.numChildren(); i < n; i += 2) {
-      if (i != 0) {
-        exprTextSb.append(", ");
+      ExprNode keyNode = node.getChild(i);
+      ExprNode valueNode = node.getChild(i + 1);
+
+      if (keyNode instanceof StringNode) {
+        if (strKeysEntriesSnippet.length() > 0) {
+          strKeysEntriesSnippet.append(", ");
+        }
+        if (doQuoteKeys) {
+          strKeysEntriesSnippet.append(visit(keyNode).getText());
+        } else {
+          String key = ((StringNode) keyNode).getValue();
+          if (BaseUtils.isIdentifier(key)) {
+            strKeysEntriesSnippet.append(key);
+          } else {
+            if (isProbablyUsingClosureCompiler) {
+              throw SoySyntaxException.createWithoutMetaInfo(
+                  "Map literal with non-identifier key must be wrapped in quoteKeysIfJs()" +
+                      " (found non-identifier key \"" + keyNode.toSourceString() +
+                      "\" in map literal \"" + node.toSourceString() + "\").");
+            } else {
+              strKeysEntriesSnippet.append(visit(keyNode).getText());
+            }
+          }
+        }
+        strKeysEntriesSnippet.append(": ").append(visit(valueNode).getText());
+
+      } else if (keyNode instanceof ConstantNode) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Map literal must have keys that are strings or expressions that will evaluate to" +
+                " strings at render time (found non-string key \"" + keyNode.toSourceString() +
+                "\" in map literal \"" + node.toSourceString() + "\").");
+
+      } else {
+        if (isProbablyUsingClosureCompiler && ! doQuoteKeys) {
+          throw SoySyntaxException.createWithoutMetaInfo(
+              "Map literal with expression key must be wrapped in quoteKeysIfJs()" +
+                  " (found expression key \"" + keyNode.toSourceString() +
+                  "\" in map literal \"" + node.toSourceString() + "\").");
+        }
+        nonstrKeysEntriesSnippet
+            .append(" map_s[soy.$$checkMapKey(").append(visit(keyNode).getText()).append(")] = ")
+            .append(visit(valueNode).getText()).append(';');
       }
-      exprTextSb.append(visit(node.getChild(i)).getText()).append(": ")
-                .append(visit(node.getChild(i + 1)).getText());
     }
 
-    exprTextSb.append("}");
+    String fullExprText;
+    if (nonstrKeysEntriesSnippet.length() == 0) {
+      fullExprText = "{" + strKeysEntriesSnippet.toString() + "}";
+    } else {
+      fullExprText = "(function() { var map_s = {" + strKeysEntriesSnippet.toString() + "};" +
+          nonstrKeysEntriesSnippet.toString() + " return map_s; })()";
+    }
 
-    return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
+    return new JsExpr(fullExprText, Integer.MAX_VALUE);
   }
 
 
@@ -180,44 +252,84 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
   @Override protected JsExpr visitDataRefNode(DataRefNode node) {
 
-    StringBuilder exprTextSb = new StringBuilder();
+    // Note: Using String instead of StringBuilder for readability. No performance concern here.
+    String nullSafetyPrefix = "";
+    String refText;
 
     // ------ Translate first key, which may reference a variable, data, or injected data. ------
     String firstKey = node.getFirstKey();
     if (node.isIjDataRef()) {
       // Case 1: Injected data reference.
-      exprTextSb.append("opt_ijData");
-      appendDataRefKey(exprTextSb, firstKey);
+      refText = "opt_ijData" + genCodeForKeyAccess(firstKey);
+      if (node.isNullSafeIjDataRef()) {
+        nullSafetyPrefix = "(opt_ijData == null) ? null : ";
+      }
     } else {
       JsExpr translation = getLocalVarTranslation(firstKey);
       if (translation != null) {
         // Case 2: In-scope local var.
-        exprTextSb.append(translation.getText());
+        refText = translation.getText();
       } else {
         // Case 3: Data reference.
-        exprTextSb.append("opt_data");
-        appendDataRefKey(exprTextSb, firstKey);
+        refText = "opt_data" + genCodeForKeyAccess(firstKey);
       }
     }
 
     // ------ Translate the rest of the keys, if any. ------
-    int numKeys = node.numChildren();
-    if (numKeys > 1) {
-      for (int i = 1; i < numKeys; ++i) {
-        ExprNode child = node.getChild(i);
-        if (child instanceof DataRefKeyNode) {
-          appendDataRefKey(exprTextSb, ((DataRefKeyNode) child).getKey());
-        } else if (child instanceof DataRefIndexNode) {
-          exprTextSb.append("[").append(((DataRefIndexNode) child).getIndex()).append("]");
-        } else {
-          JsExpr childJsExpr = visit(child);
-          exprTextSb.append("[").append(childJsExpr.getText()).append("]");
-        }
+    for (ExprNode child : node.getChildren()) {
+      DataRefAccessNode accessNode = (DataRefAccessNode) child;
+
+      if (accessNode.isNullSafe()) {
+        // Note: In JavaScript, "x == null" is equivalent to "x === undefined || x === null".
+        nullSafetyPrefix += "(" + refText + " == null) ? null : ";
+      }
+
+      switch (accessNode.getKind()) {
+        case DATA_REF_ACCESS_KEY_NODE:
+          refText += genCodeForKeyAccess(((DataRefAccessKeyNode) accessNode).getKey());
+          break;
+        case DATA_REF_ACCESS_INDEX_NODE:
+          refText += "[" + ((DataRefAccessIndexNode) accessNode).getIndex() + "]";
+          break;
+        case DATA_REF_ACCESS_EXPR_NODE:
+          JsExpr keyJsExpr = visit(accessNode.getChild(0));
+          refText += "[" + keyJsExpr.getText() + "]";
+          break;
+        default:
+          throw new AssertionError();
       }
     }
 
-    return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
+    if (nullSafetyPrefix.length() == 0) {
+      return new JsExpr(refText, Integer.MAX_VALUE);
+    } else {
+      return new JsExpr(nullSafetyPrefix + refText, Operator.CONDITIONAL.getPrecedence());
+    }
   }
+
+
+  /**
+   * Private helper for {@code visitDataRefNode()} to generate the code for a key access, e.g.
+   * ".foo" or "['class']". Handles JS reserved words.
+   * @param key The key.
+   */
+  private static String genCodeForKeyAccess(String key) {
+    return JS_RESERVED_WORDS.contains(key) ? "['" + key + "']" : "." + key;
+  }
+
+
+  /**
+   * Set of words that JavaScript considers reserved words.  These words cannot
+   * be used as identifiers.  This list is from the ECMA-262 v5, section 7.6.1:
+   * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
+   * plus the keywords for boolean values and {@code null}.
+   */
+  private static final ImmutableSet<String> JS_RESERVED_WORDS = ImmutableSet.of(
+      "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do",
+      "else", "enum", "export", "extends", "false", "finally", "for", "function", "if",
+      "implements", "import", "in", "instanceof", "interface", "let", "null", "new", "package",
+      "private", "protected", "public", "return", "static", "super", "switch", "this", "throw",
+      "true", "try", "typeof", "var", "void", "while", "with", "yield");
 
 
   @Override protected JsExpr visitGlobalNode(GlobalNode node) {
@@ -265,9 +377,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
     if (nonpluginFn != null) {
       if (numArgs != nonpluginFn.getNumArgs()) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createWithoutMetaInfo(
             "Function '" + fnName + "' called with the wrong number of arguments" +
-            " (function call \"" + node.toSourceString() + "\").");
+                " (function call \"" + node.toSourceString() + "\").");
       }
       switch (nonpluginFn) {
         case IS_FIRST:
@@ -276,8 +388,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
           return visitIsLastFunction(node);
         case INDEX:
           return visitIndexFunction(node);
-        case HAS_DATA:
-          return visitHasDataFunction();
+        case QUOTE_KEYS_IF_JS:
+          return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
         default:
           throw new AssertionError();
       }
@@ -287,23 +399,23 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     SoyJsSrcFunction fn = soyJsSrcFunctionsMap.get(fnName);
     if (fn != null) {
       if (! fn.getValidArgsSizes().contains(numArgs)) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createWithoutMetaInfo(
             "Function '" + fnName + "' called with the wrong number of arguments" +
-            " (function call \"" + node.toSourceString() + "\").");
+                " (function call \"" + node.toSourceString() + "\").");
       }
       List<JsExpr> args = visitChildren(node);
       try {
         return fn.computeForJsSrc(args);
       } catch (Exception e) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createCausedWithoutMetaInfo(
             "Error in function call \"" + node.toSourceString() + "\": " + e.getMessage(), e);
       }
     }
 
     // Function not found.
-    throw new SoySyntaxException(
+    throw SoySyntaxException.createWithoutMetaInfo(
         "Failed to find SoyJsSrcFunction with name '" + fnName + "'" +
-        " (function call \"" + node.toSourceString() + "\").");
+            " (function call \"" + node.toSourceString() + "\").");
   }
 
 
@@ -322,11 +434,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   private JsExpr visitIndexFunction(FunctionNode node) {
     String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
     return getLocalVarTranslation(varName + "__index");
-  }
-
-
-  private JsExpr visitHasDataFunction() {
-    return new JsExpr("opt_data != null", Operator.NOT_EQUAL.getPrecedence());
   }
 
 
@@ -379,34 +486,5 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return SoyJsCodeUtils.genJsExprUsingSoySyntaxWithNewToken(
         opNode.getOperator(), operandJsExprs, newToken);
   }
-
-
-  /**
-   * Appends a key onto a data reference expression.
-   * Handles JS reserved words.
-   * @param sb StringBuilder to append to.
-   * @param key Key to append.
-   */
-  private void appendDataRefKey(StringBuilder sb, String key) {
-    if (JS_RESERVED_WORDS.contains(key)) {
-      sb.append("['").append(key).append("']");
-    } else {
-      sb.append(".").append(key);
-    }
-  }
-
-
-  /**
-   * Set of words that JavaScript considers reserved words.  These words cannot
-   * be used as identifiers.  This list is from the ECMA-262 v5, section 7.6.1:
-   * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
-   * plus the keywords for boolean values and <code>null</code>.
-   */
-  private static final ImmutableSet<String> JS_RESERVED_WORDS = ImmutableSet.of(
-      "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do",
-      "else", "enum", "export", "extends", "false", "finally", "for", "function", "if",
-      "implements", "import", "in", "instanceof", "interface", "let", "null", "new", "package",
-      "private", "protected", "public", "return", "static", "super", "switch", "this", "throw",
-      "true", "try", "typeof", "var", "void", "while", "with", "yield");
 
 }

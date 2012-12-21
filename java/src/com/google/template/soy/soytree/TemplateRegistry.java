@@ -19,7 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,12 +36,13 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class TemplateRegistry {
 
 
   /**
-   * Represents a set of delegate templates with the same name and same priority.
+   * Represents a set of delegate templates with the same key (name and variant) and same priority.
    * <p> Note: Per delegate rules, at most one of the templates in each division may be active at
    * render time.
    *
@@ -79,9 +82,12 @@ public class TemplateRegistry {
   /** Map from basic template name to node. */
   private final Map<String, TemplateBasicNode> basicTemplatesMap;
 
-  /** Map from delegate template name to list of DelegateTemplateDivision, where the list is in
+  /** Map from delegate template name to set of keys. */
+  private final Map<String, Set<DelTemplateKey>> delTemplateNameToKeysMap;
+
+  /** Map from delegate template key to list of DelegateTemplateDivision, where the list is in
    *  descending priority order. */
-  private final Map<String, List<DelegateTemplateDivision>> delTemplatesMap;
+  private final Map<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMap;
 
 
   /**
@@ -93,7 +99,8 @@ public class TemplateRegistry {
     // ------ Iterate through all templates to collect data. ------
 
     Map<String, TemplateBasicNode> tempBasicTemplatesMap = Maps.newHashMap();
-    Map<String, Map<Integer, Map<String, TemplateDelegateNode>>> tempDelTemplatesMap =
+    Map<String, Set<DelTemplateKey>> tempDelTemplateNameToKeysMap = Maps.newHashMap();
+    Map<DelTemplateKey, Map<Integer, Map<String, TemplateDelegateNode>>> tempDelTemplatesMap =
         Maps.newHashMap();
 
     for (SoyFileNode soyFile : soyTree.getChildren()) {
@@ -106,15 +113,26 @@ public class TemplateRegistry {
         } else {
           // Case 2: Delegate template.
           TemplateDelegateNode delTemplate = (TemplateDelegateNode) template;
+          DelTemplateKey delTemplateKey = delTemplate.getDelTemplateKey();
+
+          // Add to tempDelTemplateNameToKeysMap.
           String delTemplateName = delTemplate.getDelTemplateName();
+          Set<DelTemplateKey> keys = tempDelTemplateNameToKeysMap.get(delTemplateName);
+          if (keys == null) {
+            keys = Sets.newLinkedHashSet();
+            tempDelTemplateNameToKeysMap.put(delTemplateName, keys);
+          }
+          keys.add(delTemplateKey);
+
+          // Add to tempDelTemplatesMap.
           int delPriority = delTemplate.getDelPriority();
           String delPackageName = delTemplate.getDelPackageName();
 
           Map<Integer, Map<String, TemplateDelegateNode>> tempDivisions =
-              tempDelTemplatesMap.get(delTemplateName);
+              tempDelTemplatesMap.get(delTemplateKey);
           if (tempDivisions == null) {
             tempDivisions = Maps.newHashMap();
-            tempDelTemplatesMap.put(delTemplateName, tempDivisions);
+            tempDelTemplatesMap.put(delTemplateKey, tempDivisions);
           }
 
           Map<String, TemplateDelegateNode> tempDivision = tempDivisions.get(delPriority);
@@ -129,16 +147,17 @@ public class TemplateRegistry {
                 prevTemplate.getNearestAncestor(SoyFileNode.class).getFilePath();
             String currTemplateFilePath =
                 delTemplate.getNearestAncestor(SoyFileNode.class).getFilePath();
-            if (currTemplateFilePath.equals(prevTemplateFilePath)) {
-              throw new SoySyntaxException(String.format(
-                  "Found two definitions for delegate template name '%s' in the same delegate" +
-                      "package, both in the file %s.",
-                  delTemplateName, currTemplateFilePath));
+            String errorMsgPrefix = (delPackageName == null) ?
+                "Found two default implementations" :
+                "Found two implementations in the same delegate package";
+            if (currTemplateFilePath != null && currTemplateFilePath.equals(prevTemplateFilePath)) {
+              throw SoySyntaxException.createWithoutMetaInfo(String.format(
+                  errorMsgPrefix + " for delegate template '%s', both in the file %s.",
+                  delTemplateKey, currTemplateFilePath));
             } else {
-              throw new SoySyntaxException(String.format(
-                  "Found two definitions for delegate template name '%s' in the same delegate" +
-                      "package, in two different files %s and %s.",
-                  delTemplateName, prevTemplateFilePath, currTemplateFilePath));
+              throw SoySyntaxException.createWithoutMetaInfo(String.format(
+                  errorMsgPrefix + " for delegate template '%s', in files %s and %s.",
+                  delTemplateKey, prevTemplateFilePath, currTemplateFilePath));
             }
           }
           tempDivision.put(delPackageName, delTemplate);
@@ -150,12 +169,12 @@ public class TemplateRegistry {
 
     basicTemplatesMap = Collections.unmodifiableMap(tempBasicTemplatesMap);
 
-    ImmutableMap.Builder<String, List<DelegateTemplateDivision>> delTemplatesMapBuilder =
+    ImmutableMap.Builder<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMapBuilder =
         ImmutableMap.builder();
 
-    for (String delTemplateName : tempDelTemplatesMap.keySet()) {
+    for (DelTemplateKey delTemplateKey : tempDelTemplatesMap.keySet()) {
       Map<Integer, Map<String, TemplateDelegateNode>> tempDivisions =
-          tempDelTemplatesMap.get(delTemplateName);
+          tempDelTemplatesMap.get(delTemplateKey);
 
       ImmutableList.Builder<DelegateTemplateDivision> divisionsBuilder = ImmutableList.builder();
 
@@ -169,10 +188,12 @@ public class TemplateRegistry {
         divisionsBuilder.add(division);
       }
 
-      delTemplatesMapBuilder.put(delTemplateName, divisionsBuilder.build());
+      delTemplatesMapBuilder.put(delTemplateKey, divisionsBuilder.build());
     }
 
     delTemplatesMap = delTemplatesMapBuilder.build();
+
+    delTemplateNameToKeysMap = Collections.unmodifiableMap(tempDelTemplateNameToKeysMap);
   }
 
 
@@ -195,40 +216,87 @@ public class TemplateRegistry {
 
 
   /**
-   * Returns a map from delegate template name to list of {@code DelegateTemplateDivision}s, where
-   * each list is sorted in descending priority order.
+   * Returns a map from delegate template name to set of keys.
    */
-  public Map<String, List<DelegateTemplateDivision>> getDelegateTemplatesMap() {
+  public Map<String, Set<DelTemplateKey>> getDelTemplateNameToKeysMap() {
+    return delTemplateNameToKeysMap;
+  }
+
+
+  /**
+   * Returns a map from delegate template key (name and variant) to list of
+   * {@code DelegateTemplateDivision}s, where each list is sorted in descending priority order.
+   */
+  public Map<DelTemplateKey, List<DelegateTemplateDivision>> getDelTemplatesMap() {
     return delTemplatesMap;
   }
 
 
   /**
-   * Retrieves the list of {@code DelegateTemplateDivision}s (sorted in descencing priority order)
-   * given the delegate template name.
+   * Retrieves the set of key (name and variant) strings for all variants of a given delegate
+   * template name.
    * @param delTemplateName The delegate template name to retrieve.
-   * @return The corresponding list of {@code DelegateTemplateDivision}s (sorted in descencing
-   *     priority order), or null if the delegate template name is not implemented.
+   * @return The set of keys for all variants.
    */
-  public List<DelegateTemplateDivision> getSortedDelegateTemplateDivisions(String delTemplateName) {
-    return delTemplatesMap.get(delTemplateName);
+  public Set<DelTemplateKey> getDelTemplateKeysForAllVariants(String delTemplateName) {
+    return delTemplateNameToKeysMap.get(delTemplateName);
   }
 
 
   /**
-   * Selects a delegate template based on the rendering rules, given the delegate template name and
-   * the set of active delegate package names.
-   * @param delTemplateName The delegate template name to select an implementation for.
+   * Retrieves the set of {@code DelegateTemplateDivision}s for all variants of a given a delegate
+   * template name.
+   * @param delTemplateName The delegate template name to retrieve.
+   * @return The set of {@code DelegateTemplateDivision}s for all variants.
+   */
+  public Set<DelegateTemplateDivision> getDelTemplateDivisionsForAllVariants(
+      String delTemplateName) {
+
+    Set<DelTemplateKey> keysForAllVariants = delTemplateNameToKeysMap.get(delTemplateName);
+    if (keysForAllVariants == null) {
+      return null;
+    }
+
+    Set<DelegateTemplateDivision> divisionsForAllVariants = Sets.newLinkedHashSet();
+    for (DelTemplateKey delTemplateKey : keysForAllVariants) {
+      divisionsForAllVariants.addAll(delTemplatesMap.get(delTemplateKey));
+    }
+    return divisionsForAllVariants;
+  }
+
+
+  /**
+   * Retrieves the list of {@code DelegateTemplateDivision}s (sorted in descencing priority order)
+   * given a delegate template key (name and variant).
+   * @param delTemplateKey The delegate template key (name and variant) to retrieve.
+   * @return The corresponding list of {@code DelegateTemplateDivision}s (sorted in descencing
+   *     priority order), or null if the delegate template key is not implemented.
+   */
+  public List<DelegateTemplateDivision> getSortedDelTemplateDivisions(
+      DelTemplateKey delTemplateKey) {
+    return delTemplatesMap.get(delTemplateKey);
+  }
+
+
+  /**
+   * Selects a delegate template based on the rendering rules, given the delegate template key (name
+   * and variant) and the set of active delegate package names.
+   * @param delTemplateKey The delegate template key (name and variant) to select an implementation
+   *     for.
    * @param activeDelPackageNames The set of active delegate package names.
    * @return The selected delegate template, or null if there are no active implementations.
    * @throws DelegateTemplateConflictException If there are two or more active implementations with
    *     equal priority (unable to select one over the other).
    */
-  public TemplateDelegateNode selectDelegateTemplate(
-      String delTemplateName, Set<String> activeDelPackageNames)
+  public TemplateDelegateNode selectDelTemplate(
+      DelTemplateKey delTemplateKey, Set<String> activeDelPackageNames)
       throws DelegateTemplateConflictException {
 
-    List<DelegateTemplateDivision> divisions = delTemplatesMap.get(delTemplateName);
+    List<DelegateTemplateDivision> divisions = delTemplatesMap.get(delTemplateKey);
+    if (divisions == null && delTemplateKey.variant.length() > 0) {
+      // Fallback to empty variant.
+      divisions = delTemplatesMap.get(new DelTemplateKey(delTemplateKey.name, ""));
+    }
     if (divisions == null) {
       return null;
     }
@@ -244,9 +312,9 @@ public class TemplateRegistry {
 
         if (delTemplate != null) {
           throw new DelegateTemplateConflictException(String.format(
-              "For delegate template name '%s', found two active implementations with equal" +
+              "For delegate template '%s', found two active implementations with equal" +
                   " priority in delegate packages '%s' and '%s'.",
-              delTemplateName, delTemplate.getDelPackageName(), delPackageName));
+              delTemplateKey, delTemplate.getDelPackageName(), delPackageName));
         }
         delTemplate = division.delPackageNameToDelTemplateMap.get(delPackageName);
       }

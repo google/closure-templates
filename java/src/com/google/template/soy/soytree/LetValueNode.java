@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
@@ -30,6 +29,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class LetValueNode extends LetNode implements ExprHolderNode {
 
@@ -51,14 +51,20 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
   public LetValueNode(int id, boolean isLocalVarNameUniquified, String commandText) {
     super(id, isLocalVarNameUniquified, commandText);
 
-    Pair<String, ExprRootNode<?>> parseResult = parseCommandTextHelper(commandText);
-    varName = parseResult.first;
-    valueExpr = parseResult.second;
+    CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
+    varName = parseResult.localVarName;
+    valueExpr = parseResult.valueExpr;
 
     if (valueExpr == null) {
-      throw new SoySyntaxException(
+      throw SoySyntaxException.createWithoutMetaInfo(
           "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
-          " contains a value (invalid tag is {let " + commandText + " /}).");
+              " contains a value (invalid tag is {let " + commandText + " /}).");
+    }
+
+    if (parseResult.contentKind != null) {
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "The 'kind' attribute is not allowed on self-ending 'let' tags that " +
+              " contain a value (invalid tag is {let " + commandText + " /}).");
     }
   }
 

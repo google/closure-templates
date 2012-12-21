@@ -16,6 +16,7 @@
 
 package com.google.template.soy.javasrc.internal;
 
+import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.NULL_DATA_INSTANCE;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.UTILS_LIB;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genBinaryOp;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.genCoerceBoolean;
@@ -40,8 +41,6 @@ import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysI
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysTwoFloatsOrOneFloatOneInteger;
 import static com.google.template.soy.javasrc.restricted.JavaCodeUtils.isAlwaysTwoIntegers;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
@@ -49,7 +48,6 @@ import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -57,8 +55,9 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.DataRefIndexNode;
-import com.google.template.soy.exprtree.DataRefKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessIndexNode;
+import com.google.template.soy.exprtree.DataRefAccessKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
@@ -105,6 +104,7 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor<JavaExpr> {
 
@@ -158,9 +158,7 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
 
 
   @Override protected JavaExpr visitNullNode(NullNode node) {
-    return new JavaExpr(
-        "com.google.template.soy.data.restricted.NullData.INSTANCE",
-        NullData.class, Integer.MAX_VALUE);
+    return new JavaExpr(NULL_DATA_INSTANCE, NullData.class, Integer.MAX_VALUE);
   }
 
 
@@ -231,67 +229,79 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
 
   @Override protected JavaExpr visitDataRefNode(DataRefNode node) {
 
-    if (node.isIjDataRef()) {
-      // Case 1: $ij data reference.
-      return convertUnknownResult(genFunctionCall(
-          "this.$$getIjData", buildKeyStringExprText(node, 0)));
+    // Note: Using String instead of StringBuilder for readability. No performance concern here.
+    String nullSafetyPrefix = "";
+    String refText;
 
+    // ------ Translate first key, which may reference a variable, data, or injected data. ------
+    String firstKey = node.getFirstKey();
+    if (node.isIjDataRef()) {
+      // Case 1: Injected data reference.
+      refText = genGetDataSingleCallWithKey("this.$$ijData", firstKey);
+      if (node.isNullSafeIjDataRef()) {
+        nullSafetyPrefix = "(this.$$ijData == null) ? " + NULL_DATA_INSTANCE + " : ";
+      }
     } else {
-      JavaExpr translation = getLocalVarTranslation(node.getFirstKey());
+      JavaExpr translation = getLocalVarTranslation(firstKey);
       if (translation != null) {
         // Case 2: In-scope local var.
-        if (node.numChildren() == 1) {
-          return translation;
-        } else {
-          return convertUnknownResult(genFunctionCall(
-              UTILS_LIB + ".$$getData",
-              genMaybeCast(translation, CollectionData.class), buildKeyStringExprText(node, 1)));
-        }
-
+        refText = (translation.getPrecedence() == Integer.MAX_VALUE) ?
+            translation.getText() : "(" + translation.getText() + ")";
       } else {
         // Case 3: Data reference.
-        return convertUnknownResult(genFunctionCall(
-            UTILS_LIB + ".$$getData", "data", buildKeyStringExprText(node, 0)));
+        refText = genGetDataSingleCallWithKey("data", firstKey);
       }
+    }
+
+    // ------ Translate the rest of the keys, if any. ------
+    for (ExprNode child : node.getChildren()) {
+      DataRefAccessNode accessNode = (DataRefAccessNode) child;
+
+      if (accessNode.isNullSafe()) {
+        nullSafetyPrefix +=
+            "(! " + genFunctionCall(UTILS_LIB + ".$$isNonnull", refText) + ") ? " +
+            NULL_DATA_INSTANCE + " : ";
+      }
+
+      switch (accessNode.getKind()) {
+        case DATA_REF_ACCESS_KEY_NODE:
+          refText = genGetDataSingleCallWithKey(
+              refText, ((DataRefAccessKeyNode) accessNode).getKey());
+          break;
+        case DATA_REF_ACCESS_INDEX_NODE:
+          refText = genGetDataSingleCallWithKey(
+              refText,
+              Integer.toString(((DataRefAccessIndexNode) accessNode).getIndex()));
+          break;
+        case DATA_REF_ACCESS_EXPR_NODE:
+          JavaExpr keyExpr = visit(accessNode.getChild(0));
+          refText = genGetDataSingleCallWithKeyExpr(refText, keyExpr);
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
+
+    if (nullSafetyPrefix.length() == 0) {
+      return new JavaExpr(refText, SoyData.class, Integer.MAX_VALUE);
+    } else {
+      return new JavaExpr(
+          nullSafetyPrefix + refText, SoyData.class, Operator.CONDITIONAL.getPrecedence());
     }
   }
 
 
-  /**
-   * Private helper for visitDataRefNode(DataRefNode).
-   * @param node -
-   * @param startIndex -
-   */
-  private String buildKeyStringExprText(DataRefNode node, int startIndex) {
+  private static String genGetDataSingleCallWithKey(String dataExprText, String key) {
+    return genFunctionCall(
+        UTILS_LIB + ".$$getDataSingle", dataExprText,
+        "\"" + CharEscapers.javaStringEscaper().escape(key) + "\"");
+  }
 
-    List<String> keyStrParts = Lists.newArrayList();
-    StringBuilder currStringLiteralPart = new StringBuilder();
 
-    for (int i = startIndex; i < node.numChildren(); i++) {
-      ExprNode child = node.getChild(i);
-
-      if (i != startIndex) {
-        currStringLiteralPart.append(".");
-      }
-
-      if (child instanceof DataRefKeyNode) {
-        currStringLiteralPart.append(
-            CharEscapers.javaStringEscaper().escape(((DataRefKeyNode) child).getKey()));
-      } else if (child instanceof DataRefIndexNode) {
-        currStringLiteralPart.append(Integer.toString(((DataRefIndexNode) child).getIndex()));
-      } else {
-        JavaExpr childJavaExpr = visit(child);
-        keyStrParts.add("\"" + currStringLiteralPart.toString() + "\"");
-        keyStrParts.add(genMaybeProtect(childJavaExpr, Integer.MAX_VALUE) + ".toString()");
-        currStringLiteralPart = new StringBuilder();
-      }
-    }
-
-    if (currStringLiteralPart.length() > 0) {
-      keyStrParts.add("\"" + currStringLiteralPart.toString() + "\"");
-    }
-
-    return Joiner.on(" + ").join(keyStrParts);
+  private static String genGetDataSingleCallWithKeyExpr(String dataExprText, JavaExpr keyExpr) {
+    return genFunctionCall(
+        UTILS_LIB + ".$$getDataSingle", dataExprText,
+        genMaybeProtect(keyExpr, Integer.MAX_VALUE) + ".toString()");
   }
 
 
@@ -477,9 +487,9 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
     NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
     if (nonpluginFn != null) {
       if (numArgs != nonpluginFn.getNumArgs()) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createWithoutMetaInfo(
             "Function '" + fnName + "' called with the wrong number of arguments" +
-            " (function call \"" + node.toSourceString() + "\").");
+                " (function call \"" + node.toSourceString() + "\").");
       }
       switch (nonpluginFn) {
         case IS_FIRST:
@@ -488,8 +498,8 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
           return visitIsLastFunction(node);
         case INDEX:
           return visitIndexFunction(node);
-        case HAS_DATA:
-          return visitHasDataFunction();
+        case QUOTE_KEYS_IF_JS:
+          return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
         default:
           throw new AssertionError();
       }
@@ -499,22 +509,22 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
     SoyJavaSrcFunction fn = soyJavaSrcFunctionsMap.get(fnName);
     if (fn != null) {
       if (! fn.getValidArgsSizes().contains(numArgs)) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createWithoutMetaInfo(
             "Function '" + fnName + "' called with the wrong number of arguments" +
-            " (function call \"" + node.toSourceString() + "\").");
+                " (function call \"" + node.toSourceString() + "\").");
       }
       List<JavaExpr> args = visitChildren(node);
       try {
         return fn.computeForJavaSrc(args);
       } catch (Exception e) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createCausedWithoutMetaInfo(
             "Error in function call \"" + node.toSourceString() + "\": " + e.getMessage(), e);
       }
     }
 
-    throw new SoySyntaxException(
+    throw SoySyntaxException.createWithoutMetaInfo(
         "Failed to find SoyJavaSrcFunction with name '" + fnName + "'" +
-        " (function call \"" + node.toSourceString() + "\").");
+            " (function call \"" + node.toSourceString() + "\").");
   }
 
 
@@ -533,11 +543,6 @@ public class TranslateToJavaExprVisitor extends AbstractReturningExprNodeVisitor
   private JavaExpr visitIndexFunction(FunctionNode node) {
     String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
     return getLocalVarTranslation(varName + "__index");
-  }
-
-
-  private JavaExpr visitHasDataFunction() {
-    return convertBooleanResult(genNewBooleanData("data != null"));
   }
 
 

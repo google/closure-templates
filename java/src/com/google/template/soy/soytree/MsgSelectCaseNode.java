@@ -17,9 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -30,6 +28,8 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
+ * @author Mohamed Eldawy
  */
 public class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
@@ -46,18 +46,13 @@ public class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode
   public MsgSelectCaseNode(int id, String commandText) throws SoySyntaxException {
     super(id, "case", commandText);
 
-    try {
-      ExprRootNode<?> strLit = (new ExpressionParser(commandText)).parseExpression();
-      // Make sure the expression is a string.
-      if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
-          throw new SoySyntaxException("Invalid string for select 'case'.");
-      }
-      caseValue = ((StringNode) (strLit.getChild(0))).getValue();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidExprList(tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidExprList(pe);
+    ExprRootNode<?> strLit = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+        commandText, "Invalid expression in 'case' command text \"" + commandText + "\".");
+    // Make sure the expression is a string.
+    if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
+        throw SoySyntaxException.createWithoutMetaInfo("Invalid string for select 'case'.");
     }
+    caseValue = ((StringNode) (strLit.getChild(0))).getValue();
   }
 
 
@@ -68,18 +63,6 @@ public class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode
   protected MsgSelectCaseNode(MsgSelectCaseNode orig) {
     super(orig);
     this.caseValue = orig.caseValue;
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidExprList(Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid expression in 'case' command text \"" + getCommandText() + "\".", cause);
   }
 
 

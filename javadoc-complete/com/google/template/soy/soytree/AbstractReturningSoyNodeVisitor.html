@@ -241,6 +241,14 @@ Abstract base class for all SoyNode visitors. A visitor is basically a function 
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html#visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)">visitDebuggerNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html#visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)">visitForeachIfemptyNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachIfemptyNode.html" title="class in com.google.template.soy.soytree">ForeachIfemptyNode</A>&nbsp;node)</CODE>
 
 <BR>
@@ -330,6 +338,14 @@ Abstract base class for all SoyNode visitors. A visitor is basically a function 
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html#visitLetValueNode(com.google.template.soy.soytree.LetValueNode)">visitLetValueNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LetValueNode.html" title="class in com.google.template.soy.soytree">LetValueNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html#visitLogNode(com.google.template.soy.soytree.LogNode)">visitLogNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A>&nbsp;node)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -681,28 +697,6 @@ protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturn
 </DL>
 <HR>
 
-<A NAME="visitMsgNode(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
-visitMsgNode</H3>
-<PRE>
-protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitMsgNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)"><!-- --></A><H3>
-visitMsgPlaceholderNode</H3>
-<PRE>
-protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitMsgPlaceholderNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPlaceholderNode.html" title="class in com.google.template.soy.soytree">MsgPlaceholderNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
 <A NAME="visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)"><!-- --></A><H3>
 visitGoogMsgNode</H3>
 <PRE>
@@ -718,6 +712,17 @@ protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturn
 visitGoogMsgRefNode</H3>
 <PRE>
 protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitGoogMsgRefNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitMsgNode(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
+visitMsgNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitMsgNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -795,6 +800,17 @@ protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturn
 visitMsgSelectDefaultNode</H3>
 <PRE>
 protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitMsgSelectDefaultNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)"><!-- --></A><H3>
+visitMsgPlaceholderNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitMsgPlaceholderNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPlaceholderNode.html" title="class in com.google.template.soy.soytree">MsgPlaceholderNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -1059,6 +1075,28 @@ protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturn
 visitCallParamNode</H3>
 <PRE>
 protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitCallParamNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitLogNode(com.google.template.soy.soytree.LogNode)"><!-- --></A><H3>
+visitLogNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitLogNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)"><!-- --></A><H3>
+visitDebuggerNode</H3>
+<PRE>
+protected <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="type parameter in AbstractReturningSoyNodeVisitor">R</A> <B>visitDebuggerNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A>&nbsp;node)</PRE>
 <DL>
 <DD><DL>
 </DL>

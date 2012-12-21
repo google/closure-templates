@@ -61,6 +61,7 @@ import java.util.List;
  * }  // the end
  * </pre>
  *
+ * @author Kai Huang
  */
 class JsCodeBuilder {
 
@@ -110,7 +111,7 @@ class JsCodeBuilder {
   public void increaseIndent() throws SoySyntaxException {
     int newIndentDepth = indent.length() + 2;
     if (newIndentDepth > 20) {
-      throw new SoySyntaxException("Indent is more than 20 spaces!");
+      throw SoySyntaxException.createWithoutMetaInfo("Indent is more than 20 spaces!");
     }
     indent = SPACES.substring(0, newIndentDepth);
   }
@@ -123,7 +124,7 @@ class JsCodeBuilder {
   public void decreaseIndent() throws SoySyntaxException {
     int newIndentDepth = indent.length() - 2;
     if (newIndentDepth < 0) {
-      throw new SoySyntaxException("Indent is less than 0 spaces!");
+      throw SoySyntaxException.createWithoutMetaInfo("Indent is less than 0 spaces!");
     }
     indent = SPACES.substring(0, newIndentDepth);
   }
@@ -165,6 +166,14 @@ class JsCodeBuilder {
     outputVars.pop();
     outputVars.push(Pair.of(currOutputVarName, true));
     currOutputVarIsInited = true;
+  }
+
+
+  /**
+   * Gets the current output variable name.
+   */
+  public String getOutputVarName() {
+    return currOutputVarName;
   }
 
 
@@ -236,7 +245,7 @@ class JsCodeBuilder {
 
 
   /**
-   * Appends a line/statement with the given concatenation of the given JS expressions saved to the
+   * Appends a line/statement with the concatenation of the given JS expressions saved to the
    * current output variable.
    * @param jsExprs One or more JS expressions to compute output.
    */

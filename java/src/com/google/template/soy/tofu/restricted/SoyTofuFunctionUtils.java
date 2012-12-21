@@ -33,6 +33,7 @@ import com.google.template.soy.data.restricted.StringData;
  * @deprecated Plese use
  *     {@link com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils} instead.
  *
+ * @author Kai Huang
  */
 @Deprecated
 public class SoyTofuFunctionUtils {

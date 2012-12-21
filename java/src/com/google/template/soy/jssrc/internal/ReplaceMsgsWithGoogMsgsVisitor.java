@@ -39,6 +39,7 @@ import java.util.List;
  *
  * <p> {@link #exec} must be called on a full parse tree.
  *
+ * @author Kai Huang
  */
 class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -108,11 +109,12 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     int googMsgNodeId = nodeIdGen.genId();
     String googMsgVarName = jsSrcOptions.googMsgsAreExternal() ?
-        "MSG_EXTERNAL_" + MsgUtils.computeMsgId(msgNode) : "MSG_UNNAMED_" + googMsgNodeId;
+        "MSG_EXTERNAL_" + MsgUtils.computeMsgIdForDualFormat(msgNode) :
+        "MSG_UNNAMED_" + googMsgNodeId;
 
     GoogMsgNode googMsgNode = new GoogMsgNode(googMsgNodeId, msgNode, googMsgVarName);
-    GoogMsgRefNode googMsgRefNode = new GoogMsgRefNode(nodeIdGen.genId(),
-        googMsgNode.getRenderedGoogMsgVarName());
+    GoogMsgRefNode googMsgRefNode =
+        new GoogMsgRefNode(nodeIdGen.genId(), googMsgNode.getRenderedGoogMsgVarName());
 
     BlockNode parent = msgNode.getParent();
     int msgNodeIndex = parent.getChildIndex(msgNode);

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -41,6 +42,7 @@ import java.util.Set;
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
  *
+ * @author Mike Samuel
  */
 final class Rewriter {
 
@@ -94,6 +96,7 @@ final class Rewriter {
      * Keep track of template nodes so we know which are derived and which aren't.
      */
     @Override protected void visitTemplateNode(TemplateNode templateNode) {
+      Preconditions.checkState(!visitedTemplateNames.contains(templateNode.getTemplateName()));
       visitedTemplateNames.add(templateNode.getTemplateName());
       visitChildrenAllowingConcurrentModification(templateNode);
     }
@@ -107,7 +110,7 @@ final class Rewriter {
       for (EscapingMode escapingMode : escapingModes) {
         PrintDirectiveNode newPrintDirective = new PrintDirectiveNode(
             inferences.getIdGenerator().genId(), escapingMode.directiveName, "");
-        newPrintDirective.setLocation(printNode.getLocation());
+        newPrintDirective.setSourceLocation(printNode.getSourceLocation());
 
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
@@ -149,35 +152,39 @@ final class Rewriter {
       String derivedCalleeName = inferences.getDerivedCalleeNameForCallId(callNode.getId());
       if (derivedCalleeName != null) {
         // Creates a new call node, but with a different target name.
-        String partialCalleeName = null;
+        // TODO: Create a CallNode.withNewName() convenience method.
         CallNode newCallNode;
         if (callNode instanceof CallBasicNode) {
-          partialCalleeName = ((CallBasicNode) callNode).getPartialCalleeName();
-
-          String newPartialCalleeName = null;
-
-          if (partialCalleeName != null) {
-            int lastDotIndex = derivedCalleeName.lastIndexOf('.');
-            if (lastDotIndex >= 0) {
-              newPartialCalleeName = derivedCalleeName.substring(lastDotIndex);
-            }
-          }
+          // For simplicity, use the full callee name as the source callee name.
           newCallNode = new CallBasicNode(
-              callNode.getId(), derivedCalleeName, newPartialCalleeName, false,
-              callNode.isPassingData(), callNode.isPassingAllData(), callNode.getExprText(),
-              callNode.getUserSuppliedPlaceholderName(), callNode.getSyntaxVersion());
+              callNode.getId(), derivedCalleeName, derivedCalleeName, false,
+              callNode.isPassingData(), callNode.isPassingAllData(), callNode.getDataExpr(),
+              callNode.getUserSuppliedPlaceholderName(), callNode.getSyntaxVersion(),
+              callNode.getEscapingDirectiveNames());
         } else {
+          CallDelegateNode callNodeCast = (CallDelegateNode) callNode;
           newCallNode = new CallDelegateNode(
-              callNode.getId(), derivedCalleeName, false, callNode.isPassingData(),
-              callNode.isPassingAllData(), callNode.getExprText(),
-              callNode.getUserSuppliedPlaceholderName());
+              callNode.getId(), derivedCalleeName, callNodeCast.getDelCalleeVariantExpr(), false,
+              callNodeCast.allowsEmptyDefault(), callNode.isPassingData(),
+              callNode.isPassingAllData(), callNode.getDataExpr(),
+              callNode.getUserSuppliedPlaceholderName(),
+              callNode.getEscapingDirectiveNames());
         }
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
-          newCallNode.setLocation(callNode.getLocation());
+          newCallNode.setSourceLocation(callNode.getSourceLocation());
           moveChildrenTo(callNode, newCallNode);
           replaceChild(callNode, newCallNode);
         }
+        // Ensure we visit the new node instead of the old one.
+        callNode = newCallNode;
       }
+
+      // For strict templates, set any necessary escaping directives.
+      ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<String>();
+      for (EscapingMode escapingMode : inferences.getEscapingModesForId(callNode.getId())) {
+        escapingDirectiveNames.add(escapingMode.directiveName);
+      }
+      callNode.setEscapingDirectiveNames(escapingDirectiveNames.build());
 
       visitChildrenAllowingConcurrentModification(callNode);
     }

@@ -32,6 +32,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.Deque;
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.Map;
 /**
  * Utilities for generating Java code for calls.
  *
+ * @author Kai Huang
  */
 class GenCallCodeUtils {
 
@@ -182,7 +184,7 @@ class GenCallCodeUtils {
       dataToPass = new JavaExpr("data", SoyMapData.class, Integer.MAX_VALUE);
     } else if (callNode.isPassingData()) {
       dataToPass = new JavaExpr(
-          genMaybeCast(ttjev.exec(callNode.getExpr()), SoyMapData.class),
+          genMaybeCast(ttjev.exec(callNode.getDataExpr()), SoyMapData.class),
           SoyMapData.class, Integer.MAX_VALUE);
     } else {
       dataToPass = new JavaExpr("null", SoyMapData.class, Integer.MAX_VALUE);
@@ -207,7 +209,7 @@ class GenCallCodeUtils {
       }
 
       String key = child.getKey();
-      paramsObjSb.append("\"").append(key).append("\", ");
+      paramsObjSb.append('\"').append(key).append("\", ");
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
@@ -216,6 +218,11 @@ class GenCallCodeUtils {
 
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;
+
+        if (cpcn.getContentKind() != null) {
+          throw SoySyntaxExceptionUtils.createWithNode(
+              "JavaSrc backend doesn't support param blocks with 'kind' attribute.", cpcn);
+        }
 
         if (isComputableAsJavaExprsVisitor.exec(cpcn)) {
           List<JavaExpr> cpcnJavaExprs =
@@ -235,7 +242,7 @@ class GenCallCodeUtils {
       }
     }
 
-    paramsObjSb.append(")");
+    paramsObjSb.append(')');
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.isPassingData()) {

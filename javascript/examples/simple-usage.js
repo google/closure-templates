@@ -15,6 +15,7 @@
  */
 
 // Usage of the simple examples.
+// Author: Kai Huang
 
 
 var numExamples = 0;

@@ -27,6 +27,7 @@ import javax.annotation.Nonnull;
  * This allows directives that take sanitized content of a particular
  * {@link SanitizedContent.ContentKind kind} and wrap it to avoid over-escaping.
  *
+ * @author Mike Samuel
  */
 public interface SanitizedContentOperator {
 

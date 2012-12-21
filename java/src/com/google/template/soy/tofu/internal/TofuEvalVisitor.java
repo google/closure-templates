@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
  *
  * <p> Uses {@code SoyTofuFunction}s instead of {@code SoyJavaRuntimeFunction}s.
  *
+ * @author Kai Huang
  */
 class TofuEvalVisitor extends EvalVisitor {
 
@@ -50,8 +51,8 @@ class TofuEvalVisitor extends EvalVisitor {
    * @param env The current environment.
    */
   protected TofuEvalVisitor(
-      @Nullable Map<String, SoyTofuFunction> soyTofuFunctionsMap,
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+      @Nullable Map<String, SoyTofuFunction> soyTofuFunctionsMap, SoyMapData data,
+      @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
 
     super(null, data, ijData, env);
 

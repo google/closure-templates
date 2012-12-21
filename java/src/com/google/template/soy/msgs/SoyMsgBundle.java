@@ -25,6 +25,7 @@ import java.util.Iterator;
 /**
  * Represents a full set of messages in some language/locale.
  *
+ * @author Kai Huang
  */
 public interface SoyMsgBundle extends Iterable<SoyMsg> {
 

@@ -27,6 +27,7 @@ import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
 /**
  * Unit tests for BidiSpanWrapDirective.
  *
+ * @author Kai Huang
  */
 public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
@@ -46,11 +47,11 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
 
     assertTofuOutput("", "", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput("blah", "blah", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
-    assertTofuOutput("<span dir=rtl>\u05E0</span>\u200E", "\u05E0",
+    assertTofuOutput("<span dir=\"rtl\">\u05E0</span>\u200E", "\u05E0",
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
 
     assertTofuOutput("", "", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("<span dir=ltr>blah</span>\u200F", "blah",
+    assertTofuOutput("<span dir=\"ltr\">blah</span>\u200F", "blah",
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput("\u05E0", "\u05E0", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
   }

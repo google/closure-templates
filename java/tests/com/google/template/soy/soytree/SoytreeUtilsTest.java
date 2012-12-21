@@ -20,7 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.base.IncrementingIdGenerator;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -36,33 +36,9 @@ import java.util.List;
 /**
  * Unit tests for SoytreeUtils.
  *
+ * @author Kai Huang
  */
 public class SoytreeUtilsTest extends TestCase {
-
-
-  public void testCreateSoySyntaxExceptionWithMetaInfo() {
-
-    String testFileContent =
-        "{namespace boo}\n" +
-        "\n" +
-        "/** @param goo */\n" +
-        "{template name=\".foo\"}\n" +
-        "  {$goo}\n" +
-        "{/template}\n";
-
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
-
-    String message = "Some error happened.";
-    @SuppressWarnings("ThrowableInstanceNeverThrown")  // created for testing
-        Throwable cause = new Throwable();
-    PrintNode pn = (PrintNode) soyTree.getChild(0).getChild(0).getChild(0);
-    SoySyntaxException sse =
-        SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(message, cause, pn);
-    assertTrue(sse.getMessage().contains(message));
-    assertEquals(cause, sse.getCause());
-    assertEquals("no-path", sse.getSourceLocation().getSourcePath());
-    assertEquals("boo.foo", sse.getTemplateName());
-  }
 
 
   // -----------------------------------------------------------------------------------------------
@@ -76,9 +52,9 @@ public class SoytreeUtilsTest extends TestCase {
         "\n" +
         "/** @param items */\n" +
         "{template name=\".foo\"}\n" +
-        "  {length($items) + 5}\n" +  // 6 nodes
-        "  {foreach $item in $items}\n" +  // 3 nodes
-        "    {$item.goo}\n" +  // 4 nodes
+        "  {length($items) + 5}\n" +  // 5 nodes
+        "  {foreach $item in $items}\n" +  // 2 nodes
+        "    {$item.goo}\n" +  // 3 nodes
         "  {/foreach}\n" +
         "{/template}\n";
 
@@ -88,7 +64,7 @@ public class SoytreeUtilsTest extends TestCase {
     SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor);
     CountingVisitor.Counts counts = countingVisitor.getCounts();
     assertEquals(3, counts.numExecs);
-    assertEquals(13, counts.numVisitedNodes);
+    assertEquals(10, counts.numVisitedNodes);
   }
 
 
@@ -175,7 +151,8 @@ public class SoytreeUtilsTest extends TestCase {
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode fileSetNode = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     SoyFileNode fileNode =
-        new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, nodeIdGen, "test.soy").parseSoyFile();
+        (new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC, "test.soy", nodeIdGen))
+            .parseSoyFile();
     fileSetNode.addChild(fileNode);
 
     SoyFileSetNode clone = fileSetNode.clone();
@@ -191,7 +168,8 @@ public class SoytreeUtilsTest extends TestCase {
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode fileSetNode = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     SoyFileNode fileNode =
-        new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, nodeIdGen, "test.soy").parseSoyFile();
+        (new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC, "test.soy", nodeIdGen))
+            .parseSoyFile();
     fileSetNode.addChild(fileNode);
 
     SoyFileSetNode clone = SoytreeUtils.cloneWithNewIds(fileSetNode);
@@ -219,7 +197,8 @@ public class SoytreeUtilsTest extends TestCase {
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode fileSetNode = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     SoyFileNode fileNode =
-        new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, nodeIdGen, "test.soy").parseSoyFile();
+        (new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC, "test.soy", nodeIdGen))
+            .parseSoyFile();
     fileSetNode.addChild(fileNode);
 
     FindNodeByTypeVisitor<MsgHtmlTagNode> visitor =

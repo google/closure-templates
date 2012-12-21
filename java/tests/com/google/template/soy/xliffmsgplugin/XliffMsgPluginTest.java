@@ -19,6 +19,7 @@ package com.google.template.soy.xliffmsgplugin;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoyFileSupplier;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -39,6 +40,7 @@ import java.util.List;
 /**
  * Unit tests for XliffMsgPlugin.
  *
+ * @author Kai Huang
  */
 public class XliffMsgPluginTest extends TestCase {
 
@@ -47,7 +49,8 @@ public class XliffMsgPluginTest extends TestCase {
 
     URL testSoyFile = Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2.soy");
     SoyFileSetNode soyTree =
-        (new SoyFileSetParser(SoyFileSupplier.Factory.create(testSoyFile))).parse();
+        (new SoyFileSetParser(SoyFileSupplier.Factory.create(testSoyFile, SoyFileKind.SRC)))
+            .parse();
     SoyMsgBundle msgBundle = (new ExtractMsgsVisitor()).exec(soyTree);
 
     XliffMsgPlugin msgPlugin = new XliffMsgPlugin();

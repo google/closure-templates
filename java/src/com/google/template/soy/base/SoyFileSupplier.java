@@ -34,6 +34,8 @@ import java.net.URL;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
+ * @author Mike Samuel
  */
 public interface SoyFileSupplier {
 
@@ -76,13 +78,21 @@ public interface SoyFileSupplier {
 
 
   /**
+   * Returns the kind of this input Soy file.
+   */
+  public SoyFileKind getSoyFileKind();
+
+
+  /**
    * Returns the file path (used for messages only).
    */
-  public String getPath();
+  public String getFilePath();
 
 
   /**
    * Container for factory methods for {@link SoyFileSupplier}s.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static final class Factory {
 
@@ -92,11 +102,12 @@ public interface SoyFileSupplier {
      * as well as the desired file path for messages.
      *
      * @param contentSupplier Supplier of a Reader for the Soy file content.
+     * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file (used for messages only).
      */
     public static SoyFileSupplier create(
-        InputSupplier<? extends Reader> contentSupplier, String filePath) {
-      return new StableSoyFileSupplier(contentSupplier, filePath);
+        InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+      return new StableSoyFileSupplier(contentSupplier, soyFileKind, filePath);
     }
 
 
@@ -104,9 +115,11 @@ public interface SoyFileSupplier {
      * Creates a new {@code SoyFileSupplier} given a {@code File}.
      *
      * @param inputFile The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
      */
-    public static SoyFileSupplier create(File inputFile) {
-      return create(Files.newReaderSupplier(inputFile, Charsets.UTF_8), inputFile.getPath());
+    public static SoyFileSupplier create(File inputFile, SoyFileKind soyFileKind) {
+      return create(
+          Files.newReaderSupplier(inputFile, Charsets.UTF_8), soyFileKind, inputFile.getPath());
     }
 
 
@@ -115,10 +128,13 @@ public interface SoyFileSupplier {
      * file path for messages.
      *
      * @param inputFileUrl The URL of the Soy file.
+     * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file (used for messages only).
      */
-    public static SoyFileSupplier create(URL inputFileUrl, String filePath) {
-      return create(Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), filePath);
+    public static SoyFileSupplier create(
+        URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
+      return create(
+          Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), soyFileKind, filePath);
     }
 
 
@@ -127,14 +143,14 @@ public interface SoyFileSupplier {
      *
      * <p> Important: This function assumes that the desired file path is returned by
      * {@code inputFileUrl.toString()}. If this is not the case, please use
-     * {@link #create(URL, String)} instead.
+     * {@link #create(java.net.URL, SoyFileKind, String)} instead.
      *
-     * @see #create(URL, String)
+     * @see #create(java.net.URL, SoyFileKind, String)
      * @param inputFileUrl The URL of the Soy file.
+     * @param soyFileKind The kind of this input Soy file.
      */
-    public static SoyFileSupplier create(URL inputFileUrl) {
-      return create(
-          Resources.newReaderSupplier(inputFileUrl, Charsets.UTF_8), inputFileUrl.toString());
+    public static SoyFileSupplier create(URL inputFileUrl, SoyFileKind soyFileKind) {
+      return create(inputFileUrl, soyFileKind, inputFileUrl.toString());
     }
 
 
@@ -143,10 +159,12 @@ public interface SoyFileSupplier {
      * as the desired file path for messages.
      *
      * @param content The Soy file content.
+     * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file (used for messages only).
      */
-    public static SoyFileSupplier create(CharSequence content, String filePath) {
-      return create(CharStreams.newReaderSupplier(content.toString()), filePath);
+    public static SoyFileSupplier create(
+        CharSequence content, SoyFileKind soyFileKind, String filePath) {
+      return create(CharStreams.newReaderSupplier(content.toString()), soyFileKind, filePath);
     }
 
 

@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
  *
  * <p> XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
  *
+ * @author Kai Huang
  */
 class XliffGenerator {
 
@@ -78,13 +79,13 @@ class XliffGenerator {
     ilb.appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     ilb.appendLine("<xliff version=\"1.2\" xmlns=\"urn:oasis:names:tc:xliff:document:1.2\">");
     ilb.increaseIndent();
-    ilb.appendIndent().appendParts(
+    ilb.appendLineStart(
         "<file original=\"SoyMsgBundle\" datatype=\"x-soy-msg-bundle\"", " xml:space=\"preserve\"",
         " source-language=\"", attributeEscaper.escape(sourceLocaleString), "\"");
     if (hasTarget) {
       ilb.appendParts(" target-language=\"", attributeEscaper.escape(targetLocaleString), "\"");
     }
-    ilb.append(">").appendLineEnd();
+    ilb.appendLineEnd(">");
     ilb.increaseIndent();
     ilb.appendLine("<body>");
     ilb.increaseIndent();
@@ -92,7 +93,7 @@ class XliffGenerator {
     for (SoyMsg msg : msgBundle) {
 
       // Begin 'trans-unit'.
-      ilb.appendIndent().appendParts("<trans-unit id=\"", Long.toString(msg.getId()), "\"");
+      ilb.appendLineStart("<trans-unit id=\"", Long.toString(msg.getId()), "\"");
       String contentType = msg.getContentType();
       if (contentType != null && contentType.length() > 0) {
         String xliffDatatype = CONTENT_TYPE_TO_XLIFF_DATATYPE_MAP.get(contentType);
@@ -101,11 +102,11 @@ class XliffGenerator {
         }
         ilb.appendParts(" datatype=\"", attributeEscaper.escape(xliffDatatype), "\"");
       }
-      ilb.append(">").appendLineEnd();
+      ilb.appendLineEnd(">");
       ilb.increaseIndent();
 
       // Source.
-      ilb.appendIndent().append("<source>");
+      ilb.appendLineStart("<source>");
       for (SoyMsgPart msgPart : msg.getParts()) {
         if (msgPart instanceof SoyMsgRawTextPart) {
           String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
@@ -115,7 +116,7 @@ class XliffGenerator {
           ilb.appendParts("<x id=\"", attributeEscaper.escape(placeholderName), "\"/>");
         }
       }
-      ilb.append("</source>").appendLineEnd();
+      ilb.appendLineEnd("</source>");
 
       // Target.
       if (hasTarget) {

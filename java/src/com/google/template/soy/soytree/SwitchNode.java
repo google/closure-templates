@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -35,6 +33,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class SwitchNode extends AbstractParentCommandNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode, ExprHolderNode {
@@ -52,15 +51,8 @@ public class SwitchNode extends AbstractParentCommandNode<SoyNode>
   public SwitchNode(int id, String commandText) throws SoySyntaxException {
     super(id, "switch", commandText);
 
-    ExprRootNode<?> tempExpr;
-    try {
-      tempExpr = (new ExpressionParser(commandText)).parseExpression();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidExpr(tme, commandText);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidExpr(pe, commandText);
-    }
-    expr = tempExpr;
+    expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+        commandText, "Invalid expression in 'switch' command text \"" + commandText + "\".");
   }
 
 
@@ -71,19 +63,6 @@ public class SwitchNode extends AbstractParentCommandNode<SoyNode>
   protected SwitchNode(SwitchNode orig) {
     super(orig);
     this.expr = orig.expr.clone();
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param cause The underlying exception.
-   * @param commandText The command text which contains the invalid expression.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidExpr(Throwable cause, String commandText) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid expression in 'switch' command text \"" + commandText + "\".", cause);
   }
 
 

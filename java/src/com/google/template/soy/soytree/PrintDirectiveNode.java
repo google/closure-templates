@@ -21,9 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -38,6 +36,7 @@ import java.util.Set;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
@@ -92,13 +91,8 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
 
     List<ExprRootNode<?>> tempArgs;
     if (this.argsText.length() > 0) {
-      try {
-        tempArgs = (new ExpressionParser(argsText)).parseExpressionList();
-      } catch (TokenMgrError tme) {
-        throw createExceptionForInvalidArgs(tme);
-      } catch (ParseException pe) {
-        throw createExceptionForInvalidArgs(pe);
-      }
+      tempArgs = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
+          argsText, "Invalid arguments for print directive \"" + toSourceString() + "\".");
     } else {
       tempArgs = Collections.emptyList();
     }
@@ -119,18 +113,6 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
       tempArgs.add(origArg.clone());
     }
     this.args = ImmutableList.copyOf(tempArgs);
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidArgs(Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid arguments for print directive \"" + toString() + "\".", cause);
   }
 
 

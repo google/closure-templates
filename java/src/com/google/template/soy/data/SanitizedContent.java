@@ -24,6 +24,7 @@ import javax.annotation.concurrent.Immutable;
 /**
  * A chunk of sanitized content of a known kind, e.g. the output of an HTML sanitizer.
  *
+ * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 @Immutable
@@ -43,6 +44,14 @@ public final class SanitizedContent extends SoyData {
     HTML,
 
     /**
+     * Executable Javascript code or expression, safe for insertion in a script-tag or event
+     * handler context, known to be free of any attacker-controlled scripts. This can either be
+     * side-effect-free Javascript (such as JSON) or Javascript that entirely under Google's
+     * control.
+     */
+    JS,
+
+    /**
      * A sequence of code units that can appear between quotes (either single or double) in a JS
      * program without causing a parse error, and without causing any side effects.
      * <p>
@@ -59,7 +68,22 @@ public final class SanitizedContent extends SoyData {
     URI,
 
     /** An attribute name and value, such as {@code dir="ltr"}. */
-    HTML_ATTRIBUTE,
+    ATTRIBUTES,
+
+    // TODO(gboyer): Consider separating rules, properties, declarations, and
+    // values into separate types, but for simplicity, we'll treat explicitly
+    // blessed SanitizedContent as allowed in all of these contexts.
+    /** A CSS3 declaration, property, value or group of semicolon separated declarations. */
+    CSS,
+
+    /**
+     * Unsanitized plain-text content.
+     *
+     * This is effectively the "null" entry of this enum, and is sometimes used to explicitly mark
+     * content that should never be used unescaped. Since any string is safe to use as text, being
+     * of ContentKind.TEXT makes no guarantees about its safety in any other context such as HTML.
+     */
+    TEXT
     ;
 
   }
@@ -70,10 +94,18 @@ public final class SanitizedContent extends SoyData {
 
 
   /**
+   * Creates a SanitizedContent object.
+   *
+   * Package-private. Ideally, if one is available, you should use an existing serializer,
+   * sanitizer, verifier, or extractor that returns SanitizedContent objects. Or, you can use
+   * UnsafeSanitizedContentOrdainer in this package, to make it clear that creating these objects
+   * from arbitrary content is risky unless you absolutely know the input is safe. See the
+   * comments in UnsafeSanitizedContentOrdainer for more recommendations.
+   *
    * @param content A string of valid content with the given content kind.
    * @param contentKind Describes the kind of string that content is.
    */
-  public SanitizedContent(String content, ContentKind contentKind) {
+  SanitizedContent(String content, ContentKind contentKind) {
     this.content = content;
     this.contentKind = contentKind;
   }

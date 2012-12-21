@@ -31,6 +31,7 @@ import java.util.List;
 /**
  * Unit tests for SoyListData.
  *
+ * @author Kai Huang
  */
 public class SoyListDataTest extends TestCase {
 
@@ -161,7 +162,7 @@ public class SoyListDataTest extends TestCase {
       new SoyListData(existingList);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path '[2][0][1]':"));
+      assertTrue(sde.getMessage().contains("At data path '[2][0][1]':"));      
     }
   }
 

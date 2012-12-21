@@ -54,6 +54,9 @@ import java.util.Map;
  *       .in(ScopeAnnotation.class);
  * </pre>
  *
+ * @author Jesse Wilson
+ * @author Fedor Karpelevitch
+ * @author Kai Huang
  */
 public class GuiceSimpleScope implements Scope {
 

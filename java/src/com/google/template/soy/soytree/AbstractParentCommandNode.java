@@ -27,6 +27,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class AbstractParentCommandNode<N extends SoyNode>
     extends AbstractCommandNode implements ParentSoyNode<N> {
@@ -61,7 +62,7 @@ public abstract class AbstractParentCommandNode<N extends SoyNode>
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
-    sb.append("{/").append(getCommandName()).append("}");
+    sb.append("{/").append(getCommandName()).append('}');
     return sb.toString();
   }
 

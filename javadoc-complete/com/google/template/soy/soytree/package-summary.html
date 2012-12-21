@@ -97,6 +97,10 @@ Soy parse tree.
  subinterfaces that extend the base interface in various aspects.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockCommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockCommandNode</A></B></TD>
+<TD>A node that represents a Soy command that encloses a template block.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockNode</A></B></TD>
 <TD>A node that represents a template block.</TD>
 </TR>
@@ -133,12 +137,16 @@ Soy parse tree.
 <TD>A block node that can hold message content.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialContentNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialContentNode</A></B></TD>
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A></B></TD>
 <TD>A node that can be the initial content (i.e.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode&lt;N extends SoyNode&gt;</A></B></TD>
 <TD>A node in a Soy parse tree that may be a parent.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.RenderUnitNode.html" title="interface in com.google.template.soy.soytree">SoyNode.RenderUnitNode</A></B></TD>
+<TD>A node that represents an independent unit of rendering.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode&lt;N extends SoyNode&gt;</A></B></TD>
@@ -249,6 +257,10 @@ Soy parse tree.
 <TD>Node representing a 'css' statement.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A></B></TD>
+<TD>Node representing the 'debugger' statement.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/ExprUnion.html" title="class in com.google.template.soy.soytree">ExprUnion</A></B></TD>
 <TD>Represents a Soy expression in either V2 or V1 syntax.</TD>
 </TR>
@@ -289,8 +301,16 @@ Soy parse tree.
 <TD>Abstract node representing a 'let' statement.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/LetNode.CommandTextParseResult.html" title="class in com.google.template.soy.soytree">LetNode.CommandTextParseResult</A></B></TD>
+<TD>Return value for <code>parseCommandTextHelper()</code>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/LetValueNode.html" title="class in com.google.template.soy.soytree">LetValueNode</A></B></TD>
 <TD>Node representing a 'let' statement with a value expression.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A></B></TD>
+<TD>Node representing the 'log' statement.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/MsgHtmlTagNode.html" title="class in com.google.template.soy.soytree">MsgHtmlTagNode</A></B></TD>
@@ -353,6 +373,10 @@ Soy parse tree.
 <TD>Node representing a Soy file set (the root of the Soy parse tree).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoySyntaxExceptionUtils.html" title="class in com.google.template.soy.soytree">SoySyntaxExceptionUtils</A></B></TD>
+<TD>Utilities for creating and modifying SoySyntaxException objects.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/SoytreeUtils.html" title="class in com.google.template.soy.soytree">SoytreeUtils</A></B></TD>
 <TD>Shared utilities for the 'soytree' package.</TD>
 </TR>
@@ -377,6 +401,10 @@ Soy parse tree.
 <TD>Node representing a delegate template.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.DelTemplateKey.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode.DelTemplateKey</A></B></TD>
+<TD>Value class for a delegate template key (name and variant).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A></B></TD>
 <TD>Node representing a template.</TD>
 </TR>
@@ -398,7 +426,7 @@ Soy parse tree.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/soytree/TemplateRegistry.DelegateTemplateDivision.html" title="class in com.google.template.soy.soytree">TemplateRegistry.DelegateTemplateDivision</A></B></TD>
-<TD>Represents a set of delegate templates with the same name and same priority.</TD>
+<TD>Represents a set of delegate templates with the same key (name and variant) and same priority.</TD>
 </TR>
 </TABLE>
 &nbsp;

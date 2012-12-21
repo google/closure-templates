@@ -196,6 +196,66 @@ Builder for a <code>SoyFileSet</code>.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addVolatileWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)">addVolatileWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
+                    <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file that the system will watch for changes, given a <code>File</code>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
+            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
+            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a <code>File</code>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)">addWithKind</A></B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
+            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a resource <code>URL</code>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#build()">build</A></B>()</CODE>
 
@@ -312,6 +372,23 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="clas
 </DL>
 <HR>
 
+<A NAME="addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
+addWithKind</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
+                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
+<DL>
+<DD>Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>contentSupplier</CODE> - Supplier of a Reader for the Soy file content.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
+<DT><B>Returns:</B><DD>This builder.</DL>
+</DD>
+</DL>
+<HR>
+
 <A NAME="add(com.google.common.io.InputSupplier, java.lang.String)"><!-- --></A><H3>
 add</H3>
 <PRE>
@@ -323,6 +400,21 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>contentSupplier</CODE> - Supplier of a Reader for the Soy file content.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
+<DT><B>Returns:</B><DD>This builder.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="addWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
+addWithKind</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
+                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
+<DL>
+<DD>Adds an input Soy file, given a <code>File</code>.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.
 <DT><B>Returns:</B><DD>This builder.</DL>
 </DD>
 </DL>
@@ -342,6 +434,21 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
 </DL>
 <HR>
 
+<A NAME="addVolatileWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
+addVolatileWithKind</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addVolatileWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
+                                              <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
+<DL>
+<DD>Adds an input Soy file that the system will watch for changes, given a <code>File</code>.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.
+<DT><B>Returns:</B><DD>This builder.</DL>
+</DD>
+</DL>
+<HR>
+
 <A NAME="addVolatile(java.io.File)"><!-- --></A><H3>
 addVolatile</H3>
 <PRE>
@@ -351,6 +458,23 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.
+<DT><B>Returns:</B><DD>This builder.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
+addWithKind</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
+<DL>
+<DD>Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
 <DT><B>Returns:</B><DD>This builder.</DL>
 </DD>
 </DL>
@@ -372,6 +496,25 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
 </DL>
 <HR>
 
+<A NAME="addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
+addWithKind</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
+<DL>
+<DD>Adds an input Soy file, given a resource <code>URL</code>.
+
+ <p> Important: This function assumes that the desired file path is returned by
+ <code>inputFileUrl.toString()</code>. If this is not the case, please use
+ <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><CODE>addWithKind(URL, SoyFileKind, String)</CODE></A> instead.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.
+<DT><B>Returns:</B><DD>This builder.<DT><B>See Also:</B><DD><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><CODE>addWithKind(URL, SoyFileKind, String)</CODE></A></DL>
+</DD>
+</DL>
+<HR>
+
 <A NAME="add(java.net.URL)"><!-- --></A><H3>
 add</H3>
 <PRE>
@@ -386,6 +529,23 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.
 <DT><B>Returns:</B><DD>This builder.<DT><B>See Also:</B><DD><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)"><CODE>add(URL, String)</CODE></A></DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="addWithKind(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
+addWithKind</H3>
+<PRE>
+public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
+                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
+                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
+<DL>
+<DD>Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>content</CODE> - The Soy file content.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
+<DT><B>Returns:</B><DD>This builder.</DL>
 </DD>
 </DL>
 <HR>

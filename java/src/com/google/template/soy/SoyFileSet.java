@@ -26,6 +26,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoyFileSupplier;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.VolatileSoyFileSupplier;
@@ -46,6 +47,7 @@ import com.google.template.soy.parsepasses.ChangeCallsToPassAllDataVisitor;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor;
 import com.google.template.soy.parsepasses.HandleCssCommandVisitor;
 import com.google.template.soy.parsepasses.PerformAutoescapeVisitor;
+import com.google.template.soy.parsepasses.contextautoesc.CheckEscapingSanityVisitor;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.parsepasses.contextautoesc.SoyAutoescapeException;
@@ -81,6 +83,7 @@ import javax.annotation.Nullable;
  *
  * <p> Note: Soy file (or resource) contents must be encoded in UTF-8.
  *
+ * @author Kai Huang
  */
 public final class SoyFileSet {
 
@@ -156,11 +159,39 @@ public final class SoyFileSet {
      * desired file path for messages.
      *
      * @param contentSupplier Supplier of a Reader for the Soy file content.
+     * @param soyFileKind The kind of this input Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
+     * @return This builder.
+     */
+    public Builder addWithKind(
+        InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+      listBuilder.add(SoyFileSupplier.Factory.create(contentSupplier, soyFileKind, filePath));
+      return this;
+    }
+
+
+    /**
+     * Adds an input Soy file, given an {@code InputSupplier} for the file content, as well as the
+     * desired file path for messages.
+     *
+     * @param contentSupplier Supplier of a Reader for the Soy file content.
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
     public Builder add(InputSupplier<? extends Reader> contentSupplier, String filePath) {
-      listBuilder.add(SoyFileSupplier.Factory.create(contentSupplier, filePath));
+      return addWithKind(contentSupplier, SoyFileKind.SRC, filePath);
+    }
+
+
+    /**
+     * Adds an input Soy file, given a {@code File}.
+     *
+     * @param inputFile The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @return This builder.
+     */
+    public Builder addWithKind(File inputFile, SoyFileKind soyFileKind) {
+      listBuilder.add(SoyFileSupplier.Factory.create(inputFile, soyFileKind));
       return this;
     }
 
@@ -172,7 +203,19 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(File inputFile) {
-      listBuilder.add(SoyFileSupplier.Factory.create(inputFile));
+      return addWithKind(inputFile, SoyFileKind.SRC);
+    }
+
+
+    /**
+     * Adds an input Soy file that the system will watch for changes, given a {@code File}.
+     *
+     * @param inputFile The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @return This builder.
+     */
+    public Builder addVolatileWithKind(File inputFile, SoyFileKind soyFileKind) {
+      listBuilder.add(new VolatileSoyFileSupplier(inputFile, soyFileKind));
       return this;
     }
 
@@ -184,7 +227,21 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addVolatile(File inputFile) {
-      listBuilder.add(new VolatileSoyFileSupplier(inputFile));
+      return addVolatileWithKind(inputFile, SoyFileKind.SRC);
+    }
+
+
+    /**
+     * Adds an input Soy file, given a resource {@code URL}, as well as the desired file path for
+     * messages.
+     *
+     * @param inputFileUrl The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
+     * @return This builder.
+     */
+    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
+      listBuilder.add(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind, filePath));
       return this;
     }
 
@@ -198,7 +255,24 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(URL inputFileUrl, String filePath) {
-      listBuilder.add(SoyFileSupplier.Factory.create(inputFileUrl, filePath));
+      return addWithKind(inputFileUrl, SoyFileKind.SRC, filePath);
+    }
+
+
+    /**
+     * Adds an input Soy file, given a resource {@code URL}.
+     *
+     * <p> Important: This function assumes that the desired file path is returned by
+     * {@code inputFileUrl.toString()}. If this is not the case, please use
+     * {@link #addWithKind(URL, SoyFileKind, String)} instead.
+     *
+     * @see #addWithKind(URL, SoyFileKind, String)
+     * @param inputFileUrl The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @return This builder.
+     */
+    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind) {
+      listBuilder.add(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind));
       return this;
     }
 
@@ -215,7 +289,21 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(URL inputFileUrl) {
-      listBuilder.add(SoyFileSupplier.Factory.create(inputFileUrl));
+      return addWithKind(inputFileUrl, SoyFileKind.SRC);
+    }
+
+
+    /**
+     * Adds an input Soy file, given the file content provided as a string, as well as the desired
+     * file path for messages.
+     *
+     * @param content The Soy file content.
+     * @param soyFileKind The kind of this input Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
+     * @return This builder.
+     */
+    public Builder addWithKind(CharSequence content, SoyFileKind soyFileKind, String filePath) {
+      listBuilder.add(SoyFileSupplier.Factory.create(content, soyFileKind, filePath));
       return this;
     }
 
@@ -229,8 +317,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSequence content, String filePath) {
-      listBuilder.add(SoyFileSupplier.Factory.create(content, filePath));
-      return this;
+      return addWithKind(content, SoyFileKind.SRC, filePath);
     }
 
 
@@ -804,7 +891,9 @@ public final class SoyFileSet {
 
 
   private void doContextualEscaping(SoyFileSetNode soyTree) throws SoySyntaxException {
-    List<TemplateNode> extraTemplates = contextualAutoescaper.rewrite(soyTree);
+    new CheckEscapingSanityVisitor().exec(soyTree);
+    List<TemplateNode> extraTemplates = contextualAutoescaper.rewrite(
+        soyTree, generalOptions.allowExternalCalls() == Boolean.FALSE);
     // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
     if (!extraTemplates.isEmpty()) {
       // TODO: pull out somewhere else.  Ideally do the merge as part of the redundant template

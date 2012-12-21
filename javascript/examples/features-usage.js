@@ -15,6 +15,7 @@
  */
 
 // Usage of the features examples.
+// Author: Kai Huang
 
 
 var GLOBAL_STR = 'This is a render-time global.';
@@ -143,6 +144,15 @@ function _renderFeaturesUsage() {
        author: 'John Doe, Esq.',
        year: 1973,
        keywords: ['Bi(Di)', '2008 (\u05E9\u05E0\u05D4)','2008 (year)']}));
+
+  // ---------------------------------------------------------------------------
+  appendExampleHeader('demoParamWithKindAttribute');
+  sb.append(soy.examples.features.demoParamWithKindAttribute(
+      {message: 'I <3 XSS',
+       list: [
+           'Thing One',
+           'This & That',
+           'Ceci n\'est pas un tag <script>.']}));
 
   // ---------------------------------------------------------------------------
   sb.append('<hr><b>The end</b>');

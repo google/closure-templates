@@ -22,6 +22,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for AbstractCommandNode.
  *
+ * @author Kai Huang
  */
 public class AbstractSoyCommandNodeTest extends TestCase {
 

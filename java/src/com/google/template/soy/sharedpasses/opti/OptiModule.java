@@ -23,6 +23,7 @@ import com.google.inject.AbstractModule;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Anthony Jawad
  */
 public class OptiModule extends AbstractModule {
   @Override protected void configure() {

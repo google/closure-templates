@@ -193,11 +193,27 @@ Represents a compiled Soy file set. This is the result of compiling Soy to a Jav
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;com.google.common.collect.ImmutableSortedSet&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/tofu/internal/BaseTofu.html#getUsedIjParamsForTemplate(com.google.template.soy.parseinfo.SoyTemplateInfo)">getUsedIjParamsForTemplate</A></B>(<A HREF="../../../../../../com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>&nbsp;templateInfo)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the set of injected param keys used by a template (and its transitive callees).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;com.google.common.collect.ImmutableSortedSet&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/tofu/internal/BaseTofu.html#getUsedIjParamsForTemplate(java.lang.String)">getUsedIjParamsForTemplate</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the set of injected param keys used by a template (and its transitive callees).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;boolean</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/tofu/internal/BaseTofu.html#isCaching()">isCaching</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Getter for whether this instance caches intermediate Soy trees after substitutions from the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets whether this instance caches intermediate Soy trees after substitutions from the
  SoyMsgBundle and the SoyCssRenamingMap.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
@@ -351,7 +367,7 @@ isCaching</H3>
 public boolean <B>isCaching</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html#isCaching()">SoyTofu</A></CODE></B></DD>
-<DD>Getter for whether this instance caches intermediate Soy trees after substitutions from the
+<DD>Gets whether this instance caches intermediate Soy trees after substitutions from the
  SoyMsgBundle and the SoyCssRenamingMap.
 <P>
 <DD><DL>
@@ -433,6 +449,47 @@ public <A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.Renderer.
      namespace. If this SoyTofu instance is namespaced, then this parameter should be a partial
      name beginning with a dot (e.g. ".fooTemplate").
 <DT><B>Returns:</B><DD>A new renderer for the given template.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getUsedIjParamsForTemplate(com.google.template.soy.parseinfo.SoyTemplateInfo)"><!-- --></A><H3>
+getUsedIjParamsForTemplate</H3>
+<PRE>
+public com.google.common.collect.ImmutableSortedSet&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>getUsedIjParamsForTemplate</B>(<A HREF="../../../../../../com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>&nbsp;templateInfo)</PRE>
+<DL>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html#getUsedIjParamsForTemplate(com.google.template.soy.parseinfo.SoyTemplateInfo)">SoyTofu</A></CODE></B></DD>
+<DD>Gets the set of injected param keys used by a template (and its transitive callees).
+
+ <p> Note: The <code>SoyTemplateInfo</code> object already has a method <code>getUsedIjParams()</code>.
+ That method should produce the same results as this method, unless the bundle of Soy files
+ included when running the SoyParseInfoGenerator is different from the bundle of Soy files
+ included when creating this SoyTofu object.
+<P>
+<DD><DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html#getUsedIjParamsForTemplate(com.google.template.soy.parseinfo.SoyTemplateInfo)">getUsedIjParamsForTemplate</A></CODE> in interface <CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A></CODE></DL>
+</DD>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>templateInfo</CODE> - Info for the template to get injected params of.
+<DT><B>Returns:</B><DD>The set of injected param keys used by the given template.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getUsedIjParamsForTemplate(java.lang.String)"><!-- --></A><H3>
+getUsedIjParamsForTemplate</H3>
+<PRE>
+public com.google.common.collect.ImmutableSortedSet&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>getUsedIjParamsForTemplate</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;templateName)</PRE>
+<DL>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html#getUsedIjParamsForTemplate(java.lang.String)">SoyTofu</A></CODE></B></DD>
+<DD>Gets the set of injected param keys used by a template (and its transitive callees).
+<P>
+<DD><DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html#getUsedIjParamsForTemplate(java.lang.String)">getUsedIjParamsForTemplate</A></CODE> in interface <CODE><A HREF="../../../../../../com/google/template/soy/tofu/SoyTofu.html" title="interface in com.google.template.soy.tofu">SoyTofu</A></CODE></DL>
+</DD>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>templateName</CODE> - The name of the template to get injected params of.
+<DT><B>Returns:</B><DD>The set of injected param keys used by the given template.</DL>
 </DD>
 </DL>
 <HR>

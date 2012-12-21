@@ -57,6 +57,7 @@ import javax.annotation.Nullable;
  * contains consecutive RawTextNodes). It's usually advisable to run a simplification pass after
  * this pass.
  *
+ * @author Kai Huang
  */
 public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -64,14 +65,21 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Exception thrown when a plural or select message is encountered.
    */
-  public static class EncounteredPluralSelectMsgException extends RuntimeException {}
+  public static class EncounteredPlrselMsgException extends RuntimeException {
+
+    public final MsgNode msgNode;
+
+    public EncounteredPlrselMsgException(MsgNode msgNode) {
+      this.msgNode = msgNode;
+    }
+  }
 
 
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   private final SoyMsgBundle msgBundle;
 
   /** If set to true, then don't report an error when encountering plural or select messages. */
-  private final boolean dontErrorOnPluralSelectMsgs;
+  private final boolean dontErrorOnPlrselMsgs;
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
@@ -82,15 +90,15 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   * @param dontErrorOnPluralSelectMsgs If set to true, then this pass won't report an error when
+   * @param dontErrorOnPlrselMsgs If set to true, then this pass won't report an error when
    *     encountering a plural or select message. Instead, plural and select messages will simply
    *     not be replaced ({@code MsgNode} left in the tree as-is). If set to false, then this pass
-   *     will throw an {@link EncounteredPluralSelectMsgException} when encountering a plural or
+   *     will throw an {@link EncounteredPlrselMsgException} when encountering a plural or
    *     select message.
    */
-  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle, boolean dontErrorOnPluralSelectMsgs) {
+  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle, boolean dontErrorOnPlrselMsgs) {
     this.msgBundle = msgBundle;
-    this.dontErrorOnPluralSelectMsgs = dontErrorOnPluralSelectMsgs;
+    this.dontErrorOnPlrselMsgs = dontErrorOnPlrselMsgs;
   }
 
 
@@ -115,18 +123,19 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     // Check for plural or select message. Either report error or don't replace.
     if (node.numChildren() == 1 &&
         (node.getChild(0) instanceof MsgSelectNode || node.getChild(0) instanceof MsgPluralNode)) {
-      if (dontErrorOnPluralSelectMsgs) {
+      if (dontErrorOnPlrselMsgs) {
         return;
       } else {
-        throw new EncounteredPluralSelectMsgException();
+        throw new EncounteredPlrselMsgException(node);
       }
     }
 
     // Process the message to build the list of replacement nodes.
     currMsgReplacementNodes = Lists.newArrayList();
 
-    long msgId = MsgUtils.computeMsgId(node);
+    long msgId = MsgUtils.computeMsgIdForDualFormat(node);
     SoyMsg soyMsg = (msgBundle == null) ? null : msgBundle.getMsg(msgId);
+
     if (soyMsg != null) {
       // Case 1: Localized message is provided by the msgBundle.
       for (SoyMsgPart msgPart : soyMsg.getParts()) {

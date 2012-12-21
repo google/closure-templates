@@ -230,7 +230,7 @@ Library of utilities needed by the generated code. Do not use these from hand-wr
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$filterHtmlAttribute(com.google.template.soy.data.SoyData)">$$filterHtmlAttribute</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$filterHtmlAttributes(com.google.template.soy.data.SoyData)">$$filterHtmlAttributes</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -254,7 +254,7 @@ Library of utilities needed by the generated code. Do not use these from hand-wr
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$getData(com.google.template.soy.data.restricted.CollectionData, java.lang.String)">$$getData</A></B>(<A HREF="../../../../../../com/google/template/soy/data/restricted/CollectionData.html" title="class in com.google.template.soy.data.restricted">CollectionData</A>&nbsp;collectionData,
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$getData(com.google.template.soy.data.SoyData, java.lang.String)">$$getData</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;collectionData,
           <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;keyStr)</CODE>
 
 <BR>
@@ -263,7 +263,7 @@ Library of utilities needed by the generated code. Do not use these from hand-wr
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$getDataSingle(com.google.template.soy.data.restricted.CollectionData, java.lang.String)">$$getDataSingle</A></B>(<A HREF="../../../../../../com/google/template/soy/data/restricted/CollectionData.html" title="class in com.google.template.soy.data.restricted">CollectionData</A>&nbsp;collectionData,
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$getDataSingle(com.google.template.soy.data.SoyData, java.lang.String)">$$getDataSingle</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;collectionData,
                 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;key)</CODE>
 
 <BR>
@@ -292,6 +292,14 @@ Library of utilities needed by the generated code. Do not use these from hand-wr
 <CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$insertWordBreaks(java.lang.String, int)">$$insertWordBreaks</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value,
                    int&nbsp;maxCharsBetweenWordBreaks)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/data/restricted/BooleanData.html" title="class in com.google.template.soy.data.restricted">BooleanData</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/javasrc/codedeps/SoyUtils.html#$$isNonnull(com.google.template.soy.data.SoyData)">$$isNonnull</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
@@ -450,10 +458,10 @@ public <B>SoyUtils</B>()</PRE>
 </TR>
 </TABLE>
 
-<A NAME="$$getData(com.google.template.soy.data.restricted.CollectionData, java.lang.String)"><!-- --></A><H3>
+<A NAME="$$getData(com.google.template.soy.data.SoyData, java.lang.String)"><!-- --></A><H3>
 $$getData</H3>
 <PRE>
-public static <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>$$getData</B>(<A HREF="../../../../../../com/google/template/soy/data/restricted/CollectionData.html" title="class in com.google.template.soy.data.restricted">CollectionData</A>&nbsp;collectionData,
+public static <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>$$getData</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;collectionData,
                                 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;keyStr)</PRE>
 <DL>
 <DD><DL>
@@ -462,10 +470,10 @@ public static <A HREF="../../../../../../com/google/template/soy/data/SoyData.ht
 </DL>
 <HR>
 
-<A NAME="$$getDataSingle(com.google.template.soy.data.restricted.CollectionData, java.lang.String)"><!-- --></A><H3>
+<A NAME="$$getDataSingle(com.google.template.soy.data.SoyData, java.lang.String)"><!-- --></A><H3>
 $$getDataSingle</H3>
 <PRE>
-public static <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>$$getDataSingle</B>(<A HREF="../../../../../../com/google/template/soy/data/restricted/CollectionData.html" title="class in com.google.template.soy.data.restricted">CollectionData</A>&nbsp;collectionData,
+public static <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>$$getDataSingle</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;collectionData,
                                       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;key)</PRE>
 <DL>
 <DD><DL>
@@ -640,10 +648,10 @@ public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.ht
 </DL>
 <HR>
 
-<A NAME="$$filterHtmlAttribute(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
-$$filterHtmlAttribute</H3>
+<A NAME="$$filterHtmlAttributes(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
+$$filterHtmlAttributes</H3>
 <PRE>
-public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>$$filterHtmlAttribute</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>$$filterHtmlAttributes</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</PRE>
 <DL>
 <DD><DL>
 </DL>
@@ -786,6 +794,17 @@ $$greaterThanOrEqual</H3>
 <PRE>
 public static <A HREF="../../../../../../com/google/template/soy/data/restricted/BooleanData.html" title="class in com.google.template.soy.data.restricted">BooleanData</A> <B>$$greaterThanOrEqual</B>(<A HREF="../../../../../../com/google/template/soy/data/restricted/NumberData.html" title="class in com.google.template.soy.data.restricted">NumberData</A>&nbsp;operand0,
                                                <A HREF="../../../../../../com/google/template/soy/data/restricted/NumberData.html" title="class in com.google.template.soy.data.restricted">NumberData</A>&nbsp;operand1)</PRE>
+<DL>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="$$isNonnull(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
+$$isNonnull</H3>
+<PRE>
+public static <A HREF="../../../../../../com/google/template/soy/data/restricted/BooleanData.html" title="class in com.google.template.soy.data.restricted">BooleanData</A> <B>$$isNonnull</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</PRE>
 <DL>
 <DD><DL>
 </DL>

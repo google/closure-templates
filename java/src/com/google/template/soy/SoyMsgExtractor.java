@@ -16,6 +16,8 @@
 
 package com.google.template.soy;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SoySyntaxException;
@@ -39,6 +41,7 @@ import java.util.List;
  * <p> The command-line arguments should contain command-line flags and the list of paths to the
  * Soy files.
  *
+ * @author Kai Huang
  */
 public final class SoyMsgExtractor {
 
@@ -48,7 +51,7 @@ public final class SoyMsgExtractor {
       "Usage:\n" +
       "java com.google.template.soy.SoyMsgExtractor  \\\n" +
       "     [<flag1> <flag2> ...] --outputFile <path>  \\\n" +
-      "     <soyFile1> <soyFile2> ...\n";
+      "     --srcs <soyFilePath>,...\n";
 
 
   @Option(name = "--inputPrefix",
@@ -56,6 +59,19 @@ public final class SoyMsgExtractor {
                   " listed on the command line. This is a literal string prefix, so you'll need" +
                   " to include a trailing slash if necessary.")
   private String inputPrefix = "";
+
+  @Option(name = "--srcs",
+          usage = "[Required] The list of source Soy files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> srcs = Lists.newArrayList();
+
+  @Option(name = "--allowExternalCalls",
+          usage = "Whether to allow external calls. New projects should set this to false, and" +
+                  " existing projects should remove existing external calls and then set this" +
+                  " to false. It will save you a lot of headaches. Currently defaults to true" +
+                  " for backward compatibility.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
+  private boolean allowExternalCalls = true;
 
   @Option(name = "--outputFile",
           usage = "The path to the output file to write. If a file already" +
@@ -110,29 +126,30 @@ public final class SoyMsgExtractor {
 
   private void execMain(String[] args) throws IOException, SoySyntaxException {
 
-    CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-    if (arguments.size() == 0) {
-      MainClassUtils.exitWithError("Must provide list of Soy files.", cmdLineParser, USAGE_PREFIX);
-    }
+    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
+
+    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
+      @Override public Void apply(String errorMsg) {
+        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
+        return null;
+      }
+    };
 
     Injector injector = MainClassUtils.createInjector(messagePluginModule, null);
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    String inputPrefixStr = inputPrefix;
-    for (String arg : arguments) {
-      sfsBuilder.add(new File(inputPrefixStr + arg));
-    }
+    MainClassUtils.addSoyFilesToBuilder(
+        sfsBuilder, inputPrefix, srcs, arguments, ImmutableList.<String>of(), exitWithErrorFn);
+    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
 
-    File outputFile;
-    if (this.outputPathFormat.length() != 0) {
-      if (this.outputFile.length() != 0) {
-        MainClassUtils.exitWithError(
-          "Must provide one of output file path or output path format.",
-          cmdLineParser, USAGE_PREFIX);
+    File outputFile0;
+    if (outputPathFormat.length() != 0) {
+      if (outputFile.length() != 0) {
+        exitWithErrorFn.apply("Must provide one of output file path or output path format.");
       }
       String outputFilePath = outputPathFormat;
 
-      String inputFilePath = inputPrefixStr + arguments.get(0);
+      String inputFilePath = inputPrefix + (srcs.size() != 0 ? srcs.get(0) : arguments.get(0));
       // Compute directory and file name.
       int lastSlashIndex = inputFilePath.lastIndexOf(File.separatorChar);
       String directory = inputFilePath.substring(0, lastSlashIndex + 1);
@@ -149,17 +166,16 @@ public final class SoyMsgExtractor {
       outputFilePath = outputFilePath.replace("{INPUT_DIRECTORY}", directory);
       outputFilePath = outputFilePath.replace("{INPUT_FILE_NAME}", fileName);
       outputFilePath = outputFilePath.replace("{INPUT_FILE_NAME_NO_EXT}", fileNameNoExt);
-      outputFile = new File(outputFilePath);
-    } else if (this.outputFile.length() != 0) {
-      outputFile = new File(this.outputFile);
+      outputFile0 = new File(outputFilePath);
+    } else if (outputFile.length() != 0) {
+      outputFile0 = new File(outputFile);
     } else {
-      MainClassUtils.exitWithError(
-        "Must provide output file path or output path format.", cmdLineParser,
-        USAGE_PREFIX);
+      exitWithErrorFn.apply("Must provide output file path or output path format.");
       return;
     }
 
     SoyFileSet sfs = sfsBuilder.build();
+
     SoyMsgBundle msgBundle = sfs.extractMsgs();
 
     SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);
@@ -168,7 +184,7 @@ public final class SoyMsgExtractor {
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    msgBundleHandler.writeToFile(msgBundle, options, outputFile);
+    msgBundleHandler.writeToFile(msgBundle, options, outputFile0);
   }
 
 }

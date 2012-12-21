@@ -26,6 +26,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MsgHtmlTagNode.
  *
+ * @author Kai Huang
  */
 public class MsgHtmlTagNodeTest extends TestCase {
 

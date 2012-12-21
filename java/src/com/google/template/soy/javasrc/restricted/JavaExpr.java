@@ -29,6 +29,7 @@ import com.google.common.base.Objects;
  * the Soy expression operators matches that of Java (as well as Java), so the precedence numbers
  * are correct when used for generating Java code as well.
  *
+ * @author Kai Huang
  */
 public class JavaExpr {
 

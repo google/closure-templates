@@ -47,6 +47,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * Escaping functions are exposed as {@link Escaper}s in Java and via a JavaScript code
  * generating ant task for JavaScript.
  *
+ * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public final class EscapingConventions {
@@ -237,6 +238,13 @@ public final class EscapingConventions {
      */
     public final ImmutableList<Escape> getEscapes() {
       return escapes;
+    }
+
+    /**
+     * Returns an innocuous string in this context that can be used when filtering.
+     */
+    public String getInnocuousOutput() {
+      return INNOCUOUS_OUTPUT;
     }
 
 
@@ -934,6 +942,11 @@ public final class EscapingConventions {
     protected ImmutableList<Escape> defineEscapes() {
       return NormalizeUri.INSTANCE.defineEscapes();
     }
+
+    @Override
+    public String getInnocuousOutput() {
+      return "#" + INNOCUOUS_OUTPUT;
+    }
   }
 
 
@@ -971,14 +984,14 @@ public final class EscapingConventions {
 
 
   /**
-   * Implements the {@code |filterHtmlAttribute} directive which filters out identifiers that
+   * Implements the {@code |filterHtmlAttributes} directive which filters out identifiers that
    * can't appear as part of an HTML tag or attribute name.
    */
-  public static final class FilterHtmlAttribute extends CrossLanguageStringXform {
-    /** Implements the {@code |filterHtmlAttribute} directive. */
-    public static final FilterHtmlAttribute INSTANCE = new FilterHtmlAttribute();
+  public static final class FilterHtmlAttributes extends CrossLanguageStringXform {
+    /** Implements the {@code |filterHtmlAttributes} directive. */
+    public static final FilterHtmlAttributes INSTANCE = new FilterHtmlAttributes();
 
-    private FilterHtmlAttribute() {
+    private FilterHtmlAttributes() {
       super(
           Pattern.compile(
               "^" +
@@ -1044,7 +1057,7 @@ public final class EscapingConventions {
         EscapeUri.INSTANCE,
         NormalizeUri.INSTANCE,
         FilterNormalizeUri.INSTANCE,
-        FilterHtmlAttribute.INSTANCE,
+        FilterHtmlAttributes.INSTANCE,
         FilterHtmlElementName.INSTANCE
         );
   }
@@ -1073,8 +1086,10 @@ public final class EscapingConventions {
    * will have trouble with complex doctypes that define their own entities) and does a decent job
    * with simple HTML comments.
    * <p>
-   * This should be food enough since HTML sanitizers do not typically output comments, or CDATA,
+   * This should be good enough since HTML sanitizers do not typically output comments, or CDATA,
    * or RCDATA content.
+   * <p>
+   * The tag name, if any is in group 1.
    */
   public static final Pattern HTML_TAG_CONTENT = Pattern.compile(
       // Matches a left angle bracket followed by either
@@ -1082,7 +1097,7 @@ public final class EscapingConventions {
       // (2) an optional solidus (/, indicating an end tag) and an HTML tag name.
       // followed by any number of quoted strings (found in tags and doctypes) or other content
       // terminated by a right angle bracket.
-      "<(?:!|/?[a-zA-Z])(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
+      "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
 
 
   /**

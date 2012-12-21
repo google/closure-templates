@@ -23,10 +23,17 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * Describes a line in a Soy input file.
  *
+ * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public final class SourceLocation {
-  private final @Nonnull String sourcePath;
+
+
+  /** A file path or URI useful for error messages. */
+  private final @Nonnull String filePath;
+
+  /** The line number in the source file (1-based), or 0 if associated with the entire file instead
+   *  of a line. */
   private final int lineNumber;
 
   /** A nullish source location. */
@@ -34,30 +41,35 @@ public final class SourceLocation {
 
 
   /**
-   * @param sourcePath A file path or URI useful for error messages.
-   * @param lineNumber A (1-indexed) line number in sourcePath or 0 to indicate that the whole
-   *     source is referred to.
+   * @param filePath A file path or URI useful for error messages.
+   * @param lineNumber The line number in the source file (1-based), or 0 if associated with the
+   *     entire file instead of a line.
    */
-  public SourceLocation(String sourcePath, int lineNumber) {
-    this.sourcePath = sourcePath;
+  public SourceLocation(String filePath, int lineNumber) {
+
+    int lastBangIndex = filePath.lastIndexOf('!');
+    if (lastBangIndex != -1) {
+      // This is a resource in a JAR file. Only keep everything after the bang.
+      filePath = filePath.substring(lastBangIndex + 1);
+    }
+
+    this.filePath = filePath;
     this.lineNumber = lineNumber;
   }
 
 
   /**
-   * A description of the input {@link com.google.template.soy.soytree.SoyFileNode}.
-   * @return a file path or URI useful for error messages.  This should not
-   *      be used to fetch content from the file system.
+   * Returns a file path or URI useful for error messages. This should not be used to fetch content
+   *     from the file system.
    */
-  public @Nonnull String getSourcePath() {
-    return sourcePath;
+  public @Nonnull String getFilePath() {
+    return filePath;
   }
 
 
   /**
-   * The line number (1-indexed) in the source file to be consistent with
-   * common source editors.
-   * @return 0 if associated with the entire file instead of a line.
+   * Returns the line number in the source file (1-based), or 0 if associated with the entire file
+   * instead of a line.
    */
   public int getLineNumber() {
     return lineNumber;
@@ -78,15 +90,15 @@ public final class SourceLocation {
       return false;
     }
     SourceLocation that = (SourceLocation) o;
-    return this.sourcePath.equals(that.sourcePath) && this.lineNumber == that.lineNumber;
+    return this.filePath.equals(that.filePath) && this.lineNumber == that.lineNumber;
   }
 
   @Override
   public int hashCode() {
-    return sourcePath.hashCode() + 31 * lineNumber;
+    return filePath.hashCode() + 31 * lineNumber;
   }
 
   @Override public String toString() {
-    return lineNumber != 0 ? sourcePath + ":" + lineNumber : sourcePath;
+    return lineNumber != 0 ? filePath + ":" + lineNumber : filePath;
   }
 }

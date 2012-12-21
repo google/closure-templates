@@ -52,7 +52,7 @@ function windowTitle()
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/exprtree/DataRefNode.html" target="_top"><B>FRAMES</B></A>  &nbsp;
@@ -108,8 +108,8 @@ Node representing a data reference.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
 
- The children of the node are the parts of the data reference. Each child may be a DataRefKeyNode,
- DataRefIndexNode, or any type of ExprNode. The first child must be a DataRefKeyNode.
+ <p> The first key is stored as a field in the node. The remaining accesses, if any, are children
+ of the node. Each child must be a DataRefAccessNode (of which there are 3 subtypes).
 <P>
 
 <P>
@@ -165,10 +165,12 @@ Node representing a data reference.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html#DataRefNode(boolean)">DataRefNode</A></B>(boolean&nbsp;isIjDataRef)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html#DataRefNode(boolean, boolean, java.lang.String)">DataRefNode</A></B>(boolean&nbsp;isIjDataRef,
+            boolean&nbsp;isNullSafeIjDataRef,
+            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;firstKey)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -202,7 +204,7 @@ Node representing a data reference.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html#getFirstKey()">getFirstKey</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the first key as a string.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the first key.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -227,6 +229,14 @@ Node representing a data reference.
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns whether this node is a reference to local var data, or null if unknown.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;boolean</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html#isNullSafeIjDataRef()">isNullSafeIjDataRef</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns whether this node is a null-safe reference to injected data.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -312,15 +322,15 @@ Node representing a data reference.
 </TR>
 </TABLE>
 
-<A NAME="DataRefNode(boolean)"><!-- --></A><H3>
+<A NAME="DataRefNode(boolean, boolean, java.lang.String)"><!-- --></A><H3>
 DataRefNode</H3>
 <PRE>
-public <B>DataRefNode</B>(boolean&nbsp;isIjDataRef)</PRE>
+public <B>DataRefNode</B>(boolean&nbsp;isIjDataRef,
+                   boolean&nbsp;isNullSafeIjDataRef,
+                   <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;firstKey)</PRE>
 <DL>
-<DD>Constructor.
-<P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>isIjDataRef</CODE> - Whether this node is a reference to injected data.</DL>
+<DT><B>Parameters:</B><DD><CODE>isIjDataRef</CODE> - Whether this node is a reference to injected data.<DD><CODE>isNullSafeIjDataRef</CODE> - Whether this node is a null-safe reference to injected data.<DD><CODE>firstKey</CODE> - The first key.</DL>
 </DL>
 <HR>
 
@@ -373,6 +383,19 @@ public boolean <B>isIjDataRef</B>()</PRE>
 </DL>
 <HR>
 
+<A NAME="isNullSafeIjDataRef()"><!-- --></A><H3>
+isNullSafeIjDataRef</H3>
+<PRE>
+public boolean <B>isNullSafeIjDataRef</B>()</PRE>
+<DL>
+<DD>Returns whether this node is a null-safe reference to injected data.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
 <A NAME="setIsLocalVarDataRef(java.lang.Boolean)"><!-- --></A><H3>
 setIsLocalVarDataRef</H3>
 <PRE>
@@ -404,11 +427,7 @@ getFirstKey</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getFirstKey</B>()</PRE>
 <DL>
-<DD>Returns the first key as a string.
- <p> This method is for convenience. It is equivalent to
- <pre>
-     ((DataRefKeyNode) thisNode.getChild(0)).getKey()
- </pre>
+<DD>Returns the first key.
 <P>
 <DD><DL>
 </DL>
@@ -481,7 +500,7 @@ public <A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/exprtree/DataRefNode.html" target="_top"><B>FRAMES</B></A>  &nbsp;

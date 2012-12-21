@@ -66,6 +66,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
  * As shown above, the suffix is optional.  The suffix is omitted for any template whose context
  * is the default starting context: {@link Context#HTML_PCDATA pcdata}.
  *
+ * @author Mike Samuel
  */
 public final class DerivedTemplateUtils {
 

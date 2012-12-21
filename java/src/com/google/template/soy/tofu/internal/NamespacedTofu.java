@@ -19,6 +19,7 @@ package com.google.template.soy.tofu.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
@@ -35,6 +36,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 class NamespacedTofu implements SoyTofu {
 
@@ -79,6 +81,14 @@ class NamespacedTofu implements SoyTofu {
   }
 
 
+  /**
+   * Translates a template name that may be full or partial to a full template name.
+   */
+  private String getFullTemplateName(String templateName) {
+    return (templateName.charAt(0) == '.') ? namespace + templateName : templateName;
+  }
+
+
   @Override public boolean isCaching() {
     return baseTofu.isCaching();
   }
@@ -96,7 +106,18 @@ class NamespacedTofu implements SoyTofu {
 
 
   @Override public Renderer newRenderer(String templateName) {
-    return baseTofu.newRenderer(namespace + templateName);
+    return baseTofu.newRenderer(getFullTemplateName(templateName));
+  }
+
+
+  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(
+      SoyTemplateInfo templateInfo) {
+    return baseTofu.getUsedIjParamsForTemplate(templateInfo);
+  }
+
+
+  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
+    return baseTofu.getUsedIjParamsForTemplate(getFullTemplateName(templateName));
   }
 
 
@@ -105,6 +126,7 @@ class NamespacedTofu implements SoyTofu {
 
 
   @Deprecated
+  @SuppressWarnings({"deprecation"})
   @Override public String render(SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
                                  @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
@@ -112,6 +134,7 @@ class NamespacedTofu implements SoyTofu {
 
 
   @Deprecated
+  @SuppressWarnings({"deprecation"})
   @Override public String render(SoyTemplateInfo templateInfo, @Nullable SoyMapData data,
                                  @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
@@ -119,6 +142,7 @@ class NamespacedTofu implements SoyTofu {
 
 
   @Deprecated
+  @SuppressWarnings({"deprecation"})
   @Override public String render(String templateName, @Nullable Map<String, ?> data,
                                  @Nullable SoyMsgBundle msgBundle) {
     return render(templateName, (data == null) ? null : new SoyMapData(data), msgBundle);
@@ -126,10 +150,14 @@ class NamespacedTofu implements SoyTofu {
 
 
   @Deprecated
+  @SuppressWarnings({"deprecation"})
   @Override public String render(String templateName, @Nullable SoyMapData data,
                                  @Nullable SoyMsgBundle msgBundle) {
-    checkArgument(templateName.charAt(0) == '.');
-    return baseTofu.render(namespace + templateName, data, msgBundle);
+    if (templateName.charAt(0) == '.') {
+      return baseTofu.render(namespace + templateName, data, msgBundle);
+    } else {
+      return baseTofu.render(templateName, data, msgBundle);
+    }
   }
 
 }

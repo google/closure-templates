@@ -25,7 +25,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
 import java.util.Set;
@@ -41,8 +43,9 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
-public abstract class TemplateNode extends AbstractBlockCommandNode {
+public abstract class TemplateNode extends AbstractBlockCommandNode implements RenderUnitNode {
 
 
   /** Priorities range from 0 to MAX_PRIORITY, inclusive. */
@@ -64,7 +67,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
 
     @Nullable public final String delPackageName;
     public final int defaultDelPriority;
-    public final String namespace;
+    @Nullable public final String namespace;
     public final AutoescapeMode defaultAutoescapeMode;
 
     public SoyFileHeaderInfo(SoyFileNode soyFileNode) {
@@ -98,11 +101,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
     @Nullable public final String partialTemplateName;
     public final boolean isPrivate;
     public final AutoescapeMode autoescapeMode;
+    @Nullable public final ContentKind contentKind;
     public final SyntaxVersion syntaxVersion;
 
     public CommandTextInfo(
         String commandText, String templateName, @Nullable String partialTemplateName,
-        boolean isPrivate, AutoescapeMode autoescapeMode, SyntaxVersion syntaxVersion) {
+        boolean isPrivate, AutoescapeMode autoescapeMode, ContentKind contentKind,
+        SyntaxVersion syntaxVersion) {
       Preconditions.checkArgument(BaseUtils.isDottedIdentifier(templateName));
       Preconditions.checkArgument(
           partialTemplateName == null || BaseUtils.isIdentifierWithLeadingDot(partialTemplateName));
@@ -111,6 +116,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
       this.partialTemplateName = partialTemplateName;
       this.isPrivate = isPrivate;
       this.autoescapeMode = autoescapeMode;
+      this.contentKind = contentKind;
       this.syntaxVersion = syntaxVersion;
     }
   }
@@ -195,8 +201,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
   /** Whether this template is private. */
   private final boolean isPrivate;
 
-  /** The kind of autoescaping, if any, done for this template. */
+  /** The mode of autoescaping, if any, done for this template. */
   private final AutoescapeMode autoescapeMode;
+
+  /** Strict mode context. Nonnull iff autoescapeMode is strict. */
+  @Nullable private final ContentKind contentKind;
 
   /** The full SoyDoc, including the start/end tokens, or null. */
   private String soyDoc;
@@ -206,6 +215,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
 
   /** The parameters listed in the SoyDoc, or null if no SoyDoc. */
   private ImmutableList<SoyDocParam> soyDocParams;
+
+  /** Param source strings with incorrect syntax, or null if no SoyDoc. */
+  private final ImmutableList<String> paramSrcsWithIncorrectSyntax;
 
 
   /**
@@ -229,6 +241,16 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
     this.partialTemplateName = commandTextInfo.partialTemplateName;
     this.isPrivate = commandTextInfo.isPrivate;
     this.autoescapeMode = commandTextInfo.autoescapeMode;
+    ContentKind contentKind = commandTextInfo.contentKind;
+    if (contentKind == null && autoescapeMode == AutoescapeMode.STRICT) {
+      // Default mode is HTML.
+      contentKind = ContentKind.HTML;
+    } else if (contentKind != null && autoescapeMode != AutoescapeMode.STRICT) {
+      // TODO: Perhaps this could imply strict escaping?
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "kind=\"...\" attribute is only valid with autoescape=\"strict\".");
+    }
+    this.contentKind = contentKind;
     maybeSetSyntaxVersion(commandTextInfo.syntaxVersion);
 
     this.soyDoc = soyDoc;
@@ -236,25 +258,30 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
       Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
       String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
       this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
-      Pair<Boolean, List<SoyDocParam>> soyDocParamsInfo = parseSoyDocDeclsHelper(cleanedSoyDoc);
-      this.soyDocParams = ImmutableList.copyOf(soyDocParamsInfo.second);
-      if (soyDocParamsInfo.first) {
+      Pair<List<SoyDocParam>, List<String>> soyDocParamsInfo =
+          parseSoyDocDeclsHelper(cleanedSoyDoc);
+      this.soyDocParams = ImmutableList.copyOf(soyDocParamsInfo.first);
+      this.paramSrcsWithIncorrectSyntax = ImmutableList.copyOf(soyDocParamsInfo.second);
+      if (paramSrcsWithIncorrectSyntax.size() > 0) {
         maybeSetSyntaxVersion(SyntaxVersion.V1);
       }
     } else {
       maybeSetSyntaxVersion(SyntaxVersion.V1);
       this.soyDocDesc = null;
       this.soyDocParams = null;
+      this.paramSrcsWithIncorrectSyntax = null;
     }
 
     // Check template name.
     if (partialTemplateName != null) {
       if (! BaseUtils.isIdentifierWithLeadingDot(partialTemplateName)) {
-        throw new SoySyntaxException("Invalid template name \"" + partialTemplateName + "\".");
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Invalid template name \"" + partialTemplateName + "\".");
       }
     } else {
       if (! BaseUtils.isDottedIdentifier(templateName)) {
-        throw new SoySyntaxException("Invalid template name \"" + templateName + "\".");
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Invalid template name \"" + templateName + "\".");
       }
     }
   }
@@ -368,12 +395,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
    * Private helper for the constructor to parse the SoyDoc declarations.
    *
    * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
-   * @return Pair of (whether there are any params in incorrect syntax, the list of parameters).
+   * @return Pair of (list of params, list of param source strings with incorrect syntax).
    */
-  private static Pair<Boolean, List<SoyDocParam>> parseSoyDocDeclsHelper(String cleanedSoyDoc) {
+  private static Pair<List<SoyDocParam>, List<String>> parseSoyDocDeclsHelper(
+      String cleanedSoyDoc) {
 
-    boolean hasParamsWithIncorrectSyntax = false;
     List<SoyDocParam> soyDocParams = Lists.newArrayList();
+    List<String> paramSrcsWithIncorrectSyntax = Lists.newArrayListWithCapacity(0);
 
     Set<String> seenParamKeys = Sets.newHashSet();
 
@@ -397,18 +425,19 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
       if (declKeyword.equals("@param") || declKeyword.equals("@param?")) {
         if (! SOY_DOC_PARAM_TEXT_PATTERN.matcher(declText).matches()) {
           if (declText.startsWith("{")) {
-            hasParamsWithIncorrectSyntax = true;
+            paramSrcsWithIncorrectSyntax.add(declKeyword + " " + declText);
             continue;  // for now, allow incorrect syntax where '{' is the start of the declText
           } else {
-            throw new SoySyntaxException(
+            throw SoySyntaxException.createWithoutMetaInfo(
                 "Invalid SoyDoc declaration \"" + declKeyword + " " + declText + "\".");
           }
         }
         if (declText.equals("ij")) {
-          throw new SoySyntaxException("Invalid param name 'ij' ('ij' is for injected data ref).");
+          throw SoySyntaxException.createWithoutMetaInfo(
+              "Invalid param name 'ij' ('ij' is for injected data ref).");
         }
         if (seenParamKeys.contains(declText)) {
-          throw new SoySyntaxException(
+          throw SoySyntaxException.createWithoutMetaInfo(
               "Duplicate declaration of param in SoyDoc: '" + declText + "'.");
         }
         seenParamKeys.add(declText);
@@ -419,7 +448,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
       }
     }
 
-    return Pair.of(hasParamsWithIncorrectSyntax, soyDocParams);
+    return Pair.of(soyDocParams, paramSrcsWithIncorrectSyntax);
   }
 
 
@@ -434,9 +463,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
     this.partialTemplateName = orig.partialTemplateName;
     this.isPrivate = orig.isPrivate;
     this.autoescapeMode = orig.autoescapeMode;
+    this.contentKind = orig.contentKind;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
     this.soyDocParams = orig.soyDocParams;  // safe to reuse (immutable)
+    this.paramSrcsWithIncorrectSyntax = orig.paramSrcsWithIncorrectSyntax;  // safe to reuse
   }
 
 
@@ -474,11 +505,15 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
   }
 
 
-  /**
-   * Returns the kind of autoescaping, if any, done for this template.
-   */
+  /** Returns the mode of autoescaping, if any, done for this template. */
   public AutoescapeMode getAutoescapeMode() {
     return autoescapeMode;
+  }
+
+
+  /** Returns the content kind for strict autoescaping. Nonnull iff autoescapeMode is strict. */
+  @Override @Nullable public ContentKind getContentKind() {
+    return contentKind;
   }
 
 
@@ -510,6 +545,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode {
   /** Returns the parameters listed in the SoyDoc, or null if no SoyDoc. */
   public List<SoyDocParam> getSoyDocParams() {
     return soyDocParams;
+  }
+
+
+  /** Returns the param source strings with incorrect syntax, or null if no SoyDoc. */
+  public ImmutableList<String> getParamSrcsWithIncorrectSyntax() {
+    return paramSrcsWithIncorrectSyntax;
+  }
+
+
+  @Override public SoyFileNode getParent() {
+    return (SoyFileNode) super.getParent();
   }
 
 

@@ -23,6 +23,7 @@ import com.google.template.soy.msgs.SoyMsgPlugin;
 /**
  * Guice module to bind the XliffMsgPlugin.
  *
+ * @author Kai Huang
  */
 public class XliffMsgPluginModule extends AbstractModule {
 

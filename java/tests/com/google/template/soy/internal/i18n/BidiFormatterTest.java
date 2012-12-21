@@ -97,29 +97,29 @@ public class BidiFormatterTest extends TestCase {
 
   public void testDirAttr() {
     // Regular cases:
-    assertEquals("dir=rtl", ltrFmt.dirAttr(he, true));
+    assertEquals("dir=\"rtl\"", ltrFmt.dirAttr(he, true));
     assertEquals("", rtlFmt.dirAttr(he, true));
-    assertEquals("dir=ltr", rtlFmt.dirAttr(en, true));
+    assertEquals("dir=\"ltr\"", rtlFmt.dirAttr(en, true));
     assertEquals("", ltrFmt.dirAttr(en, true));
 
     // Text contains HTML or HTML-escaping:
-    assertEquals("dir=rtl", ltrFmt.dirAttr(he + "<some sort of an HTML tag>", true));
+    assertEquals("dir=\"rtl\"", ltrFmt.dirAttr(he + "<some sort of an HTML tag>", true));
     assertEquals("", ltrFmt.dirAttr(he + "<some sort of an HTML tag>", false));
   }
 
   public void testKnownDirAttr() {
     // Regular cases:
-    assertEquals("dir=rtl", ltrFmt.knownDirAttr(RTL));
+    assertEquals("dir=\"rtl\"", ltrFmt.knownDirAttr(RTL));
     assertEquals("", rtlFmt.knownDirAttr(RTL));
-    assertEquals("dir=ltr", rtlFmt.knownDirAttr(LTR));
+    assertEquals("dir=\"ltr\"", rtlFmt.knownDirAttr(LTR));
     assertEquals("", ltrFmt.knownDirAttr(LTR));
   }
 
   public void testSpanWrap() {
     // The main testing of the logic is done in testSpanWrapWithKnownDir.
-    assertEquals("<span dir=rtl>" + he + "</span>" + LRM, ltrFmt.spanWrap(he, true));
+    assertEquals("<span dir=\"rtl\">" + he + "</span>" + LRM, ltrFmt.spanWrap(he, true));
     assertEquals(he, rtlFmt.spanWrap(he, true));
-    assertEquals("<span dir=ltr>" + en + "</span>" + RLM, rtlFmt.spanWrap(en, true));
+    assertEquals("<span dir=\"ltr\">" + en + "</span>" + RLM, rtlFmt.spanWrap(en, true));
     assertEquals(en, ltrFmt.spanWrap(en, true));
   }
 
@@ -135,37 +135,37 @@ public class BidiFormatterTest extends TestCase {
         rtlFmt.spanWrapWithKnownDir(RTL, he + " <some strange tag>", true));
 
     assertEquals("overall dir (RTL) doesnt match context dir (LTR)",
-        "<span dir=rtl>" + he + "</span>" + LRM, ltrFmt.spanWrapWithKnownDir(RTL, he));
+        "<span dir=\"rtl\">" + he + "</span>" + LRM, ltrFmt.spanWrapWithKnownDir(RTL, he));
     assertEquals("overall dir (RTL) doesnt match context dir (LTR), no dirReset",
-        "<span dir=rtl>" + he + "</span>", ltrFmt.spanWrapWithKnownDir(RTL, he, false, false));
+        "<span dir=\"rtl\">" + he + "</span>", ltrFmt.spanWrapWithKnownDir(RTL, he, false, false));
     assertEquals("overall dir (LTR) doesnt match context dir (RTL)",
-        "<span dir=ltr>" + en + "</span>" + RLM, rtlFmt.spanWrapWithKnownDir(LTR, en));
+        "<span dir=\"ltr\">" + en + "</span>" + RLM, rtlFmt.spanWrapWithKnownDir(LTR, en));
     assertEquals("overall dir (LTR) doesnt match context dir (RTL), no dirReset",
-        "<span dir=ltr>" + en + "</span>", rtlFmt.spanWrapWithKnownDir(LTR, en, false, false));
+        "<span dir=\"ltr\">" + en + "</span>", rtlFmt.spanWrapWithKnownDir(LTR, en, false, false));
     assertEquals("overall dir (RTL) doesnt match context dir (unknown)",
-        "<span dir=rtl>" + he + "</span>", unkFmt.spanWrapWithKnownDir(RTL, he));
+        "<span dir=\"rtl\">" + he + "</span>", unkFmt.spanWrapWithKnownDir(RTL, he));
     assertEquals("overall dir (LTR) doesnt match context dir (unknown), no dirReset",
-        "<span dir=ltr>" + en + "</span>", unkFmt.spanWrapWithKnownDir(LTR, en, false, false));
+        "<span dir=\"ltr\">" + en + "</span>", unkFmt.spanWrapWithKnownDir(LTR, en, false, false));
     assertEquals("overall dir (neutral) doesnt match context dir (LTR)",
         ".", ltrFmt.spanWrapWithKnownDir(UNKNOWN, "."));
 
     assertEquals("exit dir (but not overall dir) is opposite to context dir",
         longEn + he + LRM, ltrFmt.spanWrapWithKnownDir(LTR, longEn + he));
     assertEquals("overall dir (but not exit dir) is opposite to context dir",
-        "<span dir=ltr>" + longEn + he + "</span>" + RLM,
+        "<span dir=\"ltr\">" + longEn + he + "</span>" + RLM,
         rtlFmt.spanWrapWithKnownDir(LTR, longEn + he));
 
     assertEquals("exit dir (but not overall dir) is opposite to context dir",
         longEn + he + html + LRM, ltrFmt.spanWrapWithKnownDir(LTR, longEn + he + html, true, true));
     assertEquals("overall dir (but not exit dir) is opposite to context dir, dirReset",
-        "<span dir=ltr>" + longEn + he + "</span>" + RLM,
+        "<span dir=\"ltr\">" + longEn + he + "</span>" + RLM,
         rtlFmt.spanWrapWithKnownDir(LTR, longEn + he, true, true));
 
     assertEquals("plain text overall and exit dir same as context dir",
         "&lt;br&gt; " + he + " &lt;br&gt;",
         ltrFmt.spanWrapWithKnownDir(LTR, "<br> " + he + " <br>", false));
     assertEquals("HTML overall and exit dir opposite to context dir",
-        "<span dir=rtl><br> " + he + " <br></span>" + LRM,
+        "<span dir=\"rtl\"><br> " + he + " <br></span>" + LRM,
         ltrFmt.spanWrapWithKnownDir(RTL, "<br> " + he + " <br>", true));
 
     BidiFormatter ltrAlwaysSpanFmt = BidiFormatter.getInstance(BidiUtils.Dir.valueOf(1), true);
@@ -185,14 +185,14 @@ public class BidiFormatterTest extends TestCase {
         "<span>" + longEn + he + "</span>" + LRM,
         ltrAlwaysSpanFmt.spanWrapWithKnownDir(LTR, longEn + he, true, true));
     assertEquals("alwaysSpan, overall dir (but not exit dir) is opposite to context dir, dirReset",
-        "<span dir=ltr>" + longEn + he + "</span>" + RLM,
+        "<span dir=\"ltr\">" + longEn + he + "</span>" + RLM,
         rtlAlwaysSpanFmt.spanWrapWithKnownDir(LTR, longEn + he, true, true));
 
     assertEquals("alwaysSpan, plain text overall and exit dir same as context dir",
         "<span>&lt;br&gt; " + he + " &lt;br&gt;</span>",
         ltrAlwaysSpanFmt.spanWrapWithKnownDir(LTR, "<br> " + he + " <br>", false));
     assertEquals("alwaysSpan, HTML overall and exit dir opposite to context dir",
-        "<span dir=rtl><br> " + he + " <br></span>" + LRM,
+        "<span dir=\"rtl\"><br> " + he + " <br></span>" + LRM,
         ltrAlwaysSpanFmt.spanWrapWithKnownDir(RTL, "<br> " + he + " <br>", true));
   }
 

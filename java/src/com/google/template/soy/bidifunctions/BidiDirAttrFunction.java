@@ -22,6 +22,7 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
@@ -35,7 +36,6 @@ import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 import java.util.List;
 import java.util.Set;
 
-
 /**
  * Soy function that maybe inserts an HTML attribute for bidi directionality ('dir=ltr' or
  * 'dir=rtl'). The function requires the text string that will make up the body of the associated
@@ -43,6 +43,8 @@ import java.util.Set;
  * curret global directionality, then the appropriate HTML attribute is inserted. Otherwise, nothing
  * is inserted.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 @Singleton
 class BidiDirAttrFunction extends SoyAbstractTofuFunction
@@ -78,9 +80,9 @@ class BidiDirAttrFunction extends SoyAbstractTofuFunction
     boolean isHtml = (args.size() == 2) ? args.get(1).booleanValue() : false /* default */;
 
     int bidiGlobalDir = bidiGlobalDirProvider.get().getStaticValue();
-    return new SanitizedContent(
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         SoyBidiUtils.getBidiFormatter(bidiGlobalDir).dirAttr(text, isHtml),
-        SanitizedContent.ContentKind.HTML_ATTRIBUTE);
+        SanitizedContent.ContentKind.ATTRIBUTES);
   }
 
 
@@ -109,7 +111,7 @@ class BidiDirAttrFunction extends SoyAbstractTofuFunction
                 bidiFunctionName,
                 JavaCodeUtils.genCoerceString(text),
                 isHtml != null ? JavaCodeUtils.genCoerceBoolean(isHtml) : "false"),
-            SanitizedContent.ContentKind.HTML_ATTRIBUTE));
+            SanitizedContent.ContentKind.ATTRIBUTES));
   }
 
 }

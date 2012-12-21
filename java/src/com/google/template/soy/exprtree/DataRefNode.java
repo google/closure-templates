@@ -22,9 +22,10 @@ package com.google.template.soy.exprtree;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * The children of the node are the parts of the data reference. Each child may be a DataRefKeyNode,
- * DataRefIndexNode, or any type of ExprNode. The first child must be a DataRefKeyNode.
+ * <p> The first key is stored as a field in the node. The remaining accesses, if any, are children
+ * of the node. Each child must be a DataRefAccessNode (of which there are 3 subtypes).
  *
+ * @author Kai Huang
  */
 public class DataRefNode extends AbstractParentExprNode {
 
@@ -32,17 +33,26 @@ public class DataRefNode extends AbstractParentExprNode {
   /** Whether this node is a reference to injected data. */
   private final boolean isIjDataRef;
 
+  /** Whether this node is a null-safe reference to injected data. */
+  private final boolean isNullSafeIjDataRef;
+
   /** Whether this node is a reference to local var data, or null if unknown. */
   private Boolean isLocalVarDataRef;
 
+  /** The first key. */
+  private final String firstKey;
+
 
   /**
-   * Constructor.
    * @param isIjDataRef Whether this node is a reference to injected data.
+   * @param isNullSafeIjDataRef Whether this node is a null-safe reference to injected data.
+   * @param firstKey The first key.
    */
-  public DataRefNode(boolean isIjDataRef) {
+  public DataRefNode(boolean isIjDataRef, boolean isNullSafeIjDataRef, String firstKey) {
     this.isIjDataRef = isIjDataRef;
+    this.isNullSafeIjDataRef = isNullSafeIjDataRef;
     this.isLocalVarDataRef = null;
+    this.firstKey = firstKey;
   }
 
 
@@ -53,7 +63,9 @@ public class DataRefNode extends AbstractParentExprNode {
   protected DataRefNode(DataRefNode orig) {
     super(orig);
     this.isIjDataRef = orig.isIjDataRef;
+    this.isNullSafeIjDataRef = orig.isNullSafeIjDataRef;
     this.isLocalVarDataRef = orig.isLocalVarDataRef;
+    this.firstKey = orig.firstKey;
   }
 
 
@@ -67,6 +79,14 @@ public class DataRefNode extends AbstractParentExprNode {
    */
   public boolean isIjDataRef() {
     return isIjDataRef;
+  }
+
+
+  /**
+   * Returns whether this node is a null-safe reference to injected data.
+   */
+  public boolean isNullSafeIjDataRef() {
+    return isNullSafeIjDataRef;
   }
 
 
@@ -87,37 +107,21 @@ public class DataRefNode extends AbstractParentExprNode {
 
 
   /**
-   * Returns the first key as a string.
-   * <p> This method is for convenience. It is equivalent to
-   * <pre>
-   *     ((DataRefKeyNode) thisNode.getChild(0)).getKey()
-   * </pre>
+   * Returns the first key.
    */
   public String getFirstKey() {
-    return ((DataRefKeyNode) getChild(0)).getKey();
+    return firstKey;
   }
 
 
   @Override public String toSourceString() {
 
     StringBuilder sourceSb = new StringBuilder();
-
-    boolean isFirst = true;
+    sourceSb.append(isNullSafeIjDataRef ? "$ij?." : isIjDataRef ? "$ij." : "$");
+    sourceSb.append(firstKey);
     for (ExprNode child : getChildren()) {
-
-      if (isFirst) {
-        sourceSb.append(isIjDataRef ? "$ij." : "$").append(child.toSourceString());
-        isFirst = false;
-
-      } else {
-        if (child instanceof DataRefKeyNode || child instanceof DataRefIndexNode) {
-          sourceSb.append('.').append(child.toSourceString());
-        } else {
-          sourceSb.append('[').append(child.toSourceString()).append(']');
-        }
-      }
+      sourceSb.append(child.toSourceString());
     }
-
     return sourceSb.toString();
   }
 

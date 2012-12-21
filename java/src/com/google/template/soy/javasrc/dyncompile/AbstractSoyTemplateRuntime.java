@@ -24,6 +24,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 /**
  * Base implementations of {@code SoyTemplateRuntime} methods.
  *
+ * @author Mike Samuel
  */
 abstract class AbstractSoyTemplateRuntime implements SoyTemplateRuntime {
   private SoyMapData data = null;

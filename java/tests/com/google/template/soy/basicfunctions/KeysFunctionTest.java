@@ -33,6 +33,7 @@ import java.util.Set;
 /**
  * Unit tests for KeysFunction.
  *
+ * @author Kai Huang
  */
 public class KeysFunctionTest extends TestCase {
 
@@ -79,7 +80,7 @@ public class KeysFunctionTest extends TestCase {
     expr = new JavaExpr("JAVA_CODE", SoyData.class, Integer.MAX_VALUE);
     assertEquals(
         new JavaExpr(
-            "new com.google.template.soy.data.SoyListData(" +
+            "new com.google.template.soy.data.SoyListData(" + 
                 "((com.google.template.soy.data.SoyMapData) JAVA_CODE).getKeys())",
             IntegerData.class, Integer.MAX_VALUE),
         keysFunction.computeForJavaSrc(ImmutableList.of(expr)));

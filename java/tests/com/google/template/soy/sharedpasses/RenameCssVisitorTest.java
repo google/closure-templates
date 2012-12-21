@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for RenameCssVisitor.
  *
+ * @author Kai Huang
  */
 public class RenameCssVisitorTest extends TestCase {
 

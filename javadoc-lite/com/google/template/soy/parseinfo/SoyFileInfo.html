@@ -136,10 +136,10 @@ Parsed info about a Soy file.
             <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;namespace,
             com.google.common.collect.ImmutableSortedSet&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;paramsFromAllTemplates,
             com.google.common.collect.ImmutableList&lt;<A HREF="../../../../../com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>&gt;&nbsp;templates,
-            com.google.common.collect.ImmutableMap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/parseinfo/SoyFileInfo.CssTagsPrefixPresence.html" title="enum in com.google.template.soy.parseinfo">SoyFileInfo.CssTagsPrefixPresence</A>&gt;&nbsp;cssNamesMap)</CODE>
+            com.google.common.collect.ImmutableMap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/parseinfo/SoyFileInfo.CssTagsPrefixPresence.html" title="enum in com.google.template.soy.parseinfo">SoyFileInfo.CssTagsPrefixPresence</A>&gt;&nbsp;cssNameMap)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor for internal use only.</TD>
 </TR>
 </TABLE>
 &nbsp;
@@ -221,8 +221,13 @@ public <B>SoyFileInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/la
                    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;namespace,
                    com.google.common.collect.ImmutableSortedSet&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;paramsFromAllTemplates,
                    com.google.common.collect.ImmutableList&lt;<A HREF="../../../../../com/google/template/soy/parseinfo/SoyTemplateInfo.html" title="class in com.google.template.soy.parseinfo">SoyTemplateInfo</A>&gt;&nbsp;templates,
-                   com.google.common.collect.ImmutableMap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/parseinfo/SoyFileInfo.CssTagsPrefixPresence.html" title="enum in com.google.template.soy.parseinfo">SoyFileInfo.CssTagsPrefixPresence</A>&gt;&nbsp;cssNamesMap)</PRE>
+                   com.google.common.collect.ImmutableMap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="../../../../../com/google/template/soy/parseinfo/SoyFileInfo.CssTagsPrefixPresence.html" title="enum in com.google.template.soy.parseinfo">SoyFileInfo.CssTagsPrefixPresence</A>&gt;&nbsp;cssNameMap)</PRE>
 <DL>
+<DD>Constructor for internal use only.
+
+ <p> Important: Do not construct SoyFileInfo objects outside of Soy internal or Soy-generated
+ code. User code that constructs SoyFileInfo objects will be broken by future Soy changes.
+<P>
 <DL>
 <DT><B>Parameters:</B><DD><CODE>fileName</CODE> - The source Soy file's name.<DD><CODE>namespace</CODE> - The Soy file's namespace.<DD><CODE>paramsFromAllTemplates</CODE> - Sorted list of params from all templates in this Soy file.<DD><CODE>templates</CODE> - List of templates in this Soy file.</DL>
 </DL>

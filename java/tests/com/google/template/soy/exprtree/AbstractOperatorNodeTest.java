@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for AbstractOperatorNode.
  *
+ * @author Kai Huang
  */
 public class AbstractOperatorNodeTest extends TestCase {
 
@@ -37,8 +38,7 @@ public class AbstractOperatorNodeTest extends TestCase {
   // should work for this test.
   private static final DataRefNode x;
   static {
-    x = new DataRefNode(false);
-    x.addChild(new DataRefKeyNode("x"));
+    x = new DataRefNode(false, false, "x");
   }
 
 

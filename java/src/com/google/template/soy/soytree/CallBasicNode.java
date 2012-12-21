@@ -17,8 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
@@ -35,6 +37,7 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class CallBasicNode extends CallNode {
 
@@ -46,21 +49,19 @@ public class CallBasicNode extends CallNode {
   @Immutable
   protected static class CommandTextInfo extends CallNode.CommandTextInfo {
 
-    @Nullable private final String calleeName;
-    @Nullable private final String partialCalleeName;
+    /** The callee name string as it appears in the source code. */
+    private final String srcCalleeName;
 
     public CommandTextInfo(
-        String commandText, @Nullable String calleeName, @Nullable String partialCalleeName,
-        boolean isPassingData, @Nullable String exprText,
-        @Nullable String userSuppliedPlaceholderName, SyntaxVersion syntaxVersion) {
-      super(commandText, isPassingData, exprText, userSuppliedPlaceholderName, syntaxVersion);
+        String commandText, String srcCalleeName, boolean isPassingData,
+        @Nullable ExprRootNode<?> dataExpr, @Nullable String userSuppliedPlaceholderName,
+        SyntaxVersion syntaxVersion) {
+      super(commandText, isPassingData, dataExpr, userSuppliedPlaceholderName, syntaxVersion);
 
-      Preconditions.checkArgument(calleeName == null || BaseUtils.isDottedIdentifier(calleeName));
       Preconditions.checkArgument(
-          partialCalleeName == null || BaseUtils.isIdentifierWithLeadingDot(partialCalleeName));
-      Preconditions.checkArgument(calleeName != null || partialCalleeName != null);
-      this.calleeName = calleeName;
-      this.partialCalleeName = partialCalleeName;
+          BaseUtils.isIdentifierWithLeadingDot(srcCalleeName) ||
+              BaseUtils.isDottedIdentifier(srcCalleeName));
+      this.srcCalleeName = srcCalleeName;
     }
   }
 
@@ -77,11 +78,11 @@ public class CallBasicNode extends CallNode {
           new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
 
 
-  /** The full name of the template being called. (May be briefly null before being set.) */
-  @Nullable private String calleeName;
+  /** The callee name string as it appears in the source code. */
+  private final String srcCalleeName;
 
-  /** The partial name of the template being called, or null if the call is in V1 syntax. */
-  @Nullable private final String partialCalleeName;
+  /** The full name of the template being called. Briefly null before being set. */
+  private String calleeName;
 
 
   /**
@@ -94,7 +95,8 @@ public class CallBasicNode extends CallNode {
   public CallBasicNode(
       int id, String commandTextWithoutPhnameAttr, @Nullable String userSuppliedPlaceholderName)
       throws SoySyntaxException {
-    this(id, parseCommandTextHelper(commandTextWithoutPhnameAttr, userSuppliedPlaceholderName));
+    this(id, parseCommandTextHelper(commandTextWithoutPhnameAttr, userSuppliedPlaceholderName),
+        ImmutableList.<String>of());
   }
 
 
@@ -122,30 +124,29 @@ public class CallBasicNode extends CallNode {
     String nameAttribute = attributes.get("name");
     String functionAttribute = attributes.get("function");
     if ((nameAttribute == null) == (functionAttribute == null)) {
-      throw new SoySyntaxException("The 'call' command text must contain the callee name.");
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "The 'call' command text must contain the callee name (encountered command text \"" +
+              commandTextWithoutPhnameAttr + "\").");
     }
     if (functionAttribute != null) {
       nameAttribute = functionAttribute;
       syntaxVersion = SyntaxVersion.V1;
     }
 
-    String calleeName;
-    String partialCalleeName;
-    if (BaseUtils.isIdentifierWithLeadingDot(nameAttribute)) {
-      partialCalleeName = nameAttribute;
-      calleeName = null;
-    } else if (BaseUtils.isDottedIdentifier(nameAttribute)) {
-      calleeName = nameAttribute;
-      partialCalleeName = null;
+    String srcCalleeName;
+    if (BaseUtils.isIdentifierWithLeadingDot(nameAttribute) ||
+        BaseUtils.isDottedIdentifier(nameAttribute)) {
+      srcCalleeName = nameAttribute;
     } else {
-      throw new SoySyntaxException(
+      throw SoySyntaxException.createWithoutMetaInfo(
           "Invalid callee name \"" + nameAttribute + "\" for 'call' command.");
     }
 
-    Pair<Boolean, String> dataAttrInfo = parseDataAttributeHelper(attributes.get("data"));
+    Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
+        parseDataAttributeHelper(attributes.get("data"), commandText);
 
     return new CommandTextInfo(
-        commandText, calleeName, partialCalleeName, dataAttrInfo.first, dataAttrInfo.second,
+        commandText, srcCalleeName, dataAttrInfo.first, dataAttrInfo.second,
         userSuppliedPlaceholderName, syntaxVersion);
   }
 
@@ -153,75 +154,77 @@ public class CallBasicNode extends CallNode {
   /**
    * @param id The id for this node.
    * @param calleeName The full name of the template to call (including namespace).
-   * @param partialCalleeName The callee name without any namespace, or null for calls in
-*     V1 syntax.
+   * @param srcCalleeName The callee name string as it appears in the source code.
    * @param useAttrStyleForCalleeName Whether to use name="..." when building command text.
    * @param isPassingData True if the call forwards the data from dataRefText to its target.
    * @param isPassingAllData True if the call forwards all data from the template that contains
-*     it to its target.
-   * @param exprText The expression for the data to pass, or null if not applicable.
+   *     it to its target.
+   * @param dataExpr The expression for the data to pass, or null if not applicable.
    * @param userSuppliedPlaceholderName The user-supplied placeholder name, or null if not supplied
    *     or not applicable.
    * @param syntaxVersion The syntax version for the CallBasicNode.
+   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
    */
   public CallBasicNode(
-      int id, String calleeName, @Nullable String partialCalleeName,
-      boolean useAttrStyleForCalleeName, boolean isPassingData, boolean isPassingAllData,
-      @Nullable String exprText, @Nullable String userSuppliedPlaceholderName,
-      SyntaxVersion syntaxVersion) {
+      int id, String calleeName, String srcCalleeName, boolean useAttrStyleForCalleeName,
+      boolean isPassingData, boolean isPassingAllData, @Nullable ExprRootNode<?> dataExpr,
+      @Nullable String userSuppliedPlaceholderName, SyntaxVersion syntaxVersion,
+      ImmutableList<String> escapingDirectiveNames) {
     this(
         id,
         buildCommandTextInfoHelper(
-            calleeName, partialCalleeName, useAttrStyleForCalleeName, isPassingData,
-            isPassingAllData, exprText, userSuppliedPlaceholderName, syntaxVersion));
+            srcCalleeName, useAttrStyleForCalleeName, isPassingData, isPassingAllData, dataExpr,
+            userSuppliedPlaceholderName, syntaxVersion),
+        escapingDirectiveNames);
+
+    Preconditions.checkArgument(BaseUtils.isDottedIdentifier(calleeName));
+    this.calleeName = calleeName;
   }
 
 
   /**
    * Private helper for constructor
    * {@link #CallBasicNode(
-   *     int, String, String, boolean, boolean, boolean, String, String, SyntaxVersion)}.
+   *     int, String, String, boolean, boolean, boolean, ExprRootNode, String, SyntaxVersion)}.
    */
   private static final CommandTextInfo buildCommandTextInfoHelper(
-      String calleeName, @Nullable String partialCalleeName, boolean useAttrStyleForCalleeName,
-      boolean isPassingData, boolean isPassingAllData, @Nullable String exprText,
+      String srcCalleeName, boolean useAttrStyleForCalleeName, boolean isPassingData,
+      boolean isPassingAllData, @Nullable ExprRootNode<?> dataExpr,
       @Nullable String userSuppliedPlaceholderName, SyntaxVersion syntaxVersion) {
 
-    Preconditions.checkArgument(BaseUtils.isDottedIdentifier(calleeName));
     Preconditions.checkArgument(
-        partialCalleeName == null || BaseUtils.isIdentifierWithLeadingDot(partialCalleeName));
+        BaseUtils.isIdentifierWithLeadingDot(srcCalleeName) ||
+            BaseUtils.isDottedIdentifier(srcCalleeName));
     if (isPassingAllData) {
       Preconditions.checkArgument(isPassingData);
     }
-    if (exprText != null) {
+    if (dataExpr != null) {
       Preconditions.checkArgument(isPassingData && ! isPassingAllData);
-      Preconditions.checkArgument(! exprText.contains("\""));
     }
 
-    StringBuilder commandText = new StringBuilder();
+    String commandText = "";
     if (syntaxVersion == SyntaxVersion.V1) {
-      commandText.append("function=\"").append(calleeName).append('"');
+      commandText += "function=\"" + srcCalleeName + '"';
     } else {
-      String calleeNameInCommandText = (partialCalleeName != null) ? partialCalleeName : calleeName;
       if (useAttrStyleForCalleeName) {
-        commandText.append("name=\"").append(calleeNameInCommandText).append('"');
+        commandText += "name=\"" + srcCalleeName + '"';
       } else {
-        commandText.append(calleeNameInCommandText);
+        commandText += srcCalleeName;
       }
     }
     if (isPassingAllData) {
-      commandText.append(" data=\"all\"");
+      commandText += " data=\"all\"";
     } else if (isPassingData) {
-      commandText.append(" data=\"").append(exprText).append('"');
+      assert dataExpr != null;  // suppress warnings
+      commandText += " data=\"" + dataExpr.toSourceString() + '"';
     }
-
     if (userSuppliedPlaceholderName != null) {
-      commandText.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
+      commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
     }
 
     return new CommandTextInfo(
-        commandText.toString(), calleeName, partialCalleeName, isPassingData, exprText,
-        userSuppliedPlaceholderName, syntaxVersion);
+        commandText, srcCalleeName, isPassingData, dataExpr, userSuppliedPlaceholderName,
+        syntaxVersion);
   }
 
 
@@ -229,15 +232,17 @@ public class CallBasicNode extends CallNode {
    * Private helper constructor used by both of the constructors
    * {@link #CallBasicNode(int, String, String)} and
    * {@link #CallBasicNode(
-   *     int, String, String, boolean, boolean, boolean, String, String, SyntaxVersion)}.
+   *     int, String, String, boolean, boolean, boolean, ExprRootNode, String, SyntaxVersion)}.
    *
    * @param id The id for this node.
    * @param commandTextInfo All the info derived from the command text.
+   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
    */
-  private CallBasicNode(int id, CommandTextInfo commandTextInfo) {
-    super(id, "call", commandTextInfo);
-    this.calleeName = commandTextInfo.calleeName;
-    this.partialCalleeName = commandTextInfo.partialCalleeName;
+  private CallBasicNode(int id, CommandTextInfo commandTextInfo,
+      ImmutableList<String> escapingDirectiveNames) {
+    super(id, "call", commandTextInfo, escapingDirectiveNames);
+    this.srcCalleeName = commandTextInfo.srcCalleeName;
+    this.calleeName = null;  // to be set later by SetFullCalleeNamesVisitor
   }
 
 
@@ -247,8 +252,8 @@ public class CallBasicNode extends CallNode {
    */
   protected CallBasicNode(CallBasicNode orig) {
     super(orig);
+    this.srcCalleeName = orig.srcCalleeName;
     this.calleeName = orig.calleeName;
-    this.partialCalleeName = orig.partialCalleeName;
   }
 
 
@@ -257,25 +262,26 @@ public class CallBasicNode extends CallNode {
   }
 
 
+  /** Returns the callee name string as it appears in the source code. */
+  public String getSrcCalleeName() {
+    return srcCalleeName;
+  }
+
+
   /**
    * Sets the full name of the template being called (must not be a partial name).
    * @param calleeName The full name of the template being called.
    */
   public void setCalleeName(String calleeName) {
+    Preconditions.checkState(this.calleeName == null);
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(calleeName));
     this.calleeName = calleeName;
   }
 
 
-  /** Returns the full name of the template being called. */
+  /** Returns the full name of the template being called, or null if not yet set. */
   public String getCalleeName() {
     return calleeName;
-  }
-
-
-  /** Returns the partial name of the template being called, or null if call is in V1 syntax. */
-  public String getPartialCalleeName() {
-    return partialCalleeName;
   }
 
 

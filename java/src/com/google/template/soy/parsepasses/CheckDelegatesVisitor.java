@@ -19,15 +19,17 @@ package com.google.template.soy.parsepasses;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -47,6 +49,7 @@ import java.util.Set;
  * <p> {@link #exec} should be called on a full parse tree. There is no return value. A
  * {@code SoySyntaxException} is thrown if an error is found.
  *
+ * @author Kai Huang
  */
 public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -82,47 +85,71 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   private void checkTemplates() {
 
     Map<String, TemplateBasicNode> basicTemplatesMap = templateRegistry.getBasicTemplatesMap();
-    Map<String, List<DelegateTemplateDivision>> delTemplatesMap =
-        templateRegistry.getDelegateTemplatesMap();
+    Map<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMap =
+        templateRegistry.getDelTemplatesMap();
 
     // Check that no name is reused for both basic and delegate templates.
-    Set<String> reusedTemplateNames =
-        Sets.intersection(basicTemplatesMap.keySet(), delTemplatesMap.keySet());
+    Set<String> reusedTemplateNames = Sets.newLinkedHashSet();
+    for (DelTemplateKey delTemplateKey : delTemplatesMap.keySet()) {
+      if (basicTemplatesMap.containsKey(delTemplateKey.name)) {
+        reusedTemplateNames.add(delTemplateKey.name);
+      }
+    }
     if (reusedTemplateNames.size() > 0) {
-      throw new SoySyntaxException(String.format(
-          "Found template name %s being reused for both basic and delegate templates.",
-          reusedTemplateNames));
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Found template name " + reusedTemplateNames + " being reused for both basic and" +
+              " delegate templates.");
     }
 
-    // Check that all delegate templates with the same name have the same declared params.
+    // Check that all delegate templates with the same name have the same declared params and
+    // content kind.
     for (List<DelegateTemplateDivision> divisions : delTemplatesMap.values()) {
 
       TemplateDelegateNode firstDelTemplate = null;
+      String firstDelPackageName = null;
       Set<SoyDocParam> firstSoyDocParamsSet = null;
+      ContentKind firstContentKind = null;
 
       for (DelegateTemplateDivision division : divisions) {
         for (TemplateDelegateNode delTemplate : division.delPackageNameToDelTemplateMap.values()) {
+          String currDelPackageName =  (delTemplate.getDelPackageName() != null) ?
+              delTemplate.getDelPackageName() : "<default>";
 
           if (firstDelTemplate == null) {
             // First template encountered.
             firstDelTemplate = delTemplate;
+            firstDelPackageName = currDelPackageName;
             firstSoyDocParamsSet = Sets.newHashSet(delTemplate.getSoyDocParams());
+            firstContentKind = delTemplate.getContentKind();
 
           } else {
             // Not first template encountered.
             Set<SoyDocParam> currSoyDocParamsSet = Sets.newHashSet(delTemplate.getSoyDocParams());
             if (! currSoyDocParamsSet.equals(firstSoyDocParamsSet)) {
-              String firstDelPackageName = (firstDelTemplate.getDelPackageName() != null) ?
-                  firstDelTemplate.getDelPackageName() : "none";
-              String currDelPackageName =  (delTemplate.getDelPackageName() != null) ?
-                  delTemplate.getDelPackageName() : "none";
-              throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+              throw SoySyntaxExceptionUtils.createWithNode(
                   String.format(
                       "Found delegate templates with same name '%s' but different param" +
                           " declarations in delegate packages '%s' and '%s'.",
                       firstDelTemplate.getDelTemplateName(), firstDelPackageName,
                       currDelPackageName),
-                  null,
+                  firstDelTemplate);
+            }
+            if (delTemplate.getContentKind() != firstContentKind) {
+              // TODO: This is only *truly* a requirement if the strict mode deltemplates are being
+              // called by contextual templates. For a strict-to-strict call, everything is
+              // escaped at runtime at the call sites. You could imagine delegating between either
+              // a plain-text or rich-html template. However, most developers will write their
+              // deltemplates in a parallel manner, and will want to know when the templates
+              // differ. Plus, requiring them all to be the same early-on will allow future
+              // optimizations to avoid the run-time checks, so it's better to start out as strict
+              // as possible and only open up if needed.
+              throw SoySyntaxExceptionUtils.createWithNode(
+                  String.format(
+                      "If one deltemplate has strict autoescaping, all its peers must also be " +
+                          "strictly autoescaped with the same content kind: %s != %s (delegate " +
+                          "packages %s and %s)",
+                      firstContentKind, delTemplate.getContentKind(), firstDelPackageName,
+                      currDelPackageName),
                   firstDelTemplate);
             }
           }
@@ -133,11 +160,10 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     // Check that all basic templates within delegate packages are private.
     for (TemplateBasicNode basicTemplate : basicTemplatesMap.values()) {
       if (basicTemplate.getDelPackageName() != null && ! basicTemplate.isPrivate()) {
-        throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+        throw SoySyntaxExceptionUtils.createWithNode(
             String.format(
                 "Found public template '%s' in delegate package '%s' (must mark as private).",
                 basicTemplate.getTemplateName(), basicTemplate.getDelPackageName()),
-            null,
             basicTemplate);
       }
     }
@@ -160,13 +186,12 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     String calleeName = node.getCalleeName();
 
     // Check that the callee name is not a delegate template name.
-    if (templateRegistry.getSortedDelegateTemplateDivisions(calleeName) != null) {
-      throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+    if (templateRegistry.getDelTemplateKeysForAllVariants(calleeName) != null) {
+      throw SoySyntaxExceptionUtils.createWithNode(
           String.format(
               "In template '%s', found a 'call' referencing a delegate template '%s'" +
                   " (expected 'delcall').",
               currTemplateNameForUserMsgs, calleeName),
-          null,
           node);
     }
 
@@ -175,11 +200,10 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && ! calleeDelPackageName.equals(currDelPackageName)) {
-        throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+        throw SoySyntaxExceptionUtils.createWithNode(
             String.format(
                 "Found illegal call from '%s' to '%s', which is in a different delegate package.",
                 currTemplateNameForUserMsgs, callee.getTemplateName()),
-            null,
             node);
       }
     }
@@ -192,12 +216,11 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Check that the callee name is not a basic template name.
     if (templateRegistry.getBasicTemplate(delCalleeName) != null) {
-      throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+      throw SoySyntaxExceptionUtils.createWithNode(
           String.format(
               "In template '%s', found a 'delcall' referencing a basic template '%s'" +
                   " (expected 'call').",
               currTemplateNameForUserMsgs, delCalleeName),
-          null,
           node);
     }
   }

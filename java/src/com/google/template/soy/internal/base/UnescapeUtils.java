@@ -23,6 +23,7 @@ import java.util.Map;
 /**
  * Utilities for unescaping strings from context-specific formats.
  *
+ * @author Greg Slovacek
  */
 public class UnescapeUtils {
 

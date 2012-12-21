@@ -19,16 +19,10 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.DataRefKeyNode;
-import com.google.template.soy.exprtree.DataRefNode;
-import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialContentNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -43,10 +37,11 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
     implements StandaloneNode, SplitLevelTopNode<PrintDirectiveNode>, StatementNode,
-    ExprHolderNode, MsgPlaceholderInitialContentNode {
+    ExprHolderNode, MsgPlaceholderInitialNode {
 
 
   /** Fallback base placeholder name. */
@@ -79,15 +74,7 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
 
     this.isImplicit = isImplicit;
 
-    ExprRootNode<?> expr;
-    try {
-      expr = (new ExpressionParser(exprText)).parseExpression();
-    } catch (TokenMgrError tme) {
-      expr = null;
-    } catch (ParseException pe) {
-      expr = null;
-    }
-
+    ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(exprText);
     if (expr != null) {
       this.exprUnion = new ExprUnion(expr);
     } else {
@@ -169,25 +156,7 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
       return FALLBACK_BASE_PLACEHOLDER_NAME;
     }
 
-    ExprNode exprNode = exprRoot.getChild(0);
-
-    // Attempt to parse the expression as a data ref for the purpose of using the last key as the
-    // base placeholder name.
-    if (exprNode instanceof DataRefNode) {
-      DataRefNode dataRefNode = (DataRefNode) exprNode;
-      ExprNode lastPart = dataRefNode.getChild(dataRefNode.numChildren() - 1);
-      if (lastPart instanceof DataRefKeyNode) {
-        return BaseUtils.convertToUpperUnderscore(((DataRefKeyNode) lastPart).getKey());
-      }
-
-    } else if (exprNode instanceof GlobalNode) {
-      GlobalNode globalNode = (GlobalNode) exprNode;
-      int lastDotIndex = globalNode.getName().lastIndexOf('.');
-      String lastPart = globalNode.getName().substring(lastDotIndex + 1);
-      return BaseUtils.convertToUpperUnderscore(lastPart);
-    }
-
-    return FALLBACK_BASE_PLACEHOLDER_NAME;
+    return AbstractMsgNode.genBaseNameFromExpr(exprRoot, FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
 

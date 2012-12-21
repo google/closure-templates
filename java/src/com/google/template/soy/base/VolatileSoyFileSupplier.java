@@ -33,8 +33,10 @@ import java.io.Reader;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Mike Samuel
  */
-public class VolatileSoyFileSupplier implements SoyFileSupplier {
+public class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
+
 
   /** The file to read. */
   private final File file;
@@ -45,15 +47,11 @@ public class VolatileSoyFileSupplier implements SoyFileSupplier {
    * without warning.
    *
    * @param file The underlying file to read.
+   * @param soyFileKind The kind of this input Soy file.
    */
-  public VolatileSoyFileSupplier(File file) {
+  public VolatileSoyFileSupplier(File file, SoyFileKind soyFileKind) {
+    super(soyFileKind, file.getPath());
     this.file = file;
-  }
-
-
-  @Override
-  public String getPath() {
-    return file.getPath();
   }
 
 

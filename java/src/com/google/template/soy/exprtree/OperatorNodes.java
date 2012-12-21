@@ -22,6 +22,7 @@ package com.google.template.soy.exprtree;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class OperatorNodes {
 
@@ -250,6 +251,21 @@ public class OperatorNodes {
     @Override public Kind getKind() { return Kind.OR_OP_NODE; }
 
     @Override public OrOpNode clone() { return new OrOpNode(this); }
+  }
+
+
+  /**
+   * Node representing the '?:' (null-coalescing) operator.
+   */
+  public static class NullCoalescingOpNode extends AbstractOperatorNode {
+
+    public NullCoalescingOpNode() { super(Operator.NULL_COALESCING); }
+
+    protected NullCoalescingOpNode(NullCoalescingOpNode orig) { super(orig); }
+
+    @Override public Kind getKind() { return Kind.NULL_COALESCING_OP_NODE; }
+
+    @Override public NullCoalescingOpNode clone() { return new NullCoalescingOpNode(this); }
   }
 
 

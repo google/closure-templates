@@ -25,6 +25,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MsgNode.
  *
+ * @author Kai Huang
  */
 public class MsgNodeTest extends TestCase {
 
@@ -166,7 +167,7 @@ public class MsgNodeTest extends TestCase {
    * This contains a normal select variable and three fall back plural variables
    * with conflict.
    */
-  public static void testGenPluralSelectVarNames1() {
+  public static void testGenPlrselVarNames1() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender}    // Normal select variable.  GENDER.
@@ -275,7 +276,7 @@ public class MsgNodeTest extends TestCase {
     selectNode.addChild(selectDefaultNode);
 
     msg.addChild(selectNode);
-
+    
     // msg.printMessageNode();
 
     // Test.
@@ -286,11 +287,11 @@ public class MsgNodeTest extends TestCase {
     MsgPluralNode nodePlural1 = (MsgPluralNode) (
         (MsgSelectCaseNode) nodeSelect.getChild(0)).getChild(0);
     assertEquals("NUM_1", msg.getPluralVarName(nodePlural1));
-
+    
     MsgPluralNode nodePlural2 = (MsgPluralNode) (
         (MsgSelectCaseNode) nodeSelect.getChild(1)).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural2));
-
+    
     MsgPluralNode nodePlural3 = (MsgPluralNode) (
         (MsgSelectDefaultNode) nodeSelect.getChild(2)).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural3));
@@ -307,7 +308,7 @@ public class MsgNodeTest extends TestCase {
   /**
    * Tests whether the names for plural and select nodes are assigned correctly.
    */
-  public static void testGenPluralSelectVarNames2() {
+  public static void testGenPlrselVarNames2() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender[5]}    // Select variable, fall back to STATUS.
@@ -442,7 +443,7 @@ public class MsgNodeTest extends TestCase {
   }
 
 
-  public static void testGenPluralSelectVarNames3() {
+  public static void testGenPlrselVarNames3() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender.person}    // Select variable, fall back to PERSON_1.
@@ -562,7 +563,7 @@ public class MsgNodeTest extends TestCase {
   /**
    * Tests arbitrary expression as plural variable.
    */
-  public static void testGenPluralSelectVarNames4() {
+  public static void testGenPlrselVarNames4() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender}    // Select variable, fall back to GENDER.

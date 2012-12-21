@@ -31,6 +31,7 @@ import com.google.template.soy.data.restricted.StringData;
  *
  * <p> Feel free to static import these helpers in your function implementation classes.
  *
+ * @author Kai Huang
  */
 public class SoyJavaSrcFunctionUtils {
 
@@ -38,7 +39,7 @@ public class SoyJavaSrcFunctionUtils {
 
 
   /**
-   * Creates a new JavaExpr with the given exprText and type BooleanData.
+   * Creates a new JavaExpr with the given exprText and type BooleanData. 
    * @param exprText The Java expression text.
    */
   public static JavaExpr toBooleanJavaExpr(String exprText) {
@@ -47,7 +48,7 @@ public class SoyJavaSrcFunctionUtils {
 
 
   /**
-   * Creates a new JavaExpr with the given exprText and type IntegerData.
+   * Creates a new JavaExpr with the given exprText and type IntegerData. 
    * @param exprText The Java expression text.
    */
   public static JavaExpr toIntegerJavaExpr(String exprText) {

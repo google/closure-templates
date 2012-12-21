@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.data.internalutils.DataUtils;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -26,6 +27,8 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.DataRefAccessExprNode;
+import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ConstantNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -54,6 +57,7 @@ import javax.inject.Inject;
  *
  * Package-private helper for {@link SimplifyVisitor}.
  *
+ * @author Kai Huang
  */
 class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
@@ -69,7 +73,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Inject
   SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
-    this.preevalVisitor = preevalVisitorFactory.create(null, EMPTY_ENV);
+    this.preevalVisitor = preevalVisitorFactory.create(new SoyMapData(), EMPTY_ENV);
   }
 
 
@@ -95,6 +99,29 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   protected void visitMapLiteralNode(MapLiteralNode node) {
     // Visit children only. We cannot simplify the map literal itself.
     visitChildren(node);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for reference nodes.
+
+
+  @Override protected void visitDataRefNode(DataRefNode node) {
+
+    boolean allExprsAreConstant = true;
+    for (ExprNode child : node.getChildren()) {
+      if (child instanceof DataRefAccessExprNode) {
+        ExprNode expr = ((DataRefAccessExprNode) child).getChild(0);
+        visit(expr);
+        if (! (expr instanceof ConstantNode)) {
+          allExprsAreConstant = false;
+        }
+      }
+    }
+
+    if (allExprsAreConstant) {
+      attemptPreeval(node);
+    }
   }
 
 
@@ -174,7 +201,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Override protected void visitFunctionNode(FunctionNode node) {
 
-    // Cannot simplify nonplugin functions (this check is needed particularly because of hasData()).
+    // Cannot simplify nonplugin functions.
     if (NonpluginFunction.forFunctionName(node.getFunctionName()) != null) {
       return;
     }
@@ -205,20 +232,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return;  // cannot preevaluate
       }
     }
-
-    // Note that we need to catch RenderException because preevaluation may fail, e.g. when
-    // (a) the expression uses a bidi function that needs bidiGlobalDir to be in scope, but the
-    //     apiCallScope is not currently active,
-    // (b) the expression uses an external function (Soy V1 syntax),
-    // (c) other cases I haven't thought up.
-    SoyData preevalResult;
-    try {
-      preevalResult = preevalVisitor.exec(nodeAsParent);
-    } catch (RenderException e) {
-      return;  // failed to preevaluate
-    }
-    ConstantNode newNode = DataUtils.convertPrimitiveDataToExpr((PrimitiveData) preevalResult);
-    nodeAsParent.getParent().replaceChild(nodeAsParent, newNode);
+    attemptPreeval(nodeAsParent);
   }
 
 
@@ -226,6 +240,33 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // Helpers.
 
 
+  /**
+   * Attempts to preevaluate a node. If successful, the node is replaced with a new constant node in
+   * the tree. If unsuccessful, the tree is not changed.
+   */
+  private void attemptPreeval(ExprNode node) {
+
+    // Note that we need to catch RenderException because preevaluation may fail, e.g. when
+    // (a) the expression uses a bidi function that needs bidiGlobalDir to be in scope, but the
+    //     apiCallScope is not currently active,
+    // (b) the expression uses an external function (Soy V1 syntax),
+    // (c) other cases I haven't thought up.
+
+    SoyData preevalResult;
+    try {
+      preevalResult = preevalVisitor.exec(node);
+    } catch (RenderException e) {
+      return;  // failed to preevaluate
+    }
+
+    ConstantNode newNode = DataUtils.convertPrimitiveDataToExpr((PrimitiveData) preevalResult);
+    node.getParent().replaceChild(node, newNode);
+  }
+
+
+  /**
+   * Returns the value of the given expression if it's constant, else returns null.
+   */
   private static SoyData getConstantOrNull(ExprNode expr) {
 
     switch (expr.getKind()) {

@@ -24,14 +24,14 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ListLiteralNode.
  *
+ * @author Kai Huang
  */
 public class ListLiteralNodeTest extends TestCase {
 
 
   public void testToSourceString() {
 
-    DataRefNode dataRef = new DataRefNode(false);
-    dataRef.addChild(new DataRefKeyNode("foo"));
+    DataRefNode dataRef = new DataRefNode(false, false, "foo");
 
     ListLiteralNode listLit = new ListLiteralNode(
         Lists.<ExprNode>newArrayList(new StringNode("blah"), new IntegerNode(123), dataRef));

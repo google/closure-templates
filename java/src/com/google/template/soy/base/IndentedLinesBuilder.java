@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
  *
  * <p> The maximum indent length is 24.
  *
+ * @author Kai Huang
  */
 public class IndentedLinesBuilder implements CharSequence, Appendable {
 
@@ -151,39 +152,12 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    * (nonzero number of params). The newline char at the end is always added.
    * @param parts The parts that make up the line.
    */
-  public void appendLine(String... parts) {
-    if (parts.length > 0) {
-      sb.append(indent);
-    }
-    appendParts(parts);
-    appendLineEnd();
-  }
-
-
-  /**
-   * Appends some parts to the current line.
-   * @param parts The parts to append.
-   * @return This object.
-   */
-  public IndentedLinesBuilder appendParts(String... parts) {
-    for (String part : parts) {
-      sb.append(part);
-    }
-    return this;
-  }
-
-
-  /**
-   * Appends a line. The indent at the start is automatically added whenever the line is nonempty
-   * (nonzero number of params). The newline char at the end is always added.
-   * @param parts The parts that make up the line.
-   */
   public void appendLine(Object... parts) {
     if (parts.length > 0) {
       sb.append(indent);
     }
     appendParts(parts);
-    appendLineEnd();
+    sb.append('\n');
   }
 
 
@@ -201,20 +175,26 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
 
 
   /**
-   * Appends the start-of-line indent (assuming the line will be nonempty).
+   * Appends the current indent, then the given strings.
+   * @param parts The parts to append.
    * @return This object.
    */
-  public IndentedLinesBuilder appendIndent() {
+  public IndentedLinesBuilder appendLineStart(Object... parts) {
     sb.append(indent);
+    appendParts(parts);
     return this;
   }
 
 
   /**
-   * Appends the end-of-line terminator.
+   * Appends the given strings, then a newline.
+   * @param parts The parts to append.
+   * @return This object.
    */
-  public void appendLineEnd() {
-    sb.append('\n');
+  public IndentedLinesBuilder appendLineEnd(Object... parts) {
+    appendParts(parts);
+    sb.append("\n");
+    return this;
   }
 
 

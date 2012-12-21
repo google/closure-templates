@@ -24,16 +24,15 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MapLiteralNode.
  *
+ * @author Kai Huang
  */
 public class MapLiteralNodeTest extends TestCase {
 
 
   public void testToSourceString() {
 
-    DataRefNode booDataRef = new DataRefNode(false);
-    booDataRef.addChild(new DataRefKeyNode("boo"));
-    DataRefNode fooDataRef = new DataRefNode(false);
-    fooDataRef.addChild(new DataRefKeyNode("foo"));
+    DataRefNode booDataRef = new DataRefNode(false, false, "boo");
+    DataRefNode fooDataRef = new DataRefNode(false, false, "foo");
 
     MapLiteralNode mapLit = new MapLiteralNode(Lists.<ExprNode>newArrayList(
         new StringNode("aaa"), new StringNode("blah"), new StringNode("bbb"), new IntegerNode(123),

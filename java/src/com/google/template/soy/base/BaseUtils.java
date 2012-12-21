@@ -16,9 +16,13 @@
 
 package com.google.template.soy.base;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -28,6 +32,7 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class BaseUtils {
 
@@ -140,6 +145,17 @@ public class BaseUtils {
 
 
   /**
+   * Gets the part after the last dot in a dotted identifier. If there are no dots, returns the
+   * whole input string.
+   * <p> Important: The input must be a dotted identifier. This is not checked.
+   */
+  public static String extractPartAfterLastDot(String dottedIdent) {
+    int lastDotIndex = dottedIdent.lastIndexOf('.');
+    return (lastDotIndex == -1) ? dottedIdent : dottedIdent.substring(lastDotIndex + 1);
+  }
+
+
+  /**
    * Converts an identifier to upper-underscore format. The identifier must start with a letter or
    * underscore and must only contain letters, digits, and underscores (i.e. it must match the
    * regular expression {@code [A-Za-z_][A-Za-z_0-9]*}).
@@ -178,7 +194,7 @@ public class BaseUtils {
 
     int len = value.length();
     StringBuilder out = new StringBuilder(len * 9 / 8);
-    out.append("'");
+    out.append('\'');
 
     int codePoint;
     for (int i = 0; i < len; i += Character.charCount(codePoint)) {
@@ -192,7 +208,7 @@ public class BaseUtils {
         case '\f': out.append("\\f"); break;
         case '\\': out.append("\\\\"); break;
         case '\'': out.append("\\'"); break;
-        case '"' : out.append("\""); break;  // note: don't escape double quotes in Soy strings
+        case '"' : out.append('"'); break;  // note: don't escape double quotes in Soy strings
         default:
           // If shouldEscapeToAscii, then hex escape characters outside the range 0x20 to 0x7F.
           if (shouldEscapeToAscii && (codePoint < 0x20 || codePoint >= 0x7F)) {
@@ -204,7 +220,7 @@ public class BaseUtils {
       }
     }
 
-    out.append("'");
+    out.append('\'');
     return out.toString();
   }
 
@@ -241,5 +257,53 @@ public class BaseUtils {
     }
   }
 
+
+  /**
+   * Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the result
+   * as a hex value in string form.
+   *
+   * @param strToHash The string to compute SHA-1 of.
+   * @return The SHA-1 hash value as a hex string.
+   */
+  public static String computeSha1AsHexString(String strToHash) {
+    return computePartialSha1AsHexString(strToHash, 160);
+  }
+
+
+  /**
+   * Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the first
+   * numBits bits of the result as a hex value in string form.
+   *
+   * @param strToHash The string to compute SHA-1 of.
+   * @param numBits The number of bits worth to return. Must be a positive number at most 160 and
+   *     divisible by 8 (since we process the result 8 bits at a time).
+   * @return The partial SHA-1 hash value as a hex string.
+   */
+  public static String computePartialSha1AsHexString(String strToHash, int numBits) {
+
+    Preconditions.checkArgument(numBits > 0 && numBits <= 160 && numBits % 8 == 0);
+    int numBytes = numBits / 8;
+
+    byte[] digestBytes;
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-1");
+      digestBytes = md.digest(strToHash.getBytes("UTF-8"));
+    } catch (NoSuchAlgorithmException e) {
+      throw new AssertionError("Java should always have SHA-1.");
+    } catch (UnsupportedEncodingException e) {
+      throw new AssertionError("Java should always have UTF-8.");
+    }
+
+    StringBuilder digestHexBuilder = new StringBuilder();
+    for (int i = 0; i < numBytes; i++) {
+      byte digestByte = digestBytes[i];
+      String digestByteHex = Integer.toHexString(0xFF & digestByte);
+      if (digestByteHex.length() == 1) {
+        digestByteHex = "0" + digestByteHex;  // pad to 2 digits
+      }
+      digestHexBuilder.append(digestByteHex);
+    }
+    return digestHexBuilder.toString();
+  }
 
 }

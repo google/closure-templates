@@ -30,6 +30,8 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BidiMarkFunction.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 public class BidiMarkFunctionTest extends TestCase {
 

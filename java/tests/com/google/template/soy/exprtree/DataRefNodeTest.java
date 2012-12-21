@@ -22,25 +22,35 @@ import junit.framework.TestCase;
 /**
  * Unit tests for DataRefNode.
  *
+ * @author Kai Huang
  */
 public class DataRefNodeTest extends TestCase {
 
 
   public void testToSourceString() {
 
-    DataRefNode drn = new DataRefNode(false);
-    drn.addChild(new DataRefKeyNode("boo"));
-    drn.addChild(new DataRefIndexNode(0));
-    drn.addChild(new StringNode("foo"));
-    drn.addChild(new IntegerNode(5));
-    drn.addChild(new DataRefKeyNode("goo"));
+    // Regular data ref.
+    DataRefNode drn = new DataRefNode(false, false, "boo");
+    drn.addChild(new DataRefAccessIndexNode(false, 0));
+    drn.addChild(new DataRefAccessExprNode(false, new StringNode("foo")));
+    drn.addChild(new DataRefAccessExprNode(false, new IntegerNode(5)));
+    drn.addChild(new DataRefAccessKeyNode(false, "goo"));
 
     assertEquals("$boo.0['foo'][5].goo", drn.toSourceString());
 
-    DataRefNode ijDrn = new DataRefNode(true);
+    // Injected data ref.
+    DataRefNode ijDrn = new DataRefNode(true, false, "boo");
     ijDrn.addChildren(drn.getChildren());
 
     assertEquals("$ij.boo.0['foo'][5].goo", ijDrn.toSourceString());
+
+    // Injected data ref with some null-safe accesses.
+    DataRefNode nullSafeIjDrn = new DataRefNode(true, true, "boo");
+    nullSafeIjDrn.addChildren(drn.getChildren());
+    nullSafeIjDrn.replaceChild(1, new DataRefAccessExprNode(true, new StringNode("foo")));
+    nullSafeIjDrn.replaceChild(3, new DataRefAccessKeyNode(true, "goo"));
+
+    assertEquals("$ij?.boo.0?['foo'][5]?.goo", nullSafeIjDrn.toSourceString());
   }
 
 }

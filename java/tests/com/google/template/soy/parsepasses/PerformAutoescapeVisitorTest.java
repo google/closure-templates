@@ -44,6 +44,7 @@ import java.util.Map;
 /**
  * Unit tests for PerformAutoescapeVisitor.
  *
+ * @author Kai Huang
  */
 public class PerformAutoescapeVisitorTest extends TestCase {
 
@@ -120,9 +121,12 @@ public class PerformAutoescapeVisitorTest extends TestCase {
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
-    // After.
-    assertEquals(0, printNodes.get(0).getChildren().size());
-    assertEquals(0, printNodes.get(1).getChildren().size());
+    // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
+    assertEquals(1, printNodes.get(0).getChildren().size());
+    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(0).getChild(0).getName());
+    assertEquals(2, printNodes.get(1).getChildren().size());
+    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
+    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(1).getName());
   }
 
 
@@ -147,13 +151,15 @@ public class PerformAutoescapeVisitorTest extends TestCase {
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
-    // After.
+    // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
     assertEquals(1, printNodes.get(0).getChildren().size());
     assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(1, printNodes.get(1).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(1, printNodes.get(2).getChildren().size());
+    assertEquals(2, printNodes.get(1).getChildren().size());
+    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
+    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(1).getChild(1).getName());
+    assertEquals(2, printNodes.get(2).getChildren().size());
     assertEquals(EscapeHtmlDirective.NAME, printNodes.get(2).getChild(0).getName());
+    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(2).getChild(1).getName());
   }
 
 
@@ -212,7 +218,7 @@ public class PerformAutoescapeVisitorTest extends TestCase {
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
-    // After.
+    // After: The redundant noAutoescape calls are omitted.
     assertEquals(0, printNodes.get(0).getChildren().size());
     assertEquals(0, printNodes.get(1).getChildren().size());
   }

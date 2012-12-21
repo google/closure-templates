@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -26,6 +27,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ChangeCallsToPassAllDataVisitor,
  *
+ * @author Kai Huang
  */
 public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
@@ -127,9 +129,13 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(callCode);
     CallNode callNodeBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
+    callNodeBeforePass.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
     CallNode callNodeAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     assertEquals(callNodeBeforePass, callNodeAfterPass);
+    assertEquals("Escaping directives should be preserved",
+        ImmutableList.of("|escapeHtml"),
+        callNodeAfterPass.getEscapingDirectiveNames());
   }
 
 

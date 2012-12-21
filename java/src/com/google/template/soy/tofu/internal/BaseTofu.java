@@ -17,10 +17,14 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
@@ -29,6 +33,8 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
+import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.sharedpasses.MarkLocalVarDataRefsVisitor;
 import com.google.template.soy.sharedpasses.RenameCssVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -52,6 +58,7 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class BaseTofu implements SoyTofu {
 
@@ -96,6 +103,9 @@ public class BaseTofu implements SoyTofu {
    *  false or when isCaching is true but doAddToCache is false. */
   private final TemplateRegistry templateRegistryForNoCaching;
 
+  /** Map from template node to injected params info for all templates. */
+  private final ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap;
+
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
@@ -123,7 +133,11 @@ public class BaseTofu implements SoyTofu {
     } else {
       cachedTemplateRegistries = null;
     }
-    templateRegistryForNoCaching = buildTemplateRegistry(soyTree.clone());
+    SoyFileSetNode soyTreeForNoCaching = soyTree.clone();
+    templateRegistryForNoCaching = buildTemplateRegistry(soyTreeForNoCaching);
+    templateToIjParamsInfoMap =
+        (new FindIjParamsVisitor(templateRegistryForNoCaching)).execForAllTemplates(
+            soyTreeForNoCaching);
   }
 
 
@@ -172,6 +186,30 @@ public class BaseTofu implements SoyTofu {
   @Override public Renderer newRenderer(String templateName) {
     return new RendererImpl(this, templateName);
   }
+
+
+  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(
+      SoyTemplateInfo templateInfo) {
+    return getUsedIjParamsForTemplate(templateInfo.getName());
+  }
+
+
+  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
+    TemplateNode template = templateRegistryForNoCaching.getBasicTemplate(templateName);
+    if (template == null) {
+      throw new SoyTofuException("Template '" + templateName + "' not found.");
+    }
+    IjParamsInfo ijParamsInfo = templateToIjParamsInfoMap.get(template);
+    // TODO: Ideally we'd check that there are no external calls, but we find that in practice many
+    // users have written templates that conditionally call to undefined templates. Instead,
+    // we'll return a best effor set of what we have here, and over time, we'll encourage users to
+    // enforce the "assertNoExternalCalls" flag.
+    return ijParamsInfo.ijParamSet;
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Private methods.
 
 
   /**
@@ -249,14 +287,17 @@ public class BaseTofu implements SoyTofu {
       String templateName, @Nullable SoyMapData data, @Nullable SoyMapData ijData,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyCssRenamingMap cssRenamingMap, boolean doAddToCache) {
+
     StringBuilder outputSb = new StringBuilder();
-    renderMain(templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
-        doAddToCache, outputSb);
+    renderMain(
+        outputSb, templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
+        doAddToCache);
     return outputSb.toString();
   }
 
 
   /**
+   * @param outputBuf The Appendable to write the output to.
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
    * @param ijData The injected data to call the template with. Can be null if not used.
@@ -268,12 +309,12 @@ public class BaseTofu implements SoyTofu {
    *     the cache if it's not already there. If set to false, then falls back to the no-caching
    *     mode of rendering when not found in cache. Only applicable if isCaching is true for this
    *     BaseTofu instance.
-   * @param outputSb The Appendable to write the output to.
    */
   private void renderMain(
-      String templateName, @Nullable SoyMapData data, @Nullable SoyMapData ijData,
-      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyCssRenamingMap cssRenamingMap, boolean doAddToCache, Appendable outputSb) {
+      Appendable outputBuf, String templateName, @Nullable SoyMapData data,
+      @Nullable SoyMapData ijData, @Nullable Set<String> activeDelPackageNames,
+      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap,
+      boolean doAddToCache) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = Collections.emptySet();
@@ -294,11 +335,11 @@ public class BaseTofu implements SoyTofu {
       if (cachedTemplateRegistry != null) {
         // Note: Still need to pass msgBundle because we currently don't cache plural/select msgs.
         renderMainHelper(
-            cachedTemplateRegistry, outputSb, templateName, data, ijData, activeDelPackageNames,
+            cachedTemplateRegistry, outputBuf, templateName, data, ijData, activeDelPackageNames,
             msgBundle, null);
       } else {
         renderMainHelper(
-            templateRegistryForNoCaching, outputSb, templateName, data, ijData,
+            templateRegistryForNoCaching, outputBuf, templateName, data, ijData,
             activeDelPackageNames, msgBundle, cssRenamingMap);
       }
 
@@ -312,7 +353,7 @@ public class BaseTofu implements SoyTofu {
    * Renders a template and appends the result to a StringBuilder.
    *
    * @param templateRegistry A registry of all templates.
-   * @param outputSb The Appendable to append the rendered text to.
+   * @param outputBuf The Appendable to append the rendered text to.
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
    * @param ijData The injected data to call the template with. Can be null if not used.
@@ -322,7 +363,7 @@ public class BaseTofu implements SoyTofu {
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
    */
   private void renderMainHelper(
-      TemplateRegistry templateRegistry, Appendable outputSb, String templateName,
+      TemplateRegistry templateRegistry, Appendable outputBuf, String templateName,
       @Nullable SoyMapData data, @Nullable SoyMapData ijData, Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
@@ -331,9 +372,13 @@ public class BaseTofu implements SoyTofu {
       throw new SoyTofuException("Attempting to render undefined template '" + templateName + "'.");
     }
 
+    if (data == null) {
+      data = new SoyMapData();
+    }
+
     try {
       RenderVisitor rv = tofuRenderVisitorFactory.create(
-          outputSb, templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle,
+          outputBuf, templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle,
           cssRenamingMap);
       rv.exec(template);
 
@@ -423,9 +468,20 @@ public class BaseTofu implements SoyTofu {
           doAddToCache);
     }
 
+    @Override public SanitizedContent renderAsSanitizedContent() {
+      String resultString = render();
+      // The no-caching registry is good enough to get content kind.
+      SanitizedContent.ContentKind contentKind =
+          baseTofu.templateRegistryForNoCaching.getBasicTemplate(templateName).getContentKind();
+      Preconditions.checkArgument(contentKind != null,
+          "renderAsSanitizedContent is only valid for templates with autoescape=\"strict\".");
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(resultString, contentKind);
+    }
+
     @Override public void render(Appendable out) {
-      baseTofu.renderMain(templateName, data, ijData, activeDelPackageNames, msgBundle,
-          cssRenamingMap, doAddToCache, out);
+      baseTofu.renderMain(
+          out, templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
+          doAddToCache);
     }
   }
 

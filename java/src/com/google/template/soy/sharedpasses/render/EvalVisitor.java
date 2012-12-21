@@ -29,14 +29,14 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.DataRefIndexNode;
-import com.google.template.soy.exprtree.DataRefKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessIndexNode;
+import com.google.template.soy.exprtree.DataRefAccessKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
@@ -77,6 +77,7 @@ import javax.annotation.Nullable;
  * the context of the {@code data} and {@code env} passed into the constructor) is returned as a
  * {@code SoyData} object.
  *
+ * @author Kai Huang
  */
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
 
@@ -94,7 +95,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
      * @return The newly created EvalVisitor instance.
      */
     public EvalVisitor create(
-        @Nullable SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env);
+        SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env);
   }
 
 
@@ -120,8 +121,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
    * @param env The current environment.
    */
   protected EvalVisitor(
-      @Nullable Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap,
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+      @Nullable Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap, SoyMapData data,
+      @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
 
     this.soyJavaRuntimeFunctionsMap = soyJavaRuntimeFunctionsMap;
     this.data = data;
@@ -206,41 +207,75 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
     SoyData value0 = resolveDataRefFirstKey(node);
 
     // Case 1: There is only one key. We already have the final value of the data reference.
-    if (node.numChildren() == 1) {
+    if (node.numChildren() == 0) {
       return value0;
     }
 
     // Case 2: There are more keys.
     SoyData value = value0;
-    for (int i = 1; i < node.numChildren(); i++) {
+    for (ExprNode child : node.getChildren()) {
+      DataRefAccessNode accessNode = (DataRefAccessNode) child;
 
       // We expect 'value' to be a CollectionData during every iteration.
       if (! (value instanceof CollectionData)) {
-        return UndefinedData.INSTANCE;
-      }
-
-      ExprNode child = node.getChild(i);
-      if (child instanceof DataRefKeyNode) {
-        value = ((CollectionData) value).getSingle(((DataRefKeyNode) child).getKey());
-      } else if (child instanceof DataRefIndexNode) {
-        value = ((SoyListData) value).get(((DataRefIndexNode) child).getIndex());
-      } else if (child instanceof GlobalNode) {
-        throw new UnsupportedOperationException();
-      } else {
-        SoyData key = visit(child);
-        if (key instanceof IntegerData) {
-          value = ((SoyListData) value).get(((IntegerData) key).getValue());
+        if (accessNode.isNullSafe()) {
+          if (value == null || value instanceof UndefinedData || value instanceof NullData) {
+            return NullData.INSTANCE;
+          } else {
+            throw new RenderException(
+                "While evaluating \"" + node.toSourceString() + "\", encountered non-collection" +
+                " just before accessing \"" + accessNode.toSourceString() + "\".");
+          }
         } else {
-          value = ((CollectionData) value).getSingle(key.toString());
+          // This behavior is not ideal, but needed for compatibility with existing code.
+          return UndefinedData.INSTANCE;
+          // TODO: If feasible, find and fix existing instances, then enable this exception.
+          //if (value == null || value instanceof UndefinedData) {
+          //  throw new RenderException(
+          //      "While evaluating \"" + node.toSourceString() + "\", encountered undefined LHS" +
+          //      " just before accessing \"" + accessNode.toSourceString() + "\".");
+          //}
+          //value = UndefinedData.INSTANCE;
+          //continue;
         }
       }
+
+      // Extract either a string key or integer index from the child access node.
+      String key = null;
+      int index = -1;
+      switch (accessNode.getKind()) {
+        case DATA_REF_ACCESS_KEY_NODE:
+          key = ((DataRefAccessKeyNode) accessNode).getKey();
+          break;
+        case DATA_REF_ACCESS_INDEX_NODE:
+          index = ((DataRefAccessIndexNode) accessNode).getIndex();
+          break;
+        case DATA_REF_ACCESS_EXPR_NODE:
+          SoyData keyData = visit(accessNode.getChild(0));
+          if (keyData instanceof IntegerData) {
+            index = ((IntegerData) keyData).getValue();
+          } else {
+            key = keyData.toString();
+          }
+          break;
+        default:
+          throw new AssertionError();
+      }
+
+      // Get the data at the extracted key or index.
+      if (key != null) {
+        value = ((CollectionData) value).getSingle(key);
+      } else {
+        if (! (value instanceof SoyListData)) {
+          throw new RenderException(
+              "While evaluating \"" + node.toSourceString() + "\", encountered non-list" +
+              " just before accessing \"" + accessNode.toSourceString() + "\".");
+        }
+        value = ((SoyListData) value).get(index);
+      }
     }
 
-    if (value != null) {
-      return value;
-    } else {
-      return UndefinedData.INSTANCE;
-    }
+    return (value != null) ? value : UndefinedData.INSTANCE;
   }
 
 
@@ -432,17 +467,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
   @Override protected SoyData visitFunctionNode(FunctionNode node) {
 
     String fnName = node.getFunctionName();
-    int numArgs = node.numChildren();
 
     // Handle nonplugin functions.
     NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
     if (nonpluginFn != null) {
-      // TODO: Pass to check num args at compile time.
-      if (numArgs != nonpluginFn.getNumArgs()) {
-        throw new RenderException(
-            "Function '" + fnName + "' called with the wrong number of arguments" +
-            " (function call \"" + node.toSourceString() + "\").");
-      }
       switch (nonpluginFn) {
         case IS_FIRST:
           return visitIsFirstFunction(node);
@@ -450,8 +478,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
           return visitIsLastFunction(node);
         case INDEX:
           return visitIndexFunction(node);
-        case HAS_DATA:
-          return visitHasDataFunction();
+        case QUOTE_KEYS_IF_JS:
+          return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
         default:
           throw new AssertionError();
       }
@@ -504,7 +532,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
       return fn.compute(args);
     } catch (Exception e) {
       throw new RenderException(
-          "Error while computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage());
+          "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
   }
 
@@ -549,11 +577,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
       throw new RenderException("Failed to evaluate function call " + node.toSourceString() + ".");
     }
     return convertResult(localVarIndex);
-  }
-
-
-  private SoyData visitHasDataFunction() {
-    return convertResult(data != null);
   }
 
 
@@ -625,9 +648,21 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
     SoyData value = null;
 
     if (dataRefNode.isIjDataRef()) {
-      value = ijData.getSingle(firstKey);
+
+      if (ijData != null) {
+        value = ijData.getSingle(firstKey);
+
+      } else {
+        if (dataRefNode.isNullSafeIjDataRef()) {
+          return NullData.INSTANCE;
+        } else {
+          throw new RenderException(
+              "Injected data not provided, yet referenced (" + dataRefNode.toSourceString() + ").");
+        }
+      }
 
     } else {
+
       Boolean isLocalVarDataRef = dataRefNode.isLocalVarDataRef();  // null if unknown
 
       // Retrieve from the environment. Do this when (a) we know it's a local var data ref or (b) we
@@ -646,7 +681,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyData> {
       // Retrieve from the data. Do this when (a) we know it's not a local var data ref or (b) we
       // don't know either way, but we failed to retrieve a nonnull value from the environment.
       if (isLocalVarDataRef == Boolean.FALSE || (isLocalVarDataRef == null && value == null)) {
-        value = data.getSingle(firstKey);
+        if (data != null) {
+          value = data.getSingle(firstKey);
+        }
       }
     }
 

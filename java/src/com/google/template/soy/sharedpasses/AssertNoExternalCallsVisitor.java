@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -35,9 +36,15 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * <p> {@link #exec} should be called on a {@code SoyFileSetNode} or a {@code SoyFileNode}. There is
  * no return value. A {@code SoySyntaxException} is thrown if an error is found.
  *
+ * @author Kai Huang
  */
 public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  /** Log of all found errors. */
+  private StringBuilder errorBuffer;
+
+  /** The last node where an error was found, for error reporting reasons. */
+  private SoyNode mostRecentFailingNode;
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
@@ -48,9 +55,17 @@ public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
     Preconditions.checkArgument(
         soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
 
+    mostRecentFailingNode = null;
+    errorBuffer = new StringBuilder();
     templateRegistry = new TemplateRegistry(soyNode.getNearestAncestor(SoyFileSetNode.class));
 
-    return super.exec(soyNode);
+    super.exec(soyNode);
+
+    if (mostRecentFailingNode != null) {
+      throw SoySyntaxExceptionUtils.createWithNode(errorBuffer.toString(), mostRecentFailingNode);
+    }
+
+    return null;
   }
 
 
@@ -64,9 +79,10 @@ public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
       String currFilePath = node.getNearestAncestor(SoyFileNode.class).getFilePath();
       String currTemplateNameForErrorMsg =
           node.getNearestAncestor(TemplateNode.class).getTemplateNameForUserMsgs();
-      throw new SoySyntaxException(
+      errorBuffer.append(
           "In Soy file " + currFilePath + ", template " + currTemplateNameForErrorMsg +
-          ": Encountered call to undefined template '" + node.getCalleeName() + "'.");
+              ": Encountered call to undefined template '" + node.getCalleeName() + "'.\n");
+      mostRecentFailingNode = node;
     }
 
     // Don't forget to visit content within CallParamContentNodes.

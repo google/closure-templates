@@ -44,6 +44,7 @@ import java.util.Set;
  * Soy function that rounds a number to a specified number of digits before or after the decimal
  * point.
  *
+ * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

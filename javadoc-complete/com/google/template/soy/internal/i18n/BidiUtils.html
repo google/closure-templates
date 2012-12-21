@@ -167,42 +167,6 @@ Utility functions for performing common Bidi tests on strings.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithLtr(java.lang.String)">endsWithLtr</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithLtr(java.lang.String, boolean)"><CODE>endsWithLtr(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithLtr(java.lang.String, boolean)">endsWithLtr</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-            boolean&nbsp;isHtml)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Check whether the exit directionality of a piece of text is LTR, i.e.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithRtl(java.lang.String)">endsWithRtl</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithRtl(java.lang.String, boolean)"><CODE>endsWithRtl(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithRtl(java.lang.String, boolean)">endsWithRtl</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-            boolean&nbsp;isHtml)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Check whether the exit directionality of a piece of text is RTL, i.e.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#estimateDirection(java.lang.String)">estimateDirection</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
 
@@ -218,6 +182,43 @@ Utility functions for performing common Bidi tests on strings.
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#estimateDirection(java.lang.String)"><CODE>estimateDirection(String)</CODE></A>, but can treat <code>str</code> as HTML,
  ignoring HTML tags and escapes that would otherwise be mistaken for LTR text.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getExitDir(java.lang.String)">getExitDir</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getExitDir(java.lang.String, boolean)"><CODE>getExitDir(String, boolean)</CODE></A>, but assumes <code>str</code> is not HTML or
+ HTML-escaped.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getExitDir(java.lang.String, boolean)">getExitDir</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
+           boolean&nbsp;isHtml)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the directionality of the last character with strong directionality in the string, or
+ Dir.UNKNOWN if none was encountered.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getUnicodeDir(java.lang.String)">getUnicodeDir</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getUnicodeDir(java.lang.String, boolean)"><CODE>getUnicodeDir(String, boolean)</CODE></A>, but assumes <code>str</code> is not HTML or
+ HTML-escaped.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getUnicodeDir(java.lang.String, boolean)">getUnicodeDir</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
+              boolean&nbsp;isHtml)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the directionality of a string as defined by the UBA's rules P2 and P3, i.e.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -270,42 +271,6 @@ Utility functions for performing common Bidi tests on strings.
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the directionality of the input language / locale.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithLtr(java.lang.String)">startsWithLtr</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithLtr(java.lang.String, boolean)"><CODE>startsWithLtr(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithLtr(java.lang.String, boolean)">startsWithLtr</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-              boolean&nbsp;isHtml)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns true if the first character with strong directionality is an LTR character.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithRtl(java.lang.String)">startsWithRtl</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithRtl(java.lang.String, boolean)"><CODE>startsWithRtl(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;boolean</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithRtl(java.lang.String, boolean)">startsWithRtl</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-              boolean&nbsp;isHtml)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns true if the first character with strong directionality is an RTL character.</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
@@ -469,97 +434,30 @@ public static boolean <B>hasAnyRtl</B>(<A HREF="http://java.sun.com/javase/6/doc
 </DL>
 <HR>
 
-<A NAME="startsWithLtr(java.lang.String, boolean)"><!-- --></A><H3>
-startsWithLtr</H3>
+<A NAME="getUnicodeDir(java.lang.String, boolean)"><!-- --></A><H3>
+getUnicodeDir</H3>
 <PRE>
-public static boolean <B>startsWithLtr</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-                                    boolean&nbsp;isHtml)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A> <B>getUnicodeDir</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
+                                          boolean&nbsp;isHtml)</PRE>
 <DL>
-<DD>Returns true if the first character with strong directionality is an LTR character.
- LRE/RLE/LRO/RLO are considered to have strong directionality.
+<DD>Returns the directionality of a string as defined by the UBA's rules P2 and P3, i.e. the
+ directionality of its first strong (L, R, or AL) character (with LRE/RLE/LRO/RLO/PDF having no
+ effect). However returns Dir.UNKNOWN if no strong characters were encountered (which P3 says
+ should be treated as LTR).
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check<DD><CODE>isHtml</CODE> - whether str is HTML / HTML-escaped
-<DT><B>Returns:</B><DD>true if LTR directionality is detected</DL>
+<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check<DD><CODE>isHtml</CODE> - whether str is HTML / HTML-escaped</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="startsWithLtr(java.lang.String)"><!-- --></A><H3>
-startsWithLtr</H3>
+<A NAME="getUnicodeDir(java.lang.String)"><!-- --></A><H3>
+getUnicodeDir</H3>
 <PRE>
-public static boolean <B>startsWithLtr</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A> <B>getUnicodeDir</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
 <DL>
-<DD>Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithLtr(java.lang.String, boolean)"><CODE>startsWithLtr(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check
-<DT><B>Returns:</B><DD>true if LTR directionality is detected</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="startsWithRtl(java.lang.String, boolean)"><!-- --></A><H3>
-startsWithRtl</H3>
-<PRE>
-public static boolean <B>startsWithRtl</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-                                    boolean&nbsp;isHtml)</PRE>
-<DL>
-<DD>Returns true if the first character with strong directionality is an RTL character.
- LRE/RLE/LRO/RLO are considered to have strong directionality.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check<DD><CODE>isHtml</CODE> - whether str is HTML / HTML-escaped
-<DT><B>Returns:</B><DD>true if rtl directionality is detected</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="startsWithRtl(java.lang.String)"><!-- --></A><H3>
-startsWithRtl</H3>
-<PRE>
-public static boolean <B>startsWithRtl</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
-<DL>
-<DD>Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#startsWithRtl(java.lang.String, boolean)"><CODE>startsWithRtl(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check
-<DT><B>Returns:</B><DD>true if rtl directionality is detected</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="endsWithLtr(java.lang.String, boolean)"><!-- --></A><H3>
-endsWithLtr</H3>
-<PRE>
-public static boolean <B>endsWithLtr</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-                                  boolean&nbsp;isHtml)</PRE>
-<DL>
-<DD>Check whether the exit directionality of a piece of text is LTR, i.e. if the last
- strongly-directional character in the string is LTR. If the text ends with a balanced
- LRE|RLE|LRO|RLO...PDF sequence, the opening character of that sequence determines the exit
- directionality, e.g. LRE...PDF is considered LTR regardless of what's inside it. The intended
- use is to check whether a logically separate item that starts with a number or an LTR character
- and follows this text inline (not counting any neutral characters in between) would "stick" to
- it in an RTL context, thus being displayed in an incorrect position. An RLM character between
- the two would prevent the sticking in such a case.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check<DD><CODE>isHtml</CODE> - whether str is HTML / HTML-escaped
-<DT><B>Returns:</B><DD>whether LTR exit directionality was detected</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="endsWithLtr(java.lang.String)"><!-- --></A><H3>
-endsWithLtr</H3>
-<PRE>
-public static boolean <B>endsWithLtr</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
-<DL>
-<DD>Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithLtr(java.lang.String, boolean)"><CODE>endsWithLtr(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.
+<DD>Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getUnicodeDir(java.lang.String, boolean)"><CODE>getUnicodeDir(String, boolean)</CODE></A>, but assumes <code>str</code> is not HTML or
+ HTML-escaped.
 <P>
 <DD><DL>
 </DL>
@@ -567,35 +465,36 @@ public static boolean <B>endsWithLtr</B>(<A HREF="http://java.sun.com/javase/6/d
 </DL>
 <HR>
 
-<A NAME="endsWithRtl(java.lang.String, boolean)"><!-- --></A><H3>
-endsWithRtl</H3>
+<A NAME="getExitDir(java.lang.String, boolean)"><!-- --></A><H3>
+getExitDir</H3>
 <PRE>
-public static boolean <B>endsWithRtl</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
-                                  boolean&nbsp;isHtml)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A> <B>getExitDir</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
+                                       boolean&nbsp;isHtml)</PRE>
 <DL>
-<DD>Check whether the exit directionality of a piece of text is RTL, i.e. if the last
- strongly-directional character in the string is RTL. If the text ends with a balanced
- LRE|RLE|LRO|RLO...PDF sequence, the opening character of that sequence determines the exit
- directionality, e.g. LRE...PDF is considered LTR regardless of what's inside it. The intended
- use is to check whether a logically separate item that starts with a number or an RTL character
- and follows this text inline (not counting any neutral characters in between) would "stick" to
- it in an LTR context, thus being displayed in an incorrect position. An LRM character between
- the two would prevent the sticking in such a case.
+<DD>Returns the directionality of the last character with strong directionality in the string, or
+ Dir.UNKNOWN if none was encountered. For efficiency, actually scans backwards from the end of
+ the string. Treats a (non-BN) character between an LRE/RLE/LRO/RLO and its matching PDF as a
+ strong character, LTR after LRE/LRO, and RTL after RLE/RLO. The results are undefined for a
+ string containing unbalanced LRE/RLE/LRO/RLO/PDF characters. The intended use is to check
+ whether a logically separate item that starts with a number or a character of the string's exit
+ directionality and follows this string inline (not counting any neutral characters in between)
+ would "stick" to it in an opposite-directionality context, thus being displayed in an incorrect
+ position. An LRM or RLM character (the one of the context's directionality) between the two
+ will prevent such sticking.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check<DD><CODE>isHtml</CODE> - whether str is HTML / HTML-escaped
-<DT><B>Returns:</B><DD>whether RTL exit directionality was detected</DL>
+<DT><B>Parameters:</B><DD><CODE>str</CODE> - the string to check<DD><CODE>isHtml</CODE> - whether str is HTML / HTML-escaped</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="endsWithRtl(java.lang.String)"><!-- --></A><H3>
-endsWithRtl</H3>
+<A NAME="getExitDir(java.lang.String)"><!-- --></A><H3>
+getExitDir</H3>
 <PRE>
-public static boolean <B>endsWithRtl</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A> <B>getExitDir</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str)</PRE>
 <DL>
-<DD>Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#endsWithRtl(java.lang.String, boolean)"><CODE>endsWithRtl(String, boolean)</CODE></A>, but assumes
- <code>str</code> is not HTML / HTML-escaped.
+<DD>Like <A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.html#getExitDir(java.lang.String, boolean)"><CODE>getExitDir(String, boolean)</CODE></A>, but assumes <code>str</code> is not HTML or
+ HTML-escaped.
 <P>
 <DD><DL>
 </DL>

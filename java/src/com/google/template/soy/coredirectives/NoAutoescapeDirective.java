@@ -24,6 +24,7 @@ import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
 
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Set;
 /**
  * A directive that turns off autoescape for this 'print' tag (if it's on for the template).
  *
+ * @author Kai Huang
  */
 @Singleton
 public class NoAutoescapeDirective extends SoyAbstractTofuPrintDirective
@@ -61,17 +63,19 @@ public class NoAutoescapeDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
-    return value.toString();
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+    return Sanitizers.filterNoAutoescape(value);
   }
 
 
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return value;
+    return new JsExpr("soy.$$filterNoAutoescape(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
 
   @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
+    // TODO: Consider adding noAutoescape protection against
+    // SanitizedContent.ContentKind.TEXT in the Java source implementation.
     return value;
   }
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.Joiner;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoyFileSupplier;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -195,7 +196,8 @@ public class SourceLocationTest extends TestCase {
     // JavaCC is pretty good about never using null as a token value.
     try {
       (new SoyFileSetParser(
-          SoyFileSupplier.Factory.create("{template t}\nHello, World!\n", "borken.soy")))
+          SoyFileSupplier.Factory.create(
+              "{template t}\nHello, World!\n", SoyFileKind.SRC, "borken.soy")))
           .setDoRunInitialParsingPasses(false)
           .parse();
     } catch (SoySyntaxException ex) {
@@ -210,7 +212,8 @@ public class SourceLocationTest extends TestCase {
       throws Exception {
 
     SoyFileSetNode soyTree =
-        (new SoyFileSetParser(SoyFileSupplier.Factory.create(soySourceCode, soySourcePath)))
+        (new SoyFileSetParser(SoyFileSupplier.Factory.create(
+            soySourceCode, SoyFileKind.SRC, soySourcePath)))
             .setDoRunInitialParsingPasses(false)
             .parse();
 
@@ -245,7 +248,7 @@ public class SourceLocationTest extends TestCase {
         sb.append(' ');
         ++pos;
       }
-      sb.append(" @ ").append(node.getLocation()).append('\n');
+      sb.append(" @ ").append(node.getSourceLocation()).append('\n');
 
       if (node instanceof ParentSoyNode<?>) {
         ++depth;

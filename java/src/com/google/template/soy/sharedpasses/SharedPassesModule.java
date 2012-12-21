@@ -21,8 +21,6 @@ import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.opti.OptiModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
-import com.google.template.soy.sharedpasses.render.RenderVisitor.RenderVisitorFactory;
-import com.google.template.soy.sharedpasses.render.RenderVisitorFactoryImpl;
 
 
 /**
@@ -30,6 +28,7 @@ import com.google.template.soy.sharedpasses.render.RenderVisitorFactoryImpl;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class SharedPassesModule extends AbstractModule {
 
@@ -46,7 +45,6 @@ public class SharedPassesModule extends AbstractModule {
 
     // Bind factories.
     bind(EvalVisitorFactory.class).to(EvalVisitorFactoryImpl.class);
-    bind(RenderVisitorFactory.class).to(RenderVisitorFactoryImpl.class);
   }
 
 

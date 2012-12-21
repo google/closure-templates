@@ -102,6 +102,8 @@ Class SoyFileSupplier.Factory</H2>
 
 <P>
 Container for factory methods for <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base"><CODE>SoyFileSupplier</CODE></A>s.
+
+ <p> Important: Do not use outside of Soy code (treat as superpackage-private).
 <P>
 
 <P>
@@ -120,7 +122,8 @@ Container for factory methods for <A HREF="../../../../../com/google/template/so
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.lang.CharSequence, java.lang.String)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
+       <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
 
 <BR>
@@ -130,7 +133,8 @@ Container for factory methods for <A HREF="../../../../../com/google/template/so
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.io.File)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.io.File, com.google.template.soy.base.SoyFileKind)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
+       <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a new <code>SoyFileSupplier</code> given a <code>File</code>.</TD>
@@ -138,7 +142,8 @@ Container for factory methods for <A HREF="../../../../../com/google/template/so
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(com.google.common.io.InputSupplier, java.lang.String)">create</A></B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)">create</A></B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
+       <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
 
 <BR>
@@ -148,7 +153,8 @@ Container for factory methods for <A HREF="../../../../../com/google/template/so
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl)</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, com.google.template.soy.base.SoyFileKind)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+       <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a new <code>SoyFileSupplier</code> given a resource <code>URL</code>.</TD>
@@ -156,7 +162,8 @@ Container for factory methods for <A HREF="../../../../../com/google/template/so
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, java.lang.String)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)">create</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+       <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
 
 <BR>
@@ -186,77 +193,82 @@ Container for factory methods for <A HREF="../../../../../com/google/template/so
 </TR>
 </TABLE>
 
-<A NAME="create(com.google.common.io.InputSupplier, java.lang.String)"><!-- --></A><H3>
+<A NAME="create(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
 create</H3>
 <PRE>
 public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
+                                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
 <DL>
 <DD>Creates a new <code>SoyFileSupplier</code> given an <code>InputSupplier</code> for the file content,
  as well as the desired file path for messages.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>contentSupplier</CODE> - Supplier of a Reader for the Soy file content.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).</DL>
+<DT><B>Parameters:</B><DD><CODE>contentSupplier</CODE> - Supplier of a Reader for the Soy file content.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="create(java.io.File)"><!-- --></A><H3>
+<A NAME="create(java.io.File, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
 create</H3>
 <PRE>
-public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile)</PRE>
+public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
+                                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
 <DL>
 <DD>Creates a new <code>SoyFileSupplier</code> given a <code>File</code>.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.</DL>
+<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="create(java.net.URL, java.lang.String)"><!-- --></A><H3>
+<A NAME="create(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
 create</H3>
 <PRE>
 public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+                                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
 <DL>
 <DD>Creates a new <code>SoyFileSupplier</code> given a resource <code>URL</code>, as well as the desired
  file path for messages.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The URL of the Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).</DL>
+<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The URL of the Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="create(java.net.URL)"><!-- --></A><H3>
+<A NAME="create(java.net.URL, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
 create</H3>
 <PRE>
-public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl)</PRE>
+public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
+                                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
 <DL>
 <DD>Creates a new <code>SoyFileSupplier</code> given a resource <code>URL</code>.
 
  <p> Important: This function assumes that the desired file path is returned by
  <code>inputFileUrl.toString()</code>. If this is not the case, please use
- <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, java.lang.String)"><CODE>create(URL, String)</CODE></A> instead.
+ <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><CODE>create(java.net.URL, SoyFileKind, String)</CODE></A> instead.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The URL of the Soy file.<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, java.lang.String)"><CODE>create(URL, String)</CODE></A></DL>
+<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The URL of the Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html#create(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><CODE>create(java.net.URL, SoyFileKind, String)</CODE></A></DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="create(java.lang.CharSequence, java.lang.String)"><!-- --></A><H3>
+<A NAME="create(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
 create</H3>
 <PRE>
 public static <A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base">SoyFileSupplier</A> <B>create</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
+                                     <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
 <DL>
 <DD>Creates a new <code>SoyFileSupplier</code> given the file content provided as a string, as well
  as the desired file path for messages.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>content</CODE> - The Soy file content.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).</DL>
+<DT><B>Parameters:</B><DD><CODE>content</CODE> - The Soy file content.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

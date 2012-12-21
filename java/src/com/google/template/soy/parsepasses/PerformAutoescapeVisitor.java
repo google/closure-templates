@@ -19,17 +19,17 @@ package com.google.template.soy.parsepasses;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Map;
@@ -44,6 +44,7 @@ import java.util.Map;
  * <p> {@link #exec} should be called on a full parse tree. The directives on 'print' nodes may be
  * modified. There is no return value.
  *
+ * @author Kai Huang
  */
 public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -91,13 +92,18 @@ public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
     for (PrintDirectiveNode directiveNode : Lists.newArrayList(node.getChildren()) /*copy*/) {
       SoyPrintDirective directive = soyDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
-        throw new SoySyntaxException(
+        throw SoySyntaxExceptionUtils.createWithNode(
             "Failed to find SoyPrintDirective with name '" + directiveNode.getName() + "'" +
-            " (tag " + node.toSourceString() +")");
+                " (tag " + node.toSourceString() + ")",
+            directiveNode);
       }
       if (directive.shouldCancelAutoescape()) {
         shouldCancelAutoescape = true;
-        if (directive instanceof NoAutoescapeDirective) {
+        if (!currTemplateShouldAutoescape && directive instanceof NoAutoescapeDirective) {
+          // Remove reundant noAutoescape in autoescape="false" templates; however, keep it for
+          // other templates. This ensures filterNoAutoescape gets called for all (even
+          // non-contextually) autoescaped templates, as a safeguard against tainted
+          // ContentKind.TEXT from ending up noAutoescaped.
           node.removeChild(directiveNode);
         }
       }

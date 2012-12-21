@@ -42,6 +42,8 @@ import java.util.Set;
  * is only applied when the output text's bidi directionality is different from the bidi global
  * directionality.
  *
+ * @author Kai Huang
+ * @author Aharon Lanin
  */
 @Singleton
 public class BidiSpanWrapDirective extends SoyAbstractTofuPrintDirective
@@ -76,10 +78,12 @@ public class BidiSpanWrapDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
     boolean isHtml = true;
-    return SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
+    String html = SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
         .spanWrap(value.toString(), isHtml);
+    // TODO(user): convert to HTML SanitizedContent when isHtml.
+    return SoyData.createFromExistingData(html);
   }
 
 

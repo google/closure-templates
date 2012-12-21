@@ -24,10 +24,13 @@ import com.google.template.soy.base.IncrementingIdGenerator;
 import com.google.template.soy.base.SoyFileSupplier;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.parsepasses.CheckCallsVisitor;
 import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.CheckOverridesVisitor;
-import com.google.template.soy.parsepasses.PrependNamespacesToCalleeNamesVisitor;
+import com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor;
+import com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor;
 import com.google.template.soy.parsepasses.RewriteRemainderNodesVisitor;
+import com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor;
 import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
 import com.google.template.soy.sharedpasses.AssertSyntaxVersionV2Visitor;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
@@ -45,6 +48,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class SoyFileSetParser {
 
@@ -163,16 +167,18 @@ public class SoyFileSetParser {
     ImmutableList.Builder<SoyFileSupplier.Version> versions = ImmutableList.builder();
 
     for (SoyFileSupplier soyFileSupplier : soyFileSuppliers) {
-      Pair<SoyFileNode, SoyFileSupplier.Version> fileAndVersion = parseSoyFileHelper(
-          soyFileSupplier, nodeIdGen, soyFileSupplier.getPath());
+      Pair<SoyFileNode, SoyFileSupplier.Version> fileAndVersion =
+          parseSoyFileHelper(soyFileSupplier, nodeIdGen);
       soyTree.addChild(fileAndVersion.first);
       versions.add(fileAndVersion.second);
     }
 
     // Run passes that are considered part of initial parsing.
     if (doRunInitialParsingPasses) {
+      (new ReplaceHasDataFunctionVisitor()).exec(soyTree);
+      (new RewriteNullCoalescingOpVisitor()).exec(soyTree);
       (new RewriteRemainderNodesVisitor()).exec(soyTree);
-      (new PrependNamespacesToCalleeNamesVisitor()).exec(soyTree);
+      (new SetFullCalleeNamesVisitor()).exec(soyTree);
 
       // Run passes that check the tree.
       if (doRunCheckingPasses) {
@@ -193,8 +199,10 @@ public class SoyFileSetParser {
    * @throws SoySyntaxException If there is an error reading the file or a syntax error is found.
    */
   private static Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
-      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, String sourcePath)
+      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen)
       throws SoySyntaxException {
+
+    String filePath = soyFileSupplier.getFilePath();
 
     Reader soyFileReader;
     SoyFileSupplier.Version version;
@@ -203,33 +211,35 @@ public class SoyFileSetParser {
       soyFileReader = readerAndVersion.first;
       version = readerAndVersion.second;
     } catch (IOException ioe) {
-      throw new SoySyntaxException(
-          "Error opening Soy file " + soyFileSupplier.getPath() + ": " + ioe);
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Error opening Soy file " + filePath + ": " + ioe);
     }
 
     try {
       SoyFileNode soyFile =
-          (new SoyFileParser(soyFileReader, nodeIdGen, sourcePath)).parseSoyFile();
-      soyFile.setFilePath(soyFileSupplier.getPath());
+          (new SoyFileParser(soyFileReader, soyFileSupplier.getSoyFileKind(), filePath, nodeIdGen))
+              .parseSoyFile();
       if (soyFileSupplier.hasChangedSince(version)) {
-        throw new SoySyntaxException("Version skew in Soy file " + soyFileSupplier.getPath());
+        throw SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath);
       }
       return Pair.of(soyFile, version);
 
     } catch (TokenMgrError tme) {
-      throw (new SoySyntaxException(tme)).setFilePath(soyFileSupplier.getPath());
+      throw SoySyntaxException.createCausedWithMetaInfo(
+          null, tme, null, soyFileSupplier.getFilePath(), null);
     } catch (ParseException pe) {
-      throw (new SoySyntaxException(pe)).setFilePath(soyFileSupplier.getPath());
+      throw SoySyntaxException.createCausedWithMetaInfo(
+          null, pe, null, soyFileSupplier.getFilePath(), null);
     } catch (SoySyntaxException sse) {
-      throw sse.setFilePath(soyFileSupplier.getPath());
+      throw sse.associateMetaInfo(null, soyFileSupplier.getFilePath(), null);
 
     } finally {
       // Close the Reader.
       try {
         soyFileReader.close();
       } catch (IOException ioe) {
-        throw new SoySyntaxException(
-            "Error closing Soy file " + soyFileSupplier.getPath() + ": " + ioe);
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Error closing Soy file " + soyFileSupplier.getFilePath() + ": " + ioe);
       }
     }
   }
@@ -251,6 +261,7 @@ public class SoyFileSetParser {
       (new CheckOverridesVisitor()).exec(soyTree);
     }
     (new CheckDelegatesVisitor()).exec(soyTree);
+    (new CheckCallsVisitor()).exec(soyTree);
   }
 
 }

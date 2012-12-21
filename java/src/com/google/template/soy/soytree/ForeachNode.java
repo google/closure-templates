@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -38,6 +36,7 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class ForeachNode extends AbstractParentCommandNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode, ExprHolderNode {
@@ -66,24 +65,16 @@ public class ForeachNode extends AbstractParentCommandNode<SoyNode>
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      throw new SoySyntaxException("Invalid 'foreach' command text \"" + commandText + "\".");
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Invalid 'foreach' command text \"" + commandText + "\".");
     }
 
-    try {
-      varName = (new ExpressionParser(matcher.group(1))).parseVariable().getChild(0).getName();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText("variable name", tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText("variable name", pe);
-    }
+    varName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(
+        matcher.group(1),
+        "Invalid variable name in 'foreach' command text \"" + commandText + "\".");
 
-    try {
-      expr = (new ExpressionParser(matcher.group(2))).parseExpression();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText("expression", tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText("expression", pe);
-    }
+    expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+        matcher.group(2), "Invalid expression in 'foreach' command text \"" + commandText + "\".");
   }
 
 
@@ -95,20 +86,6 @@ public class ForeachNode extends AbstractParentCommandNode<SoyNode>
     super(orig);
     this.varName = orig.varName;
     this.expr = orig.expr.clone();
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param desc Description of the invalid item.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidCommandText(
-      String desc, Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid " + desc + " in 'foreach' command text \"" + getCommandText() + "\".", cause);
   }
 
 

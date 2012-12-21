@@ -20,6 +20,7 @@ package com.google.template.soy.tofu;
 /**
  * Compilation options for the Tofu backend.
  *
+ * @author Kai Huang
  */
 public class SoyTofuOptions implements Cloneable {
 

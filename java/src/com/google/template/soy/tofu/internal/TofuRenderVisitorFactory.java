@@ -21,8 +21,6 @@ import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
-import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.sharedpasses.render.RenderVisitor.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 
@@ -37,9 +35,11 @@ import javax.inject.Singleton;
 /**
  * Implementation of RenderVisitorFactory for Tofu backend.
  *
+ * @author Mark Knichel
+ * @author Kai Huang
  */
 @Singleton
-class TofuRenderVisitorFactory implements RenderVisitorFactory {
+class TofuRenderVisitorFactory {
 
 
   /** Map of all SoyTofuPrintDirectives (name to directive). */
@@ -58,16 +58,30 @@ class TofuRenderVisitorFactory implements RenderVisitorFactory {
   }
 
 
-  @Override
-  public RenderVisitor create(
-      Appendable outputSb, TemplateRegistry templateRegistry,
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData,
-      @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
+  /**
+   * Creates a TofuRenderVisitor.
+   *
+   * @param outputBuf The Appendable to append the output to.
+   * @param templateRegistry A registry of all templates.
+   * @param data The current template data.
+   * @param ijData The current injected data.
+   * @param env The current environment, or null if this is the initial call.
+   * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
+   *     when known to be irrelevant, i.e. when not using delegates feature.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the
+   *     Soy source.
+   * @param cssRenamingMap The CSS renaming map, or null if not applicable.
+   * @return The newly created TofuRenderVisitor instance.
+   */
+  public TofuRenderVisitor create(
+      Appendable outputBuf, TemplateRegistry templateRegistry, SoyMapData data,
+      @Nullable SoyMapData ijData, @Nullable Deque<Map<String, SoyData>> env,
+      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new TofuRenderVisitor(
-        soyTofuDirectivesMap, tofuEvalVisitorFactory, this, outputSb, templateRegistry, data,
-        ijData, env, activeDelPackageNames, msgBundle, cssRenamingMap);
+        soyTofuDirectivesMap, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData,
+        env, activeDelPackageNames, msgBundle, cssRenamingMap);
   }
 
 }

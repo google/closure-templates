@@ -24,6 +24,7 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for IdDirective.
  *
+ * @author Kai Huang
  */
 public class IdDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

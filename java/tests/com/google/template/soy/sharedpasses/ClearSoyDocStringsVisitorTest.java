@@ -26,6 +26,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ClearSoyDocStringsVisitor.
  *
+ * @author Kai Huang
  */
 public class ClearSoyDocStringsVisitorTest extends TestCase {
 

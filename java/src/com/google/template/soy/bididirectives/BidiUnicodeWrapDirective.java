@@ -41,6 +41,8 @@ import java.util.Set;
  * is only applied when the output text's bidi directionality is different from the bidi global
  * directionality.
  *
+ * @author Kai Huang
+ * @author Aharon Lanin
  */
 @Singleton
 public class BidiUnicodeWrapDirective extends SoyAbstractTofuPrintDirective
@@ -75,9 +77,10 @@ public class BidiUnicodeWrapDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
-    return SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+    String str = SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
         .unicodeWrap(value.toString(), true);
+    return SoyData.createFromExistingData(str);
   }
 
 

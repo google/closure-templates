@@ -25,10 +25,12 @@ import com.google.common.base.Objects;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * <p> Note that even though the precedence numbers we use are for Soy, the precedence ordering of
+ * <p> Note that even though the precedence numbers we use are for Soy (see
+ * {@link com.google.template.soy.exprtree.Operator#getPrecedence}), the precedence ordering of
  * the Soy expression operators matches that of JS (as well as Java), so the precedence numbers are
  * correct when used for generating JS code as well.
  *
+ * @author Kai Huang
  */
 public class JsExpr {
 

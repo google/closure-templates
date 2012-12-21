@@ -23,12 +23,13 @@ import java.util.List;
 
 
 /**
+ * @author Kai Huang
  */
 public abstract class SoyAbstractTofuPrintDirective
     implements SoyJavaRuntimePrintDirective, SoyTofuPrintDirective {
 
 
-  @Override public String applyForTofu(SoyData value, List<SoyData> args) {
+  @Override public SoyData applyForTofu(SoyData value, List<SoyData> args) {
     return apply(value, args);
   }
 

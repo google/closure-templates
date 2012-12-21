@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
  *
  * <p> Adapted from Soy V1 code.
  *
+ * @author Kai Huang
  */
 class V1JsExprTranslator {
 
@@ -86,8 +87,8 @@ class V1JsExprTranslator {
    * @return The resulting expression code after the necessary substitutions.
    * @throws SoySyntaxException If the given expression has an error.
    */
-  public static JsExpr translateToJsExpr(String soyExpr,
-                                         Deque<Map<String, JsExpr>> localVarTranslations)
+  public static JsExpr translateToJsExpr(
+      String soyExpr, Deque<Map<String, JsExpr>> localVarTranslations)
       throws SoySyntaxException {
 
     soyExpr = CharMatcher.WHITESPACE.collapseFrom(soyExpr, ' ');
@@ -142,13 +143,13 @@ class V1JsExprTranslator {
    * @return Generated translation for the variable or data reference.
    * @throws SoySyntaxException If the {@code varOrRefText} is malformed.
    */
-  private static String translateVarOrRef(String varOrRefText,
-                                          Deque<Map<String, JsExpr>> localVarTranslations)
+  private static String translateVarOrRef(
+      String varOrRefText, Deque<Map<String, JsExpr>> localVarTranslations)
       throws SoySyntaxException {
 
     Matcher matcher = VAR_OR_REF.matcher(varOrRefText);
     if (!matcher.matches()) {
-      throw new SoySyntaxException(
+      throw SoySyntaxException.createWithoutMetaInfo(
           "Variable or data reference \"" + varOrRefText + "\" is malformed.");
     }
 
@@ -211,13 +212,14 @@ class V1JsExprTranslator {
    * @return The translated string
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  private static String translateFunction(String functionText,
-                                          Deque<Map<String, JsExpr>> localVarTranslations)
+  private static String translateFunction(
+      String functionText, Deque<Map<String, JsExpr>> localVarTranslations)
       throws SoySyntaxException {
 
     Matcher matcher = SOY_FUNCTION.matcher(functionText);
     if (!matcher.matches()) {
-      throw new SoySyntaxException("Soy function call \"" + functionText + "\" is malformed.");
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Soy function call \"" + functionText + "\" is malformed.");
     }
 
     String funcName = matcher.group(1);
@@ -298,8 +300,8 @@ class V1JsExprTranslator {
    *     variables (and foreach-loop special functions) current in scope.
    * @return The translated string for the given variable, or null if not found.
    */
-  private static String getLocalVarTranslation(String ident,
-                                               Deque<Map<String, JsExpr>> localVarTranslations) {
+  private static String getLocalVarTranslation(
+      String ident, Deque<Map<String, JsExpr>> localVarTranslations) {
 
     for (Map<String, JsExpr> localVarTranslationsFrame : localVarTranslations) {
       JsExpr translation = localVarTranslationsFrame.get(ident);

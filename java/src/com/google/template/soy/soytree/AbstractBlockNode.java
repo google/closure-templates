@@ -25,6 +25,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class AbstractBlockNode extends AbstractParentSoyNode<StandaloneNode>
     implements BlockNode {

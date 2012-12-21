@@ -209,10 +209,10 @@ Definitions of escaping functions that behave consistently in JavaScript and Jav
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;class</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.FilterHtmlAttribute.html" title="class in com.google.template.soy.shared.restricted">EscapingConventions.FilterHtmlAttribute</A></B></CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.FilterHtmlAttributes.html" title="class in com.google.template.soy.shared.restricted">EscapingConventions.FilterHtmlAttributes</A></B></CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Implements the <code>|filterHtmlAttribute</code> directive which filters out identifiers that
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Implements the <code>|filterHtmlAttributes</code> directive which filters out identifiers that
  can't appear as part of an HTML tag or attribute name.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
@@ -377,8 +377,10 @@ public static final <A HREF="http://java.sun.com/javase/6/docs/api/java/util/reg
  will have trouble with complex doctypes that define their own entities) and does a decent job
  with simple HTML comments.
  <p>
- This should be food enough since HTML sanitizers do not typically output comments, or CDATA,
+ This should be good enough since HTML sanitizers do not typically output comments, or CDATA,
  or RCDATA content.
+ <p>
+ The tag name, if any is in group 1.
 <P>
 <DL>
 </DL>

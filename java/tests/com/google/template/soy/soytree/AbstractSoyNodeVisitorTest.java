@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -26,6 +27,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for AbstractSoyNodeVisitor.
  *
+ * @author Kai Huang
  */
 public class AbstractSoyNodeVisitorTest extends TestCase {
 
@@ -34,7 +36,7 @@ public class AbstractSoyNodeVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = new SoyFileSetNode(0, null);
 
-    SoyFileNode soyFile = new SoyFileNode(0, null, "boo");
+    SoyFileNode soyFile = new SoyFileNode(0, SoyFileKind.SRC, null, "boo", null);
     soyTree.addChild(soyFile);
 
     SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");

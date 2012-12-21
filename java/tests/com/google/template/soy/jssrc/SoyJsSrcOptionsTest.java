@@ -24,6 +24,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SoyJsSrcOptions.
  *
+ * @author Steven Saviano
  */
 public class SoyJsSrcOptionsTest extends TestCase {
 

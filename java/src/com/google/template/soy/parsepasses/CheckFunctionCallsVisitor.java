@@ -18,13 +18,13 @@ package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -33,6 +33,7 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,7 @@ import java.util.Set;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Mike Samuel
  */
 public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -88,12 +90,8 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
         try {
           (new CheckFunctionCallsExprVisitor((ExprHolderNode) node)).exec(exprUnion.getExpr());
         } catch (SoySyntaxException ex) {
-          // Add line number info based on node.
-          SourceLocation location = node.getLocation();
-          if (location.isKnown() && !ex.getSourceLocation().isKnown()) {
-            ex.setSourceLocation(location);
-          }
-          throw ex;
+          // Add meta info based on node.
+          throw SoySyntaxExceptionUtils.associateNode(ex, node);
         }
       }
     }
@@ -138,11 +136,12 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
       NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
       if (nonpluginFn != null) {
+        // --- Check nonplugin function. ---
         // Check arity.
         if (numArgs != nonpluginFn.getNumArgs()) {
-          throw new SoySyntaxException(
+          throw SoySyntaxException.createWithoutMetaInfo(
               "Function '" + fnName + "' called with the wrong number of arguments" +
-              " (function call \"" + node.toSourceString() + "\").");
+                  " (function call \"" + node.toSourceString() + "\").");
         }
         // Check argument types.
         switch (nonpluginFn) {
@@ -150,29 +149,35 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
           case IS_FIRST:
           case IS_LAST:
             requireLoopVariableInScope(node, node.getChild(0));
-            return;
-          case HAS_DATA:
-            // No arguments to check.
-            return;
+            break;
+          case QUOTE_KEYS_IF_JS:
+            if (! (node.getChild(0) instanceof MapLiteralNode)) {
+              throw SoySyntaxException.createWithoutMetaInfo(
+                  "Function quoteKeysIfJs() must have a map literal as its arg (encountered \"" +
+                      node.toSourceString() + "\").");
+            }
+            break;
+          default:
+            throw new AssertionError("Unrecognized nonplugin fn " + nonpluginFn);
         }
-        throw new AssertionError("Unrecognized nonplugin fn " + nonpluginFn);
+
       } else {
-        // Check pure functions.
+        // --- Check plugin function. ---
         SoyFunction signature = soyFunctionsByName.get(fnName);
         if (signature != null) {
           Set<Integer> arities = signature.getValidArgsSizes();
           // Check arity.
           if (!arities.contains(numArgs)) {
-            throw new SoySyntaxException(
+            throw SoySyntaxException.createWithoutMetaInfo(
                 "Function '" + fnName + "' called with the wrong number of arguments" +
-                " (function call \"" + node.toSourceString() + "\").");
+                    " (function call \"" + node.toSourceString() + "\").");
           }
         } else if (!allowExternallyDefinedFunctions) {
           // In version 2 and later, all functions must be available as SoyFunctions
           // at compile time.
-          throw new SoySyntaxException(
-              "Unrecognized function '" + fnName + "'" +
-              " (function call \"" + node.toSourceString() + "\").");
+          throw SoySyntaxException.createWithoutMetaInfo(
+              "Unrecognized function '" + fnName + "' (encountered function call \"" +
+                  node.toSourceString() + "\").");
         }
       }
 
@@ -186,9 +191,9 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
      */
     private void requireLoopVariableInScope(FunctionNode fn, ExprNode loopVariable) {
       if (!isLoopVariableInScope(loopVariable)) {
-        throw new SoySyntaxException(
-            "Error in function call \"" + fn.toSourceString() +
-            "\".  It takes a foreach loop variable.");
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Function '" + fn.getFunctionName() + "' must have a foreach loop variable as its" +
+                " argument (encountered \"" + fn.toSourceString() + "\").");
       }
     }
 
@@ -201,7 +206,7 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
       if (loopVariableRef.isIjDataRef()) {
         return false;
       }
-      if (loopVariableRef.numChildren() != 1) {
+      if (loopVariableRef.numChildren() != 0) {
         return false;
       }
       String loopVariableName = loopVariableRef.getFirstKey();

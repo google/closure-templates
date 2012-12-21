@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyData;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
+ * @author Kai Huang
  */
 public abstract class PrimitiveData extends SoyData {
 

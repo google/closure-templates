@@ -18,13 +18,14 @@ package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-
 
 /**
  * Unit tests for EscapeHtmlDirective.
  *
+ * @author Kai Huang
  */
 public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
@@ -37,15 +38,23 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput(
         "&lt;script&gt;alert(&#39;boo&#39;);&lt;/script&gt;",
         "<script>alert('boo');</script>", escapeHtmlDirective);
+    SanitizedContent fooTagHtml =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("<foo>", SanitizedContent.ContentKind.HTML);
     assertTofuOutput(
-        "<foo>",
+        fooTagHtml,
         // Sanitized HTML is not escaped.
-        new SanitizedContent("<foo>", SanitizedContent.ContentKind.HTML),
+        fooTagHtml,
         escapeHtmlDirective);
     assertTofuOutput(
         "&lt;foo&gt;",
         // But JS_STR_CHARS are.
-        new SanitizedContent("<foo>", SanitizedContent.ContentKind.JS_STR_CHARS),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "<foo>", SanitizedContent.ContentKind.JS_STR_CHARS),
+        escapeHtmlDirective);
+    assertTofuOutput(
+        "&lt;foo&gt;",
+        // But CSS is.
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("<foo>", SanitizedContent.ContentKind.CSS),
         escapeHtmlDirective);
   }
 

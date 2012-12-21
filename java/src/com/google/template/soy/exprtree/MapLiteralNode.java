@@ -24,6 +24,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class MapLiteralNode extends AbstractParentExprNode {
 
@@ -57,7 +58,7 @@ public class MapLiteralNode extends AbstractParentExprNode {
     }
 
     StringBuilder sourceSb = new StringBuilder();
-    sourceSb.append("[");
+    sourceSb.append('[');
 
     for (int i = 0, n = numChildren(); i < n; i += 2) {
       if (i != 0) {
@@ -67,7 +68,7 @@ public class MapLiteralNode extends AbstractParentExprNode {
               .append(getChild(i + 1).toSourceString());
     }
 
-    sourceSb.append("]");
+    sourceSb.append(']');
     return sourceSb.toString();
   }
 

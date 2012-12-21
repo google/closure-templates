@@ -21,7 +21,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprtree.DataRefKeyNode;
+import com.google.template.soy.exprtree.DataRefAccessKeyNode;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -42,6 +42,7 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public abstract class AbstractMsgNode extends AbstractBlockCommandNode
     implements StandaloneNode, MsgBlockNode {
@@ -173,6 +174,13 @@ public abstract class AbstractMsgNode extends AbstractBlockCommandNode
   }
 
 
+  /** Returns whether this is a plural or select message. */
+  public boolean isPlrselMsg() {
+    return getChildren().size() == 1 &&
+        (getChild(0) instanceof MsgPluralNode || getChild(0) instanceof MsgSelectNode);
+  }
+
+
   /**
    * Gets the representative placeholder node for a given placeholder name.
    * @param placeholderName The placeholder name.
@@ -278,6 +286,7 @@ public abstract class AbstractMsgNode extends AbstractBlockCommandNode
    *     with a different source string.  If the source strings are the same,
    *     the placeholder names also will be the same.
    */
+  @SuppressWarnings("SuspiciousMethodCalls")
   protected void genPhNamesAndSelectPluralVarsHelper() {
 
     // ------ Step 1: Determine representative nodes and build preliminary map ------
@@ -314,10 +323,10 @@ public abstract class AbstractMsgNode extends AbstractBlockCommandNode
       String baseName;
       if (node instanceof MsgSelectNode)  {
         addGrandchildrenToQueue(traversalQueue, (MsgSelectNode) node);
-        baseName = getBaseVarNameFromExpr(((MsgSelectNode) node).getExpr(), "STATUS");
+        baseName = genBaseNameFromExpr(((MsgSelectNode) node).getExpr(), "STATUS");
       } else if (node instanceof MsgPluralNode) {
         addGrandchildrenToQueue(traversalQueue, (MsgPluralNode) node);
-        baseName = getBaseVarNameFromExpr(((MsgPluralNode) node).getExpr(), "NUM");
+        baseName = genBaseNameFromExpr(((MsgPluralNode) node).getExpr(), "NUM");
       } else if (node instanceof MsgPlaceholderNode) {
         baseName = ((MsgPlaceholderNode) node).genBasePlaceholderName();
       } else {
@@ -469,49 +478,60 @@ public abstract class AbstractMsgNode extends AbstractBlockCommandNode
   }
 
 
+  @Override public BlockNode getParent() {
+    return (BlockNode) super.getParent();
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Static helpers that other nodes can use.
+
+
   /**
-   * Helper function to get the base variable name from an expression.
-   * The root node has exactly one child.  This function grabs the last child of that child
-   * (i.e., the leaf expression), and use it as the variable name.
-   * If the leaf node doesn't represent a data expression, use the default value.
+   * Helper function to get the base placeholder (or plural/select var) name from an expression.
+   *
+   * If the expression is a data ref or global, then the last key (if any) is used as the base
+   * placeholder name. Otherwise, the fallback name is used.
+   *
    * For example,
    *   $foo -> FOO
-   *   $foo.0 -> defaultKey
-   *   $foo[0] -> defaultKey
+   *   $foo.0 -> fallback
+   *   $foo[0] -> fallback
    *   $foo.0.bar -> BAR
    *   $fooBar -> FOO_BAR
    *   $foo_bar -> FOO_BAR
    *   $foo.barBaz -> BAR_BAZ
    *   foo.BAR_BAZ -> BAR_BAZ
-   *   min($foo, 4) -> defaultKey
+   *   min($foo, 4) -> fallback
+   *
    * @param exprRoot The root node for an expression.
-   * @param fallbackBaseName The default value to be used if the leaf node is not a data expression.
-   * @return The base variable name.
+   * @param fallbackBaseName The fallback base name.
+   * @return The base placeholder (or plural/select var) name for the given expression.
    */
-  public static String getBaseVarNameFromExpr(
-      ExprRootNode<?> exprRoot, String fallbackBaseName) {
+  static String genBaseNameFromExpr(ExprRootNode<?> exprRoot, String fallbackBaseName) {
 
-    ExprNode expr = exprRoot.getChild(0);
+    ExprNode exprNode = exprRoot.getChild(0);
 
-    if (expr instanceof DataRefNode) {
-      DataRefNode dataRefNode = (DataRefNode) expr;
-      ExprNode lastPart = dataRefNode.getChild(dataRefNode.numChildren() - 1);
-      if (lastPart instanceof DataRefKeyNode) {
-        return BaseUtils.convertToUpperUnderscore(((DataRefKeyNode) lastPart).getKey());
+    if (exprNode instanceof DataRefNode) {
+      DataRefNode dataRefNode = (DataRefNode) exprNode;
+
+      if (dataRefNode.numChildren() > 0) {
+        ExprNode lastChild = dataRefNode.getChild(dataRefNode.numChildren() - 1);
+        // Only handle if last child is a key. Else, fall through.
+        if (lastChild instanceof DataRefAccessKeyNode) {
+          return BaseUtils.convertToUpperUnderscore(((DataRefAccessKeyNode) lastChild).getKey());
+        }
+      } else {
+        // No children, so the first key is the last key.
+        return BaseUtils.convertToUpperUnderscore(dataRefNode.getFirstKey());
       }
-    } else if (expr instanceof GlobalNode) {
-      GlobalNode globalNode = (GlobalNode) expr;
-      int lastDotIndex = globalNode.getName().lastIndexOf('.');
-      String lastPart = globalNode.getName().substring(lastDotIndex + 1);
-      return BaseUtils.convertToUpperUnderscore(lastPart);
+
+    } else if (exprNode instanceof GlobalNode) {
+      String globalName = ((GlobalNode) exprNode).getName();
+      return BaseUtils.convertToUpperUnderscore(BaseUtils.extractPartAfterLastDot(globalName));
     }
 
     return fallbackBaseName;
-  }
-
-
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
   }
 
 }

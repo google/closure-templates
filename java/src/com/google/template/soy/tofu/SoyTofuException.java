@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 /**
  * Exception thrown when an error occurs during template rendering.
  *
+ * @author Kai Huang
  */
 public class SoyTofuException extends RuntimeException {
 
@@ -42,11 +43,21 @@ public class SoyTofuException extends RuntimeException {
 
 
   /**
+   * @param message A detailed description of the error.
+   * @param cause The underlying error.
+   */
+  public SoyTofuException(String message, Throwable cause) {
+    super(message, cause);
+    this.templateName = null;
+  }
+
+
+  /**
    * Creates an instance by copying a RenderException.
    * @param re The RenderException to copy.
    */
   public SoyTofuException(RenderException re) {
-    super(re.getRawMessage());
+    super(re.getRawMessage(), re);
     this.templateName = re.getTemplateName();
   }
 

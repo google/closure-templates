@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CeilingFunction.
  *
+ * @author Kai Huang
  */
 public class CeilingFunctionTest extends TestCase {
 

@@ -27,6 +27,7 @@ import com.google.common.base.Preconditions;
  *
  * <p> This node should always have exactly one child.
  *
+ * @author Kai Huang
  */
 public class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
 

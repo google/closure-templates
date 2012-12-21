@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -33,6 +31,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class SwitchCaseNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, ExprHolderNode {
@@ -54,13 +53,8 @@ public class SwitchCaseNode extends CaseOrDefaultNode
     super(id, "case", commandText);
 
     exprListText = commandText;
-    try {
-      exprList = (new ExpressionParser(exprListText)).parseExpressionList();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidExprList(tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidExprList(pe);
-    }
+    exprList = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
+        exprListText, "Invalid expression list in 'case' command text \"" + commandText + "\".");
   }
 
 
@@ -75,18 +69,6 @@ public class SwitchCaseNode extends CaseOrDefaultNode
     for (ExprRootNode<?> origExpr : orig.exprList) {
       this.exprList.add(origExpr.clone());
     }
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidExprList(Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid expression list in 'case' command text \"" + getCommandText() + "\".", cause);
   }
 
 

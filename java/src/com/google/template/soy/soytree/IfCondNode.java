@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -34,6 +32,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {
@@ -52,15 +51,7 @@ public class IfCondNode extends AbstractBlockCommandNode
     super(id, commandName, commandText);
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
 
-    ExprRootNode<?> expr;
-    try {
-      expr = (new ExpressionParser(commandText)).parseExpression();
-    } catch (TokenMgrError tme) {
-      expr = null;
-    } catch (ParseException pe) {
-      expr = null;
-    }
-
+    ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(commandText);
     if (expr != null) {
       exprUnion = new ExprUnion(expr);
     } else {

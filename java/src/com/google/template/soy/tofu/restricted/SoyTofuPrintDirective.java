@@ -37,6 +37,7 @@ import java.util.List;
  *
  * @see SoyAbstractTofuPrintDirective
  * @see com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective
+ * @author Kai Huang
  */
 public interface SoyTofuPrintDirective extends SoyPrintDirective {
 
@@ -48,6 +49,6 @@ public interface SoyTofuPrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public String applyForTofu(SoyData value, List<SoyData> args);
+  public SoyData applyForTofu(SoyData value, List<SoyData> args);
 
 }

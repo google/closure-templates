@@ -29,15 +29,14 @@ import java.io.Reader;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
+ * @author Mike Samuel
  */
-public class StableSoyFileSupplier implements SoyFileSupplier {
+public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
   /** Supplier of a Reader for the Soy file content. */
   private final InputSupplier<? extends Reader> contentSupplier;
-
-  /** The path to the Soy file (used for messages only). */
-  private final String path;
 
 
   /**
@@ -45,17 +44,13 @@ public class StableSoyFileSupplier implements SoyFileSupplier {
    * well as the desired file path for messages.
    *
    * @param contentSupplier Supplier of a Reader for the Soy file content.
+   * @param soyFileKind The kind of this input Soy file.
    * @param filePath The path to the Soy file (used for messages only).
    */
-  public StableSoyFileSupplier(InputSupplier<? extends Reader> contentSupplier, String filePath) {
+  public StableSoyFileSupplier(
+      InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+    super(soyFileKind, filePath);
     this.contentSupplier = contentSupplier;
-    this.path = filePath;
-  }
-
-
-  @Override
-  public String getPath() {
-    return path;
   }
 
 

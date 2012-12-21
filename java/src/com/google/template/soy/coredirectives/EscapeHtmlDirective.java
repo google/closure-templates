@@ -36,6 +36,7 @@ import java.util.Set;
 /**
  * A directive that HTML-escapes the output.
  *
+ * @author Kai Huang
  */
 @Singleton
 public class EscapeHtmlDirective extends SoyAbstractTofuPrintDirective
@@ -64,14 +65,15 @@ public class EscapeHtmlDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
     if (value instanceof SanitizedContent) {
       SanitizedContent sanitizedContent = (SanitizedContent) value;
       if (sanitizedContent.getContentKind() == SanitizedContent.ContentKind.HTML) {
-        return sanitizedContent.getContent();
+        return value;
       }
     }
-    return EscapingConventions.EscapeHtml.INSTANCE.escape(value.toString());
+    return SoyData.createFromExistingData(
+        EscapingConventions.EscapeHtml.INSTANCE.escape(value.toString()));
   }
 
 

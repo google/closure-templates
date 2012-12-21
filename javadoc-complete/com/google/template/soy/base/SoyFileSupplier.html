@@ -52,7 +52,7 @@ function windowTitle()
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html" title="class in com.google.template.soy.base"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/base/SoyFileSupplier.html" target="_top"><B>FRAMES</B></A>  &nbsp;
@@ -144,10 +144,18 @@ Record for one input Soy file.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html#getPath()">getPath</A></B>()</CODE>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html#getFilePath()">getFilePath</A></B>()</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the file path (used for messages only).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html#getSoyFileKind()">getSoyFileKind</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the kind of this input Soy file.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -208,10 +216,23 @@ boolean <B>hasChangedSince</B>(<A HREF="../../../../../com/google/template/soy/b
 </DL>
 <HR>
 
-<A NAME="getPath()"><!-- --></A><H3>
-getPath</H3>
+<A NAME="getSoyFileKind()"><!-- --></A><H3>
+getSoyFileKind</H3>
 <PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getPath</B>()</PRE>
+<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A> <B>getSoyFileKind</B>()</PRE>
+<DL>
+<DD>Returns the kind of this input Soy file.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getFilePath()"><!-- --></A><H3>
+getFilePath</H3>
+<PRE>
+<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getFilePath</B>()</PRE>
 <DL>
 <DD>Returns the file path (used for messages only).
 <P>
@@ -249,7 +270,7 @@ getPath</H3>
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base"><B>PREV CLASS</B></A>&nbsp;
+&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.Factory.html" title="class in com.google.template.soy.base"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/base/SoyFileSupplier.html" target="_top"><B>FRAMES</B></A>  &nbsp;

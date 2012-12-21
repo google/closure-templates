@@ -17,6 +17,7 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -29,12 +30,16 @@ import javax.annotation.Nullable;
 /**
  * Represents a message in some language/locale. Contains information relevant to translation.
  *
+ * @author Kai Huang
  */
 public class SoyMsg {
 
 
   /** A unique id for this message (same across all translations). */
   private final long id;
+
+  /** An alternate unique id for this message. */
+  private final long altId;
 
   /** The language/locale string. */
   private final String localeString;
@@ -54,8 +59,56 @@ public class SoyMsg {
   /** Location(s) of the source file(s) that this message comes from. */
   private Set<String> sourcePaths;
 
+  /** Whether this is a plural/select message. */
+  private final boolean isPlrselMsg;
+
   /** The parts that make up the message content. */
   private final List<SoyMsgPart> parts;
+
+
+  /**
+   * @param id A unique id for this message (same across all translations).
+   * @param altId An alternate unique id for this message, or -1L if not applicable.
+   * @param localeString The language/locale string, or null if unknown. Should only be null for
+   *     messages newly extracted from source files. Should always be set for messages parsed from
+   *     message files/resources.
+   * @param meaning The meaning string, or null if not necessary (usually null). This is a string
+   *     to create unique messages for two otherwise identical messages. This is usually done for
+   *     messages used in different contexts. (For example, the same word can be used as a noun in
+   *     one location and as a verb in another location, and the message texts would be the same
+   *     but the messages would have meanings of "noun" and "verb".). May not be applicable to all
+   *     message plugins.
+   * @param desc The description for translators.
+   * @param isHidden Whether this message should be hidden. May not be applicable to all message
+   *     plugins.
+   * @param contentType Content type of the document that this message will appear in
+   *     (e.g. "{@code text/html}"). May not be applicable to all message plugins.
+   * @param sourcePath Location of a source file that this message comes from. More sources can
+   *     be added using {@code addSourcePath()}. May not be applicable to all message plugins.
+   * @param isPlrselMsg Whether this is a plural/select message.
+   * @param parts The parts that make up the message content.
+   */
+  public SoyMsg(
+      long id, long altId, @Nullable String localeString, @Nullable String meaning,
+      @Nullable String desc, boolean isHidden, @Nullable String contentType,
+      @Nullable String sourcePath, boolean isPlrselMsg, List<SoyMsgPart> parts) {
+
+    checkArgument(id >= 0L);
+    checkArgument(altId >= -1L);
+    this.id = id;
+    this.altId = altId;
+    this.localeString = localeString;
+    this.meaning = meaning;
+    this.desc = desc;
+    this.isHidden = isHidden;
+    this.contentType = contentType;
+    this.sourcePaths = Sets.newHashSetWithExpectedSize(1);
+    if (sourcePath != null) {
+      this.sourcePaths.add(sourcePath);
+    }
+    this.isPlrselMsg = isPlrselMsg;
+    this.parts = ImmutableList.copyOf(parts);
+  }
 
 
   /**
@@ -82,19 +135,7 @@ public class SoyMsg {
       long id, @Nullable String localeString, @Nullable String meaning, @Nullable String desc,
       boolean isHidden, @Nullable String contentType, @Nullable String sourcePath,
       List<SoyMsgPart> parts) {
-
-    checkArgument(id >= 0);
-    this.id = id;
-    this.localeString = localeString;
-    this.meaning = meaning;
-    this.desc = desc;
-    this.isHidden = isHidden;
-    this.contentType = contentType;
-    this.sourcePaths = Sets.newHashSetWithExpectedSize(1);
-    if (sourcePath != null) {
-      this.sourcePaths.add(sourcePath);
-    }
-    this.parts = ImmutableList.copyOf(parts);
+    this(id, -1L, localeString, meaning, desc, isHidden, contentType, sourcePath, false, parts);
   }
 
 
@@ -106,6 +147,11 @@ public class SoyMsg {
   /** Returns the unique id for this message (same across all translations). */
   public long getId() {
     return id;
+  }
+
+  /** Returns the alternate unique id for this message, or -1L if not applicable. */
+  public long getAltId() {
+    return altId;
   }
 
   /** Returns the meaning string if set, otherwise null (usually null). */
@@ -136,6 +182,11 @@ public class SoyMsg {
   /** Returns the location(s) of the source file(s) that this message comes from. */
   public Set<String> getSourcePaths() {
     return sourcePaths;
+  }
+
+  /** Returns whether this is a plural/select message. */
+  public boolean isPlrselMsg() {
+    return isPlrselMsg;
   }
 
   /** Returns the parts that make up the message content. */

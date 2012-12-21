@@ -94,6 +94,11 @@ A pass that modifies a SoyFile to add escape directives where necessary based on
 <B>Class Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc">CheckEscapingSanityVisitor</A></B></TD>
+<TD>Visitor performing escaping sanity checks over all input -- not just input affected by the
+ contextual autoescaping inference engine.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></B></TD>
 <TD>Encapsulates the context in which a Soy node appears.</TD>
 </TR>
@@ -158,7 +163,7 @@ A pass that modifies a SoyFile to add escape directives where necessary based on
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></B></TD>
 <TD>Indicates failure to propagate contexts through a template or an existing escaping directive on a
- <code>{print}</code> that is inconsistent with the contexts in which it appears.</TD>
+ 'print' tag that is inconsistent with the contexts in which it appears.</TD>
 </TR>
 </TABLE>
 &nbsp;

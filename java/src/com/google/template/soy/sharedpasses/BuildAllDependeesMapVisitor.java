@@ -83,6 +83,7 @@ import javax.annotation.Nullable;
  * (e) MsgBlockNode: Any change to its immediate children would change the message to be translated,
  *     which would be incorrect.
  *
+ * @author Kai Huang
  */
 public class BuildAllDependeesMapVisitor
     extends AbstractSoyNodeVisitor<Map<SoyNode, List<SoyNode>>> {

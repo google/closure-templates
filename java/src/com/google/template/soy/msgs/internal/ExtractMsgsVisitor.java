@@ -17,11 +17,10 @@
 package com.google.template.soy.msgs.internal;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
-import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -39,6 +38,7 @@ import java.util.List;
  * <p> {@link #exec} should be called on a full parse tree. All messages will be extracted and
  * returned in a {@code SoyMsgBundle} (locale "en").
  *
+ * @author Kai Huang
  */
 public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
@@ -75,10 +75,10 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
   @Override protected void visitMsgNode(MsgNode node) {
 
-    Pair<List<SoyMsgPart>, Long> msgPartsAndId = MsgUtils.buildMsgPartsAndComputeMsgId(node);
+    MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(node);
     msgs.add(new SoyMsg(
-        msgPartsAndId.second, null, node.getMeaning(), node.getDesc(), node.isHidden(),
-        node.getContentType(), currentSource, msgPartsAndId.first));
+        msgPartsAndIds.id, -1L, null, node.getMeaning(), node.getDesc(), node.isHidden(),
+        node.getContentType(), currentSource, node.isPlrselMsg(), msgPartsAndIds.parts));
   }
 
 

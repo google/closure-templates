@@ -19,6 +19,8 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -34,6 +36,7 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class TemplateBasicNode extends TemplateNode {
 
@@ -50,9 +53,9 @@ public class TemplateBasicNode extends TemplateNode {
     public CommandTextInfo(
         String commandText, String templateName, @Nullable String partialTemplateName,
         boolean isOverride, boolean isPrivate, AutoescapeMode autoescapeMode,
-        SyntaxVersion syntaxVersion) {
-      super(
-          commandText, templateName, partialTemplateName, isPrivate, autoescapeMode, syntaxVersion);
+        ContentKind contentKind, SyntaxVersion syntaxVersion) {
+      super(commandText, templateName, partialTemplateName, isPrivate, autoescapeMode,
+          contentKind, syntaxVersion);
       this.isOverride = isOverride;
     }
   }
@@ -65,11 +68,11 @@ public class TemplateBasicNode extends TemplateNode {
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
       new CommandTextAttributesParser("template",
-          new Attribute("name", Attribute.ALLOW_ALL_VALUES,
-                        Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
+          new Attribute("name", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("private", Attribute.BOOLEAN_VALUES, "false"),
-          new Attribute("override", Attribute.BOOLEAN_VALUES_AND_NULL, null),  // V1
-          new Attribute("autoescape", AutoescapeMode.getAttributeValuesAndNull(), null));
+          new Attribute("override", Attribute.BOOLEAN_VALUES, null),  // V1
+          new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
+          new Attribute("kind", NodeContentKinds.getAttributeValues(), null));
 
 
   /** Whether this template overrides another (always false for syntax version V2). */
@@ -104,17 +107,36 @@ public class TemplateBasicNode extends TemplateNode {
     String commandTextForParsing = commandText;
 
     // Handle template name not listed as an attribute name="...".
+    String nameAttr = null;
     Matcher ntnMatcher = NONATTRIBUTE_TEMPLATE_NAME.matcher(commandTextForParsing);
     if (ntnMatcher.find()) {
-      commandTextForParsing = ntnMatcher.replaceFirst("name=\"" + ntnMatcher.group() + "\"");
+      nameAttr = ntnMatcher.group();
+      commandTextForParsing = commandTextForParsing.substring(ntnMatcher.end()).trim();
     }
 
     Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandTextForParsing);
 
-    String nameAttr = attributes.get("name");
+    if (nameAttr == null) {
+      nameAttr = attributes.get("name");
+      if (nameAttr == null) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Invalid 'template' command missing template name: {template " + commandText + "}.");
+      }
+    } else {
+      if (attributes.get("name") != null) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Invalid 'template' command with template name declared multiple times (" +
+            nameAttr + ", " + attributes.get("name") + ").");
+      }
+    }
     String templateName;
     String partialTemplateName;
     if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
+      if (soyFileHeaderInfo.namespace == null) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Missing namespace in Soy file containing 'template' with namespace-relative name" +
+                " ({template " + commandText + "}).");
+      }
       partialTemplateName = nameAttr;
       templateName = soyFileHeaderInfo.namespace + partialTemplateName;
     } else if (BaseUtils.isDottedIdentifier(nameAttr)) {
@@ -122,7 +144,7 @@ public class TemplateBasicNode extends TemplateNode {
       templateName = nameAttr;
       partialTemplateName = null;
     } else {
-      throw new SoySyntaxException("Invalid template name \"" + nameAttr + "\".");
+      throw SoySyntaxException.createWithoutMetaInfo("Invalid template name \"" + nameAttr + "\".");
     }
 
     boolean isPrivate = attributes.get("private").equals("true");
@@ -144,9 +166,12 @@ public class TemplateBasicNode extends TemplateNode {
       autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // Inherit from containing file.
     }
 
+    ContentKind contentKind = (attributes.get("kind") != null) ?
+        NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
+
     return new CommandTextInfo(
         commandText, templateName, partialTemplateName, isOverride, isPrivate, autoescapeMode,
-        syntaxVersion);
+        contentKind, syntaxVersion);
   }
 
 
@@ -165,13 +190,13 @@ public class TemplateBasicNode extends TemplateNode {
   public TemplateBasicNode(
       int id, SoyFileHeaderInfo soyFileHeaderInfo, String templateName,
       @Nullable String partialTemplateName, boolean useAttrStyleForName, boolean isOverride,
-      boolean isPrivate, AutoescapeMode autoescapeMode, @Nullable String soyDoc,
-      SyntaxVersion syntaxVersion) {
+      boolean isPrivate, AutoescapeMode autoescapeMode, ContentKind contentKind,
+      @Nullable String soyDoc, SyntaxVersion syntaxVersion) {
     this(
         id, soyFileHeaderInfo,
         buildCommandTextInfoHelper(
             templateName, partialTemplateName, useAttrStyleForName, isOverride, isPrivate,
-            autoescapeMode, syntaxVersion),
+            autoescapeMode, contentKind, syntaxVersion),
         soyDoc);
   }
 
@@ -179,17 +204,18 @@ public class TemplateBasicNode extends TemplateNode {
   /**
    * Private helper for constructor
    * {@link #TemplateBasicNode(
-   *     int, SoyFileHeaderInfo, String, String, boolean, boolean, boolean, AutoescapeMode, String,
-   *     SyntaxVersion)}.
+   *     int, SoyFileHeaderInfo, String, String, boolean, boolean, boolean, AutoescapeMode,
+   *     ContentKind, String, SyntaxVersion)}.
    */
   private static final CommandTextInfo buildCommandTextInfoHelper(
       String templateName, @Nullable String partialTemplateName, boolean useAttrStyleForName,
-      boolean isOverride, boolean isPrivate, AutoescapeMode autoescapeMode,
+      boolean isOverride, boolean isPrivate, AutoescapeMode autoescapeMode, ContentKind contentKind,
       SyntaxVersion syntaxVersion) {
 
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(templateName));
     Preconditions.checkArgument(
         partialTemplateName == null || BaseUtils.isIdentifierWithLeadingDot(partialTemplateName));
+    Preconditions.checkArgument((contentKind != null) == (autoescapeMode == AutoescapeMode.STRICT));
 
     StringBuilder commandText = new StringBuilder();
     String templateNameInCommandText =
@@ -200,6 +226,9 @@ public class TemplateBasicNode extends TemplateNode {
       commandText.append(templateNameInCommandText);
     }
     commandText.append(" autoescape=\"").append(autoescapeMode.getAttributeValue()).append('"');
+    if (contentKind != null) {
+      commandText.append(" kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + '"');
+    }
     if (isOverride) {
       commandText.append(" override=\"true\"");
     }
@@ -209,7 +238,7 @@ public class TemplateBasicNode extends TemplateNode {
 
     return new CommandTextInfo(
         commandText.toString(), templateName, partialTemplateName, isOverride, isPrivate,
-        autoescapeMode, syntaxVersion);
+        autoescapeMode, contentKind, syntaxVersion);
   }
 
 
@@ -217,8 +246,8 @@ public class TemplateBasicNode extends TemplateNode {
    * Private helper constructor used by both of the constructors
    * {@link #TemplateBasicNode(int, SoyFileHeaderInfo, String, String)} and
    * {@link #TemplateBasicNode(
-   *     int, SoyFileHeaderInfo, String, String, boolean, boolean, boolean, AutoescapeMode, String,
-   *     SyntaxVersion)}.
+   *     int, SoyFileHeaderInfo, String, String, boolean, boolean, boolean, AutoescapeMode,
+   *     ContentKind, String, SyntaxVersion)}.
    */
   private TemplateBasicNode(
       int id, SoyFileHeaderInfo soyFileHeaderInfo, CommandTextInfo commandTextInfo,

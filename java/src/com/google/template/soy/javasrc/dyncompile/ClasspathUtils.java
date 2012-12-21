@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 /**
  * Inspects a {@link ClassLoader} to enumerate the classes available.
  *
+ * @author Mike Samuel
  */
 final class ClasspathUtils {
 

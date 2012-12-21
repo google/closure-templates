@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -41,6 +42,7 @@ import java.util.Map;
  * <p> The command-line arguments should contain command-line flags and the list of paths to the
  * Soy files.
  *
+ * @author Kai Huang
  */
 public final class SoyParseInfoGenerator {
 
@@ -51,7 +53,7 @@ public final class SoyParseInfoGenerator {
       "java com.google.template.soy.SoyParseInfoGenerator  \\\n" +
       "     [<flag1> <flag2> ...] --outputDirectory <path>  \\\n" +
       "     --javaPackage <package> --javaClassNameSource <source>  \\\n" +
-      "     <soyFile1> <soyFile2> ...\n";
+      "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
 
   @Option(name = "--inputPrefix",
@@ -59,6 +61,25 @@ public final class SoyParseInfoGenerator {
                   " listed on the command line. This is a literal string prefix, so you'll need" +
                   " to include a trailing slash if necessary.")
   private String inputPrefix = "";
+
+  @Option(name = "--srcs",
+          usage = "[Required] The list of source Soy files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> srcs = Lists.newArrayList();
+
+  @Option(name = "--deps",
+          usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
+                  " analysis/checking, but will not generate code for dep files.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> deps = Lists.newArrayList();
+
+  @Option(name = "--allowExternalCalls",
+          usage = "Whether to allow external calls. New projects should set this to false, and" +
+                  " existing projects should remove existing external calls and then set this" +
+                  " to false. It will save you a lot of headaches. Currently defaults to true" +
+                  " for backward compatibility.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
+  private boolean allowExternalCalls = true;
 
   @Option(name = "--outputDirectory",
           required = true,
@@ -103,10 +124,15 @@ public final class SoyParseInfoGenerator {
 
   private void execMain(String[] args) throws IOException, SoySyntaxException {
 
-    CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-    if (arguments.size() == 0) {
-      MainClassUtils.exitWithError("Must provide list of Soy files.", cmdLineParser, USAGE_PREFIX);
-    }
+    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
+
+    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
+      @Override public Void apply(String errorMsg) {
+        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
+        return null;
+      }
+    };
+
     if (outputDirectory.length() == 0) {
       MainClassUtils.exitWithError("Must provide output directory.", cmdLineParser, USAGE_PREFIX);
     }
@@ -121,14 +147,14 @@ public final class SoyParseInfoGenerator {
     Injector injector = Guice.createInjector(new SoyModule());
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    String inputPrefixStr = inputPrefix;
-
     // ImmutableSet.copyOf() removes any duplicate filenames that were provided.
     // This is so the builder doesn't get confused by multiple identical
     // definitions.
-    for (String arg : ImmutableSet.copyOf(arguments)) {
-      sfsBuilder.add(new File(inputPrefixStr + arg));
-    }
+    // TODO: This does not seem like the right place to remove duplicates.
+    MainClassUtils.addSoyFilesToBuilder(
+        sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), ImmutableSet.copyOf(arguments),
+        ImmutableSet.copyOf(deps), exitWithErrorFn);
+    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 
     Map<String, String> generatedFiles =

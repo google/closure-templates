@@ -57,6 +57,7 @@ import java.util.Map;
  * out of {@code ApiCallScope} and rewrite the code somehow to still take advantage of the
  * memoized results to the extent that they remain correct.)
  *
+ * @author Kai Huang
  */
 @ApiCallScope
 class IsComputableAsJavaExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {

@@ -18,9 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -34,6 +32,8 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
+ * @author Mohamed Eldawy
  */
 public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
@@ -51,13 +51,8 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   public MsgSelectNode(int id, String commandText) throws SoySyntaxException {
     super(id, "select", commandText);
 
-    try {
-      selectExpr = (new ExpressionParser(commandText)).parseExpression();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText(tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText(pe);
-    }
+    selectExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+        commandText, "Invalid data reference in 'select' command text \"" + commandText + "\".");
   }
 
 
@@ -71,18 +66,6 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   }
 
 
-  /**
-   * Private helper for the constructor.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidCommandText(Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid data reference in 'select' command text \"" + getCommandText() + "\".", cause);
-  }
-
-
   @Override public Kind getKind() {
     return Kind.MSG_SELECT_NODE;
   }
@@ -93,7 +76,7 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     return selectExpr.toSourceString();
   }
 
-
+  
   /** Returns the parsed expression. */
   public ExprRootNode<?> getExpr() {
     return selectExpr;

@@ -119,22 +119,22 @@ function windowTitle()
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Use <A HREF="com/google/template/soy/SoyFileSet.html#compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)"><CODE>SoyFileSet.compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)</CODE></A>.</I>&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><A HREF="com/google/template/soy/soyparse/SimpleCharStream.html#getColumn()">com.google.template.soy.soyparse.SimpleCharStream.getColumn()</A>
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><A HREF="com/google/template/soy/exprparse/SimpleCharStream.html#getColumn()">com.google.template.soy.exprparse.SimpleCharStream.getColumn()</A>
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><A HREF="com/google/template/soy/soyparse/SimpleCharStream.html#getLine()">com.google.template.soy.soyparse.SimpleCharStream.getLine()</A>
+<TD><A HREF="com/google/template/soy/soyparse/SimpleCharStream.html#getColumn()">com.google.template.soy.soyparse.SimpleCharStream.getColumn()</A>
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><A HREF="com/google/template/soy/exprparse/SimpleCharStream.html#getLine()">com.google.template.soy.exprparse.SimpleCharStream.getLine()</A>
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><A HREF="com/google/template/soy/soyparse/SimpleCharStream.html#getLine()">com.google.template.soy.soyparse.SimpleCharStream.getLine()</A>
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
 </TR>
@@ -203,6 +203,18 @@ function windowTitle()
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Use <A HREF="com/google/template/soy/data/restricted/IntegerData.html#ZERO"><CODE>IntegerData.ZERO</CODE></A>, <A HREF="com/google/template/soy/data/restricted/IntegerData.html#ONE"><CODE>IntegerData.ONE</CODE></A>,
      <A HREF="com/google/template/soy/data/restricted/IntegerData.html#MINUS_ONE"><CODE>IntegerData.MINUS_ONE</CODE></A>, or <A HREF="com/google/template/soy/data/restricted/IntegerData.html#forValue(int)"><CODE>IntegerData.forValue(int)</CODE></A>.</I>&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><A HREF="com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.String)">com.google.template.soy.base.SoySyntaxException(String)</A>
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Do not use outside of Soy code (treat as superpackage-private).</I>&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><A HREF="com/google/template/soy/parseinfo/SoyTemplateInfo.html#SoyTemplateInfo(java.lang.String, com.google.common.collect.ImmutableMap)">com.google.template.soy.parseinfo.SoyTemplateInfo(String, ImmutableMap<String, SoyTemplateInfo.ParamRequisiteness>)</A>
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Users should not be creating SoyTemplateInfo objects. If you're constructing
+     SoyTemplateInfo objects from non-Soy-internal code, your code will be broken by future
+     Soy changes.</I>&nbsp;</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><A HREF="com/google/template/soy/data/restricted/StringData.html#StringData(java.lang.String)">com.google.template.soy.data.restricted.StringData(String)</A>

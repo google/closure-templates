@@ -73,9 +73,9 @@ function windowTitle()
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#methods_inherited_from_class_java.lang.Object">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#methods_inherited_from_class_java.lang.Object">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;METHOD</FONT></TD>
+DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;METHOD</FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_top"></A>
@@ -113,7 +113,24 @@ Private helper class used by constructors. Encapsulates all the info derived fro
 <HR>
 
 <P>
+<!-- =========== FIELD SUMMARY =========== -->
 
+<A NAME="field_summary"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
+<B>Field Summary</B></FONT></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>protected &nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html#syntaxVersion">syntaxVersion</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+</TR>
+</TABLE>
+&nbsp;
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 
 <A NAME="constructor_summary"><!-- --></A>
@@ -123,9 +140,9 @@ Private helper class used by constructors. Encapsulates all the info derived fro
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html#CallNode.CommandTextInfo(java.lang.String, boolean, java.lang.String, java.lang.String, com.google.template.soy.soytree.SoyNode.SyntaxVersion)">CallNode.CommandTextInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandText,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/CallNode.CommandTextInfo.html#CallNode.CommandTextInfo(java.lang.String, boolean, com.google.template.soy.exprtree.ExprRootNode, java.lang.String, com.google.template.soy.soytree.SoyNode.SyntaxVersion)">CallNode.CommandTextInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandText,
                          boolean&nbsp;isPassingData,
-                         <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;exprText,
+                         <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&nbsp;dataExpr,
                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;userSuppliedPlaceholderName,
                          <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A>&nbsp;syntaxVersion)</CODE>
 
@@ -155,6 +172,25 @@ Private helper class used by constructors. Encapsulates all the info derived fro
 &nbsp;
 <P>
 
+<!-- ============ FIELD DETAIL =========== -->
+
+<A NAME="field_detail"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
+<B>Field Detail</B></FONT></TH>
+</TR>
+</TABLE>
+
+<A NAME="syntaxVersion"><!-- --></A><H3>
+syntaxVersion</H3>
+<PRE>
+protected final <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A> <B>syntaxVersion</B></PRE>
+<DL>
+<DL>
+</DL>
+</DL>
+
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 
 <A NAME="constructor_detail"><!-- --></A>
@@ -165,13 +201,13 @@ Private helper class used by constructors. Encapsulates all the info derived fro
 </TR>
 </TABLE>
 
-<A NAME="CallNode.CommandTextInfo(java.lang.String, boolean, java.lang.String, java.lang.String, com.google.template.soy.soytree.SoyNode.SyntaxVersion)"><!-- --></A><H3>
+<A NAME="CallNode.CommandTextInfo(java.lang.String, boolean, com.google.template.soy.exprtree.ExprRootNode, java.lang.String, com.google.template.soy.soytree.SoyNode.SyntaxVersion)"><!-- --></A><H3>
 CallNode.CommandTextInfo</H3>
 <PRE>
 public <B>CallNode.CommandTextInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;commandText,
                                 boolean&nbsp;isPassingData,
                                 <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                                <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;exprText,
+                                <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&nbsp;dataExpr,
                                 <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
                                 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;userSuppliedPlaceholderName,
                                 <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A>&nbsp;syntaxVersion)</PRE>
@@ -228,9 +264,9 @@ public <B>CallNode.CommandTextInfo</B>(<A HREF="http://java.sun.com/javase/6/doc
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#methods_inherited_from_class_java.lang.Object">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#methods_inherited_from_class_java.lang.Object">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;METHOD</FONT></TD>
+DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;METHOD</FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_bottom"></A>

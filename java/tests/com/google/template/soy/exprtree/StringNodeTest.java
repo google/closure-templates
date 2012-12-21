@@ -22,6 +22,7 @@ import junit.framework.*;
 /**
  * Unit tests for StringNode.
  *
+ * @author Kai Huang
  */
 public class StringNodeTest extends TestCase {
 

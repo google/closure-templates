@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * Represents a select statement within a message.
  *
+ * @author Mohamed Eldawy
  */
 public class SoyMsgSelectPart extends SoyMsgPart {
 

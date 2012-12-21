@@ -32,6 +32,10 @@ import javax.inject.Singleton;
 /**
  * Default implementation of EvalVisitorFactory.
  *
+ * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * @author Mark Knichel
+ * @author Kai Huang
  */
 @Singleton
 public class EvalVisitorFactoryImpl implements EvalVisitorFactory {
@@ -49,7 +53,7 @@ public class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 
   @Override
   public EvalVisitor create(
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+      SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
 
     return new EvalVisitor(soyJavaRuntimeFunctionsMap, data, ijData, env);
   }

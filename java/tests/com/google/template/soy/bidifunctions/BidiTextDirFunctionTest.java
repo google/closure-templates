@@ -30,6 +30,8 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BidiTextDirFunction.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 public class BidiTextDirFunctionTest extends TestCase {
 

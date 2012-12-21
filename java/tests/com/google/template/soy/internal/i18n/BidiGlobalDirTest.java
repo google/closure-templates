@@ -22,6 +22,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BidiGlobalDir.
  *
+ * @author Aharon Lanin
  */
 public class BidiGlobalDirTest extends TestCase {
 

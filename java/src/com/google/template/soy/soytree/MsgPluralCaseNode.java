@@ -24,6 +24,8 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
+ * @author Mohamed Eldawy
  */
 public class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
@@ -43,11 +45,12 @@ public class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode
     try {
       caseNumber = Integer.parseInt(commandText);
       if (caseNumber < 0) {
-        throw new SoySyntaxException("Plural cases must be nonnegative integers.");
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Plural cases must be nonnegative integers.");
       }
     } catch (NumberFormatException nfe) {
-      throw new SoySyntaxException(
-        "Invalid number in 'plural case' command text \"" + getCommandText() + "\".", nfe);
+      throw SoySyntaxException.createCausedWithoutMetaInfo(
+          "Invalid number in 'plural case' command text \"" + getCommandText() + "\".", nfe);
     }
   }
 

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -31,12 +32,11 @@ import java.util.SortedSet;
 /**
  * Visitor for finding the templates called in a file that are not defined in the file.
  *
- * <p> Important: Only deals with basic callees (not delegates). Delegates are not applicable here
- * because we cannot tell at compile time which delegate will be called (if any). Thus, during
- * compilation, we usually handle delegate calls the same way as external calls.
+ * <p> Important: Only deals with basic callees (not delegates). Calls to delegates are not
+ * applicable here because we cannot tell at compile time which delegate will be called (if any).
  *
  * <p> Precondition: All template and callee names should be full names (i.e. you must execute
- * {@code PrependNamespacesVisitor} before executing this visitor).
+ * {@code SetFullCalleeNamesVisitor} before executing this visitor).
  *
  * <p> {@link #exec} should be called on a {@code SoyFileNode}. The returned set will be the full
  * names of all templates called by the templates in this file that that not in this file. In other
@@ -44,6 +44,7 @@ import java.util.SortedSet;
  * then the returned set consists of the full names of all templates in U called by any template
  * in T.
  *
+ * @author Kai Huang
  */
 class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
 
@@ -56,6 +57,8 @@ class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<Strin
 
 
   @Override public SortedSet<String> exec(SoyNode node) {
+
+    Preconditions.checkArgument(node instanceof SoyFileNode);
     visit(node);
     return calleesNotInFile;
   }

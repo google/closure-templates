@@ -120,6 +120,22 @@ Java implementations of functions that escape, normalize, and filter untrusted s
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(com.google.template.soy.data.SoyData)">cleanHtml</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Normalizes the input HTML while preserving "safe" tags.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(java.lang.String)">cleanHtml</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Normalizes the input HTML while preserving "safe" tags.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#escapeCssString(com.google.template.soy.data.SoyData)">escapeCssString</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
 
 <BR>
@@ -286,7 +302,7 @@ Java implementations of functions that escape, normalize, and filter untrusted s
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#filterHtmlAttribute(com.google.template.soy.data.SoyData)">filterHtmlAttribute</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#filterHtmlAttributes(com.google.template.soy.data.SoyData)">filterHtmlAttributes</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Checks that the input is a valid HTML attribute name with normal keyword or textual content
@@ -295,7 +311,7 @@ Java implementations of functions that escape, normalize, and filter untrusted s
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#filterHtmlAttribute(java.lang.String)">filterHtmlAttribute</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</CODE>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#filterHtmlAttributes(java.lang.String)">filterHtmlAttributes</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Checks that the input is a valid HTML attribute name with normal keyword or textual content.</TD>
@@ -315,6 +331,14 @@ Java implementations of functions that escape, normalize, and filter untrusted s
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Checks that the input is part of the name of an innocuous element.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#filterNoAutoescape(com.google.template.soy.data.SoyData)">filterNoAutoescape</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;data)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filters noAutoescape input from explicitly tainted content.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -428,6 +452,32 @@ escapeHtml</H3>
 public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>escapeHtml</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</PRE>
 <DL>
 <DD>Converts plain text to HTML by entity escaping.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="cleanHtml(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
+cleanHtml</H3>
+<PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>cleanHtml</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</PRE>
+<DL>
+<DD>Normalizes the input HTML while preserving "safe" tags.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="cleanHtml(java.lang.String)"><!-- --></A><H3>
+cleanHtml</H3>
+<PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>cleanHtml</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</PRE>
+<DL>
+<DD>Normalizes the input HTML while preserving "safe" tags.
 <P>
 <DD><DL>
 </DL>
@@ -786,10 +836,10 @@ public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.ht
 </DL>
 <HR>
 
-<A NAME="filterHtmlAttribute(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
-filterHtmlAttribute</H3>
+<A NAME="filterHtmlAttributes(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
+filterHtmlAttributes</H3>
 <PRE>
-public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>filterHtmlAttribute</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>filterHtmlAttributes</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;value)</PRE>
 <DL>
 <DD>Checks that the input is a valid HTML attribute name with normal keyword or textual content
  or known safe attribute content.
@@ -800,10 +850,10 @@ public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.ht
 </DL>
 <HR>
 
-<A NAME="filterHtmlAttribute(java.lang.String)"><!-- --></A><H3>
-filterHtmlAttribute</H3>
+<A NAME="filterHtmlAttributes(java.lang.String)"><!-- --></A><H3>
+filterHtmlAttributes</H3>
 <PRE>
-public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>filterHtmlAttribute</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>filterHtmlAttributes</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</PRE>
 <DL>
 <DD>Checks that the input is a valid HTML attribute name with normal keyword or textual content.
 <P>
@@ -832,6 +882,23 @@ filterHtmlElementName</H3>
 public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>filterHtmlElementName</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;value)</PRE>
 <DL>
 <DD>Checks that the input is part of the name of an innocuous element.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="filterNoAutoescape(com.google.template.soy.data.SoyData)"><!-- --></A><H3>
+filterNoAutoescape</H3>
+<PRE>
+public static <A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A> <B>filterNoAutoescape</B>(<A HREF="../../../../../../com/google/template/soy/data/SoyData.html" title="class in com.google.template.soy.data">SoyData</A>&nbsp;data)</PRE>
+<DL>
+<DD>Filters noAutoescape input from explicitly tainted content.
+
+ SanitizedContent.ContentKind.TEXT is used to explicitly mark input that is never meant to be
+ used unescaped. Specifically, {let} and {param} blocks of kind "text" are explicitly
+ forbidden from being noAutoescaped to avoid XSS regressions during application transition.
 <P>
 <DD><DL>
 </DL>

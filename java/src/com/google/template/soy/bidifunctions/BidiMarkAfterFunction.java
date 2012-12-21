@@ -44,6 +44,8 @@ import java.util.Set;
  * going forward, then the bidi mark is inserted to restore the global bidi directionality.
  * Otherwise, nothing is inserted.
  *
+ * @author Aharon Lanin
+ * @author Kai Huang
  */
 @Singleton
 class BidiMarkAfterFunction extends SoyAbstractTofuFunction

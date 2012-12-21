@@ -34,6 +34,7 @@ import java.util.Map;
 /**
  * Unit tests for SubstituteGlobalsVisitor.
  *
+ * @author Kai Huang
  */
 public class SubstituteGlobalsVisitorTest extends TestCase {
 

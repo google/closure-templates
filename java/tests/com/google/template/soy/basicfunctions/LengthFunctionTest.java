@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for LengthFunction.
  *
+ * @author Kai Huang
  */
 public class LengthFunctionTest extends TestCase {
 
@@ -65,7 +66,7 @@ public class LengthFunctionTest extends TestCase {
     expr = new JavaExpr("JAVA_CODE", SoyData.class, Integer.MAX_VALUE);
     assertEquals(
         new JavaExpr(
-            "com.google.template.soy.data.restricted.IntegerData.forValue(" +
+            "com.google.template.soy.data.restricted.IntegerData.forValue(" + 
                 "((com.google.template.soy.data.SoyListData) JAVA_CODE).length())",
             IntegerData.class, Integer.MAX_VALUE),
         lengthFunction.computeForJavaSrc(ImmutableList.of(expr)));

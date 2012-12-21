@@ -205,7 +205,7 @@ Node representing the loop portion of a 'foreach' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html#getKind()">getKind</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets this node's kind (corresponding to this node's specific type).</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns this node's kind (corresponding to this node's specific type).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -221,7 +221,7 @@ Node representing the loop portion of a 'foreach' statement.
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html#getVarName()">getVarName</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets the name of this node's local variable (without the preceding '$').</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the name of this node's local variable (without the preceding '$').</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -247,7 +247,7 @@ Node representing the loop portion of a 'foreach' statement.
 <TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getLocation()">getLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setLocation(com.google.template.soy.base.SourceLocation)">setLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNode"><!-- --></A>
@@ -345,14 +345,13 @@ getKind</H3>
 public <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</A> <B>getKind</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">SoyNode</A></CODE></B></DD>
-<DD>Gets this node's kind (corresponding to this node's specific type).
+<DD>Returns this node's kind (corresponding to this node's specific type).
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">getKind</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>This node's kind (corresponding to this node's specific type).</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -377,14 +376,13 @@ getVarName</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getVarName</B>()</PRE>
 <DL>
 <DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html#getVarName()">SoyNode.LocalVarNode</A></CODE></B></DD>
-<DD>Gets the name of this node's local variable (without the preceding '$').
+<DD>Returns the name of this node's local variable (without the preceding '$').
 <P>
 <DD><DL>
 <DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html#getVarName()">getVarName</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarNode</A></CODE></DL>
 </DD>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>The name of this node's local variable (without the preceding '$').</DL>
+</DL>
 </DD>
 </DL>
 <HR>

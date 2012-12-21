@@ -23,6 +23,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 /**
  * Compilation options for the Java Src output target (backend).
  *
+ * @author Kai Huang
  */
 public class SoyJavaSrcOptions implements Cloneable {
 

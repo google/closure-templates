@@ -20,6 +20,7 @@ package com.google.template.soy.msgs.restricted;
 /**
  * Represents the placeholder part in the plural statement (The '#' sign in ICU syntax).
  *
+ * @author Mohamed Eldawy
  */
 public class SoyMsgPluralRemainderPart extends SoyMsgPart {
 

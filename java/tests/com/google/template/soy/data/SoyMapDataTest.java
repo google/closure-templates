@@ -30,6 +30,7 @@ import java.util.Map;
 /**
  * Unit tests for SoyMapData.
  *
+ * @author Kai Huang
  */
 public class SoyMapDataTest extends TestCase {
 

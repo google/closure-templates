@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.BaseUtils;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -40,6 +39,8 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
@@ -55,6 +56,7 @@ import java.util.Map;
  *
  * <p> Precondition: MsgNode should not exist in the tree.
  *
+ * @author Kai Huang
  */
 public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
 
@@ -124,6 +126,18 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
     Preconditions.checkArgument(isComputableAsJsExprsVisitor.exec(node));
     jsExprs = Lists.newArrayList();
     visit(node);
+    return jsExprs;
+  }
+
+
+  /**
+   * Executes this visitor on the children of the given node, without visiting the given node
+   * itself.
+   */
+  public List<JsExpr> execOnChildren(ParentSoyNode<?> node) {
+    Preconditions.checkArgument(isComputableAsJsExprsVisitor.execOnChildren(node));
+    jsExprs = Lists.newArrayList();
+    visitChildren(node);
     return jsExprs;
   }
 
@@ -218,17 +232,19 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
       // Get directive.
       SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
-        throw new SoySyntaxException(
+        throw SoySyntaxExceptionUtils.createWithNode(
             "Failed to find SoyJsSrcPrintDirective with name '" + directiveNode.getName() + "'" +
-            " (tag " + node.toSourceString() +")");
+                " (tag " + node.toSourceString() + ")",
+            directiveNode);
       }
 
       // Get directive args.
       List<ExprRootNode<?>> args = directiveNode.getArgs();
       if (! directive.getValidArgsSizes().contains(args.size())) {
-        throw new SoySyntaxException(
+        throw SoySyntaxExceptionUtils.createWithNode(
             "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
-            " arguments (tag " + node.toSourceString() + ").");
+                " arguments (tag " + node.toSourceString() + ").",
+            directiveNode);
       }
 
       // Translate directive args.
@@ -271,7 +287,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
       sb.append(baseJsExpr.getText()).append(", ");
     }
 
-    sb.append("'").append(node.getSelectorText()).append("')");
+    sb.append('\'').append(node.getSelectorText()).append("')");
 
     jsExprs.add(new JsExpr(sb.toString(), Integer.MAX_VALUE));
   }
@@ -308,7 +324,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
 
         JsExpr condJsExpr = jsExprTranslator.translateToJsExpr(
             icn.getExprUnion().getExpr(), icn.getExprText(), localVarTranslations);
-        jsExprTextSb.append("(").append(condJsExpr.getText()).append(") ? ");
+        jsExprTextSb.append('(').append(condJsExpr.getText()).append(") ? ");
 
         List<JsExpr> condBlockJsExprs = genJsExprsVisitor.exec(icn);
         jsExprTextSb.append(JsExprUtils.concatJsExprs(condBlockJsExprs).getText());
@@ -362,7 +378,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    *   some.func(opt_data)
    *   some.func(opt_data.boo.foo)
    *   some.func({goo: opt_data.moo})
-   *   some.func(soy.$$augmentData(opt_data.boo, {goo: 'Blah'}))
+   *   some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))
    * </pre>
    */
   @Override protected void visitCallNode(CallNode node) {

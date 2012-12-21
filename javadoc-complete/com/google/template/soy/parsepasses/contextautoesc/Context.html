@@ -52,7 +52,7 @@ function windowTitle()
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;PREV CLASS&nbsp;
+&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.AttributeEndDelimiter.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/Context.html" target="_top"><B>FRAMES</B></A>  &nbsp;
@@ -285,6 +285,22 @@ Encapsulates the context in which a Soy node appears.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#TEXT">TEXT</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Plain text, with no escaping.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#URI_START">URI_START</A></B></CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start of a URI.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.UriPart</A></CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#uriPart">uriPart</A></B></CODE>
 
@@ -402,6 +418,27 @@ Encapsulates the context in which a Soy node appears.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#getLikelyEndContextMismatchCause(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.parsepasses.contextautoesc.Context)">getLikelyEndContextMismatchCause</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                 <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&nbsp;context)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a plausible human-readable description of a context mismatch;
+
+ This assumes that the provided context is an invalid end context for the particular content
+ kind.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#getStartContextForContentKind(com.google.template.soy.data.SanitizedContent.ContentKind)">getStartContextForContentKind</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the autoescacpe <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><CODE>Context</CODE></A> that produces sanitized content of the given
+ <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data"><CODE>SanitizedContent.ContentKind</CODE></A>.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;int</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#hashCode()">hashCode</A></B>()</CODE>
 
@@ -423,6 +460,26 @@ Encapsulates the context in which a Soy node appears.
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;True if this context is in the <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#ERROR"><CODE>error</CODE></A> state.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;boolean</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#isValidEndContextForContentKind(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.parsepasses.contextautoesc.Context)">isValidEndContextForContentKind</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&nbsp;context)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Determines whether a particular context is valid for the end of a block of a particular
+ content kind.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;boolean</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#isValidStartContextForContentKind(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.parsepasses.contextautoesc.Context)">isValidStartContextForContentKind</A></B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                  <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&nbsp;context)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Determines whether a particular context is valid at the start of a block of a particular
+ content kind.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -629,6 +686,30 @@ JS</H3>
 public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A> <B>JS</B></PRE>
 <DL>
 <DD>Inside a <code>&lt;script&gt;</code> element body.  The same caveat applies here as to <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html#CSS"><CODE>CSS</CODE></A>.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="TEXT"><!-- --></A><H3>
+TEXT</H3>
+<PRE>
+public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A> <B>TEXT</B></PRE>
+<DL>
+<DD>Plain text, with no escaping.
+<P>
+<DL>
+</DL>
+</DL>
+<HR>
+
+<A NAME="URI_START"><!-- --></A><H3>
+URI_START</H3>
+<PRE>
+public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A> <B>URI_START</B></PRE>
+<DL>
+<DD>Start of a URI.
 <P>
 <DL>
 </DL>
@@ -895,6 +976,73 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 </DL>
 </DD>
 </DL>
+<HR>
+
+<A NAME="getStartContextForContentKind(com.google.template.soy.data.SanitizedContent.ContentKind)"><!-- --></A><H3>
+getStartContextForContentKind</H3>
+<PRE>
+public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A> <B>getStartContextForContentKind</B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind)</PRE>
+<DL>
+<DD>Returns the autoescacpe <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><CODE>Context</CODE></A> that produces sanitized content of the given
+ <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data"><CODE>SanitizedContent.ContentKind</CODE></A>.
+
+ <p>
+ Given a <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data"><CODE>SanitizedContent.ContentKind</CODE></A>, returns the corresponding <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><CODE>Context</CODE></A> such that contextual
+ autoescaping of a block of Soy code with that context as the start context results in a value
+ that adheres to the contract of <A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><CODE>SanitizedContent</CODE></A> of the
+ given kind.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="isValidStartContextForContentKind(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.parsepasses.contextautoesc.Context)"><!-- --></A><H3>
+isValidStartContextForContentKind</H3>
+<PRE>
+public static boolean <B>isValidStartContextForContentKind</B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                                        <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&nbsp;context)</PRE>
+<DL>
+<DD>Determines whether a particular context is valid at the start of a block of a particular
+ content kind.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="isValidEndContextForContentKind(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.parsepasses.contextautoesc.Context)"><!-- --></A><H3>
+isValidEndContextForContentKind</H3>
+<PRE>
+public static boolean <B>isValidEndContextForContentKind</B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                                      <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&nbsp;context)</PRE>
+<DL>
+<DD>Determines whether a particular context is valid for the end of a block of a particular
+ content kind.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="getLikelyEndContextMismatchCause(com.google.template.soy.data.SanitizedContent.ContentKind, com.google.template.soy.parsepasses.contextautoesc.Context)"><!-- --></A><H3>
+getLikelyEndContextMismatchCause</H3>
+<PRE>
+public static <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getLikelyEndContextMismatchCause</B>(<A HREF="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</A>&nbsp;contentKind,
+                                                      <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A>&nbsp;context)</PRE>
+<DL>
+<DD>Returns a plausible human-readable description of a context mismatch;
+
+ This assumes that the provided context is an invalid end context for the particular content
+ kind.
+<P>
+<DD><DL>
+</DL>
+</DD>
+</DL>
 <!-- ========= END OF CLASS DATA ========= -->
 <HR>
 
@@ -925,7 +1073,7 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;PREV CLASS&nbsp;
+&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><B>PREV CLASS</B></A>&nbsp;
 &nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.AttributeEndDelimiter.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/Context.html" target="_top"><B>FRAMES</B></A>  &nbsp;

@@ -24,6 +24,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 /**
  * Guice module for basic Soy print directives.
  *
+ * @author Kai Huang
  */
 public class BasicDirectivesModule extends AbstractModule {
 
@@ -36,13 +37,15 @@ public class BasicDirectivesModule extends AbstractModule {
     // Basic escape directives.
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeCssString());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterCssValue());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.CleanHtml());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlRcdata());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlAttribute());
     soyDirectivesSetBinder.addBinding().toInstance(
         new BasicEscapeDirective.EscapeHtmlAttributeNospace());
-    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterHtmlAttribute());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterHtmlAttributes());
     soyDirectivesSetBinder.addBinding().toInstance(
         new BasicEscapeDirective.FilterHtmlElementName());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsRegex());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsString());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsValue());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterNormalizeUri());
@@ -53,6 +56,7 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(ChangeNewlineToBrDirective.class);
     soyDirectivesSetBinder.addBinding().to(InsertWordBreaksDirective.class);
     soyDirectivesSetBinder.addBinding().to(TruncateDirective.class);
+    soyDirectivesSetBinder.addBinding().to(TextDirective.class);
   }
 
 }

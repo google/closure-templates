@@ -23,6 +23,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -37,14 +38,12 @@ import java.util.Map;
  *
  * <p> Overrides are only allowed in Soy V1. An override is a template with the same name as an
  * earlier template, intended to replace the earlier definition.
- *
+ * 
  * <p> {@link #exec} should be called on a full parse tree. This visitor will check that all
  * overrides are explicit. There is no return value. A {@code SoySyntaxException} is thrown if a
  * non-explicit override is found.
  *
- * <p> Precondition: All the template names in {@code TemplateNode}s must be full names (i.e. you
- * must execute {@link PrependNamespacesToCalleeNamesVisitor} before executing this visitor).
- *
+ * @author Kai Huang
  */
 public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -99,22 +98,25 @@ public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
         SoyFileNode prevTemplateFile = prevTemplate.getNearestAncestor(SoyFileNode.class);
         SoyFileNode currTemplateFile = node.getNearestAncestor(SoyFileNode.class);
         if (currTemplateFile == prevTemplateFile) {
-          throw new SoySyntaxException(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "Found two definitions for template name '" + templateName + "', both in the file " +
-              currTemplateFile.getFilePath() + ".");
+                  currTemplateFile.getFilePath() + ".",
+              node);
         } else {
           String prevTemplateFilePath = prevTemplateFile.getFilePath();
           String currTemplateFilePath = currTemplateFile.getFilePath();
-          if (currTemplateFilePath.equals(prevTemplateFilePath)) {
-            throw new SoySyntaxException(
+          if (currTemplateFilePath != null && currTemplateFilePath.equals(prevTemplateFilePath)) {
+            throw SoySyntaxExceptionUtils.createWithNode(
                 "Found two definitions for template name '" + templateName +
-                "' in two different files with the same name " + currTemplateFilePath +
-                " (perhaps the file was accidentally included twice).");
+                    "' in two different files with the same name " + currTemplateFilePath +
+                    " (perhaps the file was accidentally included twice).",
+                node);
           } else {
-            throw new SoySyntaxException(
+            throw SoySyntaxExceptionUtils.createWithNode(
                 "Found two definitions for template name '" + templateName +
-                "' in two different files " + prevTemplateFilePath + " and " +
-                currTemplateFilePath + ".");
+                    "' in two different files " + prevTemplateFilePath + " and " +
+                    currTemplateFilePath + ".",
+                node);
           }
         }
       }

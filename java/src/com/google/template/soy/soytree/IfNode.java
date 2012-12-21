@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class IfNode extends AbstractParentSoyNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode {

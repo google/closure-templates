@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
@@ -67,6 +68,7 @@ import java.util.List;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractExprNodeVisitor
+ * @author Kai Huang
  */
 public abstract class AbstractReturningExprNodeVisitor<R>
     extends AbstractReturningNodeVisitor<ExprNode, R> {
@@ -90,8 +92,11 @@ public abstract class AbstractReturningExprNodeVisitor<R>
       case VAR_NODE: return visitVarNode((VarNode) node);
 
       case DATA_REF_NODE: return visitDataRefNode((DataRefNode) node);
-      case DATA_REF_KEY_NODE: return visitDataRefKeyNode((DataRefKeyNode) node);
-      case DATA_REF_INDEX_NODE: return visitDataRefIndexNode((DataRefIndexNode) node);
+      case DATA_REF_ACCESS_KEY_NODE: return visitDataRefAccessKeyNode((DataRefAccessKeyNode) node);
+      case DATA_REF_ACCESS_INDEX_NODE:
+        return visitDataRefAccessIndexNode((DataRefAccessIndexNode) node);
+      case DATA_REF_ACCESS_EXPR_NODE:
+        return visitDataRefAccessExprNode((DataRefAccessExprNode) node);
 
       case GLOBAL_NODE: return visitGlobalNode((GlobalNode) node);
 
@@ -112,6 +117,7 @@ public abstract class AbstractReturningExprNodeVisitor<R>
       case NOT_EQUAL_OP_NODE: return visitNotEqualOpNode((NotEqualOpNode) node);
       case AND_OP_NODE: return visitAndOpNode((AndOpNode) node);
       case OR_OP_NODE: return visitOrOpNode((OrOpNode) node);
+      case NULL_COALESCING_OP_NODE: return visitNullCoalescingOpNode((NullCoalescingOpNode) node);
       case CONDITIONAL_OP_NODE: return visitConditionalOpNode((ConditionalOpNode) node);
 
       case FUNCTION_NODE: return visitFunctionNode((FunctionNode) node);
@@ -210,11 +216,19 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
-  protected R visitDataRefKeyNode(DataRefKeyNode node) {
-    return visitExprNode(node);
+  protected R visitDataRefAccessKeyNode(DataRefAccessKeyNode node) {
+    return visitDataRefAccessNode(node);
   }
 
-  protected R visitDataRefIndexNode(DataRefIndexNode node) {
+  protected R visitDataRefAccessIndexNode(DataRefAccessIndexNode node) {
+    return visitDataRefAccessNode(node);
+  }
+
+  protected R visitDataRefAccessExprNode(DataRefAccessExprNode node) {
+    return visitDataRefAccessNode(node);
+  }
+
+  protected R visitDataRefAccessNode(DataRefAccessNode node) {
     return visitExprNode(node);
   }
 
@@ -288,6 +302,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitConditionalOpNode(ConditionalOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     return visitOperatorNode(node);
   }
 

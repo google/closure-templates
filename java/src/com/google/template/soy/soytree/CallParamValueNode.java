@@ -28,6 +28,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class CallParamValueNode extends CallParamNode implements ExprHolderNode {
 
@@ -52,12 +53,18 @@ public class CallParamValueNode extends CallParamNode implements ExprHolderNode 
     valueExprUnion = parseResult.valueExprUnion;
 
     if (valueExprUnion == null) {
-      throw new SoySyntaxException(
+      throw SoySyntaxException.createWithoutMetaInfo(
           "A 'param' tag should be self-ending (with a trailing '/') if and only if it also" +
-          " contains a value (invalid tag is {param " + commandText + " /}).");
+              " contains a value (invalid tag is {param " + commandText + " /}).");
     }
     if (valueExprUnion.getExpr() == null) {
       maybeSetSyntaxVersion(SyntaxVersion.V1);
+    }
+
+    if (parseResult.contentKind != null) {
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "The 'kind' attribute is not allowed on self-ending 'param' tags that " +
+              " contain a value (invalid tag is {param " + commandText + " /}).");
     }
   }
 

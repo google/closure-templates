@@ -53,7 +53,7 @@ function windowTitle()
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/base/SourceLocation.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="SourceLocation.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -133,7 +133,7 @@ Describes a line in a Soy input file.
 <B>Constructor Summary</B></FONT></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SourceLocation.html#SourceLocation(java.lang.String, int)">SourceLocation</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath,
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SourceLocation.html#SourceLocation(java.lang.String, int)">SourceLocation</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
                int&nbsp;lineNumber)</CODE>
 
 <BR>
@@ -159,20 +159,20 @@ Describes a line in a Soy input file.
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SourceLocation.html#getFilePath()">getFilePath</A></B>()</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a file path or URI useful for error messages.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;int</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SourceLocation.html#getLineNumber()">getLineNumber</A></B>()</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The line number (1-indexed) in the source file to be consistent with
- common source editors.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/base/SourceLocation.html#getSourcePath()">getSourcePath</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A description of the input <A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree"><CODE>SoyFileNode</CODE></A>.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the line number in the source file (1-based), or 0 if associated with the entire file
+ instead of a line.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -245,12 +245,12 @@ public static final <A HREF="../../../../../com/google/template/soy/base/SourceL
 <A NAME="SourceLocation(java.lang.String, int)"><!-- --></A><H3>
 SourceLocation</H3>
 <PRE>
-public <B>SourceLocation</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;sourcePath,
+public <B>SourceLocation</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath,
                       int&nbsp;lineNumber)</PRE>
 <DL>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>sourcePath</CODE> - A file path or URI useful for error messages.<DD><CODE>lineNumber</CODE> - A (1-indexed) line number in sourcePath or 0 to indicate that the whole
-     source is referred to.</DL>
+<DT><B>Parameters:</B><DD><CODE>filePath</CODE> - A file path or URI useful for error messages.<DD><CODE>lineNumber</CODE> - The line number in the source file (1-based), or 0 if associated with the
+     entire file instead of a line.</DL>
 </DL>
 
 <!-- ============ METHOD DETAIL ========== -->
@@ -263,18 +263,17 @@ public <B>SourceLocation</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java
 </TR>
 </TABLE>
 
-<A NAME="getSourcePath()"><!-- --></A><H3>
-getSourcePath</H3>
+<A NAME="getFilePath()"><!-- --></A><H3>
+getFilePath</H3>
 <PRE>
 <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nonnull.html?is-external=true" title="class or interface in javax.annotation">@Nonnull</A>
-</FONT>public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getSourcePath</B>()</PRE>
+</FONT>public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getFilePath</B>()</PRE>
 <DL>
-<DD>A description of the input <A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree"><CODE>SoyFileNode</CODE></A>.
+<DD>Returns a file path or URI useful for error messages. This should not be used to fetch content
+     from the file system.
 <P>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>a file path or URI useful for error messages.  This should not
-      be used to fetch content from the file system.</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -284,12 +283,11 @@ getLineNumber</H3>
 <PRE>
 public int <B>getLineNumber</B>()</PRE>
 <DL>
-<DD>The line number (1-indexed) in the source file to be consistent with
- common source editors.
+<DD>Returns the line number in the source file (1-based), or 0 if associated with the entire file
+ instead of a line.
 <P>
 <DD><DL>
-
-<DT><B>Returns:</B><DD>0 if associated with the entire file instead of a line.</DL>
+</DL>
 </DD>
 </DL>
 <HR>
@@ -379,7 +377,7 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../com/google/template/soy/base/IndentedLinesBuilder.html" title="class in com.google.template.soy.base"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileSupplier.html" title="interface in com.google.template.soy.base"><B>NEXT CLASS</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base"><B>NEXT CLASS</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/base/SourceLocation.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="SourceLocation.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;

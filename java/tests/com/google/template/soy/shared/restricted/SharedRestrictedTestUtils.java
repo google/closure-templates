@@ -26,6 +26,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
  *
  * <p> Important: This class may only be used when testing plugins (e.g. functions, directives).
  *
+ * @author Kai Huang
  */
 public class SharedRestrictedTestUtils {
 

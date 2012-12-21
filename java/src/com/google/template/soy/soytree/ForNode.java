@@ -19,9 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
+import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
@@ -41,6 +39,7 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class ForNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode, ConditionalBlockNode, LoopNode, ExprHolderNode,
@@ -74,27 +73,18 @@ public class ForNode extends AbstractBlockCommandNode
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      throw new SoySyntaxException("Invalid 'for' command text \"" + commandText + "\".");
+      throw SoySyntaxException.createWithoutMetaInfo(
+          "Invalid 'for' command text \"" + commandText + "\".");
     }
 
-    try {
-      varName = (new ExpressionParser(matcher.group(1))).parseVariable().getChild(0).getName();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText("variable name", tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText("variable name", pe);
-    }
+    varName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(
+        matcher.group(1), "Invalid variable name in 'for' command text \"" + commandText + "\".");
 
-    List<ExprRootNode<?>> tempRangeArgs;
-    try {
-      tempRangeArgs = (new ExpressionParser(matcher.group(2))).parseExpressionList();
-    } catch (TokenMgrError tme) {
-      throw createExceptionForInvalidCommandText("range specification", tme);
-    } catch (ParseException pe) {
-      throw createExceptionForInvalidCommandText("range specification", pe);
-    }
+    List<ExprRootNode<?>> tempRangeArgs = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
+        matcher.group(2),
+        "Invalid range specification in 'for' command text \"" + commandText + "\".");
     if (tempRangeArgs.size() > 3) {
-      throw new SoySyntaxException(
+      throw SoySyntaxException.createWithoutMetaInfo(
           "Invalid range specification in 'for' command text \"" + commandText + "\".");
     }
     rangeArgs = ImmutableList.copyOf(tempRangeArgs);
@@ -121,20 +111,6 @@ public class ForNode extends AbstractBlockCommandNode
       tempRangeArgs.add(origRangeArg.clone());
     }
     this.rangeArgs = ImmutableList.copyOf(tempRangeArgs);
-  }
-
-
-  /**
-   * Private helper for the constructor.
-   * @param desc Description of the invalid item.
-   * @param cause The underlying exception.
-   * @return The SoySyntaxException to be thrown.
-   */
-  private SoySyntaxException createExceptionForInvalidCommandText(
-      String desc, Throwable cause) {
-    //noinspection ThrowableInstanceNeverThrown
-    return new SoySyntaxException(
-        "Invalid " + desc + " in 'for' command text \"" + getCommandText() + "\".", cause);
   }
 
 

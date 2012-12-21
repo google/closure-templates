@@ -13,6 +13,7 @@ com.google.template.soy.data.restricted
 com.google.template.soy.examples
 com.google.template.soy.exprparse
 com.google.template.soy.exprtree
+com.google.template.soy.i18ndirectives
 com.google.template.soy.internal.base
 com.google.template.soy.internal.i18n
 com.google.template.soy.javasrc

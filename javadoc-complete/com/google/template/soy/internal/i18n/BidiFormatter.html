@@ -109,7 +109,7 @@ Utility class for formatting text for display in a potentially opposite-directio
  and the text following it may be displayed incorrectly unless the inserted string is explicitly
  separated from the surrounding text in a "wrapper" that declares its directionality at the start
  and then resets it back at the end. This wrapping can be done in HTML mark-up (e.g. a
- 'span dir=rtl' tag) or - only in contexts where mark-up cannot be used - in Unicode BiDi
+ 'span dir=\"rtl\"' tag) or - only in contexts where mark-up cannot be used - in Unicode BiDi
  formatting codes (LRE|RLE and PDF). Optionally, the mark-upp can be inserted even when the
  directionality the same, in order to keep the DOM structure more stable. Providing such wrapping
  services is the basic purpose of the BiDi formatter.
@@ -163,8 +163,8 @@ Utility class for formatting text for display in a potentially opposite-directio
         boolean&nbsp;isHtml)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns "dir=ltr" or "dir=rtl", depending on <code>str</code>'s estimated directionality, if it is
- not the same as the context directionality.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns "dir=\"ltr\"" or "dir=\"rtl\"", depending on <code>str</code>'s estimated directionality,
+ if it is not the same as the context directionality.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
@@ -292,7 +292,7 @@ Utility class for formatting text for display in a potentially opposite-directio
 <TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiFormatter.html#knownDirAttr(com.google.template.soy.internal.i18n.BidiUtils.Dir)">knownDirAttr</A></B>(<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A>&nbsp;dir)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns "dir=ltr" or "dir=rtl", depending on the given directionality, if it is not
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns "dir=\"ltr\"" or "dir=\"rtl\"", depending on the given directionality, if it is not
  the same as the context directionality.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
@@ -682,14 +682,14 @@ dirAttr</H3>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>dirAttr</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;str,
                       boolean&nbsp;isHtml)</PRE>
 <DL>
-<DD>Returns "dir=ltr" or "dir=rtl", depending on <code>str</code>'s estimated directionality, if it is
- not the same as the context directionality.
+<DD>Returns "dir=\"ltr\"" or "dir=\"rtl\"", depending on <code>str</code>'s estimated directionality,
+ if it is not the same as the context directionality.
  Otherwise, returns the empty string.
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>str</CODE> - String whose directionality is to be estimated<DD><CODE>isHtml</CODE> - Whether <code>str</code> is HTML / HTML-escaped
-<DT><B>Returns:</B><DD>"dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
-     else, the empty string.</DL>
+<DT><B>Returns:</B><DD>"dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
+     context; else, the empty string.</DL>
 </DD>
 </DL>
 <HR>
@@ -703,8 +703,8 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>str</CODE> - String whose directionality is to be estimated
-<DT><B>Returns:</B><DD>"dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
-     else, the empty string.</DL>
+<DT><B>Returns:</B><DD>"dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
+     context; else, the empty string.</DL>
 </DD>
 </DL>
 <HR>
@@ -714,14 +714,14 @@ knownDirAttr</H3>
 <PRE>
 public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>knownDirAttr</B>(<A HREF="../../../../../../com/google/template/soy/internal/i18n/BidiUtils.Dir.html" title="enum in com.google.template.soy.internal.i18n">BidiUtils.Dir</A>&nbsp;dir)</PRE>
 <DL>
-<DD>Returns "dir=ltr" or "dir=rtl", depending on the given directionality, if it is not
+<DD>Returns "dir=\"ltr\"" or "dir=\"rtl\"", depending on the given directionality, if it is not
  the same as the context directionality.
  Otherwise, returns the empty string.
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>dir</CODE> - Given directionality
-<DT><B>Returns:</B><DD>"dir=rtl" for RTL text in non-RTL context; "dir=ltr" for LTR text in non-LTR context;
-     else, the empty string.</DL>
+<DT><B>Returns:</B><DD>"dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
+     context; else, the empty string.</DL>
 </DD>
 </DL>
 <HR>
@@ -738,7 +738,7 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
  follows it.<p>
  The algorithm: estimates the directionality of input argument <code>str</code>. In case its
  directionality doesn't match the context directionality, wraps it with a 'span' tag and adds a
- "dir" attribute (either 'dir=rtl' or 'dir=ltr').<p>
+ "dir" attribute (either 'dir=\"rtl\"' or 'dir=\"ltr\"').<p>
  If <code>setAlwaysSpan(true)</code> was used, the input is always wrapped with 'span', skipping just
  the dir attribute when it's not needed.
  <p>
@@ -800,7 +800,7 @@ public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-e
  so an opposite-directionality string is neither garbled nor garbles what follows it.<p>
  The algorithm: estimates the directionality of input argument <code>str</code>. In case its
  directionality doesn't match the context directionality, wraps it with a 'span' tag and adds a
- "dir" attribute (either 'dir=rtl' or 'dir=ltr').<p>
+ "dir" attribute (either 'dir=\"rtl\"' or 'dir=\"ltr\"').<p>
  If <code>setAlwaysSpan(true)</code> was used, the input is always wrapped with 'span', skipping just
  the dir attribute when it's not needed.
  <p>

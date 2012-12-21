@@ -16,19 +16,14 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
-import com.google.template.soy.sharedpasses.render.RenderVisitor.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Deque;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.inject.Singleton;
@@ -39,9 +34,10 @@ import javax.inject.Singleton;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 @Singleton
-public class PrerenderVisitorFactory implements RenderVisitorFactory {
+public class PrerenderVisitorFactory {
 
 
   /** Map of all SoyJavaRuntimePrintDirectives (name to directive). */
@@ -60,31 +56,21 @@ public class PrerenderVisitorFactory implements RenderVisitorFactory {
   }
 
 
+  /**
+   * Creates a PrerenderVisitor.
+   *
+   * @param outputBuf The Appendable to append the output to.
+   * @param templateRegistry A registry of all templates.
+   * @param data The current template data.
+   * @param env The current environment, or null if this is the initial call.
+   * @return The newly created PrerenderVisitor instance.
+   */
   public PrerenderVisitor create(
-      StringBuilder outputSb, TemplateRegistry templateRegistry,
-      @Nullable SoyMapData data, @Nullable Deque<Map<String, SoyData>> env) {
+      Appendable outputBuf, TemplateRegistry templateRegistry, SoyMapData data,
+      @Nullable Deque<Map<String, SoyData>> env) {
 
     return new PrerenderVisitor(
-        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, this, outputSb, templateRegistry,
-        data, env);
-  }
-
-
-  @Override
-  public PrerenderVisitor create(Appendable outputSb,
-      TemplateRegistry templateRegistry, @Nullable SoyMapData data,
-      @Nullable SoyMapData ijData, @Nullable Deque<Map<String, SoyData>> env,
-      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyCssRenamingMap cssRenamingMap) {
-
-    // PrerenderVisitor cannot handle CallDelegateNode, MsgNode, and CssNode.
-    Preconditions.checkArgument(activeDelPackageNames == null);
-    Preconditions.checkArgument(msgBundle == null);
-    Preconditions.checkArgument(cssRenamingMap == null);
-
-    return new PrerenderVisitor(
-        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, this, outputSb, templateRegistry,
-        data, env);
+        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry, data, env);
   }
 
 }

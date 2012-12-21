@@ -16,6 +16,8 @@
 
 package com.google.template.soy.tofu;
 
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
@@ -30,6 +32,10 @@ import javax.annotation.Nullable;
 /**
  * SoyTofu is the public interface for a Java object that represents a compiled Soy file set.
  *
+ * <p> Important: Users should use the methods here (on a SoyTofu object created by Soy), but should
+ * not create their own implementations this interface.
+ *
+ * @author Kai Huang
  */
 public interface SoyTofu {
 
@@ -56,7 +62,7 @@ public interface SoyTofu {
 
 
   /**
-   * Getter for whether this instance caches intermediate Soy trees after substitutions from the
+   * Gets whether this instance caches intermediate Soy trees after substitutions from the
    * SoyMsgBundle and the SoyCssRenamingMap.
    *
    * @return Whether this instance caches intermediate Soy trees after substitutions from the
@@ -109,6 +115,29 @@ public interface SoyTofu {
   public Renderer newRenderer(String templateName);
 
 
+  /**
+   * Gets the set of injected param keys used by a template (and its transitive callees).
+   *
+   * <p> Note: The {@code SoyTemplateInfo} object already has a method {@code getUsedIjParams()}.
+   * That method should produce the same results as this method, unless the bundle of Soy files
+   * included when running the SoyParseInfoGenerator is different from the bundle of Soy files
+   * included when creating this SoyTofu object.
+   *
+   * @param templateInfo Info for the template to get injected params of.
+   * @return The set of injected param keys used by the given template.
+   */
+  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(SoyTemplateInfo templateInfo);
+
+
+  /**
+   * Gets the set of injected param keys used by a template (and its transitive callees).
+   *
+   * @param templateName The name of the template to get injected params of.
+   * @return The set of injected param keys used by the given template.
+   */
+  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName);
+
+
   // -----------------------------------------------------------------------------------------------
   // Renderer interface.
 
@@ -141,7 +170,7 @@ public interface SoyTofu {
      * will be converted to a {@code SoyMapData} object on each call. This may not be a big deal if
      * you only need to use the data object once. But if you need to reuse the same data object for
      * multiple calls, it's more efficient to build your own {@code SoyMapData} object and reuse it
-     * with {@link #setIjData (SoyMapData)}.
+     * with {@link #setIjData(SoyMapData)}.
      */
     public Renderer setIjData(Map<String, ?> ijData);
 
@@ -189,6 +218,17 @@ public interface SoyTofu {
      * Renders the template using the data, injected data, and message bundle previously set.
      */
     public String render();
+
+    /**
+     * Renders the strict-mode template as a SanitizedContent object, which can be used as an input
+     * to another Soy template, or used to verify that the output type is correct.
+     *
+     * Strict-autoescaped templates will return a SanitizedContent object corresponding to the
+     * kind="..." attribute of the template.
+     *
+     * @throws IllegalArgumentException If the template is non-strict.
+     */
+    public SanitizedContent renderAsSanitizedContent();
 
     /**
      * Renders the template using the data, injected data, and message bundle previously set

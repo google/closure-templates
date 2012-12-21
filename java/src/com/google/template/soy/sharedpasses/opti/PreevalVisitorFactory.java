@@ -35,6 +35,7 @@ import javax.inject.Singleton;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 @Singleton
 public class PreevalVisitorFactory implements EvalVisitorFactory {
@@ -53,7 +54,7 @@ public class PreevalVisitorFactory implements EvalVisitorFactory {
   }
 
 
-  public PreevalVisitor create(@Nullable SoyMapData data, Deque<Map<String, SoyData>> env) {
+  public PreevalVisitor create(SoyMapData data, Deque<Map<String, SoyData>> env) {
 
     return new PreevalVisitor(soyJavaRuntimeFunctionsMap, data, env);
   }
@@ -61,7 +62,7 @@ public class PreevalVisitorFactory implements EvalVisitorFactory {
 
   @Override
   public PreevalVisitor create(
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+      SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);

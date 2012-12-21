@@ -20,10 +20,9 @@ import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
-import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 
@@ -41,6 +40,7 @@ import javax.annotation.Nullable;
  * <p> Uses {@code SoyTofuFunction}s and {@code SoyTofuPrintDirective}s instead of
  * {@code SoyJavaRuntimeFunction}s and {@code SoyJavaRuntimePrintDirective}s.
  *
+ * @author Kai Huang
  */
 class TofuRenderVisitor extends RenderVisitor {
 
@@ -51,9 +51,8 @@ class TofuRenderVisitor extends RenderVisitor {
 
   /**
    * @param soyTofuDirectivesMap Map of all SoyTofuPrintDirectives (name to directive).
-   * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
-   * @param renderVisitorFactory Factory for creating an instance of EvalVisitor.
-   * @param outputSb The Appendable to append the output to.
+   * @param tofuEvalVisitorFactory Factory for creating an instance of TofuEvalVisitor.
+   * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
    *     tests).
    * @param data The current template data.
@@ -67,36 +66,44 @@ class TofuRenderVisitor extends RenderVisitor {
    */
   protected TofuRenderVisitor(
       Map<String, SoyTofuPrintDirective> soyTofuDirectivesMap,
-      EvalVisitorFactory evalVisitorFactory, RenderVisitorFactory renderVisitorFactory,
-      Appendable outputSb, @Nullable TemplateRegistry templateRegistry,
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData,
+      TofuEvalVisitorFactory tofuEvalVisitorFactory, Appendable outputBuf,
+      @Nullable TemplateRegistry templateRegistry, SoyMapData data, @Nullable SoyMapData ijData,
       @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     super(
-        null, evalVisitorFactory, renderVisitorFactory, outputSb, templateRegistry, data, ijData,
-        env, activeDelPackageNames, msgBundle, cssRenamingMap);
+        null, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData, env,
+        activeDelPackageNames, msgBundle, cssRenamingMap);
 
     this.soyTofuDirectivesMap = soyTofuDirectivesMap;
   }
 
 
-  @Override protected String applyDirective(
-      String directiveName, SoyData value, List<SoyData> args, PrintNode printNode) {
+  @Override protected TofuRenderVisitor createHelperInstance(
+      Appendable outputBuf, SoyMapData data) {
+
+    return new TofuRenderVisitor(
+        soyTofuDirectivesMap, (TofuEvalVisitorFactory) evalVisitorFactory, outputBuf,
+        templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle, cssRenamingMap);
+  }
+
+
+  @Override protected SoyData applyDirective(
+      String directiveName, SoyData value, List<SoyData> args, SoyNode node) {
 
     // Get directive.
     SoyTofuPrintDirective directive = soyTofuDirectivesMap.get(directiveName);
     if (directive == null) {
       throw new RenderException(
           "Failed to find Soy print directive with name '" + directiveName + "'" +
-          " (tag " + printNode.toSourceString() + ")");
+          " (tag " + node.toSourceString() + ")");
     }
 
     // TODO: Add a pass to check num args at compile time.
     if (! directive.getValidArgsSizes().contains(args.size())) {
       throw new RenderException(
           "Print directive '" + directiveName + "' used with the wrong number of" +
-          " arguments (tag " + printNode.toSourceString() + ").");
+          " arguments (tag " + node.toSourceString() + ").");
     }
 
     return directive.applyForTofu(value, args);

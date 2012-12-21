@@ -96,6 +96,10 @@ Compiler passes used in parsing.
 <TD>Visitor to change <code>call</code>s to use <code>data="all"</code> whenever possible.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/CheckCallsVisitor.html" title="class in com.google.template.soy.parsepasses">CheckCallsVisitor</A></B></TD>
+<TD>Visitor for running some sanity checks on calls.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/CheckDelegatesVisitor.html" title="class in com.google.template.soy.parsepasses">CheckDelegatesVisitor</A></B></TD>
 <TD>Checks various rules regarding the use of delegates (including delegate packages, delegate
  templates, and delegate calls).</TD>
@@ -118,14 +122,22 @@ Compiler passes used in parsing.
  HTML-escaping on all 'print' nodes).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/PrependNamespacesToCalleeNamesVisitor.html" title="class in com.google.template.soy.parsepasses">PrependNamespacesToCalleeNamesVisitor</A></B></TD>
-<TD>Visitor for prepending namespaces to the partial callee names in <code>CallBasicNode</code>s to make
- full callee names.</TD>
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/ReplaceHasDataFunctionVisitor.html" title="class in com.google.template.soy.parsepasses">ReplaceHasDataFunctionVisitor</A></B></TD>
+<TD>Visitor for replacing hasData() function with boolean 'true'.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/RewriteNullCoalescingOpVisitor.html" title="class in com.google.template.soy.parsepasses">RewriteNullCoalescingOpVisitor</A></B></TD>
+<TD>Visitor for rewriting the binary '?:' (null-coalescing) operator.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/RewriteRemainderNodesVisitor.html" title="class in com.google.template.soy.parsepasses">RewriteRemainderNodesVisitor</A></B></TD>
 <TD>Visitor for finding 'print' nodes that are actually 'remainder' nodes, and replacing them with
  the appropriate expression.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/SetFullCalleeNamesVisitor.html" title="class in com.google.template.soy.parsepasses">SetFullCalleeNamesVisitor</A></B></TD>
+<TD>Visitor for setting the full callee name on each CallBasicNode whose callee name in the source
+ code either (a) is a partial template name or (b) starts with an alias.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/parsepasses/VerifyPhnameAttrOnlyOnPlaceholdersVisitor.html" title="class in com.google.template.soy.parsepasses">VerifyPhnameAttrOnlyOnPlaceholdersVisitor</A></B></TD>

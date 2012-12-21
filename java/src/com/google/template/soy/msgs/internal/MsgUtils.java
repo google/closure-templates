@@ -46,23 +46,121 @@ import java.util.List;
 /**
  * Soy-specific utilities for working with messages.
  *
+ * @author Kai Huang
  */
 public class MsgUtils {
+
 
   private MsgUtils() {}
 
 
+  // -----------------------------------------------------------------------------------------------
+  // Utilities assuming a specific dual format: use unbraced placeholders for regular messages and
+  // use braced placeholders for plural/select messages.
+
+
   /**
-   * Builds the list of SoyMsgParts and computes the unique message id for the given MsgNode.
+   * Builds the list of SoyMsgParts and computes the unique message id for the given MsgNode,
+   * assuming a specific dual format.
+   *
+   * Note: The field {@code idUsingBracedPhs} in the return value is simply set to -1L.
+   *
    * @param msgNode The message parsed from the Soy source.
-   * @return A pair whose first item is the list of SoyMsgParts and second item is the message id.
+   * @return A {@code MsgPartsAndIds} object, asssuming a specific dual format, with field
+   *     {@code idUsingBracedPhs} set to -1L.
    */
-  public static Pair<List<SoyMsgPart>, Long> buildMsgPartsAndComputeMsgId(MsgNode msgNode) {
+  public static MsgPartsAndIds buildMsgPartsAndComputeMsgIdForDualFormat(MsgNode msgNode) {
+
+    if (msgNode.isPlrselMsg()) {
+      MsgPartsAndIds mpai = buildMsgPartsAndComputeMsgIds(msgNode, true);
+      return new MsgPartsAndIds(mpai.parts, mpai.idUsingBracedPhs, -1L);
+    } else {
+      return buildMsgPartsAndComputeMsgIds(msgNode, false);
+    }
+  }
+
+
+  /**
+   * Computes the unique message id for the given MsgNode, assuming a specific dual format.
+   * @param msgNode The message parsed from the Soy source.
+   * @return The message id, assuming a specific dual format.
+   */
+  public static long computeMsgIdForDualFormat(MsgNode msgNode) {
+    return msgNode.isPlrselMsg() ? computeMsgIdUsingBracedPhs(msgNode) : computeMsgId(msgNode);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Flexible utilities. Currently private to prevent accidental usage, but can be public if needed.
+
+
+  /**
+   * Value class for the return value of {@code buildMsgPartsAndComputeMsgId()}.
+   */
+  public static class MsgPartsAndIds {
+
+    /** The parts that make up the message content. */
+    public final List<SoyMsgPart> parts;
+    /** A unique id for this message (same across all translations). */
+    public final long id;
+    /** An alternate unique id for this message. Only use this if you use braced placeholders. */
+    public final long idUsingBracedPhs;
+
+    private MsgPartsAndIds(List<SoyMsgPart> parts, long id, long idUsingBracedPhs) {
+      this.parts = parts;
+      this.id = id;
+      this.idUsingBracedPhs = idUsingBracedPhs;
+    }
+  }
+
+
+  /**
+   * Builds the list of SoyMsgParts and computes the unique message id(s) for the given MsgNode.
+   * @param msgNode The message parsed from the Soy source.
+   * @param doComputeMsgIdUsingBracedPhs Whether to compute the alternate message id using braced
+   *     placeholders. If set to false, then the field {@code idUsingBracedPhs} in the return value
+   *     is simply set to -1L.
+   * @return A {@code MsgPartsAndIds} object.
+   */
+  private static MsgPartsAndIds buildMsgPartsAndComputeMsgIds(
+      MsgNode msgNode, boolean doComputeMsgIdUsingBracedPhs) {
+
     List<SoyMsgPart> msgParts = buildMsgParts(msgNode);
     long msgId =
         SoyMsgIdComputer.computeMsgId(msgParts, msgNode.getMeaning(), msgNode.getContentType());
-    return Pair.of(msgParts, msgId);
+    long msgIdUsingBracedPhs = doComputeMsgIdUsingBracedPhs ?
+        SoyMsgIdComputer.computeMsgIdUsingBracedPhs(
+            msgParts, msgNode.getMeaning(), msgNode.getContentType()) :
+        -1L;
+    return new MsgPartsAndIds(msgParts, msgId, msgIdUsingBracedPhs);
   }
+
+
+  /**
+   * Computes the unique message id for the given MsgNode.
+   * @param msgNode The message parsed from the Soy source.
+   * @return The message id.
+   */
+  private static long computeMsgId(MsgNode msgNode) {
+    return SoyMsgIdComputer.computeMsgId(
+        buildMsgParts(msgNode), msgNode.getMeaning(), msgNode.getContentType());
+  }
+
+
+  /**
+   * Computes the alternate unique id for this message. Only use this if you use braced
+   * placeholders.
+   * @param msgNode The message parsed from the Soy source.
+   * @return The alternate message id using braced placeholders.
+   */
+  private static long computeMsgIdUsingBracedPhs(MsgNode msgNode) {
+    return SoyMsgIdComputer.computeMsgIdUsingBracedPhs(
+        buildMsgParts(msgNode), msgNode.getMeaning(), msgNode.getContentType());
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Helpers for building the list of message parts.
 
 
   /**
@@ -70,7 +168,7 @@ public class MsgUtils {
    * @param msgNode The message parsed from the Soy source.
    * @return The list of SoyMsgParts.
    */
-  public static List<SoyMsgPart> buildMsgParts(MsgNode msgNode) {
+  private static List<SoyMsgPart> buildMsgParts(MsgNode msgNode) {
     return buildMsgPartsForChildren(msgNode, msgNode);
   }
 
@@ -150,6 +248,7 @@ public class MsgUtils {
    */
   private static SoyMsgSelectPart buildMsgPartForSelect(
       MsgSelectNode msgSelectNode, MsgNode msgNode) {
+
     // This is the list of the cases.
     List<Pair<String, List<SoyMsgPart>>> selectCases = Lists.newArrayList();
 
@@ -167,17 +266,6 @@ public class MsgUtils {
     }
 
     return new SoyMsgSelectPart(msgNode.getSelectVarName(msgSelectNode), selectCases);
-  }
-
-
-  /**
-   * Computes the unique message id for the given MsgNode.
-   * @param msgNode The message parsed from the Soy source.
-   * @return The message id.
-   */
-  public static long computeMsgId(MsgNode msgNode) {
-    return SoyMsgIdComputer.computeMsgId(
-        buildMsgParts(msgNode), msgNode.getMeaning(), msgNode.getContentType());
   }
 
 }

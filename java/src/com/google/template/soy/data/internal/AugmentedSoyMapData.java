@@ -35,6 +35,7 @@ import java.util.Set;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class AugmentedSoyMapData extends SoyMapData {
 
@@ -148,16 +149,6 @@ public class AugmentedSoyMapData extends SoyMapData {
    */
   @Override public void removeSingle(String key) {
     throw new UnsupportedOperationException();
-  }
-
-
-  @Override public SoyData get(String keyStr) {
-
-    SoyData value = super.get(keyStr);
-    if (value != null) {
-      return value;
-    }
-    return baseData.get(keyStr);
   }
 
 

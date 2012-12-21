@@ -34,6 +34,7 @@ package com.google.template.soy.internal.base;
  * <p>Several popular escapers are defined as constants in the class {@link
  * CharEscapers}.
  *
+ * @author David Beaumont
  */
 public interface Escaper {
 

@@ -36,6 +36,7 @@ import java.util.List;
  *
  * @see SoyAbstractTofuFunction
  * @see com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction
+ * @author Kai Huang
  */
 public interface SoyTofuFunction extends SoyFunction {
 

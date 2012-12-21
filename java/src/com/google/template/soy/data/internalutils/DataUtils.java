@@ -41,6 +41,7 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public class DataUtils {
 
@@ -125,7 +126,7 @@ public class DataUtils {
         value = null;  // make compiler happy
       }
       if (!isValidValue) {
-        throw new SoySyntaxException(
+        throw SoySyntaxException.createWithoutMetaInfo(
             "Compile-time globals map contains invalid value: " + valueObj.toString() + ".");
       }
 

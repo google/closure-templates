@@ -53,7 +53,7 @@ function windowTitle()
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/package-summary.html"><B>PREV PACKAGE</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/internal/base/package-summary.html"><B>NEXT PACKAGE</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../com/google/template/soy/i18ndirectives/package-summary.html"><B>NEXT PACKAGE</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/exprtree/package-summary.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="package-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
@@ -155,12 +155,20 @@ Expression parse tree.
 <TD>Node representing a boolean value.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefIndexNode</A></B></TD>
-<TD>Node representing a literal array index within a data reference.</TD>
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A></B></TD>
+<TD>Node representing an access using brackets containing an expression.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefKeyNode</A></B></TD>
-<TD>Node representing a literal identifier key within a data reference.</TD>
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A></B></TD>
+<TD>Node representing an access using literal list index.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A></B></TD>
+<TD>Node representing an access using literal identifier key.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A></B></TD>
+<TD>Node representing an access within a data reference.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html" title="class in com.google.template.soy.exprtree">DataRefNode</A></B></TD>
@@ -268,6 +276,10 @@ Expression parse tree.
 <TD>Node representing the 'not' operator.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
+<TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A></B></TD>
+<TD>Node representing the '?:' (null-coalescing) operator.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
 <TD WIDTH="15%"><B><A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.OrOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.OrOpNode</A></B></TD>
 <TD>Node representing the 'or' operator.</TD>
 </TR>
@@ -354,7 +366,7 @@ Expression parse tree.
 <TR>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
 &nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/package-summary.html"><B>PREV PACKAGE</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/internal/base/package-summary.html"><B>NEXT PACKAGE</B></A></FONT></TD>
+&nbsp;<A HREF="../../../../../com/google/template/soy/i18ndirectives/package-summary.html"><B>NEXT PACKAGE</B></A></FONT></TD>
 <TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
   <A HREF="../../../../../index.html?com/google/template/soy/exprtree/package-summary.html" target="_top"><B>FRAMES</B></A>  &nbsp;
 &nbsp;<A HREF="package-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;

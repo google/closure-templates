@@ -26,6 +26,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.restricted.Sanitizers;
 
 import java.util.Map;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 /**
  * Library of utilities needed by the generated code. Do not use these from hand-written code.
  *
+ * @author Kai Huang
  */
 public class SoyUtils {
 
@@ -48,18 +50,18 @@ public class SoyUtils {
   // Basics.
 
 
-  public static SoyData $$getData(CollectionData collectionData, String keyStr) {
+  public static SoyData $$getData(SoyData collectionData, String keyStr) {
 
-    SoyData data = collectionData.get(keyStr);
-    return (data != null) ? data : NullData.INSTANCE;
+    SoyData value = ((CollectionData) collectionData).get(keyStr);
+    return (value != null) ? value : UndefinedData.INSTANCE;
   }
 
 
   // TODO: Use this in generated Java code instead of $$getData(), whenever possible.
-  public static SoyData $$getDataSingle(CollectionData collectionData, String key) {
+  public static SoyData $$getDataSingle(SoyData collectionData, String key) {
 
-    SoyData data = collectionData.getSingle(key);
-    return (data != null) ? data : NullData.INSTANCE;
+    SoyData value = ((CollectionData) collectionData).getSingle(key);
+    return (value != null) ? value : UndefinedData.INSTANCE;
   }
 
 
@@ -149,8 +151,8 @@ public class SoyUtils {
   }
 
 
-  public static String $$filterHtmlAttribute(SoyData value) {
-    return Sanitizers.filterHtmlAttribute(value);
+  public static String $$filterHtmlAttributes(SoyData value) {
+    return Sanitizers.filterHtmlAttributes(value);
   }
 
 
@@ -365,6 +367,11 @@ public class SoyUtils {
 
   // -----------------------------------------------------------------------------------------------
   // Functions.
+
+
+  public static BooleanData $$isNonnull(SoyData value) {
+    return BooleanData.forValue(! (value instanceof UndefinedData || value instanceof NullData));
+  }
 
 
   public static NumberData $$round(

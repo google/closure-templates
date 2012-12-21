@@ -23,6 +23,8 @@ import com.google.common.io.Files;
 import com.google.common.io.InputSupplier;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.DataUtils;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.ParseException;
@@ -30,7 +32,10 @@ import com.google.template.soy.exprparse.TokenMgrError;
 import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.internal.base.Pair;
 
 import java.io.BufferedReader;
@@ -47,6 +52,7 @@ import java.util.regex.Pattern;
 /**
  * Public utilities for Soy users.
  *
+ * @author Kai Huang
  */
 public class SoyUtils {
 
@@ -67,7 +73,7 @@ public class SoyUtils {
    * @param output The object to append the generated text to.
    * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
-   * @see #generateCompileTimeGlobalsFile(Map, File)
+   * @see #generateCompileTimeGlobalsFile(Map, File) 
    */
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, Appendable output) throws IOException {
@@ -158,9 +164,26 @@ public class SoyUtils {
       String name = matcher.group(1);
       String valueText = matcher.group(2).trim();
 
-      PrimitiveData value;
       try {
         ExprNode valueExpr = (new ExpressionParser(valueText)).parseExpression().getChild(0);
+
+        // Handle negative numbers as a special case.
+        // TODO: Consider changing parser to actually parse negative numbers as primitives.
+        if (valueExpr instanceof NegativeOpNode) {
+          ExprNode childExpr = ((NegativeOpNode) valueExpr).getChild(0);
+          if (childExpr instanceof IntegerNode) {
+            compileTimeGlobalsBuilder.put(
+                name, IntegerData.forValue(-((IntegerNode) childExpr).getValue()));
+            continue;
+          } else if (childExpr instanceof FloatNode) {
+            compileTimeGlobalsBuilder.put(
+                name, FloatData.forValue(-((FloatNode) childExpr).getValue()));
+            continue;
+          }
+        }
+
+        // Record error for non-primitives.
+        // TODO: Consider allowing non-primitives (e.g. list/map literals).
         if (!(valueExpr instanceof PrimitiveNode)) {
           if (valueExpr instanceof GlobalNode || valueExpr instanceof DataRefNode) {
             errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
@@ -169,7 +192,11 @@ public class SoyUtils {
           }
           continue;
         }
-        value = DataUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr);
+
+        // Default case.
+        compileTimeGlobalsBuilder.put(
+            name, DataUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr));
+
       } catch (TokenMgrError tme) {
         errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
         continue;
@@ -177,8 +204,6 @@ public class SoyUtils {
         errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
         continue;
       }
-
-      compileTimeGlobalsBuilder.put(name, value);
     }
 
     if (errors.size() > 0) {
@@ -188,7 +213,7 @@ public class SoyUtils {
         errorMsgSb.append("[").append(String.format("%-19s", error.first.toString()))
             .append("] ").append(error.second).append("\n");
       }
-      throw new SoySyntaxException(errorMsgSb.toString());
+      throw SoySyntaxException.createWithoutMetaInfo(errorMsgSb.toString());
     }
 
     return compileTimeGlobalsBuilder.build();

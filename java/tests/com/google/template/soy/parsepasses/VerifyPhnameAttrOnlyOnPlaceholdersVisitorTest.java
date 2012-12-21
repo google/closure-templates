@@ -26,6 +26,7 @@ import junit.framework.TestCase;
 /**
  * Unit tests for VerifyPhnameAttrOnlyOnPlaceholdersVisitor.
  *
+ * @author Kai Huang
  */
 public class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
 

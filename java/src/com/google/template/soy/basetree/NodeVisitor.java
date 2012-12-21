@@ -25,7 +25,8 @@ package com.google.template.soy.basetree;
  *
  * @param <N> A more specific subinterface of Node, or just Node if not applicable.
  * @param <R> The return type of this visitor.
- *
+ * 
+ * @author Kai Huang
  */
 public interface NodeVisitor<N extends Node, R> {
 

@@ -97,8 +97,7 @@
   {1 + 2}<br>  // print the result of an expression
   {$boo}<br>  // print a data value
   {1 + $two}<br>  // print the result of an expression that uses a data value
-  {GLOBAL_STR}<br>  // print a global (this one bound at render time for JS, compile time for Java)
-  These are compile-time globals: {GLOBAL_INT}, {GLOBAL_BOOL}.<br>  // print more globals
+  {GLOBAL_INT}, {GLOBAL_BOOL}.<br>  // print globals
 {/template}
 
 
@@ -163,19 +162,15 @@
     Hello {$name}!
   {/msg}<br>
 
-  // The 'hidden' attribute hides a message from volunteer translators (paid translators will still
-  // see and translate the message as usual). When it comes time to send the message to volunteer
-  // translators as well, simply remove the hidden="true" attribute and the next TC message
-  // extraction will change the hidden state of the message in the TC.
-  {msg desc="Link to the unreleased 'Labs' feature." hidden="true"}
+  {msg desc="Link to the unreleased 'Labs' feature."}
     Click <a href="{$labsUrl}">here</a> to access Labs.
   {/msg}<br>
 
-  // The 'meaning' attribute is almost never needed. You only use it when you have two messages that
-  // are exactly the same string in English, but may be translated to different strings in other
-  // languages. The 'meaning' attribute should then be a short string that distinguishes the two
-  // strings, and will be used for generating different message ids. The 'meaning' will not be shown
-  // to translators, so you must still communicate all the details in the 'desc' text.
+  // The 'meaning' attribute is used when you have two messages that are exactly the same string in
+  // English, but may be translated to different strings in other languages. The 'meaning' attribute
+  // should then be a short string that distinguishes the two strings, and will be used for
+  // generating different message ids. The 'meaning' will not be shown to translators, so you must
+  // still communicate all the details in the 'desc' text.
   {msg meaning="noun" desc="The word 'Archive' used as a noun, i.e. an information store."}
     Archive
   {/msg}<br>
@@ -386,6 +381,49 @@
 
 
 /**
+ * Demo {param} blocks with 'kind' attribute.
+ * @param message A message text.
+ * @param list A list of things.
+ */
+{template .demoParamWithKindAttribute autoescape="contextual"}
+  <div>
+    {call .demoParamWithKindAttributeCallee_}
+      // Note that the {param} blocks for the message and listItems parameter are declared to have
+      // content of kind HTML. This instructs the contextual autoescaper to process the content of
+      // these blocks as HTML, and to wrap the the value of the parameter as a soydata.SanitizedHtml
+      // object.
+      {param message kind="html"}
+        <b>{$message}</b>
+      {/param}
+      {param listItems kind="html"}
+        {foreach $i in $list}
+          <li>{$i}</li>
+        {/foreach}
+      {/param}
+    {/call}
+  </div>
+{/template}
+
+
+/**
+ * Demo {param} blocks with 'kind' attribute.
+ * @param message A message with HTML markup.
+ * @param listItems A HTML-formatted list.
+ */
+{template .demoParamWithKindAttributeCallee_ private="true" autoescape="contextual"}
+  // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
+  // the calling template.  Since the {param} blocks are declared to have HTML content, their values
+  // are wrapped as soydata.SanitizedHtml objects.  This in turn causes them to be emitted here
+  // without further escaping.  In particular, it is not necessary to use the |noAutoescape print
+  // directive to prevent double-escaping.
+  <div>{$message}</div>
+  <ol>
+    {$listItems}
+  </ol>
+{/template}
+
+
+/**
  * Demo expressions.
  * @param students Nonempty list of students. Each student must have 'name', 'major', and 'year'.
  * @param currentYear The current year.
@@ -480,7 +518,7 @@
   // Setting the dir attribute on a block element like <div> has the side-effect of setting its
   // default alignment. In some cases, this is desirable, since text is generally more readable
   // when start-aligned. In such cases, we declare directionality using the bidiDirAttr() function,
-  // which returns dir=ltr for an LTR value in an RTL locale, dir=rtl for an RTL value in an LTR
+  // which returns dir="ltr" for an LTR value in an RTL locale, dir="rtl" for an RTL value in an LTR
   // locale, and an empty string otherwise.
   //
   <div id="title1" style="font-variant:small-caps" {bidiDirAttr($title)}>
@@ -490,8 +528,8 @@
   // In other cases, changing alignment may do more harm than good by upsetting the layout of the
   // page, and we do not want to do it. Our $title seems to be one such case. To avoid setting the
   // dir attribute on the <div>, we declare $title's directionality using the |bidiSpanWrap print
-  // directive, which wraps the value to be printed in a <span dir=ltr>, <span dir=rtl>, or nothing
-  // at all when it has the same directionality as the locale.
+  // directive, which wraps the value to be printed in a <span dir="ltr">, <span dir="rtl">, or
+  // nothing at all when it has the same directionality as the locale.
   <div id="title2" style="font-variant:small-caps">
     {$title |bidiSpanWrap}
   </div>

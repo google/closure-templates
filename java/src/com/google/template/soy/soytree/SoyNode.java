@@ -19,8 +19,11 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -32,6 +35,7 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public interface SoyNode extends Node {
 
@@ -50,10 +54,10 @@ public interface SoyNode extends Node {
 
     RAW_TEXT_NODE,
 
-    MSG_NODE,
-    MSG_PLACEHOLDER_NODE,
     GOOG_MSG_NODE,
     GOOG_MSG_REF_NODE,
+
+    MSG_NODE,
     MSG_PLURAL_NODE,
     MSG_PLURAL_CASE_NODE,
     MSG_PLURAL_DEFAULT_NODE,
@@ -61,6 +65,7 @@ public interface SoyNode extends Node {
     MSG_SELECT_NODE,
     MSG_SELECT_CASE_NODE,
     MSG_SELECT_DEFAULT_NODE,
+    MSG_PLACEHOLDER_NODE,
     MSG_HTML_TAG_NODE,
 
     PRINT_NODE,
@@ -89,6 +94,9 @@ public interface SoyNode extends Node {
     CALL_DELEGATE_NODE,
     CALL_PARAM_VALUE_NODE,
     CALL_PARAM_CONTENT_NODE,
+
+    LOG_NODE,
+    DEBUGGER_NODE,
   }
 
 
@@ -100,8 +108,7 @@ public interface SoyNode extends Node {
 
 
   /**
-   * Gets this node's kind (corresponding to this node's specific type).
-   * @return This node's kind (corresponding to this node's specific type).
+   * Returns this node's kind (corresponding to this node's specific type).
    */
   public Kind getKind();
 
@@ -114,26 +121,23 @@ public interface SoyNode extends Node {
   public void setId(int id);
 
   /**
-   * Gets this node's id.
-   * @return This node's id.
+   * Returns this node's id.
    */
   public int getId();
 
   /**
    * Sets the source location (file path and line number) for this node.
-   * @param location The source location for this node.
+   * @param srcLoc The source location for this node.
    */
-  public void setLocation(SourceLocation location);
+  public void setSourceLocation(SourceLocation srcLoc);
 
   /**
-   * Gets the source location (file path and line number) for this node.
-   * @return The source location for this node.
+   * Returns the source location (file path and line number) for this node.
    */
-  public SourceLocation getLocation();
+  public SourceLocation getSourceLocation();
 
   /**
-   * Gets the syntax version of this node.
-   * @return The syntax version of this node.
+   * Returns the syntax version of this node.
    */
   public SyntaxVersion getSyntaxVersion();
 
@@ -164,10 +168,27 @@ public interface SoyNode extends Node {
 
     /**
      * Returns whether this node needs an env frame during interpretation, or null if unknown.
-     * @return Whether this node needs an env frame during interpretation, or null if unknown.
      */
     public Boolean needsEnvFrameDuringInterp();
   }
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
+   * A node that represents the top of a split-level structure in the parse tree. This indicates
+   * there are special structural requirements on its immediate children (e.g. IfNode may only
+   * have IfCondNode and IfElseNode as children).
+   *
+   * <p> Includes nodes such as SoyFileSetNode, SoyFileNode, IfNode, SwitchNode, ForeachNode,
+   * CallNode, etc.
+   *
+   * <p> During optimization, the immediate children should never be moved, but lower descendents
+   * may be freely moved (either moved within the node's subtree or moved outside of the node's
+   * subtree).
+   */
+  public static interface SplitLevelTopNode<N extends SoyNode> extends ParentSoyNode<N> {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -197,37 +218,17 @@ public interface SoyNode extends Node {
 
 
   /**
-   * A node that represents the top of a split-level structure in the parse tree. This indicates
-   * there are special structural requirements on its immediate children (e.g. IfNode may only
-   * have IfCondNode and IfElseNode as children).
-   *
-   * <p> Includes nodes such as SoyFileSetNode, SoyFileNode, IfNode, SwitchNode, ForeachNode,
-   * CallNode, etc.
-   *
-   * <p> During optimization, the immediate children should never be moved, but lower descendents
-   * may be freely moved (either moved within the node's subtree or moved outside of the node's
-   * subtree).
-   */
-  public static interface SplitLevelTopNode<N extends SoyNode> extends ParentSoyNode<N> {}
-
-
-  // -----------------------------------------------------------------------------------------------
-
-
-  /**
    * A node that represents a specific Soy command.
    */
   public static interface CommandNode extends SoyNode {
 
     /**
-     * Gets the Soy command name.
-     * @return The Soy command name.
+     * Returns the Soy command name.
      */
     public String getCommandName();
 
     /**
-     * Gets the command text (may be the empty string).
-     * @return The command text (may be the empty string).
+     * Returns the command text (may be the empty string).
      */
     public String getCommandText();
 
@@ -237,6 +238,30 @@ public interface SoyNode extends Node {
      * @return A Soy tag string that could be the Soy tag for this node.
      */
     public String getTagString();
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
+   * A node that represents a Soy command that encloses a template block.
+   */
+  public static interface BlockCommandNode extends CommandNode, BlockNode {}
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
+   * A node that represents an independent unit of rendering.
+   */
+  public static interface RenderUnitNode extends BlockCommandNode {
+
+    /**
+     * Returns the content kind for strict autoescape, or null if not specified or not applicable.
+     */
+    @Nullable public ContentKind getContentKind();
   }
 
 
@@ -285,8 +310,7 @@ public interface SoyNode extends Node {
   public static interface LocalVarNode extends SoyNode {
 
     /**
-     * Gets the name of this node's local variable (without the preceding '$').
-     * @return The name of this node's local variable (without the preceding '$').
+     * Returns the name of this node's local variable (without the preceding '$').
      */
     public String getVarName();
   }
@@ -319,8 +343,7 @@ public interface SoyNode extends Node {
   public static interface ExprHolderNode extends SoyNode {
 
     /**
-     * Gets the list of expressions in this node.
-     * @return The list of expressions in this node.
+     * Returns the list of expressions in this node.
      */
     public List<ExprUnion> getAllExprUnions();
   }
@@ -342,7 +365,7 @@ public interface SoyNode extends Node {
   /**
    * A node that can be the initial content (i.e. initial child) of a MsgPlaceholderNode.
    */
-  public static interface MsgPlaceholderInitialContentNode extends StandaloneNode {
+  public static interface MsgPlaceholderInitialNode extends StandaloneNode {
 
     /**
      * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that

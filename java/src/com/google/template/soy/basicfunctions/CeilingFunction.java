@@ -39,6 +39,7 @@ import java.util.Set;
 /**
  * Soy function that takes the ceiling of a number.
  *
+ * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

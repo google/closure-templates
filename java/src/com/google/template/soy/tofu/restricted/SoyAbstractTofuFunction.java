@@ -22,6 +22,7 @@ import java.util.List;
 
 
 /**
+ * @author Kai Huang
  */
 public abstract class SoyAbstractTofuFunction implements SoyJavaRuntimeFunction, SoyTofuFunction {
 

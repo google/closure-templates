@@ -29,6 +29,7 @@ import com.google.template.soy.basetree.ParentNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public interface ExprNode extends Node {
 
@@ -53,8 +54,9 @@ public interface ExprNode extends Node {
     VAR_NODE,
 
     DATA_REF_NODE,
-    DATA_REF_KEY_NODE,
-    DATA_REF_INDEX_NODE,
+    DATA_REF_ACCESS_KEY_NODE,
+    DATA_REF_ACCESS_INDEX_NODE,
+    DATA_REF_ACCESS_EXPR_NODE,
 
     GLOBAL_NODE,
 
@@ -73,6 +75,7 @@ public interface ExprNode extends Node {
     NOT_EQUAL_OP_NODE,
     AND_OP_NODE,
     OR_OP_NODE,
+    NULL_COALESCING_OP_NODE,
     CONDITIONAL_OP_NODE,
 
     FUNCTION_NODE,

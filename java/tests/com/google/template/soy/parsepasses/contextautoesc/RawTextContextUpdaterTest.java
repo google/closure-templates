@@ -495,6 +495,16 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("HTML_RCDATA TEXTAREA", "</textarea>", "HTML_PCDATA");
   }
 
+  public final void textText() throws Exception {
+    // Plain text's only edge should be back to itself.
+    assertTransition("TEXT", "", "TEXT");
+    assertTransition("TEXT", "Hello, World!", "TEXT");
+    assertTransition("TEXT", "<p", "TEXT");
+    assertTransition("TEXT", "&D*(@*(#*(AW*D(J*#(J*(JS!!!''\"", "TEXT");
+    assertTransition("TEXT", "<script>var x='", "TEXT");
+    assertTransition("TEXT", "<a href='", "TEXT");
+  }
+
   private static void assertTransition(String from, String rawText, String to) throws Exception {
     Context after = RawTextContextUpdater.processRawText(rawText, parseContext(from));
     assertEquals(rawText, parseContext(to), after);

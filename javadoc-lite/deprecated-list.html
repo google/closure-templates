@@ -83,6 +83,7 @@ function windowTitle()
 <HR SIZE="4" NOSHADE>
 <B>Contents</B><UL>
 <LI><A HREF="#method">Deprecated Methods</A>
+<LI><A HREF="#constructor">Deprecated Constructors</A>
 </UL>
 
 <A NAME="method"><!-- --></A>
@@ -120,6 +121,27 @@ function windowTitle()
 <TD><A HREF="com/google/template/soy/tofu/SoyTofu.html#render(java.lang.String, com.google.template.soy.data.SoyMapData, com.google.template.soy.msgs.SoyMsgBundle)">com.google.template.soy.tofu.SoyTofu.render(String, SoyMapData, SoyMsgBundle)</A>
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Use <A HREF="com/google/template/soy/tofu/SoyTofu.html#newRenderer(java.lang.String)"><CODE>SoyTofu.newRenderer(String)</CODE></A>.</I>&nbsp;</TD>
+</TR>
+</TABLE>
+&nbsp;
+<P>
+<A NAME="constructor"><!-- --></A>
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
+<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
+<B>Deprecated Constructors</B></FONT></TH>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><A HREF="com/google/template/soy/base/SoySyntaxException.html#SoySyntaxException(java.lang.String)">com.google.template.soy.base.SoySyntaxException(String)</A>
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Do not use outside of Soy code (treat as superpackage-private).</I>&nbsp;</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD><A HREF="com/google/template/soy/parseinfo/SoyTemplateInfo.html#SoyTemplateInfo(java.lang.String, com.google.common.collect.ImmutableMap)">com.google.template.soy.parseinfo.SoyTemplateInfo(String, ImmutableMap<String, SoyTemplateInfo.ParamRequisiteness>)</A>
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<I>Users should not be creating SoyTemplateInfo objects. If you're constructing
+     SoyTemplateInfo objects from non-Soy-internal code, your code will be broken by future
+     Soy changes.</I>&nbsp;</TD>
 </TR>
 </TABLE>
 &nbsp;

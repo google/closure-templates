@@ -30,6 +30,7 @@ import java.io.Writer;
 /**
  * A java "file" generated from Soy source.
  *
+ * @author Mike Samuel
  */
 final class ReadableInMemoryJavaFileObject extends InMemoryJavaFileObject {
 

@@ -26,12 +26,14 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetNode;
+import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -59,6 +61,7 @@ import java.util.Map;
  * out of {@code ApiCallScope} and rewrite the code somehow to still take advantage of the
  * memoized results to the extent that they remain correct.)
  *
+ * @author Kai Huang
  */
 @ApiCallScope
 class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
@@ -78,6 +81,15 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
   IsComputableAsJsExprsVisitor(SoyJsSrcOptions jsSrcOptions) {
     this.jsSrcOptions = jsSrcOptions;
     memoizedResults = Maps.newHashMap();
+  }
+
+
+  /**
+   * Executes this visitor on the children of the given node, and returns true if all children are
+   * computable as JsExprs. Ignores whether the given node itself is computable as JsExprs or not.
+   */
+  public Boolean execOnChildren(ParentSoyNode<?> node) {
+    return areChildrenComputableAsJsExprs(node);
   }
 
 
@@ -190,6 +202,16 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
   }
 
 
+  @Override protected Boolean visitLogNode(LogNode node) {
+    return false;
+  }
+
+
+  @Override protected Boolean visitDebuggerNode(DebuggerNode node) {
+    return false;
+  }
+
+
   // -----------------------------------------------------------------------------------------------
   // Private helpers.
 
@@ -198,7 +220,7 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
    * Private helper to check whether all children of a given parent node satisfy
    * IsComputableAsJsExprsVisitor.
    * @param node The parent node whose children to check.
-   * @return True if all children satisfy IsComputableAsJsExprsVisitor.
+   * @return True if all children satisfy IsComputableAsJsExprsVisitor. 
    */
   private boolean areChildrenComputableAsJsExprs(ParentSoyNode<?> node) {
 

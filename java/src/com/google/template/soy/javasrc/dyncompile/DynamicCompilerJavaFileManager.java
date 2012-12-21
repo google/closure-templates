@@ -37,6 +37,7 @@ import javax.tools.StandardLocation;
  * compiled from them, resolves dependencies via the current {@link ClassLoader}'s
  * resource loading methods, and delegates boot classpath lookup to another file manager.
  *
+ * @author Mike Samuel
  */
 final class DynamicCompilerJavaFileManager implements JavaFileManager {
 

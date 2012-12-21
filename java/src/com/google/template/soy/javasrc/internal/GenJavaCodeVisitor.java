@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
+import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -54,6 +55,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -75,6 +77,7 @@ import java.util.regex.Pattern;
  * all the Soy files. The return value is a list of strings, each string being the content of one
  * generated Java file (corresponding to one Soy file).
  *
+ * @author Kai Huang
  */
 class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
 
@@ -205,7 +208,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
       try {
         visit(soyFile);
       } catch (SoySyntaxException sse) {
-        throw sse.setFilePath(soyFile.getFilePath());
+        throw sse.associateMetaInfo(null, soyFile.getFilePath(), null);
       }
     }
   }
@@ -222,6 +225,10 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    */
   @Override protected void visitSoyFileNode(SoyFileNode node) {
 
+    if (node.getSoyFileKind() == SoyFileKind.DEP) {
+      return;  // don't generate code for deps
+    }
+
     javaCodeBuilder.appendLine(
         "// ----------------------------------------------------------------------------- ");
     javaCodeBuilder.appendLine(
@@ -233,7 +240,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
       try {
         visit(template);
       } catch (SoySyntaxException sse) {
-        throw sse.setTemplateName(template.getTemplateNameForUserMsgs());
+        throw sse.associateMetaInfo(null, null, template.getTemplateNameForUserMsgs());
       }
     }
   }
@@ -367,6 +374,11 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
    * </pre>
    */
   @Override protected void visitLetContentNode(LetContentNode node) {
+
+    if (node.getContentKind() != null) {
+      throw SoySyntaxExceptionUtils.createWithNode(
+          "JavaSrc backend doesn't support let blocks with 'kind' attribute.", node);
+    }
 
     String generatedVarName = node.getUniqueVarName();
 
@@ -507,7 +519,7 @@ class GenJavaCodeVisitor extends AbstractSoyNodeVisitor<String> {
             conditionExprText.append(" || ");
           }
           conditionExprText.append(switchValueVarName).append(".equals(")
-              .append(caseJavaExpr.getText()).append(")");
+              .append(caseJavaExpr.getText()).append(')');
         }
 
         if (isFirstCase) {

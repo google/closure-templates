@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 /**
  * A directive that replaces newlines (\n, \r, or \r\n) with HTML line breaks (&lt;br&gt;).
  *
+ * @author Felix Chang
  */
 @Singleton
 public class ChangeNewlineToBrDirective extends SoyAbstractTofuPrintDirective
@@ -65,8 +66,9 @@ public class ChangeNewlineToBrDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public String apply(SoyData value, List<SoyData> args) {
-    return NEWLINE_PATTERN.matcher(value.toString()).replaceAll("<br>");
+  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+    return SoyData.createFromExistingData(
+        NEWLINE_PATTERN.matcher(value.toString()).replaceAll("<br>"));
   }
 
 

@@ -31,6 +31,7 @@ import java.util.Set;
 /**
  * Unit tests for RandomIntFunction.
  *
+ * @author Kai Huang
  */
 public class RandomIntFunctionTest extends TestCase {
 

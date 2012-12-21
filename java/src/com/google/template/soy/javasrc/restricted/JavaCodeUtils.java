@@ -32,14 +32,17 @@ import java.util.regex.Pattern;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
+ * @author Kai Huang
  */
 public class JavaCodeUtils {
 
   private JavaCodeUtils() {}
 
 
-  public static final String UTILS_LIB =
-      "com.google.template.soy.javasrc.codedeps.SoyUtils";
+  public static final String UTILS_LIB = "com.google.template.soy.javasrc.codedeps.SoyUtils";
+
+  public static final String NULL_DATA_INSTANCE =
+      "com.google.template.soy.data.restricted.NullData.INSTANCE";
 
   // group(1) is the number literal.
   private static final Pattern NUMBER_IN_PARENS = Pattern.compile("^[(]([0-9]+(?:[.][0-9]+)?)[)]$");

@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractReturningNodeVisitor
+ * @author Kai Huang
  */
 public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisitor<N, R> {
 

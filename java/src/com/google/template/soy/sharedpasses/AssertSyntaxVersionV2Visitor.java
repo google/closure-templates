@@ -24,7 +24,8 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SyntaxVersion;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 
@@ -36,6 +37,7 @@ import com.google.template.soy.soytree.TemplateNode;
  * <p> {@link #exec} may be called on any node. There is no return value. However, a
  * {@code SoySyntaxException} is thrown if the given node or a descendent is not in Soy V2 syntax.
  *
+ * @author Kai Huang
  */
 public class AssertSyntaxVersionV2Visitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -65,11 +67,34 @@ public class AssertSyntaxVersionV2Visitor extends AbstractSoyNodeVisitor<Void> {
 
     if (node.getSyntaxVersion() == SyntaxVersion.V1) {
 
-      // Specific error message for missing SoyDoc.
-      if (node instanceof TemplateNode && ((TemplateNode) node).getSoyDocParams() == null) {
-        throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
-            "Not all code is in Soy V2 syntax (missing SoyDoc for template " +
-            ((TemplateNode) node).getTagString() + ").", null, node);
+      if (node instanceof TemplateNode) {
+        TemplateNode templateNodeCast = (TemplateNode) node;
+
+        // Specific error message for missing SoyDoc.
+        if (templateNodeCast.getSoyDocParams() == null) {
+          throw SoySyntaxExceptionUtils.createWithNode(
+              "Missing SoyDoc for template: " + templateNodeCast.getTagString() +
+                  " (required in Soy V2)",
+              node);
+        }
+
+        // Specific error message for incorrect param syntax.
+        if (templateNodeCast.getParamSrcsWithIncorrectSyntax().size() > 0) {
+          throw SoySyntaxExceptionUtils.createWithNode(
+              "Template " +
+                  templateNodeCast.getTagString() + " has params with invalid Soy V2 syntax " +
+                  templateNodeCast.getParamSrcsWithIncorrectSyntax() + ").",
+              node);
+        }
+
+        // Checks for fully-qualified template names. (In V2, they need to be namespace-relative).
+        if (templateNodeCast instanceof TemplateBasicNode &&
+            (templateNodeCast.getPartialTemplateName() == null)) {
+          throw SoySyntaxExceptionUtils.createWithNode(
+              "Template names must be namespace-relative, i.e. have a leading dot: " +
+                  templateNodeCast.getTagString() + " (required in Soy V2)",
+              node);
+        }
       }
 
       // General error message.
@@ -77,9 +102,10 @@ public class AssertSyntaxVersionV2Visitor extends AbstractSoyNodeVisitor<Void> {
           (node instanceof CommandNode) ? "tag " + ((CommandNode) node).getTagString() :
           (node instanceof SoyFileNode) ? "file " + ((SoyFileNode) node).getFileName():
           "node " + node.toString();
-      throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+      throw SoySyntaxExceptionUtils.createWithNode(
           "Not all code is in Soy V2 syntax (found " + nodeStringForErrorMsg +
-          " not in Soy V2 syntax).", null, node);
+              " not in Soy V2 syntax).",
+          node);
     }
 
     if (node instanceof ParentSoyNode<?>) {

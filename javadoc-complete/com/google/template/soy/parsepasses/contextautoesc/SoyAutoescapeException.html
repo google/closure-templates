@@ -73,9 +73,9 @@ function windowTitle()
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_top"></A>
@@ -101,13 +101,12 @@ Class SoyAutoescapeException</H2>
 </DL>
 <HR>
 <DL>
-<DT><PRE><FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/ParametersAreNullableByDefault.html?is-external=true" title="class or interface in javax.annotation">@ParametersAreNullableByDefault</A>
-</FONT>public final class <B>SoyAutoescapeException</B><DT>extends <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></DL>
+<DT><PRE>public final class <B>SoyAutoescapeException</B><DT>extends <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></DL>
 </PRE>
 
 <P>
 Indicates failure to propagate contexts through a template or an existing escaping directive on a
- <code>{print}</code> that is inconsistent with the contexts in which it appears.
+ 'print' tag that is inconsistent with the contexts in which it appears.
 <P>
 
 <P>
@@ -117,44 +116,6 @@ Indicates failure to propagate contexts through a template or an existing escapi
 
 <P>
 
-<!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#SoyAutoescapeException(com.google.template.soy.soytree.SoyNode, java.lang.String)">SoyAutoescapeException</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node,
-                       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#SoyAutoescapeException(com.google.template.soy.soytree.SoyNode, java.lang.String, java.lang.Throwable)">SoyAutoescapeException</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node,
-                       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#SoyAutoescapeException(java.lang.String)">SoyAutoescapeException</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#SoyAutoescapeException(java.lang.String, java.lang.Throwable)">SoyAutoescapeException</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-</TABLE>
-&nbsp;
 <!-- ========== METHOD SUMMARY =========== -->
 
 <A NAME="method_summary"><!-- --></A>
@@ -165,19 +126,55 @@ Indicates failure to propagate contexts through a template or an existing escapi
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#maybeSetContextNode(com.google.template.soy.soytree.SoyNode)">maybeSetContextNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;contextNode)</CODE>
+<CODE>&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#associateNode(com.google.template.soy.soytree.SoyNode)">associateNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#setContextNode(com.google.template.soy.soytree.SoyNode)">setContextNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;contextNode)</CODE>
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#createCausedWithNode(java.lang.String, java.lang.Throwable, com.google.template.soy.soytree.SoyNode)">createCausedWithNode</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                     <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause,
+                     <A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
 
 <BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Associates useful debugging information (file location, template name) with this exception.</TD>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#createCausedWithoutMetaInfo(java.lang.String, java.lang.Throwable)">createCausedWithoutMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#createWithNode(java.lang.String, com.google.template.soy.soytree.SoyNode)">createWithNode</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+               <A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#createWithoutMetaInfo(java.lang.String)">createWithoutMetaInfo</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html#maybeAssociateNode(com.google.template.soy.soytree.SoyNode)">maybeAssociateNode</A></B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Important: Do not use outside of Soy code (treat as superpackage-private).</TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.base.SoySyntaxException"><!-- --></A>
@@ -186,7 +183,7 @@ Indicates failure to propagate contexts through a template or an existing escapi
 <TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.base.<A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></B></TH>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getMessage()">getMessage</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getOriginalMessage()">getOriginalMessage</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getTemplateName()">getTemplateName</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#setFilePath(java.lang.String)">setFilePath</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#setTemplateName(java.lang.String)">setTemplateName</A></CODE></TD>
+<TD><CODE><A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#associateMetaInfo(com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)">associateMetaInfo</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#createCausedWithMetaInfo(java.lang.String, java.lang.Throwable, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)">createCausedWithMetaInfo</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#createWithMetaInfo(java.lang.String, com.google.template.soy.base.SourceLocation, java.lang.String, java.lang.String)">createWithMetaInfo</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getMessage()">getMessage</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getOriginalMessage()">getOriginalMessage</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../../com/google/template/soy/base/SoySyntaxException.html#getTemplateName()">getTemplateName</A></CODE></TD>
 </TR>
 </TABLE>
 &nbsp;<A NAME="methods_inherited_from_class_java.lang.Throwable"><!-- --></A>
@@ -210,53 +207,6 @@ Indicates failure to propagate contexts through a template or an existing escapi
 &nbsp;
 <P>
 
-<!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="SoyAutoescapeException(com.google.template.soy.soytree.SoyNode, java.lang.String, java.lang.Throwable)"><!-- --></A><H3>
-SoyAutoescapeException</H3>
-<PRE>
-public <B>SoyAutoescapeException</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
-<DL>
-<DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The node at which the problem was noticed or null.</DL>
-</DL>
-<HR>
-
-<A NAME="SoyAutoescapeException(com.google.template.soy.soytree.SoyNode, java.lang.String)"><!-- --></A><H3>
-SoyAutoescapeException</H3>
-<PRE>
-public <B>SoyAutoescapeException</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
-<DL>
-</DL>
-<HR>
-
-<A NAME="SoyAutoescapeException(java.lang.String, java.lang.Throwable)"><!-- --></A><H3>
-SoyAutoescapeException</H3>
-<PRE>
-public <B>SoyAutoescapeException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
-<DL>
-</DL>
-<HR>
-
-<A NAME="SoyAutoescapeException(java.lang.String)"><!-- --></A><H3>
-SoyAutoescapeException</H3>
-<PRE>
-public <B>SoyAutoescapeException</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
-<DL>
-</DL>
-
 <!-- ============ METHOD DETAIL ========== -->
 
 <A NAME="method_detail"><!-- --></A>
@@ -267,26 +217,96 @@ public <B>SoyAutoescapeException</B>(<A HREF="http://java.sun.com/javase/6/docs/
 </TR>
 </TABLE>
 
-<A NAME="setContextNode(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
-setContextNode</H3>
+<A NAME="createWithoutMetaInfo(java.lang.String)"><!-- --></A><H3>
+createWithoutMetaInfo</H3>
 <PRE>
-public void <B>setContextNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;contextNode)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A> <B>createWithoutMetaInfo</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
 <DL>
-<DD>Associates useful debugging information (file location, template name) with this exception.
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
 <P>
 <DD><DL>
-</DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message.
+<DT><B>Returns:</B><DD>The new SoyAutoescapeException object.</DL>
 </DD>
 </DL>
 <HR>
 
-<A NAME="maybeSetContextNode(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
-maybeSetContextNode</H3>
+<A NAME="createCausedWithoutMetaInfo(java.lang.String, java.lang.Throwable)"><!-- --></A><H3>
+createCausedWithoutMetaInfo</H3>
 <PRE>
-public void <B>maybeSetContextNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;contextNode)</PRE>
+public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A> <B>createCausedWithoutMetaInfo</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                                 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                                                                 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause)</PRE>
 <DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
 <DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message, or null to use the message from the cause.<DD><CODE>cause</CODE> - The cause of this exception.
+<DT><B>Returns:</B><DD>The new SoyAutoescapeException object.</DL>
+</DD>
 </DL>
+<HR>
+
+<A NAME="createWithNode(java.lang.String, com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
+createWithNode</H3>
+<PRE>
+public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A> <B>createWithNode</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                                                    <A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
+<DL>
+<DD>Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
+
+ <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message.<DD><CODE>node</CODE> - The node from which to derive the exception meta info.
+<DT><B>Returns:</B><DD>The new SoyAutoescapeException object.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="createCausedWithNode(java.lang.String, java.lang.Throwable, com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
+createCausedWithNode</H3>
+<PRE>
+public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A> <B>createCausedWithNode</B>(<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
+                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message,
+                                                          <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Throwable.html?is-external=true" title="class or interface in java.lang">Throwable</A>&nbsp;cause,
+                                                          <A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
+<DL>
+<DD>Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
+
+ <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>message</CODE> - The error message, or null to use the message from the cause.<DD><CODE>cause</CODE> - The cause of this exception.<DD><CODE>node</CODE> - The node from which to derive the exception meta info.
+<DT><B>Returns:</B><DD>The new SoyAutoescapeException object.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="associateNode(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
+associateNode</H3>
+<PRE>
+public <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A> <B>associateNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>node</CODE> - The node from which to derive the exception meta info.
+<DT><B>Returns:</B><DD>This same SoyAutoescapeException object, for convenience.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="maybeAssociateNode(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
+maybeAssociateNode</H3>
+<PRE>
+public <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A> <B>maybeAssociateNode</B>(<A HREF="../../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
+<DL>
+<DD><p> Important: Do not use outside of Soy code (treat as superpackage-private).
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>node</CODE> - The node from which to derive the exception meta info.
+<DT><B>Returns:</B><DD>This same SoyAutoescapeException object, for convenience.</DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->
@@ -340,9 +360,9 @@ public void <B>maybeSetContextNode</B>(<A HREF="../../../../../../com/google/tem
 </TR>
 <TR>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
+  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
 <TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
+DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
 </TR>
 </TABLE>
 <A NAME="skip-navbar_bottom"></A>

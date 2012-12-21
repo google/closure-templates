@@ -27,6 +27,7 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @author Kai Huang
  */
 public enum NonpluginFunction {
 
@@ -34,7 +35,7 @@ public enum NonpluginFunction {
   IS_FIRST(1),
   IS_LAST(1),
   INDEX(1),
-  HAS_DATA(0);
+  QUOTE_KEYS_IF_JS(1);
 
 
   /** Map of NonpluginFunctions by function name. */

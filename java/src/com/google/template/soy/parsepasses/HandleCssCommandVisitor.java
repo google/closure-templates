@@ -31,7 +31,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.List;
 
@@ -48,6 +48,7 @@ import java.util.List;
  * (b) REFERENCE: Turn each CssNode into a PrintNode.
  * (c) BACKEND_SPECIFIC: Don't change anything. Let backend handle 'css' commands.
  *
+ * @author Kai Huang
  */
 public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -115,9 +116,10 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
           }
         }
         if (isInvalidExpr) {
-          throw SoytreeUtils.createSoySyntaxExceptionWithMetaInfo(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "The css-handling scheme is 'reference', but tag " + cssNode.getTagString() +
-              " does not contain a valid reference.", null, node);
+                  " does not contain a valid reference.",
+              node);
         }
 
       } else {

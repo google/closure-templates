@@ -16,7 +16,6 @@
 
 package com.google.template.soy.parsepasses;
 
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -24,6 +23,7 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 
 /**
@@ -38,6 +38,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  *
  * <p> {@link #exec} should be called on a full parse tree. There is no return value.
  *
+ * @author Mohamed Eldawy
+ * @author Kai Huang
  */
 public class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 
@@ -64,34 +66,39 @@ public class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 
         if (currPluralNode == null) {
           // 'remainder' outside 'plural'. Bad!
-          throw new SoySyntaxException(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "The special function 'remainder' is for use in plural messages" +
-              " (tag " + node.toSourceString() + ").");
+                  " (tag " + node.toSourceString() + ").",
+              node);
         }
         // 'remainder' with no parameters or more than one parameter. Bad!
         if (functionNode.numChildren() != 1) {
-          throw new SoySyntaxException(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "The function 'remainder' has to have exactly one argument" +
-              " (tag " + node.toSourceString() + ").");
+                  " (tag " + node.toSourceString() + ").",
+              node);
         }
         // 'remainder' with a different expression than the enclosing 'plural'. Bad!
         if (! functionNode.getChild(0).toSourceString().equals(
                   currPluralNode.getExpr().toSourceString())) {
-          throw new SoySyntaxException(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "The parameter to 'remainder' has to be the same as the 'plural' variable" +
-              " (tag " + node.toSourceString() + ").");
+                  " (tag " + node.toSourceString() + ").",
+              node);
         }
         // 'remainder' with a 0 offset. Bad!
         if (currPluralNode.getOffset() == 0) {
-          throw new SoySyntaxException(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "In 'plural' block, use of 'remainder' function is unnecessary since offset = 0" +
-              " (tag " + node.toSourceString() + ").");
+                  " (tag " + node.toSourceString() + ").",
+              node);
         }
         // 'remainder' with 'phname' attribute. Bad!
         if (node.getUserSuppliedPlaceholderName() != null) {
-          throw new SoySyntaxException(
+          throw SoySyntaxExceptionUtils.createWithNode(
               "Cannot use special function 'remainder' and attribute 'phname' together" +
-              " (tag " + node.toSourceString() + ").");
+                  " (tag " + node.toSourceString() + ").",
+              node);
         }
 
         // Now rewrite the PrintNode (reusing the old node id).
