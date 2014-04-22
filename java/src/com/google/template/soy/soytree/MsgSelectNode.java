@@ -21,10 +21,12 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -36,11 +38,18 @@ import java.util.List;
  * @author Mohamed Eldawy
  */
 public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
-    implements StandaloneNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
+    implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
 
 
-  /** The parsed expression. */
+  /** Fallback base select var name. */
+  public static final String FALLBACK_BASE_SELECT_VAR_NAME = "STATUS";
+
+
+  /** The expression for the value to select on. */
   private final ExprRootNode<?> selectExpr;
+
+  /** The base select var name (what the translator sees). */
+  private final String baseSelectVarName;
 
 
   /**
@@ -53,6 +62,34 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
 
     selectExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
         commandText, "Invalid data reference in 'select' command text \"" + commandText + "\".");
+
+    // TODO: Maybe allow user to write 'phname' attribute in 'select' tag.
+    // Note: If we do add support for 'phname' for 'select', it would also be a good time to clean
+    // up how 'phname' is parsed for 'call'. Right now, it's parsed in TemplateParser.jj because
+    // 'print' needs it to be parsed in TemplateParser.jj (due to print directives possibly
+    // appearing between the expression and the 'phname' attribute). But for 'call', it should
+    // really be parsed in CallNode.
+    baseSelectVarName =
+        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+            selectExpr, FALLBACK_BASE_SELECT_VAR_NAME);
+  }
+
+
+  /**
+   * @param id The id for this node.
+   * @param selectExpr The expression for the value to select on.
+   * @param baseSelectVarName The base select var name to use (what the translator sees), or null if
+   *     it should be generated from the select expression.
+   */
+  public MsgSelectNode(int id, ExprRootNode<?> selectExpr, @Nullable String baseSelectVarName) {
+    super(
+        id, "select",
+        selectExpr.toSourceString() +
+            ((baseSelectVarName != null) ? " phname=\"" + baseSelectVarName + "\"" : ""));
+    this.selectExpr = selectExpr;
+    this.baseSelectVarName = (baseSelectVarName != null) ? baseSelectVarName :
+        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+            selectExpr, FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
 
@@ -63,6 +100,7 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   protected MsgSelectNode(MsgSelectNode orig) {
     super(orig);
     this.selectExpr = orig.selectExpr.clone();
+    this.baseSelectVarName = orig.baseSelectVarName;
   }
 
 
@@ -77,9 +115,21 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   }
 
   
-  /** Returns the parsed expression. */
+  /** Returns the expression for the value to select on. */
   public ExprRootNode<?> getExpr() {
     return selectExpr;
+  }
+
+
+  /** Returns the base select var name (what the translator sees). */
+  @Override public String getBaseVarName() {
+    return baseSelectVarName;
+  }
+
+
+  @Override public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+    return (other instanceof MsgSelectNode) &&
+        this.getCommandText().equals(((MsgSelectNode) other).getCommandText());
   }
 
 
@@ -88,8 +138,8 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   }
 
 
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @Override public MsgBlockNode getParent() {
+    return (MsgBlockNode) super.getParent();
   }
 
 

@@ -31,8 +31,8 @@ public class MapLiteralNodeTest extends TestCase {
 
   public void testToSourceString() {
 
-    DataRefNode booDataRef = new DataRefNode(false, false, "boo");
-    DataRefNode fooDataRef = new DataRefNode(false, false, "foo");
+    VarRefNode booDataRef = new VarRefNode("boo", false, false, null);
+    VarRefNode fooDataRef = new VarRefNode("foo", false, false, null);
 
     MapLiteralNode mapLit = new MapLiteralNode(Lists.<ExprNode>newArrayList(
         new StringNode("aaa"), new StringNode("blah"), new StringNode("bbb"), new IntegerNode(123),

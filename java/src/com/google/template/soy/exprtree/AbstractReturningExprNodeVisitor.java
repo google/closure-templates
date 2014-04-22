@@ -89,14 +89,9 @@ public abstract class AbstractReturningExprNodeVisitor<R>
       case LIST_LITERAL_NODE: return visitListLiteralNode((ListLiteralNode) node);
       case MAP_LITERAL_NODE: return visitMapLiteralNode((MapLiteralNode) node);
 
-      case VAR_NODE: return visitVarNode((VarNode) node);
-
-      case DATA_REF_NODE: return visitDataRefNode((DataRefNode) node);
-      case DATA_REF_ACCESS_KEY_NODE: return visitDataRefAccessKeyNode((DataRefAccessKeyNode) node);
-      case DATA_REF_ACCESS_INDEX_NODE:
-        return visitDataRefAccessIndexNode((DataRefAccessIndexNode) node);
-      case DATA_REF_ACCESS_EXPR_NODE:
-        return visitDataRefAccessExprNode((DataRefAccessExprNode) node);
+      case VAR_REF_NODE: return visitVarRefNode((VarRefNode) node);
+      case FIELD_ACCESS_NODE: return visitFieldAccessNode((FieldAccessNode) node);
+      case ITEM_ACCESS_NODE: return visitItemAccessNode((ItemAccessNode) node);
 
       case GLOBAL_NODE: return visitGlobalNode((GlobalNode) node);
 
@@ -208,28 +203,20 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   // Implementations for reference nodes.
 
 
-  protected R visitVarNode(VarNode node) {
+  protected R visitVarRefNode(VarRefNode node) {
     return visitExprNode(node);
   }
 
-  protected R visitDataRefNode(DataRefNode node) {
+  protected R visitDataAccessNode(DataAccessNode node) {
     return visitExprNode(node);
   }
 
-  protected R visitDataRefAccessKeyNode(DataRefAccessKeyNode node) {
-    return visitDataRefAccessNode(node);
+  protected R visitFieldAccessNode(FieldAccessNode node) {
+    return visitDataAccessNode(node);
   }
 
-  protected R visitDataRefAccessIndexNode(DataRefAccessIndexNode node) {
-    return visitDataRefAccessNode(node);
-  }
-
-  protected R visitDataRefAccessExprNode(DataRefAccessExprNode node) {
-    return visitDataRefAccessNode(node);
-  }
-
-  protected R visitDataRefAccessNode(DataRefAccessNode node) {
-    return visitExprNode(node);
+  protected R visitItemAccessNode(ItemAccessNode node) {
+    return visitDataAccessNode(node);
   }
 
   protected R visitGlobalNode(GlobalNode node) {

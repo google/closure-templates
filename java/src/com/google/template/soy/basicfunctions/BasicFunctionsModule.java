@@ -44,6 +44,9 @@ public class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(RandomIntFunction.class);
     soyFunctionsSetBinder.addBinding().to(RoundFunction.class);
     soyFunctionsSetBinder.addBinding().to(StrContainsFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrIndexOfFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrLenFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrSubFunction.class);
   }
 
 }

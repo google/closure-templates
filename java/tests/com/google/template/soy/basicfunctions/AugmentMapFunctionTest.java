@@ -18,8 +18,11 @@ package com.google.template.soy.basicfunctions;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 import junit.framework.TestCase;
@@ -33,26 +36,29 @@ import junit.framework.TestCase;
 public class AugmentMapFunctionTest extends TestCase {
 
 
-  public void testCompute() {
+  private static final SoyValueHelper VALUE_HELPER = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
 
-    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
-    SoyMapData origMap =
-        new SoyMapData("aaa", "blah", "bbb", "bleh", "ccc", new SoyMapData("xxx", 2));
-    SoyMapData additionalMap =
-        new SoyMapData("aaa", "bluh", "ccc", new SoyMapData("yyy", 5));
-    SoyMapData augmentedMap = (SoyMapData) augmentMapFunction.compute(
-        ImmutableList.<SoyData>of(origMap, additionalMap));
 
-    assertEquals("bluh", augmentedMap.getString("aaa"));
-    assertEquals("bleh", augmentedMap.getString("bbb"));
-    assertEquals(5, augmentedMap.getInteger("ccc.yyy"));
-    assertEquals(null, augmentedMap.get("ccc.xxx"));
+  public void testComputeForJava() {
+
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
+    SoyMap origMap = VALUE_HELPER.newEasyDict(
+        "aaa", "blah", "bbb", "bleh", "ccc", VALUE_HELPER.newEasyDict("xxx", 2));
+    SoyMap additionalMap =
+        VALUE_HELPER.newEasyDict("aaa", "bluh", "ccc", VALUE_HELPER.newEasyDict("yyy", 5));
+    SoyDict augmentedDict = (SoyDict) augmentMapFunction.computeForJava(
+        ImmutableList.<SoyValue>of(origMap, additionalMap));
+
+    assertEquals("bluh", augmentedDict.getField("aaa").stringValue());
+    assertEquals("bleh", augmentedDict.getItem(StringData.forValue("bbb")).stringValue());
+    assertEquals(5, ((SoyDict) augmentedDict.getField("ccc")).getField("yyy").integerValue());
+    assertEquals(null, ((SoyDict) augmentedDict.getField("ccc")).getField("xxx"));
   }
 
 
   public void testComputeForJsSrc() {
 
-    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
     JsExpr baseMapExpr = new JsExpr("BASE_MAP_JS_CODE", Integer.MAX_VALUE);
     JsExpr additionalMapExpr = new JsExpr("ADDITIONAL_MAP_JS_CODE", Integer.MAX_VALUE);
     assertEquals(

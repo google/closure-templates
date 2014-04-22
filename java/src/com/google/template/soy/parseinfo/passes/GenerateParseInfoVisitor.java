@@ -27,10 +27,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.BaseUtils;
-import com.google.template.soy.base.IndentedLinesBuilder;
-import com.google.template.soy.base.SoyFileKind;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
@@ -39,16 +45,26 @@ import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyObjectType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.aggregate.RecordType;
+import com.google.template.soy.types.aggregate.UnionType;
+import com.google.template.soy.types.proto.SoyProtoType;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -60,7 +76,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -289,7 +304,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
   @Override protected void visitSoyFileNode(SoyFileNode node) {
 
-    if (node.getSoyFileKind() == SoyFileKind.DEP) {
+    if (node.getSoyFileKind() != SoyFileKind.SRC) {
       return;  // don't generate code for deps
     }
 
@@ -302,24 +317,32 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
     String javaClassName = soyFileToJavaClassNameMap.get(node);
 
+
     // Collect the following:
     // + all the public basic templates (non-private, non-delegate) in a map from the
     //   upper-underscore template name to the template's node,
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
+    // + for any params whose type is a proto, get the proto name and Java class name.
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
     Set<String> allParamKeys = Sets.newHashSet();
     LinkedHashMultimap<String, TemplateNode> paramKeyToTemplatesMultimap =
         LinkedHashMultimap.create();
+    SortedSet<String> protoTypes = Sets.newTreeSet();
     for (TemplateNode template : node.getChildren()) {
       if (!template.isPrivate() && template instanceof TemplateBasicNode) {
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
       }
-      for (SoyDocParam param : template.getSoyDocParams()) {
-        allParamKeys.add(param.key);
-        paramKeyToTemplatesMultimap.put(param.key, template);
+      for (TemplateParam param : template.getParams()) {
+        allParamKeys.add(param.name());
+        paramKeyToTemplatesMultimap.put(param.name(), template);
+        if (param instanceof HeaderParam) {
+          SoyType paramType = ((HeaderParam) param).type();
+          findProtoTypesRecurse(paramType, protoTypes);
+        }
       }
+      new FindUsedProtoTypesVisitor(protoTypes).exec(template);
     }
     // allParamKeysMap is a map from upper-underscore key to original key.
     SortedMap<String, String> allParamKeysMap = Maps.newTreeMap();
@@ -334,6 +357,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       }
       allParamKeysMap.put(upperUnderscoreKey, key);
     }
+
+
 
     ilb = new IndentedLinesBuilder(2);
 
@@ -354,7 +379,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.appendLine();
     ilb.appendLine();
     appendJavadoc(ilb, "Soy parse info for " + node.getFileName() + ".", true, false);
-    ilb.appendLine("public class ", javaClassName, " extends SoyFileInfo {");
+    ilb.appendLine("public final class ", javaClassName, " extends SoyFileInfo {");
     ilb.increaseIndent();
 
     // ------ Constant for namespace. ------
@@ -363,10 +388,29 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.appendLine("/** This Soy file's namespace. */");
     ilb.appendLine("public static final String __NAMESPACE__ = \"", node.getNamespace(), "\";");
 
+    // ------ Proto types map. ------
+    if (!protoTypes.isEmpty()) {
+      ilb.appendLine();
+      ilb.appendLine();
+      ilb.appendLine("/** Protocol buffer types used by these templates. */");
+      ilb.appendLine(
+          "@Override public ImmutableList<Object> getProtoTypes() {");
+      ilb.increaseIndent();
+      // Note we use fully-qualified names instead of imports to avoid potential collisions.
+      List<String> defaultInstances = Lists.newArrayList();
+      for (String protoTypeName : protoTypes) {
+        defaultInstances.add(protoTypeName);
+      }
+      appendListOrSetHelper(ilb, "return ImmutableList.<Object>of", defaultInstances);
+      ilb.appendLineEnd(";");
+      ilb.decreaseIndent();
+      ilb.appendLine("}");
+    }
+
     // ------ Template names. ------
     ilb.appendLine();
     ilb.appendLine();
-    ilb.appendLine("public static class TemplateName {");
+    ilb.appendLine("public static final class TemplateName {");
     ilb.increaseIndent();
     ilb.appendLine("private TemplateName() {}");
     ilb.appendLine();
@@ -390,7 +434,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.appendLine("/**");
     ilb.appendLine(" * Param names from all templates in this Soy file.");
     ilb.appendLine(" */");
-    ilb.appendLine("public static class Param {");
+    ilb.appendLine("public static final class Param {");
     ilb.increaseIndent();
     ilb.appendLine("private Param() {}");
     ilb.appendLine();
@@ -503,25 +547,29 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
 
     // First build list of all transitive params (direct and indirect).
-    LinkedHashMap<String, SoyDocParam> transitiveParamMap = Maps.newLinkedHashMap();
+    LinkedHashMap<String, TemplateParam> transitiveParamMap = Maps.newLinkedHashMap();
     // Direct params.
-    for (SoyDocParam param : node.getSoyDocParams()) {
-      transitiveParamMap.put(param.key, param);
+    List<TemplateParam> params = node.getParams();
+    if (params != null) {
+      for (TemplateParam param : params) {
+        transitiveParamMap.put(param.name(), param);
+      }
     }
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
         (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
-    for (SoyDocParam param : indirectParamsInfo.indirectParams.values()) {
-      SoyDocParam existingParam = transitiveParamMap.get(param.key);
+    for (TemplateParam param : indirectParamsInfo.indirectParams.values()) {
+      TemplateParam existingParam = transitiveParamMap.get(param.name());
       if (existingParam == null) {
-        // Note: We don't list the SoyDoc description for indirect params.
-        transitiveParamMap.put(param.key, new SoyDocParam(param.key, param.isRequired, null));
+        // Note: We don't list the description for indirect params.
+        transitiveParamMap.put(param.name(), param.cloneEssential());
       }
     }
 
     // Get info on injected params.
     IjParamsInfo ijParamsInfo = (new FindIjParamsVisitor(templateRegistry)).exec(node);
 
+    @SuppressWarnings("ConstantConditions")  // for IntelliJ
     String upperUnderscoreName =
         convertToUpperUnderscore(node.getPartialTemplateName().substring(1));
     String templateInfoClassName =
@@ -532,7 +580,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.appendLine();
     ilb.appendLine();
     appendJavadoc(ilb, node.getSoyDocDesc(), true, false);
-    ilb.appendLine("public static class ", templateInfoClassName, " extends SoyTemplateInfo {");
+    ilb.appendLine(
+        "public static final class ", templateInfoClassName, " extends SoyTemplateInfo {");
     ilb.increaseIndent();
 
     // ------ Constants for template name. ------
@@ -546,15 +595,15 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     // ------ Param constants. ------
     boolean hasSeenFirstDirectParam = false;
     boolean hasSwitchedToIndirectParams = false;
-    for (SoyDocParam param : transitiveParamMap.values()) {
+    for (TemplateParam param : transitiveParamMap.values()) {
 
-      if (param.desc != null) {
+      if (param.desc() != null) {
         // Direct param.
         if (! hasSeenFirstDirectParam) {
           ilb.appendLine();
           hasSeenFirstDirectParam = true;
         }
-        appendJavadoc(ilb, param.desc, false, false);
+        appendJavadoc(ilb, param.desc(), false, false);
 
       } else {
         // Indirect param.
@@ -569,7 +618,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
         // generating the Javadoc.
         SortedSet<String> sortedJavadocCalleeNames = Sets.newTreeSet();
         for (TemplateNode transitiveCallee :
-                 indirectParamsInfo.paramKeyToCalleesMultimap.get(param.key)) {
+                 indirectParamsInfo.paramKeyToCalleesMultimap.get(param.name())) {
           String javadocCalleeName =
               buildTemplateNameForJavadoc(node.getParent(), transitiveCallee);
           sortedJavadocCalleeNames.add(javadocCalleeName);
@@ -592,8 +641,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       }
 
       // The actual param field.
-      ilb.appendLine("public static final String ", convertToUpperUnderscore(param.key),
-                     " = \"", param.key, "\";");
+      ilb.appendLine("public static final String ", convertToUpperUnderscore(param.name()),
+                     " = \"", param.name(), "\";");
     }
 
     // ------ Constructor. ------
@@ -607,10 +656,10 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
     if (transitiveParamMap.size() > 0) {
       List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
-      for (SoyDocParam param : transitiveParamMap.values()) {
+      for (TemplateParam param : transitiveParamMap.values()) {
         entrySnippetPairs.add(Pair.of(
-            "\"" + param.key + "\"",
-            param.isRequired ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL"));
+            "\"" + param.name() + "\"",
+            param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL"));
       }
       appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs);
       ilb.appendLineEnd(",");
@@ -678,6 +727,45 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     return result;
   }
 
+  /**
+   * Recursively search for protocol buffer types within the given type.
+   * @param type The type to search.
+   * @param protoTypes Output set.
+   */
+  private static void findProtoTypesRecurse(SoyType type, SortedSet<String> protoTypes) {
+    if (type instanceof SoyProtoType) {
+      protoTypes.add(((SoyProtoType) type).getDescriptorExpression());
+    } else {
+      switch (type.getKind()) {
+        case UNION:
+          for (SoyType member: ((UnionType) type).getMembers()) {
+            findProtoTypesRecurse(member, protoTypes);
+          }
+          break;
+
+        case LIST: {
+          ListType listType = (ListType) type;
+          findProtoTypesRecurse(listType.getElementType(), protoTypes);
+          break;
+        }
+
+        case MAP: {
+          MapType mapType = (MapType) type;
+          findProtoTypesRecurse(mapType.getKeyType(), protoTypes);
+          findProtoTypesRecurse(mapType.getValueType(), protoTypes);
+          break;
+        }
+
+        case RECORD: {
+          RecordType recordType = (RecordType) type;
+          for (SoyType fieldType : recordType.getMembers().values()) {
+            findProtoTypesRecurse(fieldType, protoTypes);
+          }
+          break;
+        }
+      }
+    }
+  }
 
   /**
    * Private helper for visitSoyFileNode() and visitTemplateNode() to append a Javadoc comment to
@@ -915,4 +1003,86 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
+  // -----------------------------------------------------------------------------------------------
+  // Helper visitor to collect CSS names.
+
+
+  /**
+   * Private helper class for visitSoyFileNode() to collect all of the proto
+   * extension types used in the template.
+   */
+  private static class FindUsedProtoTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+
+    private final SortedSet<String> protoTypes;
+
+    public FindUsedProtoTypesVisitor(SortedSet<String> protoTypes) {
+      this.protoTypes = protoTypes;
+    }
+
+    @Override public Void exec(SoyNode node) {
+      visit(node);
+      return null;
+    }
+
+    @Override protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ExprHolderNode) {
+        visitExpressions((ExprHolderNode) node);
+      }
+
+      if (node instanceof ParentSoyNode<?>) {
+        visitChildren((ParentSoyNode<?>) node);
+      }
+    }
+
+    private void visitExpressions(ExprHolderNode node) {
+      FindUsedProtoTypesExprVisitor exprVisitor = new FindUsedProtoTypesExprVisitor(protoTypes);
+      for (ExprUnion exprUnion : node.getAllExprUnions()) {
+        if (exprUnion.getExpr() != null) {
+          exprVisitor.exec(exprUnion.getExpr());
+        }
+      }
+    }
+  }
+
+
+  /**
+   * Private helper class to collect all of the proto extension types used in
+   * an expression.
+   */
+  private static class FindUsedProtoTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
+
+    private final SortedSet<String> protoTypes;
+
+    public FindUsedProtoTypesExprVisitor(SortedSet<String> protoTypes) {
+      this.protoTypes = protoTypes;
+    }
+
+    @Override protected void visit(ExprNode node) {
+      super.visit(node);
+    }
+
+    @Override protected void visitExprRootNode(ExprRootNode<?> node) {
+      visitChildren(node);
+      ExprNode expr = node.getChild(0);
+      node.setType(expr.getType());
+    }
+
+    @Override protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        visitChildren((ParentExprNode) node);
+      }
+    }
+
+    @Override protected void visitFieldAccessNode(FieldAccessNode node) {
+      visit(node.getBaseExprChild());
+      SoyType baseType = node.getBaseExprChild().getType();
+      if (baseType instanceof SoyProtoType) {
+        SoyObjectType protoType = (SoyObjectType) baseType;
+        String importName = protoType.getFieldImport(node.getFieldName(), SoyBackendKind.TOFU);
+        if (importName != null) {
+          protoTypes.add(importName);
+        }
+      }
+    }
+  }
 }

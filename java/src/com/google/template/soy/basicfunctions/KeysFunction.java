@@ -16,21 +16,16 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toIntegerJavaExpr;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyListData;
-import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
+import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -49,11 +44,17 @@ import java.util.Set;
  */
 @Singleton
 @SoyPureFunction
-class KeysFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction {
+
+
+  /** The SoyValueHelper instance to use internally. */
+  private final SoyValueHelper valueHelper;
 
 
   @Inject
-  KeysFunction() {}
+  KeysFunction(SoyValueHelper valueHelper) {
+    this.valueHelper = valueHelper;
+  }
 
 
   @Override public String getName() {
@@ -66,13 +67,13 @@ class KeysFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, 
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
-    SoyData arg = args.get(0);
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
+    SoyValue arg = args.get(0);
 
-    if (! (arg instanceof SoyMapData)) {
-      throw new IllegalArgumentException("Argument to keys() function is not SoyMapData.");
+    if (! (arg instanceof SoyMap)) {
+      throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
     }
-    return new SoyListData(((SoyMapData) arg).getKeys());
+    return valueHelper.newEasyListFromJavaIterable(((SoyMap) arg).getItemKeys());
   }
 
 
@@ -80,15 +81,6 @@ class KeysFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, 
     JsExpr arg = args.get(0);
 
     return new JsExpr("soy.$$getMapKeys(" + arg.getText() + ")", Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-    JavaExpr arg = args.get(0);
-
-    return toIntegerJavaExpr(
-        JavaCodeUtils.genNewListData(
-            "(" + JavaCodeUtils.genMaybeCast(arg, SoyMapData.class) + ").getKeys()"));
   }
 
 }

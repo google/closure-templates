@@ -19,13 +19,12 @@ package com.google.template.soy.coredirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -38,8 +37,8 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-public class IdDirective extends SoyAbstractTofuPrintDirective
-    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+@SoyPurePrintDirective
+public class IdDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
 
 
   public static final String NAME = "|id";
@@ -64,19 +63,12 @@ public class IdDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public SoyData apply(SoyData value, List<SoyData> args) {
-    return value instanceof StringData
-      ? value
-      : SoyData.createFromExistingData(value.toString());
+  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+    return (value instanceof StringData) ? value : StringData.forValue(value.coerceToString());
   }
 
 
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return value;
-  }
-
-
-  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
     return value;
   }
 

@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -54,7 +56,10 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
 
 
   /** The directive name (including vertical bar). */
-  private String name;
+  private final String name;
+
+  /** The directive name in source code (including vertical bar). For user msgs only! */
+  private final String srcName;
 
   /** The text of all the args. */
   private final String argsText;
@@ -65,25 +70,28 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
 
   /**
    * @param id The id for this node.
-   * @param name The directive name (including vertical bar).
+   * @param srcName The directive name in source code (including vertical bar).
    * @param argsText The text of all the args, or empty string if none (usually empty string).
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public PrintDirectiveNode(int id, String name, String argsText) throws SoySyntaxException {
+  public PrintDirectiveNode(int id, String srcName, String argsText) throws SoySyntaxException {
     super(id);
 
-    String translatedDirectiveName = DEPRECATED_DIRECTIVE_NAMES.get(name);
+    this.srcName = srcName;
+
+    String translatedDirectiveName = DEPRECATED_DIRECTIVE_NAMES.get(srcName);
     if (translatedDirectiveName == null) {
       // Not a deprecated directive name.
-      this.name = name;
+      this.name = srcName;
     } else {
       // Use the undeprecated name since the supporting Java and JavaScript code only contains
       // support functions for undeprecated directives.
       this.name = translatedDirectiveName;
 
       // If this name is part of the V1 syntax, then maybe set the syntax version.
-      if (V1_DIRECTIVE_NAMES.contains(name)) {
-        maybeSetSyntaxVersion(SyntaxVersion.V1);
+      if (V1_DIRECTIVE_NAMES.contains(srcName)) {
+        maybeSetSyntaxVersionBound(new SyntaxVersionBound(
+            SyntaxVersion.V2_1, "Print directive '" + srcName + "' is from Soy V1.0."));
       }
     }
 
@@ -106,6 +114,7 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
    */
   protected PrintDirectiveNode(PrintDirectiveNode orig) {
     super(orig);
+    this.srcName = orig.srcName;
     this.name = orig.name;
     this.argsText = orig.argsText;
     List<ExprRootNode<?>> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
@@ -118,12 +127,6 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
 
   @Override public Kind getKind() {
     return Kind.PRINT_DIRECTIVE_NODE;
-  }
-
-
-  /** @param name The new name to set for this directive. */
-  public void setName(String name) {
-    this.name = name;
   }
 
 
@@ -146,7 +149,7 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
 
 
   @Override public String toSourceString() {
-    return name + ((argsText.length() > 0) ? ":" + argsText : "");
+    return srcName + ((argsText.length() > 0) ? ":" + argsText : "");
   }
 
 

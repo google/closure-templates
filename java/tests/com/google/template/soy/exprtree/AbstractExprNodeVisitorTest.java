@@ -50,7 +50,7 @@ public class AbstractExprNodeVisitorTest extends TestCase {
     MinusOpNode expr = new MinusOpNode();
     expr.addChild(new IntegerNode(17));
 
-    DataRefNode dataRef = new DataRefNode(false, false, "boo");
+    VarRefNode dataRef = new VarRefNode("boo", false, false, null);
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
@@ -67,7 +67,7 @@ public class AbstractExprNodeVisitorTest extends TestCase {
     MinusOpNode expr = new MinusOpNode();
     expr.addChild(new FloatNode(17.0));
 
-    DataRefNode dataRef = new DataRefNode(false, false, "boo");
+    VarRefNode dataRef = new VarRefNode("boo", false, false, null);
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
@@ -101,11 +101,8 @@ public class AbstractExprNodeVisitorTest extends TestCase {
       resultStack.push((double) node.getValue());
     }
 
-    @Override protected void visitDataRefNode(DataRefNode node) {
-      if (node.numChildren() > 0) {
-        throw new UnsupportedOperationException();
-      }
-      resultStack.push(env.get(node.getFirstKey()));
+    @Override protected void visitVarRefNode(VarRefNode node) {
+      resultStack.push(env.get(node.getName()));
     }
 
     @Override protected void visitOperatorNode(OperatorNode node) {

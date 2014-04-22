@@ -17,7 +17,7 @@
 package com.google.template.soy.exprparse;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 
@@ -131,7 +131,7 @@ public class ExprParseUtils {
    * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
    * @return The parsed data reference.
    */
-  public static ExprRootNode<DataRefNode> parseDataRefElseThrowSoySyntaxException(
+  public static ExprRootNode<ExprNode> parseDataRefElseThrowSoySyntaxException(
       String exprText, String errorMsg) {
 
     try {

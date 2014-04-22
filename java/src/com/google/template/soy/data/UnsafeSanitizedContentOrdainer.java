@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -47,7 +48,8 @@ public final class UnsafeSanitizedContentOrdainer {
   private UnsafeSanitizedContentOrdainer() {}
 
   /**
-   * Faithfully assumes the provided value is "safe" and marks it not to be re-escaped.
+   * Faithfully assumes the provided value is "safe" and marks it not to be re-escaped. The value's
+   * direction is assumed to be LTR for JS, URI, ATTRIBUTES, and CSS content, and otherwise unknown.
    *
    * When you "ordain" a string as safe content, it means that Soy will NOT re-escape or validate
    * the contents if printed in the relevant context. You can use this to insert known-safe HTML
@@ -57,6 +59,21 @@ public final class UnsafeSanitizedContentOrdainer {
    * in your code.
    */
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind) {
-    return new SanitizedContent(value, kind);
+    return ordainAsSafe(value, kind, SanitizedContents.getDefaultDir(kind));
+  }
+
+  /**
+   * Faithfully assumes the provided value is "safe" and marks it not to be re-escaped. Also
+   * assumes the provided direction; null means unknown and thus to be estimated when necessary.
+   *
+   * When you "ordain" a string as safe content, it means that Soy will NOT re-escape or validate
+   * the contents if printed in the relevant context. You can use this to insert known-safe HTML
+   * into a template via a parameter.
+   *
+   * This doesn't do a lot of strict checking, but makes it easier to differentiate safe constants
+   * in your code.
+   */
+  public static SanitizedContent ordainAsSafe(String value, ContentKind kind, @Nullable Dir dir) {
+    return new SanitizedContent(value, kind, dir);
   }
 }

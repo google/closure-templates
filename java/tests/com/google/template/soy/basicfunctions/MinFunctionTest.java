@@ -17,11 +17,9 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 import junit.framework.TestCase;
@@ -35,19 +33,19 @@ import junit.framework.TestCase;
 public class MinFunctionTest extends TestCase {
 
 
-  public void testComputeForTofu() {
+  public void testComputeForJava() {
 
     MinFunction minFunction = new MinFunction();
 
-    SoyData float0 = FloatData.forValue(7.5);
-    SoyData float1 = FloatData.forValue(7.777);
+    SoyValue float0 = FloatData.forValue(7.5);
+    SoyValue float1 = FloatData.forValue(7.777);
     assertEquals(FloatData.forValue(7.5),
-                 minFunction.computeForTofu(ImmutableList.of(float0, float1)));
+                 minFunction.computeForJava(ImmutableList.of(float0, float1)));
 
-    SoyData integer0 = IntegerData.forValue(-7);
-    SoyData integer1 = IntegerData.forValue(-8);
+    SoyValue integer0 = IntegerData.forValue(-7);
+    SoyValue integer1 = IntegerData.forValue(-8);
     assertEquals(IntegerData.forValue(-8),
-                 minFunction.computeForTofu(ImmutableList.of(integer0, integer1)));
+                 minFunction.computeForJava(ImmutableList.of(integer0, integer1)));
   }
 
 
@@ -58,49 +56,6 @@ public class MinFunctionTest extends TestCase {
     JsExpr expr1 = new JsExpr("JS_CODE_1", Integer.MAX_VALUE);
     assertEquals(new JsExpr("Math.min(JS_CODE_0, JS_CODE_1)", Integer.MAX_VALUE),
                  minFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)));
-  }
-
-
-  public void testComputeForJavaSrc() {
-
-    MinFunction minFunction = new MinFunction();
-
-    JavaExpr expr0 = new JavaExpr("JAVA_CODE_0", IntegerData.class, Integer.MAX_VALUE);
-    JavaExpr expr1 = new JavaExpr("JAVA_CODE_1", IntegerData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.data.restricted.IntegerData.forValue(" +
-                "Math.min(JAVA_CODE_0.integerValue(), JAVA_CODE_1.integerValue()))",
-            IntegerData.class, Integer.MAX_VALUE),
-        minFunction.computeForJavaSrc(ImmutableList.of(expr0, expr1)));
-
-    expr0 = new JavaExpr("JAVA_CODE_0", FloatData.class, Integer.MAX_VALUE);
-    expr1 = new JavaExpr("JAVA_CODE_1", FloatData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.data.restricted.FloatData.forValue(" +
-                "Math.min(JAVA_CODE_0.floatValue(), JAVA_CODE_1.floatValue()))",
-            FloatData.class, Integer.MAX_VALUE),
-        minFunction.computeForJavaSrc(ImmutableList.of(expr0, expr1)));
-
-    expr0 = new JavaExpr("JAVA_CODE_0", IntegerData.class, Integer.MAX_VALUE);
-    expr1 = new JavaExpr("JAVA_CODE_1", FloatData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.data.restricted.FloatData.forValue(" +
-                "Math.min(JAVA_CODE_0.floatValue(), JAVA_CODE_1.floatValue()))",
-            FloatData.class, Integer.MAX_VALUE),
-        minFunction.computeForJavaSrc(ImmutableList.of(expr0, expr1)));
-
-    expr0 = new JavaExpr("JAVA_CODE_0", NumberData.class, Integer.MAX_VALUE);
-    expr1 = new JavaExpr("JAVA_CODE_1", SoyData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.javasrc.codedeps.SoyUtils.$$min(" +
-                "JAVA_CODE_0," +
-                " (com.google.template.soy.data.restricted.NumberData) JAVA_CODE_1)",
-            NumberData.class, Integer.MAX_VALUE),
-        minFunction.computeForJavaSrc(ImmutableList.of(expr0, expr1)));
   }
 
 }

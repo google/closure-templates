@@ -41,7 +41,7 @@ public interface SoyNode extends Node {
 
 
   /**
-   * Enum of specific node kinds (coresponding to specific node types).
+   * Enum of specific node kinds (corresponding to specific node types).
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static enum Kind {
@@ -54,9 +54,10 @@ public interface SoyNode extends Node {
 
     RAW_TEXT_NODE,
 
-    GOOG_MSG_NODE,
+    GOOG_MSG_DEF_NODE,
     GOOG_MSG_REF_NODE,
 
+    MSG_FALLBACK_GROUP_NODE,
     MSG_NODE,
     MSG_PLURAL_NODE,
     MSG_PLURAL_CASE_NODE,
@@ -71,6 +72,7 @@ public interface SoyNode extends Node {
     PRINT_NODE,
     PRINT_DIRECTIVE_NODE,
 
+    XID_NODE,
     CSS_NODE,
 
     LET_VALUE_NODE,
@@ -101,16 +103,10 @@ public interface SoyNode extends Node {
 
 
   /**
-   * Enum for the syntax version.
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
-  public static enum SyntaxVersion { V1, V2 }
-
-
-  /**
    * Returns this node's kind (corresponding to this node's specific type).
    */
   public Kind getKind();
+
 
   /**
    * Sets this node's id.
@@ -120,10 +116,12 @@ public interface SoyNode extends Node {
    */
   public void setId(int id);
 
+
   /**
    * Returns this node's id.
    */
   public int getId();
+
 
   /**
    * Sets the source location (file path and line number) for this node.
@@ -131,17 +129,15 @@ public interface SoyNode extends Node {
    */
   public void setSourceLocation(SourceLocation srcLoc);
 
+
   /**
    * Returns the source location (file path and line number) for this node.
    */
   public SourceLocation getSourceLocation();
 
-  /**
-   * Returns the syntax version of this node.
-   */
-  public SyntaxVersion getSyntaxVersion();
 
   @Override public ParentSoyNode<?> getParent();
+
 
   /**
    * {@inheritDoc}
@@ -184,7 +180,7 @@ public interface SoyNode extends Node {
    * <p> Includes nodes such as SoyFileSetNode, SoyFileNode, IfNode, SwitchNode, ForeachNode,
    * CallNode, etc.
    *
-   * <p> During optimization, the immediate children should never be moved, but lower descendents
+   * <p> During optimization, the immediate children should never be moved, but lower descendants
    * may be freely moved (either moved within the node's subtree or moved outside of the node's
    * subtree).
    */
@@ -279,7 +275,7 @@ public interface SoyNode extends Node {
 
   /**
    * A node that represents a block of Soy code that is conditionally executed. During optimization,
-   * descendents should generally never be moved outside of the subtree of such a node. We make an
+   * descendants should generally never be moved outside of the subtree of such a node. We make an
    * exception for LoopNodes because we don't want to lose the ability to pull invariants out of
    * loops.
    *
@@ -353,8 +349,40 @@ public interface SoyNode extends Node {
 
 
   /**
-   * A block node that can hold message content. Every direct child of a MsgBlockNode must be one
-   * of: RawTextNode, MsgPlaceholderNode, MsgSelectNode, MsgPluralNode, or MsgPluralRemainderNode.
+   * A substitution unit is any non-raw-text message part, since it will be replaced when the
+   * message is rendered. Currently, one of MsgPlaceholderNode, MsgSelectNode, MsgPluralNode, or
+   * MsgPluralRemainderNode.
+   */
+  public static interface MsgSubstUnitNode extends StandaloneNode {
+
+    @Override public MsgBlockNode getParent();
+
+    /**
+     * Returns the base var name for this substitution unit. (For a placeholder, this is the base
+     * placeholder name.)
+     *
+     * <p> Note: This isn't quite correct semantically. It's conceivable that a new type of
+     * substitution unit in the future could have multiple vars. But until that happens, this
+     * simpler model is sufficient.
+     */
+    public String getBaseVarName();
+
+    /**
+     * Returns whether this substitution unit should use the same var name as another substitution
+     * unit. (For placeholders, this means the other placeholder is exactly the same as this one,
+     * i.e. it appears twice in the same message.)
+     * @param other The other substitution unit to check against.
+     */
+    public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+
+
+  /**
+   * A block node that can hold message content. Every direct child of a MsgBlockNode must be either
+   * a RawTextNode or a MsgSubstUnitNode.
    */
   public static interface MsgBlockNode extends BlockNode {}
 
@@ -372,13 +400,13 @@ public interface SoyNode extends Node {
      * this raw name can be any identifier (not necessarily in upper-underscore format).
      * @return The user-supplied placeholder name, or null if not supplied or not applicable.
      */
-    public String getUserSuppliedPlaceholderName();
+    public String getUserSuppliedPhName();
 
     /**
      * Generates the base placeholder name for this node.
      * @return The base placeholder name for this node.
      */
-    public String genBasePlaceholderName();
+    public String genBasePhName();
 
     /**
      * Generates the key object used in comparisons to determine whether two placeholder nodes

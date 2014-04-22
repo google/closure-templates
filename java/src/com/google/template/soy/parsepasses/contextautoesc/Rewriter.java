@@ -157,9 +157,9 @@ final class Rewriter {
         if (callNode instanceof CallBasicNode) {
           // For simplicity, use the full callee name as the source callee name.
           newCallNode = new CallBasicNode(
-              callNode.getId(), derivedCalleeName, derivedCalleeName, false,
+              callNode.getId(), derivedCalleeName, derivedCalleeName, false, false,
               callNode.isPassingData(), callNode.isPassingAllData(), callNode.getDataExpr(),
-              callNode.getUserSuppliedPlaceholderName(), callNode.getSyntaxVersion(),
+              callNode.getUserSuppliedPhName(), callNode.getSyntaxVersionBound(),
               callNode.getEscapingDirectiveNames());
         } else {
           CallDelegateNode callNodeCast = (CallDelegateNode) callNode;
@@ -167,7 +167,7 @@ final class Rewriter {
               callNode.getId(), derivedCalleeName, callNodeCast.getDelCalleeVariantExpr(), false,
               callNodeCast.allowsEmptyDefault(), callNode.isPassingData(),
               callNode.isPassingAllData(), callNode.getDataExpr(),
-              callNode.getUserSuppliedPlaceholderName(),
+              callNode.getUserSuppliedPhName(),
               callNode.getEscapingDirectiveNames());
         }
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {

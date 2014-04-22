@@ -21,8 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.SoyFileKind;
-import com.google.template.soy.base.SoyFileSupplier;
+import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.shared.internal.SharedTestUtils;
@@ -30,7 +31,9 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
@@ -39,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 
@@ -66,6 +70,17 @@ public final class ContextualAutoescaperTest extends TestCase {
         }
         @Override public boolean shouldCancelAutoescape() {
           return false;
+        }
+      },
+      "|noAutoescape", new SoyPrintDirective() {
+        @Override public String getName() {
+          return "|noAutoescape";
+        }
+        @Override public Set<Integer> getValidArgsSizes() {
+          return ImmutableSet.of(0);
+        }
+        @Override public boolean shouldCancelAutoescape() {
+          return true;
         }
       },
       "|bidiSpanWrap", new FakeBidiSpanWrapDirective());
@@ -116,6 +131,33 @@ public final class ContextualAutoescaperTest extends TestCase {
               "<a href='worlds?world={$world}'>\n",
                 "{$world}\n",
               "</a>!\n",
+            "{/template}\n"));
+  }
+
+  public final void testObscureUrlAttributes() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"contextual\"}\n",
+            //"<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+              "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
+              "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
+              "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
+              "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
+              "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"contextual\"}\n",
+            // TODO(user): Re-enable content since it is often (but often not) used to convey
+            // URLs in place of <link rel> once we can figure out a good way to distinguish the
+            // URL use-cases from others.
+            //"<meta http-equiv=refresh content='{$x}'>\n",
+              "<a xml:base='{$x}' href='/foo'>link</a>\n",
+              "<button formaction='{$x}'>do</button>\n",
+              "<command icon='{$x}'></command>\n",
+              "<object data='{$x}'></object>\n",
+              "<video poster='{$x}'></video>\n",
             "{/template}\n"));
   }
 
@@ -687,6 +729,15 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
+  public final void testXid() throws Exception {
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"contextual\"}\n",
+              "{xid foo}\n",
+            "{/template}"));
+  }
+
   public final void testAlreadyEscaped() throws Exception {
     assertContextualRewritingNoop(
         join(
@@ -1196,8 +1247,9 @@ public final class ContextualAutoescaperTest extends TestCase {
   public final void testTypedLetBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
         "In file no-path:5, template t: " +
-        "Autoescape-cancelling print directive |customEscapeDirective not allowed in strict " +
-        "blocks of non-text kind: {$y |customEscapeDirective}",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
+        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
+        "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
             "{template t autoescape=\"contextual\"}\n",
@@ -1205,6 +1257,51 @@ public final class ContextualAutoescaperTest extends TestCase {
               "<b>{$y |customEscapeDirective}</b>",
             "{/let}\n",
             "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:5, template t: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"html\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            // Strict templates never allow noAutoescape.
+            "{template t autoescape=\"strict\"}\n",
+            "{let $l kind=\"html\"}\n",
+              "<b>{$y |noAutoescape}</b>",
+            "{/let}\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:5, template t: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"js\" or SanitizedContent.",
+        join(
+            // Throw in a red-herring namespace, just to check things.
+            "{namespace ns autoescape=\"contextual\"}\n\n",
+            // Strict templates never allow noAutoescape.
+            "{template t autoescape=\"strict\"}\n",
+            "{let $l kind=\"html\"}\n",
+              "<script>{$y |noAutoescape}</script>",
+            "{/let}\n",
+            "{/template}"));
+
+
+    assertRewriteFails(
+        "In file no-path:5, template t: " +
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
+        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
+        "{call .other data=\"all\" /}",
+        join(
+            "{namespace ns}\n\n",
+            "{template t autoescape=\"contextual\"}\n",
+            "{let $l kind=\"html\"}\n",
+              "<b>{call .other data=\"all\"/}</b>",
+            "{/let}\n",
+            "{/template}\n\n",
+            "{template .other autoescape=\"contextual\"}\n",
+              "Hello World\n",
+            "{/template}"));
+
     assertRewriteFails(
         "In file no-path:5, template t: " +
         "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
@@ -1376,8 +1473,127 @@ public final class ContextualAutoescaperTest extends TestCase {
   public final void testTypedParamBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
         "In file no-path:4, template caller: " +
-        "Autoescape-cancelling print directive |customEscapeDirective not allowed in strict " +
-        "blocks of non-text kind: {$y |customEscapeDirective}",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
+        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
+        "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"strict\"}\n",
+              "<div>",
+                "{call callee}",
+                  "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
+                "{/call}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"strict\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}"));
+
+    // noAutoescape has a special error message.
+    assertRewriteFails(
+        "In file no-path:4, template caller: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"html\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"strict\"}\n",
+              "<div>",
+                "{call callee}",
+                  "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
+                "{/call}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"strict\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}"));
+
+    // NOTE: This error only works for non-extern templates.
+    assertRewriteFails(
+        "In file no-path:4, template caller: " +
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
+        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
+        "{call subCallee data=\"all\" /}",
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"strict\"}\n",
+              "<div>",
+                "{call callee}",
+                  "{param x kind=\"html\"}{call subCallee data=\"all\"/}{/param}",
+                "{/call}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"strict\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}\n\n",
+            "{template subCallee autoescape=\"contextual\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}"));
+
+    // Non-escape-cancelling directives are allowed.
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"strict\"}\n",
+            "<div>",
+              "{call callee}",
+                "{param x kind=\"html\"}<b>{$y |customOtherDirective |escapeHtml}</b>{/param}",
+              "{/call}",
+            "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"strict\" private=\"true\"}\n",
+              "<b>{$x |escapeHtml}</b>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"strict\"}\n",
+            "<div>",
+              "{call callee}",
+                "{param x kind=\"html\"}<b>{$y |customOtherDirective}</b>{/param}",
+              "{/call}",
+            "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"strict\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}"));
+  }
+
+
+  public final void testTransitionalTypedParamBlock() {
+    // In non-strict contextual templates, param blocks employ "transitional" strict autoescaping,
+    // which permits noAutoescape. This helps teams migrate the callees to strict even if not all
+    // the callers can be fixed.
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"contextual\"}\n",
+              "<div>",
+                "{call callee}",
+                  "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
+                "{/call}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"contextual\" private=\"true\"}\n",
+              "<b>{$x |escapeHtml}</b>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"contextual\"}\n",
+              "<div>",
+                "{call callee}",
+                  "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
+                "{/call}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"contextual\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}"));
+
+    // Other escape-cancelling directives are still not allowed.
+    assertRewriteFails(
+        "In file no-path:4, template caller: " +
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
+        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
+        "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
             "{template caller autoescape=\"contextual\"}\n",
@@ -1524,12 +1740,64 @@ public final class ContextualAutoescaperTest extends TestCase {
   public void testStrictModeRejectsAutoescapeCancellingDirectives() {
     assertRewriteFails(
         "In file no-path:4, template main: " +
-        "Autoescape-cancelling print directive |customEscapeDirective not allowed in strict " +
-        "blocks of non-text kind: {$foo |customEscapeDirective}",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
+        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
+        "{let $foo kind=\"text\"}{$foo |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
             "{template main autoescape=\"strict\"}\n",
               "<b>{$foo|customEscapeDirective}</b>\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:4, template main: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"html\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"strict\"}\n",
+              "<b>{$foo|noAutoescape}</b>\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:4, template main: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"uri\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"strict\"}\n",
+              "<a href=\"{$foo|noAutoescape}\">Test</a>\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:4, template main: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"attributes\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"strict\"}\n",
+              "<div {$foo|noAutoescape}>Test</div>\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:4, template main: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"js\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"strict\"}\n",
+              "<script>{$foo|noAutoescape}</script>\n",
+            "{/template}"));
+
+    // NOTE: There's no recommended context for textarea, since it's really essentially text.
+    assertRewriteFails(
+        "In file no-path:4, template main: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with appropriate kind=\"...\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"strict\"}\n",
+              "<textarea>{$foo|noAutoescape}</textarea>\n",
             "{/template}"));
   }
 
@@ -1726,7 +1994,7 @@ public final class ContextualAutoescaperTest extends TestCase {
     // This ensures that a contextual template can use a strict URI -- specifically testing that
     // the contextual call site matching doesn't do an exact match on context (which would be
     // sensitive to whether single quotes or double quotes are used) but uses the logic in
-    // Context.isValidStartContextForContentKind().
+    // Context.isValidStartContextForContentKindLoose().
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
@@ -1870,14 +2138,13 @@ public final class ContextualAutoescaperTest extends TestCase {
         "{template .jsTemplate autoescape=\"strict\" kind=\"js\"}\n" +
           "foo()" +
         "\n{/template}";
-    
+
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(source);
     new CheckEscapingSanityVisitor().exec(soyTree);
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(
-        soyTree, false /* assumeNoExternalCalls */);
+    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertEquals("Sanity check", "ns.main", mainTemplate.getTemplateName());
-    final List<CallNode> callNodes = SharedTestUtils.getAllNodesOfType(
+    final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
         mainTemplate, CallNode.class);
     assertEquals(4, callNodes.size());
     assertEquals("HTML->HTML escaping should be pruned",
@@ -1891,32 +2158,7 @@ public final class ContextualAutoescaperTest extends TestCase {
   }
 
 
-  public void testStrictModeCarefulWithDelegates() {
-    String source =
-        "{namespace ns}\n\n" +
-        "{template .main autoescape=\"strict\"}\n" +
-          "{delcall ns.delegate /}" +
-        "\n{/template}\n\n" +
-        "/** A delegate returning HTML. */\n" +
-        "{deltemplate ns.delegate autoescape=\"strict\"}\n" +
-          "Hello World" +
-        "\n{/deltemplate}";
-    
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(source);
-    new CheckEscapingSanityVisitor().exec(soyTree);
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(
-        soyTree, false /* assumeNoExternalCalls */);
-    TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
-    assertEquals("Sanity check", "ns.main", mainTemplate.getTemplateName());
-    final List<CallNode> callNodes = SharedTestUtils.getAllNodesOfType(
-        mainTemplate, CallNode.class);
-    assertEquals(1, callNodes.size());
-    assertEquals("Escaping should be there since there might be extern delegates",
-        ImmutableList.of("|escapeHtml"), callNodes.get(0).getEscapingDirectiveNames());
-  }
-
-
-  public void testStrictModeOptimizesDelegatesWhenExternalCallsBanned() {
+  public void testStrictModeOptimizesDelegates() {
     String source =
         "{namespace ns}\n\n" +
         "{template .main autoescape=\"strict\"}\n" +
@@ -1931,14 +2173,13 @@ public final class ContextualAutoescaperTest extends TestCase {
         "{deltemplate ns.delegateText autoescape=\"strict\" kind=\"text\"}\n" +
           "Hello World" +
         "\n{/deltemplate}";
-    
+
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(source);
     new CheckEscapingSanityVisitor().exec(soyTree);
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(
-        soyTree, true /* assumeNoExternalCalls */);
+    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertEquals("Sanity check", "ns.main", mainTemplate.getTemplateName());
-    final List<CallNode> callNodes = SharedTestUtils.getAllNodesOfType(
+    final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
         mainTemplate, CallNode.class);
     assertEquals(2, callNodes.size());
     assertEquals("We're compiling a complete set; we can optimize based on usages.",
@@ -1963,8 +2204,7 @@ public final class ContextualAutoescaperTest extends TestCase {
   private String rewrittenSource(SoyFileSetNode soyTree)
       throws SoyAutoescapeException {
 
-    List<TemplateNode> tmpls = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(
-        soyTree, false /* assumeNoExternalCalls */);
+    List<TemplateNode> tmpls = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
 
     StringBuilder src = new StringBuilder();
     src.append(soyTree.getChild(0).toSourceString());
@@ -2014,16 +2254,21 @@ public final class ContextualAutoescaperTest extends TestCase {
       soyFileSuppliers.add(SoyFileSupplier.Factory.create(
           inputs[i], SoyFileKind.SRC, inputs.length == 1 ? "no-path" : "no-path-" + i));
     }
-    SoyFileSetNode soyTree = new SoyFileSetParser(soyFileSuppliers)
-        .setDoRunInitialParsingPasses(true)
-        .setDoRunCheckingPasses(true)
-        .setDoEnforceSyntaxVersionV2(false)
-        .parse();
+    SoyFileSetNode soyTree =
+        (new SoyFileSetParser(new SoyTypeRegistry(), null, SyntaxVersion.V1_0, soyFileSuppliers))
+            .setDoRunInitialParsingPasses(true)
+            .setDoRunCheckingPasses(true)
+            .parse();
 
     try {
       new CheckEscapingSanityVisitor().exec(soyTree);
       rewrittenSource(soyTree);
     } catch (SoyAutoescapeException ex) {
+      // Find the root cause; during contextualization, we re-wrap exceptions on the path to a
+      // template.
+      while (ex.getCause() instanceof SoyAutoescapeException) {
+        ex = (SoyAutoescapeException) ex.getCause();
+      }
       if (msg != null && !msg.equals(ex.getMessage())) {
         throw (ComparisonFailure) new ComparisonFailure("", msg, ex.getMessage()).initCause(ex);
       }
@@ -2047,7 +2292,7 @@ public final class ContextualAutoescaperTest extends TestCase {
     public boolean shouldCancelAutoescape() {
       return false;
     }
-    @Override
+    @Override @Nonnull
     public SanitizedContent.ContentKind getContentKind() {
       return SanitizedContent.ContentKind.HTML;
     }

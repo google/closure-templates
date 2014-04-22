@@ -22,8 +22,8 @@ import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  * @author Mohamed Eldawy
  */
 public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
-    implements StandaloneNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
+    implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
 
 
   /** An expression, and optional "offset" attribute. */
@@ -52,12 +52,18 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
       new CommandTextAttributesParser("plural",
           new Attribute("offset", Attribute.ALLOW_ALL_VALUES, null));
 
+  /** Fallback base plural var name. */
+  public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";
+
 
   /** The offset. */
   private final int offset;
 
   /** The parsed expression. */
   private final ExprRootNode<?> pluralExpr;
+
+  /** The base plural var name (what the translator sees). */
+  private final String basePluralVarName;
 
 
   /**
@@ -95,6 +101,10 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     } else {
       offset = 0;
     }
+
+    basePluralVarName =
+        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+            pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
   }
 
 
@@ -106,6 +116,7 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     super(orig);
     this.offset = orig.offset;
     this.pluralExpr = orig.pluralExpr.clone();
+    this.basePluralVarName = orig.basePluralVarName;
   }
 
 
@@ -132,13 +143,25 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   }
 
 
+  /** Returns the base plural var name (what the translator sees). */
+  @Override public String getBaseVarName() {
+    return basePluralVarName;
+  }
+
+
+  @Override public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+    return (other instanceof MsgPluralNode) &&
+        this.getCommandText().equals(((MsgPluralNode) other).getCommandText());
+  }
+
+
   @Override public List<ExprUnion> getAllExprUnions() {
     return ImmutableList.of(new ExprUnion(pluralExpr));
   }
 
 
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @Override public MsgBlockNode getParent() {
+    return (MsgBlockNode) super.getParent();
   }
 
 

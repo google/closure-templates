@@ -56,8 +56,9 @@ public class SoyBidiUtilsTest extends TestCase {
   public void testGetBidiFormatter() {
     assertEquals(1, SoyBidiUtils.getBidiFormatter(1).getContextDir().ord);
     assertEquals(-1, SoyBidiUtils.getBidiFormatter(-1).getContextDir().ord);
-    assertEquals(0, SoyBidiUtils.getBidiFormatter(0).getContextDir().ord);
     assertTrue(SoyBidiUtils.getBidiFormatter(1) == SoyBidiUtils.getBidiFormatter(100));
+    assertTrue(SoyBidiUtils.getBidiFormatter(-1) == SoyBidiUtils.getBidiFormatter(-5));
+    assertTrue(SoyBidiUtils.getBidiFormatter(-1) != SoyBidiUtils.getBidiFormatter(1));
   }
 
 
@@ -76,6 +77,6 @@ public class SoyBidiUtilsTest extends TestCase {
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromOptions(0, true);
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "goog.i18n.bidi.IS_RTL?-1:1");
+    assertEquals(bidiGlobalDir.getCodeSnippet(), "soy.$$IS_LOCALE_RTL?-1:1");
   }
 }

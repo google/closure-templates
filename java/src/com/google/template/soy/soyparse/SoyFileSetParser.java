@@ -18,29 +18,42 @@ package com.google.template.soy.soyparse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.base.IncrementingIdGenerator;
-import com.google.template.soy.base.SoyFileSupplier;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parsepasses.CheckCallsVisitor;
 import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.CheckOverridesVisitor;
+import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
 import com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor;
+import com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor;
 import com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor;
 import com.google.template.soy.parsepasses.RewriteRemainderNodesVisitor;
+import com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor;
 import com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor;
 import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
-import com.google.template.soy.sharedpasses.AssertSyntaxVersionV2Visitor;
+import com.google.template.soy.shared.SoyAstCache;
+import com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.sharedpasses.RemoveHtmlCommentsVisitor;
+import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
+import com.google.template.soy.sharedpasses.ResolveExpressionTypesVisitor;
+import com.google.template.soy.sharedpasses.ResolveNamesVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -53,6 +66,15 @@ import java.util.List;
 public class SoyFileSetParser {
 
 
+  /** The type registry to resolve type names. */
+  private final SoyTypeRegistry typeRegistry;
+
+  /** Optional file cache. */
+  private SoyAstCache cache;
+
+  /** User-declared syntax version. */
+  private SyntaxVersion declaredSyntaxVersion;
+
   /** The suppliers of the Soy files to parse. */
   private final List<SoyFileSupplier> soyFileSuppliers;
 
@@ -62,29 +84,42 @@ public class SoyFileSetParser {
   /** Whether to run checking passes. */
   private boolean doRunCheckingPasses;
 
-  /** Whether to enforce V2 syntax. */
-  private boolean doEnforceSyntaxVersionV2;
-
   /** Whether to check overrides. */
   private boolean doCheckOverrides;
 
 
   /**
+   * @param typeRegistry The type registry to resolve type names.
+   * @param astCache The AST cache to use, if any.
+   * @param declaredSyntaxVersion User-declared syntax version.
    * @param soyFileSuppliers The suppliers for the Soy files.
    */
-  public SoyFileSetParser(SoyFileSupplier... soyFileSuppliers) {
-    this(Lists.newArrayList(soyFileSuppliers));
+  public SoyFileSetParser(
+      SoyTypeRegistry typeRegistry, @Nullable SoyAstCache astCache,
+      SyntaxVersion declaredSyntaxVersion, SoyFileSupplier... soyFileSuppliers) {
+    this(typeRegistry, astCache, declaredSyntaxVersion, Arrays.asList(soyFileSuppliers));
   }
 
 
   /**
-   * @param soyFileSuppliers The suppliers for the Soy files.
+   * @param typeRegistry The type registry to resolve type names.
+   * @param astCache The AST cache to use, if any.
+   * @param declaredSyntaxVersion User-declared syntax version.
+   * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
    */
-  public SoyFileSetParser(List<SoyFileSupplier> soyFileSuppliers) {
+  public SoyFileSetParser(
+      SoyTypeRegistry typeRegistry, @Nullable SoyAstCache astCache,
+      SyntaxVersion declaredSyntaxVersion, List<SoyFileSupplier> soyFileSuppliers) {
+
+    this.typeRegistry = typeRegistry;
+    this.cache = astCache;
+    this.declaredSyntaxVersion = declaredSyntaxVersion;
     this.soyFileSuppliers = soyFileSuppliers;
+    verifyUniquePaths(soyFileSuppliers);
+
+    // By default, do everything.
     this.doRunInitialParsingPasses = true;
     this.doRunCheckingPasses = true;
-    this.doEnforceSyntaxVersionV2 = true;
     this.doCheckOverrides = true;
   }
 
@@ -96,7 +131,6 @@ public class SoyFileSetParser {
     this.doRunInitialParsingPasses = doRunInitialParsingPasses;
     if (! doRunInitialParsingPasses) {
       this.doRunCheckingPasses = false;
-      this.doEnforceSyntaxVersionV2 = false;
       this.doCheckOverrides = false;
     }
     return this;
@@ -111,20 +145,7 @@ public class SoyFileSetParser {
     if (doRunCheckingPasses) {
       Preconditions.checkState(doRunInitialParsingPasses);
     } else {
-      this.doEnforceSyntaxVersionV2 = false;
       this.doCheckOverrides = false;
-    }
-    return this;
-  }
-
-
-  /**
-   * Sets whether to enforce V2 syntax. Returns self.
-   */
-  public SoyFileSetParser setDoEnforceSyntaxVersionV2(boolean doEnforceSyntaxVersionV2) {
-    this.doEnforceSyntaxVersionV2 = doEnforceSyntaxVersionV2;
-    if (doEnforceSyntaxVersionV2) {
-      Preconditions.checkState(doRunCheckingPasses);
     }
     return this;
   }
@@ -154,6 +175,19 @@ public class SoyFileSetParser {
 
 
   /**
+   * Ensures all SoyFileSuppliers have unique paths.
+   */
+  private static void verifyUniquePaths(Iterable<SoyFileSupplier> soyFileSuppliers) {
+    Set<String> paths = Sets.newHashSet();
+    for (SoyFileSupplier supplier : soyFileSuppliers) {
+      Preconditions.checkArgument(!paths.contains(supplier.getFilePath()),
+          "Two file suppliers have the same path: " + supplier.getFilePath());
+      paths.add(supplier.getFilePath());
+    }
+  }
+
+
+  /**
    * Parses a set of Soy files and returns the parse tree and versions of the files.
    *
    * @return The resulting parse tree and the versions of the files read.
@@ -162,28 +196,41 @@ public class SoyFileSetParser {
   public Pair<SoyFileSetNode, List<SoyFileSupplier.Version>> parseWithVersions()
       throws SoySyntaxException {
 
-    IdGenerator nodeIdGen = new IncrementingIdGenerator();
+    Preconditions.checkState((cache == null) || (doRunInitialParsingPasses && doRunCheckingPasses),
+        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
+            "caching inconsistent versions");
+    IdGenerator nodeIdGen =
+        (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     ImmutableList.Builder<SoyFileSupplier.Version> versions = ImmutableList.builder();
 
     for (SoyFileSupplier soyFileSupplier : soyFileSuppliers) {
       Pair<SoyFileNode, SoyFileSupplier.Version> fileAndVersion =
-          parseSoyFileHelper(soyFileSupplier, nodeIdGen);
+          (cache != null) ? cache.get(soyFileSupplier) : null;
+      if (fileAndVersion == null) {
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
+        synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
+          fileAndVersion = parseSoyFileHelper(soyFileSupplier, nodeIdGen, typeRegistry);
+          if (doRunInitialParsingPasses) {
+            // Run passes that are considered part of initial parsing.
+            runSingleFileParsingPasses(fileAndVersion.first, nodeIdGen);
+          }
+        }
+        if (doRunCheckingPasses) {
+          // Run passes that check the tree.
+          runSingleFileCheckingPasses(fileAndVersion.first);
+        }
+        if (cache != null) {
+          cache.put(soyFileSupplier, fileAndVersion.second, fileAndVersion.first);
+        }
+      }
       soyTree.addChild(fileAndVersion.first);
       versions.add(fileAndVersion.second);
     }
 
-    // Run passes that are considered part of initial parsing.
-    if (doRunInitialParsingPasses) {
-      (new ReplaceHasDataFunctionVisitor()).exec(soyTree);
-      (new RewriteNullCoalescingOpVisitor()).exec(soyTree);
-      (new RewriteRemainderNodesVisitor()).exec(soyTree);
-      (new SetFullCalleeNamesVisitor()).exec(soyTree);
-
-      // Run passes that check the tree.
-      if (doRunCheckingPasses) {
-        runCheckingPasses(soyTree);
-      }
+    // Run passes that check the tree.
+    if (doRunCheckingPasses) {
+      runWholeFileSetCheckingPasses(soyTree);
     }
 
     return Pair.of(soyTree, (List<SoyFileSupplier.Version>) versions.build());
@@ -199,7 +246,7 @@ public class SoyFileSetParser {
    * @throws SoySyntaxException If there is an error reading the file or a syntax error is found.
    */
   private static Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
-      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen)
+      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
       throws SoySyntaxException {
 
     String filePath = soyFileSupplier.getFilePath();
@@ -216,9 +263,9 @@ public class SoyFileSetParser {
     }
 
     try {
-      SoyFileNode soyFile =
-          (new SoyFileParser(soyFileReader, soyFileSupplier.getSoyFileKind(), filePath, nodeIdGen))
-              .parseSoyFile();
+      SoyFileNode soyFile = (new SoyFileParser(
+          typeRegistry, nodeIdGen, soyFileReader, soyFileSupplier.getSoyFileKind(), filePath))
+          .parseSoyFile();
       if (soyFileSupplier.hasChangedSince(version)) {
         throw SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath);
       }
@@ -238,6 +285,7 @@ public class SoyFileSetParser {
       try {
         soyFileReader.close();
       } catch (IOException ioe) {
+        //noinspection ThrowFromFinallyBlock IntelliJ
         throw SoySyntaxException.createWithoutMetaInfo(
             "Error closing Soy file " + soyFileSupplier.getFilePath() + ": " + ioe);
       }
@@ -246,22 +294,52 @@ public class SoyFileSetParser {
 
 
   /**
-   * Private helper for {@code parseWithVersions()} to run checking passes.
+   * Runs initial parsing passes that work on a file-by-file basis.
    */
-  private void runCheckingPasses(SoyFileSetNode soyTree) {
-
-    if (doEnforceSyntaxVersionV2) {
-      (new AssertSyntaxVersionV2Visitor()).exec(soyTree);
-    } else {
-      (new RemoveHtmlCommentsVisitor()).exec(soyTree);
+  private void runSingleFileParsingPasses(SoyFileNode fileNode, IdGenerator nodeIdGen) {
+    // Note: RewriteGenderMsgsVisitor must be run first due to the assertion in
+    // MsgNode.getAllExprUnions().
+    (new RewriteGenderMsgsVisitor(nodeIdGen)).exec(fileNode);
+    (new RewriteRemainderNodesVisitor()).exec(fileNode);
+    (new ReplaceHasDataFunctionVisitor(declaredSyntaxVersion)).exec(fileNode);
+    (new RewriteNullCoalescingOpVisitor()).exec(fileNode);
+    (new SetFullCalleeNamesVisitor()).exec(fileNode);
+    (new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion)).exec(fileNode);
+    if (declaredSyntaxVersion == SyntaxVersion.V1_0) {
+      (new RemoveHtmlCommentsVisitor(nodeIdGen)).exec(fileNode);
     }
-    (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
-    (new CheckSoyDocVisitor(doEnforceSyntaxVersionV2)).exec(soyTree);
+    (new ResolveNamesVisitor(declaredSyntaxVersion)).exec(fileNode);
+    (new ResolveExpressionTypesVisitor(typeRegistry, declaredSyntaxVersion)).exec(fileNode);
+  }
+
+
+  /**
+   * Private helper for {@code parseWithVersion()} that operate on single files.
+   */
+  private void runSingleFileCheckingPasses(SoyFileNode fileNode) {
+
+    (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(fileNode);
+    (new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true)).exec(fileNode);
+
+    // Check for errors based on inferred (as opposed to declared) required syntax version.
+    SyntaxVersion inferredSyntaxVersion = (new InferRequiredSyntaxVersionVisitor()).exec(fileNode);
+    if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
+      (new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false)).exec(fileNode);
+    }
+  }
+
+
+  /**
+   * Private helper for {@code parseWithVersions()} to run checking passes that require the whole
+   * tree.
+   */
+  private void runWholeFileSetCheckingPasses(SoyFileSetNode soyTree) {
+    (new CheckSoyDocVisitor(declaredSyntaxVersion)).exec(soyTree);
     if (doCheckOverrides) {
       (new CheckOverridesVisitor()).exec(soyTree);
     }
     (new CheckDelegatesVisitor()).exec(soyTree);
     (new CheckCallsVisitor()).exec(soyTree);
+    (new CheckCallingParamTypesVisitor()).exec(soyTree);
   }
-
 }

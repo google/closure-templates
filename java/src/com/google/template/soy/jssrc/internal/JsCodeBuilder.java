@@ -45,7 +45,7 @@ import java.util.List;
  *   jcb.addToOutputVar(Lists.newArrayList(
  *       new JsExpr("temp", Integer.MAX_VALUE),
  *       new JsExpr("' Dwarfs'", Integer.MAX_VALUE));
- *   jcb.indent().append("return ").appendOutputVarName().append(".toString();\n");
+ *   jcb.appendLineStart("return ").appendOutputVarName().appendLineEnd(".toString();");
  *   jcb.popOutputVar();
  *   jcb.decreaseIndent();
  *   String THE_END = "the end";
@@ -68,6 +68,9 @@ class JsCodeBuilder {
 
   /** Used by {@code increaseIndent()} and {@code decreaseIndent()}. */
   private static final String SPACES = "                    ";  // 20 spaces
+
+  /** The size of a single indent level. */
+  private static final int INDENT_SIZE = 2;
 
 
   /** A buffer to accumulate the generated code. */
@@ -105,26 +108,54 @@ class JsCodeBuilder {
 
 
   /**
-   * Increases the current indent by two spaces.
+   * Increases the current indent.
    * @throws SoySyntaxException If the new indent depth would be greater than 20.
    */
   public void increaseIndent() throws SoySyntaxException {
-    int newIndentDepth = indent.length() + 2;
-    if (newIndentDepth > 20) {
-      throw SoySyntaxException.createWithoutMetaInfo("Indent is more than 20 spaces!");
-    }
-    indent = SPACES.substring(0, newIndentDepth);
+    changeIndentHelper(1);
   }
 
 
   /**
-   * Decreases the current indent by two spaces.
+   * Increases the current indent twice.
+   * @throws SoySyntaxException If the new indent depth would be greater than 20.
+   */
+  public void increaseIndentTwice() throws SoySyntaxException {
+    changeIndentHelper(2);
+  }
+
+
+  /**
+   * Decreases the current indent.
    * @throws SoySyntaxException If the new indent depth would be less than 0.
    */
   public void decreaseIndent() throws SoySyntaxException {
-    int newIndentDepth = indent.length() - 2;
+    changeIndentHelper(-1);
+  }
+
+
+  /**
+   * Decreases the current indent twice.
+   * @throws SoySyntaxException If the new indent depth would be less than 0.
+   */
+  public void decreaseIndentTwice() throws SoySyntaxException {
+    changeIndentHelper(-2);
+  }
+
+
+  /**
+   * Private helper for increaseIndent(), increaseIndentTwice(), decreaseIndent(), and
+   * decreaseIndentTwice().
+   * @param chg The number of indent levels to change.
+   * @throws SoySyntaxException If the new indent depth would be less than 0 or greater than 20.
+   */
+  private void changeIndentHelper(int chg) throws SoySyntaxException {
+    int newIndentDepth = indent.length() + chg * INDENT_SIZE;
     if (newIndentDepth < 0) {
       throw SoySyntaxException.createWithoutMetaInfo("Indent is less than 0 spaces!");
+    }
+    if (newIndentDepth > 20) {
+      throw SoySyntaxException.createWithoutMetaInfo("Indent is more than 20 spaces!");
     }
     indent = SPACES.substring(0, newIndentDepth);
   }
@@ -178,16 +209,6 @@ class JsCodeBuilder {
 
 
   /**
-   * Appends the current indent to the generated code.
-   * @return This JsCodeBuilder (for stringing together operations).
-   */
-  public JsCodeBuilder indent() {
-    code.append(indent);
-    return this;
-  }
-
-
-  /**
    * Appends one or more strings to the generated code.
    * @param jsCodeFragments The code string(s) to append.
    * @return This JsCodeBuilder (for stringing together operations).
@@ -201,12 +222,36 @@ class JsCodeBuilder {
 
 
   /**
-   * Equvalent to jsCodeBuilder.indent().append(jsCodeFragments).append("\n");
+   * Appends the current indent, then the given strings, then a newline.
    * @param jsCodeFragments The code string(s) to append.
    * @return This JsCodeBuilder (for stringing together operations).
    */
   public JsCodeBuilder appendLine(String... jsCodeFragments) {
-    indent();
+    code.append(indent);
+    append(jsCodeFragments);
+    code.append("\n");
+    return this;
+  }
+
+
+  /**
+   * Appends the current indent, then the given strings.
+   * @param jsCodeFragments The code string(s) to append.
+   * @return This JsCodeBuilder (for stringing together operations).
+   */
+  public JsCodeBuilder appendLineStart(String... jsCodeFragments) {
+    code.append(indent);
+    append(jsCodeFragments);
+    return this;
+  }
+
+
+  /**
+   * Appends the given strings, then a newline.
+   * @param jsCodeFragments The code string(s) to append.
+   * @return This JsCodeBuilder (for stringing together operations).
+   */
+  public JsCodeBuilder appendLineEnd(String... jsCodeFragments) {
     append(jsCodeFragments);
     code.append("\n");
     return this;
@@ -274,14 +319,16 @@ class JsCodeBuilder {
       }
 
     } else {  // CodeStyle.CONCAT
-      JsExpr concatenatedJsExprs = JsExprUtils.concatJsExprs(jsExprs);
-
       if (currOutputVarIsInited) {
         // output += AAA + BBB + CCC;
-        appendLine(currOutputVarName, " += ", concatenatedJsExprs.getText(), ";");
+        appendLine(currOutputVarName, " += ", JsExprUtils.concatJsExprs(jsExprs).getText(), ";");
       } else {
-        // var output = AAA + BBB + CCC;
-        appendLine("var ", currOutputVarName, " = ", concatenatedJsExprs.getText(), ";");
+        // var output = '' + AAA + BBB + CCC;
+        // NOTE: We initialize with '' to enforce string concatenation. This ensures something like
+        // {2}{2} becomes '22' instead of 4.
+        // TODO: Optimize this away if we know the first or second expression is a string.
+        String contents = JsExprUtils.concatJsExprsForceString(jsExprs).getText();
+        appendLine("var ", currOutputVarName, " = ", contents, ";");
         setOutputVarInited();
       }
     }

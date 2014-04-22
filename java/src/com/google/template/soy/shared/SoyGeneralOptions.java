@@ -16,18 +16,24 @@
 
 package com.google.template.soy.shared;
 
-import com.google.common.base.Charsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyUtils;
-import com.google.template.soy.data.internalutils.DataUtils;
+import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 
 /**
@@ -42,9 +48,12 @@ public class SoyGeneralOptions implements Cloneable {
    * Schemes for handling {@code css} commands.
    */
   public static enum CssHandlingScheme {
-    LITERAL, REFERENCE, BACKEND_SPECIFIC;
+    LITERAL, REFERENCE, BACKEND_SPECIFIC
   }
 
+
+  /** User-declared syntax version, or null if not set. */
+  @Nullable private SyntaxVersion declaredSyntaxVersion;
 
   /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
   private Boolean allowExternalCalls;
@@ -55,11 +64,39 @@ public class SoyGeneralOptions implements Cloneable {
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
+  /** Whether to automatically mark scripts that appear literally in templates as allowed to run. */
+  private boolean supportContentSecurityPolicy;
+
 
   public SoyGeneralOptions() {
+    declaredSyntaxVersion = null;
     allowExternalCalls = null;
     cssHandlingScheme = CssHandlingScheme.LITERAL;
     compileTimeGlobals = null;
+    supportContentSecurityPolicy = false;
+  }
+
+
+  /**
+   * Sets the user-declared syntax version name for the Soy file bundle.
+   * @param versionName The syntax version name, e.g. "1.0", "2.0", "2.3".
+   */
+  public void setDeclaredSyntaxVersionName(@Nonnull String versionName) {
+    this.declaredSyntaxVersion = SyntaxVersion.forName(versionName);
+  }
+
+
+  /**
+   * Returns the user-declared syntax version, or the given default value if the user did not
+   * declare a syntax version.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param defaultSyntaxVersion The default value to return if the user did not declare a syntax
+   *     version.
+   */
+  public SyntaxVersion getDeclaredSyntaxVersion(SyntaxVersion defaultSyntaxVersion) {
+    return (declaredSyntaxVersion != null) ? declaredSyntaxVersion : defaultSyntaxVersion;
   }
 
 
@@ -111,7 +148,8 @@ public class SoyGeneralOptions implements Cloneable {
    *        Soy primitive type.
    */
   public void setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
-    setCompileTimeGlobalsInternal(DataUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap));
+    setCompileTimeGlobalsInternal(
+        InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap));
   }
 
   
@@ -146,7 +184,7 @@ public class SoyGeneralOptions implements Cloneable {
    */
   public void setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
     setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Files.newReaderSupplier(compileTimeGlobalsFile, Charsets.UTF_8)));
+        Files.newReaderSupplier(compileTimeGlobalsFile, UTF_8)));
   }
 
 
@@ -169,7 +207,7 @@ public class SoyGeneralOptions implements Cloneable {
    */
   public void setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
     setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Resources.newReaderSupplier(compileTimeGlobalsResource, Charsets.UTF_8)));
+        Resources.newReaderSupplier(compileTimeGlobalsResource, UTF_8)));
   }
 
 
@@ -181,7 +219,31 @@ public class SoyGeneralOptions implements Cloneable {
   }
 
 
-  @Override public SoyGeneralOptions clone() {
+  /**
+   * Pass true to enable CSP (Content Security Policy) support which adds an extra pass that marks
+   * inline scripts in templates specially so the browser can distinguish scripts written by trusted
+   * template authors from scripts injected via XSS.
+   * <p>
+   * Scripts are marked using a per-page-render secret stored in the injected variable
+   * {@code $ij.csp_nonce}.
+   * Scripts in non-contextually auto-escaped templates may not be found.
+   */
+  public void setSupportContentSecurityPolicy(boolean supportContentSecurityPolicy) {
+    this.supportContentSecurityPolicy = supportContentSecurityPolicy;
+  }
+
+
+  /**
+   * True when CSP (Content Security Policy) support is enabled causing inline scripts to be marked
+   * so that the browser can run scripts specified by the template author but not ones injected via
+   * XSS.
+   */
+  public boolean supportContentSecurityPolicy() {
+    return supportContentSecurityPolicy;
+  }
+
+
+  @Override public final SoyGeneralOptions clone() {
     try {
       return (SoyGeneralOptions) super.clone();
     } catch (CloneNotSupportedException cnse) {

@@ -49,7 +49,7 @@ public class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVi
 
 
   private void visitMsgPlaceholderInitialContentNodeHelper(MsgPlaceholderInitialNode node) {
-    if (node.getUserSuppliedPlaceholderName() != null &&
+    if (node.getUserSuppliedPhName() != null &&
         ! (node.getParent() instanceof MsgPlaceholderNode)) {
       throw SoySyntaxExceptionUtils.createWithNode(
           "Found 'phname' attribute not on a msg placeholder (tag " + node.toSourceString() + ").",

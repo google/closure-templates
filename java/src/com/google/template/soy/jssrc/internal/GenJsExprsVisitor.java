@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
-import com.google.template.soy.base.BaseUtils;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -42,6 +42,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import java.util.Deque;
@@ -163,13 +164,9 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    */
   @Override protected void visitRawTextNode(RawTextNode node) {
 
-    // Note: BaseUtils.escapeToSoyString() builds a Soy string, which is usually a valid JS string.
-    // The rare exception is a string containing a Unicode Format character (Unicode category "Cf")
-    // because of the JavaScript language quirk that requires all category "Cf" characters to be
-    // escaped in JS strings. Therefore, we must call JsSrcUtils.escapeUnicodeFormatChars() on the
-    // result.
-    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false);
-    exprText = JsSrcUtils.escapeUnicodeFormatChars(exprText);
+    // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
+    // JS source files.
+    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), true);
     // Note: </script> in a JavaScript string will end the current script tag
     // in most browsers.  Escape the forward slash in the string to get around
     // this issue.
@@ -258,6 +255,21 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
     }
 
     jsExprs.add(jsExpr);
+  }
+
+
+  /**
+   * Example:
+   * <pre>
+   *   {xid selected-option}
+   * </pre>
+   * might generate
+   * <pre>
+   *   xid('selected-option')
+   * </pre>
+   */
+  @Override protected void visitXidNode(XidNode node) {
+    jsExprs.add(new JsExpr("xid('" + node.getText() + "')", Integer.MAX_VALUE));
   }
 
 

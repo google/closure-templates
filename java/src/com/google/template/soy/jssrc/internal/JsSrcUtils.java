@@ -16,11 +16,25 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.template.soy.base.BaseUtils;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.template.soy.base.SoyBackendKind;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.types.SoyEnumType;
+import com.google.template.soy.types.SoyObjectType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.aggregate.RecordType;
+import com.google.template.soy.types.aggregate.UnionType;
+import com.google.template.soy.types.primitive.SanitizedType;
 
-import java.io.File;
-
-import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
 
 
 /**
@@ -33,53 +47,7 @@ import javax.annotation.Nullable;
 public class JsSrcUtils {
 
 
-  /**
-   * Builds a specific file path given a path format and the info needed for replacing placeholders.
-   *
-   * @param filePathFormat The format string defining how to build the file path.
-   * @param locale The locale for the file path, or null if not applicable.
-   * @param inputFilePath Only applicable if you need to replace the placeholders {INPUT_DIRECTORY},
-   *     {INPUT_FILE_NAME}, and {INPUT_FILE_NAME_NO_EXT} (otherwise pass null). This is the full
-   *     path of the input file (including the input path prefix).
-   * @param inputPathPrefix The input path prefix, or empty string if none.
-   * @return The output file path corresponding to the given input file path.
-   */
-  public static String buildFilePath(String filePathFormat, @Nullable String locale,
-                                     @Nullable String inputFilePath, String inputPathPrefix) {
-
-    String path = filePathFormat;
-
-    if (locale != null) {
-      path = path.replace("{LOCALE}", locale);
-      path = path.replace("{LOCALE_LOWER_CASE}", locale.toLowerCase().replace('-', '_'));
-    }
-
-    path = path.replace("{INPUT_PREFIX}", inputPathPrefix);
-
-    if (inputFilePath != null) {
-      // Remove the prefix (if any) from the input file path.
-      inputFilePath = inputFilePath.substring(inputPathPrefix.length());
-
-      // Compute directory and file name.
-      int lastSlashIndex = inputFilePath.lastIndexOf(File.separatorChar);
-      String directory = inputFilePath.substring(0, lastSlashIndex + 1);
-      String fileName = inputFilePath.substring(lastSlashIndex + 1);
-
-      // Compute file name without extension.
-      int lastDotIndex = fileName.lastIndexOf('.');
-      if (lastDotIndex == -1) {
-        lastDotIndex = fileName.length();
-      }
-      String fileNameNoExt = fileName.substring(0, lastDotIndex);
-
-      // Substitute placeholders.
-      path = path.replace("{INPUT_DIRECTORY}", directory);
-      path = path.replace("{INPUT_FILE_NAME}", fileName);
-      path = path.replace("{INPUT_FILE_NAME_NO_EXT}", fileNameNoExt);
-    }
-
-    return path;
-  }
+  private JsSrcUtils() {}
 
 
   /**
@@ -92,7 +60,7 @@ public class JsSrcUtils {
    * category "Cf") changed to valid JavaScript Unicode escapes (i.e. &92;u####).
    */
   public static String escapeUnicodeFormatChars(String str) {
-    
+
     int len = str.length();
 
     // Do a quick check first, because most strings do not contain Unicode format characters.
@@ -121,4 +89,174 @@ public class JsSrcUtils {
     return out.toString();
   }
 
+
+  /**
+   * Given a Soy type, return the corresponding jscompiler doc type expression.
+   */
+  public static String getJsTypeExpr(SoyType type) {
+    return getJsTypeExpr(type, false, true);
+  }
+
+
+  public static String getJsTypeExpr(
+      SoyType type,
+      boolean addParensIfNeeded,
+      boolean addRequiredIfNeeded) {
+    String nonNullablePrefix = addRequiredIfNeeded ? "!" : "";
+    switch (type.getKind()) {
+      case ANY:
+        return "*";
+
+      case UNKNOWN:
+        return "?";
+
+      case NULL:
+        return "null";
+
+      case BOOL:
+        return "boolean";
+
+      case STRING:
+        return "string";
+
+      case INT:
+      case FLOAT:
+        return "number";
+
+      case LIST: {
+        ListType listType = (ListType) type;
+        if (listType.getElementType().getKind() == SoyType.Kind.ANY) {
+          return nonNullablePrefix + "Array";
+        }
+        return nonNullablePrefix +
+            "Array.<" + getJsTypeExpr(listType.getElementType(), false, true) + ">";
+      }
+
+      case MAP: {
+        MapType mapType = (MapType) type;
+        if (mapType.getKeyType().getKind() == SoyType.Kind.ANY &&
+            mapType.getValueType().getKind() == SoyType.Kind.ANY) {
+          return nonNullablePrefix + "Object.<?,?>";
+        }
+        String keyTypeName = getJsTypeExpr(mapType.getKeyType(), false, true);
+        String valueTypeName = getJsTypeExpr(mapType.getValueType(), false, true);
+        return nonNullablePrefix + "Object.<" + keyTypeName + "," + valueTypeName + ">";
+      }
+
+      case RECORD: {
+        RecordType recordType = (RecordType) type;
+        List<String> members = Lists.newArrayListWithExpectedSize(recordType.getMembers().size());
+        for (Map.Entry<String, SoyType> member : recordType.getMembers().entrySet()) {
+          members.add(member.getKey() + ": " + getJsTypeExpr(member.getValue(), true, true));
+        }
+        return "{" + Joiner.on(", ").join(members) + "}";
+      }
+
+      case UNION: {
+        UnionType unionType = (UnionType) type;
+        SortedSet<String> typeNames = Sets.newTreeSet();
+        boolean isNullable = unionType.isNullable();
+        boolean hasNullableMember = false;
+        for (SoyType memberType : unionType.getMembers()) {
+          if (memberType.getKind() == SoyType.Kind.NULL) {
+            continue;
+          }
+          if (memberType instanceof SanitizedType) {
+            typeNames.add(getJsTypeName(memberType));
+            typeNames.add("string");
+            hasNullableMember = true;
+            continue;
+          }
+          if (JsSrcUtils.isDefaultOptional(memberType)) {
+            hasNullableMember = true;
+          }
+          typeNames.add(getJsTypeExpr(memberType, false, !isNullable));
+        }
+        if (isNullable && !hasNullableMember) {
+          typeNames.add("null");
+        }
+        if (isNullable) {
+          typeNames.add("undefined");
+        }
+        if (typeNames.size() != 1) {
+          String result = Joiner.on("|").join(typeNames);
+          if (addParensIfNeeded) {
+            result = "(" + result + ")";
+          }
+          return result;
+        } else {
+          return typeNames.first();
+        }
+      }
+
+      default:
+        if (type instanceof SanitizedType) {
+          String result = NodeContentKinds.toJsSanitizedContentCtorName(
+              ((SanitizedType) type).getContentKind()) + "|string";
+          if (addParensIfNeeded) {
+            result = "(" + result + ")";
+          }
+          return result;
+        }
+        return getJsTypeName(type);
+    }
+  }
+
+
+  /**
+   * Given a Soy type, return the corresponding jscompiler type name. Only
+   * handles types which have names and have a declared constructor - not
+   * arbitrary type expressions.
+   */
+  public static String getJsTypeName(SoyType type) {
+    if (type instanceof SanitizedType) {
+      return NodeContentKinds.toJsSanitizedContentCtorName(
+          ((SanitizedType) type).getContentKind());
+    } else if (type.getKind() == SoyType.Kind.OBJECT) {
+      return ((SoyObjectType) type).getNameForBackend(SoyBackendKind.JS_SRC);
+    } else if (type.getKind() == SoyType.Kind.ENUM) {
+      return ((SoyEnumType) type).getNameForBackend(SoyBackendKind.JS_SRC);
+    } else {
+      throw new AssertionError("Unsupported type: " + type);
+    }
+  }
+
+
+  /** Returns true if the given type is optional by default (in the jscompiler). */
+  public static boolean isDefaultOptional(SoyType type) {
+    switch (type.getKind()) {
+      case OBJECT:
+      case LIST:
+      case MAP:
+        return true;
+
+      default:
+        return type instanceof SanitizedType;
+    }
+  }
+
+
+  /**
+   * Returns true if key is a JavaScript reserved word.
+   */
+  public static boolean isReservedWord(String key) {
+    return JS_RESERVED_WORDS.contains(key);
+  }
+
+
+  /**
+   * Set of words that JavaScript considers reserved words.  These words cannot
+   * be used as identifiers.  This list is from the ECMA-262 v5, section 7.6.1:
+   * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
+   * plus the keywords for boolean values and {@code null}.
+   * (Also includes the identifiers "soy" and "soydata" which are used internally by
+   * Soy.)
+   */
+  private static final ImmutableSet<String> JS_RESERVED_WORDS = ImmutableSet.of(
+      "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do",
+      "else", "enum", "export", "extends", "false", "finally", "for", "function", "if",
+      "implements", "import", "in", "instanceof", "interface", "let", "null", "new", "package",
+      "private", "protected", "public", "return", "soy", "soydata", "static", "super",
+      "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while",
+      "with", "yield");
 }

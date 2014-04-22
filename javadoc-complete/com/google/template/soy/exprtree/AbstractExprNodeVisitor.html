@@ -1,113 +1,114 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-AbstractExprNodeVisitor (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>AbstractExprNodeVisitor (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="AbstractExprNodeVisitor (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNode.html" title="class in com.google.template.soy.exprtree"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractOperatorNode.html" title="class in com.google.template.soy.exprtree"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/exprtree/AbstractExprNodeVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="AbstractExprNodeVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNode.html" title="class in com.google.template.soy.exprtree"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../com/google/template/soy/exprtree/AbstractOperatorNode.html" title="class in com.google.template.soy.exprtree"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/exprtree/AbstractExprNodeVisitor.html" target="_top">Frames</a></li>
+<li><a href="AbstractExprNodeVisitor.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy.exprtree</FONT>
-<BR>
-Class AbstractExprNodeVisitor&lt;R&gt;</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>,R&gt;
-      <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.exprtree.AbstractExprNodeVisitor&lt;R&gt;</B>
-</PRE>
-<DL>
-<DT><DT><B>Type Parameters:</B><DD><CODE>R</CODE> - The return type of this visitor.</DL>
-<DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>,R&gt;</DD>
-</DL>
-<HR>
-<DL>
-<DT><PRE>public abstract class <B>AbstractExprNodeVisitor&lt;R&gt;</B><DT>extends <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>,R&gt;</DL>
-</PRE>
-
-<P>
-Abstract base class for all ExprNode visitors. A visitor is basically a function implemented for
+<div class="header">
+<div class="subTitle">com.google.template.soy.exprtree</div>
+<h2 title="Class AbstractExprNodeVisitor" class="title">Class AbstractExprNodeVisitor&lt;R&gt;</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>,R&gt;</li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.exprtree.AbstractExprNodeVisitor&lt;R&gt;</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl><dt><span class="strong">Type Parameters:</span></dt><dd><code>R</code> - The return type of this visitor.</dd></dl>
+<dl>
+<dt>All Implemented Interfaces:</dt>
+<dd><a href="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>,R&gt;</dd>
+</dl>
+<hr>
+<br>
+<pre>public abstract class <span class="strong">AbstractExprNodeVisitor&lt;R&gt;</span>
+extends <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>,R&gt;</pre>
+<div class="block">Abstract base class for all ExprNode visitors. A visitor is basically a function implemented for
  some or all ExprNodes, where the implementation can be different for each specific node class.
 
- <p> Same as <A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="class in com.google.template.soy.exprtree"><CODE>AbstractReturningExprNodeVisitor</CODE></A> except that in this class, internal
+ <p> Same as <a href="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="class in com.google.template.soy.exprtree"><code>AbstractReturningExprNodeVisitor</code></a> except that in this class, internal
  <code>visit()</code> calls do not return a value.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -118,908 +119,663 @@ Abstract base class for all ExprNode visitors. A visitor is basically a function
  <li> Subclass this class.
  <li> Implement <code>visit*Node()</code> methods for some specific node types.
  <li> Implement fallback methods for node types not specifically handled. The most general
-      fallback method is <A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitExprNode(com.google.template.soy.exprtree.ExprNode)"><CODE>visitExprNode()</CODE></A>, which is usually needed. Other
+      fallback method is <a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitExprNode(com.google.template.soy.exprtree.ExprNode)"><code>visitExprNode()</code></a>, which is usually needed. Other
       fallback methods include <code>visitPrimitiveNode()</code> and <code>visitOperatorNode()</code>.
  <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- <li> Maybe implement <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)"><CODE>exec()</CODE></A> if this visitor needs to return a non-null final result
+ <li> Maybe implement <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)"><code>exec()</code></a> if this visitor needs to return a non-null final result
       and/or if this visitor has state that needs to be setup/reset before each unrelated use of
       <code>visit()</code>.
- </ol>
-<P>
-
-<P>
-<DL>
-<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="class in com.google.template.soy.exprtree"><CODE>AbstractReturningExprNodeVisitor</CODE></A></DL>
-<HR>
-
-<P>
-
+ </ol></div>
+<dl><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../com/google/template/soy/exprtree/AbstractReturningExprNodeVisitor.html" title="class in com.google.template.soy.exprtree"><code>AbstractReturningExprNodeVisitor</code></a></dd></dl>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#AbstractExprNodeVisitor()">AbstractExprNodeVisitor</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#AbstractExprNodeVisitor()">AbstractExprNodeVisitor</a></strong>()</code>&nbsp;</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visit(com.google.template.soy.exprtree.ExprNode)">visit</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Visits the given node to execute the function defined by this visitor.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitAndOpNode(com.google.template.soy.exprtree.OperatorNodes.AndOpNode)">visitAndOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.AndOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.AndOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitBooleanNode(com.google.template.soy.exprtree.BooleanNode)">visitBooleanNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/BooleanNode.html" title="class in com.google.template.soy.exprtree">BooleanNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)">visitChildren</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Helper to visit all the children of a node, in order.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)">visitChildrenAllowingConcurrentModification</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Helper to visit all the children of a node, in order.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitConditionalOpNode(com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode)">visitConditionalOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.ConditionalOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ConditionalOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessExprNode(com.google.template.soy.exprtree.DataRefAccessExprNode)">visitDataRefAccessExprNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessIndexNode(com.google.template.soy.exprtree.DataRefAccessIndexNode)">visitDataRefAccessIndexNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessKeyNode(com.google.template.soy.exprtree.DataRefAccessKeyNode)">visitDataRefAccessKeyNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefAccessNode(com.google.template.soy.exprtree.DataRefAccessNode)">visitDataRefAccessNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataRefNode(com.google.template.soy.exprtree.DataRefNode)">visitDataRefNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html" title="class in com.google.template.soy.exprtree">DataRefNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDivideByOpNode(com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode)">visitDivideByOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.DivideByOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.DivideByOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.EqualOpNode)">visitEqualOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.EqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.EqualOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitExprNode(com.google.template.soy.exprtree.ExprNode)">visitExprNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitExprRootNode(com.google.template.soy.exprtree.ExprRootNode)">visitExprRootNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitFloatNode(com.google.template.soy.exprtree.FloatNode)">visitFloatNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/FloatNode.html" title="class in com.google.template.soy.exprtree">FloatNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitFunctionNode(com.google.template.soy.exprtree.FunctionNode)">visitFunctionNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/FunctionNode.html" title="class in com.google.template.soy.exprtree">FunctionNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitGlobalNode(com.google.template.soy.exprtree.GlobalNode)">visitGlobalNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitGreaterThanOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode)">visitGreaterThanOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitGreaterThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode)">visitGreaterThanOrEqualOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOrEqualOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitIntegerNode(com.google.template.soy.exprtree.IntegerNode)">visitIntegerNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/IntegerNode.html" title="class in com.google.template.soy.exprtree">IntegerNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitLessThanOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode)">visitLessThanOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitLessThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode)">visitLessThanOrEqualOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOrEqualOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitListLiteralNode(com.google.template.soy.exprtree.ListLiteralNode)">visitListLiteralNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ListLiteralNode.html" title="class in com.google.template.soy.exprtree">ListLiteralNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitMapLiteralNode(com.google.template.soy.exprtree.MapLiteralNode)">visitMapLiteralNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/MapLiteralNode.html" title="class in com.google.template.soy.exprtree">MapLiteralNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitMinusOpNode(com.google.template.soy.exprtree.OperatorNodes.MinusOpNode)">visitMinusOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.MinusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.MinusOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitModOpNode(com.google.template.soy.exprtree.OperatorNodes.ModOpNode)">visitModOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.ModOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ModOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNegativeOpNode(com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode)">visitNegativeOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NegativeOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NegativeOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNotEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode)">visitNotEqualOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotEqualOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNotOpNode(com.google.template.soy.exprtree.OperatorNodes.NotOpNode)">visitNotOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)">visitNullCoalescingOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNullNode(com.google.template.soy.exprtree.NullNode)">visitNullNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/NullNode.html" title="class in com.google.template.soy.exprtree">NullNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitOperatorNode(com.google.template.soy.exprtree.ExprNode.OperatorNode)">visitOperatorNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.OperatorNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.OperatorNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitOrOpNode(com.google.template.soy.exprtree.OperatorNodes.OrOpNode)">visitOrOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.OrOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.OrOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitPlusOpNode(com.google.template.soy.exprtree.OperatorNodes.PlusOpNode)">visitPlusOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.PlusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.PlusOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitPrimitiveNode(com.google.template.soy.exprtree.ExprNode.PrimitiveNode)">visitPrimitiveNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.PrimitiveNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.PrimitiveNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitStringNode(com.google.template.soy.exprtree.StringNode)">visitStringNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/StringNode.html" title="class in com.google.template.soy.exprtree">StringNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitTimesOpNode(com.google.template.soy.exprtree.OperatorNodes.TimesOpNode)">visitTimesOpNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.TimesOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.TimesOpNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitVarNode(com.google.template.soy.exprtree.VarNode)">visitVarNode</A></B>(<A HREF="../../../../../com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNodeVisitor"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.basetree.<A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)">exec</A>, <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildren(com.google.template.soy.basetree.ParentNode)">visitChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.basetree.ParentNode)">visitChildrenAllowingConcurrentModification</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visit(com.google.template.soy.exprtree.ExprNode)">visit</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>&nbsp;node)</code>
+<div class="block">Visits the given node to execute the function defined by this visitor.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitAndOpNode(com.google.template.soy.exprtree.OperatorNodes.AndOpNode)">visitAndOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.AndOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.AndOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitBooleanNode(com.google.template.soy.exprtree.BooleanNode)">visitBooleanNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/BooleanNode.html" title="class in com.google.template.soy.exprtree">BooleanNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)">visitChildren</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</a>&nbsp;node)</code>
+<div class="block">Helper to visit all the children of a node, in order.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)">visitChildrenAllowingConcurrentModification</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</a>&nbsp;node)</code>
+<div class="block">Helper to visit all the children of a node, in order.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitConditionalOpNode(com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode)">visitConditionalOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.ConditionalOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ConditionalOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDataAccessNode(com.google.template.soy.exprtree.DataAccessNode)">visitDataAccessNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/DataAccessNode.html" title="class in com.google.template.soy.exprtree">DataAccessNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitDivideByOpNode(com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode)">visitDivideByOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.DivideByOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.DivideByOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.EqualOpNode)">visitEqualOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.EqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.EqualOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitExprNode(com.google.template.soy.exprtree.ExprNode)">visitExprNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitExprRootNode(com.google.template.soy.exprtree.ExprRootNode)">visitExprRootNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;?&gt;&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitFieldAccessNode(com.google.template.soy.exprtree.FieldAccessNode)">visitFieldAccessNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/FieldAccessNode.html" title="class in com.google.template.soy.exprtree">FieldAccessNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitFloatNode(com.google.template.soy.exprtree.FloatNode)">visitFloatNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/FloatNode.html" title="class in com.google.template.soy.exprtree">FloatNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitFunctionNode(com.google.template.soy.exprtree.FunctionNode)">visitFunctionNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/FunctionNode.html" title="class in com.google.template.soy.exprtree">FunctionNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitGlobalNode(com.google.template.soy.exprtree.GlobalNode)">visitGlobalNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitGreaterThanOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode)">visitGreaterThanOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitGreaterThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode)">visitGreaterThanOrEqualOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOrEqualOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitIntegerNode(com.google.template.soy.exprtree.IntegerNode)">visitIntegerNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/IntegerNode.html" title="class in com.google.template.soy.exprtree">IntegerNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitItemAccessNode(com.google.template.soy.exprtree.ItemAccessNode)">visitItemAccessNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ItemAccessNode.html" title="class in com.google.template.soy.exprtree">ItemAccessNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitLessThanOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode)">visitLessThanOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitLessThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode)">visitLessThanOrEqualOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOrEqualOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitListLiteralNode(com.google.template.soy.exprtree.ListLiteralNode)">visitListLiteralNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ListLiteralNode.html" title="class in com.google.template.soy.exprtree">ListLiteralNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitMapLiteralNode(com.google.template.soy.exprtree.MapLiteralNode)">visitMapLiteralNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/MapLiteralNode.html" title="class in com.google.template.soy.exprtree">MapLiteralNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitMinusOpNode(com.google.template.soy.exprtree.OperatorNodes.MinusOpNode)">visitMinusOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.MinusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.MinusOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitModOpNode(com.google.template.soy.exprtree.OperatorNodes.ModOpNode)">visitModOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.ModOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ModOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNegativeOpNode(com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode)">visitNegativeOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NegativeOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NegativeOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNotEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode)">visitNotEqualOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotEqualOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNotOpNode(com.google.template.soy.exprtree.OperatorNodes.NotOpNode)">visitNotOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)">visitNullCoalescingOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitNullNode(com.google.template.soy.exprtree.NullNode)">visitNullNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/NullNode.html" title="class in com.google.template.soy.exprtree">NullNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitOperatorNode(com.google.template.soy.exprtree.ExprNode.OperatorNode)">visitOperatorNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.OperatorNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.OperatorNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitOrOpNode(com.google.template.soy.exprtree.OperatorNodes.OrOpNode)">visitOrOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.OrOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.OrOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitPlusOpNode(com.google.template.soy.exprtree.OperatorNodes.PlusOpNode)">visitPlusOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.PlusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.PlusOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitPrimitiveNode(com.google.template.soy.exprtree.ExprNode.PrimitiveNode)">visitPrimitiveNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.PrimitiveNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.PrimitiveNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitStringNode(com.google.template.soy.exprtree.StringNode)">visitStringNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/StringNode.html" title="class in com.google.template.soy.exprtree">StringNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitTimesOpNode(com.google.template.soy.exprtree.OperatorNodes.TimesOpNode)">visitTimesOpNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.TimesOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.TimesOpNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitVarRefNode(com.google.template.soy.exprtree.VarRefNode)">visitVarRefNode</a></strong>(<a href="../../../../../com/google/template/soy/exprtree/VarRefNode.html" title="class in com.google.template.soy.exprtree">VarRefNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNodeVisitor">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;com.google.template.soy.basetree.<a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a></h3>
+<code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)">exec</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildren(com.google.template.soy.basetree.ParentNode)">visitChildren</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.basetree.ParentNode)">visitChildrenAllowingConcurrentModification</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="AbstractExprNodeVisitor()"><!-- --></A><H3>
-AbstractExprNodeVisitor</H3>
-<PRE>
-public <B>AbstractExprNodeVisitor</B>()</PRE>
-<DL>
-</DL>
-
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="AbstractExprNodeVisitor()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>AbstractExprNodeVisitor</h4>
+<pre>public&nbsp;AbstractExprNodeVisitor()</pre>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="visit(com.google.template.soy.exprtree.ExprNode)"><!-- --></A><H3>
-visit</H3>
-<PRE>
-protected void <B>visit</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><B>Description copied from class: <CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">AbstractNodeVisitor</A></CODE></B></DD>
-<DD>Visits the given node to execute the function defined by this visitor.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">visit</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>,<A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html" title="type parameter in AbstractExprNodeVisitor">R</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The node to visit.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)"><!-- --></A><H3>
-visitChildren</H3>
-<PRE>
-protected void <B>visitChildren</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</A>&nbsp;node)</PRE>
-<DL>
-<DD>Helper to visit all the children of a node, in order.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The parent node whose children to visit.<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)"><CODE>visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)</CODE></A></DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)"><!-- --></A><H3>
-visitChildrenAllowingConcurrentModification</H3>
-<PRE>
-protected void <B>visitChildrenAllowingConcurrentModification</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</A>&nbsp;node)</PRE>
-<DL>
-<DD>Helper to visit all the children of a node, in order.
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="visit(com.google.template.soy.exprtree.ExprNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visit</h4>
+<pre>protected&nbsp;void&nbsp;visit(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>&nbsp;node)</pre>
+<div class="block"><strong>Description copied from class:&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">AbstractNodeVisitor</a></code></strong></div>
+<div class="block">Visits the given node to execute the function defined by this visitor.</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">visit</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>,<a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html" title="type parameter in AbstractExprNodeVisitor">R</a>&gt;</code></dd>
+<dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The node to visit.</dd></dl>
+</li>
+</ul>
+<a name="visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitChildren</h4>
+<pre>protected&nbsp;void&nbsp;visitChildren(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</a>&nbsp;node)</pre>
+<div class="block">Helper to visit all the children of a node, in order.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The parent node whose children to visit.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)"><code>visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)</code></a></dd></dl>
+</li>
+</ul>
+<a name="visitChildrenAllowingConcurrentModification(com.google.template.soy.exprtree.ExprNode.ParentExprNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitChildrenAllowingConcurrentModification</h4>
+<pre>protected&nbsp;void&nbsp;visitChildrenAllowingConcurrentModification(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.ParentExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.ParentExprNode</a>&nbsp;node)</pre>
+<div class="block">Helper to visit all the children of a node, in order.
 
  This method differs from <code>visitChildren</code> in that we are iterating through a copy of the
- children. Thus, concurrent modification of the list of children is allowed.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The parent node whose children to visit.<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)"><CODE>visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)</CODE></A></DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitExprRootNode(com.google.template.soy.exprtree.ExprRootNode)"><!-- --></A><H3>
-visitExprRootNode</H3>
-<PRE>
-protected void <B>visitExprRootNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitNullNode(com.google.template.soy.exprtree.NullNode)"><!-- --></A><H3>
-visitNullNode</H3>
-<PRE>
-protected void <B>visitNullNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/NullNode.html" title="class in com.google.template.soy.exprtree">NullNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitBooleanNode(com.google.template.soy.exprtree.BooleanNode)"><!-- --></A><H3>
-visitBooleanNode</H3>
-<PRE>
-protected void <B>visitBooleanNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/BooleanNode.html" title="class in com.google.template.soy.exprtree">BooleanNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitIntegerNode(com.google.template.soy.exprtree.IntegerNode)"><!-- --></A><H3>
-visitIntegerNode</H3>
-<PRE>
-protected void <B>visitIntegerNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/IntegerNode.html" title="class in com.google.template.soy.exprtree">IntegerNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitFloatNode(com.google.template.soy.exprtree.FloatNode)"><!-- --></A><H3>
-visitFloatNode</H3>
-<PRE>
-protected void <B>visitFloatNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/FloatNode.html" title="class in com.google.template.soy.exprtree">FloatNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitStringNode(com.google.template.soy.exprtree.StringNode)"><!-- --></A><H3>
-visitStringNode</H3>
-<PRE>
-protected void <B>visitStringNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/StringNode.html" title="class in com.google.template.soy.exprtree">StringNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitPrimitiveNode(com.google.template.soy.exprtree.ExprNode.PrimitiveNode)"><!-- --></A><H3>
-visitPrimitiveNode</H3>
-<PRE>
-protected void <B>visitPrimitiveNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.PrimitiveNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.PrimitiveNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitListLiteralNode(com.google.template.soy.exprtree.ListLiteralNode)"><!-- --></A><H3>
-visitListLiteralNode</H3>
-<PRE>
-protected void <B>visitListLiteralNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ListLiteralNode.html" title="class in com.google.template.soy.exprtree">ListLiteralNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMapLiteralNode(com.google.template.soy.exprtree.MapLiteralNode)"><!-- --></A><H3>
-visitMapLiteralNode</H3>
-<PRE>
-protected void <B>visitMapLiteralNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/MapLiteralNode.html" title="class in com.google.template.soy.exprtree">MapLiteralNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitVarNode(com.google.template.soy.exprtree.VarNode)"><!-- --></A><H3>
-visitVarNode</H3>
-<PRE>
-protected void <B>visitVarNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDataRefNode(com.google.template.soy.exprtree.DataRefNode)"><!-- --></A><H3>
-visitDataRefNode</H3>
-<PRE>
-protected void <B>visitDataRefNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html" title="class in com.google.template.soy.exprtree">DataRefNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDataRefAccessKeyNode(com.google.template.soy.exprtree.DataRefAccessKeyNode)"><!-- --></A><H3>
-visitDataRefAccessKeyNode</H3>
-<PRE>
-protected void <B>visitDataRefAccessKeyNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessKeyNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessKeyNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDataRefAccessIndexNode(com.google.template.soy.exprtree.DataRefAccessIndexNode)"><!-- --></A><H3>
-visitDataRefAccessIndexNode</H3>
-<PRE>
-protected void <B>visitDataRefAccessIndexNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessIndexNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessIndexNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDataRefAccessExprNode(com.google.template.soy.exprtree.DataRefAccessExprNode)"><!-- --></A><H3>
-visitDataRefAccessExprNode</H3>
-<PRE>
-protected void <B>visitDataRefAccessExprNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessExprNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessExprNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDataRefAccessNode(com.google.template.soy.exprtree.DataRefAccessNode)"><!-- --></A><H3>
-visitDataRefAccessNode</H3>
-<PRE>
-protected void <B>visitDataRefAccessNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/DataRefAccessNode.html" title="class in com.google.template.soy.exprtree">DataRefAccessNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGlobalNode(com.google.template.soy.exprtree.GlobalNode)"><!-- --></A><H3>
-visitGlobalNode</H3>
-<PRE>
-protected void <B>visitGlobalNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitNegativeOpNode(com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode)"><!-- --></A><H3>
-visitNegativeOpNode</H3>
-<PRE>
-protected void <B>visitNegativeOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NegativeOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NegativeOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitNotOpNode(com.google.template.soy.exprtree.OperatorNodes.NotOpNode)"><!-- --></A><H3>
-visitNotOpNode</H3>
-<PRE>
-protected void <B>visitNotOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitTimesOpNode(com.google.template.soy.exprtree.OperatorNodes.TimesOpNode)"><!-- --></A><H3>
-visitTimesOpNode</H3>
-<PRE>
-protected void <B>visitTimesOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.TimesOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.TimesOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDivideByOpNode(com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode)"><!-- --></A><H3>
-visitDivideByOpNode</H3>
-<PRE>
-protected void <B>visitDivideByOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.DivideByOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.DivideByOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitModOpNode(com.google.template.soy.exprtree.OperatorNodes.ModOpNode)"><!-- --></A><H3>
-visitModOpNode</H3>
-<PRE>
-protected void <B>visitModOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.ModOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ModOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitPlusOpNode(com.google.template.soy.exprtree.OperatorNodes.PlusOpNode)"><!-- --></A><H3>
-visitPlusOpNode</H3>
-<PRE>
-protected void <B>visitPlusOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.PlusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.PlusOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMinusOpNode(com.google.template.soy.exprtree.OperatorNodes.MinusOpNode)"><!-- --></A><H3>
-visitMinusOpNode</H3>
-<PRE>
-protected void <B>visitMinusOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.MinusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.MinusOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLessThanOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode)"><!-- --></A><H3>
-visitLessThanOpNode</H3>
-<PRE>
-protected void <B>visitLessThanOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGreaterThanOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode)"><!-- --></A><H3>
-visitGreaterThanOpNode</H3>
-<PRE>
-protected void <B>visitGreaterThanOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLessThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode)"><!-- --></A><H3>
-visitLessThanOrEqualOpNode</H3>
-<PRE>
-protected void <B>visitLessThanOrEqualOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOrEqualOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGreaterThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode)"><!-- --></A><H3>
-visitGreaterThanOrEqualOpNode</H3>
-<PRE>
-protected void <B>visitGreaterThanOrEqualOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOrEqualOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.EqualOpNode)"><!-- --></A><H3>
-visitEqualOpNode</H3>
-<PRE>
-protected void <B>visitEqualOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.EqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.EqualOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitNotEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode)"><!-- --></A><H3>
-visitNotEqualOpNode</H3>
-<PRE>
-protected void <B>visitNotEqualOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotEqualOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitAndOpNode(com.google.template.soy.exprtree.OperatorNodes.AndOpNode)"><!-- --></A><H3>
-visitAndOpNode</H3>
-<PRE>
-protected void <B>visitAndOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.AndOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.AndOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitOrOpNode(com.google.template.soy.exprtree.OperatorNodes.OrOpNode)"><!-- --></A><H3>
-visitOrOpNode</H3>
-<PRE>
-protected void <B>visitOrOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.OrOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.OrOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)"><!-- --></A><H3>
-visitNullCoalescingOpNode</H3>
-<PRE>
-protected void <B>visitNullCoalescingOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitConditionalOpNode(com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode)"><!-- --></A><H3>
-visitConditionalOpNode</H3>
-<PRE>
-protected void <B>visitConditionalOpNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/OperatorNodes.ConditionalOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ConditionalOpNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitOperatorNode(com.google.template.soy.exprtree.ExprNode.OperatorNode)"><!-- --></A><H3>
-visitOperatorNode</H3>
-<PRE>
-protected void <B>visitOperatorNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.OperatorNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.OperatorNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitFunctionNode(com.google.template.soy.exprtree.FunctionNode)"><!-- --></A><H3>
-visitFunctionNode</H3>
-<PRE>
-protected void <B>visitFunctionNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/FunctionNode.html" title="class in com.google.template.soy.exprtree">FunctionNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitExprNode(com.google.template.soy.exprtree.ExprNode)"><!-- --></A><H3>
-visitExprNode</H3>
-<PRE>
-protected void <B>visitExprNode</B>(<A HREF="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The node being visited.</DL>
-</DD>
-</DL>
+ children. Thus, concurrent modification of the list of children is allowed.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The parent node whose children to visit.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNodeVisitor.html#visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)"><code>visitChildren(com.google.template.soy.exprtree.ExprNode.ParentExprNode)</code></a></dd></dl>
+</li>
+</ul>
+<a name="visitExprRootNode(com.google.template.soy.exprtree.ExprRootNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitExprRootNode</h4>
+<pre>protected&nbsp;void&nbsp;visitExprRootNode(<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;?&gt;&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitNullNode(com.google.template.soy.exprtree.NullNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitNullNode</h4>
+<pre>protected&nbsp;void&nbsp;visitNullNode(<a href="../../../../../com/google/template/soy/exprtree/NullNode.html" title="class in com.google.template.soy.exprtree">NullNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitBooleanNode(com.google.template.soy.exprtree.BooleanNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitBooleanNode</h4>
+<pre>protected&nbsp;void&nbsp;visitBooleanNode(<a href="../../../../../com/google/template/soy/exprtree/BooleanNode.html" title="class in com.google.template.soy.exprtree">BooleanNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitIntegerNode(com.google.template.soy.exprtree.IntegerNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitIntegerNode</h4>
+<pre>protected&nbsp;void&nbsp;visitIntegerNode(<a href="../../../../../com/google/template/soy/exprtree/IntegerNode.html" title="class in com.google.template.soy.exprtree">IntegerNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitFloatNode(com.google.template.soy.exprtree.FloatNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitFloatNode</h4>
+<pre>protected&nbsp;void&nbsp;visitFloatNode(<a href="../../../../../com/google/template/soy/exprtree/FloatNode.html" title="class in com.google.template.soy.exprtree">FloatNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitStringNode(com.google.template.soy.exprtree.StringNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitStringNode</h4>
+<pre>protected&nbsp;void&nbsp;visitStringNode(<a href="../../../../../com/google/template/soy/exprtree/StringNode.html" title="class in com.google.template.soy.exprtree">StringNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitPrimitiveNode(com.google.template.soy.exprtree.ExprNode.PrimitiveNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitPrimitiveNode</h4>
+<pre>protected&nbsp;void&nbsp;visitPrimitiveNode(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.PrimitiveNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.PrimitiveNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitListLiteralNode(com.google.template.soy.exprtree.ListLiteralNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitListLiteralNode</h4>
+<pre>protected&nbsp;void&nbsp;visitListLiteralNode(<a href="../../../../../com/google/template/soy/exprtree/ListLiteralNode.html" title="class in com.google.template.soy.exprtree">ListLiteralNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMapLiteralNode(com.google.template.soy.exprtree.MapLiteralNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMapLiteralNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMapLiteralNode(<a href="../../../../../com/google/template/soy/exprtree/MapLiteralNode.html" title="class in com.google.template.soy.exprtree">MapLiteralNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitVarRefNode(com.google.template.soy.exprtree.VarRefNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitVarRefNode</h4>
+<pre>protected&nbsp;void&nbsp;visitVarRefNode(<a href="../../../../../com/google/template/soy/exprtree/VarRefNode.html" title="class in com.google.template.soy.exprtree">VarRefNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitDataAccessNode(com.google.template.soy.exprtree.DataAccessNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitDataAccessNode</h4>
+<pre>protected&nbsp;void&nbsp;visitDataAccessNode(<a href="../../../../../com/google/template/soy/exprtree/DataAccessNode.html" title="class in com.google.template.soy.exprtree">DataAccessNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitFieldAccessNode(com.google.template.soy.exprtree.FieldAccessNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitFieldAccessNode</h4>
+<pre>protected&nbsp;void&nbsp;visitFieldAccessNode(<a href="../../../../../com/google/template/soy/exprtree/FieldAccessNode.html" title="class in com.google.template.soy.exprtree">FieldAccessNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitItemAccessNode(com.google.template.soy.exprtree.ItemAccessNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitItemAccessNode</h4>
+<pre>protected&nbsp;void&nbsp;visitItemAccessNode(<a href="../../../../../com/google/template/soy/exprtree/ItemAccessNode.html" title="class in com.google.template.soy.exprtree">ItemAccessNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitGlobalNode(com.google.template.soy.exprtree.GlobalNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitGlobalNode</h4>
+<pre>protected&nbsp;void&nbsp;visitGlobalNode(<a href="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitNegativeOpNode(com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitNegativeOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitNegativeOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NegativeOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NegativeOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitNotOpNode(com.google.template.soy.exprtree.OperatorNodes.NotOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitNotOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitNotOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitTimesOpNode(com.google.template.soy.exprtree.OperatorNodes.TimesOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitTimesOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitTimesOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.TimesOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.TimesOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitDivideByOpNode(com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitDivideByOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitDivideByOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.DivideByOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.DivideByOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitModOpNode(com.google.template.soy.exprtree.OperatorNodes.ModOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitModOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitModOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.ModOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ModOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitPlusOpNode(com.google.template.soy.exprtree.OperatorNodes.PlusOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitPlusOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitPlusOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.PlusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.PlusOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMinusOpNode(com.google.template.soy.exprtree.OperatorNodes.MinusOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMinusOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMinusOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.MinusOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.MinusOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLessThanOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLessThanOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLessThanOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitGreaterThanOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitGreaterThanOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitGreaterThanOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLessThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.LessThanOrEqualOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLessThanOrEqualOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLessThanOrEqualOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.LessThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.LessThanOrEqualOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitGreaterThanOrEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.GreaterThanOrEqualOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitGreaterThanOrEqualOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitGreaterThanOrEqualOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.GreaterThanOrEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.GreaterThanOrEqualOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.EqualOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitEqualOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitEqualOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.EqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.EqualOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitNotEqualOpNode(com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitNotEqualOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitNotEqualOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NotEqualOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NotEqualOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitAndOpNode(com.google.template.soy.exprtree.OperatorNodes.AndOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitAndOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitAndOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.AndOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.AndOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitOrOpNode(com.google.template.soy.exprtree.OperatorNodes.OrOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitOrOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitOrOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.OrOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.OrOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitNullCoalescingOpNode(com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitNullCoalescingOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitNullCoalescingOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.NullCoalescingOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.NullCoalescingOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitConditionalOpNode(com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitConditionalOpNode</h4>
+<pre>protected&nbsp;void&nbsp;visitConditionalOpNode(<a href="../../../../../com/google/template/soy/exprtree/OperatorNodes.ConditionalOpNode.html" title="class in com.google.template.soy.exprtree">OperatorNodes.ConditionalOpNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitOperatorNode(com.google.template.soy.exprtree.ExprNode.OperatorNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitOperatorNode</h4>
+<pre>protected&nbsp;void&nbsp;visitOperatorNode(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.OperatorNode.html" title="interface in com.google.template.soy.exprtree">ExprNode.OperatorNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitFunctionNode(com.google.template.soy.exprtree.FunctionNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitFunctionNode</h4>
+<pre>protected&nbsp;void&nbsp;visitFunctionNode(<a href="../../../../../com/google/template/soy/exprtree/FunctionNode.html" title="class in com.google.template.soy.exprtree">FunctionNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitExprNode(com.google.template.soy.exprtree.ExprNode)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>visitExprNode</h4>
+<pre>protected&nbsp;void&nbsp;visitExprNode(<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>&nbsp;node)</pre>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The node being visited.</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractExprNode.html" title="class in com.google.template.soy.exprtree"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/AbstractOperatorNode.html" title="class in com.google.template.soy.exprtree"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/exprtree/AbstractExprNodeVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="AbstractExprNodeVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../com/google/template/soy/exprtree/AbstractExprNode.html" title="class in com.google.template.soy.exprtree"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../com/google/template/soy/exprtree/AbstractOperatorNode.html" title="class in com.google.template.soy.exprtree"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/exprtree/AbstractExprNodeVisitor.html" target="_top">Frames</a></li>
+<li><a href="AbstractExprNodeVisitor.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -1036,6 +792,6 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&n
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

@@ -20,18 +20,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.internal.i18n.BidiUtils;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -40,15 +40,14 @@ import java.util.Set;
  * Soy function that maybe inserts an HTML attribute for bidi directionality ('dir=ltr' or
  * 'dir=rtl'). The function requires the text string that will make up the body of the associated
  * HTML tag pair. If the text string is detected to require different directionality than the
- * curret global directionality, then the appropriate HTML attribute is inserted. Otherwise, nothing
- * is inserted.
+ * current global directionality, then the appropriate HTML attribute is inserted. Otherwise,
+ * nothing is inserted.
  *
  * @author Aharon Lanin
  * @author Kai Huang
  */
 @Singleton
-class BidiDirAttrFunction extends SoyAbstractTofuFunction
-    implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class BidiDirAttrFunction implements SoyJavaFunction, SoyJsSrcFunction {
 
 
   /** Provider for the current bidi global directionality. */
@@ -74,44 +73,39 @@ class BidiDirAttrFunction extends SoyAbstractTofuFunction
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
-    String text = args.get(0).stringValue();
-    @SuppressWarnings("SimplifiableConditionalExpression")  // make IntelliJ happy
-    boolean isHtml = (args.size() == 2) ? args.get(1).booleanValue() : false /* default */;
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
+    SoyValue value = args.get(0);
+    Dir valueDir = null;
+    boolean isHtmlForValueDirEstimation = false;
+    if (value instanceof SanitizedContent) {
+      SanitizedContent sanitizedContent = (SanitizedContent) value;
+      valueDir = sanitizedContent.getContentDirection();
+      if (valueDir == null) {
+        isHtmlForValueDirEstimation = sanitizedContent.getContentKind() == ContentKind.HTML;
+      }
+    }
+    if (valueDir == null) {
+      isHtmlForValueDirEstimation = isHtmlForValueDirEstimation ||
+          (args.size() == 2 && args.get(1).booleanValue());
+      valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
+    }
 
-    int bidiGlobalDir = bidiGlobalDirProvider.get().getStaticValue();
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDir).dirAttr(text, isHtml),
-        SanitizedContent.ContentKind.ATTRIBUTES);
+    BidiFormatter bidiFormatter = SoyBidiUtils.getBidiFormatter(
+        bidiGlobalDirProvider.get().getStaticValue());
+    String dirAttr = bidiFormatter.knownDirAttr(valueDir);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(dirAttr, ContentKind.ATTRIBUTES);
   }
 
 
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
-    JsExpr text = args.get(0);
+    JsExpr value = args.get(0);
     JsExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
     String callText =
         "soy.$$bidiDirAttr(" + bidiGlobalDirProvider.get().getCodeSnippet() + ", " +
-        text.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
+        value.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
 
     return new JsExpr(callText, Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-    JavaExpr text = args.get(0);
-    JavaExpr isHtml = (args.size() == 2) ? args.get(1) : null;
-
-    String bidiFunctionName = SoyBidiUtils.class.getName() + ".getBidiFormatter(" +
-        bidiGlobalDirProvider.get().getCodeSnippet() + ").dirAttr";
-
-    return SoyJavaSrcFunctionUtils.toStringJavaExpr(
-        JavaCodeUtils.genNewSanitizedContent(
-            JavaCodeUtils.genFunctionCall(
-                bidiFunctionName,
-                JavaCodeUtils.genCoerceString(text),
-                isHtml != null ? JavaCodeUtils.genCoerceBoolean(isHtml) : "false"),
-            SanitizedContent.ContentKind.ATTRIBUTES));
   }
 
 }

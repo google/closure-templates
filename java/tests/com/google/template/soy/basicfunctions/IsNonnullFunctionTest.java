@@ -17,15 +17,13 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 import junit.framework.TestCase;
@@ -39,21 +37,21 @@ import junit.framework.TestCase;
 public class IsNonnullFunctionTest extends TestCase {
 
 
-  public void testCompute() {
+  public void testComputeForJava() {
 
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
     assertEquals(
         BooleanData.FALSE,
-        isNonnullFunction.compute(ImmutableList.<SoyData>of(UndefinedData.INSTANCE)));
+        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(UndefinedData.INSTANCE)));
     assertEquals(
         BooleanData.FALSE,
-        isNonnullFunction.compute(ImmutableList.<SoyData>of(NullData.INSTANCE)));
+        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(NullData.INSTANCE)));
     assertEquals(
         BooleanData.TRUE,
-        isNonnullFunction.compute(ImmutableList.<SoyData>of(IntegerData.forValue(0))));
+        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(IntegerData.forValue(0))));
     assertEquals(
         BooleanData.TRUE,
-        isNonnullFunction.compute(ImmutableList.<SoyData>of(StringData.forValue(""))));
+        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(StringData.forValue(""))));
   }
 
 
@@ -64,18 +62,6 @@ public class IsNonnullFunctionTest extends TestCase {
     assertEquals(
         new JsExpr("JS_CODE != null", Operator.NOT_EQUAL.getPrecedence()),
         isNonnullFunction.computeForJsSrc(ImmutableList.of(expr)));
-  }
-
-
-  public void testComputeForJavaSrc() {
-
-    IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
-    JavaExpr expr = new JavaExpr("JAVA_CODE", FloatData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.javasrc.codedeps.SoyUtils.$$isNonnull(JAVA_CODE)",
-            BooleanData.class, Integer.MAX_VALUE),
-        isNonnullFunction.computeForJavaSrc(ImmutableList.of(expr)));
   }
 
 }

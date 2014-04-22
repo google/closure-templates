@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.restricted;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
@@ -35,6 +36,10 @@ import javax.annotation.Nullable;
  */
 public class JsExprUtils {
 
+  /** Expression constant for empty string. */
+  private static final JsExpr EMPTY_STRING = new JsExpr("''", Integer.MAX_VALUE);
+
+
   private JsExprUtils() {}
 
 
@@ -43,13 +48,16 @@ public class JsExprUtils {
    * operator is used for concatenation. Operands will be protected with an extra pair of
    * parentheses if and only if needed.
    *
+   * The resulting expression is not guaranteed to be a string if the operands do not produce
+   * strings when combined with the plus operator; e.g. 2+2 might be 4 instead of '22'.
+   *
    * @param jsExprs The JS expressions to concatentate.
    * @return One JS expression that computes the concatenation of the given JS expressions.
    */
   public static JsExpr concatJsExprs(List<JsExpr> jsExprs) {
 
     if (jsExprs.size() == 0) {
-      return new JsExpr("''", Integer.MAX_VALUE);
+      return EMPTY_STRING;
     }
 
     if (jsExprs.size() == 1) {
@@ -86,6 +94,60 @@ public class JsExprUtils {
 
 
   /**
+   * Builds a JS expression which is the string concatenation of individual expressions. This
+   * doesn't assume that the inputs are necessarily strings, but guarantees that the output is
+   * a string.
+   *
+   * @param jsExprs The JS expressions to concatentate.
+   * @return One JS expression that computes the guaranteed string concatenation of the given JS
+   *     expressions.
+   */
+  public static JsExpr concatJsExprsForceString(List<JsExpr> jsExprs) {
+    // If the first or second expression in the list is a string, the plus operator (if any) will
+    // produce a string concatenation, so we are set.
+    if ((jsExprs.size() > 0 && isStringLiteral(jsExprs.get(0)))
+        || (jsExprs.size() > 1 && isStringLiteral(jsExprs.get(1)))) {
+      return concatJsExprs(jsExprs);
+    }
+    // Add empty string first, which ensures the plus operator always means string concatenation.
+    // Consider:
+    //    '' + 6 + 6 + 6 = '666'
+    //    6 + 6 + 6 + '' = '18'
+    return concatJsExprs(ImmutableList.<JsExpr>builder().add(EMPTY_STRING).addAll(jsExprs).build());
+  }
+
+
+  @VisibleForTesting
+  static boolean isStringLiteral(JsExpr jsExpr) {
+    String jsExprText = jsExpr.getText();
+    int jsExprTextLastIndex = jsExprText.length() - 1;
+    if (jsExprTextLastIndex < 1 || jsExprText.charAt(0) != '\''
+        || jsExprText.charAt(jsExprTextLastIndex) != '\'') {
+      return false;
+    }
+    for (int i = 1; i < jsExprTextLastIndex; ++i) {
+      char c = jsExprText.charAt(i);
+      if (c == '\'') {
+        return false;
+      }
+      if (c == '\\') {
+        // We do not bother skipping through the whole escape if it takes up more than one character
+        // beyond the backslash, e.g. \u1234 or \123 or \x12, since none of such escapes' characters
+        // can be an apostrophe, which is all we really care about. Nor do we check that the escape
+        // doesn't include the final apostrophe, since that would mean the JS expression is invalid.
+        ++i;
+      }
+    }
+    return true;
+  }
+
+
+  public static JsExpr toString(JsExpr expr) {
+    return concatJsExprsForceString(ImmutableList.of(expr));
+  }
+
+
+  /**
    * Wraps an expression in a function call.
    *
    * @param functionExprText expression for the function to invoke, such as a function name or
@@ -113,6 +175,28 @@ public class JsExprUtils {
       return jsExpr;
     } else {
       return wrapWithFunction(NodeContentKinds.toJsSanitizedContentOrdainer(contentKind), jsExpr);
+    }
+  }
+
+
+  /**
+   * Wraps with the proper SanitizedContent constructor if contentKind is non-null, in a way
+   * specific for let/param blocks.
+   *
+   * We generate slightly different code for param and let blocks so that empty strings evaluate
+   * to false; specifically, by not wrapping them in SanitizedContent. However, template return
+   * values are not affected, so that the external interface to Soy remains pristine.
+   *
+   * @param contentKind The kind of sanitized content.
+   * @param jsExpr The expression to wrap.
+   */
+  public static JsExpr maybeWrapAsSanitizedContentForInternalBlocks(
+      @Nullable ContentKind contentKind, JsExpr jsExpr) {
+    if (contentKind == null) {
+      return jsExpr;
+    } else {
+      return wrapWithFunction(
+          NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(contentKind), jsExpr);
     }
   }
 }

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -45,13 +45,42 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final Pattern HTML_COMMENT = Pattern.compile("<!--.*?-->");
 
 
-  /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
+  /**
+   * The node id generator for the parse tree.
+   * Retrieved from the root SoyFileSetNode or constructor arguments.
+   */
   private IdGenerator nodeIdGen;
+
+  
+  /** Explicitly specified ID generator for parsing tree fragments. */
+  private final IdGenerator explicitNodeIdGen;
+
+
+  /**
+   * Constructor when working on tree fragments that are not part of a SoyFileSet.
+   */
+  public RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen) {
+    explicitNodeIdGen = nodeIdGen;
+  }
+
+
+  /**
+   * Constructor when working with full soy file sets.
+   */
+  public RemoveHtmlCommentsVisitor() {
+    this(null);
+  }
 
 
   @Override public Void exec(SoyNode node) {
-    nodeIdGen = null;
+    if (explicitNodeIdGen != null) {
+      nodeIdGen = explicitNodeIdGen;
+    } else {
+      // Retrieve the node id generator from the root of the parse tree.
+      nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
+    }
     visit(node);
+    nodeIdGen = null;
     return null;
   }
 
@@ -78,10 +107,6 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
     // If the new raw text string is nonempty, then create a new RawTextNode to replace this node,
     // else simply remove this node.
     if (newRawText.length() > 0) {
-      if (nodeIdGen == null) {
-        // Retrieve the node id generator from the root of the parse tree.
-        nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
-      }
       RawTextNode newRawTextNode = new RawTextNode(nodeIdGen.genId(), newRawText.toString());
       node.getParent().replaceChild(node, newRawTextNode);
 

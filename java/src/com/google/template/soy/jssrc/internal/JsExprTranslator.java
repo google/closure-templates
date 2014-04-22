@@ -16,12 +16,12 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.TranslateToJsExprVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -42,25 +42,20 @@ class JsExprTranslator {
   /** Map of all SoyJsSrcFunctions (name to function). */
   private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
 
-  /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
-
   /** Factory for creating an instance of TranslateToJsExprVisitor. */
   private final TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory;
 
 
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
-   * @param jsSrcOptions The options for generating JS source code.
    * @param translateToJsExprVisitorFactory Factory for creating an instance of
    *     TranslateToJsExprVisitor.
    */
   @Inject
   JsExprTranslator(
-      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, SoyJsSrcOptions jsSrcOptions,
+      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
       TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory) {
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
-    this.jsSrcOptions = jsSrcOptions;
     this.translateToJsExprVisitorFactory = translateToJsExprVisitorFactory;
   }
 
@@ -72,7 +67,7 @@ class JsExprTranslator {
    * ExprNode.
    *
    * @param expr The Soy expression to translate.
-   * @param exprText The expression text.
+   * @param exprText The expression text. Only required for V1 support, nullable otherwise.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
    * @return The built JS expression.
@@ -81,12 +76,13 @@ class JsExprTranslator {
       ExprNode expr, String exprText, Deque<Map<String, JsExpr>> localVarTranslations) {
 
     if (expr != null &&
-        (! jsSrcOptions.shouldAllowDeprecatedSyntax() ||
+        (exprText == null ||
          (new CheckAllFunctionsSupportedVisitor(soyJsSrcFunctionsMap)).exec(expr))) {
       // V2 expression.
       return translateToJsExprVisitorFactory.create(localVarTranslations).exec(expr);
     } else {
       // V1 expression.
+      Preconditions.checkNotNull(exprText);
       return V1JsExprTranslator.translateToJsExpr(exprText, localVarTranslations);
     }
   }

@@ -16,25 +16,19 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toNumberJavaExpr;
-import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -48,8 +42,7 @@ import java.util.Set;
  */
 @Singleton
 @SoyPureFunction
-class RoundFunction extends SoyAbstractTofuFunction
-    implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction {
 
 
   @Inject
@@ -66,24 +59,24 @@ class RoundFunction extends SoyAbstractTofuFunction
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
-    SoyData value = args.get(0);
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
+    SoyValue value = args.get(0);
     int numDigitsAfterPt = (args.size() == 2) ? args.get(1).integerValue() : 0 /* default */;
 
     if (numDigitsAfterPt == 0) {
       if (value instanceof IntegerData) {
-        return toSoyData(value.integerValue());
+        return IntegerData.forValue(value.longValue());
       } else {
-        return toSoyData((int) Math.round(value.numberValue()));
+        return IntegerData.forValue((int) Math.round(value.numberValue()));
       }
     } else if (numDigitsAfterPt > 0) {
       double valueDouble = value.numberValue();
       double shift = Math.pow(10, numDigitsAfterPt);
-      return toSoyData(Math.round(valueDouble * shift) / shift);
+      return FloatData.forValue(Math.round(valueDouble * shift) / shift);
     } else {
       double valueDouble = value.numberValue();
       double shift = Math.pow(10, -numDigitsAfterPt);
-      return toSoyData((int) (Math.round(valueDouble / shift) * shift));
+      return IntegerData.forValue((int) (Math.round(valueDouble / shift) * shift));
     }
   }
 
@@ -134,20 +127,6 @@ class RoundFunction extends SoyAbstractTofuFunction
           "Second argument to round() function is " + numDigitsAfterPtAsInt +
           ", which is too large in magnitude.");
     }
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-    JavaExpr value = args.get(0);
-    JavaExpr numDigitsAfterPt = (args.size() == 2) ? args.get(1) : null;
-
-    String numDigitsAfterPtExprText =
-        (numDigitsAfterPt != null) ?
-        JavaCodeUtils.genMaybeCast(numDigitsAfterPt, IntegerData.class) : "null";
-    return toNumberJavaExpr(JavaCodeUtils.genFunctionCall(
-        JavaCodeUtils.UTILS_LIB + ".$$round",
-        JavaCodeUtils.genMaybeCast(value, NumberData.class),
-        numDigitsAfterPtExprText));
   }
 
 }

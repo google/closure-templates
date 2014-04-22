@@ -20,18 +20,21 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
 import java.util.List;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 
 /**
@@ -41,8 +44,9 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective
-    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective, SanitizedContentOperator {
+@SoyPurePrintDirective
+public class InsertWordBreaksDirective
+    implements SanitizedContentOperator, SoyJavaPrintDirective, SoyJsSrcPrintDirective {
 
 
   @Inject
@@ -64,7 +68,13 @@ public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+  @Override @Nonnull public SanitizedContent.ContentKind getContentKind() {
+    // This directive expects HTML as input and produces HTML as output.
+    return SanitizedContent.ContentKind.HTML;
+  }
+
+
+  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
 
     int maxCharsBetweenWordBreaks;
     try {
@@ -81,7 +91,7 @@ public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective
     boolean isMaybeInEntity = false;  // whether we might be inside an HTML entity
     int numCharsWithoutBreak = 0;  // number of characters since the last word break
 
-    String str = value.toString();
+    String str = value.coerceToString();
     for (int codePoint, i = 0, n = str.length(); i < n; i += Character.charCount(codePoint)) {
       codePoint = str.codePointAt(i);
 
@@ -144,7 +154,20 @@ public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective
       result.appendCodePoint(codePoint);
     }
 
-    return SoyData.createFromExistingData(result.toString());
+    // Make sure to transmit the known direction, if any, to any downstream directive that may need
+    // it, e.g. BidiSpanWrapDirective. Since a known direction is carried only by SanitizedContent,
+    // and the transformation we make is only valid in HTML, we only transmit the direction when we
+    // get HTML SanitizedContent.
+    // TODO(user): Consider always returning HTML SanitizedContent.
+    if (value instanceof SanitizedContent) {
+      SanitizedContent sanitizedContent = (SanitizedContent) value;
+      if (sanitizedContent.getContentKind() == ContentKind.HTML) {
+        return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            result.toString(), ContentKind.HTML, sanitizedContent.getContentDirection());
+      }
+    }
+
+    return StringData.forValue(result.toString());
   }
 
 
@@ -153,23 +176,6 @@ public class InsertWordBreaksDirective extends SoyAbstractTofuPrintDirective
     return new JsExpr(
         "soy.$$insertWordBreaks(" + value.getText() + ", " + args.get(0).getText() + ")",
         Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
-
-    return new JavaExpr(
-        JavaCodeUtils.genFunctionCall(
-            JavaCodeUtils.UTILS_LIB + ".$$insertWordBreaks",
-            JavaCodeUtils.genCoerceString(value),
-            JavaCodeUtils.genIntegerValue(args.get(0))),
-        String.class, Integer.MAX_VALUE);
-  }
-
-
-  @Override public SanitizedContent.ContentKind getContentKind() {
-    // This directive expects HTML as input and produces HTML as output.
-    return SanitizedContent.ContentKind.HTML;
   }
 
 }

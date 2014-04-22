@@ -27,7 +27,9 @@ import java.util.List;
  * <p> Important: This may only be used in implementing print directive plugins.
  *
  * @author Kai Huang
+ * @deprecated JavaSrc backend was removed June 2013.
  */
+@Deprecated
 public interface SoyJavaSrcPrintDirective extends SoyPrintDirective {
 
 

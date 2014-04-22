@@ -17,8 +17,8 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.sharedpasses.MarkLocalVarDataRefsVisitor;
 import com.google.template.soy.sharedpasses.UnmarkLocalVarDataRefsVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.SyntaxVersion;
 import com.google.template.soy.soytree.TemplateNode;
 
 
@@ -98,8 +97,8 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
       if (valueExprRoot == null) {
         return;
       }
-      DataRefNode valueDataRef = (DataRefNode) valueExprRoot.getChild(0);
-      if (valueDataRef.isLocalVarDataRef() || valueDataRef.isIjDataRef()) {
+      VarRefNode valueDataRef = (VarRefNode) valueExprRoot.getChild(0);
+      if (valueDataRef.isLocalVar() || valueDataRef.isInjected()) {
         return;
       }
     }
@@ -109,14 +108,13 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
     if (node instanceof CallBasicNode) {
       CallBasicNode nodeCast = (CallBasicNode) node;
       newCallNode = new CallBasicNode(
-          node.getId(), nodeCast.getCalleeName(), nodeCast.getSrcCalleeName(), false, true,
-          true, null, node.getUserSuppliedPlaceholderName(), SyntaxVersion.V2,
-          node.getEscapingDirectiveNames());
+          node.getId(), nodeCast.getCalleeName(), nodeCast.getSrcCalleeName(), false, false, true,
+          true, null, node.getUserSuppliedPhName(), null, node.getEscapingDirectiveNames());
     } else {
       CallDelegateNode nodeCast = (CallDelegateNode) node;
       newCallNode = new CallDelegateNode(
           node.getId(), nodeCast.getDelCalleeName(), nodeCast.getDelCalleeVariantExpr(), false,
-          nodeCast.allowsEmptyDefault(), true, true, null, node.getUserSuppliedPlaceholderName(),
+          nodeCast.allowsEmptyDefault(), true, true, null, node.getUserSuppliedPhName(),
           node.getEscapingDirectiveNames());
     }
     node.getParent().replaceChild(node, newCallNode);

@@ -15,7 +15,7 @@
 // Delegates examples (total 3 files).
 // Author: Kai Huang
 
-{namespace soy.examples.delegates}
+{namespace soy.examples.delegates autoescape="strict"}
 
 
 /**
@@ -36,6 +36,6 @@
  * @param moo Note: Must list same params for all implementations, even if not all implementations
  *     use a param.
  */
-{deltemplate myDelegates.foo}
+{deltemplate myDelegates.foo kind="text"}
   myDelegates.foo default.
 {/deltemplate}

@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -127,32 +127,37 @@ class NamespacedTofu implements SoyTofu {
 
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
-                                 @Nullable SoyMsgBundle msgBundle) {
+  @Override public String render(
+      SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
+      @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
   }
 
 
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(SoyTemplateInfo templateInfo, @Nullable SoyMapData data,
-                                 @Nullable SoyMsgBundle msgBundle) {
+  @Override public String render(
+      SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
   }
 
 
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(String templateName, @Nullable Map<String, ?> data,
-                                 @Nullable SoyMsgBundle msgBundle) {
-    return render(templateName, (data == null) ? null : new SoyMapData(data), msgBundle);
+  @Override public String render(
+      String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
+    if (templateName.charAt(0) == '.') {
+      return baseTofu.render(namespace + templateName, data, msgBundle);
+    } else {
+      return baseTofu.render(templateName, data, msgBundle);
+    }
   }
 
 
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(String templateName, @Nullable SoyMapData data,
-                                 @Nullable SoyMsgBundle msgBundle) {
+  @Override public String render(
+      String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
     if (templateName.charAt(0) == '.') {
       return baseTofu.render(namespace + templateName, data, msgBundle);
     } else {

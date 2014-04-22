@@ -94,7 +94,7 @@ public class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
               node);
         }
         // 'remainder' with 'phname' attribute. Bad!
-        if (node.getUserSuppliedPlaceholderName() != null) {
+        if (node.getUserSuppliedPhName() != null) {
           throw SoySyntaxExceptionUtils.createWithNode(
               "Cannot use special function 'remainder' and attribute 'phname' together" +
                   " (tag " + node.toSourceString() + ").",

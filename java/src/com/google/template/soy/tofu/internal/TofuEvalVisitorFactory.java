@@ -17,11 +17,13 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.inject.Inject;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
+import com.google.template.soy.tofu.internal.TofuModule.Tofu;
 
 import java.util.Deque;
 import java.util.Map;
@@ -40,21 +42,25 @@ import javax.inject.Singleton;
 class TofuEvalVisitorFactory implements EvalVisitorFactory {
 
 
-  /** Map of all SoyTofuFunctions (name to function). */
-  private final Map<String, SoyTofuFunction> soyTofuFunctionsMap;
+  /** Instance of SoyValueHelper to use. */
+  private final SoyValueHelper valueHelper;
+
+  /** Map of all SoyJavaFunctions (name to function). */
+  private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
 
 
   @Inject
-  public TofuEvalVisitorFactory(Map<String, SoyTofuFunction> soyTofuFunctionsMap) {
-    this.soyTofuFunctionsMap = soyTofuFunctionsMap;
+  public TofuEvalVisitorFactory(
+      SoyValueHelper valueHelper, @Tofu Map<String, SoyJavaFunction> soyJavaFunctionsMap) {
+    this.valueHelper = valueHelper;
+    this.soyJavaFunctionsMap = soyJavaFunctionsMap;
   }
 
 
-  @Override
-  public EvalVisitor create(
-      SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+  @Override public EvalVisitor create(
+      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
 
-    return new TofuEvalVisitor(soyTofuFunctionsMap, data, ijData, env);
+    return new TofuEvalVisitor(valueHelper, soyJavaFunctionsMap, data, ijData, env);
   }
 
 }

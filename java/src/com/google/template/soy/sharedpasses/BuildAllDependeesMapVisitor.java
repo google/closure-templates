@@ -21,9 +21,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.LetNode;
@@ -39,7 +39,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgNode;
+import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -135,7 +135,7 @@ public class BuildAllDependeesMapVisitor
   }
 
 
-  @Override protected void visitGoogMsgNode(GoogMsgNode node) {
+  @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
 
     visitSoyNode(node);
 
@@ -309,9 +309,8 @@ public class BuildAllDependeesMapVisitor
       return topLevelRefs;
     }
 
-    @Override protected void visitDataRefNode(DataRefNode node) {
-      topLevelRefs.add(node.getFirstKey());
-      visitChildren(node);
+    @Override protected void visitVarRefNode(VarRefNode node) {
+      topLevelRefs.add(node.getName());
     }
 
     @Override protected void visitExprNode(ExprNode node) {

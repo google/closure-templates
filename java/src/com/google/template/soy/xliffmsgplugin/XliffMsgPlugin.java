@@ -48,11 +48,11 @@ public class XliffMsgPlugin implements SoyMsgPlugin {
   }
 
 
-  @Override public SoyMsgBundle parseTranslatedMsgsFile(String inputFileContent)
+  @Override public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent)
       throws SoyMsgException {
 
     try {
-      return XliffParser.parseXliffTargetMsgs(inputFileContent);
+      return XliffParser.parseXliffTargetMsgs(translatedMsgsFileContent);
     } catch (SAXException e) {
       throw new SoyMsgException(e);
     }

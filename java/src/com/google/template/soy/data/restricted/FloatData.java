@@ -27,7 +27,7 @@ import javax.annotation.concurrent.Immutable;
  * @author Kai Huang
  */
 @Immutable
-public class FloatData extends NumberData {
+public final class FloatData extends NumberData {
 
 
   /** The float value. */
@@ -49,6 +49,7 @@ public class FloatData extends NumberData {
    * @param value The desired value.
    * @return A FloatData instance with the given value.
    */
+  @SuppressWarnings("deprecation")
   public static FloatData forValue(double value) {
     return new FloatData(value);
   }
@@ -66,19 +67,36 @@ public class FloatData extends NumberData {
 
 
   @Override public String toString() {
-    // Note: This differs from JS in how it rendered values that have a zero fractional component
-    // and in how it renders the value -0.0.
-    // JavaScript specifies that the string form of -0 is signless, and that the string form of
-    // fractionless numeric values has no decimal point.
-    return Double.toString(value).replace('E', 'e');
+    return toString(value);
   }
 
+  /**
+   * Returns Soy's idea of a double as a string.
+   */
+  public static String toString(double value) {
+    // This approximately consistent with Javascript for important cases.
+    // Reference: http://www.ecma-international.org/ecma-262/5.1/#sec-9.8.1
+    if (value % 1 == 0 && Math.abs(value) < Long.MAX_VALUE) {
+      // The value is non-fractional and within the magnitude of a long, so print as an integer
+      // instead of scientific notation.  Note that Javascript uses 1.0e19 as the cutoff, but
+      // Long.MAX_VALUE is not that far off (9.2e18), and it is both easy and efficient to coerce
+      // to a long.
+      return String.valueOf((long) value);
+    } else {
+      // Note: This differs from JS in how it rendered values that have a zero fractional component
+      // and in how it renders the value -0.0.
+      // JavaScript specifies that the string form of -0 is signless, and that the string form of
+      // fractionless numeric values has no decimal point.
+      return Double.toString(value).replace('E', 'e');
+    }
+  }
 
   /**
    * {@inheritDoc}
    *
    * <p> 0.0 is falsy as is NaN.
    */
+  @Deprecated
   @Override public boolean toBoolean() {
     return value != 0.0 && !Double.isNaN(value);
   }

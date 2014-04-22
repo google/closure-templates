@@ -16,19 +16,19 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.base.Charsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provider;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -37,6 +37,7 @@ import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPlrselMsgException;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.sharedpasses.IsUsingIjDataVisitor;
@@ -48,7 +49,6 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -70,9 +70,6 @@ public class JsSrcMain {
   /** The instanceof of SimplifyVisitor to use. */
   private final SimplifyVisitor simplifyVisitor;
 
-  /** Provider for getting an instance of ReplaceMsgsWithGoogMsgsVisitor. */
-  private final Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider;
-
   /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
   private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
@@ -83,8 +80,6 @@ public class JsSrcMain {
   /**
    * @param apiCallScope The scope object that manages the API call scope.
    * @param simplifyVisitor The instance of SimplifyVisitor to use.
-   * @param replaceMsgsWithGoogMsgsVisitorProvider Provider for getting an instance of
-   *     ReplaceMsgsWithGoogMsgsVisitor.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
    *     OptimizeBidiCodeGenVisitor.
    * @param genJsCodeVisitorProvider Provider for getting an instance of GenJsCodeVisitor.
@@ -92,12 +87,10 @@ public class JsSrcMain {
   @Inject
   public JsSrcMain(
       @ApiCall GuiceSimpleScope apiCallScope, SimplifyVisitor simplifyVisitor,
-      Provider<ReplaceMsgsWithGoogMsgsVisitor> replaceMsgsWithGoogMsgsVisitorProvider,
       Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
       Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
     this.simplifyVisitor = simplifyVisitor;
-    this.replaceMsgsWithGoogMsgsVisitorProvider = replaceMsgsWithGoogMsgsVisitorProvider;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
   }
@@ -144,8 +137,8 @@ public class JsSrcMain {
 
       // Replace MsgNodes.
       if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
-        replaceMsgsWithGoogMsgsVisitorProvider.get().exec(soyTree);
-        (new MoveGoogMsgNodesEarlierVisitor()).exec(soyTree);
+        (new ReplaceMsgsWithGoogMsgsVisitor()).exec(soyTree);
+        (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
         Preconditions.checkState(
             bidiGlobalDir != null,
             "If enabling shouldGenerateGoogMsgDefs, must also set bidi global directionality.");
@@ -173,7 +166,6 @@ public class JsSrcMain {
     }
   }
 
-
   /**
    * Generates JS source files given a Soy parse tree, an options object, an optional bundle of
    * translated messages, and information on where to put the output files.
@@ -196,38 +188,19 @@ public class JsSrcMain {
 
     List<String> jsFileContents = genJsSrc(soyTree, jsSrcOptions, msgBundle);
 
-    int numFiles = soyTree.numChildren();
-    if (numFiles != jsFileContents.size()) {
-      throw new AssertionError();
+    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(Iterables.filter(
+        soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
+
+    if (srcsToCompile.size() != jsFileContents.size()) {
+      throw new AssertionError(String.format("Expected to generate %d code chunk(s), got %d",
+          srcsToCompile.size(), jsFileContents.size()));
     }
 
-    // Maps output paths to indices of inputs that should be emitted to them.
-    Multimap<String, Integer> outputs = Multimaps.newListMultimap(
-        Maps.<String, Collection<Integer>>newLinkedHashMap(),
-        new Supplier<List<Integer>>() {
-          @Override
-          public List<Integer> get() {
-            return Lists.newArrayList();
-          }
-        });
-
-    // First, check that the parent directories for all output files exist, and group the output
-    // files by the inputs that go there.
-    // This means that the compiled source from multiple input files might be written to a single
-    // output file, as is the case when there are multiple inputs, and the output format string
-    // contains no wildcards.
-    for (int i = 0; i < numFiles; ++i) {
-      SoyFileNode inputFile = soyTree.getChild(i);
-      String inputFilePath = inputFile.getFilePath();
-      String outputFilePath =
-          JsSrcUtils.buildFilePath(outputPathFormat, locale, inputFilePath, inputPathsPrefix);
-
-      BaseUtils.ensureDirsExistInPath(outputFilePath);
-      outputs.put(outputFilePath, i);
-    }
+    Multimap<String, Integer> outputs =
+        mapOutputsToSrcs(locale, outputPathFormat, inputPathsPrefix, srcsToCompile);
 
     for (String outputFilePath : outputs.keySet()) {
-      Writer out = Files.newWriter(new File(outputFilePath), Charsets.UTF_8);
+      Writer out = Files.newWriter(new File(outputFilePath), UTF_8);
       try {
         boolean isFirst = true;
         for (int inputFileIndex : outputs.get(outputFilePath)) {
@@ -247,4 +220,27 @@ public class JsSrcMain {
     }
   }
 
+  /**
+   * Maps output paths to indices of inputs that should be emitted to them.
+   */
+  private Multimap<String, Integer> mapOutputsToSrcs(String locale, String outputPathFormat,
+      String inputPathsPrefix, ImmutableList<SoyFileNode> fileNodes) {
+    Multimap<String, Integer> outputs = ArrayListMultimap.create();
+
+    // First, check that the parent directories for all output files exist, and group the output
+    // files by the inputs that go there.
+    // This means that the compiled source from multiple input files might be written to a single
+    // output file, as is the case when there are multiple inputs, and the output format string
+    // contains no wildcards.
+    for (int i = 0; i < fileNodes.size(); ++i) {
+      SoyFileNode inputFile = fileNodes.get(i);
+      String inputFilePath = inputFile.getFilePath();
+      String outputFilePath = MainEntryPointUtils.buildFilePath(
+          outputPathFormat, locale, inputFilePath, inputPathsPrefix);
+
+      BaseUtils.ensureDirsExistInPath(outputFilePath);
+      outputs.put(outputFilePath, i);
+    }
+    return outputs;
+  }
 }

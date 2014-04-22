@@ -17,14 +17,16 @@
 package com.google.template.soy.exprparse;
 
 import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.DataRefAccessExprNode;
-import com.google.template.soy.exprtree.DataRefAccessIndexNode;
-import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -37,6 +39,7 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarNode;
+import com.google.template.soy.exprtree.VarRefNode;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
@@ -137,6 +140,22 @@ public class ExpressionParserTest extends TestCase {
   }
 
 
+  public void testRecognizeListsAndMaps() throws Exception {
+
+    assertIsExpression("[]");
+    assertIsExpression("[55]");
+    assertIsExpression("[55,]");
+    assertIsExpression("['blah', 123, $boo]");
+    assertIsExpression("['blah', 123, $boo,]");
+
+    assertIsExpression("[:]");
+    assertIsExpression("['aa': 55]");
+    assertIsExpression("['aa': 55,]");
+    assertIsExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]");
+    assertIsExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]");
+  }
+
+
   public void testRecognizeDataRefAsExpression() throws Exception {
     assertIsExpression("$aaa", "$a0a0.b1b1", "$aaa.0.bbb.12", "$aaa[0].bbb['ccc'][$eee]",
                        "$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]");
@@ -227,44 +246,54 @@ public class ExpressionParserTest extends TestCase {
 
   public void testParseDataReference() throws Exception {
 
-    DataRefNode dataRef = (new ExpressionParser("$boo.0[$foo]")).parseDataReference().getChild(0);
-    assertFalse(dataRef.isIjDataRef());
-    assertFalse(dataRef.isNullSafeIjDataRef());
-    assertEquals("boo", dataRef.getFirstKey());
-    assertEquals(2, dataRef.numChildren());
-    DataRefAccessIndexNode access0 = (DataRefAccessIndexNode) dataRef.getChild(0);
-    assertFalse(access0.isNullSafe());
-    assertEquals(0, access0.getIndex());
-    DataRefAccessExprNode access1 = (DataRefAccessExprNode) dataRef.getChild(1);
-    assertFalse(access1.isNullSafe());
-    assertEquals("$foo", access1.getChild(0).toSourceString());
+    ExprNode dataRef = (new ExpressionParser("$boo")).parseDataReference().getChild(0);
+    assertNodeEquals(
+        new VarRefNode("boo", false, false, null),
+        dataRef);
+
+    dataRef = (new ExpressionParser("$boo.foo")).parseDataReference().getChild(0);
+    assertNodeEquals(
+        new FieldAccessNode(
+            new VarRefNode("boo", false, false, null),
+            "foo",
+            false),
+        dataRef);
+
+    dataRef = (new ExpressionParser("$boo.0[$foo]")).parseDataReference().getChild(0);
+    assertNodeEquals(
+        new ItemAccessNode(
+            new ItemAccessNode(
+                new VarRefNode("boo", false, false, null),
+                new IntegerNode(0),
+                false, true),
+            new VarRefNode("foo", false, false, null),
+            false,
+            false),
+        dataRef);
 
     dataRef = (new ExpressionParser("$boo?.0?[$foo]")).parseDataReference().getChild(0);
-    assertFalse(dataRef.isIjDataRef());
-    assertFalse(dataRef.isNullSafeIjDataRef());
-    assertEquals("boo", dataRef.getFirstKey());
-    assertEquals(2, dataRef.numChildren());
-    access0 = (DataRefAccessIndexNode) dataRef.getChild(0);
-    assertTrue(access0.isNullSafe());
-    assertEquals(0, access0.getIndex());
-    access1 = (DataRefAccessExprNode) dataRef.getChild(1);
-    assertTrue(access1.isNullSafe());
-    assertEquals("$foo", access1.getChild(0).toSourceString());
+    assertNodeEquals(
+        new ItemAccessNode(
+            new ItemAccessNode(
+                new VarRefNode("boo", false, false, null),
+                new IntegerNode(0),
+                true, true),
+            new VarRefNode("foo", false, false, null),
+            true,
+            false),
+        dataRef);
 
     dataRef = (new ExpressionParser("$ij?.boo?.0[$ij.foo]")).parseDataReference().getChild(0);
-    assertTrue(dataRef.isIjDataRef());
-    assertTrue(dataRef.isNullSafeIjDataRef());
-    assertEquals("boo", dataRef.getFirstKey());
-    assertEquals(2, dataRef.numChildren());
-    access0 = (DataRefAccessIndexNode) dataRef.getChild(0);
-    assertTrue(access0.isNullSafe());
-    assertEquals(0, access0.getIndex());
-    access1 = (DataRefAccessExprNode) dataRef.getChild(1);
-    assertFalse(access1.isNullSafe());
-    DataRefNode childDataRef = (DataRefNode) access1.getChild(0);
-    assertTrue(childDataRef.isIjDataRef());
-    assertFalse(childDataRef.isNullSafeIjDataRef());
-    assertEquals("$ij.foo", childDataRef.toSourceString());
+    assertNodeEquals(
+        new ItemAccessNode(
+            new ItemAccessNode(
+                new VarRefNode("boo", true, true, null),
+                new IntegerNode(0),
+                true, true),
+            new VarRefNode("foo", true, false, null),
+            false,
+            false),
+        dataRef);
   }
 
 
@@ -314,10 +343,36 @@ public class ExpressionParserTest extends TestCase {
   }
 
 
+  public void testParseListsAndMaps() throws Exception {
+
+    ExprRootNode<?> expr = (new ExpressionParser("[]")).parseExpression();
+    assertEquals(0, ((ListLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("[55]")).parseExpression();
+    assertEquals(1, ((ListLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("[55,]")).parseExpression();
+    assertEquals(1, ((ListLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("['blah', 123, $boo]")).parseExpression();
+    assertEquals(3, ((ListLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("['blah', 123, $boo,]")).parseExpression();
+    assertEquals(3, ((ListLiteralNode) expr.getChild(0)).numChildren());
+
+    expr = (new ExpressionParser("[:]")).parseExpression();
+    assertEquals(0, ((MapLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("['aa': 55]")).parseExpression();
+    assertEquals(2, ((MapLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("['aa': 55,]")).parseExpression();
+    assertEquals(2, ((MapLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]")).parseExpression();
+    assertEquals(6, ((MapLiteralNode) expr.getChild(0)).numChildren());
+    expr = (new ExpressionParser("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]")).parseExpression();
+    assertEquals(6, ((MapLiteralNode) expr.getChild(0)).numChildren());
+  }
+
+
   public void testParseDataRefAsExpression() throws Exception {
 
     ExprRootNode<?> expr = (new ExpressionParser("$boo.foo")).parseExpression();
-    assertTrue(expr.getChild(0) instanceof DataRefNode);
+    assertTrue(expr.getChild(0) instanceof FieldAccessNode);
   }
 
 
@@ -334,7 +389,7 @@ public class ExpressionParserTest extends TestCase {
     FunctionNode isFirstFn = (FunctionNode) expr.getChild(0);
     assertEquals("isFirst", isFirstFn.getFunctionName());
     assertEquals(1, isFirstFn.numChildren());
-    assertEquals("$x", ((DataRefNode) isFirstFn.getChild(0)).toSourceString());
+    assertEquals("$x", ((VarRefNode) isFirstFn.getChild(0)).toSourceString());
 
     expr = (new ExpressionParser("round(3.14159, 2)")).parseExpression();
     FunctionNode roundFn = (FunctionNode) expr.getChild(0);
@@ -386,7 +441,7 @@ public class ExpressionParserTest extends TestCase {
 
     List<ExprRootNode<?>> exprList =
         (new ExpressionParser("$aaa, $bbb.ccc + 1, index($ddd)")).parseExpressionList();
-    assertTrue(exprList.get(0).getChild(0) instanceof DataRefNode);
+    assertTrue(exprList.get(0).getChild(0) instanceof VarRefNode);
     assertTrue(exprList.get(1).getChild(0) instanceof PlusOpNode);
     assertTrue(exprList.get(2).getChild(0) instanceof FunctionNode);
   }
@@ -425,6 +480,13 @@ public class ExpressionParserTest extends TestCase {
       } catch (ParseException pe) {
         // Test passes.
       }
+    }
+  }
+
+  private void assertNodeEquals(ExprNode expected, ExprNode actual) {
+    if (!expected.equals(actual)) {
+      fail(String.format(
+          "Expected <%s> but was: <%s>", expected.toSourceString(), actual.toSourceString()));
     }
   }
 

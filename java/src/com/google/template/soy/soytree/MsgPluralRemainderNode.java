@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 
 
 /**
@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  *
  * @author Mohamed Eldawy
  */
-public class MsgPluralRemainderNode extends AbstractSoyNode implements StandaloneNode {
+public class MsgPluralRemainderNode extends AbstractSoyNode implements MsgSubstUnitNode {
 
 
   /** The source string. */
@@ -57,13 +57,23 @@ public class MsgPluralRemainderNode extends AbstractSoyNode implements Standalon
   }
 
 
+  @Override public String getBaseVarName() {
+    throw new AssertionError();  // should never happen (removed by RewriteRemainderNodesVisitor)
+  }
+
+
+  @Override public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+    throw new AssertionError();  // should never happen (removed by RewriteRemainderNodesVisitor)
+  }
+
+
   @Override public String toSourceString() {
     return sourceString;
   }
 
 
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @Override public MsgBlockNode getParent() {
+    return (MsgBlockNode) super.getParent();
   }
 
 

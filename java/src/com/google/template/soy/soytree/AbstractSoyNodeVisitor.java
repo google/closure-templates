@@ -19,8 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgNode;
+import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 
@@ -67,9 +68,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
 
       case RAW_TEXT_NODE: visitRawTextNode((RawTextNode) node); break;
 
-      case GOOG_MSG_NODE: visitGoogMsgNode((GoogMsgNode) node); break;
+      case GOOG_MSG_DEF_NODE: visitGoogMsgDefNode((GoogMsgDefNode) node); break;
       case GOOG_MSG_REF_NODE: visitGoogMsgRefNode((GoogMsgRefNode) node); break;
 
+      case MSG_FALLBACK_GROUP_NODE: visitMsgFallbackGroupNode((MsgFallbackGroupNode) node); break;
       case MSG_NODE: visitMsgNode((MsgNode) node); break;
       case MSG_PLURAL_NODE: visitMsgPluralNode((MsgPluralNode) node); break;
       case MSG_PLURAL_CASE_NODE: visitMsgPluralCaseNode((MsgPluralCaseNode) node); break;
@@ -86,6 +88,7 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case PRINT_DIRECTIVE_NODE: visitPrintDirectiveNode((PrintDirectiveNode) node); break;
 
       case CSS_NODE: visitCssNode((CssNode) node); break;
+      case XID_NODE: visitXidNode((XidNode) node); break;
 
       case LET_VALUE_NODE: visitLetValueNode((LetValueNode) node); break;
       case LET_CONTENT_NODE: visitLetContentNode((LetContentNode) node); break;
@@ -169,11 +172,15 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-  protected void visitGoogMsgNode(GoogMsgNode node) {
+  protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
     visitSoyNode(node);
   }
 
   protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     visitSoyNode(node);
   }
 
@@ -182,7 +189,7 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitMsgPluralNode(MsgPluralNode node) {
-    visitSoyNode(node);
+    visitMsgSubstUnitNode(node);
   }
 
   protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
@@ -194,11 +201,11 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitMsgPluralRemainderNode(MsgPluralRemainderNode node) {
-    visitSoyNode(node);
+    visitMsgSubstUnitNode(node);
   }
 
   protected void visitMsgSelectNode(MsgSelectNode node) {
-    visitSoyNode(node);
+    visitMsgSubstUnitNode(node);
   }
 
   protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
@@ -210,10 +217,14 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
-    visitSoyNode(node);
+    visitMsgSubstUnitNode(node);
   }
 
   protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitMsgSubstUnitNode(MsgSubstUnitNode node) {
     visitSoyNode(node);
   }
 
@@ -226,6 +237,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitCssNode(CssNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitXidNode(XidNode node) {
     visitSoyNode(node);
   }
 

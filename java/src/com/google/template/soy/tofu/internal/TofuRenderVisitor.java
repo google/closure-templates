@@ -16,18 +16,16 @@
 
 package com.google.template.soy.tofu.internal;
 
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
-import com.google.template.soy.sharedpasses.render.RenderException;
+import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,20 +35,18 @@ import javax.annotation.Nullable;
 /**
  * Version of {@code RenderVisitor} for the Tofu backend.
  *
- * <p> Uses {@code SoyTofuFunction}s and {@code SoyTofuPrintDirective}s instead of
- * {@code SoyJavaRuntimeFunction}s and {@code SoyJavaRuntimePrintDirective}s.
+ * <p>For deprecated directive implementations, uses {@code SoyTofuPrintDirective}s instead of
+ * {@code SoyJavaRuntimePrintDirective}s. (For new directives that implement
+ * {@code SoyJavaPrintDirective}, there is no difference.)
  *
  * @author Kai Huang
  */
+// TODO: Attempt to remove this class.
 class TofuRenderVisitor extends RenderVisitor {
 
 
-  /** Map of all SoyTofuPrintDirectives (name to directive). */
-  private final Map<String, SoyTofuPrintDirective> soyTofuDirectivesMap;
-
-
   /**
-   * @param soyTofuDirectivesMap Map of all SoyTofuPrintDirectives (name to directive).
+   * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param tofuEvalVisitorFactory Factory for creating an instance of TofuEvalVisitor.
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
@@ -62,51 +58,29 @@ class TofuRenderVisitor extends RenderVisitor {
    *     known to be irrelevant.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
    *     Soy source.
+   * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    */
   protected TofuRenderVisitor(
-      Map<String, SoyTofuPrintDirective> soyTofuDirectivesMap,
+      Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       TofuEvalVisitorFactory tofuEvalVisitorFactory, Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry, SoyMapData data, @Nullable SoyMapData ijData,
-      @Nullable Deque<Map<String, SoyData>> env, @Nullable Set<String> activeDelPackageNames,
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
+      @Nullable TemplateRegistry templateRegistry, SoyRecord data, @Nullable SoyRecord ijData,
+      @Nullable Deque<Map<String, SoyValue>> env, @Nullable Set<String> activeDelPackageNames,
+      @Nullable SoyMsgBundle msgBundle, @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     super(
-        null, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData, env,
-        activeDelPackageNames, msgBundle, cssRenamingMap);
-
-    this.soyTofuDirectivesMap = soyTofuDirectivesMap;
+        soyJavaDirectivesMap, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData,
+        env, activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
   }
 
 
-  @Override protected TofuRenderVisitor createHelperInstance(
-      Appendable outputBuf, SoyMapData data) {
+  @Override protected TofuRenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
 
     return new TofuRenderVisitor(
-        soyTofuDirectivesMap, (TofuEvalVisitorFactory) evalVisitorFactory, outputBuf,
-        templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle, cssRenamingMap);
-  }
-
-
-  @Override protected SoyData applyDirective(
-      String directiveName, SoyData value, List<SoyData> args, SoyNode node) {
-
-    // Get directive.
-    SoyTofuPrintDirective directive = soyTofuDirectivesMap.get(directiveName);
-    if (directive == null) {
-      throw new RenderException(
-          "Failed to find Soy print directive with name '" + directiveName + "'" +
-          " (tag " + node.toSourceString() + ")");
-    }
-
-    // TODO: Add a pass to check num args at compile time.
-    if (! directive.getValidArgsSizes().contains(args.size())) {
-      throw new RenderException(
-          "Print directive '" + directiveName + "' used with the wrong number of" +
-          " arguments (tag " + node.toSourceString() + ").");
-    }
-
-    return directive.applyForTofu(value, args);
+        soyJavaDirectivesMap, (TofuEvalVisitorFactory) evalVisitorFactory, outputBuf,
+        templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle,
+        xidRenamingMap, cssRenamingMap);
   }
 
 }

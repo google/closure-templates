@@ -16,9 +16,9 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.data.internalutils.DataUtils;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -27,8 +27,6 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
-import com.google.template.soy.exprtree.DataRefAccessExprNode;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ConstantNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -63,8 +61,8 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
   /** Empty env used in creating PreevalVisitors for this class. */
-  private static final Deque<Map<String, SoyData>> EMPTY_ENV =
-      new ArrayDeque<Map<String, SoyData>>(0);
+  private static final Deque<Map<String, SoyValue>> EMPTY_ENV =
+      new ArrayDeque<Map<String, SoyValue>>(0);
 
 
   /** The PreevalVisitor for this instance (can reuse). */
@@ -73,7 +71,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
   @Inject
   SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
-    this.preevalVisitor = preevalVisitorFactory.create(new SoyMapData(), EMPTY_ENV);
+    this.preevalVisitor = preevalVisitorFactory.create(SoyValueHelper.EMPTY_DICT, EMPTY_ENV);
   }
 
 
@@ -90,13 +88,13 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // Implementations for collection nodes.
 
 
-  protected void visitListLiteralNode(ListLiteralNode node) {
+  @Override protected void visitListLiteralNode(ListLiteralNode node) {
     // Visit children only. We cannot simplify the list literal itself.
     visitChildren(node);
   }
 
 
-  protected void visitMapLiteralNode(MapLiteralNode node) {
+  @Override protected void visitMapLiteralNode(MapLiteralNode node) {
     // Visit children only. We cannot simplify the map literal itself.
     visitChildren(node);
   }
@@ -105,7 +103,8 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------
   // Implementations for reference nodes.
 
-
+  // TODO: Port this to the new representation once we figure out what it does.
+/*
   @Override protected void visitDataRefNode(DataRefNode node) {
 
     boolean allExprsAreConstant = true;
@@ -123,7 +122,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       attemptPreeval(node);
     }
   }
-
+*/
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for operators.
@@ -135,22 +134,11 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     visitChildren(node);
 
     // Can simplify if either child is constant. We assume no side-effects.
-    SoyData operand0 = getConstantOrNull(node.getChild(0));
-    SoyData operand1 = getConstantOrNull(node.getChild(1));
-    if (operand0 == null && operand1 == null) {
-      return;  // cannot simplify
+    SoyValue operand0 = getConstantOrNull(node.getChild(0));
+    if (operand0 != null) {
+      ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(1) : node.getChild(0);
+      node.getParent().replaceChild(node, replacementNode);
     }
-
-    ExprNode replacementNode;
-    if (operand0 != null && operand1 != null) {
-      replacementNode = new BooleanNode(operand0.toBoolean() && operand1.toBoolean());
-    } else if (operand0 != null) {
-      replacementNode = operand0.toBoolean() ? node.getChild(1) : new BooleanNode(false);
-    } else /*(operand1 != null)*/ {
-      replacementNode = operand1.toBoolean() ? node.getChild(0) : new BooleanNode(false);
-    }
-
-    node.getParent().replaceChild(node, replacementNode);
   }
 
 
@@ -160,22 +148,11 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     visitChildren(node);
 
     // Can simplify if either child is constant. We assume no side-effects.
-    SoyData operand0 = getConstantOrNull(node.getChild(0));
-    SoyData operand1 = getConstantOrNull(node.getChild(1));
-    if (operand0 == null && operand1 == null) {
-      return;  // cannot simplify
+    SoyValue operand0 = getConstantOrNull(node.getChild(0));
+    if (operand0 != null) {
+      ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(0) : node.getChild(1);
+      node.getParent().replaceChild(node, replacementNode);
     }
-
-    ExprNode replacementNode;
-    if (operand0 != null && operand1 != null) {
-      replacementNode = new BooleanNode(operand0.toBoolean() || operand1.toBoolean());
-    } else if (operand0 != null) {
-      replacementNode = operand0.toBoolean() ? new BooleanNode(true) : node.getChild(1);
-    } else /*(operand1 != null)*/ {
-      replacementNode = operand1.toBoolean() ? new BooleanNode(true) : node.getChild(0);
-    }
-
-    node.getParent().replaceChild(node, replacementNode);
   }
 
 
@@ -185,12 +162,12 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     visitChildren(node);
 
     // Can simplify if operand0 is constant. We assume no side-effects.
-    SoyData operand0 = getConstantOrNull(node.getChild(0));
+    SoyValue operand0 = getConstantOrNull(node.getChild(0));
     if (operand0 == null) {
       return;  // cannot simplify
     }
 
-    ExprNode replacementNode = operand0.toBoolean() ? node.getChild(1) : node.getChild(2);
+    ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(1) : node.getChild(2);
     node.getParent().replaceChild(node, replacementNode);
   }
 
@@ -252,14 +229,15 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // (b) the expression uses an external function (Soy V1 syntax),
     // (c) other cases I haven't thought up.
 
-    SoyData preevalResult;
+    SoyValue preevalResult;
     try {
       preevalResult = preevalVisitor.exec(node);
     } catch (RenderException e) {
       return;  // failed to preevaluate
     }
 
-    ConstantNode newNode = DataUtils.convertPrimitiveDataToExpr((PrimitiveData) preevalResult);
+    ConstantNode newNode =
+        InternalValueUtils.convertPrimitiveDataToExpr((PrimitiveData) preevalResult);
     node.getParent().replaceChild(node, newNode);
   }
 
@@ -267,7 +245,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   /**
    * Returns the value of the given expression if it's constant, else returns null.
    */
-  private static SoyData getConstantOrNull(ExprNode expr) {
+  private static SoyValue getConstantOrNull(ExprNode expr) {
 
     switch (expr.getKind()) {
       case NULL_NODE: return NullData.INSTANCE;
@@ -278,5 +256,4 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       default: return null;
     }
   }
-
 }

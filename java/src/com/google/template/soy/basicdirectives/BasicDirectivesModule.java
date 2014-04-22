@@ -37,7 +37,6 @@ public class BasicDirectivesModule extends AbstractModule {
     // Basic escape directives.
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeCssString());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterCssValue());
-    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.CleanHtml());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlRcdata());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlAttribute());
     soyDirectivesSetBinder.addBinding().toInstance(
@@ -57,6 +56,8 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(InsertWordBreaksDirective.class);
     soyDirectivesSetBinder.addBinding().to(TruncateDirective.class);
     soyDirectivesSetBinder.addBinding().to(TextDirective.class);
+    soyDirectivesSetBinder.addBinding().to(CleanHtmlDirective.class);
+    soyDirectivesSetBinder.addBinding().to(FilterImageDataUriDirective.class);
   }
 
 }

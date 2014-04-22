@@ -17,16 +17,17 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
 
 import junit.framework.TestCase;
+
 
 /**
  * Unit tests for BidiDirAttrFunction.
@@ -48,37 +49,81 @@ public class BidiDirAttrFunctionTest extends TestCase {
           SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET_PROVIDER);
 
 
-  public void testComputeForTofu() {
+  public void testComputeForJava() {
 
-    SoyData text = StringData.EMPTY_STRING;
+    SoyValue text = StringData.EMPTY_STRING;
     assertEquals(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "", SanitizedContent.ContentKind.ATTRIBUTES),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForTofu(ImmutableList.of(text)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "", SanitizedContent.ContentKind.ATTRIBUTES),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForTofu(ImmutableList.of(text)));
-
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
     text = StringData.forValue("a");
     assertEquals(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "", SanitizedContent.ContentKind.ATTRIBUTES),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForTofu(ImmutableList.of(text)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForTofu(ImmutableList.of(text)));
-
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
     text = StringData.forValue("\u05E0");
     assertEquals(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "dir=\"rtl\"", SanitizedContent.ContentKind.ATTRIBUTES),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForTofu(ImmutableList.of(text)));
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+
+    text = SanitizedContents.unsanitizedText("\u05E0");
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "dir=\"rtl\"", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    text = SanitizedContents.unsanitizedText("\u05E0", Dir.RTL);
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "dir=\"rtl\"", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    text = SanitizedContents.unsanitizedText("\u05E0", Dir.LTR);
     assertEquals(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "", SanitizedContent.ContentKind.ATTRIBUTES),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForTofu(ImmutableList.of(text)));
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    text = SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL);
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+
+    text = StringData.EMPTY_STRING;
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    text = StringData.forValue("\u05E0");
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    text = StringData.forValue("a");
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+
+    text = SanitizedContents.unsanitizedText("a");
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    text = SanitizedContents.unsanitizedText("a", Dir.LTR);
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    text = SanitizedContents.unsanitizedText("a", Dir.RTL);
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    text = SanitizedContents.unsanitizedText("a", Dir.NEUTRAL);
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "", SanitizedContent.ContentKind.ATTRIBUTES),
+        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
   }
 
 
@@ -100,52 +145,6 @@ public class BidiDirAttrFunctionTest extends TestCase {
                             Integer.MAX_VALUE),
                  BIDI_DIR_ATTR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
                      ImmutableList.of(textExpr, isHtmlExpr)));
-  }
-
-
-  public void testComputeForJavaSrc() {
-    JavaExpr textExpr = new JavaExpr("TEXT_JAVA_CODE", StringData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "new com.google.template.soy.data.SanitizedContent(" +
-                "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-                "1).dirAttr(TEXT_JAVA_CODE.toString(), false), " +
-                "com.google.template.soy.data.SanitizedContent.ContentKind.ATTRIBUTES" +
-            ")",
-            StringData.class, Integer.MAX_VALUE),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJavaSrc(ImmutableList.of(textExpr)));
-    assertEquals(
-        new JavaExpr(
-            "new com.google.template.soy.data.SanitizedContent(" +
-                "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-                "IS_RTL?-1:1).dirAttr(TEXT_JAVA_CODE.toString(), false), " +
-                "com.google.template.soy.data.SanitizedContent.ContentKind.ATTRIBUTES" +
-            ")",
-            StringData.class, Integer.MAX_VALUE),
-        BIDI_DIR_ATTR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJavaSrc(
-            ImmutableList.of(textExpr)));
-
-    JavaExpr isHtmlExpr = new JavaExpr("IS_HTML_JAVA_CODE", BooleanData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "new com.google.template.soy.data.SanitizedContent(" +
-                "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-                "-1).dirAttr(TEXT_JAVA_CODE.toString(), IS_HTML_JAVA_CODE.toBoolean()), " +
-                "com.google.template.soy.data.SanitizedContent.ContentKind.ATTRIBUTES" +
-            ")",
-            StringData.class, Integer.MAX_VALUE),
-        BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJavaSrc(
-            ImmutableList.of(textExpr, isHtmlExpr)));
-    assertEquals(
-        new JavaExpr(
-            "new com.google.template.soy.data.SanitizedContent(" +
-                "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-                "IS_RTL?-1:1).dirAttr(TEXT_JAVA_CODE.toString(), IS_HTML_JAVA_CODE.toBoolean()), " +
-                "com.google.template.soy.data.SanitizedContent.ContentKind.ATTRIBUTES" +
-            ")",
-            StringData.class, Integer.MAX_VALUE),
-        BIDI_DIR_ATTR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJavaSrc(
-            ImmutableList.of(textExpr, isHtmlExpr)));
   }
 
 }

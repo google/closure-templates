@@ -16,13 +16,16 @@
 
 package com.google.template.soy.shared;
 
-import com.google.common.base.Charsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import junit.framework.TestCase;
 
@@ -39,6 +42,7 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 
@@ -54,32 +58,32 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
   /**
    * @param expectedOutput The expected result of applying directive to value with args.
    * @param value The test input.
-   * @param directive The directive whose {@link SoyTofuPrintDirective#applyForTofu} is under test.
+   * @param directive The directive whose {@link SoyJavaPrintDirective#applyForJava} is under test.
    * @param args Arguments to the Soy directive.
    */
   protected void assertTofuOutput(
-      String expectedOutput, Object value, SoyTofuPrintDirective directive, Object... args) {
-    assertTofuOutput(SoyData.createFromExistingData(expectedOutput), value, directive, args);
+      String expectedOutput, @Nullable Object value, SoyJavaPrintDirective directive,
+      Object... args) {
+    assertTofuOutput(StringData.forValue(expectedOutput), value, directive, args);
   }
 
 
   /**
    * @param expectedOutput The expected result of applying directive to value with args.
    * @param value The test input.
-   * @param directive The directive whose {@link SoyTofuPrintDirective#applyForTofu} is under test.
+   * @param directive The directive whose {@link SoyJavaPrintDirective#applyForJava} is under test.
    * @param args Arguments to the Soy directive.
    */
   protected void assertTofuOutput(
-      SoyData expectedOutput, Object value, SoyTofuPrintDirective directive, Object... args) {
-    ImmutableList.Builder<SoyData> argsData = ImmutableList.builder();
+      SoyValue expectedOutput, Object value, SoyJavaPrintDirective directive, Object... args) {
+    ImmutableList.Builder<SoyValue> argsData = ImmutableList.builder();
     for (Object arg : args) {
-      argsData.add(SoyData.createFromExistingData(arg));
+      argsData.add(SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(arg).resolve());
     }
     assertEquals(
         expectedOutput,
-        directive.applyForTofu(
-            SoyData.createFromExistingData(value),
-            argsData.build()));
+        directive.applyForJava(
+            SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(value).resolve(), argsData.build()));
   }
 
 
@@ -127,7 +131,7 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
           generatedJsExprsAsJsArray.append(",\n");
         }
         generatedJsExprsAsJsArray
-            .append("(")
+            .append("String(")
             .append(
                 testData.directive.applyForJsSrc(
                     new JsExpr("(" + testData.valueJs + ")", Integer.MAX_VALUE), args.build())
@@ -146,7 +150,7 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
 
       try {
         String soyutilsPath = getSoyUtilsPath();
-        Reader soyutils = new InputStreamReader(new FileInputStream(soyutilsPath), Charsets.UTF_8);
+        Reader soyutils = new InputStreamReader(new FileInputStream(soyutilsPath), UTF_8);
         try {
           String basename = soyutilsPath.substring(soyutilsPath.lastIndexOf('/') + 1);
           context.evaluateReader(globalScope, soyutils, basename, 1, null);
@@ -175,9 +179,11 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
     }
   }
 
+
   private static String getSoyUtilsPath() {
     return "javascript/soyutils.js";
   }
+
 
   /**
    * Data for a single print directive test to run in a JS interpreter.
@@ -196,7 +202,6 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
     /** The print directive arguments as a javaScript expression. */
     final ImmutableList<String> directiveArgsJs;
 
-
     TestData(
         String expectedOutput, String valueJs, SoyJsSrcPrintDirective directive,
         List<String> directiveArgsJs) {
@@ -206,4 +211,5 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
       this.directiveArgsJs = ImmutableList.copyOf(directiveArgsJs);
     }
   }
+
 }

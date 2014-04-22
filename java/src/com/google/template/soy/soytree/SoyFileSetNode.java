@@ -16,8 +16,8 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.IdGenerator;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
 

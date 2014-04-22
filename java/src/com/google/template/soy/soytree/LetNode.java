@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -86,6 +87,10 @@ public abstract class LetNode extends AbstractCommandNode
   private final boolean isVarNameUnique;
 
 
+  /** The local variable defined by this node. */
+  protected LocalVar var;
+
+
   /**
    * @param id The id for this node.
    * @param isVarNameUnique Whether the local var name is already unique (e.g. node id has already
@@ -105,6 +110,7 @@ public abstract class LetNode extends AbstractCommandNode
   protected LetNode(LetNode orig) {
     super(orig);
     this.isVarNameUnique = orig.isVarNameUnique;
+    this.var = new LocalVar(orig.var.name(), this, orig.var.type());
   }
 
 
@@ -164,4 +170,20 @@ public abstract class LetNode extends AbstractCommandNode
     return (BlockNode) super.getParent();
   }
 
+
+  /**
+   * Get the local variable defined by this node.
+   */
+  public final LocalVar getVar() {
+    return var;
+  }
+
+
+  /**
+   * Set the local variable defined by this node.
+   * @param var the variable to set
+   */
+  protected final void setVar(LocalVar var) {
+    this.var = var;
+  }
 }

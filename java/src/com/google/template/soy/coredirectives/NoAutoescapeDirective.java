@@ -19,13 +19,12 @@ package com.google.template.soy.coredirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -37,8 +36,8 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-public class NoAutoescapeDirective extends SoyAbstractTofuPrintDirective
-    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+@SoyPurePrintDirective
+public class NoAutoescapeDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
 
 
   public static final String NAME = "|noAutoescape";
@@ -63,20 +62,13 @@ public class NoAutoescapeDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterNoAutoescape(value);
   }
 
 
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$filterNoAutoescape(" + value.getText() + ")", Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
-    // TODO: Consider adding noAutoescape protection against
-    // SanitizedContent.ContentKind.TEXT in the Java source implementation.
-    return value;
   }
 
 }

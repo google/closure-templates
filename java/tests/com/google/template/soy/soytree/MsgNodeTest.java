@@ -57,7 +57,7 @@ public class MsgNodeTest extends TestCase {
     // 2. To differentiate {$foo.goo} and {$goo}, normally the new names would be GOO_1 and GOO_2.
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
-    MsgNode msg = new MsgNode(0, "desc=\"\"");
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
     // Link 1 start tag.
     MsgHtmlTagNode link1Start = new MsgHtmlTagNode(
         1,
@@ -191,7 +191,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "desc=\"\"");
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
 
     // case 'female'
@@ -284,16 +284,13 @@ public class MsgNodeTest extends TestCase {
     assertEquals("GENDER", msg.getSelectVarName(nodeSelect));
     assertSame(nodeSelect, msg.getRepSelectNode("GENDER"));
 
-    MsgPluralNode nodePlural1 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(0)).getChild(0);
+    MsgPluralNode nodePlural1 = (MsgPluralNode) nodeSelect.getChild(0).getChild(0);
     assertEquals("NUM_1", msg.getPluralVarName(nodePlural1));
     
-    MsgPluralNode nodePlural2 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(1)).getChild(0);
+    MsgPluralNode nodePlural2 = (MsgPluralNode) nodeSelect.getChild(1).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural2));
     
-    MsgPluralNode nodePlural3 = (MsgPluralNode) (
-        (MsgSelectDefaultNode) nodeSelect.getChild(2)).getChild(0);
+    MsgPluralNode nodePlural3 = (MsgPluralNode) nodeSelect.getChild(2).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural3));
     assertNotSame(nodePlural2, nodePlural3);
 
@@ -332,7 +329,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "desc=\"\"");
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender[5]");
 
     // case 'female'
@@ -423,14 +420,11 @@ public class MsgNodeTest extends TestCase {
     assertEquals("STATUS", msg.getSelectVarName(nodeSelect));
     assertSame(nodeSelect, msg.getRepSelectNode("STATUS"));
 
-    MsgPluralNode nodePlural1 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(0)).getChild(0);
+    MsgPluralNode nodePlural1 = (MsgPluralNode) nodeSelect.getChild(0).getChild(0);
     assertEquals("NUM_FRIENDS_1", msg.getPluralVarName(nodePlural1));
-    MsgPluralNode nodePlural2 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(1)).getChild(0);
+    MsgPluralNode nodePlural2 = (MsgPluralNode) nodeSelect.getChild(1).getChild(0);
     assertEquals("NUM_FRIENDS_2", msg.getPluralVarName(nodePlural2));
-    MsgPluralNode nodePlural3 = (MsgPluralNode) (
-        (MsgSelectDefaultNode) nodeSelect.getChild(2)).getChild(0);
+    MsgPluralNode nodePlural3 = (MsgPluralNode) nodeSelect.getChild(2).getChild(0);
     assertEquals("N_ENTITIES", msg.getPluralVarName(nodePlural3));
     assertNotSame(nodePlural2, nodePlural3);
 
@@ -462,7 +456,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "desc=\"\"");
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
 
     // case 'female'
@@ -526,24 +520,18 @@ public class MsgNodeTest extends TestCase {
     assertEquals("PERSON_1", msg.getSelectVarName(nodeSelect));
     assertSame(nodeSelect, msg.getRepSelectNode("PERSON_1"));
 
-    MsgPluralNode nodePlural1 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(0)).getChild(0);
+    MsgPluralNode nodePlural1 = (MsgPluralNode) nodeSelect.getChild(0).getChild(0);
     assertEquals("PERSON_3", msg.getPluralVarName(nodePlural1));
-    MsgPlaceholderNode phNode11 = (MsgPlaceholderNode) (
-        (MsgPluralCaseNode) nodePlural1.getChild(0)).getChild(0);
+    MsgPlaceholderNode phNode11 = (MsgPlaceholderNode) nodePlural1.getChild(0).getChild(0);
     assertEquals("PERSON_5", msg.getPlaceholderName(phNode11));
-    MsgPlaceholderNode phNode12 = (MsgPlaceholderNode) (
-        (MsgPluralDefaultNode) nodePlural1.getChild(1)).getChild(0);
+    MsgPlaceholderNode phNode12 = (MsgPlaceholderNode) nodePlural1.getChild(1).getChild(0);
     assertEquals("PERSON_2", msg.getPlaceholderName(phNode12));
 
-    MsgPluralNode nodePlural2 = (MsgPluralNode) (
-        (MsgSelectDefaultNode) nodeSelect.getChild(1)).getChild(0);
+    MsgPluralNode nodePlural2 = (MsgPluralNode) nodeSelect.getChild(1).getChild(0);
     assertEquals("PERSON_4", msg.getPluralVarName(nodePlural2));
-    MsgPlaceholderNode phNode21 = (MsgPlaceholderNode) (
-        (MsgPluralCaseNode) nodePlural2.getChild(0)).getChild(0);
+    MsgPlaceholderNode phNode21 = (MsgPlaceholderNode) nodePlural2.getChild(0).getChild(0);
     assertEquals("PERSON_5", msg.getPlaceholderName(phNode21));
-    MsgPlaceholderNode phNode22 = (MsgPlaceholderNode) (
-        (MsgPluralDefaultNode) nodePlural2.getChild(1)).getChild(0);
+    MsgPlaceholderNode phNode22 = (MsgPlaceholderNode) nodePlural2.getChild(1).getChild(0);
     assertEquals("PERSON_2", msg.getPlaceholderName(phNode22));
 
 
@@ -587,7 +575,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "desc=\"\"");
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
 
     // case 'female'
@@ -678,14 +666,11 @@ public class MsgNodeTest extends TestCase {
     assertEquals("GENDER", msg.getSelectVarName(nodeSelect));
     assertSame(nodeSelect, msg.getRepSelectNode("GENDER"));
 
-    MsgPluralNode nodePlural1 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(0)).getChild(0);
+    MsgPluralNode nodePlural1 = (MsgPluralNode) nodeSelect.getChild(0).getChild(0);
     assertEquals("NUM_1", msg.getPluralVarName(nodePlural1));
-    MsgPluralNode nodePlural2 = (MsgPluralNode) (
-        (MsgSelectCaseNode) nodeSelect.getChild(1)).getChild(0);
+    MsgPluralNode nodePlural2 = (MsgPluralNode) nodeSelect.getChild(1).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural2));
-    MsgPluralNode nodePlural3 = (MsgPluralNode) (
-        (MsgSelectDefaultNode) nodeSelect.getChild(2)).getChild(0);
+    MsgPluralNode nodePlural3 = (MsgPluralNode) nodeSelect.getChild(2).getChild(0);
     assertEquals("NUM_3", msg.getPluralVarName(nodePlural3));
     assertNotSame(nodePlural2, nodePlural3);
 

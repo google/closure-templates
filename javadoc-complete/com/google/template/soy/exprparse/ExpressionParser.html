@@ -1,107 +1,106 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-ExpressionParser (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>ExpressionParser (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="ExpressionParser (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;PREV CLASS&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/exprparse/ExpressionParser.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="ExpressionParser.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li>Prev Class</li>
+<li><a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/exprparse/ExpressionParser.html" target="_top">Frames</a></li>
+<li><a href="ExpressionParser.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy.exprparse</FONT>
-<BR>
-Class ExpressionParser</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.exprparse.ExpressionParser</B>
-</PRE>
-<DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</A></DD>
-</DL>
-<HR>
-<DL>
-<DT><PRE>public class <B>ExpressionParser</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A><DT>implements <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</A></DL>
-</PRE>
-
-<P>
-This parser's specification is in ExpressionParser.jj, which is read by JavaCC and transformed
+<div class="header">
+<div class="subTitle">com.google.template.soy.exprparse</div>
+<h2 title="Class ExpressionParser" class="title">Class ExpressionParser</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.exprparse.ExpressionParser</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl>
+<dt>All Implemented Interfaces:</dt>
+<dd><a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</a></dd>
+</dl>
+<hr>
+<br>
+<pre>public class <span class="strong">ExpressionParser</span>
+extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>
+implements <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</a></pre>
+<div class="block">This parser's specification is in ExpressionParser.jj, which is read by JavaCC and transformed
  into ExpressionParser.java. To modify this parser, please edit ExpressionParser.jj. Do not edit
  ExpressionParser.java directly.
 
@@ -193,657 +192,543 @@ This parser's specification is in ExpressionParser.jj, which is read by JavaCC a
        + The function name is one identifier.
        + See above for the definition of an expression list.
        Examples:   isFirst($item)   foo()   myFunction(2, 'aa')
- </pre>
-<P>
-
-<P>
-<HR>
-
-<P>
+ </pre></div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- =========== FIELD SUMMARY =========== -->
-
-<A NAME="field_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Field Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#jj_nt">jj_nt</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Next token.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#token">token</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Current token.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#token_source">token_source</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generated Token Manager.</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="fields_inherited_from_class_com.google.template.soy.exprparse.ExpressionParserConstants"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Fields inherited from interface com.google.template.soy.exprparse.<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#BOOLEAN">BOOLEAN</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DEC_DIGITS">DEC_DIGITS</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DEFAULT">DEFAULT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DOLLAR_IDENT">DOLLAR_IDENT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DOT_IDENT">DOT_IDENT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DOT_INDEX">DOT_INDEX</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#EOF">EOF</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#FLOAT">FLOAT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#HEX_DIGIT">HEX_DIGIT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#IDENT">IDENT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#INTEGER">INTEGER</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#NULL">NULL</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#ONLY_BINARY_OP">ONLY_BINARY_OP</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#ONLY_UNARY_OP">ONLY_UNARY_OP</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#QUESTION_DOT_IDENT">QUESTION_DOT_IDENT</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#QUESTION_DOT_INDEX">QUESTION_DOT_INDEX</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#STRING">STRING</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#tokenImage">tokenImage</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#UNARY_OR_BINARY_OP">UNARY_OR_BINARY_OP</A>, <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#WS">WS</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="field_summary">
+<!--   -->
+</a>
+<h3>Field Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Field Summary table, listing fields, and an explanation">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Field and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#jj_nt">jj_nt</a></strong></code>
+<div class="block">Next token.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#token">token</a></strong></code>
+<div class="block">Current token.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#token_source">token_source</a></strong></code>
+<div class="block">Generated Token Manager.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="fields_inherited_from_class_com.google.template.soy.exprparse.ExpressionParserConstants">
+<!--   -->
+</a>
+<h3>Fields inherited from interface&nbsp;com.google.template.soy.exprparse.<a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</a></h3>
+<code><a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#BOOLEAN">BOOLEAN</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DEC_DIGITS">DEC_DIGITS</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DEFAULT">DEFAULT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DOLLAR_IDENT">DOLLAR_IDENT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DOT_IDENT">DOT_IDENT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#DOT_INDEX">DOT_INDEX</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#EOF">EOF</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#FLOAT">FLOAT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#HEX_DIGIT">HEX_DIGIT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#IDENT">IDENT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#INTEGER">INTEGER</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#NULL">NULL</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#ONLY_BINARY_OP">ONLY_BINARY_OP</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#ONLY_UNARY_OP">ONLY_UNARY_OP</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#QUESTION_DOT_IDENT">QUESTION_DOT_IDENT</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#QUESTION_DOT_INDEX">QUESTION_DOT_INDEX</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#STRING">STRING</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#tokenImage">tokenImage</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#UNARY_OR_BINARY_OP">UNARY_OR_BINARY_OP</a>, <a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html#WS">WS</a></code></li>
+</ul>
+</li>
+</ul>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(com.google.template.soy.exprparse.ExpressionParserTokenManager)">ExpressionParser</A></B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with generated Token Manager.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.InputStream)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with InputStream.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.InputStream, java.lang.String)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
-                 <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor with InputStream and supplied encoding</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.Reader)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.lang.String)">ExpressionParser</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;input)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructor that takes a string input.</TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(com.google.template.soy.exprparse.ExpressionParserTokenManager)">ExpressionParser</a></strong>(<a href="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</a>&nbsp;tm)</code>
+<div class="block">Constructor with generated Token Manager.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.InputStream)">ExpressionParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</code>
+<div class="block">Constructor with InputStream.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.InputStream, java.lang.String)">ExpressionParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+                <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</code>
+<div class="block">Constructor with InputStream and supplied encoding</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.io.Reader)">ExpressionParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</code>
+<div class="block">Constructor.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ExpressionParser(java.lang.String)">ExpressionParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;input)</code>
+<div class="block">Constructor that takes a string input.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#disable_tracing()">disable_tracing</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Disable tracing.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#enable_tracing()">enable_tracing</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enable tracing.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#generateParseException()">generateParseException</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generate ParseException.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#getNextToken()">getNextToken</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Get the next Token.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#getToken(int)">getToken</A></B>(int&nbsp;index)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Get the specific Token.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html" title="class in com.google.template.soy.exprtree">DataRefNode</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseDataReference()">parseDataReference</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Attempts to parse the input as a data reference.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseExpression()">parseExpression</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Attempts to parse the input as an expression.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseExpressionList()">parseExpressionList</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Attempts to parse the input as a comma-separated list of one or more expressions.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseGlobal()">parseGlobal</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Attempts to parse the input as a global.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseVariable()">parseVariable</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Attempts to parse the input as a variable name.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(com.google.template.soy.exprparse.ExpressionParserTokenManager)">ReInit</A></B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.InputStream)">ReInit</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.InputStream, java.lang.String)">ReInit</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
-       <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.Reader)">ReInit</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reinitialise.</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#disable_tracing()">disable_tracing</a></strong>()</code>
+<div class="block">Disable tracing.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#enable_tracing()">enable_tracing</a></strong>()</code>
+<div class="block">Enable tracing.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#generateParseException()">generateParseException</a></strong>()</code>
+<div class="block">Generate ParseException.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#getNextToken()">getNextToken</a></strong>()</code>
+<div class="block">Get the next Token.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#getToken(int)">getToken</a></strong>(int&nbsp;index)</code>
+<div class="block">Get the specific Token.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseDataReference()">parseDataReference</a></strong>()</code>
+<div class="block">Attempts to parse the input as a data reference.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;?&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseExpression()">parseExpression</a></strong>()</code>
+<div class="block">Attempts to parse the input as an expression.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;?&gt;&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseExpressionList()">parseExpressionList</a></strong>()</code>
+<div class="block">Attempts to parse the input as a comma-separated list of one or more expressions.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseGlobal()">parseGlobal</a></strong>()</code>
+<div class="block">Attempts to parse the input as a global.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#parseVariable()">parseVariable</a></strong>()</code>
+<div class="block">Attempts to parse the input as a variable name.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(com.google.template.soy.exprparse.ExpressionParserTokenManager)">ReInit</a></strong>(<a href="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</a>&nbsp;tm)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.InputStream)">ReInit</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.InputStream, java.lang.String)">ReInit</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/exprparse/ExpressionParser.html#ReInit(java.io.Reader)">ReInit</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
 <!-- ============ FIELD DETAIL =========== -->
-
-<A NAME="field_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Field Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="token_source"><!-- --></A><H3>
-token_source</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A> <B>token_source</B></PRE>
-<DL>
-<DD>Generated Token Manager.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="token"><!-- --></A><H3>
-token</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>token</B></PRE>
-<DL>
-<DD>Current token.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="jj_nt"><!-- --></A><H3>
-jj_nt</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>jj_nt</B></PRE>
-<DL>
-<DD>Next token.
-<P>
-<DL>
-</DL>
-</DL>
-
+<ul class="blockList">
+<li class="blockList"><a name="field_detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a name="token_source">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>token_source</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</a> token_source</pre>
+<div class="block">Generated Token Manager.</div>
+</li>
+</ul>
+<a name="token">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>token</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a> token</pre>
+<div class="block">Current token.</div>
+</li>
+</ul>
+<a name="jj_nt">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>jj_nt</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a> jj_nt</pre>
+<div class="block">Next token.</div>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="ExpressionParser(java.lang.String)"><!-- --></A><H3>
-ExpressionParser</H3>
-<PRE>
-public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;input)</PRE>
-<DL>
-<DD>Constructor that takes a string input.
-<P>
-<DL>
-<DT><B>Parameters:</B><DD><CODE>input</CODE> - The input to parse.</DL>
-</DL>
-<HR>
-
-<A NAME="ExpressionParser(java.io.InputStream)"><!-- --></A><H3>
-ExpressionParser</H3>
-<PRE>
-public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</PRE>
-<DL>
-<DD>Constructor with InputStream.
-<P>
-</DL>
-<HR>
-
-<A NAME="ExpressionParser(java.io.InputStream, java.lang.String)"><!-- --></A><H3>
-ExpressionParser</H3>
-<PRE>
-public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
-                        <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</PRE>
-<DL>
-<DD>Constructor with InputStream and supplied encoding
-<P>
-</DL>
-<HR>
-
-<A NAME="ExpressionParser(java.io.Reader)"><!-- --></A><H3>
-ExpressionParser</H3>
-<PRE>
-public <B>ExpressionParser</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</PRE>
-<DL>
-<DD>Constructor.
-<P>
-</DL>
-<HR>
-
-<A NAME="ExpressionParser(com.google.template.soy.exprparse.ExpressionParserTokenManager)"><!-- --></A><H3>
-ExpressionParser</H3>
-<PRE>
-public <B>ExpressionParser</B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</PRE>
-<DL>
-<DD>Constructor with generated Token Manager.
-<P>
-</DL>
-
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="ExpressionParser(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ExpressionParser</h4>
+<pre>public&nbsp;ExpressionParser(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;input)</pre>
+<div class="block">Constructor that takes a string input.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>input</code> - The input to parse.</dd></dl>
+</li>
+</ul>
+<a name="ExpressionParser(java.io.InputStream)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ExpressionParser</h4>
+<pre>public&nbsp;ExpressionParser(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</pre>
+<div class="block">Constructor with InputStream.</div>
+</li>
+</ul>
+<a name="ExpressionParser(java.io.InputStream, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ExpressionParser</h4>
+<pre>public&nbsp;ExpressionParser(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+                <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</pre>
+<div class="block">Constructor with InputStream and supplied encoding</div>
+</li>
+</ul>
+<a name="ExpressionParser(java.io.Reader)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ExpressionParser</h4>
+<pre>public&nbsp;ExpressionParser(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</pre>
+<div class="block">Constructor.</div>
+</li>
+</ul>
+<a name="ExpressionParser(com.google.template.soy.exprparse.ExpressionParserTokenManager)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>ExpressionParser</h4>
+<pre>public&nbsp;ExpressionParser(<a href="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</a>&nbsp;tm)</pre>
+<div class="block">Constructor with generated Token Manager.</div>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="parseExpressionList()"><!-- --></A><H3>
-parseExpressionList</H3>
-<PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt;&gt; <B>parseExpressionList</B>()
-                                          throws <A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A>,
-                                                 <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></PRE>
-<DL>
-<DD>Attempts to parse the input as a comma-separated list of one or more expressions.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A></CODE> - When the input has a token error.
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></CODE> - When the input has a parse error.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="parseExpression()"><!-- --></A><H3>
-parseExpression</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;?&gt; <B>parseExpression</B>()
-                                throws <A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A>,
-                                       <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></PRE>
-<DL>
-<DD>Attempts to parse the input as an expression.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A></CODE> - When the input has a token error.
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></CODE> - When the input has a parse error.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="parseVariable()"><!-- --></A><H3>
-parseVariable</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</A>&gt; <B>parseVariable</B>()
-                                    throws <A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A>,
-                                           <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></PRE>
-<DL>
-<DD>Attempts to parse the input as a variable name.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A></CODE> - When the input has a token error.
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></CODE> - When the input has a parse error.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="parseDataReference()"><!-- --></A><H3>
-parseDataReference</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/DataRefNode.html" title="class in com.google.template.soy.exprtree">DataRefNode</A>&gt; <B>parseDataReference</B>()
-                                             throws <A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A>,
-                                                    <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></PRE>
-<DL>
-<DD>Attempts to parse the input as a data reference.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A></CODE> - When the input has a token error.
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></CODE> - When the input has a parse error.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="parseGlobal()"><!-- --></A><H3>
-parseGlobal</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</A>&lt;<A HREF="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</A>&gt; <B>parseGlobal</B>()
-                                     throws <A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A>,
-                                            <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></PRE>
-<DL>
-<DD>Attempts to parse the input as a global.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</A></CODE> - When the input has a token error.
-<DD><CODE><A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A></CODE> - When the input has a parse error.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="ReInit(java.io.InputStream)"><!-- --></A><H3>
-ReInit</H3>
-<PRE>
-public void <B>ReInit</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream)</PRE>
-<DL>
-<DD>Reinitialise.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="ReInit(java.io.InputStream, java.lang.String)"><!-- --></A><H3>
-ReInit</H3>
-<PRE>
-public void <B>ReInit</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</A>&nbsp;stream,
-                   <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;encoding)</PRE>
-<DL>
-<DD>Reinitialise.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="ReInit(java.io.Reader)"><!-- --></A><H3>
-ReInit</H3>
-<PRE>
-public void <B>ReInit</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&nbsp;stream)</PRE>
-<DL>
-<DD>Reinitialise.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="ReInit(com.google.template.soy.exprparse.ExpressionParserTokenManager)"><!-- --></A><H3>
-ReInit</H3>
-<PRE>
-public void <B>ReInit</B>(<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</A>&nbsp;tm)</PRE>
-<DL>
-<DD>Reinitialise.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getNextToken()"><!-- --></A><H3>
-getNextToken</H3>
-<PRE>
-public final <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>getNextToken</B>()</PRE>
-<DL>
-<DD>Get the next Token.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getToken(int)"><!-- --></A><H3>
-getToken</H3>
-<PRE>
-public final <A HREF="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</A> <B>getToken</B>(int&nbsp;index)</PRE>
-<DL>
-<DD>Get the specific Token.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="generateParseException()"><!-- --></A><H3>
-generateParseException</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</A> <B>generateParseException</B>()</PRE>
-<DL>
-<DD>Generate ParseException.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="enable_tracing()"><!-- --></A><H3>
-enable_tracing</H3>
-<PRE>
-public final void <B>enable_tracing</B>()</PRE>
-<DL>
-<DD>Enable tracing.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="disable_tracing()"><!-- --></A><H3>
-disable_tracing</H3>
-<PRE>
-public final void <B>disable_tracing</B>()</PRE>
-<DL>
-<DD>Disable tracing.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="parseExpressionList()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseExpressionList</h4>
+<pre>public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;?&gt;&gt;&nbsp;parseExpressionList()
+                                          throws <a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a>,
+                                                 <a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as a comma-separated list of one or more expressions.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="parseExpression()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseExpression</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;?&gt;&nbsp;parseExpression()
+                                throws <a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a>,
+                                       <a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as an expression.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="parseVariable()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseVariable</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/VarNode.html" title="class in com.google.template.soy.exprtree">VarNode</a>&gt;&nbsp;parseVariable()
+                                    throws <a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a>,
+                                           <a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as a variable name.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="parseDataReference()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseDataReference</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/ExprNode.html" title="interface in com.google.template.soy.exprtree">ExprNode</a>&gt;&nbsp;parseDataReference()
+                                          throws <a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a>,
+                                                 <a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as a data reference.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="parseGlobal()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseGlobal</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprtree/ExprRootNode.html" title="class in com.google.template.soy.exprtree">ExprRootNode</a>&lt;<a href="../../../../../com/google/template/soy/exprtree/GlobalNode.html" title="class in com.google.template.soy.exprtree">GlobalNode</a>&gt;&nbsp;parseGlobal()
+                                     throws <a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a>,
+                                            <a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as a global.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/TokenMgrError.html" title="class in com.google.template.soy.exprparse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="ReInit(java.io.InputStream)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="ReInit(java.io.InputStream, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+          <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="ReInit(java.io.Reader)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="ReInit(com.google.template.soy.exprparse.ExpressionParserTokenManager)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="../../../../../com/google/template/soy/exprparse/ExpressionParserTokenManager.html" title="class in com.google.template.soy.exprparse">ExpressionParserTokenManager</a>&nbsp;tm)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="getNextToken()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getNextToken</h4>
+<pre>public final&nbsp;<a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a>&nbsp;getNextToken()</pre>
+<div class="block">Get the next Token.</div>
+</li>
+</ul>
+<a name="getToken(int)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getToken</h4>
+<pre>public final&nbsp;<a href="../../../../../com/google/template/soy/exprparse/Token.html" title="class in com.google.template.soy.exprparse">Token</a>&nbsp;getToken(int&nbsp;index)</pre>
+<div class="block">Get the specific Token.</div>
+</li>
+</ul>
+<a name="generateParseException()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateParseException</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/exprparse/ParseException.html" title="class in com.google.template.soy.exprparse">ParseException</a>&nbsp;generateParseException()</pre>
+<div class="block">Generate ParseException.</div>
+</li>
+</ul>
+<a name="enable_tracing()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>enable_tracing</h4>
+<pre>public final&nbsp;void&nbsp;enable_tracing()</pre>
+<div class="block">Enable tracing.</div>
+</li>
+</ul>
+<a name="disable_tracing()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>disable_tracing</h4>
+<pre>public final&nbsp;void&nbsp;disable_tracing()</pre>
+<div class="block">Disable tracing.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;PREV CLASS&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/exprparse/ExpressionParser.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="ExpressionParser.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li>Prev Class</li>
+<li><a href="../../../../../com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/exprparse/ExpressionParser.html" target="_top">Frames</a></li>
+<li><a href="ExpressionParser.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#field_summary">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -860,6 +745,6 @@ DETAIL:&nbsp;<A HREF="#field_detail">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

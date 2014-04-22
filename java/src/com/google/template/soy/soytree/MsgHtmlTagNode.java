@@ -17,8 +17,8 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 
@@ -200,12 +200,12 @@ public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderI
   }
 
 
-  @Override public String getUserSuppliedPlaceholderName() {
+  @Override public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
 
-  @Override public String genBasePlaceholderName() {
+  @Override public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);

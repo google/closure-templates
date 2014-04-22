@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.basetree.SyntaxVersion;
 
 import junit.framework.TestCase;
 
@@ -31,7 +32,7 @@ public class CallNodeTest extends TestCase {
 
 
   /** Escaping list of directive names. */
-  private static final ImmutableList<String> NO_ESCAPERS = ImmutableList.<String>of();
+  private static final ImmutableList<String> NO_ESCAPERS = ImmutableList.of();
 
   public void testCommandText() throws SoySyntaxException {
 
@@ -73,13 +74,13 @@ public class CallNodeTest extends TestCase {
 
     CallBasicNode normCallNode = new CallBasicNode(
         0, callNode.getCalleeName(), callNode.getSrcCalleeName(), false,
+        ! callNode.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0),
         callNode.isPassingData(), callNode.isPassingAllData(), callNode.getDataExpr(),
-        callNode.getUserSuppliedPlaceholderName(), callNode.getSyntaxVersion(),
-        NO_ESCAPERS);
+        callNode.getUserSuppliedPhName(), callNode.getSyntaxVersionBound(), NO_ESCAPERS);
 
     assertEquals(expectedCommandText, normCallNode.getCommandText());
 
-    assertEquals(callNode.getSyntaxVersion(), normCallNode.getSyntaxVersion());
+    assertEquals(callNode.getSyntaxVersionBound(), normCallNode.getSyntaxVersionBound());
     assertEquals(callNode.getCalleeName(), normCallNode.getCalleeName());
     assertEquals(callNode.isPassingData(), normCallNode.isPassingData());
     assertEquals(callNode.isPassingAllData(), normCallNode.isPassingAllData());

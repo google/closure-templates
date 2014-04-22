@@ -340,7 +340,8 @@ public final class Context {
         //     <input name=was&#32;checked>
         // instead of
         //     <input name=was checked>
-        if (escapingMode == EscapingMode.ESCAPE_HTML_ATTRIBUTE) {
+        if (escapingMode == EscapingMode.ESCAPE_HTML_ATTRIBUTE ||
+            escapingMode == EscapingMode.NORMALIZE_URI) {
           escapingMode = EscapingMode.ESCAPE_HTML_ATTRIBUTE_NOSPACE;
         } else {
           extraEscapingMode = EscapingMode.ESCAPE_HTML_ATTRIBUTE_NOSPACE;
@@ -348,7 +349,13 @@ public final class Context {
         break;
       case SINGLE_QUOTE:
       case DOUBLE_QUOTE:
-        if (!escapingMode.isHtmlEmbeddable) {
+        if (escapingMode == EscapingMode.NORMALIZE_URI) {
+          // URI's should still be HTML-escaped to escape ampersands, quotes, and other characters. 
+          // Normalizing a URI (which mostly percent-encodes quotes) is unnecessary if it's going
+          // to be escaped as an HTML attribute, so as a performance optimization, we simply
+          // replace the escaper.
+          escapingMode = EscapingMode.ESCAPE_HTML_ATTRIBUTE;
+        } else if (!escapingMode.isHtmlEmbeddable) {
           // Some modes, like JS and CSS value modes, might insert quotes to make
           // a quoted string, so make sure to escape those as HTML.
           // E.g. when the value of $s is " onmouseover=evil() foo=", in
@@ -568,7 +575,7 @@ public final class Context {
 
 
   /**
-   * Returns the autoescacpe {@link Context} that produces sanitized content of the given
+   * Returns the autoescape {@link Context} that produces sanitized content of the given
    * {@link ContentKind}.
    *
    * <p>
@@ -578,7 +585,7 @@ public final class Context {
    * given kind.
    */
   public static Context getStartContextForContentKind(ContentKind contentKind) {
-    return Preconditions.checkNotNull(Context.CONTENT_KIND_TO_START_CONTEXT_MAP.get(contentKind));
+    return Preconditions.checkNotNull(CONTENT_KIND_TO_START_CONTEXT_MAP.get(contentKind));
   }
 
 
@@ -593,12 +600,52 @@ public final class Context {
         // Allow HTML attribute names, regardless of the kind of attribute (e.g. plain text)
         // or immediately after an open tag.
         return context.state == State.HTML_ATTRIBUTE_NAME || context.state == State.HTML_TAG;
-      case URI:
-        // Ensure it's at the start, but don't worry about single versus double quotes.
-        return context.state == State.URI && context.uriPart == UriPart.START;
       default:
+        // NOTE: For URI's, we need to be picky that the context has no attribute type, since we
+        // don't want to forget to escape ampersands.
         return context.equals(getStartContextForContentKind(contentKind));
     }
+  }
+
+
+  /**
+   * Determines whether a particular context is allowed for contextual to strict calls.
+   *
+   * This is slightly more relaxed, and used to help piecemeal transition of templates from
+   * contextual to strict.
+   */
+  public static boolean isValidStartContextForContentKindLoose(
+      ContentKind contentKind, Context context) {
+    switch (contentKind) {
+      case URI:
+        // Allow contextual templates directly call URI templates, even if we technically need to
+        // do HTML-escaping for correct output.  Supported browsers recover gracefully when
+        // ampersands are underescaped, as long as there are no nearby semicolons.  However, this
+        // special case is limited ONLY to transitional cases, where the caller is contextual and
+        // the callee is strict.
+        return context.state == State.URI;
+      default:
+        return isValidStartContextForContentKind(contentKind, context);
+    }
+  }
+
+
+  /**
+   * Returns the most sensible content kind for a context.
+   *
+   * <p>This is primarily for error messages, indicating to the user what content kind can be used
+   * to mostly null out the escaping. Returns TEXT if no useful match was detected.
+   */
+  public ContentKind getMostAppropriateContentKind() {
+    // Dumb algorithm: Loop over all content kinds, and use the existing matching logic. There are
+    // too many context varieties to maintain a labelling of each context, and this is called only
+    // infrequently when generating error messages.
+    for (ContentKind contentKind : CONTENT_KIND_TO_START_CONTEXT_MAP.keySet()) {
+      if (isValidStartContextForContentKindLoose(contentKind, this)) {
+        return contentKind;
+      }
+    }
+    return ContentKind.TEXT;
   }
 
 
@@ -763,8 +810,8 @@ public final class Context {
     /** In JavaScript inside a regular expression literal. */
     JS_REGEX(EscapingMode.ESCAPE_JS_REGEX),
 
-    /** In an HTML attribute whose content is a URI. */
-    URI(EscapingMode.ESCAPE_HTML_ATTRIBUTE),
+    /** In a URI, which may or may not be in an HTML attribute. */
+    URI(EscapingMode.NORMALIZE_URI),
 
     /** Plain text; no escaping. */
     TEXT(EscapingMode.TEXT),

@@ -48,16 +48,33 @@ public class IfCondNode extends AbstractBlockCommandNode
    * @param commandText The command text.
    */
   public IfCondNode(int id, String commandName, String commandText) {
-    super(id, commandName, commandText);
+
+    this(id, commandName, buildExprUnion(commandText));
+  }
+
+
+  /**
+   * A helper for {@link #IfCondNode(int,String,String)} that parses the condition to an
+   * {@code ExpUnion}.
+   * @param commandText The command text.
+   */
+  private static ExprUnion buildExprUnion(String commandText) {
+    ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(commandText);
+    return (expr != null) ? new ExprUnion(expr) : new ExprUnion(commandText);
+  }
+
+
+  /**
+   * @param id The id for this node.
+   * @param commandName The command name -- either 'if' or 'elseif'.
+   * @param condition Determines when the body is performed.
+   */
+  public IfCondNode(int id, String commandName, ExprUnion condition) {
+
+    super(id, commandName, condition.getExprText());
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
 
-    ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(commandText);
-    if (expr != null) {
-      exprUnion = new ExprUnion(expr);
-    } else {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
-      exprUnion = new ExprUnion(commandText);
-    }
+    this.exprUnion = condition;
   }
 
 

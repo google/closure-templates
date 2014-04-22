@@ -37,19 +37,13 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   /** The first line in the file from which this node was parsed or derived. */
   private SourceLocation srcLoc;
 
-  /** The syntax version of this node. Not final -- may be adjusted by subclass constructors. */
-  private SyntaxVersion syntaxVersion;
-
 
   /**
    * @param id The id for this node.
    */
   protected AbstractSoyNode(int id) {
-    Preconditions.checkNotNull(id);
     this.id = id;
     srcLoc = SourceLocation.UNKNOWN;
-    // Assumes this node follows V2 syntax. Subclass constructors can modify this value.
-    syntaxVersion = SyntaxVersion.V2;
   }
 
 
@@ -61,7 +55,6 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
     super(orig);
     this.id = orig.id;
     this.srcLoc = orig.srcLoc;
-    this.syntaxVersion = orig.syntaxVersion;
   }
 
 
@@ -84,23 +77,6 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   @Override public void setSourceLocation(SourceLocation srcLoc) {
     Preconditions.checkNotNull(srcLoc);
     this.srcLoc = srcLoc;
-  }
-
-
-  @Override public SyntaxVersion getSyntaxVersion() {
-    return syntaxVersion;
-  }
-
-
-  /**
-   * If the given syntax version is lower than the current syntax version value, then lowers the
-   * syntax version to the given value.
-   * @param syntaxVersion The syntax version to drop down to, if it is lower.
-   */
-  protected void maybeSetSyntaxVersion(SyntaxVersion syntaxVersion) {
-    if (this.syntaxVersion.compareTo(syntaxVersion) > 0) {
-      this.syntaxVersion = syntaxVersion;
-    }
   }
 
 

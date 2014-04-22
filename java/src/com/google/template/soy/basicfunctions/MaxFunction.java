@@ -16,20 +16,16 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -42,7 +38,7 @@ import java.util.Set;
  */
 @Singleton
 @SoyPureFunction
-class MaxFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction {
 
 
   @Inject
@@ -59,14 +55,14 @@ class MaxFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, S
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
-    SoyData arg0 = args.get(0);
-    SoyData arg1 = args.get(1);
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
+    SoyValue arg0 = args.get(0);
+    SoyValue arg1 = args.get(1);
 
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return toSoyData(Math.max(arg0.integerValue(), arg1.integerValue()));
+      return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
     } else {
-      return toSoyData(Math.max(arg0.numberValue(), arg1.numberValue()));
+      return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
     }
   }
 
@@ -77,15 +73,6 @@ class MaxFunction extends SoyAbstractTofuFunction implements SoyJsSrcFunction, S
 
     return new JsExpr(
         "Math.max(" + arg0.getText() + ", " + arg1.getText() + ")", Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-    JavaExpr arg0 = args.get(0);
-    JavaExpr arg1 = args.get(1);
-
-    return JavaCodeUtils.genJavaExprForNumberToNumberBinaryFunction(
-        "Math.max", "$$max", arg0, arg1);
   }
 
 }

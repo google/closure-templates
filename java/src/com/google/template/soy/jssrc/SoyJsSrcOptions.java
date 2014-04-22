@@ -31,7 +31,7 @@ public class SoyJsSrcOptions implements Cloneable {
    * The two supported code styles.
    */
   public static enum CodeStyle {
-    STRINGBUILDER, CONCAT;
+    STRINGBUILDER, CONCAT
   }
 
 
@@ -101,12 +101,17 @@ public class SoyJsSrcOptions implements Cloneable {
    * Sets whether to allow deprecated syntax (semi backwards compatible mode).
    * @param shouldAllowDeprecatedSyntax The value to set.
    */
+  // TODO SOON: Deprecate. (Use setDeclaredSyntaxVersionName() on SoyFileSet or SoyGeneralOptions.)
   public void setShouldAllowDeprecatedSyntax(boolean shouldAllowDeprecatedSyntax) {
     this.shouldAllowDeprecatedSyntax = shouldAllowDeprecatedSyntax;
   }
 
 
-  /** Returns whether we're set to allow deprecated syntax (semi backwards compatible mode). */
+  /**
+   * Returns whether we're set to allow deprecated syntax (semi backwards compatible mode).
+   * @deprecated Use {@code SoyGeneralOptions.getDeclaredSyntaxVersion()}.
+   */
+  @Deprecated
   public boolean shouldAllowDeprecatedSyntax() {
     return shouldAllowDeprecatedSyntax;
   }
@@ -360,7 +365,7 @@ public class SoyJsSrcOptions implements Cloneable {
   }
 
 
-  @Override public SoyJsSrcOptions clone() {
+  @Override public final SoyJsSrcOptions clone() {
     try {
       return (SoyJsSrcOptions) super.clone();
     } catch (CloneNotSupportedException cnse) {

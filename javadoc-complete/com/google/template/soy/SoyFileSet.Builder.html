@@ -1,626 +1,631 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-SoyFileSet.Builder (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>SoyFileSet.Builder (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="SoyFileSet.Builder (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../com/google/template/soy/SoyModule.html" title="class in com.google.template.soy"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../index.html?com/google/template/soy/SoyFileSet.Builder.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="SoyFileSet.Builder.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../index-all.html">Index</a></li>
+<li><a href="../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../com/google/template/soy/SoyModule.html" title="class in com.google.template.soy"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../index.html?com/google/template/soy/SoyFileSet.Builder.html" target="_top">Frames</a></li>
+<li><a href="SoyFileSet.Builder.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy</FONT>
-<BR>
-Class SoyFileSet.Builder</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.SoyFileSet.Builder</B>
-</PRE>
-<DL>
-<DT><B>Enclosing class:</B><DD><A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A></DD>
-</DL>
-<HR>
-<DL>
-<DT><PRE>public static final class <B>SoyFileSet.Builder</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></DL>
-</PRE>
-
-<P>
-Builder for a <code>SoyFileSet</code>.
-<P>
-
-<P>
-<HR>
-
-<P>
-
+<div class="header">
+<div class="subTitle">com.google.template.soy</div>
+<h2 title="Class SoyFileSet.Builder" class="title">Class SoyFileSet.Builder</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.SoyFileSet.Builder</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl>
+<dt>Enclosing class:</dt>
+<dd><a href="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</a></dd>
+</dl>
+<hr>
+<br>
+<pre>public static final class <span class="strong">SoyFileSet.Builder</span>
+extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></pre>
+<div class="block">Builder for a <code>SoyFileSet</code>.</div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#SoyFileSet.Builder()">SoyFileSet.Builder</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructs a builder that starts with a default <A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object (options
- can be modified via methods on the builder).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#SoyFileSet.Builder(com.google.template.soy.shared.SoyGeneralOptions)">SoyFileSet.Builder</A></B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>&nbsp;generalOptions)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Constructs a builder with a specified <A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object.</TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#SoyFileSet.Builder()">SoyFileSet.Builder</a></strong>()</code>
+<div class="block"><strong>Deprecated.</strong>&nbsp;
+<div class="block"><i>Use the static SoyFileSet.builder() method, or  inject SoyFileSet.Builder
+     using Guice with SoyModule installed. The behavior of this builder is unpredictable and
+     will use the Soy configuration from the most recently configured Injector containing a
+     SoyModule, because it relies on Guice's static injection.</i></div>
+</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.lang.CharSequence, java.lang.String)">add</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
-    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given the file content provided as a string, as well as the desired
- file path for messages.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.io.File)">add</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a <code>File</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(com.google.common.io.InputSupplier, java.lang.String)">add</A></B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
-    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
- desired file path for messages.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL)">add</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a resource <code>URL</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)">add</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
-    <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
- messages.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addVolatile(java.io.File)">addVolatile</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file that the system will watch for changes, given a <code>File</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addVolatileWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)">addVolatileWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
-                    <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file that the system will watch for changes, given a <code>File</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
-            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given the file content provided as a string, as well as the desired
- file path for messages.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
-            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a <code>File</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)">addWithKind</A></B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
-            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
- desired file path for messages.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
-            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a resource <code>URL</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)">addWithKind</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
-            <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
- messages.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#build()">build</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds the new <code>SoyFileSet</code>.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setAllowExternalCalls(boolean)">setAllowExternalCalls</A></B>(boolean&nbsp;allowExternalCalls)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets whether to allow external calls (calls to undefined templates).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.io.File)">setCompileTimeGlobals</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;compileTimeGlobalsFile)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the file containing compile-time globals.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.util.Map)">setCompileTimeGlobals</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,?&gt;&nbsp;compileTimeGlobalsMap)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the map from compile-time global name to value.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.net.URL)">setCompileTimeGlobals</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;compileTimeGlobalsResource)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the resource file containing compile-time globals.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCssHandlingScheme(com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme)">setCssHandlingScheme</A></B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.CssHandlingScheme.html" title="enum in com.google.template.soy.shared">SoyGeneralOptions.CssHandlingScheme</A>&nbsp;cssHandlingScheme)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the scheme for handling <code>css</code> commands.</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.lang.CharSequence, java.lang.String)">add</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</a>&nbsp;content,
+   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.io.File)">add</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile)</code>
+<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(com.google.common.io.InputSupplier, java.lang.String)">add</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL)">add</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl)</code>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)">add</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl,
+   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addVolatile(java.io.File)">addVolatile</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile)</code>
+<div class="block">Adds an input Soy file that supports checking for modifications, given a <code>File</code>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addVolatileWithKind(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">addVolatileWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
+                   <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</code>
+<div class="block">Adds an input Soy file that supports checking for modifications, given a <code>File</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.lang.CharSequence, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">addWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</a>&nbsp;content,
+           <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">addWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
+           <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</code>
+<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">addWithKind</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+           <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.internal.SoyFileKind)">addWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl,
+           <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</code>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">addWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl,
+           <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#build()">build</a></strong>()</code>
+<div class="block">Builds the new <code>SoyFileSet</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setAllowExternalCalls(boolean)">setAllowExternalCalls</a></strong>(boolean&nbsp;allowExternalCalls)</code>
+<div class="block">Sets whether to allow external calls (calls to undefined templates).</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.io.File)">setCompileTimeGlobals</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;compileTimeGlobalsFile)</code>
+<div class="block">Sets the file containing compile-time globals.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.util.Map)">setCompileTimeGlobals</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</a>&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,?&gt;&nbsp;compileTimeGlobalsMap)</code>
+<div class="block">Sets the map from compile-time global name to value.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCompileTimeGlobals(java.net.URL)">setCompileTimeGlobals</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;compileTimeGlobalsResource)</code>
+<div class="block">Sets the resource file containing compile-time globals.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setCssHandlingScheme(com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme)">setCssHandlingScheme</a></strong>(<a href="../../../../com/google/template/soy/shared/SoyGeneralOptions.CssHandlingScheme.html" title="enum in com.google.template.soy.shared">SoyGeneralOptions.CssHandlingScheme</a>&nbsp;cssHandlingScheme)</code>
+<div class="block">Sets the scheme for handling <code>css</code> commands.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setDeclaredSyntaxVersionName(java.lang.String)">setDeclaredSyntaxVersionName</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;versionName)</code>
+<div class="block">Sets the user-declared syntax version name for the Soy file bundle.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setGeneralOptions(com.google.template.soy.shared.SoyGeneralOptions)">setGeneralOptions</a></strong>(<a href="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</a>&nbsp;generalOptions)</code>
+<div class="block">Sets all Soy general options.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setLocalTypeRegistry(com.google.template.soy.types.SoyTypeRegistry)">setLocalTypeRegistry</a></strong>(<a href="../../../../com/google/template/soy/types/SoyTypeRegistry.html" title="class in com.google.template.soy.types">SoyTypeRegistry</a>&nbsp;typeRegistry)</code>
+<div class="block">Override the global type registry with one that is local to this file set.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setSoyAstCache(com.google.template.soy.shared.SoyAstCache)">setSoyAstCache</a></strong>(<a href="../../../../com/google/template/soy/shared/SoyAstCache.html" title="class in com.google.template.soy.shared">SoyAstCache</a>&nbsp;cache)</code>
+<div class="block">Configures to use an AST cache to speed up development time.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setSupportContentSecurityPolicy(boolean)">setSupportContentSecurityPolicy</a></strong>(boolean&nbsp;supportContentSecurityPolicy)</code>
+<div class="block">Pass true to enable CSP (Content Security Policy) support which adds an extra pass that marks
+ inline scripts in templates specially so the browser can distinguish scripts written by
+ trusted template authors from scripts injected via XSS.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="SoyFileSet.Builder()"><!-- --></A><H3>
-SoyFileSet.Builder</H3>
-<PRE>
-<FONT SIZE="-1">@Inject
-</FONT>public <B>SoyFileSet.Builder</B>()</PRE>
-<DL>
-<DD>Constructs a builder that starts with a default <A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object (options
- can be modified via methods on the builder).
-<P>
-</DL>
-<HR>
-
-<A NAME="SoyFileSet.Builder(com.google.template.soy.shared.SoyGeneralOptions)"><!-- --></A><H3>
-SoyFileSet.Builder</H3>
-<PRE>
-public <B>SoyFileSet.Builder</B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</A>&nbsp;generalOptions)</PRE>
-<DL>
-<DD>Constructs a builder with a specified <A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared"><CODE>SoyGeneralOptions</CODE></A> object.
-<P>
-<DL>
-<DT><B>Parameters:</B><DD><CODE>generalOptions</CODE> - The <code>SoyGeneralOptions</code> object to use.</DL>
-</DL>
-
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="SoyFileSet.Builder()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>SoyFileSet.Builder</h4>
+<pre>@Inject
+<a href="http://java.sun.com/javase/6/docs/api/java/lang/Deprecated.html?is-external=true" title="class or interface in java.lang">@Deprecated</a>
+public&nbsp;SoyFileSet.Builder()</pre>
+<div class="block"><span class="strong">Deprecated.</span>&nbsp;<i>Use the static SoyFileSet.builder() method, or  inject SoyFileSet.Builder
+     using Guice with SoyModule installed. The behavior of this builder is unpredictable and
+     will use the Soy configuration from the most recently configured Injector containing a
+     SoyModule, because it relies on Guice's static injection.</i></div>
+<div class="block">Constructs a builder using a statically-injected configuration.</div>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="setGeneralOptions(com.google.template.soy.shared.SoyGeneralOptions)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setGeneralOptions</h4>
+<pre>public&nbsp;void&nbsp;setGeneralOptions(<a href="../../../../com/google/template/soy/shared/SoyGeneralOptions.html" title="class in com.google.template.soy.shared">SoyGeneralOptions</a>&nbsp;generalOptions)</pre>
+<div class="block">Sets all Soy general options.
 
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
+ This must be called before any other setters.</div>
+</li>
+</ul>
+<a name="build()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>build</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</a>&nbsp;build()</pre>
+<div class="block">Builds the new <code>SoyFileSet</code>.</div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>The new <code>SoyFileSet</code>.</dd></dl>
+</li>
+</ul>
+<a name="addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addWithKind</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+                             <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+                             <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSupplier</code> - Supplier of a Reader for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="add(com.google.common.io.InputSupplier, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>add</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+                     <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+ desired file path for messages.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSupplier</code> - Supplier of a Reader for the Soy file content.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="addWithKind(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addWithKind</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
+                             <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</pre>
+<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFile</code> - The Soy file.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="add(java.io.File)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>add</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile)</pre>
+<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFile</code> - The Soy file.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="addVolatileWithKind(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addVolatileWithKind</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addVolatileWithKind(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
+                                     <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</pre>
+<div class="block">Adds an input Soy file that supports checking for modifications, given a <code>File</code>.
 
-<A NAME="build()"><!-- --></A><H3>
-build</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy">SoyFileSet</A> <B>build</B>()</PRE>
-<DL>
-<DD>Builds the new <code>SoyFileSet</code>.
-<P>
-<DD><DL>
+ <p>Note: This does nothing by itself. It should be used in conjunction with a feature that
+ actually checks for volatile files. Currently, that feature is
+ <a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setSoyAstCache(com.google.template.soy.shared.SoyAstCache)"><code>setSoyAstCache(SoyAstCache)</code></a>.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFile</code> - The Soy file.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="addVolatile(java.io.File)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addVolatile</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addVolatile(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile)</pre>
+<div class="block">Adds an input Soy file that supports checking for modifications, given a <code>File</code>.
 
-<DT><B>Returns:</B><DD>The new <code>SoyFileSet</code>.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
-addWithKind</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
-                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
- desired file path for messages.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>contentSupplier</CODE> - Supplier of a Reader for the Soy file content.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="add(com.google.common.io.InputSupplier, java.lang.String)"><!-- --></A><H3>
-add</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>add</B>(com.google.common.io.InputSupplier&lt;? extends <A HREF="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</A>&gt;&nbsp;contentSupplier,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
- desired file path for messages.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>contentSupplier</CODE> - Supplier of a Reader for the Soy file content.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="addWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
-addWithKind</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
-                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
-<DL>
-<DD>Adds an input Soy file, given a <code>File</code>.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="add(java.io.File)"><!-- --></A><H3>
-add</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>add</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile)</PRE>
-<DL>
-<DD>Adds an input Soy file, given a <code>File</code>.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="addVolatileWithKind(java.io.File, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
-addVolatileWithKind</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addVolatileWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile,
-                                              <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
-<DL>
-<DD>Adds an input Soy file that the system will watch for changes, given a <code>File</code>.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="addVolatile(java.io.File)"><!-- --></A><H3>
-addVolatile</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addVolatile</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;inputFile)</PRE>
-<DL>
-<DD>Adds an input Soy file that the system will watch for changes, given a <code>File</code>.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFile</CODE> - The Soy file.
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
-addWithKind</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
-                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
- messages.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="add(java.net.URL, java.lang.String)"><!-- --></A><H3>
-add</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>add</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
- messages.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind)"><!-- --></A><H3>
-addWithKind</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl,
-                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind)</PRE>
-<DL>
-<DD>Adds an input Soy file, given a resource <code>URL</code>.
-
- <p> Important: This function assumes that the desired file path is returned by
- <code>inputFileUrl.toString()</code>. If this is not the case, please use
- <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><CODE>addWithKind(URL, SoyFileKind, String)</CODE></A> instead.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.
-<DT><B>Returns:</B><DD>This builder.<DT><B>See Also:</B><DD><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.SoyFileKind, java.lang.String)"><CODE>addWithKind(URL, SoyFileKind, String)</CODE></A></DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="add(java.net.URL)"><!-- --></A><H3>
-add</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>add</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;inputFileUrl)</PRE>
-<DL>
-<DD>Adds an input Soy file, given a resource <code>URL</code>.
+ <p>Note: This does nothing by itself. It should be used in conjunction with a feature that
+ actually checks for volatile files. Currently, that feature is
+ <a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#setSoyAstCache(com.google.template.soy.shared.SoyAstCache)"><code>setSoyAstCache(SoyAstCache)</code></a>.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFile</code> - The Soy file.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="addWithKind(java.net.URL, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addWithKind</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl,
+                             <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+                             <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFileUrl</code> - The Soy file.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="add(java.net.URL, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>add</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl,
+                     <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>, as well as the desired file path for
+ messages.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFileUrl</code> - The Soy file.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="addWithKind(java.net.URL, com.google.template.soy.base.internal.SoyFileKind)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addWithKind</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl,
+                             <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</pre>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>.
 
  <p> Important: This function assumes that the desired file path is returned by
  <code>inputFileUrl.toString()</code>. If this is not the case, please use
- <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)"><CODE>add(URL, String)</CODE></A> instead.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>inputFileUrl</CODE> - The Soy file.
-<DT><B>Returns:</B><DD>This builder.<DT><B>See Also:</B><DD><A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)"><CODE>add(URL, String)</CODE></A></DL>
-</DD>
-</DL>
-<HR>
+ <a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)"><code>addWithKind(URL, SoyFileKind, String)</code></a> instead.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFileUrl</code> - The Soy file.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.net.URL, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)"><code>addWithKind(URL, SoyFileKind, String)</code></a></dd></dl>
+</li>
+</ul>
+<a name="add(java.net.URL)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>add</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;inputFileUrl)</pre>
+<div class="block">Adds an input Soy file, given a resource <code>URL</code>.
 
-<A NAME="addWithKind(java.lang.CharSequence, com.google.template.soy.base.SoyFileKind, java.lang.String)"><!-- --></A><H3>
-addWithKind</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>addWithKind</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
-                                      <A HREF="../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-                                      <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Adds an input Soy file, given the file content provided as a string, as well as the desired
- file path for messages.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>content</CODE> - The Soy file content.<DD><CODE>soyFileKind</CODE> - The kind of this input Soy file.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
+ <p> Important: This function assumes that the desired file path is returned by
+ <code>inputFileUrl.toString()</code>. If this is not the case, please use
+ <a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)"><code>add(URL, String)</code></a> instead.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputFileUrl</code> - The Soy file.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.net.URL, java.lang.String)"><code>add(URL, String)</code></a></dd></dl>
+</li>
+</ul>
+<a name="addWithKind(java.lang.CharSequence, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addWithKind</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(<a href="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</a>&nbsp;content,
+                             <a href="../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+                             <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<div class="block">Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>content</code> - The Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="add(java.lang.CharSequence, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>add</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(<a href="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</a>&nbsp;content,
+                     <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<div class="block">Adds an input Soy file, given the file content provided as a string, as well as the desired
+ file path for messages.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>content</code> - The Soy file content.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="setSoyAstCache(com.google.template.soy.shared.SoyAstCache)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setSoyAstCache</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setSoyAstCache(<a href="../../../../com/google/template/soy/shared/SoyAstCache.html" title="class in com.google.template.soy.shared">SoyAstCache</a>&nbsp;cache)</pre>
+<div class="block">Configures to use an AST cache to speed up development time.
 
-<A NAME="add(java.lang.CharSequence, java.lang.String)"><!-- --></A><H3>
-add</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>add</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/CharSequence.html?is-external=true" title="class or interface in java.lang">CharSequence</A>&nbsp;content,
-                              <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD>Adds an input Soy file, given the file content provided as a string, as well as the desired
- file path for messages.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>content</CODE> - The Soy file content.<DD><CODE>filePath</CODE> - The path to the Soy file (used for messages only).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setAllowExternalCalls(boolean)"><!-- --></A><H3>
-setAllowExternalCalls</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>setAllowExternalCalls</B>(boolean&nbsp;allowExternalCalls)</PRE>
-<DL>
-<DD>Sets whether to allow external calls (calls to undefined templates).
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>allowExternalCalls</CODE> - Whether to allow external calls (calls to undefined templates).
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setCssHandlingScheme(com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme)"><!-- --></A><H3>
-setCssHandlingScheme</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>setCssHandlingScheme</B>(<A HREF="../../../../com/google/template/soy/shared/SoyGeneralOptions.CssHandlingScheme.html" title="enum in com.google.template.soy.shared">SoyGeneralOptions.CssHandlingScheme</A>&nbsp;cssHandlingScheme)</PRE>
-<DL>
-<DD>Sets the scheme for handling <code>css</code> commands.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>cssHandlingScheme</CODE> - The scheme for handling <code>css</code> commands.
-<DT><B>Returns:</B><DD>This builder.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setCompileTimeGlobals(java.util.Map)"><!-- --></A><H3>
-setCompileTimeGlobals</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>setCompileTimeGlobals</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,?&gt;&nbsp;compileTimeGlobalsMap)</PRE>
-<DL>
-<DD>Sets the map from compile-time global name to value.
+ <p>This is undesirable in production mode since it uses strictly more memory, and this only
+ helps if the same templates are going to be recompiled frequently.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>cache</code> - The cache to use, which can have a lifecycle independent of the SoyFileSet.
+     Null indicates not to use a cache.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="setDeclaredSyntaxVersionName(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setDeclaredSyntaxVersionName</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setDeclaredSyntaxVersionName(<a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nonnull.html?is-external=true" title="class or interface in javax.annotation">@Nonnull</a>
+                                              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;versionName)</pre>
+<div class="block">Sets the user-declared syntax version name for the Soy file bundle.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>versionName</code> - The syntax version name, e.g. "1.0", "2.0", "2.3".</dd></dl>
+</li>
+</ul>
+<a name="setAllowExternalCalls(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setAllowExternalCalls</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setAllowExternalCalls(boolean&nbsp;allowExternalCalls)</pre>
+<div class="block">Sets whether to allow external calls (calls to undefined templates).</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>allowExternalCalls</code> - Whether to allow external calls (calls to undefined templates).</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="setCssHandlingScheme(com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setCssHandlingScheme</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setCssHandlingScheme(<a href="../../../../com/google/template/soy/shared/SoyGeneralOptions.CssHandlingScheme.html" title="enum in com.google.template.soy.shared">SoyGeneralOptions.CssHandlingScheme</a>&nbsp;cssHandlingScheme)</pre>
+<div class="block">Sets the scheme for handling <code>css</code> commands.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>cssHandlingScheme</code> - The scheme for handling <code>css</code> commands.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
+</li>
+</ul>
+<a name="setCompileTimeGlobals(java.util.Map)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setCompileTimeGlobals</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setCompileTimeGlobals(<a href="http://java.sun.com/javase/6/docs/api/java/util/Map.html?is-external=true" title="class or interface in java.util">Map</a>&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,?&gt;&nbsp;compileTimeGlobalsMap)</pre>
+<div class="block">Sets the map from compile-time global name to value.
 
  <p> The values can be any of the Soy primitive types: null, boolean, integer, float (Java
- double), or string.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>compileTimeGlobalsMap</CODE> - Map from compile-time global name to value. The values can be
-     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-<DT><B>Returns:</B><DD>This builder.
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE> - If one of the values is not a valid Soy primitive type.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setCompileTimeGlobals(java.io.File)"><!-- --></A><H3>
-setCompileTimeGlobals</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>setCompileTimeGlobals</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</A>&nbsp;compileTimeGlobalsFile)
-                                         throws <A HREF="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</A></PRE>
-<DL>
-<DD>Sets the file containing compile-time globals.
+ double), or string.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>compileTimeGlobalsMap</code> - Map from compile-time global name to value. The values can be
+     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</a></code> - If one of the values is not a valid Soy primitive type.</dd></dl>
+</li>
+</ul>
+<a name="setCompileTimeGlobals(java.io.File)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setCompileTimeGlobals</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setCompileTimeGlobals(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;compileTimeGlobalsFile)
+                                         throws <a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></pre>
+<div class="block">Sets the file containing compile-time globals.
 
  <p> Each line of the file should have the format
  <pre>
@@ -631,24 +636,22 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
  should be encoded in UTF-8.
 
  <p> If you need to generate a file in this format from Java, consider using the utility
- <code>SoyUtils.generateCompileTimeGlobalsFile()</code>.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>compileTimeGlobalsFile</CODE> - The file containing compile-time globals.
-<DT><B>Returns:</B><DD>This builder.
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</A></CODE> - If there is an error reading the compile-time globals file.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setCompileTimeGlobals(java.net.URL)"><!-- --></A><H3>
-setCompileTimeGlobals</H3>
-<PRE>
-public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</A> <B>setCompileTimeGlobals</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</A>&nbsp;compileTimeGlobalsResource)
-                                         throws <A HREF="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</A></PRE>
-<DL>
-<DD>Sets the resource file containing compile-time globals.
+ <code>SoyUtils.generateCompileTimeGlobalsFile()</code>.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>compileTimeGlobalsFile</code> - The file containing compile-time globals.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></code> - If there is an error reading the compile-time globals file.</dd></dl>
+</li>
+</ul>
+<a name="setCompileTimeGlobals(java.net.URL)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setCompileTimeGlobals</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setCompileTimeGlobals(<a href="http://java.sun.com/javase/6/docs/api/java/net/URL.html?is-external=true" title="class or interface in java.net">URL</a>&nbsp;compileTimeGlobalsResource)
+                                         throws <a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></pre>
+<div class="block">Sets the resource file containing compile-time globals.
 
  <p> Each line of the file should have the format
  <pre>
@@ -659,76 +662,106 @@ public <A HREF="../../../../com/google/template/soy/SoyFileSet.Builder.html" tit
  should be encoded in UTF-8.
 
  <p> If you need to generate a file in this format from Java, consider using the utility
- <code>SoyUtils.generateCompileTimeGlobalsFile()</code>.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>compileTimeGlobalsResource</CODE> - The resource containing compile-time globals.
-<DT><B>Returns:</B><DD>This builder.
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</A></CODE> - If there is an error reading the compile-time globals file.</DL>
-</DD>
-</DL>
+ <code>SoyUtils.generateCompileTimeGlobalsFile()</code>.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>compileTimeGlobalsResource</code> - The resource containing compile-time globals.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>This builder.</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></code> - If there is an error reading the compile-time globals file.</dd></dl>
+</li>
+</ul>
+<a name="setSupportContentSecurityPolicy(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setSupportContentSecurityPolicy</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setSupportContentSecurityPolicy(boolean&nbsp;supportContentSecurityPolicy)</pre>
+<div class="block">Pass true to enable CSP (Content Security Policy) support which adds an extra pass that marks
+ inline scripts in templates specially so the browser can distinguish scripts written by
+ trusted template authors from scripts injected via XSS.
+ <p>
+ Scripts are marked using a per-page-render secret stored in the injected variable
+ <code>$ij.csp_nonce</code>.
+ Scripts in non-contextually auto-escaped templates may not be found.</div>
+</li>
+</ul>
+<a name="setLocalTypeRegistry(com.google.template.soy.types.SoyTypeRegistry)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>setLocalTypeRegistry</h4>
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;setLocalTypeRegistry(<a href="../../../../com/google/template/soy/types/SoyTypeRegistry.html" title="class in com.google.template.soy.types">SoyTypeRegistry</a>&nbsp;typeRegistry)</pre>
+<div class="block">Override the global type registry with one that is local to this file set.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../com/google/template/soy/SoyModule.html" title="class in com.google.template.soy"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../index.html?com/google/template/soy/SoyFileSet.Builder.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="SoyFileSet.Builder.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../index-all.html">Index</a></li>
+<li><a href="../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../com/google/template/soy/SoyFileSet.html" title="class in com.google.template.soy"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../com/google/template/soy/SoyModule.html" title="class in com.google.template.soy"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../index.html?com/google/template/soy/SoyFileSet.Builder.html" target="_top">Frames</a></li>
+<li><a href="SoyFileSet.Builder.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -745,6 +778,6 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&n
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

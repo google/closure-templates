@@ -30,9 +30,9 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.List;
 import java.util.Set;
@@ -92,8 +92,8 @@ public class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
       }
 
-      // Do the check if the callee node has SoyDoc.
-      if (callee != null && callee.getSoyDocParams() != null) {
+      // Do the check if the callee node has declared params.
+      if (callee != null && callee.getParams() != null) {
         // Get param keys passed by caller.
         Set<String> callerParamKeys = Sets.newHashSet();
         for (CallParamNode callerParam : node.getChildren()) {
@@ -101,9 +101,9 @@ public class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
         // Check param keys required by callee.
         List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
-        for (SoyDocParam calleeParam : callee.getSoyDocParams()) {
-          if (calleeParam.isRequired && ! callerParamKeys.contains(calleeParam.key)) {
-            missingParamKeys.add(calleeParam.key);
+        for (TemplateParam calleeParam : callee.getParams()) {
+          if (calleeParam.isRequired() && ! callerParamKeys.contains(calleeParam.name())) {
+            missingParamKeys.add(calleeParam.name());
           }
         }
         // Report errors.

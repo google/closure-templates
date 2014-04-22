@@ -16,12 +16,13 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
@@ -39,7 +40,7 @@ import java.util.Map;
  *
  * <p> {@link #exec} may be called on any expression. The result of evaluating the expression (in
  * the context of the {@code data} and {@code env} passed into the constructor) is returned as a
- * {@code SoyData} object.
+ * {@code SoyValue} object.
  *
  * @author Kai Huang
  */
@@ -47,15 +48,16 @@ class PreevalVisitor extends EvalVisitor {
 
 
   /**
-   * @param soyJavaRuntimeFunctionsMap Map of all SoyJavaRuntimeFunctions (name to function).
+   * @param valueHelper Instance of SoyValueHelper to use.
+   * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
    * @param data The current template data.
    * @param env The current environment.
    */
   PreevalVisitor(
-      Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap, SoyMapData data,
-      Deque<Map<String, SoyData>> env) {
+      SoyValueHelper valueHelper, Map<String, SoyJavaFunction> soyJavaFunctionsMap,
+      SoyRecord data, Deque<Map<String, SoyValue>> env) {
 
-    super(soyJavaRuntimeFunctionsMap, data, null, env);
+    super(valueHelper, soyJavaFunctionsMap, data, null, env);
   }
 
 
@@ -63,40 +65,32 @@ class PreevalVisitor extends EvalVisitor {
   // Implementations for specific nodes.
 
 
-  @Override protected SoyData visitDataRefNode(DataRefNode node) {
+  @Override protected SoyValue visitVarRefNode(VarRefNode node) {
 
     // Cannot preevaluate injected data.
-    if (node.isIjDataRef()) {
+    if (node.isInjected()) {
       throw new RenderException("Cannot preevaluate reference to ijData.");
     }
 
     // Otherwise, super method can handle it.
-    return super.visitDataRefNode(node);
+    SoyValue value = super.visitVarRefNode(node);
+
+    if (value instanceof UndefinedData) {
+      throw new RenderException("Encountered undefined reference during preevaluation.");
+    }
+
+    return value;
   }
 
 
-  @Override protected SoyData computeFunctionHelper(
-      SoyJavaRuntimeFunction fn, List<SoyData> args, FunctionNode fnNode) {
+  @Override protected SoyValue computeFunctionHelper(
+      SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
 
     if (! fn.getClass().isAnnotationPresent(SoyPureFunction.class)) {
       throw new RenderException("Cannot preevaluate impure function.");
     }
 
     return super.computeFunctionHelper(fn, args, fnNode);
-  }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Private helpers.
-
-
-  @Override protected SoyData resolveDataRefFirstKey(DataRefNode dataRefNode) {
-
-    SoyData value = super.resolveDataRefFirstKey(dataRefNode);
-    if (value instanceof UndefinedData) {
-      throw new RenderException("Encountered undefined reference during preevaluation.");
-    }
-    return value;
   }
 
 }

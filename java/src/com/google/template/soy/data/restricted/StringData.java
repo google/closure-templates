@@ -29,10 +29,11 @@ import javax.annotation.concurrent.Immutable;
  * @author Kai Huang
  */
 @Immutable
-public class StringData extends PrimitiveData {
+public final class StringData extends PrimitiveData {
 
 
   /** Static instance of StringData with value "". */
+  @SuppressWarnings("deprecation")
   public static final StringData EMPTY_STRING = new StringData("");
 
 
@@ -56,6 +57,7 @@ public class StringData extends PrimitiveData {
    * @param value The desired value.
    * @return A StringData instance with the given value.
    */
+  @SuppressWarnings("deprecation")
   public static StringData forValue(String value) {
     return (value.length() == 0) ? EMPTY_STRING : new StringData(value);
   }
@@ -82,14 +84,15 @@ public class StringData extends PrimitiveData {
    *
    * <p> The empty string is falsy.
    */
+  @Deprecated
   @Override public boolean toBoolean() {
     return value.length() > 0;
   }
 
 
+  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override public boolean equals(Object other) {
-    return other != null && other.getClass() == StringData.class &&
-           ((StringData) other).getValue().equals(value);
+    return other != null && value.equals(other.toString());
   }
 
 

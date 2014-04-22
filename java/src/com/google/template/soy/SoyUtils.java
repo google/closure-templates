@@ -16,26 +16,27 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Charsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.common.io.InputSupplier;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.data.internalutils.DataUtils;
+import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.ParseException;
 import com.google.template.soy.exprparse.TokenMgrError;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.base.Pair;
 
 import java.io.BufferedReader;
@@ -73,16 +74,17 @@ public class SoyUtils {
    * @param output The object to append the generated text to.
    * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
-   * @see #generateCompileTimeGlobalsFile(Map, File) 
+   * @see #generateCompileTimeGlobalsFile(Map, File)
    */
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, Appendable output) throws IOException {
 
     Map<String, PrimitiveData> compileTimeGlobals =
-        DataUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap);
+        InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap);
 
     for (Map.Entry<String, PrimitiveData> entry : compileTimeGlobals.entrySet()) {
-      String valueSrcStr = DataUtils.convertPrimitiveDataToExpr(entry.getValue()).toSourceString();
+      String valueSrcStr =
+          InternalValueUtils.convertPrimitiveDataToExpr(entry.getValue()).toSourceString();
       output.append(entry.getKey()).append(" = ").append(valueSrcStr).append("\n");
     }
   }
@@ -103,7 +105,7 @@ public class SoyUtils {
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, File file) throws IOException {
 
-    BufferedWriter writer = Files.newWriter(file, Charsets.UTF_8);
+    BufferedWriter writer = Files.newWriter(file, UTF_8);
     generateCompileTimeGlobalsFile(compileTimeGlobalsMap, writer);
     writer.close();
   }
@@ -185,7 +187,7 @@ public class SoyUtils {
         // Record error for non-primitives.
         // TODO: Consider allowing non-primitives (e.g. list/map literals).
         if (!(valueExpr instanceof PrimitiveNode)) {
-          if (valueExpr instanceof GlobalNode || valueExpr instanceof DataRefNode) {
+          if (valueExpr instanceof GlobalNode || valueExpr instanceof VarRefNode) {
             errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
           } else {
             errors.add(Pair.of(CompileTimeGlobalsFileError.NON_PRIMITIVE_VALUE, line));
@@ -195,7 +197,7 @@ public class SoyUtils {
 
         // Default case.
         compileTimeGlobalsBuilder.put(
-            name, DataUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr));
+            name, InternalValueUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr));
 
       } catch (TokenMgrError tme) {
         errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));

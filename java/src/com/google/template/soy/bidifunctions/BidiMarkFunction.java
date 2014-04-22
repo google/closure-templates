@@ -16,23 +16,17 @@
 
 package com.google.template.soy.bidifunctions;
 
-import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toStringJavaExpr;
-import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -46,8 +40,7 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-class BidiMarkFunction extends SoyAbstractTofuFunction
-    implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction {
 
 
   /** Provider for the current bidi global directionality. */
@@ -73,9 +66,9 @@ class BidiMarkFunction extends SoyAbstractTofuFunction
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
 
-    return toSoyData(
+    return StringData.forValue(
         (bidiGlobalDirProvider.get().getStaticValue() < 0) ? "\u200F" /*RLM*/ : "\u200E" /*LRM*/);
   }
 
@@ -91,21 +84,6 @@ class BidiMarkFunction extends SoyAbstractTofuFunction
     return new JsExpr(
         "(" + bidiGlobalDir.getCodeSnippet() + ") < 0 ? '\\u200F' : '\\u200E'",
         Operator.CONDITIONAL.getPrecedence());
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-
-    BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
-    if (bidiGlobalDir.isStaticValue()) {
-      return toStringJavaExpr(JavaCodeUtils.genNewStringData(
-            (bidiGlobalDir.getStaticValue() < 0) ? "\"\\u200F\"" /*RLM*/ : "\"\\u200E\"" /*LRM*/));
-    }
-
-    String bidiFunctionName = SoyBidiUtils.class.getName() + ".getBidiFormatter(" +
-        bidiGlobalDir.getCodeSnippet() + ").mark";
-    return toStringJavaExpr(JavaCodeUtils.genNewStringData(
-        JavaCodeUtils.genFunctionCall(bidiFunctionName)));
   }
 
 }

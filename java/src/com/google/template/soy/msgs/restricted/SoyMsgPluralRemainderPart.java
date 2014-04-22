@@ -16,13 +16,15 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.Objects;
+
 
 /**
  * Represents the placeholder part in the plural statement (The '#' sign in ICU syntax).
  *
  * @author Mohamed Eldawy
  */
-public class SoyMsgPluralRemainderPart extends SoyMsgPart {
+public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
 
 
   /** The plural variable name. */
@@ -40,4 +42,12 @@ public class SoyMsgPluralRemainderPart extends SoyMsgPart {
     return pluralVarName;
   }
 
+  @Override public boolean equals(Object other) {
+    return other instanceof SoyMsgPluralRemainderPart
+        && pluralVarName.equals(((SoyMsgPluralRemainderPart) other).pluralVarName);
+  }
+
+  @Override public int hashCode() {
+    return Objects.hashCode(SoyMsgPluralRemainderPart.class, pluralVarName);
+  }
 }

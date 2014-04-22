@@ -1,244 +1,263 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-com.google.template.soy.parsepasses.contextautoesc (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>com.google.template.soy.parsepasses.contextautoesc (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="com.google.template.soy.parsepasses.contextautoesc (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Package</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/package-summary.html"><B>PREV PACKAGE</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/shared/package-summary.html"><B>NEXT PACKAGE</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/package-summary.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="package-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li class="navBarCell1Rev">Package</li>
+<li>Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/parsepasses/package-summary.html">Prev Package</a></li>
+<li><a href="../../../../../../com/google/template/soy/shared/package-summary.html">Next Package</a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/package-summary.html" target="_top">Frames</a></li>
+<li><a href="package-summary.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
-<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/ParametersAreNonnullByDefault.html?is-external=true" title="class or interface in javax.annotation">@ParametersAreNonnullByDefault</A>
-</FONT><H2>
-Package com.google.template.soy.parsepasses.contextautoesc
-</H2>
-A pass that modifies a SoyFile to add escape directives where necessary based on a contextual
- examination of template <code>print</code> commands.
-<P>
-<B>See:</B>
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="#package_description"><B>Description</B></A>
-<P>
-
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Class Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc">CheckEscapingSanityVisitor</A></B></TD>
-<TD>Visitor performing escaping sanity checks over all input -- not just input affected by the
- contextual autoescaping inference engine.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></B></TD>
-<TD>Encapsulates the context in which a Soy node appears.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html" title="class in com.google.template.soy.parsepasses.contextautoesc">ContextualAutoescaper</A></B></TD>
-<TD>Inserts directives into print commands by looking at the context in which a print appears, and
+<div class="header">
+<p><a href="http://java.sun.com/javase/6/docs/api/javax/annotation/ParametersAreNonnullByDefault.html?is-external=true" title="class or interface in javax.annotation">@ParametersAreNonnullByDefault</a>
+</p>
+<h1 title="Package" class="title">Package&nbsp;com.google.template.soy.parsepasses.contextautoesc</h1>
+<div class="docSummary">
+<div class="block">A pass that modifies a SoyFile to add escape directives where necessary based on a contextual
+ examination of template <code>print</code> commands.</div>
+</div>
+<p>See:&nbsp;<a href="#package_description">Description</a></p>
+</div>
+<div class="contentContainer">
+<ul class="blockList">
+<li class="blockList">
+<table class="packageSummary" border="0" cellpadding="3" cellspacing="0" summary="Class Summary table, listing classes, and an explanation">
+<caption><span>Class Summary</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Class</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc">CheckEscapingSanityVisitor</a></td>
+<td class="colLast">
+<div class="block">Visitor performing escaping sanity checks over all input -- not just input affected by the
+ contextual autoescaping inference engine.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContentSecurityPolicyPass.html" title="class in com.google.template.soy.parsepasses.contextautoesc">ContentSecurityPolicyPass</a></td>
+<td class="colLast">
+<div class="block">Inserts attributes into templates to bless inline <code>&lt;script&gt;</code> and <code>&lt;style&gt;</code> elements
+ and inline event handler and style attributes so that the browser can distinguish scripts
+ specified by the template author from ones injected via XSS.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</a></td>
+<td class="colLast">
+<div class="block">Encapsulates the context in which a Soy node appears.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html" title="class in com.google.template.soy.parsepasses.contextautoesc">ContextualAutoescaper</a></td>
+<td class="colLast">
+<div class="block">Inserts directives into print commands by looking at the context in which a print appears, and
  derives templates and rewrites calls so that each template is entered only in contexts
- consistent with its escaping conventions.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/DerivedTemplateUtils.html" title="class in com.google.template.soy.parsepasses.contextautoesc">DerivedTemplateUtils</A></B></TD>
-<TD>Utilities for dealing with the names of derived templates.</TD>
-</TR>
-</TABLE>
-&nbsp;
-
-<P>
-
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Enum Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.AttributeEndDelimiter.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.AttributeEndDelimiter</A></B></TD>
-<TD>Describes the content that will end the current HTML attribute.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.AttributeType.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.AttributeType</A></B></TD>
-<TD>Describes the content of an HTML attribute.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.ElementType.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.ElementType</A></B></TD>
-<TD>A type of HTML element.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.JsFollowingSlash.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.JsFollowingSlash</A></B></TD>
-<TD>Describes what a slash (<code>/</code>) means when parsing JavaScript source code.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A></B></TD>
-<TD>A state in the parse of an HTML document.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.UriPart</A></B></TD>
-<TD>Describes the part of a URI reference that the context point is in.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/EscapingMode.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">EscapingMode</A></B></TD>
-<TD>Ways of escaping dynamic content in a template.</TD>
-</TR>
-</TABLE>
-&nbsp;
-
-<P>
-
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Exception Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD WIDTH="15%"><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</A></B></TD>
-<TD>Indicates failure to propagate contexts through a template or an existing escaping directive on a
- 'print' tag that is inconsistent with the contexts in which it appears.</TD>
-</TR>
-</TABLE>
-&nbsp;
-
-<P>
-<A NAME="package_description"><!-- --></A><H2>
-Package com.google.template.soy.parsepasses.contextautoesc Description
-</H2>
-
-<P>
-A pass that modifies a SoyFile to add escape directives where necessary based on a contextual
+ consistent with its escaping conventions.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/DerivedTemplateUtils.html" title="class in com.google.template.soy.parsepasses.contextautoesc">DerivedTemplateUtils</a></td>
+<td class="colLast">
+<div class="block">Utilities for dealing with the names of derived templates.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SlicedRawTextNode.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SlicedRawTextNode</a></td>
+<td class="colLast">
+<div class="block">A raw text node divided into a slice for each context found by the inference engine so that later
+ parse passes can take action based on text and attribute boundaries.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SlicedRawTextNode.RawTextSlice.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SlicedRawTextNode.RawTextSlice</a></td>
+<td class="colLast">
+<div class="block">A substring of raw text that is exposed to parse passes.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li class="blockList">
+<table class="packageSummary" border="0" cellpadding="3" cellspacing="0" summary="Enum Summary table, listing enums, and an explanation">
+<caption><span>Enum Summary</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Enum</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.AttributeEndDelimiter.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.AttributeEndDelimiter</a></td>
+<td class="colLast">
+<div class="block">Describes the content that will end the current HTML attribute.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.AttributeType.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.AttributeType</a></td>
+<td class="colLast">
+<div class="block">Describes the content of an HTML attribute.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.ElementType.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.ElementType</a></td>
+<td class="colLast">
+<div class="block">A type of HTML element.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.JsFollowingSlash.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.JsFollowingSlash</a></td>
+<td class="colLast">
+<div class="block">Describes what a slash (<code>/</code>) means when parsing JavaScript source code.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a></td>
+<td class="colLast">
+<div class="block">A state in the parse of an HTML document.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.UriPart</a></td>
+<td class="colLast">
+<div class="block">Describes the part of a URI reference that the context point is in.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/EscapingMode.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">EscapingMode</a></td>
+<td class="colLast">
+<div class="block">Ways of escaping dynamic content in a template.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li class="blockList">
+<table class="packageSummary" border="0" cellpadding="3" cellspacing="0" summary="Exception Summary table, listing exceptions, and an explanation">
+<caption><span>Exception Summary</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Exception</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/SoyAutoescapeException.html" title="class in com.google.template.soy.parsepasses.contextautoesc">SoyAutoescapeException</a></td>
+<td class="colLast">
+<div class="block">Indicates failure to propagate contexts through a template or an existing escaping directive on a
+ 'print' tag that is inconsistent with the contexts in which it appears.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<a name="package_description">
+<!--   -->
+</a>
+<h2 title="Package com.google.template.soy.parsepasses.contextautoesc Description">Package com.google.template.soy.parsepasses.contextautoesc Description</h2>
+<div class="block">A pass that modifies a SoyFile to add escape directives where necessary based on a contextual
  examination of template <code>print</code> commands.
 
  <p>
  The main entry point for this package is
- <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><CODE>ContextualAutoescaper</CODE></A>.
-<P>
-
-<P>
-<DL>
-</DL>
-<HR>
-
-
+ <a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/ContextualAutoescaper.html" title="class in com.google.template.soy.parsepasses.contextautoesc"><code>ContextualAutoescaper</code></a>.</div>
+</div>
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Package</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/package-summary.html"><B>PREV PACKAGE</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/shared/package-summary.html"><B>NEXT PACKAGE</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/package-summary.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="package-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li class="navBarCell1Rev">Package</li>
+<li>Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/parsepasses/package-summary.html">Prev Package</a></li>
+<li><a href="../../../../../../com/google/template/soy/shared/package-summary.html">Next Package</a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/package-summary.html" target="_top">Frames</a></li>
+<li><a href="package-summary.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -255,6 +274,6 @@ A pass that modifies a SoyFile to add escape directives where necessary based on
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

@@ -50,13 +50,13 @@ public class ClearSoyDocStringsVisitorTest extends TestCase {
 
     assertTrue(template.getSoyDoc().contains("blah"));
     assertTrue(template.getSoyDocDesc().contains("blah"));
-    assertTrue(template.getSoyDocParams().get(0).desc.contains("blah"));
+    assertTrue(template.getParams().get(0).desc().contains("blah"));
 
     (new ClearSoyDocStringsVisitor()).exec(soyTree);
 
     assertNull(template.getSoyDoc());
     assertNull(template.getSoyDocDesc());
-    assertNull(template.getSoyDocParams().get(0).desc);
+    assertNull(template.getParams().get(0).desc());
   }
 
 }

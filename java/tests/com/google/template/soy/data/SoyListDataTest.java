@@ -162,7 +162,7 @@ public class SoyListDataTest extends TestCase {
       new SoyListData(existingList);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path '[2][0][1]':"));      
+      assertTrue(sde.getMessage().contains("At data path '[2][0][1]':"));
     }
   }
 
@@ -175,13 +175,13 @@ public class SoyListDataTest extends TestCase {
     SoyListData sld2 = new SoyListData(8, null, new SoyListData("blah", true), "bleh");
     sld2.put("2.2", 2.71828);
 
-    assertEquals("[]", sld0.toString());
-    assertEquals("[boo]", sld1.toString());
-    assertEquals("[8, null, [blah, true, 2.71828], bleh]", sld2.toString());
+    assertEquals("[]", sld0.coerceToString());
+    assertEquals("[boo]", sld1.coerceToString());
+    assertEquals("[8, null, [blah, true, 2.71828], bleh]", sld2.coerceToString());
 
-    assertEquals(true, sld0.toBoolean());
-    assertEquals(true, sld1.toBoolean());
-    assertEquals(true, sld2.toBoolean());
+    assertEquals(true, sld0.coerceToBoolean());
+    assertEquals(true, sld1.coerceToBoolean());
+    assertEquals(true, sld2.coerceToBoolean());
   }
 
 
@@ -196,4 +196,14 @@ public class SoyListDataTest extends TestCase {
     assertFalse(sld0.equals(new SoyListData()));
   }
 
+  public void testLongHandling() {
+    // long value will loose precision if converted to double.
+    long l = 987654321987654321L;
+    SoyListData sld = new SoyListData();
+    sld.add(l);
+    assertEquals(l, sld.getLong(0));
+
+    sld = new SoyListData(l);
+    assertEquals(l, sld.getLong(0));
+  }
 }

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.i18ndirectives;
 
+import com.ibm.icu.util.ULocale;
+
 import java.util.Locale;
 
 /**
@@ -26,17 +28,17 @@ import java.util.Locale;
 class I18nUtils {
 
 
-  // Private constructor to prevent instantiation
+  // Private constructor to prevent instantiation.
   private I18nUtils() { }
 
 
   /**
    * Given a string representing a Locale, returns the Locale object for that string.
    *
-   * @param localeString The string representation of the given Locale
    * @return A Locale object built from the string provided
    */
   public static Locale parseLocale(String localeString) {
+    if (localeString == null) { return Locale.US; }
     String[] groups = localeString.split("[-_]");
     switch (groups.length) {
        case 1:
@@ -48,5 +50,14 @@ class I18nUtils {
        default:
          throw new IllegalArgumentException("Malformed localeString: " + localeString);
     }
+  }
+
+  /**
+   * Given a string representing a Locale, returns the ICU4J ULocale object for that string.
+   *
+   * @return A ULocale object built from the string provided
+   */
+  public static ULocale parseULocale(String localeString) {
+    return ULocale.forLocale(parseLocale(localeString));
   }
 }

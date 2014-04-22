@@ -17,8 +17,8 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -73,15 +73,8 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
     super(id, "print", "");
 
     this.isImplicit = isImplicit;
-
     ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(exprText);
-    if (expr != null) {
-      this.exprUnion = new ExprUnion(expr);
-    } else {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
-      this.exprUnion = new ExprUnion(exprText);
-    }
-
+    this.exprUnion = (expr != null) ? new ExprUnion(expr) : new ExprUnion(exprText);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
   }
 
@@ -140,12 +133,12 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
   }
 
 
-  @Override public String getUserSuppliedPlaceholderName() {
+  @Override public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
 
-  @Override public String genBasePlaceholderName() {
+  @Override public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
@@ -156,7 +149,8 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
       return FALLBACK_BASE_PLACEHOLDER_NAME;
     }
 
-    return AbstractMsgNode.genBaseNameFromExpr(exprRoot, FALLBACK_BASE_PLACEHOLDER_NAME);
+    return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+        exprRoot, FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
 

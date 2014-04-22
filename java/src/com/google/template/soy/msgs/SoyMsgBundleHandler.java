@@ -16,11 +16,12 @@
 
 package com.google.template.soy.msgs;
 
-import com.google.common.base.Charsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
-import com.google.template.soy.base.BaseUtils;
+import com.google.template.soy.base.internal.BaseUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,14 +42,18 @@ public class SoyMsgBundleHandler {
 
 
   /**
-   * Options for generating an output message bundle file.
+   * Options for generating an output messages file.
+   *
+   * This same class is used for both extracted messages files (source messages to be translated)
+   * and translated messages files. Not all options will apply to both types of output files, and
+   * not all options will apply to all message plugins.
    */
   public static class OutputFileOptions {
 
-    /** The source locale string in the message bundle file. */
+    /** The source locale string in the messages file. */
     private String sourceLocaleString;
 
-    /** The target locale string in the message bundle file. */
+    /** The target locale string in the messages file. */
     private String targetLocaleString;
 
     /**
@@ -61,7 +66,7 @@ public class SoyMsgBundleHandler {
     }
 
     /**
-     * Sets the source locale string for an output message bundle file.
+     * Sets the source locale string for an output messages file.
      * @param sourceLocaleString The source locale string.
      */
     public void setSourceLocaleString(String sourceLocaleString) {
@@ -76,7 +81,7 @@ public class SoyMsgBundleHandler {
     }
 
     /**
-     * Sets the target locale string f0or an output message bundle file.
+     * Sets the target locale string for an output messages file.
      * @param targetLocaleString The target locale string.
      */
     public void setTargetLocaleString(String targetLocaleString) {
@@ -106,43 +111,7 @@ public class SoyMsgBundleHandler {
 
 
   /**
-   * Converts a message bundle to output file format and writes it to file. Uses the default
-   * output file options (source locale "en", no target locale).
-   *
-   * @param msgBundle The message bundle to write to file.
-   * @param outputFile The output file to write to.
-   * @throws IOException If there's an error while accessing the file.
-   * @throws SoyMsgException If there's an error while processing the messages.
-   */
-  public void writeToFile(SoyMsgBundle msgBundle, File outputFile)
-      throws IOException, SoyMsgException {
-
-    writeToFile(msgBundle, new OutputFileOptions(), outputFile);
-  }
-
-
-  /**
-   * Converts a message bundle to output file format and writes it to file.
-   *
-   * @param msgBundle The message bundle to write to file.
-   * @param options The options for generating the output file (some of the options may be needed,
-   *     depending on the SoyMsgPlugin used).
-   * @param outputFile The output file to write to.
-   * @throws IOException If there's an error while accessing the file.
-   * @throws SoyMsgException If there's an error while processing the messages.
-   */
-   public void writeToFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
-      throws IOException, SoyMsgException {
-
-    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
-    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.write(cs, outputFile, Charsets.UTF_8);
-  }
-
-
-  /**
-   * Reads an input messages file and creates a SoyMsgBundle.
+   * Reads a translated messages file and creates a SoyMsgBundle.
    *
    * @param inputFile The input file to read from.
    * @return The message bundle created from the messages file.
@@ -159,7 +128,7 @@ public class SoyMsgBundleHandler {
     }
 
     try {
-      String inputFileContent = Files.toString(inputFile, Charsets.UTF_8);
+      String inputFileContent = Files.toString(inputFile, UTF_8);
       return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
 
     } catch (SoyMsgException sme) {
@@ -170,7 +139,7 @@ public class SoyMsgBundleHandler {
 
 
   /**
-   * Reads an input messages resource and creates a SoyMsgBundle.
+   * Reads a translated messages resource and creates a SoyMsgBundle.
    *
    * @param inputResource The resource to read from.
    * @return The message bundle created from the messages resource.
@@ -180,13 +149,69 @@ public class SoyMsgBundleHandler {
   public SoyMsgBundle createFromResource(URL inputResource) throws IOException, SoyMsgException {
 
     try {
-      String inputFileContent = Resources.toString(inputResource, Charsets.UTF_8);
+      String inputFileContent = Resources.toString(inputResource, UTF_8);
       return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
 
     } catch (SoyMsgException sme) {
       sme.setFileOrResourceName(inputResource.toString());
       throw sme;
     }
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Soy internal methods.
+
+
+  /**
+   * Generates an extracted messages file (source messages to be translated) from a given message
+   * bundle, and writes it to file.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param msgBundle The message bundle to write to file.
+   * @param options The options for generating the output extracted messages file (depending on the
+   *     message plugin being used, none or some of the options may be applicable).
+   * @param outputFile The output file to write to.
+   * @throws SoyMsgException If there's an error while processing the messages.
+   * @throws IOException If there's an error while accessing the file.
+   */
+  public void writeToExtractedMsgsFile(
+      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
+      throws IOException, SoyMsgException {
+
+    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
+    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
+    Files.write(cs, outputFile, UTF_8);
+  }
+
+
+  /**
+   * Generates an translated messages file (source messages to be translated) from a given message
+   * bundle, and writes it to file.
+   *
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param msgBundle The message bundle to write to file.
+   * @param options The options for generating the output translated messages file (depending on the
+   *     message plugin being used, none or some of the options may be applicable).
+   * @param outputFile The output file to write to.
+   * @throws IOException If there's an error while accessing the file.
+   * @throws SoyMsgException If there's an error while processing the messages.
+   */
+  public void writeToTranslatedMsgsFile(
+      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
+      throws IOException, SoyMsgException {
+
+    if (! (msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
+      throw new SoyMsgException(
+          "writeToTranslatedMsgsFile() only works if using a SoyBidirectionalMsgPlugin.");
+    }
+    SoyBidirectionalMsgPlugin msgPluginCast = (SoyBidirectionalMsgPlugin) msgPlugin;
+
+    CharSequence cs = msgPluginCast.generateTranslatedMsgsFile(msgBundle, options);
+    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
+    Files.write(cs, outputFile, UTF_8);
   }
 
 }

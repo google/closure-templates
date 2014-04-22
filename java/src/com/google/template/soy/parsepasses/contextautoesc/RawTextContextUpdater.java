@@ -16,17 +16,18 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.internal.base.UnescapeUtils;
+import com.google.template.soy.soytree.RawTextNode;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.internal.base.UnescapeUtils;
 
 /**
  * Propagates {@link Context}s across raw text chunks using a state-machine parser for HTML/CSS/JS.
@@ -50,25 +51,35 @@ import com.google.template.soy.internal.base.UnescapeUtils;
 final class RawTextContextUpdater {
 
   /**
-   * @param rawText A chunk of HTML/CSS/JS.
+   * @param rawTextNode A chunk of HTML/CSS/JS.
    * @param context The context before rawText.
-   * @return The context after rawText.
+   * @return The input text node with context transitions marked.
    */
-  public static Context processRawText(String rawText, Context context)
+  public static SlicedRawTextNode processRawText(RawTextNode rawTextNode, Context context)
       throws SoyAutoescapeException {
-    while (rawText.length() != 0) {
-      // If we are in an attribute value, then decode rawText (except for the delimiter) up to the
-      // next occurrence of delimiter.
+    SlicedRawTextNode slicedRawTextNode = new SlicedRawTextNode(rawTextNode, context);
+    String rawText = rawTextNode.getRawText();
+    int offset = 0;
+    int length = rawText.length();
+    while (offset < length) {
+      String unprocessedRawText = rawText.substring(offset);
+      int startOffset = offset;
+      int endOffset;
+      Context startContext = context;
+      Context endContext;
+
+      // If we are in an attribute value, then decode the remaining text
+      // (except for the delimiter) up to the next occurrence of delimiter.
 
       // The end of the section to decode.  Either before a delimiter or > symbol that closes an
       // attribute, at the end of the rawText, or -1 if no decoding needs to happen.
-      int attrValueEnd = findEndOfAttributeValue(rawText, context.delimType);
+      int attrValueEnd = findEndOfAttributeValue(unprocessedRawText, context.delimType);
       if (attrValueEnd == -1) {
         // Outside an attribute value.  No need to decode.
         RawTextContextUpdater cu = new RawTextContextUpdater();
-        cu.processNextToken(rawText, context);
-        rawText = rawText.substring(cu.numCharsConsumed);
-        context = cu.next;
+        cu.processNextToken(unprocessedRawText, context);
+        endOffset = offset + cu.numCharsConsumed;
+        endContext = cu.next;
 
       } else {
         // Inside an attribute value.  Find the end and decode up to it.
@@ -86,11 +97,12 @@ final class RawTextContextUpdater {
         //
         // We could take the cross-product of two languages to avoid decoding but that leads to
         // either an explosion in the number of states, or the amount of lookahead required.
-        int rawTextLen = rawText.length();
+        int unprocessedRawTextLen = unprocessedRawText.length();
 
-        // The end of the attribute value.  At attrValueEnd, or attrValueend + 1 if a delimiter
+        // The end of the attribute value relative to offset.
+        // At attrValueEnd, or attrValueend + 1 if a delimiter
         // needs to be consumed.
-        int attrEnd = attrValueEnd < rawTextLen ?
+        int attrEnd = attrValueEnd < unprocessedRawTextLen ?
             attrValueEnd + context.delimType.text.length() : -1;
 
         // Decode so that the JavaScript rules work on attribute values like
@@ -107,39 +119,47 @@ final class RawTextContextUpdater {
 
         // We use this example more in the comments below.
 
-        String attrValueTail = UnescapeUtils.unescapeHtml(rawText.substring(0, attrValueEnd));
+        String attrValueTail = UnescapeUtils.unescapeHtml(
+            unprocessedRawText.substring(0, attrValueEnd));
         // attrValueTail is "!\")" in the example above.
 
         // Recurse on the decoded value.
         RawTextContextUpdater cu = new RawTextContextUpdater();
+        Context attrContext = startContext;
         while (attrValueTail.length() != 0) {
-          cu.processNextToken(attrValueTail, context);
+          cu.processNextToken(attrValueTail, attrContext);
           attrValueTail = attrValueTail.substring(cu.numCharsConsumed);
-          context = cu.next;
+          attrContext = cu.next;
         }
 
         // TODO: Maybe check that context is legal to leave an attribute in.  Throw if the attribute
         // ends inside a quoted string.
 
         if (attrEnd != -1) {
-          rawText = rawText.substring(attrEnd);
-          // rawText is now ">" from the example above.
+          endOffset = offset + attrEnd;
+          // rawText.charAt(endOffset) is now ">" in the example above.
 
           // When an attribute ends, we're back in the tag.
-          context = new Context(
+          endContext = new Context(
               Context.State.HTML_TAG, context.elType, Context.AttributeType.NONE,
               Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
               Context.UriPart.NONE);
         } else {
           // Whole tail is part of an unterminated attribute.
-          if (attrValueEnd != rawText.length()) {
+          if (attrValueEnd != unprocessedRawTextLen) {
             throw new IllegalStateException();
           }
-          rawText = "";
+          endOffset = length;
+          endContext = attrContext;
         }
       }
+
+      slicedRawTextNode.addSlice(startOffset, endOffset, startContext);
+      context = endContext;
+      offset = endOffset;
     }
-    return context;
+    slicedRawTextNode.setEndContext(context);
+    return slicedRawTextNode;
   }
 
   /**
@@ -345,14 +365,19 @@ final class RawTextContextUpdater {
    * depending on the value of other attributes.
    * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
    */
-  private static Set<String> URI_ATTR_NAMES = ImmutableSet.of(
-      "action", "archive", "background", "cite", "classid", "codebase", "data", "dsync", "href",
-      "longdesc", "src", "usemap",
+  private static final Set<String> URI_ATTR_NAMES = ImmutableSet.of(
+      "action", "archive", "base", "background", "cite", "classid", "codebase",
+      // TODO: content is only a URL sometimes depending on other parameters and existing templates
+      // use content with non-URL values.  Fix those templates or otherwise flag interpolations into
+      // content.
+      // "content",
+      "data", "dsync", "formaction", "href", "icon", "longdesc", "manifest", "poster", "src",
+      "usemap",
       // Custom attributes that are reliably URLs in existing code.
       "entity");
 
   /** Matches lower-case attribute local names that start or end with "url" or "uri". */
-  private static Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION = Pattern.compile(
+  private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION = Pattern.compile(
       "\\bur[il]|ur[il]s?$");
 
   /**

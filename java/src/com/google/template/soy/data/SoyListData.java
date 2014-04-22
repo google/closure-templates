@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.CollectionData;
@@ -29,13 +30,15 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 
 /**
  * A list data node in a Soy data tree.
  *
  * @author Kai Huang
  */
-public class SoyListData extends CollectionData implements Iterable<SoyData> {
+public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
 
 
   /** The underlying list. */
@@ -92,11 +95,13 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    *
    * <p> A list is always truthy.
    */
+  @Deprecated
   @Override public boolean toBoolean() {
     return true;
   }
 
 
+  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override public boolean equals(Object other) {
     return this == other;  // fall back to object equality
   }
@@ -167,6 +172,14 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    * @param value The data to add.
    */
   public void add(int value) {
+    add(IntegerData.forValue(value));
+  }
+
+  /**
+   * Adds a data value.
+   * @param value The data to add.
+   */
+  public void add(long value) {
     add(IntegerData.forValue(value));
   }
 
@@ -306,6 +319,16 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
   }
 
   /**
+   * Precondition: The specified index contains a long.
+   * Gets the long at the given index.
+   * @param index The index.
+   * @return The long at the given index, or null of the index is undefined.
+   */
+  public long getLong(int index) {
+    return get(index).longValue();
+  }
+
+  /**
    * Precondition: The specified index contains a float.
    * Gets the float at the given index.
    * @param index The index.
@@ -362,6 +385,81 @@ public class SoyListData extends CollectionData implements Iterable<SoyData> {
    */
   @Override public SoyData getSingle(String key) {
     return get(Integer.parseInt(key));
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyList.
+
+
+  @Override @Nonnull public List<? extends SoyValueProvider> asJavaList() {
+    return asList();
+  }
+
+
+  @Override @Nonnull public List<? extends SoyValue> asResolvedJavaList() {
+    return asList();
+  }
+
+
+  @Override public SoyValueProvider getProvider(int index) {
+    return get(index);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyMap.
+
+
+  @Override public int getItemCnt() {
+    return length();
+  }
+
+
+  @Override @Nonnull public Iterable<? extends SoyValue> getItemKeys() {
+    ImmutableList.Builder<IntegerData> indexesBuilder = ImmutableList.builder();
+    for (int i = 0, n = length(); i < n; i++) {
+      indexesBuilder.add(IntegerData.forValue(i));
+    }
+    return indexesBuilder.build();
+  }
+
+
+  @Override public boolean hasItem(SoyValue key) {
+    int index = getIntegerIndex(key);
+    return 0 <= index && index < length();
+  }
+
+
+  @Override public SoyValue getItem(SoyValue key) {
+    return get(getIntegerIndex(key));
+  }
+
+
+  @Override public SoyValueProvider getItemProvider(SoyValue key) {
+    return get(getIntegerIndex(key));
+  }
+
+
+  /**
+   * Gets the integer index out of a SoyValue key, or throws SoyDataException if the key is not an
+   * integer.
+   * @param key The SoyValue key.
+   * @return The index.
+   */
+  private int getIntegerIndex(SoyValue key) {
+    try {
+      return ((IntegerData) key).integerValue();
+    } catch (ClassCastException cce) {
+      try {
+        // TODO: Remove this old bad behavior after existing code is compliant.
+        return Integer.parseInt(key.coerceToString());
+      } catch (NumberFormatException nfe) {
+        throw new SoyDataException(
+            "SoyList accessed with non-integer key (got key type " + key.getClass().getName() +
+                ").");
+      }
+    }
   }
 
 }

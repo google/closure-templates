@@ -16,13 +16,13 @@
 // Author: Kai Huang
 
 {delpackage alpha}
-{namespace soy.examples.delegates}
+{namespace soy.examples.delegates autoescape="strict"}
 
 
 /**
  * Delegate package 'alpha' implementation of 'delegateBoo'.
  */
-{deltemplate delegateBoo}
+{deltemplate delegateBoo kind="text"}
   delegateBoo from delegate package alpha.
 {/deltemplate}
 
@@ -32,6 +32,6 @@
  * @param moo Note: Must list same params for all implementations, even if not all implementations
  *     use a param.
  */
-{deltemplate myDelegates.foo}
+{deltemplate myDelegates.foo kind="text"}
   myDelegates.foo from delegate package alpha (moo = {$moo}).
 {/deltemplate}

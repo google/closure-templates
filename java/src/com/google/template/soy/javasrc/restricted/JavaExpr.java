@@ -18,7 +18,6 @@ package com.google.template.soy.javasrc.restricted;
 
 import com.google.common.base.Objects;
 
-
 /**
  * Value class to represent a Java expression. Includes the text of the expression as well as the
  * precedence of the top-most operator.
@@ -73,8 +72,7 @@ public class JavaExpr {
 
 
   @Override public String toString() {
-    return Objects.toStringHelper(this)
-        .add("text", text).add("type", type).add("precedence", precedence).toString();
+    return String.format("JavaExpr{text=%s, precedence=%d}", text, precedence);
   }
 
 

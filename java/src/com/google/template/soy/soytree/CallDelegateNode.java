@@ -19,8 +19,8 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -56,13 +56,13 @@ public class CallDelegateNode extends CallNode {
 
     public final String delCalleeName;
     @Nullable public final ExprRootNode<?> delCalleeVariantExpr;
-    public final boolean allowsEmptyDefault;
+    public final Boolean allowsEmptyDefault;
 
     public CommandTextInfo(
         String commandText, String delCalleeName, @Nullable ExprRootNode<?> delCalleeVariantExpr,
-        boolean allowsEmptyDefault, boolean isPassingData, @Nullable ExprRootNode<?> dataExpr,
+        Boolean allowsEmptyDefault, boolean isPassingData, @Nullable ExprRootNode<?> dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
-      super(commandText, isPassingData, dataExpr, userSuppliedPlaceholderName, SyntaxVersion.V2);
+      super(commandText, isPassingData, dataExpr, userSuppliedPlaceholderName, null);
 
       Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
       this.delCalleeName = delCalleeName;
@@ -82,7 +82,7 @@ public class CallDelegateNode extends CallNode {
           new Attribute("name", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("variant", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("data", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("allowemptydefault", Attribute.BOOLEAN_VALUES, "true"));
+          new Attribute("allowemptydefault", Attribute.BOOLEAN_VALUES, null));
 
 
   /** The name of the delegate template being called. */
@@ -91,8 +91,9 @@ public class CallDelegateNode extends CallNode {
   /** The variant expression for the delegate being called, or null. */
   @Nullable private final ExprRootNode<?> delCalleeVariantExpr;
 
-  /** Whether this delegate call defaults to empty string if there's no active implementation. */
-  private final boolean allowsEmptyDefault;
+  /** User-specified value of whether this delegate call defaults to empty string if there's no
+   *  active implementation, or null if the attribute is not specified. */
+  private Boolean allowsEmptyDefault;
 
 
   /**
@@ -113,7 +114,7 @@ public class CallDelegateNode extends CallNode {
   /**
    * Private helper for constructor {@link #CallDelegateNode(int, String, String)}.
    */
-  private static final CommandTextInfo parseCommandTextHelper(
+  private static CommandTextInfo parseCommandTextHelper(
       String commandTextWithoutPhnameAttr, @Nullable String userSuppliedPlaceholderName) {
 
     String commandText =
@@ -162,7 +163,9 @@ public class CallDelegateNode extends CallNode {
     Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
         parseDataAttributeHelper(attributes.get("data"), commandText);
 
-    boolean allowsEmptyDefault = attributes.get("allowemptydefault").equals("true");
+    String allowemptydefaultAttr = attributes.get("allowemptydefault");
+    Boolean allowsEmptyDefault =
+        (allowemptydefaultAttr == null) ? null : allowemptydefaultAttr.equals("true");
 
     return new CommandTextInfo(
         commandText, delCalleeName, delCalleeVariantExpr, allowsEmptyDefault, dataAttrInfo.first,
@@ -175,8 +178,8 @@ public class CallDelegateNode extends CallNode {
    * @param delCalleeName The name of the delegate template being called.
    * @param delCalleeVariantExpr The variant expression for the delegate being called, or null.
    * @param useAttrStyleForCalleeName Whether to use name="..." when building command text.
-   * @param allowsEmptyDefault Whether this delegate call defaults to empty string if there's no
-   *     active implementation.
+   * @param allowsEmptyDefault User-specified value of whether this delegate call defaults to empty
+   *     string if there's no active implementation, or null if the attribute is not specified.
    * @param isPassingData True if the call forwards the data from dataRefText to its target.
    * @param isPassingAllData True if the call forwards all data from the template that contains
    *     it to its target.
@@ -186,7 +189,7 @@ public class CallDelegateNode extends CallNode {
    */
   public CallDelegateNode(
       int id, String delCalleeName, @Nullable ExprRootNode<?> delCalleeVariantExpr,
-      boolean useAttrStyleForCalleeName, boolean allowsEmptyDefault, boolean isPassingData,
+      boolean useAttrStyleForCalleeName, Boolean allowsEmptyDefault, boolean isPassingData,
       boolean isPassingAllData, @Nullable ExprRootNode<?> dataExpr,
       @Nullable String userSuppliedPlaceholderName, ImmutableList<String> escapingDirectiveNames) {
     this(
@@ -201,11 +204,12 @@ public class CallDelegateNode extends CallNode {
   /**
    * Private helper for constructor
    * {@link #CallDelegateNode(
-   *     int, String, ExprRootNode, boolean, boolean, boolean, boolean, ExprRootNode, String)}.
+   *     int, String, ExprRootNode, boolean, Boolean, boolean, boolean, ExprRootNode, String,
+   *     ImmutableList)}.
    */
-  private static final CommandTextInfo buildCommandTextInfoHelper(
+  private static CommandTextInfo buildCommandTextInfoHelper(
       String delCalleeName, @Nullable ExprRootNode<?> delCalleeVariantExpr,
-      boolean useAttrStyleForCalleeName, boolean allowsEmptyDefault, boolean isPassingData,
+      boolean useAttrStyleForCalleeName, Boolean allowsEmptyDefault, boolean isPassingData,
       boolean isPassingAllData, @Nullable ExprRootNode<?> dataExpr,
       @Nullable String userSuppliedPlaceholderName) {
 
@@ -243,7 +247,8 @@ public class CallDelegateNode extends CallNode {
    * Private helper constructor used by both of the constructors
    * {@link #CallDelegateNode(int, String, String)} and
    * {@link #CallDelegateNode(
-   *     int, String, ExprRootNode, boolean, boolean, boolean, boolean, ExprRootNode, String)}.
+   *     int, String, ExprRootNode, boolean, Boolean, boolean, boolean, ExprRootNode, String,
+   *     ImmutableList)}.
    * @param id The id for this node.
    * @param commandTextInfo All the info derived from the command text.
    * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
@@ -261,10 +266,12 @@ public class CallDelegateNode extends CallNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
+  @SuppressWarnings("ConstantConditions")  // for IntelliJ
   protected CallDelegateNode(CallDelegateNode orig) {
     super(orig);
     this.delCalleeName = orig.delCalleeName;
-    this.delCalleeVariantExpr = orig.delCalleeVariantExpr;
+    this.delCalleeVariantExpr =
+        (orig.delCalleeVariantExpr != null) ? orig.delCalleeVariantExpr.clone() : null;
     this.allowsEmptyDefault = orig.allowsEmptyDefault;
   }
 
@@ -286,8 +293,17 @@ public class CallDelegateNode extends CallNode {
   }
 
 
+  /** Sets allowsEmptyDefault to the given default value if it wasn't already user-specified. */
+  public void maybeSetAllowsEmptyDefault(boolean defaultValueForAllowsEmptyDefault) {
+    if (allowsEmptyDefault == null) {
+      allowsEmptyDefault = defaultValueForAllowsEmptyDefault;
+    }
+  }
+
+
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */
   public boolean allowsEmptyDefault() {
+    Preconditions.checkState(allowsEmptyDefault != null);
     return allowsEmptyDefault;
   }
 

@@ -91,6 +91,7 @@ public final class SanitizedContent extends SoyData {
 
   private final String content;
   private final ContentKind contentKind;
+  private final Dir contentDir;
 
 
   /**
@@ -104,10 +105,13 @@ public final class SanitizedContent extends SoyData {
    *
    * @param content A string of valid content with the given content kind.
    * @param contentKind Describes the kind of string that content is.
+   * @param contentDir The content's direction; null if unknown and thus to be estimated when
+   *     necessary.
    */
-  SanitizedContent(String content, ContentKind contentKind) {
+  SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
     this.content = content;
     this.contentKind = contentKind;
+    this.contentDir = contentDir;
   }
 
 
@@ -127,6 +131,17 @@ public final class SanitizedContent extends SoyData {
   }
 
 
+  /**
+   * Returns the content's direction; null indicates that the direction is unknown, and is to be
+   * estimated when necessary.
+   */
+  @Nullable
+  public Dir getContentDirection() {
+    return contentDir;
+  }
+
+
+  @Deprecated
   @Override
   public boolean toBoolean() {
     return content.length() != 0;  // Consistent with StringData
@@ -139,10 +154,22 @@ public final class SanitizedContent extends SoyData {
   }
 
 
+  /**
+   * Returns the string value.
+   *
+   * In contexts where a string value is required, SanitizedCOntent is permitted.
+   */
+  @Override
+  public String stringValue() {
+    return content;
+  }
+
+
   @Override
   public boolean equals(@Nullable Object other) {
     return other instanceof SanitizedContent &&
         this.contentKind == ((SanitizedContent) other).contentKind &&
+        this.contentDir == ((SanitizedContent) other).contentDir &&
         this.content.equals(((SanitizedContent) other).content);
   }
 

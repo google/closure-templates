@@ -16,6 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.primitive.FloatType;
+
 
 /**
  * Node representing a float value.
@@ -51,6 +54,11 @@ public class FloatNode extends AbstractPrimitiveNode {
 
   @Override public Kind getKind() {
     return Kind.FLOAT_NODE;
+  }
+
+
+  @Override public SoyType getType() {
+    return FloatType.getInstance();
   }
 
 

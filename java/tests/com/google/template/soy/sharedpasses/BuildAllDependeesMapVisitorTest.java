@@ -25,6 +25,7 @@ import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -83,7 +84,8 @@ public class BuildAllDependeesMapVisitorTest extends TestCase {
     PrintNode f = (PrintNode) foreachNonemptyNode.getChild(0);
     PrintNode gh = (PrintNode) foreachNonemptyNode.getChild(1);
     PrintDirectiveNode ghPdn = gh.getChild(0);
-    MsgNode msgNode = (MsgNode) foreachNonemptyNode.getChild(2);
+    MsgFallbackGroupNode msgFbGrpNode = (MsgFallbackGroupNode) foreachNonemptyNode.getChild(2);
+    MsgNode msgNode = msgFbGrpNode.getChild(0);
     MsgPlaceholderNode iPh = (MsgPlaceholderNode) msgNode.getChild(0);
     PrintNode i = (PrintNode) iPh.getChild(0);
     MsgPlaceholderNode callPh = (MsgPlaceholderNode) msgNode.getChild(1);
@@ -113,6 +115,9 @@ public class BuildAllDependeesMapVisitorTest extends TestCase {
     assertEquals(ImmutableList.of(gh, ifCondNode, template), allDependeesMap.get(ghPdn));
     assertEquals(
         ImmutableList.of(foreachNonemptyNode, ifCondNode, template),
+        allDependeesMap.get(msgFbGrpNode));
+    assertEquals(
+        ImmutableList.of(msgFbGrpNode, foreachNonemptyNode, ifCondNode, template),
         allDependeesMap.get(msgNode));
     // Note special case: foreachNonemptyNode does not count as conditional block.
     assertEquals(ImmutableList.of(msgNode, ifCondNode, template), allDependeesMap.get(iPh));

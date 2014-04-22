@@ -174,7 +174,7 @@ class XliffParser {
         // Placeholder in message: Save the preceding raw text (if any) and then save the
         // placeholder name.
         if (currRawTextPart != null) {
-          currMsgParts.add(new SoyMsgRawTextPart(currRawTextPart));
+          currMsgParts.add(SoyMsgRawTextPart.of(currRawTextPart));
           currRawTextPart = null;
         }
         currMsgParts.add(new SoyMsgPlaceholderPart(atts.getValue("id")));
@@ -188,7 +188,7 @@ class XliffParser {
         // End 'target': Save the preceding raw text (if any). Then create a SoyMsg object from the
         // collected message data and add it to msgs list.
         if (currRawTextPart != null) {
-          currMsgParts.add(new SoyMsgRawTextPart(currRawTextPart));
+          currMsgParts.add(SoyMsgRawTextPart.of(currRawTextPart));
           currRawTextPart = null;
         }
         isInMsg = false;

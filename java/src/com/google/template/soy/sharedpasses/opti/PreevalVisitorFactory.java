@@ -18,9 +18,11 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.shared.internal.SharedModule.Shared;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 
 import java.util.Deque;
@@ -41,33 +43,37 @@ import javax.inject.Singleton;
 public class PreevalVisitorFactory implements EvalVisitorFactory {
 
 
-  /** Map of all SoyJavaRuntimeFunctions (name to function). */
-  private final Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap;
+  /** Instance of SoyValueHelper to use. */
+  private final SoyValueHelper valueHelper;
+
+  /** Map of all SoyJavaFunctions (name to function). */
+  private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
 
 
   /**
-   * @param soyJavaRuntimeFunctionsMap Map of all SoyJavaRuntimeFunctions (name to function).
+   * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
    */
   @Inject
-  public PreevalVisitorFactory(Map<String, SoyJavaRuntimeFunction> soyJavaRuntimeFunctionsMap) {
-    this.soyJavaRuntimeFunctionsMap = soyJavaRuntimeFunctionsMap;
+  public PreevalVisitorFactory(
+      SoyValueHelper valueHelper, @Shared Map<String, SoyJavaFunction> soyJavaFunctionsMap) {
+    this.valueHelper = valueHelper;
+    this.soyJavaFunctionsMap = soyJavaFunctionsMap;
   }
 
 
-  public PreevalVisitor create(SoyMapData data, Deque<Map<String, SoyData>> env) {
+  public PreevalVisitor create(SoyRecord data, Deque<Map<String, SoyValue>> env) {
 
-    return new PreevalVisitor(soyJavaRuntimeFunctionsMap, data, env);
+    return new PreevalVisitor(valueHelper, soyJavaFunctionsMap, data, env);
   }
 
 
-  @Override
-  public PreevalVisitor create(
-      SoyMapData data, @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+  @Override public PreevalVisitor create(
+      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);
 
-    return new PreevalVisitor(soyJavaRuntimeFunctionsMap, data, env);
+    return new PreevalVisitor(valueHelper, soyJavaFunctionsMap, data, env);
   }
 
 }

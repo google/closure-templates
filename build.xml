@@ -60,6 +60,7 @@ Author: Neil Sanchala
     <mkdir dir="${build.genfiles.dir}" />
     <mkdir dir="${build.genfiles.dir}/com/google/template/soy/exprparse" />
     <mkdir dir="${build.genfiles.dir}/com/google/template/soy/soyparse" />
+    <mkdir dir="${build.genfiles.dir}/com/google/template/soy/types/parse" />
 
     <!-- JavaCC compilation. Generated files go into the 'genfiles' directory. -->
     <javacc target="${java.src.dir}/com/google/template/soy/exprparse/ExpressionParser.jj"
@@ -71,12 +72,15 @@ Author: Neil Sanchala
     <javacc target = "${java.src.dir}/com/google/template/soy/soyparse/TemplateParser.jj"
             outputdirectory = "${build.genfiles.dir}/com/google/template/soy/soyparse"
             javacchome = "buildtools/javacc" />
+    <javacc target = "${java.src.dir}/com/google/template/soy/types/parse/TypeParser.jj"
+            outputdirectory = "${build.genfiles.dir}/com/google/template/soy/types/parse"
+            javacchome = "buildtools/javacc" />
 
     <!-- Java compilation. -->
     <javac srcdir="${java.src.dir}:${build.genfiles.dir}"
            destdir="${build.classes.dir}"
-           source="1.6"
-           target="1.6"
+           source="1.7"
+           target="1.7"
            includeAntRuntime="true"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />
@@ -92,7 +96,7 @@ Author: Neil Sanchala
           description="generates soyutils.js and soyutils_usegoog.js.">
     <!-- Load a custom ANT task. -->
     <taskdef name="gen.escape.directives"
-             classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode">
+             classname="com.google.template.soy.shared.internal.GenerateSoyUtilsEscapingDirectiveCode">
       <classpath>
         <fileset dir="${java.lib.dir}">
           <include name="*.jar" />
@@ -111,8 +115,8 @@ Author: Neil Sanchala
     <gen.escape.directives>
       <input path="${basedir}/javascript/soyutils_usegoog.js"/>
       <output path="${build.dir}/javascript/soyutils_usegoog.js"/>
-      <jsdefined pattern="goog.string.*"/>
-      <jsdefined pattern="goog.asserts.*"/>
+      <libdefined pattern="goog.string.*"/>
+      <libdefined pattern="goog.asserts.*"/>
     </gen.escape.directives>
   </target>
 
@@ -189,19 +193,6 @@ Author: Neil Sanchala
   </target>
 
 
-  <!-- Target to create a standalone executable SoyToJavaSrcCompilerExperimental.jar. -->
-  <target name="SoyToJavaSrcCompilerExperimental"
-          depends="jar"
-          description="Creates a standalone executable SoyToJavaSrcCompilerExperimental.jar.">
-    <jar destfile="${build.dir}/SoyToJavaSrcCompilerExperimental.jar" update="true">
-      <manifest>
-        <attribute name="Main-Class" value="com.google.template.soy.SoyToJavaSrcCompilerExperimental" />
-      </manifest>
-      <zipfileset src="${soy.jar.file}" />
-    </jar>
-  </target>
-
-
   <!-- Target to generate lite javadoc (for API users). -->
   <target name="javadoc-lite"
           depends="compile"
@@ -215,7 +206,6 @@ Author: Neil Sanchala
       <packageset dir="${java.src.dir}">
         <include name="com/google/template/soy" />
         <include name="com/google/template/soy/data" />
-        <include name="com/google/template/soy/javasrc" />
         <include name="com/google/template/soy/jssrc" />
         <include name="com/google/template/soy/msgs" />
         <include name="com/google/template/soy/parseinfo" />
@@ -664,8 +654,8 @@ Author: Neil Sanchala
     <mkdir dir="${build.testclasses.dir}" />
     <javac srcdir="${java.tests.dir}"
            destdir="${build.testclasses.dir}"
-           source="1.6"
-           target="1.6"
+           source="1.7"
+           target="1.7"
            includeAntRuntime="false"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />

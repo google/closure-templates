@@ -16,11 +16,9 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -28,7 +26,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,14 +39,7 @@ import java.util.Set;
 final class TemplateCallGraph {
 
   /** The edges. */
-  private final Multimap<TemplateNode, TemplateNode> callers = Multimaps.newSetMultimap(
-      Maps.<TemplateNode, Collection<TemplateNode>>newLinkedHashMap(),
-      new Supplier<Set<TemplateNode>>() {
-        @Override
-        public Set<TemplateNode> get() {
-          return Sets.newLinkedHashSet();
-        }
-      });
+  private final Multimap<TemplateNode, TemplateNode> callers = LinkedHashMultimap.create();
 
   /**
    * @param templatesByName A map whose values are the vertices for the call graph, and whose

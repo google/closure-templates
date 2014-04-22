@@ -266,7 +266,7 @@ public class TemplateRegistry {
 
 
   /**
-   * Retrieves the list of {@code DelegateTemplateDivision}s (sorted in descencing priority order)
+   * Retrieves the list of {@code DelegateTemplateDivision}s (sorted in descending priority order)
    * given a delegate template key (name and variant).
    * @param delTemplateKey The delegate template key (name and variant) to retrieve.
    * @return The corresponding list of {@code DelegateTemplateDivision}s (sorted in descencing
@@ -281,6 +281,7 @@ public class TemplateRegistry {
   /**
    * Selects a delegate template based on the rendering rules, given the delegate template key (name
    * and variant) and the set of active delegate package names.
+   *
    * @param delTemplateKey The delegate template key (name and variant) to select an implementation
    *     for.
    * @param activeDelPackageNames The set of active delegate package names.
@@ -292,11 +293,35 @@ public class TemplateRegistry {
       DelTemplateKey delTemplateKey, Set<String> activeDelPackageNames)
       throws DelegateTemplateConflictException {
 
-    List<DelegateTemplateDivision> divisions = delTemplatesMap.get(delTemplateKey);
-    if (divisions == null && delTemplateKey.variant.length() > 0) {
-      // Fallback to empty variant.
-      divisions = delTemplatesMap.get(new DelTemplateKey(delTemplateKey.name, ""));
+    TemplateDelegateNode delTemplate = selectDelTemplateHelper(
+        delTemplateKey, activeDelPackageNames);
+
+    if (delTemplate == null && delTemplateKey.variant.length() > 0) {
+      // Fall back to empty variant.
+      delTemplate = selectDelTemplateHelper(
+          new DelTemplateKey(delTemplateKey.name, ""), activeDelPackageNames);
     }
+
+    return delTemplate;
+  }
+
+
+  /**
+   * Private helper for {@code selectDelTemplate()}. Selects a delegate template based on the
+   * rendering rules, given the delegate template key (name and variant) and the set of active
+   * delegate package names. However, does not fall back to empty variant.
+   *
+   * @param delTemplateKey The delegate template key (name and variant) to select an implementation
+   *     for.
+   * @param activeDelPackageNames The set of active delegate package names.
+   * @return The selected delegate template, or null if there are no active implementations.
+   * @throws DelegateTemplateConflictException
+   */
+  private TemplateDelegateNode selectDelTemplateHelper(
+      DelTemplateKey delTemplateKey, Set<String> activeDelPackageNames)
+      throws DelegateTemplateConflictException {
+
+    List<DelegateTemplateDivision> divisions = delTemplatesMap.get(delTemplateKey);
     if (divisions == null) {
       return null;
     }

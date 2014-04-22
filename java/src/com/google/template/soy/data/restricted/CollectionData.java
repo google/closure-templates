@@ -29,7 +29,8 @@ import java.util.List;
  * Abstract superclass for a node in a Soy data tree that represents a collection of data (i.e. an
  * internal node).
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p> Important: Even though this class is not marked 'final', do not extend this class.
  *
  * @author Kai Huang
  */
@@ -118,6 +119,16 @@ public abstract class CollectionData extends SoyData {
    * @param value The data to put at the specified location.
    */
   public void put(String keyStr, int value) {
+    put(keyStr, IntegerData.forValue(value));
+  }
+
+  /**
+   * Puts data into this data tree at the specified key string.
+   * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
+   *     Indicates the path to the location within this data tree.
+   * @param value The data to put at the specified location.
+   */
+  public void put(String keyStr, long value) {
     put(keyStr, IntegerData.forValue(value));
   }
 
@@ -247,6 +258,22 @@ public abstract class CollectionData extends SoyData {
       throw new IllegalArgumentException("Missing key: " + keyStr);
     }
     return valueData.integerValue();
+  }
+
+  /**
+   * Precondition: The specified key string is the path to a long.
+   * Gets the long at the specified key string.
+   * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
+   *     Indicates the path to the location within this data tree.
+   * @return The long at the specified key string.
+   * @throws IllegalArgumentException If no data is stored at the specified key.
+   */
+  public long getLong(String keyStr) {
+    SoyData valueData = get(keyStr);
+    if (valueData == null) {
+      throw new IllegalArgumentException("Missing key: " + keyStr);
+    }
+    return valueData.longValue();
   }
 
   /**

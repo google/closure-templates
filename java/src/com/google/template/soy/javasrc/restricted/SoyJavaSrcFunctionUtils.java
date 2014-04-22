@@ -25,7 +25,7 @@ import com.google.template.soy.data.restricted.StringData;
 
 
 /**
- * Utilities for implementing {@link SoyJavaSrcFunction}s.
+ * Utilities for implementing {@code SoyJavaSrcFunction}s.
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *

@@ -31,9 +31,9 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.List;
 import java.util.Map;
@@ -87,6 +87,8 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     Map<String, TemplateBasicNode> basicTemplatesMap = templateRegistry.getBasicTemplatesMap();
     Map<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMap =
         templateRegistry.getDelTemplatesMap();
+    Map<String, Set<DelTemplateKey>> delTemplateNameToKeysMap =
+        templateRegistry.getDelTemplateNameToKeysMap();
 
     // Check that no name is reused for both basic and delegate templates.
     Set<String> reusedTemplateNames = Sets.newLinkedHashSet();
@@ -102,69 +104,62 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Check that all delegate templates with the same name have the same declared params and
-    // content kind.
-    for (List<DelegateTemplateDivision> divisions : delTemplatesMap.values()) {
+    // content kind. First, we iterate over template names:
+    for (Set<DelTemplateKey> delTemplateKeys : delTemplateNameToKeysMap.values()) {
 
       TemplateDelegateNode firstDelTemplate = null;
-      String firstDelPackageName = null;
-      Set<SoyDocParam> firstSoyDocParamsSet = null;
+      Set<TemplateParam> firstParamSet = null;
       ContentKind firstContentKind = null;
 
-      for (DelegateTemplateDivision division : divisions) {
-        for (TemplateDelegateNode delTemplate : division.delPackageNameToDelTemplateMap.values()) {
-          String currDelPackageName =  (delTemplate.getDelPackageName() != null) ?
-              delTemplate.getDelPackageName() : "<default>";
+      // Then, loop over keys that share the same name (effectively, over variants):
+      for (DelTemplateKey delTemplateKey : delTemplateKeys) {
+        // Then, loop over divisions with the same key (effectively, over priorities):
+        for (DelegateTemplateDivision division : delTemplatesMap.get(delTemplateKey)) {
+          // Now, over templates in the division (effectively, delpackages):
+          for (TemplateDelegateNode delTemplate :
+              division.delPackageNameToDelTemplateMap.values()) {
+            String currDelPackageName =  (delTemplate.getDelPackageName() != null) ?
+                delTemplate.getDelPackageName() : "<default>";
 
-          if (firstDelTemplate == null) {
-            // First template encountered.
-            firstDelTemplate = delTemplate;
-            firstDelPackageName = currDelPackageName;
-            firstSoyDocParamsSet = Sets.newHashSet(delTemplate.getSoyDocParams());
-            firstContentKind = delTemplate.getContentKind();
+            if (firstDelTemplate == null) {
+              // First template encountered.
+              firstDelTemplate = delTemplate;
+              firstParamSet = Sets.newHashSet(delTemplate.getParams());
+              firstContentKind = delTemplate.getContentKind();
 
-          } else {
-            // Not first template encountered.
-            Set<SoyDocParam> currSoyDocParamsSet = Sets.newHashSet(delTemplate.getSoyDocParams());
-            if (! currSoyDocParamsSet.equals(firstSoyDocParamsSet)) {
-              throw SoySyntaxExceptionUtils.createWithNode(
-                  String.format(
-                      "Found delegate templates with same name '%s' but different param" +
-                          " declarations in delegate packages '%s' and '%s'.",
-                      firstDelTemplate.getDelTemplateName(), firstDelPackageName,
-                      currDelPackageName),
-                  firstDelTemplate);
-            }
-            if (delTemplate.getContentKind() != firstContentKind) {
-              // TODO: This is only *truly* a requirement if the strict mode deltemplates are being
-              // called by contextual templates. For a strict-to-strict call, everything is
-              // escaped at runtime at the call sites. You could imagine delegating between either
-              // a plain-text or rich-html template. However, most developers will write their
-              // deltemplates in a parallel manner, and will want to know when the templates
-              // differ. Plus, requiring them all to be the same early-on will allow future
-              // optimizations to avoid the run-time checks, so it's better to start out as strict
-              // as possible and only open up if needed.
-              throw SoySyntaxExceptionUtils.createWithNode(
-                  String.format(
-                      "If one deltemplate has strict autoescaping, all its peers must also be " +
-                          "strictly autoescaped with the same content kind: %s != %s (delegate " +
-                          "packages %s and %s)",
-                      firstContentKind, delTemplate.getContentKind(), firstDelPackageName,
-                      currDelPackageName),
-                  firstDelTemplate);
+            } else {
+              // Not first template encountered.
+              Set<TemplateParam> currParamSet = Sets.newHashSet(delTemplate.getParams());
+              if (! currParamSet.equals(firstParamSet)) {
+                throw SoySyntaxExceptionUtils.createWithNode(
+                    String.format(
+                        "Found delegate template with same name '%s' but different param" +
+                            " declarations compared to the definition at %s.",
+                        firstDelTemplate.getDelTemplateName(),
+                        firstDelTemplate.getSourceLocation().toString()),
+                    delTemplate);
+              }
+              if (delTemplate.getContentKind() != firstContentKind) {
+                // TODO: This is only *truly* a requirement if the strict mode deltemplates are
+                // being called by contextual templates. For a strict-to-strict call, everything
+                // is escaped at runtime at the call sites. You could imagine delegating between
+                // either a plain-text or rich-html template. However, most developers will write
+                // their deltemplates in a parallel manner, and will want to know when the
+                // templates differ. Plus, requiring them all to be the same early-on will allow
+                // future optimizations to avoid the run-time checks, so it's better to start out
+                // as strict as possible and only open up if needed.
+                throw SoySyntaxExceptionUtils.createWithNode(
+                    String.format(
+                        "If one deltemplate has strict autoescaping, all its peers must also be " +
+                            "strictly autoescaped with the same content kind: %s != %s. " +
+                            "Conflicting definition at %s.",
+                        firstContentKind, delTemplate.getContentKind(),
+                        firstDelTemplate.getSourceLocation().toString()),
+                    delTemplate);
+              }
             }
           }
         }
-      }
-    }
-
-    // Check that all basic templates within delegate packages are private.
-    for (TemplateBasicNode basicTemplate : basicTemplatesMap.values()) {
-      if (basicTemplate.getDelPackageName() != null && ! basicTemplate.isPrivate()) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            String.format(
-                "Found public template '%s' in delegate package '%s' (must mark as private).",
-                basicTemplate.getTemplateName(), basicTemplate.getDelPackageName()),
-            basicTemplate);
       }
     }
   }

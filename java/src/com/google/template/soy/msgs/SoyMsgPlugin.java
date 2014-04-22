@@ -28,13 +28,13 @@ public interface SoyMsgPlugin {
 
 
   /**
-   * Builds the content of an output message file (one that will be sent for translation) from a
+   * Builds the content of an extracted messages file (source messages to be translated) from a
    * given message bundle object containing messages extracted from source files.
    *
    * @param msgBundle The bundle of messages extracted from source files.
-   * @param options The options to use for generating the output message file (e.g. the source
+   * @param options The options to use for generating the extracted messages file (e.g. the source
    *     locale/language of the messages). Not all options will apply to all message plugins.
-   * @return The content of the generated output file.
+   * @return The content of the generated extracted messages file.
    * @throws SoyMsgException If there was an error building the file content.
    */
   public CharSequence generateExtractedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options)
@@ -42,14 +42,13 @@ public interface SoyMsgPlugin {
 
 
   /**
-   * Parses the content of an input message file (one that has been translated) and builds a
-   * message bundle object.
+   * Parses the content of a translated messages file and builds a message bundle object.
    *
-   * @param inputFileContent The content of the translated message file.
-   * @return The message bundle object built from the message file.
+   * @param translatedMsgsFileContent The content of the translated messages file.
+   * @return The message bundle object built from the messages file.
    * @throws SoyMsgException If there was an error parsing the file content.
    */
-  public SoyMsgBundle parseTranslatedMsgsFile(String inputFileContent)
+  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent)
       throws SoyMsgException;
 
 }

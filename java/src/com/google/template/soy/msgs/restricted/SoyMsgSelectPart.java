@@ -16,29 +16,30 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.base.Pair;
-
-import java.util.List;
 
 /**
  * Represents a select statement within a message.
  *
  * @author Mohamed Eldawy
  */
-public class SoyMsgSelectPart extends SoyMsgPart {
+public final class SoyMsgSelectPart extends SoyMsgPart {
 
 
   /** The select variable name. */
   private final String selectVarName;
 
   /** The various cases for this select statement. The default statement has a null key. */
-  private final List<Pair<String, List<SoyMsgPart>>> cases;
+  private final ImmutableList<Pair<String, ImmutableList<SoyMsgPart>>> cases;
 
   /**
    * @param selectVarName The select variable name.
    * @param cases The list of cases for this select statement.
    */
-  public SoyMsgSelectPart(String selectVarName, List<Pair<String, List<SoyMsgPart>>> cases) {
+  public SoyMsgSelectPart(
+      String selectVarName, ImmutableList<Pair<String, ImmutableList<SoyMsgPart>>> cases) {
     this.selectVarName = selectVarName;
     this.cases = cases;
   }
@@ -50,8 +51,22 @@ public class SoyMsgSelectPart extends SoyMsgPart {
   }
 
   /** Returns the cases. */
-  public List<Pair<String, List<SoyMsgPart>>> getCases() {
+  public ImmutableList<Pair<String, ImmutableList<SoyMsgPart>>> getCases() {
     return cases;
   }
 
+
+  @Override public boolean equals(Object other) {
+    if (!(other instanceof SoyMsgSelectPart)) {
+      return false;
+    }
+    SoyMsgSelectPart otherSelect = (SoyMsgSelectPart) other;
+    return selectVarName.equals(otherSelect.selectVarName)
+        && cases.equals(otherSelect.cases);
+  }
+
+
+  @Override public int hashCode() {
+    return Objects.hashCode(SoyMsgSelectPart.class, selectVarName, cases);
+  }
 }

@@ -1,748 +1,679 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-Context.State (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>Context.State (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="Context.State (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.JsFollowingSlash.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/Context.State.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="Context.State.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.JsFollowingSlash.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/Context.State.html" target="_top">Frames</a></li>
+<li><a href="Context.State.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#enum_constant_summary">ENUM CONSTANTS</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;<A HREF="#enum_constant_detail">ENUM CONSTANTS</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#enum_constant_summary">Enum Constants</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#enum_constant_detail">Enum Constants</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy.parsepasses.contextautoesc</FONT>
-<BR>
-Enum Context.State</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by "><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true" title="class or interface in java.lang">java.lang.Enum</A>&lt;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A>&gt;
-      <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.parsepasses.contextautoesc.Context.State</B>
-</PRE>
-<DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="http://java.sun.com/javase/6/docs/api/java/io/Serializable.html?is-external=true" title="class or interface in java.io">Serializable</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Comparable.html?is-external=true" title="class or interface in java.lang">Comparable</A>&lt;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A>&gt;</DD>
-</DL>
-<DL>
-<DT><B>Enclosing class:</B><DD><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</A></DD>
-</DL>
-<HR>
-<DL>
-<DT><PRE>public static enum <B>Context.State</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true" title="class or interface in java.lang">Enum</A>&lt;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A>&gt;</DL>
-</PRE>
-
-<P>
-A state in the parse of an HTML document.
-<P>
-
-<P>
-<HR>
-
-<P>
+<div class="header">
+<div class="subTitle">com.google.template.soy.parsepasses.contextautoesc</div>
+<h2 title="Enum Context.State" class="title">Enum Context.State</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true" title="class or interface in java.lang">java.lang.Enum</a>&lt;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a>&gt;</li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.parsepasses.contextautoesc.Context.State</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl>
+<dt>All Implemented Interfaces:</dt>
+<dd><a href="http://java.sun.com/javase/6/docs/api/java/io/Serializable.html?is-external=true" title="class or interface in java.io">Serializable</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Comparable.html?is-external=true" title="class or interface in java.lang">Comparable</a>&lt;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a>&gt;</dd>
+</dl>
+<dl>
+<dt>Enclosing class:</dt>
+<dd><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.html" title="class in com.google.template.soy.parsepasses.contextautoesc">Context</a></dd>
+</dl>
+<hr>
+<br>
+<pre>public static enum <span class="strong">Context.State</span>
+extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true" title="class or interface in java.lang">Enum</a>&lt;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a>&gt;</pre>
+<div class="block">A state in the parse of an HTML document.</div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- =========== ENUM CONSTANT SUMMARY =========== -->
-
-<A NAME="enum_constant_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Enum Constant Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS">CSS</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS content outside a comment, string, or URI.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_COMMENT">CSS_COMMENT</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS inside a comment.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_DQ_STRING">CSS_DQ_STRING</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS inside a double quoted string.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_DQ_URI">CSS_DQ_URI</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS in a URI terminated by the first double quote.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_SQ_STRING">CSS_SQ_STRING</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS inside a single quoted string.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_SQ_URI">CSS_SQ_URI</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS in a URI terminated by the first single quote.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_URI">CSS_URI</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In CSS in a URI terminated by the first close parenthesis.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#ERROR">ERROR</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Not inside any valid HTML/CSS/JS construct.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_ATTRIBUTE_NAME">HTML_ATTRIBUTE_NAME</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Inside an HTML attribute name.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_BEFORE_ATTRIBUTE_VALUE">HTML_BEFORE_ATTRIBUTE_VALUE</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_BEFORE_TAG_NAME">HTML_BEFORE_TAG_NAME</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Just before a tag name.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_COMMENT">HTML_COMMENT</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Inside an HTML comment.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_NORMAL_ATTR_VALUE">HTML_NORMAL_ATTR_VALUE</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Inside a normal (non-CSS, JS, or URI) HTML attribute value.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_PCDATA">HTML_PCDATA</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Outside an HTML tag, directive, or comment.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_RCDATA">HTML_RCDATA</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Inside an element whose content is RCDATA where text and entities can appear but where nested
- elements cannot.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_TAG">HTML_TAG</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Before an HTML attribute or the end of a tag.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_TAG_NAME">HTML_TAG_NAME</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Inside a tag name.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS">JS</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In JavaScript, outside a comment, string, or Regexp literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_BLOCK_COMMENT">JS_BLOCK_COMMENT</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In JavaScript inside a block comment.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_DQ_STRING">JS_DQ_STRING</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In JavaScript inside a double quoted string.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_LINE_COMMENT">JS_LINE_COMMENT</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In JavaScript inside a line comment.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_REGEX">JS_REGEX</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In JavaScript inside a regular expression literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_SQ_STRING">JS_SQ_STRING</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In JavaScript inside a single quoted string.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#TEXT">TEXT</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Plain text; no escaping.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#URI">URI</A></B></CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In an HTML attribute whose content is a URI.</TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="enum_constant_summary">
+<!--   -->
+</a>
+<h3>Enum Constant Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Enum Constant Summary table, listing enum constants, and an explanation">
+<caption><span>Enum Constants</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Enum Constant and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS">CSS</a></strong></code>
+<div class="block">In CSS content outside a comment, string, or URI.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_COMMENT">CSS_COMMENT</a></strong></code>
+<div class="block">In CSS inside a comment.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_DQ_STRING">CSS_DQ_STRING</a></strong></code>
+<div class="block">In CSS inside a double quoted string.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_DQ_URI">CSS_DQ_URI</a></strong></code>
+<div class="block">In CSS in a URI terminated by the first double quote.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_SQ_STRING">CSS_SQ_STRING</a></strong></code>
+<div class="block">In CSS inside a single quoted string.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_SQ_URI">CSS_SQ_URI</a></strong></code>
+<div class="block">In CSS in a URI terminated by the first single quote.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#CSS_URI">CSS_URI</a></strong></code>
+<div class="block">In CSS in a URI terminated by the first close parenthesis.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#ERROR">ERROR</a></strong></code>
+<div class="block">Not inside any valid HTML/CSS/JS construct.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_ATTRIBUTE_NAME">HTML_ATTRIBUTE_NAME</a></strong></code>
+<div class="block">Inside an HTML attribute name.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_BEFORE_ATTRIBUTE_VALUE">HTML_BEFORE_ATTRIBUTE_VALUE</a></strong></code>
+<div class="block">Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_BEFORE_TAG_NAME">HTML_BEFORE_TAG_NAME</a></strong></code>
+<div class="block">Just before a tag name.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_COMMENT">HTML_COMMENT</a></strong></code>
+<div class="block">Inside an HTML comment.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_NORMAL_ATTR_VALUE">HTML_NORMAL_ATTR_VALUE</a></strong></code>
+<div class="block">Inside a normal (non-CSS, JS, or URI) HTML attribute value.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_PCDATA">HTML_PCDATA</a></strong></code>
+<div class="block">Outside an HTML tag, directive, or comment.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_RCDATA">HTML_RCDATA</a></strong></code>
+<div class="block">Inside an element whose content is RCDATA where text and entities can appear but where nested
+ elements cannot.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_TAG">HTML_TAG</a></strong></code>
+<div class="block">Before an HTML attribute or the end of a tag.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#HTML_TAG_NAME">HTML_TAG_NAME</a></strong></code>
+<div class="block">Inside a tag name.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS">JS</a></strong></code>
+<div class="block">In JavaScript, outside a comment, string, or Regexp literal.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_BLOCK_COMMENT">JS_BLOCK_COMMENT</a></strong></code>
+<div class="block">In JavaScript inside a block comment.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_DQ_STRING">JS_DQ_STRING</a></strong></code>
+<div class="block">In JavaScript inside a double quoted string.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_LINE_COMMENT">JS_LINE_COMMENT</a></strong></code>
+<div class="block">In JavaScript inside a line comment.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_REGEX">JS_REGEX</a></strong></code>
+<div class="block">In JavaScript inside a regular expression literal.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#JS_SQ_STRING">JS_SQ_STRING</a></strong></code>
+<div class="block">In JavaScript inside a single quoted string.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#TEXT">TEXT</a></strong></code>
+<div class="block">Plain text; no escaping.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#URI">URI</a></strong></code>
+<div class="block">In a URI, which may or may not be in an HTML attribute.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#valueOf(java.lang.String)">valueOf</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;name)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the enum constant of this type with the specified name.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A>[]</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#values()">values</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns an array containing the constants of this enum type, in
-the order they are declared.</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Enum"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true" title="class or interface in java.lang">Enum</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#compareTo(E)" title="class or interface in java.lang">compareTo</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#getDeclaringClass()" title="class or interface in java.lang">getDeclaringClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#name()" title="class or interface in java.lang">name</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#ordinal()" title="class or interface in java.lang">ordinal</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#valueOf(java.lang.Class, java.lang.String)" title="class or interface in java.lang">valueOf</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#valueOf(java.lang.String)">valueOf</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name)</code>
+<div class="block">Returns the enum constant of this type with the specified name.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a>[]</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html#values()">values</a></strong>()</code>
+<div class="block">Returns an array containing the constants of this enum type, in
+the order they are declared.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Enum">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true" title="class or interface in java.lang">Enum</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#compareTo(E)" title="class or interface in java.lang">compareTo</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#getDeclaringClass()" title="class or interface in java.lang">getDeclaringClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#name()" title="class or interface in java.lang">name</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#ordinal()" title="class or interface in java.lang">ordinal</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-external=true#valueOf(java.lang.Class, java.lang.String)" title="class or interface in java.lang">valueOf</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
 <!-- ============ ENUM CONSTANT DETAIL =========== -->
-
-<A NAME="enum_constant_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Enum Constant Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="HTML_PCDATA"><!-- --></A><H3>
-HTML_PCDATA</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_PCDATA</B></PRE>
-<DL>
-<DD>Outside an HTML tag, directive, or comment.  (Parsed character data).
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_RCDATA"><!-- --></A><H3>
-HTML_RCDATA</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_RCDATA</B></PRE>
-<DL>
-<DD>Inside an element whose content is RCDATA where text and entities can appear but where nested
+<ul class="blockList">
+<li class="blockList"><a name="enum_constant_detail">
+<!--   -->
+</a>
+<h3>Enum Constant Detail</h3>
+<a name="HTML_PCDATA">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_PCDATA</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_PCDATA</pre>
+<div class="block">Outside an HTML tag, directive, or comment.  (Parsed character data).</div>
+</li>
+</ul>
+<a name="HTML_RCDATA">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_RCDATA</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_RCDATA</pre>
+<div class="block">Inside an element whose content is RCDATA where text and entities can appear but where nested
  elements cannot.
  The content of <code>&lt;title&gt;</code> and <code>&lt;textarea&gt;</code> fall into this category since they
- cannot contain nested elements in HTML.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_BEFORE_TAG_NAME"><!-- --></A><H3>
-HTML_BEFORE_TAG_NAME</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_BEFORE_TAG_NAME</B></PRE>
-<DL>
-<DD>Just before a tag name.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_TAG_NAME"><!-- --></A><H3>
-HTML_TAG_NAME</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_TAG_NAME</B></PRE>
-<DL>
-<DD>Inside a tag name.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_TAG"><!-- --></A><H3>
-HTML_TAG</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_TAG</B></PRE>
-<DL>
-<DD>Before an HTML attribute or the end of a tag.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_ATTRIBUTE_NAME"><!-- --></A><H3>
-HTML_ATTRIBUTE_NAME</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_ATTRIBUTE_NAME</B></PRE>
-<DL>
-<DD>Inside an HTML attribute name.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_BEFORE_ATTRIBUTE_VALUE"><!-- --></A><H3>
-HTML_BEFORE_ATTRIBUTE_VALUE</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_BEFORE_ATTRIBUTE_VALUE</B></PRE>
-<DL>
-<DD>Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_COMMENT"><!-- --></A><H3>
-HTML_COMMENT</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_COMMENT</B></PRE>
-<DL>
-<DD>Inside an HTML comment.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="HTML_NORMAL_ATTR_VALUE"><!-- --></A><H3>
-HTML_NORMAL_ATTR_VALUE</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>HTML_NORMAL_ATTR_VALUE</B></PRE>
-<DL>
-<DD>Inside a normal (non-CSS, JS, or URI) HTML attribute value.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS"><!-- --></A><H3>
-CSS</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS</B></PRE>
-<DL>
-<DD>In CSS content outside a comment, string, or URI.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS_COMMENT"><!-- --></A><H3>
-CSS_COMMENT</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS_COMMENT</B></PRE>
-<DL>
-<DD>In CSS inside a comment.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS_DQ_STRING"><!-- --></A><H3>
-CSS_DQ_STRING</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS_DQ_STRING</B></PRE>
-<DL>
-<DD>In CSS inside a double quoted string.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS_SQ_STRING"><!-- --></A><H3>
-CSS_SQ_STRING</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS_SQ_STRING</B></PRE>
-<DL>
-<DD>In CSS inside a single quoted string.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS_URI"><!-- --></A><H3>
-CSS_URI</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS_URI</B></PRE>
-<DL>
-<DD>In CSS in a URI terminated by the first close parenthesis.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS_DQ_URI"><!-- --></A><H3>
-CSS_DQ_URI</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS_DQ_URI</B></PRE>
-<DL>
-<DD>In CSS in a URI terminated by the first double quote.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="CSS_SQ_URI"><!-- --></A><H3>
-CSS_SQ_URI</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>CSS_SQ_URI</B></PRE>
-<DL>
-<DD>In CSS in a URI terminated by the first single quote.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="JS"><!-- --></A><H3>
-JS</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>JS</B></PRE>
-<DL>
-<DD>In JavaScript, outside a comment, string, or Regexp literal.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="JS_LINE_COMMENT"><!-- --></A><H3>
-JS_LINE_COMMENT</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>JS_LINE_COMMENT</B></PRE>
-<DL>
-<DD>In JavaScript inside a line comment.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="JS_BLOCK_COMMENT"><!-- --></A><H3>
-JS_BLOCK_COMMENT</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>JS_BLOCK_COMMENT</B></PRE>
-<DL>
-<DD>In JavaScript inside a block comment.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="JS_DQ_STRING"><!-- --></A><H3>
-JS_DQ_STRING</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>JS_DQ_STRING</B></PRE>
-<DL>
-<DD>In JavaScript inside a double quoted string.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="JS_SQ_STRING"><!-- --></A><H3>
-JS_SQ_STRING</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>JS_SQ_STRING</B></PRE>
-<DL>
-<DD>In JavaScript inside a single quoted string.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="JS_REGEX"><!-- --></A><H3>
-JS_REGEX</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>JS_REGEX</B></PRE>
-<DL>
-<DD>In JavaScript inside a regular expression literal.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="URI"><!-- --></A><H3>
-URI</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>URI</B></PRE>
-<DL>
-<DD>In an HTML attribute whose content is a URI.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="TEXT"><!-- --></A><H3>
-TEXT</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>TEXT</B></PRE>
-<DL>
-<DD>Plain text; no escaping.
-<P>
-<DL>
-</DL>
-</DL>
-<HR>
-
-<A NAME="ERROR"><!-- --></A><H3>
-ERROR</H3>
-<PRE>
-public static final <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>ERROR</B></PRE>
-<DL>
-<DD>Not inside any valid HTML/CSS/JS construct.
-<P>
-<DL>
-</DL>
-</DL>
-
+ cannot contain nested elements in HTML.</div>
+</li>
+</ul>
+<a name="HTML_BEFORE_TAG_NAME">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_BEFORE_TAG_NAME</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_BEFORE_TAG_NAME</pre>
+<div class="block">Just before a tag name.</div>
+</li>
+</ul>
+<a name="HTML_TAG_NAME">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_TAG_NAME</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_TAG_NAME</pre>
+<div class="block">Inside a tag name.</div>
+</li>
+</ul>
+<a name="HTML_TAG">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_TAG</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_TAG</pre>
+<div class="block">Before an HTML attribute or the end of a tag.</div>
+</li>
+</ul>
+<a name="HTML_ATTRIBUTE_NAME">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_ATTRIBUTE_NAME</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_ATTRIBUTE_NAME</pre>
+<div class="block">Inside an HTML attribute name.</div>
+</li>
+</ul>
+<a name="HTML_BEFORE_ATTRIBUTE_VALUE">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_BEFORE_ATTRIBUTE_VALUE</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_BEFORE_ATTRIBUTE_VALUE</pre>
+<div class="block">Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag.</div>
+</li>
+</ul>
+<a name="HTML_COMMENT">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_COMMENT</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_COMMENT</pre>
+<div class="block">Inside an HTML comment.</div>
+</li>
+</ul>
+<a name="HTML_NORMAL_ATTR_VALUE">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>HTML_NORMAL_ATTR_VALUE</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> HTML_NORMAL_ATTR_VALUE</pre>
+<div class="block">Inside a normal (non-CSS, JS, or URI) HTML attribute value.</div>
+</li>
+</ul>
+<a name="CSS">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS</pre>
+<div class="block">In CSS content outside a comment, string, or URI.</div>
+</li>
+</ul>
+<a name="CSS_COMMENT">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS_COMMENT</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS_COMMENT</pre>
+<div class="block">In CSS inside a comment.</div>
+</li>
+</ul>
+<a name="CSS_DQ_STRING">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS_DQ_STRING</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS_DQ_STRING</pre>
+<div class="block">In CSS inside a double quoted string.</div>
+</li>
+</ul>
+<a name="CSS_SQ_STRING">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS_SQ_STRING</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS_SQ_STRING</pre>
+<div class="block">In CSS inside a single quoted string.</div>
+</li>
+</ul>
+<a name="CSS_URI">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS_URI</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS_URI</pre>
+<div class="block">In CSS in a URI terminated by the first close parenthesis.</div>
+</li>
+</ul>
+<a name="CSS_DQ_URI">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS_DQ_URI</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS_DQ_URI</pre>
+<div class="block">In CSS in a URI terminated by the first double quote.</div>
+</li>
+</ul>
+<a name="CSS_SQ_URI">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>CSS_SQ_URI</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> CSS_SQ_URI</pre>
+<div class="block">In CSS in a URI terminated by the first single quote.</div>
+</li>
+</ul>
+<a name="JS">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>JS</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> JS</pre>
+<div class="block">In JavaScript, outside a comment, string, or Regexp literal.</div>
+</li>
+</ul>
+<a name="JS_LINE_COMMENT">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>JS_LINE_COMMENT</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> JS_LINE_COMMENT</pre>
+<div class="block">In JavaScript inside a line comment.</div>
+</li>
+</ul>
+<a name="JS_BLOCK_COMMENT">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>JS_BLOCK_COMMENT</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> JS_BLOCK_COMMENT</pre>
+<div class="block">In JavaScript inside a block comment.</div>
+</li>
+</ul>
+<a name="JS_DQ_STRING">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>JS_DQ_STRING</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> JS_DQ_STRING</pre>
+<div class="block">In JavaScript inside a double quoted string.</div>
+</li>
+</ul>
+<a name="JS_SQ_STRING">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>JS_SQ_STRING</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> JS_SQ_STRING</pre>
+<div class="block">In JavaScript inside a single quoted string.</div>
+</li>
+</ul>
+<a name="JS_REGEX">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>JS_REGEX</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> JS_REGEX</pre>
+<div class="block">In JavaScript inside a regular expression literal.</div>
+</li>
+</ul>
+<a name="URI">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>URI</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> URI</pre>
+<div class="block">In a URI, which may or may not be in an HTML attribute.</div>
+</li>
+</ul>
+<a name="TEXT">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>TEXT</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> TEXT</pre>
+<div class="block">Plain text; no escaping.</div>
+</li>
+</ul>
+<a name="ERROR">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>ERROR</h4>
+<pre>public static final&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a> ERROR</pre>
+<div class="block">Not inside any valid HTML/CSS/JS construct.</div>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="values()"><!-- --></A><H3>
-values</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A>[] <B>values</B>()</PRE>
-<DL>
-<DD>Returns an array containing the constants of this enum type, in
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="values()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>values</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a>[]&nbsp;values()</pre>
+<div class="block">Returns an array containing the constants of this enum type, in
 the order they are declared.  This method may be used to iterate
 over the constants as follows:
 <pre>
 for (Context.State c : Context.State.values())
 &nbsp;   System.out.println(c);
-</pre>
-<P>
-<DD><DL>
-
-<DT><B>Returns:</B><DD>an array containing the constants of this enum type, in
-the order they are declared</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="valueOf(java.lang.String)"><!-- --></A><H3>
-valueOf</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</A> <B>valueOf</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;name)</PRE>
-<DL>
-<DD>Returns the enum constant of this type with the specified name.
-The string must match <I>exactly</I> an identifier used to declare an
+</pre></div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>an array containing the constants of this enum type, in
+the order they are declared</dd></dl>
+</li>
+</ul>
+<a name="valueOf(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>valueOf</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.State.html" title="enum in com.google.template.soy.parsepasses.contextautoesc">Context.State</a>&nbsp;valueOf(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name)</pre>
+<div class="block">Returns the enum constant of this type with the specified name.
+The string must match <i>exactly</i> an identifier used to declare an
 enum constant in this type.  (Extraneous whitespace characters are 
-not permitted.)
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>name</CODE> - the name of the enum constant to be returned.
-<DT><B>Returns:</B><DD>the enum constant with the specified name
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/IllegalArgumentException.html?is-external=true" title="class or interface in java.lang">IllegalArgumentException</A></CODE> - if this enum type has no constant
-with the specified name
-<DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/NullPointerException.html?is-external=true" title="class or interface in java.lang">NullPointerException</A></CODE> - if the argument is null</DL>
-</DD>
-</DL>
+not permitted.)</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>name</code> - the name of the enum constant to be returned.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>the enum constant with the specified name</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/IllegalArgumentException.html?is-external=true" title="class or interface in java.lang">IllegalArgumentException</a></code> - if this enum type has no constant
+with the specified name</dd>
+<dd><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/NullPointerException.html?is-external=true" title="class or interface in java.lang">NullPointerException</a></code> - if the argument is null</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.JsFollowingSlash.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/Context.State.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="Context.State.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.JsFollowingSlash.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../../com/google/template/soy/parsepasses/contextautoesc/Context.UriPart.html" title="enum in com.google.template.soy.parsepasses.contextautoesc"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/parsepasses/contextautoesc/Context.State.html" target="_top">Frames</a></li>
+<li><a href="Context.State.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#enum_constant_summary">ENUM CONSTANTS</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;<A HREF="#enum_constant_detail">ENUM CONSTANTS</A>&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#enum_constant_summary">Enum Constants</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#enum_constant_detail">Enum Constants</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -759,6 +690,6 @@ DETAIL:&nbsp;<A HREF="#enum_constant_detail">ENUM CONSTANTS</A>&nbsp;|&nbsp;FIEL
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

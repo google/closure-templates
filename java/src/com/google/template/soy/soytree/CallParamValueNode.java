@@ -57,9 +57,6 @@ public class CallParamValueNode extends CallParamNode implements ExprHolderNode 
           "A 'param' tag should be self-ending (with a trailing '/') if and only if it also" +
               " contains a value (invalid tag is {param " + commandText + " /}).");
     }
-    if (valueExprUnion.getExpr() == null) {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
-    }
 
     if (parseResult.contentKind != null) {
       throw SoySyntaxException.createWithoutMetaInfo(

@@ -16,6 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.primitive.BoolType;
+
 /**
  * Node representing a boolean value.
  *
@@ -50,6 +53,11 @@ public class BooleanNode extends AbstractPrimitiveNode {
 
   @Override public Kind getKind() {
     return Kind.BOOLEAN_NODE;
+  }
+
+
+  @Override public SoyType getType() {
+    return BoolType.getInstance();
   }
 
 

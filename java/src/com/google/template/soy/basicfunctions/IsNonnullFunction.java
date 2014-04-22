@@ -16,25 +16,20 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toBooleanJavaExpr;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -47,8 +42,7 @@ import java.util.Set;
  */
 @Singleton
 @SoyPureFunction
-class IsNonnullFunction extends SoyAbstractTofuFunction
-    implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction {
 
 
   @Inject
@@ -65,8 +59,8 @@ class IsNonnullFunction extends SoyAbstractTofuFunction
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
-    SoyData arg = args.get(0);
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
+    SoyValue arg = args.get(0);
     return BooleanData.forValue(! (arg instanceof UndefinedData || arg instanceof NullData));
   }
 
@@ -77,13 +71,6 @@ class IsNonnullFunction extends SoyAbstractTofuFunction
     // Note: In JavaScript, "x != null" is equivalent to "x !== undefined && x !== null".
     return SoyJsCodeUtils.genJsExprUsingSoySyntax(
         Operator.NOT_EQUAL, Lists.<JsExpr>newArrayList(arg, nullJsExpr));
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-    JavaExpr arg = args.get(0);
-    return toBooleanJavaExpr(
-        JavaCodeUtils.genFunctionCall(JavaCodeUtils.UTILS_LIB + ".$$isNonnull", arg.getText()));
   }
 
 }

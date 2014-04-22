@@ -17,7 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Inject;
-import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.coredirectives.CoreDirectiveUtils;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -114,13 +115,14 @@ class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitPrintNode(PrintNode node) {
 
     // We replace this node if and only if it:
-    // (a) is in V2 syntax,
+    // (a) could be in V2 syntax and has a V2 expression,
     // (b) is not a child of a MsgBlockNode,
     // (c) has a single call to bidiMark(), bidiStartEdge(), or bidiEndEdge() as its expression and
     //     the global directionality is static,
     // (d) doesn't have directives other than "|id", "|noAutoescape", and "|escapeHtml".
 
-    if (node.getSyntaxVersion() != SoyNode.SyntaxVersion.V2) {
+    if (! node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0) ||
+        node.getExprUnion().getExpr() == null) {
       return;
     }
 

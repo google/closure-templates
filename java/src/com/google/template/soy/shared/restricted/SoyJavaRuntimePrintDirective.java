@@ -31,6 +31,7 @@ import java.util.List;
  *
  * @author Kai Huang
  */
+// TODO SOON: Deprecate.
 public interface SoyJavaRuntimePrintDirective extends SoyPrintDirective {
 
 

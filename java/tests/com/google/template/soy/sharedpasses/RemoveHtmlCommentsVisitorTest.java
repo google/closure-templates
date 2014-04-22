@@ -49,7 +49,8 @@ public class RemoveHtmlCommentsVisitorTest extends TestCase {
         "  <!-- comment 5 -->\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
+        false /* doRunInitialParsingPasses */, testFileContent);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.

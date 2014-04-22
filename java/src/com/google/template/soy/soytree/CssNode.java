@@ -18,14 +18,20 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -44,6 +50,14 @@ public class CssNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, ExprHolderNode {
 
 
+  /** Regular expression for a CSS class name. */
+  private static final String CSS_CLASS_NAME_RE = "-?[a-zA-Z_]+[a-zA-Z0-9_-]*";
+
+  /** Pattern for valid selectorText in a 'css' tag. */
+  private static final Pattern SELECTOR_TEXT_PATTERN = Pattern.compile(
+      "^(" + CSS_CLASS_NAME_RE + "|" + "[$]?" + BaseUtils.DOTTED_IDENT_RE + ")$");
+
+
   /**
    * Component name expression of a CSS command. Null if CSS command has no expression.
    * In the example <code>{css $componentName, SUFFIX}</code>, this would be
@@ -57,6 +71,16 @@ public class CssNode extends AbstractCommandNode
    * <code>{css $componentName, SUFFIX}</code>
    */
   private final String selectorText;
+
+  /**
+   * This pair keeps a mapping to the last used map and the calculated value, so that we don't have
+   * lookup the value again if the same renaming map is used. Note that you need to make sure that
+   * the number of actually occuring maps is very low and should really be at max 2 (one for
+   * obfuscated and one for unobfuscated renaming).
+   * Also in production only one of the maps should really be used, so that cache hit rate
+   * approaches 100%.
+   */
+  Pair<SoyCssRenamingMap, String> renameCache;
 
 
   /**
@@ -78,6 +102,11 @@ public class CssNode extends AbstractCommandNode
       componentNameExpr = null;
       selectorText = commandText;
     }
+
+    if (! SELECTOR_TEXT_PATTERN.matcher(selectorText).matches()) {
+      maybeSetSyntaxVersionBound(new SyntaxVersionBound(
+          SyntaxVersion.V2_1, "Invalid 'css' command text."));
+    }
   }
 
 
@@ -87,6 +116,7 @@ public class CssNode extends AbstractCommandNode
    */
   protected CssNode(CssNode orig) {
     super(orig);
+    //noinspection ConstantConditions IntelliJ
     this.componentNameExpr =
         (orig.componentNameExpr != null) ? orig.componentNameExpr.clone() : null;
     this.selectorText = orig.selectorText;
@@ -99,7 +129,7 @@ public class CssNode extends AbstractCommandNode
 
 
   /** Returns the parsed component name expression, or null if this node has no expression. */
-  public ExprRootNode<?> getComponentNameExpr() {
+  @Nullable public ExprRootNode<?> getComponentNameExpr() {
     return componentNameExpr;
   }
 
@@ -112,6 +142,26 @@ public class CssNode extends AbstractCommandNode
 
   /** Returns the selector text from this command. */
   public String getSelectorText() {
+    return selectorText;
+  }
+
+  public String getRenamedSelectorText(SoyCssRenamingMap cssRenamingMap) {
+    // Copy the property to a local here as it may be written to in a separate thread.
+    // The cached value is a pair that keeps a reference to the map that was used for renaming it.
+    // If the same map is passed to this call, we use the cached value, otherwise we rename
+    // again and store the a new pair in the cache. For thread safety reasons this must be a Pair
+    // over 2 independent instance variables.
+    Pair<SoyCssRenamingMap, String> cache = renameCache;
+    if (cache != null && cache.first == cssRenamingMap) {
+      return cache.second;
+    }
+    if (cssRenamingMap != null) {
+      String mappedText = cssRenamingMap.get(selectorText);
+      if (mappedText != null) {
+        renameCache = Pair.of(cssRenamingMap, mappedText);
+        return mappedText;
+      }
+    }
     return selectorText;
   }
 

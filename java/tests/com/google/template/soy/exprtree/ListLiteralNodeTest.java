@@ -31,7 +31,7 @@ public class ListLiteralNodeTest extends TestCase {
 
   public void testToSourceString() {
 
-    DataRefNode dataRef = new DataRefNode(false, false, "foo");
+    VarRefNode dataRef = new VarRefNode("foo", false, false, null);
 
     ListLiteralNode listLit = new ListLiteralNode(
         Lists.<ExprNode>newArrayList(new StringNode("blah"), new IntegerNode(123), dataRef));

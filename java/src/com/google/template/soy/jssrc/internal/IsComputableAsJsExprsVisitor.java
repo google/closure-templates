@@ -42,7 +42,8 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgNode;
+import com.google.template.soy.soytree.XidNode;
+import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import java.util.Map;
@@ -120,7 +121,7 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
   }
 
 
-  @Override protected Boolean visitGoogMsgNode(GoogMsgNode node) {
+  @Override protected Boolean visitGoogMsgDefNode(GoogMsgDefNode node) {
     return false;
   }
 
@@ -141,6 +142,11 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
 
 
   @Override protected Boolean visitPrintNode(PrintNode node) {
+    return true;
+  }
+
+
+  @Override protected Boolean visitXidNode(XidNode node) {
     return true;
   }
 
@@ -220,7 +226,7 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
    * Private helper to check whether all children of a given parent node satisfy
    * IsComputableAsJsExprsVisitor.
    * @param node The parent node whose children to check.
-   * @return True if all children satisfy IsComputableAsJsExprsVisitor. 
+   * @return True if all children satisfy IsComputableAsJsExprsVisitor.
    */
   private boolean areChildrenComputableAsJsExprs(ParentSoyNode<?> node) {
 

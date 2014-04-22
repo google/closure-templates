@@ -16,15 +16,13 @@
 
 package com.google.template.soy.tofu.internal;
 
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
-import com.google.template.soy.sharedpasses.render.RenderException;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
 
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -33,51 +31,28 @@ import javax.annotation.Nullable;
 /**
  * Version of {@code EvalVisitor} for the Tofu backend.
  *
- * <p> Uses {@code SoyTofuFunction}s instead of {@code SoyJavaRuntimeFunction}s.
+ * <p>For deprecated function implementations, uses {@code SoyTofuFunction}s instead of
+ * {@code SoyJavaRuntimeFunction}s. (For new functions that implement {@code SoyJavaFunction}, there
+ * is no difference.)
  *
  * @author Kai Huang
  */
+// TODO: Attempt to remove this class.
 class TofuEvalVisitor extends EvalVisitor {
 
 
-  /** Map of all SoyTofuFunctions (name to function). */
-  private final Map<String, SoyTofuFunction> soyTofuFunctionsMap;
-
-
   /**
-   * @param soyTofuFunctionsMap Map of all SoyTofuFunctions (name to function).
+   * @param valueHelper Instance of SoyValueHelper to use.
+   * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
    * @param data The current template data.
    * @param ijData The current injected data.
    * @param env The current environment.
    */
   protected TofuEvalVisitor(
-      @Nullable Map<String, SoyTofuFunction> soyTofuFunctionsMap, SoyMapData data,
-      @Nullable SoyMapData ijData, Deque<Map<String, SoyData>> env) {
+      SoyValueHelper valueHelper, @Nullable Map<String, SoyJavaFunction> soyJavaFunctionsMap,
+      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
 
-    super(null, data, ijData, env);
-
-    this.soyTofuFunctionsMap = soyTofuFunctionsMap;
-  }
-
-
-  @Override protected SoyData computeFunction(
-      String fnName, List<SoyData> args, FunctionNode fnNode) {
-
-    SoyTofuFunction fn = soyTofuFunctionsMap.get(fnName);
-    if (fn == null) {
-      throw new RenderException(
-          "Failed to find Soy function with name '" + fnName + "'" +
-          " (function call \"" + fnNode.toSourceString() + "\").");
-    }
-
-    // Arity has already been checked by CheckFunctionCallsVisitor.
-
-    try {
-      return fn.computeForTofu(args);
-    } catch (Exception e) {
-      throw new RenderException(
-          "Error while computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage());
-    }
+    super(valueHelper, soyJavaFunctionsMap, data, ijData, env);
   }
 
 }

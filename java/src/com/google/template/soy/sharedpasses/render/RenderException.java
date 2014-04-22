@@ -16,8 +16,10 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import javax.annotation.Nullable;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.soytree.TemplateNode;
 
+import java.util.LinkedList;
 
 /**
  * Exception thrown when a rendering or evaluation attempt fails.
@@ -27,8 +29,12 @@ import javax.annotation.Nullable;
 public class RenderException extends RuntimeException {
 
 
-  /** The name of the template with the syntax error if any. */
-  private String templateName;
+  /** The location of the source file that triggered the exception. */
+  private SourceLocation partialStackTraceElement;
+
+
+  /** The list of all stack traces from the soy rendering. */
+  private final LinkedList<StackTraceElement> soyStackTrace;
 
 
   /**
@@ -36,7 +42,8 @@ public class RenderException extends RuntimeException {
    */
   public RenderException(String message) {
     super(message);
-    this.templateName = null;
+    this.partialStackTraceElement = null;
+    this.soyStackTrace = new LinkedList<StackTraceElement>();
   }
 
 
@@ -46,40 +53,81 @@ public class RenderException extends RuntimeException {
    */
   public RenderException(String message, Throwable cause) {
     super(message, cause);
-    this.templateName = null;
+    this.partialStackTraceElement = null;
+    this.soyStackTrace = new LinkedList<StackTraceElement>();
   }
 
 
   /**
-   * The name of the template in which the problem occurred or {@code null} if not known.
+   * Add a partial stack trace element by specifying the source location of the soy file.
    */
-  public @Nullable String getTemplateName() {
-    return templateName;
-  }
-
-
-  /**
-   * Sets the template name for this error.
-   * @param templateName The name of the template containing this error.
-   * @return This same instance.
-   */
-  public RenderException setTemplateName(String templateName) {
-    this.templateName = templateName;
+  RenderException addPartialStackTraceElement(SourceLocation srcLocation) {
+    if (partialStackTraceElement != null) {
+      // Somehow the previous partialStackTraceElement didn't get completely built.  Finish it.
+      soyStackTrace.add(new StackTraceElement("[Unknown]", "[Unknown]",
+          partialStackTraceElement.getFileName(), partialStackTraceElement.getLineNumber()));
+    }
+    partialStackTraceElement = srcLocation;
     return this;
   }
 
 
   /**
-   * Returns the message without the templateName added, even if templateName is known.
+   * Adds a stack trace element to the current RenderException, to be used to generate a custom
+   * stack trace when rendering fails.
+   * @param node The TemplateNode that will provide all the information to construct a
+   *     StackTraceElement.
+   * @return The same instance.
    */
-  public String getRawMessage() {
-    return super.getMessage();
+  RenderException completeStackTraceElement(TemplateNode node) {
+    if (partialStackTraceElement == null) {
+      // Somehow the render exception did not have a source location.  We have to fake it.
+      soyStackTrace.add(node.createStackTraceElement(SourceLocation.UNKNOWN));
+    } else {
+      soyStackTrace.add(node.createStackTraceElement(partialStackTraceElement));
+    }
+    partialStackTraceElement = null;
+    return this;
   }
 
 
-  @Override public String getMessage() {
-    return
-        ((templateName != null) ? "In template " + templateName + ": " : "") + super.getMessage();
+  /**
+   * Finalize the current stack trace by prepending the soy stack trace.
+   */
+  public void finalizeStackTrace() {
+    finalizeStackTrace(this);
   }
 
+
+  /**
+   * Finalize the stack trace by prepending the soy stack trace to the given Throwable.
+   */
+  public void finalizeStackTrace(Throwable t) {
+    t.setStackTrace(concatWithJavaStackTrace(t.getStackTrace()));
+  }
+
+
+  /**
+   * Prepend the soy stack trace to the given standard java stack trace.
+   * @param javaStackTrace The java stack trace to prepend.  This should come from
+   *     Throwable#getStackTrace()
+   * @return The combined stack trace to use.  Callers should call Throwable#setStackTrace() to
+   *     override another Throwable's stack trace.
+   */
+  private StackTraceElement[] concatWithJavaStackTrace(StackTraceElement[] javaStackTrace) {
+    if (soyStackTrace.isEmpty()) {
+      return javaStackTrace;
+    }
+
+    StackTraceElement[] finalStackTrace =
+        new StackTraceElement[soyStackTrace.size() + javaStackTrace.length];
+    int i = 0;
+    for (StackTraceElement soyStackTraceElement : soyStackTrace) {
+      finalStackTrace[i] = soyStackTraceElement;
+      i++;
+    }
+    System.arraycopy(
+        javaStackTrace, 0, finalStackTrace, soyStackTrace.size(), javaStackTrace.length);
+    return finalStackTrace;
+  }
 }

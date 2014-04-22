@@ -20,16 +20,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -45,8 +47,7 @@ import java.util.Set;
  * @author Aharon Lanin
  */
 @Singleton
-public class BidiUnicodeWrapDirective extends SoyAbstractTofuPrintDirective
-    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+public class BidiUnicodeWrapDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
 
 
   /** Provider for the current bidi global directionality. */
@@ -77,10 +78,48 @@ public class BidiUnicodeWrapDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public SoyData apply(SoyData value, List<SoyData> args) {
-    String str = SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue())
-        .unicodeWrap(value.toString(), true);
-    return SoyData.createFromExistingData(str);
+  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+    ContentKind valueKind = null;
+    Dir valueDir = null;
+    if (value instanceof SanitizedContent) {
+      SanitizedContent sanitizedContent = (SanitizedContent) value;
+      valueKind = sanitizedContent.getContentKind();
+      valueDir = sanitizedContent.getContentDirection();
+    }
+    BidiFormatter bidiFormatter =
+        SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue());
+
+    // We treat the value as HTML if and only if it says it's HTML, even though in legacy usage, we
+    // sometimes have an HTML string (not SanitizedContent) that is passed to an autoescape="false"
+    // template or a {print $foo |noAutoescape}, with the output going into an HTML context without
+    // escaping. We simply have no way of knowing if this is what is happening when we get
+    // non-SanitizedContent input, and most of the time it isn't.
+    boolean isHtml = valueKind == ContentKind.HTML;
+    String wrappedValue = bidiFormatter.unicodeWrapWithKnownDir(
+        valueDir, value.coerceToString(), isHtml);
+
+    // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
+    // anything, we will indicate this known direction in the output SanitizedContent, even though
+    // the intended consumer of that information - a bidi wrapping directive - has already been run.
+    Dir wrappedValueDir = bidiFormatter.getContextDir();
+
+    // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
+    // Unicode-wrapping safe HTML or JS string data gives valid, safe HTML or JS string data.
+    if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML ||
+        valueKind == ContentKind.JS_STR_CHARS) {
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, wrappedValueDir);
+    }
+
+    // Unicode-wrapping does not conform to the syntax of the other types of content. For lack of
+    // anything better to do, we output non-SanitizedContent.
+    // TODO(user): Consider throwing a runtime error on receipt of SanitizedContent other than
+    // TEXT, HTML, or JS_STR_CHARS.
+    if (valueKind != null) {
+      return StringData.forValue(wrappedValue);
+    }
+
+    // The input was not SanitizedContent, so our output isn't SanitizedContent either.
+    return StringData.forValue(wrappedValue);
   }
 
 
@@ -88,17 +127,6 @@ public class BidiUnicodeWrapDirective extends SoyAbstractTofuPrintDirective
     String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new JsExpr(
         "soy.$$bidiUnicodeWrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
-    String bidiFunctionName = SoyBidiUtils.class.getName() + ".getBidiFormatter(" +
-        bidiGlobalDirProvider.get().getCodeSnippet() + ").unicodeWrap";
-
-    return SoyJavaSrcFunctionUtils.toStringJavaExpr(
-        JavaCodeUtils.genNewStringData(
-            JavaCodeUtils.genFunctionCall(
-                bidiFunctionName, JavaCodeUtils.genCoerceString(value), "true")));
   }
 
 }

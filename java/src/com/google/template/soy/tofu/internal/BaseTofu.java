@@ -23,13 +23,16 @@ import com.google.common.collect.Maps;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
@@ -79,6 +82,9 @@ public class BaseTofu implements SoyTofu {
   }
 
 
+  /** Instance of SoyValueHelper to use. */
+  private final SoyValueHelper valueHelper;
+
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
@@ -108,6 +114,7 @@ public class BaseTofu implements SoyTofu {
 
 
   /**
+   * @param valueHelper Instance of SoyValueHelper to use.
    * @param apiCallScope The scope object that manages the API call scope.
    * @param tofuRenderVisitorFactory Factory for creating an instance of TofuRenderVisitor.
    * @param simplifyVisitor The instance of SimplifyVisitor to use.
@@ -117,10 +124,11 @@ public class BaseTofu implements SoyTofu {
    */
   @AssistedInject
   public BaseTofu(
-      @ApiCall GuiceSimpleScope apiCallScope, TofuRenderVisitorFactory tofuRenderVisitorFactory,
-      SimplifyVisitor simplifyVisitor, @Assisted SoyFileSetNode soyTree,
-      @Assisted boolean isCaching) {
+      SoyValueHelper valueHelper, @ApiCall GuiceSimpleScope apiCallScope,
+      TofuRenderVisitorFactory tofuRenderVisitorFactory, SimplifyVisitor simplifyVisitor,
+      @Assisted SoyFileSetNode soyTree, @Assisted boolean isCaching) {
 
+    this.valueHelper = valueHelper;
     this.apiCallScope = apiCallScope;
     this.tofuRenderVisitorFactory = tofuRenderVisitorFactory;
     this.simplifyVisitor = simplifyVisitor;
@@ -136,7 +144,7 @@ public class BaseTofu implements SoyTofu {
     SoyFileSetNode soyTreeForNoCaching = soyTree.clone();
     templateRegistryForNoCaching = buildTemplateRegistry(soyTreeForNoCaching);
     templateToIjParamsInfoMap =
-        (new FindIjParamsVisitor(templateRegistryForNoCaching)).execForAllTemplates(
+        (new FindIjParamsVisitor(templateRegistryForNoCaching)).execOnAllTemplates(
             soyTreeForNoCaching);
   }
 
@@ -268,35 +276,6 @@ public class BaseTofu implements SoyTofu {
 
 
   /**
-   * Main entry point used by all of the API render() calls.
-   *
-   * @param templateName The full name of the template to render.
-   * @param data The data to call the template with. Can be null if the template has no parameters.
-   * @param ijData The injected data to call the template with. Can be null if not used.
-   * @param activeDelPackageNames The set of active delegate package names, or null if none.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
-   * @param doAddToCache Whether to add the current combination of msgBundle and cssRenamingMap to
-   *     the cache if it's not already there. If set to false, then falls back to the no-caching
-   *     mode of rendering when not found in cache. Only applicable if isCaching is true for this
-   *     BaseTofu instance.
-   * @return The rendered text.
-   */
-  private String renderMain(
-      String templateName, @Nullable SoyMapData data, @Nullable SoyMapData ijData,
-      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyCssRenamingMap cssRenamingMap, boolean doAddToCache) {
-
-    StringBuilder outputSb = new StringBuilder();
-    renderMain(
-        outputSb, templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
-        doAddToCache);
-    return outputSb.toString();
-  }
-
-
-  /**
    * @param outputBuf The Appendable to write the output to.
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
@@ -309,11 +288,13 @@ public class BaseTofu implements SoyTofu {
    *     the cache if it's not already there. If set to false, then falls back to the no-caching
    *     mode of rendering when not found in cache. Only applicable if isCaching is true for this
    *     BaseTofu instance.
+   * @return The template that was rendered.
    */
-  private void renderMain(
-      Appendable outputBuf, String templateName, @Nullable SoyMapData data,
-      @Nullable SoyMapData ijData, @Nullable Set<String> activeDelPackageNames,
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap,
+  private TemplateNode renderMain(
+      Appendable outputBuf, String templateName, @Nullable SoyRecord data,
+      @Nullable SoyRecord ijData, @Nullable Set<String> activeDelPackageNames,
+      @Nullable SoyMsgBundle msgBundle, @Nullable SoyIdRenamingMap idRenamingMap,
+      @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean doAddToCache) {
 
     if (activeDelPackageNames == null) {
@@ -334,13 +315,13 @@ public class BaseTofu implements SoyTofu {
       // doAddToCache is false).
       if (cachedTemplateRegistry != null) {
         // Note: Still need to pass msgBundle because we currently don't cache plural/select msgs.
-        renderMainHelper(
+        return renderMainHelper(
             cachedTemplateRegistry, outputBuf, templateName, data, ijData, activeDelPackageNames,
-            msgBundle, null);
+            msgBundle, null, null);
       } else {
-        renderMainHelper(
+        return renderMainHelper(
             templateRegistryForNoCaching, outputBuf, templateName, data, ijData,
-            activeDelPackageNames, msgBundle, cssRenamingMap);
+            activeDelPackageNames, msgBundle, idRenamingMap, cssRenamingMap);
       }
 
     } finally {
@@ -361,11 +342,13 @@ public class BaseTofu implements SoyTofu {
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
+   * @return The template that was rendered.
    */
-  private void renderMainHelper(
+  private TemplateNode renderMainHelper(
       TemplateRegistry templateRegistry, Appendable outputBuf, String templateName,
-      @Nullable SoyMapData data, @Nullable SoyMapData ijData, Set<String> activeDelPackageNames,
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
+      @Nullable SoyRecord data, @Nullable SoyRecord ijData, Set<String> activeDelPackageNames,
+      @Nullable SoyMsgBundle msgBundle, @Nullable SoyIdRenamingMap idRenamingMap,
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     TemplateNode template = templateRegistry.getBasicTemplate(templateName);
     if (template == null) {
@@ -373,18 +356,20 @@ public class BaseTofu implements SoyTofu {
     }
 
     if (data == null) {
-      data = new SoyMapData();
+      data = SoyValueHelper.EMPTY_DICT;
     }
 
     try {
       RenderVisitor rv = tofuRenderVisitorFactory.create(
           outputBuf, templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle,
-          cssRenamingMap);
+          idRenamingMap, cssRenamingMap);
       rv.exec(template);
 
     } catch (RenderException re) {
       throw new SoyTofuException(re);
     }
+
+    return template;
   }
 
 
@@ -399,12 +384,15 @@ public class BaseTofu implements SoyTofu {
 
     private final BaseTofu baseTofu;
     private final String templateName;
-    private SoyMapData data;
-    private SoyMapData ijData;
+    private SoyRecord data;
+    private SoyRecord ijData;
     private SoyMsgBundle msgBundle;
+    private SoyIdRenamingMap idRenamingMap;
     private SoyCssRenamingMap cssRenamingMap;
     private Set<String> activeDelPackageNames;
     private boolean doAddToCache;
+    private SanitizedContent.ContentKind expectedContentKind;
+    private boolean contentKindExplicitlySet;
 
     /**
      * @param baseTofu The underlying BaseTofu object used to perform the rendering.
@@ -418,25 +406,30 @@ public class BaseTofu implements SoyTofu {
       this.activeDelPackageNames = null;
       this.msgBundle = null;
       this.cssRenamingMap = null;
+      this.idRenamingMap = null;
       this.doAddToCache = true;
+      this.expectedContentKind = SanitizedContent.ContentKind.HTML;
+      this.contentKindExplicitlySet = false;
     }
 
     @Override public Renderer setData(Map<String, ?> data) {
-      this.data = (data == null) ? null : new SoyMapData(data);
+      this.data =
+          (data == null) ? null : baseTofu.valueHelper.newEasyDictFromJavaStringMap(data);
       return this;
     }
 
-    @Override public Renderer setData(SoyMapData data) {
+    @Override public Renderer setData(SoyRecord data) {
       this.data = data;
       return this;
     }
 
     @Override public Renderer setIjData(Map<String, ?> ijData) {
-      this.ijData = (ijData == null) ? null : new SoyMapData(ijData);
+      this.ijData =
+          (ijData == null) ? null : baseTofu.valueHelper.newEasyDictFromJavaStringMap(ijData);
       return this;
     }
 
-    @Override public Renderer setIjData(SoyMapData ijData) {
+    @Override public Renderer setIjData(SoyRecord ijData) {
       this.ijData = ijData;
       return this;
     }
@@ -452,6 +445,11 @@ public class BaseTofu implements SoyTofu {
       return this;
     }
 
+    @Override public Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap) {
+      this.idRenamingMap = idRenamingMap;
+      return this;
+    }
+
     @Override public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       this.cssRenamingMap = cssRenamingMap;
       return this;
@@ -462,26 +460,59 @@ public class BaseTofu implements SoyTofu {
       return this;
     }
 
-    @Override public String render() {
-      return baseTofu.renderMain(
-          templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
-          doAddToCache);
+    @Override public Renderer setContentKind(SanitizedContent.ContentKind contentKind) {
+      this.expectedContentKind = Preconditions.checkNotNull(contentKind);
+      this.contentKindExplicitlySet = true;
+      return this;
     }
 
-    @Override public SanitizedContent renderAsSanitizedContent() {
-      String resultString = render();
-      // The no-caching registry is good enough to get content kind.
-      SanitizedContent.ContentKind contentKind =
-          baseTofu.templateRegistryForNoCaching.getBasicTemplate(templateName).getContentKind();
-      Preconditions.checkArgument(contentKind != null,
-          "renderAsSanitizedContent is only valid for templates with autoescape=\"strict\".");
-      return UnsafeSanitizedContentOrdainer.ordainAsSafe(resultString, contentKind);
+    @Override public String render() {
+      StringBuilder sb = new StringBuilder();
+      render(sb);
+      return sb.toString();
     }
 
     @Override public void render(Appendable out) {
-      baseTofu.renderMain(
-          out, templateName, data, ijData, activeDelPackageNames, msgBundle, cssRenamingMap,
-          doAddToCache);
+      TemplateNode template = baseTofu.renderMain(
+          out, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
+          cssRenamingMap, doAddToCache);
+      if (contentKindExplicitlySet || template.getContentKind() != null) {
+        // Enforce the content kind if:
+        // - The caller explicitly set a content kind to validate.
+        // - The template is strict. This avoids accidentally using a text strict template in a
+        // place where HTML was implicitly expected.
+        enforceContentKind(template);
+      }
+    }
+
+    @Override public SanitizedContent renderStrict() {
+      StringBuilder sb = new StringBuilder();
+      TemplateNode template = baseTofu.renderMain(
+          sb, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
+          cssRenamingMap, doAddToCache);
+      enforceContentKind(template);
+      // Use the expected instead of actual content kind; that way, if an HTML template is rendered
+      // as TEXT, we will return TEXT.
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(sb.toString(), expectedContentKind);
+    }
+
+    private void enforceContentKind(TemplateNode template) {
+      if (expectedContentKind == SanitizedContent.ContentKind.TEXT) {
+        // Allow any template to be called as text. This is consistent with the fact that
+        // kind="text" templates can call any other template.
+        return;
+      }
+      if (template.getContentKind() == null) {
+        throw new SoyTofuException("Expected template to be autoescape=\"strict\" " +
+            "but was autoescape=\"" + template.getAutoescapeMode().getAttributeValue() + "\": " +
+            template.getTemplateName());
+      }
+      if (expectedContentKind != template.getContentKind()) {
+        throw new SoyTofuException("Expected template to be kind=\"" +
+            NodeContentKinds.toAttributeValue(expectedContentKind) +
+            "\" but was kind=\"" + NodeContentKinds.toAttributeValue(template.getContentKind()) +
+            "\": " + template.getTemplateName());
+      }
     }
   }
 
@@ -491,34 +522,33 @@ public class BaseTofu implements SoyTofu {
 
 
   @Deprecated
-  @Override public String render(SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
+  @Override public String render(
+      SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
       @Nullable SoyMsgBundle msgBundle) {
-    return renderMain(
-        templateInfo.getName(), (data == null) ? null : new SoyMapData(data), null, null, msgBundle,
-        null, true);
+    return (new RendererImpl(this, templateInfo.getName())).setData(data).setMsgBundle(msgBundle)
+        .render();
   }
 
 
   @Deprecated
-  @Override public String render(SoyTemplateInfo templateInfo, @Nullable SoyMapData data,
-      @Nullable SoyMsgBundle msgBundle) {
-    return renderMain(templateInfo.getName(), data, null, null, msgBundle, null, true);
+  @Override public String render(
+      SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
+    return (new RendererImpl(this, templateInfo.getName())).setData(data).setMsgBundle(msgBundle)
+        .render();
   }
 
 
   @Deprecated
-  @Override public String render(String templateName, @Nullable Map<String, ?> data,
-      @Nullable SoyMsgBundle msgBundle) {
-    return renderMain(
-        templateName, (data == null) ? null : new SoyMapData(data), null, null, msgBundle, null,
-        true);
+  @Override public String render(
+      String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
+    return (new RendererImpl(this, templateName)).setData(data).setMsgBundle(msgBundle).render();
   }
 
 
   @Deprecated
-  @Override public String render(String templateName, @Nullable SoyMapData data,
-      @Nullable SoyMsgBundle msgBundle) {
-    return renderMain(templateName, data, null, null, msgBundle, null, true);
+  @Override public String render(
+      String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
+    return (new RendererImpl(this, templateName)).setData(data).setMsgBundle(msgBundle).render();
   }
 
 }

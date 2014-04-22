@@ -38,6 +38,7 @@ import java.util.List;
  * @see com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction
  * @author Kai Huang
  */
+// TODO SOON: Deprecate.
 public interface SoyTofuFunction extends SoyFunction {
 
 

@@ -18,17 +18,17 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-
+// TODO(gboyer): Consider renaming to StrictDepsVisitor.
 /**
  * Visitor to check that there are no external calls. Used by backends that disallow external calls,
  * such as the Tofu (JavaObj) backend.
@@ -43,9 +43,6 @@ public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Log of all found errors. */
   private StringBuilder errorBuffer;
 
-  /** The last node where an error was found, for error reporting reasons. */
-  private SoyNode mostRecentFailingNode;
-
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
@@ -55,14 +52,13 @@ public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
     Preconditions.checkArgument(
         soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
 
-    mostRecentFailingNode = null;
     errorBuffer = new StringBuilder();
     templateRegistry = new TemplateRegistry(soyNode.getNearestAncestor(SoyFileSetNode.class));
 
     super.exec(soyNode);
 
-    if (mostRecentFailingNode != null) {
-      throw SoySyntaxExceptionUtils.createWithNode(errorBuffer.toString(), mostRecentFailingNode);
+    if (errorBuffer.length() != 0) {
+      throw SoySyntaxException.createWithoutMetaInfo(errorBuffer.toString());
     }
 
     return null;
@@ -73,22 +69,48 @@ public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
   // Implementations for specific nodes.
 
 
+  // TODO(gboyer): Consider some deltemplate checking, but it's hard to make a coherent case for
+  // deltemplates since it's legitimate to have zero implementations, or to have the implementation
+  // in a different part of the dependency graph (if it's late-bound).
   @Override protected void visitCallBasicNode(CallBasicNode node) {
+    TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
 
-    if (templateRegistry.getBasicTemplate(node.getCalleeName()) == null) {
-      String currFilePath = node.getNearestAncestor(SoyFileNode.class).getFilePath();
-      String currTemplateNameForErrorMsg =
-          node.getNearestAncestor(TemplateNode.class).getTemplateNameForUserMsgs();
-      errorBuffer.append(
-          "In Soy file " + currFilePath + ", template " + currTemplateNameForErrorMsg +
-              ": Encountered call to undefined template '" + node.getCalleeName() + "'.\n");
-      mostRecentFailingNode = node;
+    if (callee == null) {
+      addError(node,
+          "Encountered call to undefined template '" + node.getCalleeName() + "'.");
+    } else {
+      SoyFileKind callerKind = node.getNearestAncestor(SoyFileNode.class).getSoyFileKind();
+      SoyFileKind calleeKind = callee.getParent().getSoyFileKind();
+      if (calleeKind == SoyFileKind.INDIRECT_DEP && callerKind == SoyFileKind.SRC) {
+        addError(node,
+            "Call to '" + callee.getTemplateNameForUserMsgs()
+            + "' is satisfied only by indirect dependency "
+            + callee.getSourceLocation().getFilePath()
+            + ". Add it as a direct dependency, instead.");
+      }
+
+      // Double check if a dep calls a source. We shouldn't usually see this since the dependency
+      // should fail due to unknown template, but it doesn't hurt to add this.
+      if (calleeKind == SoyFileKind.SRC && callerKind != SoyFileKind.SRC) {
+        addError(node,
+            "Illegal call to '" + callee.getTemplateNameForUserMsgs()
+            + "', because according to the dependency graph, "
+            + callee.getSourceLocation().getFilePath() + " depends on "
+            + node.getSourceLocation().getFilePath() + ", not the other way around.");
+      }
     }
 
     // Don't forget to visit content within CallParamContentNodes.
     visitChildren(node);
   }
 
+  private void addError(CallBasicNode node, String errorStr) {
+    TemplateNode containingTemplateNode = node.getNearestAncestor(TemplateNode.class);
+
+    String fullError = node.getSourceLocation() + ", template "
+        + containingTemplateNode.getTemplateNameForUserMsgs() + ": " + errorStr + "\n";
+    errorBuffer.append(fullError);
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.

@@ -32,31 +32,31 @@ public class PrintNodeTest extends TestCase {
   public void testPlaceholderMethods() throws SoySyntaxException {
 
     PrintNode pn = new PrintNode(0, true, "$boo", null);
-    assertEquals("BOO", pn.genBasePlaceholderName());
+    assertEquals("BOO", pn.genBasePhName());
     assertTrue(pn.genSamenessKey().equals((new PrintNode(4, true, "$boo", null)).genSamenessKey()));
     assertTrue(
         pn.genSamenessKey().equals((new PrintNode(4, true, "  $boo  ", null)).genSamenessKey()));
 
     pn = new PrintNode(0, true, "$boo.foo", null);
-    assertEquals("FOO", pn.genBasePlaceholderName());
+    assertEquals("FOO", pn.genBasePhName());
     assertFalse(
         pn.genSamenessKey().equals((new PrintNode(4, true, "$boo", null)).genSamenessKey()));
 
     pn = new PrintNode(0, true, "$boo.foo", null);
     pn.addChild(new PrintDirectiveNode(0, "|insertWordBreaks", "8"));
-    assertEquals("FOO", pn.genBasePlaceholderName());
+    assertEquals("FOO", pn.genBasePhName());
     assertFalse(
         pn.genSamenessKey().equals((new PrintNode(4, true, "$boo.foo", null)).genSamenessKey()));
 
     pn = new PrintNode(0, true, "$boo['foo']", null);
-    assertEquals("Fallback value expected.", "XXX", pn.genBasePlaceholderName());
+    assertEquals("Fallback value expected.", "XXX", pn.genBasePhName());
 
     pn = new PrintNode(0, true, "$boo + $foo", null);
-    assertEquals("Fallback value expected.", "XXX", pn.genBasePlaceholderName());
+    assertEquals("Fallback value expected.", "XXX", pn.genBasePhName());
 
     // V1 syntax.
     pn = new PrintNode(0, true, "\"blah\"", null);
-    assertEquals("Fallback value expected.", "XXX", pn.genBasePlaceholderName());
+    assertEquals("Fallback value expected.", "XXX", pn.genBasePhName());
   }
 
 

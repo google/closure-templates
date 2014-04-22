@@ -19,6 +19,8 @@ package com.google.template.soy;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Helper class to initialize Guice for Soy users that do not use Guice.
@@ -35,30 +37,56 @@ import com.google.inject.Inject;
  *
  * @author Kai Huang
  */
+// TODO(gboyer): This class is very unfortunate. Static injection essentially means that whichever
+// Injector installed SoyModule last wins, which can cause bewildering errors.
 class GuiceInitializer {
+  private static final Logger LOGGER = Logger.getLogger(GuiceInitializer.class.getName());
 
+  /** How many time this has been statically injected. */
+  private static int initializationCount;
 
-  /** Whether the SoyModule has been initialized. */
-  private static boolean isInitialized = false;
-
+  /** Factory created from static injection. */
+  @Inject
+  private static SoyFileSet.SoyFileSetFactory soyFileSetFactory = null;
 
   /** Marks that the SoyModule has been initialized. */
   @Inject
-  static void markInitialized() {
-    isInitialized = true;
+  static synchronized void markInitialized() {
+    initializationCount++;
   }
 
-
   /** Initializes the SoyModule if it has not already been initialized. */
-  static void initializeIfNecessary() {
-    if (!isInitialized) {
+  private static synchronized void initializeIfNecessary() {
+    if (initializationCount == 0) {
       // This injector creation has the important side effect of performing static injections.
       Guice.createInjector(new SoyModule());
       // The injector creation above should have called this class's markInitialized().
-      if (!isInitialized) {
+      if (initializationCount == 0) {
         throw new AssertionError("Injector creation failed to do static injection.");
       }
     }
   }
 
+  /**
+   * Returns the hacky static-injected SoyFileSetFactory containing bindings from whichever
+   * injector happened to install SoyModule first.
+   */
+  static synchronized SoyFileSet.SoyFileSetFactory getHackySoyFileSetFactory() {
+    initializeIfNecessary();
+    if (initializationCount > 1) {
+      String message =
+          "The SoyFileSet.Builder constructor is trying to guess which Injector to use, but"
+          + " multiple Injectors have already installed a new SoyModule(). We will essentially"
+          + " configure Soy at random, so you get an inconsistent set of plugins or Soy types."
+          + " To fix, inject SoyFileSet.Builder (with SoyModule installed) instead of new'ing it.";
+      LOGGER.log(Level.SEVERE, message, new IllegalStateException(message));
+    } else {
+      String message =
+          "Falling back to statically-injected SoyFileSetFactory; unpredictable behavior is likely."
+          + " Instead of constructing a SoyFileSet.Builder directly, either inject it using Guice"
+          + " (with SoyModule installed), or call the static SoyFileSet.builder() method.";
+      LOGGER.log(Level.WARNING, message);
+    }
+    return soyFileSetFactory;
+  }
 }

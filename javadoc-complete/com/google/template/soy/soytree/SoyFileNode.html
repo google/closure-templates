@@ -1,706 +1,670 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-SoyFileNode (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>SoyFileNode (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="SoyFileNode (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/RawTextNode.html" title="class in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/soytree/SoyFileNode.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="SoyFileNode.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../com/google/template/soy/soytree/RequirecssUtils.html" title="class in com.google.template.soy.soytree"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/soytree/SoyFileNode.html" target="_top">Frames</a></li>
+<li><a href="SoyFileNode.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#fields_inherited_from_class_com.google.template.soy.basetree.AbstractNode">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy.soytree</FONT>
-<BR>
-Class SoyFileNode</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNode</A>
-      <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">com.google.template.soy.soytree.AbstractSoyNode</A>
-          <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html" title="class in com.google.template.soy.soytree">com.google.template.soy.soytree.AbstractParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;
-              <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.soytree.SoyFileNode</B>
-</PRE>
-<DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;</DD>
-</DL>
-<HR>
-<DL>
-<DT><PRE>public class <B>SoyFileNode</B><DT>extends <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html" title="class in com.google.template.soy.soytree">AbstractParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;<DT>implements <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&gt;</DL>
-</PRE>
+<div class="header">
+<div class="subTitle">com.google.template.soy.soytree</div>
+<h2 title="Class SoyFileNode" class="title">Class SoyFileNode</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li><a href="../../../../../com/google/template/soy/basetree/AbstractNode.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNode</a></li>
+<li>
+<ul class="inheritance">
+<li><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">com.google.template.soy.soytree.AbstractSoyNode</a></li>
+<li>
+<ul class="inheritance">
+<li><a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html" title="class in com.google.template.soy.soytree">com.google.template.soy.soytree.AbstractParentSoyNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&gt;</li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.soytree.SoyFileNode</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl>
+<dt>All Implemented Interfaces:</dt>
+<dd><a href="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&gt;, <a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&gt;, <a href="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&gt;</dd>
+</dl>
+<hr>
+<br>
+<pre>public class <span class="strong">SoyFileNode</span>
+extends <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html" title="class in com.google.template.soy.soytree">AbstractParentSoyNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&gt;
+implements <a href="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&gt;</pre>
+<div class="block">Node representing a Soy file.
 
-<P>
-Node representing a Soy file.
-
- <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-<P>
-
-<P>
-<HR>
-
-<P>
+ <p> Important: Do not use outside of Soy code (treat as superpackage-private).</div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- ======== NESTED CLASS SUMMARY ======== -->
-
-<A NAME="nested_class_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Nested Class Summary</B></FONT></TH>
-</TR>
-</TABLE>
-&nbsp;<A NAME="nested_classes_inherited_from_class_com.google.template.soy.soytree.SoyNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Nested classes/interfaces inherited from interface com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockCommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockCommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.BlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ConditionalBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ConditionalBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarInlineNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarInlineNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgBlockNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="type parameter in SoyNode.ParentSoyNode">N</A> extends <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.RenderUnitNode.html" title="interface in com.google.template.soy.soytree">SoyNode.RenderUnitNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="type parameter in SoyNode.SplitLevelTopNode">N</A> extends <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&gt;, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.SyntaxVersion.html" title="enum in com.google.template.soy.soytree">SoyNode.SyntaxVersion</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="nested_class_summary">
+<!--   -->
+</a>
+<h3>Nested Class Summary</h3>
+<ul class="blockList">
+<li class="blockList"><a name="nested_classes_inherited_from_class_com.google.template.soy.soytree.SoyNode">
+<!--   -->
+</a>
+<h3>Nested classes/interfaces inherited from interface&nbsp;com.google.template.soy.soytree.<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.BlockCommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockCommandNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.BlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.BlockNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.CommandNode.html" title="interface in com.google.template.soy.soytree">SoyNode.CommandNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.ConditionalBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ConditionalBlockNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.ExprHolderNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ExprHolderNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarBlockNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarInlineNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarInlineNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.LocalVarNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LocalVarNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.MsgBlockNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgBlockNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.MsgPlaceholderInitialNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgPlaceholderInitialNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.MsgSubstUnitNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgSubstUnitNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="type parameter in SoyNode.ParentSoyNode">N</a> extends <a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>&gt;, <a href="../../../../../com/google/template/soy/soytree/SoyNode.RenderUnitNode.html" title="interface in com.google.template.soy.soytree">SoyNode.RenderUnitNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.SplitLevelTopNode</a>&lt;<a href="../../../../../com/google/template/soy/soytree/SoyNode.SplitLevelTopNode.html" title="type parameter in SoyNode.SplitLevelTopNode">N</a> extends <a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>&gt;, <a href="../../../../../com/google/template/soy/soytree/SoyNode.StandaloneNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StandaloneNode</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.StatementNode.html" title="interface in com.google.template.soy.soytree">SoyNode.StatementNode</a></code></li>
+</ul>
+</li>
+</ul>
 <!-- =========== FIELD SUMMARY =========== -->
-
-<A NAME="field_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Field Summary</B></FONT></TH>
-</TR>
-</TABLE>
-&nbsp;<A NAME="fields_inherited_from_class_com.google.template.soy.basetree.AbstractNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Fields inherited from class com.google.template.soy.basetree.<A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html" title="class in com.google.template.soy.basetree">AbstractNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html#SPACES">SPACES</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="field_summary">
+<!--   -->
+</a>
+<h3>Field Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Field Summary table, listing fields, and an explanation">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Field and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static com.google.common.base.Predicate&lt;<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#MATCH_SRC_FILENODE">MATCH_SRC_FILENODE</a></strong></code>&nbsp;</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="fields_inherited_from_class_com.google.template.soy.basetree.AbstractNode">
+<!--   -->
+</a>
+<h3>Fields inherited from class&nbsp;com.google.template.soy.basetree.<a href="../../../../../com/google/template/soy/basetree/AbstractNode.html" title="class in com.google.template.soy.basetree">AbstractNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#SPACES">SPACES</a></code></li>
+</ul>
+</li>
+</ul>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#SoyFileNode(int, com.google.template.soy.base.SoyFileKind, java.lang.String, java.lang.String, java.util.List)">SoyFileNode</A></B>(int&nbsp;id,
-            <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delpackageCmdText,
-            <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;namespaceCmdText,
-            <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;aliasCmdTexts)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected </CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#SoyFileNode(com.google.template.soy.soytree.SoyFileNode)">SoyFileNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;orig)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Copy constructor.</TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier</th>
+<th class="colLast" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>&nbsp;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#SoyFileNode(int, com.google.template.soy.base.internal.SoyFileKind, java.lang.String, java.lang.String, java.util.List)">SoyFileNode</a></strong>(int&nbsp;id,
+           <a href="../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;delpackageCmdText,
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;namespaceCmdText,
+           <a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;aliasCmdTexts)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected </code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#SoyFileNode(com.google.template.soy.soytree.SoyFileNode)">SoyFileNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&nbsp;orig)</code>
+<div class="block">Copy constructor.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#clone()">clone</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clones this node.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;com.google.common.collect.ImmutableMap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getAliasToNamespaceMap()">getAliasToNamespaceMap</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the map from aliases to namespaces for this file.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getDefaultAutoescapeMode()">getDefaultAutoescapeMode</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the default autoescaping mode for contained templates.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getDelPackageName()">getDelPackageName</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the name of the containing delegate package, or null if none.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getFileName()">getFileName</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns this Soy file's name (null if not supplied).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getFilePath()">getFilePath</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the path to the source Soy file ("unknown" if not supplied).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getKind()">getKind</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns this node's kind (corresponding to this node's specific type).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getNamespace()">getNamespace</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns this Soy file's namespace, or null if syntax version V1.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getParent()">getParent</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets this node's parent.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getSoyFileKind()">getSoyFileKind</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the kind of this Soy file.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#setFilePath(java.lang.String)">setFilePath</A></B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A></B>(<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets the source location (file path and line number) for this node.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>&nbsp;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html#toSourceString()">toSourceString</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Builds a Soy source string that could be the source for this node.</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.soytree.AbstractParentSoyNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html" title="class in com.google.template.soy.soytree">AbstractParentSoyNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChild(int, N)">addChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChild(N)">addChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChildren(int, java.util.List)">addChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChildren(java.util.List)">addChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#appendSourceStringForChildren(java.lang.StringBuilder)">appendSourceStringForChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#appendTreeStringForChildren(java.lang.StringBuilder, int)">appendTreeStringForChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#clearChildren()">clearChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#getChild(int)">getChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#getChildIndex(N)">getChildIndex</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#getChildren()">getChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#needsEnvFrameDuringInterp()">needsEnvFrameDuringInterp</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#numChildren()">numChildren</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#removeChild(int)">removeChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#removeChild(N)">removeChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#replaceChild(int, N)">replaceChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#replaceChild(N, N)">replaceChild</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#setNeedsEnvFrameDuringInterp(java.lang.Boolean)">setNeedsEnvFrameDuringInterp</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#toTreeString(int)">toTreeString</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.soytree.AbstractSoyNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#maybeSetSyntaxVersion(com.google.template.soy.soytree.SoyNode.SyntaxVersion)">maybeSetSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</A>, <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.basetree.<A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html" title="class in com.google.template.soy.basetree">AbstractNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html#getNearestAncestor(java.lang.Class)">getNearestAncestor</A>, <A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html#hasAncestor(java.lang.Class)">hasAncestor</A>, <A HREF="../../../../../com/google/template/soy/basetree/AbstractNode.html#setParent(com.google.template.soy.basetree.ParentNode)">setParent</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.soytree.SoyNode.ParentSoyNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from interface com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html#needsEnvFrameDuringInterp()">needsEnvFrameDuringInterp</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html#setNeedsEnvFrameDuringInterp(java.lang.Boolean)">setNeedsEnvFrameDuringInterp</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.soytree.SoyNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from interface com.google.template.soy.soytree.<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getId()">getId</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getSourceLocation()">getSourceLocation</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getSyntaxVersion()">getSyntaxVersion</A>, <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#setId(int)">setId</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.ParentNode"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from interface com.google.template.soy.basetree.<A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#addChild(int, N)">addChild</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#addChild(N)">addChild</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#addChildren(int, java.util.List)">addChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#addChildren(java.util.List)">addChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#appendSourceStringForChildren(java.lang.StringBuilder)">appendSourceStringForChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#appendTreeStringForChildren(java.lang.StringBuilder, int)">appendTreeStringForChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#clearChildren()">clearChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#getChild(int)">getChild</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#getChildIndex(N)">getChildIndex</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#getChildren()">getChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#numChildren()">numChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#removeChild(int)">removeChild</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#removeChild(N)">removeChild</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#replaceChild(int, N)">replaceChild</A>, <A HREF="../../../../../com/google/template/soy/basetree/ParentNode.html#replaceChild(N, N)">replaceChild</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.Node"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from interface com.google.template.soy.basetree.<A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#getNearestAncestor(java.lang.Class)">getNearestAncestor</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#hasAncestor(java.lang.Class)">hasAncestor</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#setParent(com.google.template.soy.basetree.ParentNode)">setParent</A>, <A HREF="../../../../../com/google/template/soy/basetree/Node.html#toTreeString(int)">toTreeString</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#clone()">clone</a></strong>()</code>
+<div class="block">Clones this node.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>com.google.common.collect.ImmutableMap&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getAliasToNamespaceMap()">getAliasToNamespaceMap</a></strong>()</code>
+<div class="block">Returns the map from aliases to namespaces for this file.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getDefaultAutoescapeMode()">getDefaultAutoescapeMode</a></strong>()</code>
+<div class="block">Returns the default autoescaping mode for contained templates.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getDelPackageName()">getDelPackageName</a></strong>()</code>
+<div class="block">Returns the name of the containing delegate package, or null if none.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getFileName()">getFileName</a></strong>()</code>
+<div class="block">Returns this Soy file's name (null if not supplied).</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getFilePath()">getFilePath</a></strong>()</code>
+<div class="block">Returns the path to the source Soy file ("unknown" if not supplied).</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getKind()">getKind</a></strong>()</code>
+<div class="block">Returns this node's kind (corresponding to this node's specific type).</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getNamespace()">getNamespace</a></strong>()</code>
+<div class="block">Returns this Soy file's namespace, or null if syntax version V1.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getParent()">getParent</a></strong>()</code>
+<div class="block">Gets this node's parent.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>com.google.common.collect.ImmutableList&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getRequiredCssNamespaces()">getRequiredCssNamespaces</a></strong>()</code>
+<div class="block">Returns the CSS namespaces required by this file (usable in any template in this file).</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#getSoyFileKind()">getSoyFileKind</a></strong>()</code>
+<div class="block">Returns the kind of this Soy file.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#setFilePath(java.lang.String)">setFilePath</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</a></strong>(<a href="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</a>&nbsp;srcLoc)</code>
+<div class="block">Sets the source location (file path and line number) for this node.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html#toSourceString()">toSourceString</a></strong>()</code>
+<div class="block">Builds a Soy source string that could be the source for this node.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.soytree.AbstractParentSoyNode">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;com.google.template.soy.soytree.<a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html" title="class in com.google.template.soy.soytree">AbstractParentSoyNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChild(int, N)">addChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChild(N)">addChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChildren(int, java.util.List)">addChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#addChildren(java.util.List)">addChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#appendSourceStringForChildren(java.lang.StringBuilder)">appendSourceStringForChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#appendTreeStringForChildren(java.lang.StringBuilder, int)">appendTreeStringForChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#clearChildren()">clearChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#getChild(int)">getChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#getChildIndex(N)">getChildIndex</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#getChildren()">getChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#needsEnvFrameDuringInterp()">needsEnvFrameDuringInterp</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#numChildren()">numChildren</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#removeChild(int)">removeChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#removeChild(N)">removeChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#replaceChild(int, N)">replaceChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#replaceChild(N, N)">replaceChild</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#setNeedsEnvFrameDuringInterp(java.lang.Boolean)">setNeedsEnvFrameDuringInterp</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractParentSoyNode.html#toTreeString(int)">toTreeString</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.soytree.AbstractSoyNode">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;com.google.template.soy.soytree.<a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getId()">getId</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getSourceLocation()">getSourceLocation</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setId(int)">setId</a>, <a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#toString()">toString</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNode">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;com.google.template.soy.basetree.<a href="../../../../../com/google/template/soy/basetree/AbstractNode.html" title="class in com.google.template.soy.basetree">AbstractNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#couldHaveSyntaxVersionAtLeast(com.google.template.soy.basetree.SyntaxVersion)">couldHaveSyntaxVersionAtLeast</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#getNearestAncestor(java.lang.Class)">getNearestAncestor</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#getSyntaxVersionBound()">getSyntaxVersionBound</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#hasAncestor(java.lang.Class)">hasAncestor</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#maybeSetSyntaxVersionBound(com.google.template.soy.basetree.SyntaxVersionBound)">maybeSetSyntaxVersionBound</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNode.html#setParent(com.google.template.soy.basetree.ParentNode)">setParent</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.soytree.SoyNode.ParentSoyNode">
+<!--   -->
+</a>
+<h3>Methods inherited from interface&nbsp;com.google.template.soy.soytree.<a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html#needsEnvFrameDuringInterp()">needsEnvFrameDuringInterp</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html#setNeedsEnvFrameDuringInterp(java.lang.Boolean)">setNeedsEnvFrameDuringInterp</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.soytree.SoyNode">
+<!--   -->
+</a>
+<h3>Methods inherited from interface&nbsp;com.google.template.soy.soytree.<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#getId()">getId</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.html#getSourceLocation()">getSourceLocation</a>, <a href="../../../../../com/google/template/soy/soytree/SoyNode.html#setId(int)">setId</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.basetree.ParentNode">
+<!--   -->
+</a>
+<h3>Methods inherited from interface&nbsp;com.google.template.soy.basetree.<a href="../../../../../com/google/template/soy/basetree/ParentNode.html" title="interface in com.google.template.soy.basetree">ParentNode</a></h3>
+<code><a href="../../../../../com/google/template/soy/basetree/ParentNode.html#addChild(int, N)">addChild</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#addChild(N)">addChild</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#addChildren(int, java.util.List)">addChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#addChildren(java.util.List)">addChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#appendSourceStringForChildren(java.lang.StringBuilder)">appendSourceStringForChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#appendTreeStringForChildren(java.lang.StringBuilder, int)">appendTreeStringForChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#clearChildren()">clearChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#getChild(int)">getChild</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#getChildIndex(N)">getChildIndex</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#getChildren()">getChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#numChildren()">numChildren</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#removeChild(int)">removeChild</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#removeChild(N)">removeChild</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#replaceChild(int, N)">replaceChild</a>, <a href="../../../../../com/google/template/soy/basetree/ParentNode.html#replaceChild(N, N)">replaceChild</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.basetree.Node">
+<!--   -->
+</a>
+<h3>Methods inherited from interface&nbsp;com.google.template.soy.basetree.<a href="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</a></h3>
+<code><a href="../../../../../com/google/template/soy/basetree/Node.html#couldHaveSyntaxVersionAtLeast(com.google.template.soy.basetree.SyntaxVersion)">couldHaveSyntaxVersionAtLeast</a>, <a href="../../../../../com/google/template/soy/basetree/Node.html#getNearestAncestor(java.lang.Class)">getNearestAncestor</a>, <a href="../../../../../com/google/template/soy/basetree/Node.html#getSyntaxVersionBound()">getSyntaxVersionBound</a>, <a href="../../../../../com/google/template/soy/basetree/Node.html#hasAncestor(java.lang.Class)">hasAncestor</a>, <a href="../../../../../com/google/template/soy/basetree/Node.html#maybeSetSyntaxVersionBound(com.google.template.soy.basetree.SyntaxVersionBound)">maybeSetSyntaxVersionBound</a>, <a href="../../../../../com/google/template/soy/basetree/Node.html#setParent(com.google.template.soy.basetree.ParentNode)">setParent</a>, <a href="../../../../../com/google/template/soy/basetree/Node.html#toTreeString(int)">toTreeString</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
+<!-- ============ FIELD DETAIL =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a name="MATCH_SRC_FILENODE">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>MATCH_SRC_FILENODE</h4>
+<pre>public static final&nbsp;com.google.common.base.Predicate&lt;<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&gt; MATCH_SRC_FILENODE</pre>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="SoyFileNode(int, com.google.template.soy.base.SoyFileKind, java.lang.String, java.lang.String, java.util.List)"><!-- --></A><H3>
-SoyFileNode</H3>
-<PRE>
-public <B>SoyFileNode</B>(int&nbsp;id,
-                   <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A>&nbsp;soyFileKind,
-                   <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                   <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;delpackageCmdText,
-                   <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                   <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;namespaceCmdText,
-                   <FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A></FONT>
-                   <A HREF="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</A>&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt;&nbsp;aliasCmdTexts)
-            throws <A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></PRE>
-<DL>
-<DL>
-<DT><B>Parameters:</B><DD><CODE>id</CODE> - The id for this node.<DD><CODE>soyFileKind</CODE> - The kind of this Soy file.<DD><CODE>delpackageCmdText</CODE> - This Soy file's delegate package, or null if none.<DD><CODE>namespaceCmdText</CODE> - This Soy file's namespace and attributes. Nullable for backwards
-     compatibility only.<DD><CODE>aliasCmdTexts</CODE> - The command texts of the 'alias' declarations. Allowed to be null.
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</A></CODE> - If a syntax error is found.</DL>
-</DL>
-<HR>
-
-<A NAME="SoyFileNode(com.google.template.soy.soytree.SoyFileNode)"><!-- --></A><H3>
-SoyFileNode</H3>
-<PRE>
-protected <B>SoyFileNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;orig)</PRE>
-<DL>
-<DD>Copy constructor.
-<P>
-<DL>
-<DT><B>Parameters:</B><DD><CODE>orig</CODE> - The node to copy.</DL>
-</DL>
-
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="SoyFileNode(int, com.google.template.soy.base.internal.SoyFileKind, java.lang.String, java.lang.String, java.util.List)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>SoyFileNode</h4>
+<pre>public&nbsp;SoyFileNode(int&nbsp;id,
+           <a href="../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+           <a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;delpackageCmdText,
+           <a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;namespaceCmdText,
+           <a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
+           <a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;aliasCmdTexts)
+            throws <a href="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</a></pre>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>id</code> - The id for this node.</dd><dd><code>soyFileKind</code> - The kind of this Soy file.</dd><dd><code>delpackageCmdText</code> - This Soy file's delegate package, or null if none.</dd><dd><code>namespaceCmdText</code> - This Soy file's namespace and attributes. Nullable for backwards
+     compatibility only.</dd><dd><code>aliasCmdTexts</code> - The command texts of the 'alias' declarations. Allowed to be null.</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</a></code> - If a syntax error is found.</dd></dl>
+</li>
+</ul>
+<a name="SoyFileNode(com.google.template.soy.soytree.SoyFileNode)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>SoyFileNode</h4>
+<pre>protected&nbsp;SoyFileNode(<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&nbsp;orig)</pre>
+<div class="block">Copy constructor.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>orig</code> - The node to copy.</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="getKind()"><!-- --></A><H3>
-getKind</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</A> <B>getKind</B>()</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">SoyNode</A></CODE></B></DD>
-<DD>Returns this node's kind (corresponding to this node's specific type).
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">getKind</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE></DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getSoyFileKind()"><!-- --></A><H3>
-getSoyFileKind</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/base/SoyFileKind.html" title="enum in com.google.template.soy.base">SoyFileKind</A> <B>getSoyFileKind</B>()</PRE>
-<DL>
-<DD>Returns the kind of this Soy file.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getDelPackageName()"><!-- --></A><H3>
-getDelPackageName</H3>
-<PRE>
-<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A>
-</FONT>public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getDelPackageName</B>()</PRE>
-<DL>
-<DD>Returns the name of the containing delegate package, or null if none.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getNamespace()"><!-- --></A><H3>
-getNamespace</H3>
-<PRE>
-<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A>
-</FONT>public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getNamespace</B>()</PRE>
-<DL>
-<DD>Returns this Soy file's namespace, or null if syntax version V1.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getDefaultAutoescapeMode()"><!-- --></A><H3>
-getDefaultAutoescapeMode</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</A> <B>getDefaultAutoescapeMode</B>()</PRE>
-<DL>
-<DD>Returns the default autoescaping mode for contained templates.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getAliasToNamespaceMap()"><!-- --></A><H3>
-getAliasToNamespaceMap</H3>
-<PRE>
-public com.google.common.collect.ImmutableMap&lt;<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>,<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&gt; <B>getAliasToNamespaceMap</B>()</PRE>
-<DL>
-<DD>Returns the map from aliases to namespaces for this file.
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setSourceLocation(com.google.template.soy.base.SourceLocation)"><!-- --></A><H3>
-setSourceLocation</H3>
-<PRE>
-public void <B>setSourceLocation</B>(<A HREF="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</A>&nbsp;srcLoc)</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">SoyNode</A></CODE></B></DD>
-<DD>Sets the source location (file path and line number) for this node.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE><DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></CODE></DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>srcLoc</CODE> - The source location for this node.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="setFilePath(java.lang.String)"><!-- --></A><H3>
-setFilePath</H3>
-<PRE>
-public void <B>setFilePath</B>(<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;filePath)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>filePath</CODE> - The path to the source Soy file.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getFilePath()"><!-- --></A><H3>
-getFilePath</H3>
-<PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getFilePath</B>()</PRE>
-<DL>
-<DD>Returns the path to the source Soy file ("unknown" if not supplied).
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getFileName()"><!-- --></A><H3>
-getFileName</H3>
-<PRE>
-<FONT SIZE="-1"><A HREF="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</A>
-</FONT>public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>getFileName</B>()</PRE>
-<DL>
-<DD>Returns this Soy file's name (null if not supplied).
-<P>
-<DD><DL>
-</DL>
-</DD>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="toSourceString()"><!-- --></A><H3>
-toSourceString</H3>
-<PRE>
-public <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A> <B>toSourceString</B>()</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#toSourceString()">Node</A></CODE></B></DD>
-<DD>Builds a Soy source string that could be the source for this node. Note that this is not the
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="getKind()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getKind</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/soytree/SoyNode.Kind.html" title="enum in com.google.template.soy.soytree">SoyNode.Kind</a>&nbsp;getKind()</pre>
+<div class="block"><strong>Description copied from interface:&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">SoyNode</a></code></strong></div>
+<div class="block">Returns this node's kind (corresponding to this node's specific type).</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#getKind()">getKind</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a></code></dd>
+</dl>
+</li>
+</ul>
+<a name="getSoyFileKind()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getSoyFileKind</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;getSoyFileKind()</pre>
+<div class="block">Returns the kind of this Soy file.</div>
+</li>
+</ul>
+<a name="getDelPackageName()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getDelPackageName</h4>
+<pre><a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
+public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getDelPackageName()</pre>
+<div class="block">Returns the name of the containing delegate package, or null if none.</div>
+</li>
+</ul>
+<a name="getNamespace()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getNamespace</h4>
+<pre><a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
+public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getNamespace()</pre>
+<div class="block">Returns this Soy file's namespace, or null if syntax version V1.</div>
+</li>
+</ul>
+<a name="getDefaultAutoescapeMode()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getDefaultAutoescapeMode</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</a>&nbsp;getDefaultAutoescapeMode()</pre>
+<div class="block">Returns the default autoescaping mode for contained templates.</div>
+</li>
+</ul>
+<a name="getRequiredCssNamespaces()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getRequiredCssNamespaces</h4>
+<pre>public&nbsp;com.google.common.collect.ImmutableList&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;getRequiredCssNamespaces()</pre>
+<div class="block">Returns the CSS namespaces required by this file (usable in any template in this file).</div>
+</li>
+</ul>
+<a name="getAliasToNamespaceMap()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getAliasToNamespaceMap</h4>
+<pre>public&nbsp;com.google.common.collect.ImmutableMap&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;getAliasToNamespaceMap()</pre>
+<div class="block">Returns the map from aliases to namespaces for this file.</div>
+</li>
+</ul>
+<a name="setSourceLocation(com.google.template.soy.base.SourceLocation)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setSourceLocation</h4>
+<pre>public&nbsp;void&nbsp;setSourceLocation(<a href="../../../../../com/google/template/soy/base/SourceLocation.html" title="class in com.google.template.soy.base">SourceLocation</a>&nbsp;srcLoc)</pre>
+<div class="block"><strong>Description copied from interface:&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">SoyNode</a></code></strong></div>
+<div class="block">Sets the source location (file path and line number) for this node.</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a></code></dd>
+<dt><strong>Overrides:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#setSourceLocation(com.google.template.soy.base.SourceLocation)">setSourceLocation</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</a></code></dd>
+<dt><span class="strong">Parameters:</span></dt><dd><code>srcLoc</code> - The source location for this node.</dd></dl>
+</li>
+</ul>
+<a name="setFilePath(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setFilePath</h4>
+<pre>public&nbsp;void&nbsp;setFilePath(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>filePath</code> - The path to the source Soy file.</dd></dl>
+</li>
+</ul>
+<a name="getFilePath()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getFilePath</h4>
+<pre>public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getFilePath()</pre>
+<div class="block">Returns the path to the source Soy file ("unknown" if not supplied).</div>
+</li>
+</ul>
+<a name="getFileName()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getFileName</h4>
+<pre><a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
+public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getFileName()</pre>
+<div class="block">Returns this Soy file's name (null if not supplied).</div>
+</li>
+</ul>
+<a name="toSourceString()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>toSourceString</h4>
+<pre>public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;toSourceString()</pre>
+<div class="block"><strong>Description copied from interface:&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/Node.html#toSourceString()">Node</a></code></strong></div>
+<div class="block">Builds a Soy source string that could be the source for this node. Note that this is not the
  actual original source string, but a (sort of) canonical equivalent.
 
  Note: Some nodes do not have a direct mapping to Soy source (such as nodes created during
- some optimization passes). Thus this method may not always be supported.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#toSourceString()">toSourceString</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A></CODE></DL>
-</DD>
-<DD><DL>
-
-<DT><B>Returns:</B><DD>A Soy string that could be the source for this node.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="getParent()"><!-- --></A><H3>
-getParent</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A> <B>getParent</B>()</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#getParent()">Node</A></CODE></B></DD>
-<DD>Gets this node's parent.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#getParent()">getParent</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A></CODE><DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#getParent()">getParent</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE><DT><B>Overrides:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getParent()">getParent</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></CODE></DL>
-</DD>
-<DD><DL>
-
-<DT><B>Returns:</B><DD>This node's parent.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="clone()"><!-- --></A><H3>
-clone</H3>
-<PRE>
-public <A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A> <B>clone</B>()</PRE>
-<DL>
-<DD><B>Description copied from interface: <CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#clone()">Node</A></CODE></B></DD>
-<DD>Clones this node. The clone's parent pointer is set to null.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html#clone()">clone</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</A></CODE><DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html#clone()">clone</A></CODE> in interface <CODE><A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A></CODE><DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#clone()">clone</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</A></CODE></DL>
-</DD>
-<DD><DL>
-
-<DT><B>Returns:</B><DD>A clone of this code.</DL>
-</DD>
-</DL>
+ some optimization passes). Thus this method may not always be supported.</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/basetree/Node.html#toSourceString()">toSourceString</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</a></code></dd>
+<dt><span class="strong">Returns:</span></dt><dd>A Soy string that could be the source for this node.</dd></dl>
+</li>
+</ul>
+<a name="getParent()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getParent</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</a>&nbsp;getParent()</pre>
+<div class="block"><strong>Description copied from interface:&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/Node.html#getParent()">Node</a></code></strong></div>
+<div class="block">Gets this node's parent.</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/basetree/Node.html#getParent()">getParent</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</a></code></dd>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#getParent()">getParent</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a></code></dd>
+<dt><strong>Overrides:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#getParent()">getParent</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</a></code></dd>
+<dt><span class="strong">Returns:</span></dt><dd>This node's parent.</dd></dl>
+</li>
+</ul>
+<a name="clone()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>clone</h4>
+<pre>public&nbsp;<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&nbsp;clone()</pre>
+<div class="block"><strong>Description copied from interface:&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/Node.html#clone()">Node</a></code></strong></div>
+<div class="block">Clones this node. The clone's parent pointer is set to null.</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/basetree/Node.html#clone()">clone</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/Node.html" title="interface in com.google.template.soy.basetree">Node</a></code></dd>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html#clone()">clone</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a></code></dd>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html#clone()">clone</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree">AbstractSoyNode</a></code></dd>
+<dt><span class="strong">Returns:</span></dt><dd>A clone of this code.</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/RawTextNode.html" title="class in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/soytree/SoyFileNode.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="SoyFileNode.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../com/google/template/soy/soytree/RequirecssUtils.html" title="class in com.google.template.soy.soytree"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/soytree/SoyFileNode.html" target="_top">Frames</a></li>
+<li><a href="SoyFileNode.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;<A HREF="#fields_inherited_from_class_com.google.template.soy.basetree.AbstractNode">FIELD</A>&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -717,6 +681,6 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&n
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

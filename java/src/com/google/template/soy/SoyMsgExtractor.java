@@ -24,6 +24,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
+import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 
 import org.kohsuke.args4j.Argument;
@@ -33,7 +34,6 @@ import org.kohsuke.args4j.Option;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-
 
 /**
  * Executable for extracting messages from a set of Soy files into an output messages file.
@@ -138,8 +138,8 @@ public final class SoyMsgExtractor {
     Injector injector = MainClassUtils.createInjector(messagePluginModule, null);
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    MainClassUtils.addSoyFilesToBuilder(
-        sfsBuilder, inputPrefix, srcs, arguments, ImmutableList.<String>of(), exitWithErrorFn);
+    MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments,
+        ImmutableList.<String>of(), ImmutableList.<String>of(), exitWithErrorFn);
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
 
     File outputFile0;
@@ -147,25 +147,9 @@ public final class SoyMsgExtractor {
       if (outputFile.length() != 0) {
         exitWithErrorFn.apply("Must provide one of output file path or output path format.");
       }
-      String outputFilePath = outputPathFormat;
-
       String inputFilePath = inputPrefix + (srcs.size() != 0 ? srcs.get(0) : arguments.get(0));
-      // Compute directory and file name.
-      int lastSlashIndex = inputFilePath.lastIndexOf(File.separatorChar);
-      String directory = inputFilePath.substring(0, lastSlashIndex + 1);
-      String fileName = inputFilePath.substring(lastSlashIndex + 1);
-
-      // Compute file name without extension.
-      int lastDotIndex = fileName.lastIndexOf('.');
-      if (lastDotIndex == -1) {
-        lastDotIndex = fileName.length();
-      }
-      String fileNameNoExt = fileName.substring(0, lastDotIndex);
-
-      outputFilePath = outputFilePath.replace("{INPUT_PREFIX}", inputPrefix);
-      outputFilePath = outputFilePath.replace("{INPUT_DIRECTORY}", directory);
-      outputFilePath = outputFilePath.replace("{INPUT_FILE_NAME}", fileName);
-      outputFilePath = outputFilePath.replace("{INPUT_FILE_NAME_NO_EXT}", fileNameNoExt);
+      String outputFilePath = MainEntryPointUtils.buildFilePath(
+          outputPathFormat, null, inputFilePath, inputPrefix);
       outputFile0 = new File(outputFilePath);
     } else if (outputFile.length() != 0) {
       outputFile0 = new File(outputFile);
@@ -184,7 +168,7 @@ public final class SoyMsgExtractor {
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    msgBundleHandler.writeToFile(msgBundle, options, outputFile0);
+    msgBundleHandler.writeToExtractedMsgsFile(msgBundle, options, outputFile0);
   }
 
 }

@@ -17,8 +17,8 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
+import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
@@ -51,9 +51,41 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
     assertTofuOutput("\u202B\u05E0\u202C\u200E", "\u05E0",
                      BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
 
+    assertTofuOutput("\u202B\u05E0\u202C\u200E",
+                     SanitizedContents.unsanitizedText("\u05E0"),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
+    assertTofuOutput("\u202B\u05E0\u202C\u200E",
+                     SanitizedContents.unsanitizedText("\u05E0", Dir.RTL),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
+    assertTofuOutput("\u05E0\u200E",
+                     SanitizedContents.unsanitizedText("\u05E0", Dir.LTR),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
+    assertTofuOutput("\u05E0\u200E",
+                     SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
+    assertTofuOutput("blah",
+                     SanitizedContents.unsanitizedText("blah", Dir.NEUTRAL),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
+
     assertTofuOutput("", "", BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("\u202Ablah\u202C\u200F", "blah", BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput("\u05E0", "\u05E0", BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+    assertTofuOutput("\u202Ablah\u202C\u200F", "blah", BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+
+    assertTofuOutput("\u202Ablah\u202C\u200F",
+                     SanitizedContents.unsanitizedText("blah"),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+    assertTofuOutput("\u202Ablah\u202C\u200F",
+                     SanitizedContents.unsanitizedText("blah", Dir.LTR),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+    assertTofuOutput("blah\u200F",
+                     SanitizedContents.unsanitizedText("blah", Dir.RTL),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+    assertTofuOutput("blah\u200F",
+                     SanitizedContents.unsanitizedText("blah", Dir.NEUTRAL),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+    assertTofuOutput("\u05E0",
+                     SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL),
+                     BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
   }
 
 
@@ -72,30 +104,6 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
         "soy.$$bidiUnicodeWrap(IS_RTL?-1:1, opt_data.myKey)",
         BIDI_UNICODE_WRAP_DIRECTIVE_FOR_ISRTL_CODE_SNIPPET.applyForJsSrc(
             dataRef, ImmutableList.<JsExpr>of()).getText());
-  }
-
-
-  public void testApplyForJavaSrc() {
-
-    JavaExpr dataRef = new JavaExpr("myKey", StringData.class, Integer.MAX_VALUE);
-    assertEquals(
-        "com.google.template.soy.data.restricted.StringData.forValue(" +
-            "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-            "1).unicodeWrap(myKey.toString(), true))",
-        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR.applyForJavaSrc(
-            dataRef, ImmutableList.<JavaExpr>of()).getText());
-    assertEquals(
-        "com.google.template.soy.data.restricted.StringData.forValue(" +
-            "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-            "-1).unicodeWrap(myKey.toString(), true))",
-        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL.applyForJavaSrc(
-            dataRef, ImmutableList.<JavaExpr>of()).getText());
-    assertEquals(
-        "com.google.template.soy.data.restricted.StringData.forValue(" +
-            "com.google.template.soy.internal.i18n.SoyBidiUtils.getBidiFormatter(" +
-            "IS_RTL?-1:1).unicodeWrap(myKey.toString(), true))",
-        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_ISRTL_CODE_SNIPPET.applyForJavaSrc(
-            dataRef, ImmutableList.<JavaExpr>of()).getText());
   }
 
 }

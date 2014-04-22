@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -351,7 +352,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
 
-    (new CheckSoyDocVisitor(false)).exec(soyTree);
+    (new CheckSoyDocVisitor(SyntaxVersion.V1_0)).exec(soyTree);
   }
 
 }

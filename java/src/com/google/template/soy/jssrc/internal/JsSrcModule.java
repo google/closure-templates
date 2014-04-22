@@ -25,6 +25,8 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.TranslateToJsExprVisitorFactory;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.ModuleUtils;
@@ -57,11 +59,12 @@ public class JsSrcModule extends AbstractModule {
     bind(JsSrcMain.class);
     bind(GenJsCodeVisitor.class);
     bind(OptimizeBidiCodeGenVisitor.class);
-    bind(ReplaceMsgsWithGoogMsgsVisitor.class);
     bind(CanInitOutputVarVisitor.class);
     bind(GenCallCodeUtils.class);
     bind(IsComputableAsJsExprsVisitor.class);
     bind(JsExprTranslator.class);
+    bind(GenDirectivePluginRequiresVisitor.class);
+    bind(GenFunctionPluginRequiresVisitor.class);
 
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(GenJsExprsVisitorFactory.class));
@@ -83,14 +86,29 @@ public class JsSrcModule extends AbstractModule {
   @Singleton
   Map<String, SoyJsSrcFunction> provideSoyJsSrcFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
 
-    return ModuleUtils.buildSpecificSoyFunctionsMap(SoyJsSrcFunction.class, soyFunctionsSet);
+    return ModuleUtils.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyJsSrcFunction.class);
+  }
+
+
+  /**
+   * Builds and provides the map of SoyLibraryAssistedJsSrcFunctions (name to function).
+   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
+   *     SoyFunction may or may not implement SoyLibraryAssistedJsSrcFunction.
+   */
+  @Provides
+  @Singleton
+  Map<String, SoyLibraryAssistedJsSrcFunction> provideSoyLibraryAssistedJsSrcFunctionsMap(
+      Set<SoyFunction> soyFunctionsSet) {
+
+    return ModuleUtils.buildSpecificSoyFunctionsMap(
+        soyFunctionsSet, SoyLibraryAssistedJsSrcFunction.class);
   }
 
 
   /**
    * Builds and provides the map of SoyJsSrcDirectives (name to directive).
    * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
-   *     SoyDirective may or may not implement SoyJsSrcDirective.
+   *     SoyDirective may or may not implement SoyJsSrcPrintDirective.
    */
   @Provides
   @Singleton
@@ -98,7 +116,22 @@ public class JsSrcModule extends AbstractModule {
       Set<SoyPrintDirective> soyDirectivesSet) {
 
     return ModuleUtils.buildSpecificSoyDirectivesMap(
-        SoyJsSrcPrintDirective.class, soyDirectivesSet);
+        soyDirectivesSet, SoyJsSrcPrintDirective.class);
+  }
+
+
+  /**
+   * Builds and provides the map of SoyLibraryAssistedJsSrcDirectives (name to directive).
+   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
+   *     SoyDirective may or may not implement SoyLibraryAssistedJsSrcDirectives.
+   */
+  @Provides
+  @Singleton
+  Map<String, SoyLibraryAssistedJsSrcPrintDirective> provideSoyLibraryAssistedJsSrcDirectivesMap(
+      Set<SoyPrintDirective> soyDirectivesSet) {
+
+    return ModuleUtils.buildSpecificSoyDirectivesMap(
+        soyDirectivesSet, SoyLibraryAssistedJsSrcPrintDirective.class);
   }
 
 }

@@ -24,6 +24,7 @@ import com.google.inject.Provider;
 import com.google.inject.Scope;
 
 import java.util.Map;
+import java.util.Stack;
 
 
 /**
@@ -86,16 +87,20 @@ public class GuiceSimpleScope implements Scope {
 
 
   /** The ThreadLocal holding all the values in scope. */
-  private final ThreadLocal<Map<Key<?>, Object>> scopedValuesTl =
-      new ThreadLocal<Map<Key<?>, Object>>();
+  private final ThreadLocal<Stack<Map<Key<?>, Object>>> scopedValuesTl =
+      new ThreadLocal<Stack<Map<Key<?>, Object>>>();
 
 
   /**
    * Enters an occurrence of this scope.
    */
   public void enter() {
-    checkState(!isActive(), "A scoping block is already in progress");
-    scopedValuesTl.set(Maps.<Key<?>, Object>newHashMap());
+    Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
+    if (stack == null) {
+      stack = new Stack<Map<Key<?>, Object>>();
+      scopedValuesTl.set(stack);
+    }
+    stack.push(Maps.<Key<?>, Object>newHashMap());
   }
 
 
@@ -104,7 +109,11 @@ public class GuiceSimpleScope implements Scope {
    */
   public void exit() {
     checkState(isActive(), "No scoping block in progress");
-    scopedValuesTl.remove();
+    Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
+    stack.pop();
+    if (stack.isEmpty()) {
+      scopedValuesTl.remove();
+    }
   }
 
 
@@ -112,7 +121,8 @@ public class GuiceSimpleScope implements Scope {
    * Whether we're currently in an occurrence of this scope.
    */
   public boolean isActive() {
-    return scopedValuesTl.get() != null;
+    Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
+    return stack != null && !stack.isEmpty();
   }
 
 
@@ -191,12 +201,10 @@ public class GuiceSimpleScope implements Scope {
    * @param key The key that is intended to be retrieved from the returned map.
    */
   private <T> Map<Key<?>, Object> getScopedValues(Key<T> key) {
-
-    Map<Key<?>, Object> scopedValues = scopedValuesTl.get();
-    if (scopedValues == null) {
+    if (!isActive()) {
       throw new OutOfScopeException("Cannot access " + key + " outside of a scoping block");
     }
-    return scopedValues;
+    return scopedValuesTl.get().peek();
   }
 
 }

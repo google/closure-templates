@@ -17,10 +17,11 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
@@ -111,7 +112,8 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
           isInvalidExpr = true;
         } else {
           ExprNode exprNode = newPrintNode.getExprUnion().getExpr().getChild(0);
-          if (! (exprNode instanceof DataRefNode || exprNode instanceof GlobalNode)) {
+          if (!(exprNode instanceof GlobalNode || exprNode instanceof VarRefNode ||
+              exprNode instanceof DataAccessNode)) {
             isInvalidExpr = true;
           }
         }

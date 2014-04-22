@@ -17,13 +17,13 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.List;
 
@@ -44,17 +44,14 @@ public class ShouldEnsureDataIsDefinedVisitor {
   public boolean exec(TemplateNode template) {
 
     // If there exists a required param, then data should already be defined (no need to ensure).
-    List<SoyDocParam> params = template.getSoyDocParams();
+    List<TemplateParam> params = template.getParams();
     if (params != null) {
-      for (SoyDocParam param : params) {
-        if (param.isRequired) {
+      for (TemplateParam param : params) {
+        if (param.isRequired()) {
           return false;
         }
       }
     }
-
-    // ExistsRegDataRefInExprVisitor needs MarkLocalVarDataRefsVisitor to have been run first.
-    (new MarkLocalVarDataRefsVisitor()).exec(template);
 
     // Run the ExistsRegDataRefInExprVisitor on all expressions in the template, shortcircuiting as
     // soon as we find one regular data ref.
@@ -79,8 +76,8 @@ public class ShouldEnsureDataIsDefinedVisitor {
    * regular data ref in an expression, where regular in this case means not injected and not local
    * var.
    *
-   * <p> Note: This visitor assumes DataRefNodes in the expression are correctly marked as being
-   * local var data refs as appropriate (i.e. MarkLocalVarDataRefsVisitor must have been run).
+   * <p> Note: This visitor assumes VarRefNodes in the expression are correctly marked as being
+   * local var data refs as appropriate (i.e. variable name resolution has been performed).
    */
   private static class ExistsRegDataRefInExprVisitor extends AbstractExprNodeVisitor<Void> {
 
@@ -91,8 +88,8 @@ public class ShouldEnsureDataIsDefinedVisitor {
       return foundRegDataRef;
     }
 
-    @Override protected void visitDataRefNode(DataRefNode node) {
-      if (! node.isIjDataRef() && ! node.isLocalVarDataRef()) {
+    @Override protected void visitVarRefNode(VarRefNode node) {
+      if (node.isPossibleParam()) {
         foundRegDataRef = true;
       }
     }

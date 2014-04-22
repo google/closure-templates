@@ -35,7 +35,7 @@ public class MsgHtmlTagNodeTest extends TestCase {
 
     MsgHtmlTagNode mhtn =
         new MsgHtmlTagNode(0, Lists.<StandaloneNode>newArrayList(new RawTextNode(0, "<b>")));
-    assertEquals("START_BOLD", mhtn.genBasePlaceholderName());
+    assertEquals("START_BOLD", mhtn.genBasePhName());
     assertTrue(
         mhtn.genSamenessKey().equals(
             (new MsgHtmlTagNode(4, Lists.<StandaloneNode>newArrayList(new RawTextNode(0, "<b>"))))
@@ -47,7 +47,7 @@ public class MsgHtmlTagNodeTest extends TestCase {
     assertEquals("<b>", mhtn.toSourceString());
 
     mhtn = new MsgHtmlTagNode(0, Lists.<StandaloneNode>newArrayList(new RawTextNode(0, "<br />")));
-    assertEquals("BREAK", mhtn.genBasePlaceholderName());
+    assertEquals("BREAK", mhtn.genBasePhName());
     assertFalse(
         mhtn.genSamenessKey().equals(
             (new MsgHtmlTagNode(4, Lists.<StandaloneNode>newArrayList(new RawTextNode(0, "<br/>"))))
@@ -60,7 +60,7 @@ public class MsgHtmlTagNodeTest extends TestCase {
             new RawTextNode(0, "<div class=\""),
             new PrintNode(0, true, "$cssClass", null),
             new RawTextNode(0, "\">")));
-    assertEquals("START_DIV", mhtn.genBasePlaceholderName());
+    assertEquals("START_DIV", mhtn.genBasePhName());
     assertFalse(
         mhtn.genSamenessKey().equals(
             (new MsgHtmlTagNode(

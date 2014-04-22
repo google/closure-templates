@@ -17,12 +17,14 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.inject.Inject;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
+import com.google.template.soy.tofu.internal.TofuModule.Tofu;
 
 import java.util.Deque;
 import java.util.Map;
@@ -42,8 +44,8 @@ import javax.inject.Singleton;
 class TofuRenderVisitorFactory {
 
 
-  /** Map of all SoyTofuPrintDirectives (name to directive). */
-  private final Map<String, SoyTofuPrintDirective> soyTofuDirectivesMap;
+  /** Map of all SoyJavaPrintDirectives (name to directive). */
+  private final Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
 
   /** Factory for creating an instance of TofuEvalVisitor. */
   private final TofuEvalVisitorFactory tofuEvalVisitorFactory;
@@ -51,9 +53,9 @@ class TofuRenderVisitorFactory {
 
   @Inject
   public TofuRenderVisitorFactory(
-      Map<String, SoyTofuPrintDirective> soyTofuDirectivesMap,
+      @Tofu Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       TofuEvalVisitorFactory tofuEvalVisitorFactory) {
-    this.soyTofuDirectivesMap = soyTofuDirectivesMap;
+    this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.tofuEvalVisitorFactory = tofuEvalVisitorFactory;
   }
 
@@ -70,18 +72,19 @@ class TofuRenderVisitorFactory {
    *     when known to be irrelevant, i.e. when not using delegates feature.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
    *     Soy source.
+   * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @return The newly created TofuRenderVisitor instance.
    */
   public TofuRenderVisitor create(
-      Appendable outputBuf, TemplateRegistry templateRegistry, SoyMapData data,
-      @Nullable SoyMapData ijData, @Nullable Deque<Map<String, SoyData>> env,
+      Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
+      @Nullable SoyRecord ijData, @Nullable Deque<Map<String, SoyValue>> env,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyCssRenamingMap cssRenamingMap) {
+      @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new TofuRenderVisitor(
-        soyTofuDirectivesMap, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData,
-        env, activeDelPackageNames, msgBundle, cssRenamingMap);
+        soyJavaDirectivesMap, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData,
+        env, activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
   }
 
 }

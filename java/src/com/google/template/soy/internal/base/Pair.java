@@ -39,8 +39,8 @@ import javax.annotation.Nullable;
  * This usually involves creating a new custom value-object type. This is
  * difficult to do "by hand" in Java, but avoid the temptation to extend {@code
  * Pair} to accomplish this; consider using the utilities {@link
- * com.google.common.labs.misc.ComparisonKeys} or {@link
- * com.google.common.labs.misc.ValueType} to help you with this instead.
+ * com.google.common.labs.collect.ComparisonKeys} or {@link
+ * com.google.common.labs.reflect.ValueType} to help you with this instead.
  *
  * @author Kevin Bourrillion
  */

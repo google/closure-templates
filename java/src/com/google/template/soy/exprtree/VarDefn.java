@@ -1,0 +1,52 @@
+/*
+ * Copyright 2013 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.exprtree;
+
+import com.google.template.soy.types.SoyType;
+
+/**
+ * Interface for the definition of a variable, i.e. a value that can be referred
+ * to by name. Variables include params, injected params, and local vars. Note
+ * that a definition does not always have a corresponding declaration in user
+ * code. Some definitions are implicit, e.g. in the case of injected params.
+ *
+ * @author Talin
+ */
+public interface VarDefn {
+  /**
+   * Enum used to distinguish subtypes.
+   */
+  enum Kind {
+    // Explicitly declared parameter.
+    PARAM,
+    // Injected parameter.
+    IJ_PARAM,
+    // Local variable
+    LOCAL_VAR,
+    // Undeclared variable reference (for legacy templates).
+    UNDECLARED,
+  }
+
+  /** What kind of variable this is (param, local var, etc). */
+  Kind kind();
+
+  /** The name of this variable. */
+  String name();
+
+  /** Returns the data type of this variable. */
+  SoyType type();
+}

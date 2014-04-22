@@ -21,8 +21,9 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprparse.ExprParseUtils;
-import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -139,11 +140,11 @@ public abstract class CallParamNode extends AbstractCommandNode {
         null;
 
     // Check the validity of the key name.
-    DataRefNode dataRef = ExprParseUtils.parseDataRefElseThrowSoySyntaxException(
+    ExprNode dataRef = ExprParseUtils.parseDataRefElseThrowSoySyntaxException(
         "$" + key,
         "Invalid key in 'param' command text \"" + commandText + "\".")
         .getChild(0);
-    if (dataRef.numChildren() > 1 || dataRef.isIjDataRef()) {
+    if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
       throw SoySyntaxException.createWithoutMetaInfo(
           "The key in a 'param' tag must be top level, i.e. not contain multiple keys" +
               " (invalid 'param' command text \"" + commandText + "\").");

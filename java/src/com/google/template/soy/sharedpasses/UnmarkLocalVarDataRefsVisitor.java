@@ -17,17 +17,17 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 
 
 /**
- * Visitor to unmark all DataRefNodes regarding whether they are actually local var data refs.
- * Unmarking is done by calling {@link DataRefNode#setIsLocalVarDataRef} with a value of null.
+ * Visitor to unmark all VarRefNodes regarding whether they are actually local var data refs.
+ * Unmarking is done by calling {@link VarRefNode#setIsLocalVarDataRef} with a value of null.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -44,19 +44,16 @@ public class UnmarkLocalVarDataRefsVisitor extends AbstractSoyNodeVisitor<Void> 
 
 
   /**
-   * Helper visitor to unmark all DataRefNodes within an expression.
+   * Helper visitor to unmark all VarRefNodes within an expression.
    */
   private static class UnmarkLocalVarDataRefsInExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     // ------ Implementations for specific nodes. ------
 
-    @Override protected void visitDataRefNode(DataRefNode node) {
+    @Override protected void visitVarRefNode(VarRefNode node) {
 
       // Unmark whether the node references local var data.
-      node.setIsLocalVarDataRef(null);
-
-      // Important: Must visit children since children may be expressions that contain data refs.
-      visitChildren(node);
+      node.setIsLocalVar(null);
     }
 
     // ------ Fallback implementation. ------

@@ -16,15 +16,16 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Charsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
@@ -34,7 +35,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Executable for generating Java classes containing Soy parse info.
@@ -72,6 +72,11 @@ public final class SoyParseInfoGenerator {
                   " analysis/checking, but will not generate code for dep files.",
           handler = MainClassUtils.StringListOptionHandler.class)
   private List<String> deps = Lists.newArrayList();
+
+  @Option(name = "--indirectDeps",
+          usage = "Soy files required by deps, but which may not be used by srcs.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> indirectDeps = Lists.newArrayList();
 
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
@@ -153,7 +158,7 @@ public final class SoyParseInfoGenerator {
     // TODO: This does not seem like the right place to remove duplicates.
     MainClassUtils.addSoyFilesToBuilder(
         sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), ImmutableSet.copyOf(arguments),
-        ImmutableSet.copyOf(deps), exitWithErrorFn);
+        ImmutableSet.copyOf(deps), ImmutableSet.copyOf(indirectDeps), exitWithErrorFn);
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 
@@ -163,7 +168,7 @@ public final class SoyParseInfoGenerator {
     for (Map.Entry<String, String> entry : generatedFiles.entrySet()) {
       File outputFile = new File(outputDirectory, entry.getKey());
       BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-      Files.write(entry.getValue(), outputFile, Charsets.UTF_8);
+      Files.write(entry.getValue(), outputFile, UTF_8);
     }
   }
 

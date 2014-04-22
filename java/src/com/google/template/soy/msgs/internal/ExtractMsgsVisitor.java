@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -24,6 +25,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -51,12 +53,37 @@ public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
 
   /**
-   * Returns a SoyMsgBundle containing all the extracted messages (locale string is null).
+   * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
+   * SoyFileNode (locale string is null).
    */
   @Override public SoyMsgBundle exec(SoyNode node) {
+
+    Preconditions.checkArgument(node instanceof SoyFileSetNode || node instanceof SoyFileNode);
+
     msgs = Lists.newArrayList();
     currentSource = null;
     visit(node);
+    currentSource = null;
+    return new SoyMsgBundleImpl(null, msgs);
+  }
+
+
+  /**
+   * Returns a SoyMsgBundle containing all messages extracted from the given nodes (locale string is
+   * null).
+   */
+  public SoyMsgBundle execOnMultipleNodes(Iterable<? extends SoyNode> nodes) {
+
+    msgs = Lists.newArrayList();
+    for (SoyNode node : nodes) {
+      if (node instanceof SoyFileSetNode || node instanceof SoyFileNode) {
+        currentSource = null;
+      } else {
+        currentSource = node.getNearestAncestor(SoyFileNode.class).getFilePath();
+      }
+      visit(node);
+      currentSource = null;
+    }
     return new SoyMsgBundleImpl(null, msgs);
   }
 

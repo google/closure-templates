@@ -17,14 +17,16 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -49,28 +51,30 @@ import java.util.Set;
 public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
-  /** Injected Soy function definitions. */
-  private final Map<String, SoyFunction> soyFunctionsByName;
+  /**
+   * Injectable factory for creating an instance of this class.
+   */
+  public static interface CheckFunctionCallsVisitorFactory {
 
-  /** Determines whether we allow external function definitions. */
-  private boolean allowExternallyDefinedFunctions;
-
-  @Inject public CheckFunctionCallsVisitor(
-      Map<String, SoyFunction> soyFunctionsByName) {
-    this.soyFunctionsByName = ImmutableMap.copyOf(soyFunctionsByName);
+    /**
+     * @param declaredSyntaxVersion User-declared syntax version.
+     */
+    public CheckFunctionCallsVisitor create(SyntaxVersion declaredSyntaxVersion);
   }
 
 
-  /**
-   * Specifies whether we allow external function definitions.
-   * If true, then we ignore calls to functions that are not defined in the
-   * map passed to the constructor.
-   * Otherwise, we fail with an exception.
-   *
-   * @param allow true to allow external function definitions.
-   */
-  public void setAllowExternallyDefinedFunctions(boolean allow) {
-    this.allowExternallyDefinedFunctions = allow;
+  /** Injected Soy function definitions. */
+  private final Map<String, SoyFunction> soyFunctionsByName;
+
+  /** User-declared syntax version. */
+  private SyntaxVersion declaredSyntaxVersion;
+
+
+  @AssistedInject
+  public CheckFunctionCallsVisitor(
+      Map<String, SoyFunction> soyFunctionsByName, @Assisted SyntaxVersion declaredSyntaxVersion) {
+    this.soyFunctionsByName = ImmutableMap.copyOf(soyFunctionsByName);
+    this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
 
@@ -131,12 +135,13 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
      * @exception SoySyntaxException When a signature is violated.
      */
     @Override protected void visitFunctionNode(FunctionNode node) {
+
       String fnName = node.getFunctionName();
       int numArgs = node.numChildren();
 
       NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
       if (nonpluginFn != null) {
-        // --- Check nonplugin function. ---
+        // --- Case 1: nonplugin function. ---
         // Check arity.
         if (numArgs != nonpluginFn.getNumArgs()) {
           throw SoySyntaxException.createWithoutMetaInfo(
@@ -162,22 +167,25 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
         }
 
       } else {
-        // --- Check plugin function. ---
-        SoyFunction signature = soyFunctionsByName.get(fnName);
-        if (signature != null) {
-          Set<Integer> arities = signature.getValidArgsSizes();
+        SoyFunction pluginFn = soyFunctionsByName.get(fnName);
+        if (pluginFn != null) {
+          // --- Case 2: Plugin function. ---
+          Set<Integer> arities = pluginFn.getValidArgsSizes();
           // Check arity.
           if (!arities.contains(numArgs)) {
             throw SoySyntaxException.createWithoutMetaInfo(
                 "Function '" + fnName + "' called with the wrong number of arguments" +
                     " (function call \"" + node.toSourceString() + "\").");
           }
-        } else if (!allowExternallyDefinedFunctions) {
-          // In version 2 and later, all functions must be available as SoyFunctions
-          // at compile time.
-          throw SoySyntaxException.createWithoutMetaInfo(
-              "Unrecognized function '" + fnName + "' (encountered function call \"" +
-                  node.toSourceString() + "\").");
+
+        } else {
+          // --- Case 3: Unrecognized function. ---
+          // In Soy V2, all functions must be available as SoyFunctions at compile time.
+          if (declaredSyntaxVersion != SyntaxVersion.V1_0) {
+            throw SoySyntaxException.createWithoutMetaInfo(
+                "Unrecognized function '" + fnName + "' (encountered function call \"" +
+                    node.toSourceString() + "\").");
+          }
         }
       }
 
@@ -199,17 +207,14 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
     private boolean isLoopVariableInScope(ExprNode loopVariable) {
-      if (!(loopVariable instanceof DataRefNode)) {
+      if (!(loopVariable instanceof VarRefNode)) {
         return false;
       }
-      DataRefNode loopVariableRef = (DataRefNode) loopVariable;
-      if (loopVariableRef.isIjDataRef()) {
+      VarRefNode loopVariableRef = (VarRefNode) loopVariable;
+      if (loopVariableRef.isInjected()) {
         return false;
       }
-      if (loopVariableRef.numChildren() != 0) {
-        return false;
-      }
-      String loopVariableName = loopVariableRef.getFirstKey();
+      String loopVariableName = loopVariableRef.getName();
       for (ParentSoyNode<?> ancestor = container.getParent(); ancestor != null;
            ancestor = ancestor.getParent()) {
         if (ancestor instanceof ForeachNonemptyNode) {

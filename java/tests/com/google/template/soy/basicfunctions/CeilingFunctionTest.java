@@ -17,10 +17,9 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 import junit.framework.TestCase;
@@ -34,17 +33,17 @@ import junit.framework.TestCase;
 public class CeilingFunctionTest extends TestCase {
 
 
-  public void testComputeForTofu() {
+  public void testComputeForJava() {
 
     CeilingFunction ceilingFunction = new CeilingFunction();
 
-    SoyData float0 = FloatData.forValue(7.5);
+    SoyValue float0 = FloatData.forValue(7.5);
     assertEquals(IntegerData.forValue(8),
-                 ceilingFunction.computeForTofu(ImmutableList.of(float0)));
+                 ceilingFunction.computeForJava(ImmutableList.of(float0)));
 
-    SoyData integer = IntegerData.forValue(14);
+    SoyValue integer = IntegerData.forValue(14);
     assertEquals(IntegerData.forValue(14),
-                 ceilingFunction.computeForTofu(ImmutableList.of(integer)));
+                 ceilingFunction.computeForJava(ImmutableList.of(integer)));
   }
 
 
@@ -54,19 +53,6 @@ public class CeilingFunctionTest extends TestCase {
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
     assertEquals(new JsExpr("Math.ceil(JS_CODE)", Integer.MAX_VALUE),
                  ceilingFunction.computeForJsSrc(ImmutableList.of(expr)));
-  }
-
-
-  public void testComputeForJavaSrc() {
-
-    CeilingFunction ceilingFunction = new CeilingFunction();
-    JavaExpr expr = new JavaExpr("JAVA_CODE", FloatData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.data.restricted.IntegerData.forValue(" +
-                "(int) Math.ceil(JAVA_CODE.numberValue()))",
-            IntegerData.class, Integer.MAX_VALUE),
-        ceilingFunction.computeForJavaSrc(ImmutableList.of(expr)));
   }
 
 }

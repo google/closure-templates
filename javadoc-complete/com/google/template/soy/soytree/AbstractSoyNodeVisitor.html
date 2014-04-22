@@ -1,116 +1,118 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-AbstractSoyNodeVisitor (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>AbstractSoyNodeVisitor (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="AbstractSoyNodeVisitor (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="AbstractSoyNodeVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" target="_top">Frames</a></li>
+<li><a href="AbstractSoyNodeVisitor.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy.soytree</FONT>
-<BR>
-Class AbstractSoyNodeVisitor&lt;R&gt;</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,R&gt;
-      <IMG SRC="../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.soytree.AbstractSoyNodeVisitor&lt;R&gt;</B>
-</PRE>
-<DL>
-<DT><DT><B>Type Parameters:</B><DD><CODE>R</CODE> - The return type of this visitor.</DL>
-<DL>
-<DT><B>All Implemented Interfaces:</B> <DD><A HREF="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,R&gt;</DD>
-</DL>
-<DL>
-<DT><B>Direct Known Subclasses:</B> <DD><A HREF="../../../../../com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses">AssertNoExternalCallsVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/AssertSyntaxVersionV2Visitor.html" title="class in com.google.template.soy.sharedpasses">AssertSyntaxVersionV2Visitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html" title="class in com.google.template.soy.sharedpasses">BuildAllDependeesMapVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/ChangeCallsToPassAllDataVisitor.html" title="class in com.google.template.soy.parsepasses">ChangeCallsToPassAllDataVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/CheckCallsVisitor.html" title="class in com.google.template.soy.parsepasses">CheckCallsVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/CheckDelegatesVisitor.html" title="class in com.google.template.soy.parsepasses">CheckDelegatesVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc">CheckEscapingSanityVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/CheckFunctionCallsVisitor.html" title="class in com.google.template.soy.parsepasses">CheckFunctionCallsVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/CheckOverridesVisitor.html" title="class in com.google.template.soy.parsepasses">CheckOverridesVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html" title="class in com.google.template.soy.sharedpasses">CheckSoyDocVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/ClearSoyDocStringsVisitor.html" title="class in com.google.template.soy.sharedpasses">ClearSoyDocStringsVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/CombineConsecutiveRawTextNodesVisitor.html" title="class in com.google.template.soy.sharedpasses">CombineConsecutiveRawTextNodesVisitor</A>, <A HREF="../../../../../com/google/template/soy/msgs/internal/ExtractMsgsVisitor.html" title="class in com.google.template.soy.msgs.internal">ExtractMsgsVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/FindIjParamsVisitor.html" title="class in com.google.template.soy.sharedpasses">FindIjParamsVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html" title="class in com.google.template.soy.sharedpasses">FindIndirectParamsVisitor</A>, <A HREF="../../../../../com/google/template/soy/parseinfo/passes/GenerateParseInfoVisitor.html" title="class in com.google.template.soy.parseinfo.passes">GenerateParseInfoVisitor</A>, <A HREF="../../../../../com/google/template/soy/javasrc/internal/GenJavaExprsVisitor.html" title="class in com.google.template.soy.javasrc.internal">GenJavaExprsVisitor</A>, <A HREF="../../../../../com/google/template/soy/jssrc/internal/GenJsExprsVisitor.html" title="class in com.google.template.soy.jssrc.internal">GenJsExprsVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/HandleCssCommandVisitor.html" title="class in com.google.template.soy.parsepasses">HandleCssCommandVisitor</A>, <A HREF="../../../../../com/google/template/soy/jssrc/internal/HasPlrselMsgVisitor.html" title="class in com.google.template.soy.jssrc.internal">HasPlrselMsgVisitor</A>, <A HREF="../../../../../com/google/template/soy/msgs/internal/InsertMsgsVisitor.html" title="class in com.google.template.soy.msgs.internal">InsertMsgsVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/MarkLocalVarDataRefsVisitor.html" title="class in com.google.template.soy.sharedpasses">MarkLocalVarDataRefsVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/PerformAutoescapeVisitor.html" title="class in com.google.template.soy.parsepasses">PerformAutoescapeVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/RemoveHtmlCommentsVisitor.html" title="class in com.google.template.soy.sharedpasses">RemoveHtmlCommentsVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/RenameCssVisitor.html" title="class in com.google.template.soy.sharedpasses">RenameCssVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html" title="class in com.google.template.soy.sharedpasses.render">RenderVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/RewriteRemainderNodesVisitor.html" title="class in com.google.template.soy.parsepasses">RewriteRemainderNodesVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/SetFullCalleeNamesVisitor.html" title="class in com.google.template.soy.parsepasses">SetFullCalleeNamesVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/opti/SimplifyVisitor.html" title="class in com.google.template.soy.sharedpasses.opti">SimplifyVisitor</A>, <A HREF="../../../../../com/google/template/soy/sharedpasses/UnmarkLocalVarDataRefsVisitor.html" title="class in com.google.template.soy.sharedpasses">UnmarkLocalVarDataRefsVisitor</A>, <A HREF="../../../../../com/google/template/soy/parsepasses/VerifyPhnameAttrOnlyOnPlaceholdersVisitor.html" title="class in com.google.template.soy.parsepasses">VerifyPhnameAttrOnlyOnPlaceholdersVisitor</A></DD>
-</DL>
-<HR>
-<DL>
-<DT><PRE>public abstract class <B>AbstractSoyNodeVisitor&lt;R&gt;</B><DT>extends <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,R&gt;</DL>
-</PRE>
-
-<P>
-Abstract base class for all SoyNode visitors. A visitor is basically a function implemented for
+<div class="header">
+<div class="subTitle">com.google.template.soy.soytree</div>
+<h2 title="Class AbstractSoyNodeVisitor" class="title">Class AbstractSoyNodeVisitor&lt;R&gt;</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">com.google.template.soy.basetree.AbstractNodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>,R&gt;</li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.soytree.AbstractSoyNodeVisitor&lt;R&gt;</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl><dt><span class="strong">Type Parameters:</span></dt><dd><code>R</code> - The return type of this visitor.</dd></dl>
+<dl>
+<dt>All Implemented Interfaces:</dt>
+<dd><a href="../../../../../com/google/template/soy/basetree/NodeVisitor.html" title="interface in com.google.template.soy.basetree">NodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>,R&gt;</dd>
+</dl>
+<dl>
+<dt>Direct Known Subclasses:</dt>
+<dd><a href="../../../../../com/google/template/soy/sharedpasses/AssertNoExternalCallsVisitor.html" title="class in com.google.template.soy.sharedpasses">AssertNoExternalCallsVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/BuildAllDependeesMapVisitor.html" title="class in com.google.template.soy.sharedpasses">BuildAllDependeesMapVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/ChangeCallsToPassAllDataVisitor.html" title="class in com.google.template.soy.parsepasses">ChangeCallsToPassAllDataVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/CheckCallingParamTypesVisitor.html" title="class in com.google.template.soy.sharedpasses">CheckCallingParamTypesVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/CheckCallsVisitor.html" title="class in com.google.template.soy.parsepasses">CheckCallsVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/CheckDelegatesVisitor.html" title="class in com.google.template.soy.parsepasses">CheckDelegatesVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/contextautoesc/CheckEscapingSanityVisitor.html" title="class in com.google.template.soy.parsepasses.contextautoesc">CheckEscapingSanityVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/CheckFunctionCallsVisitor.html" title="class in com.google.template.soy.parsepasses">CheckFunctionCallsVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/CheckOverridesVisitor.html" title="class in com.google.template.soy.parsepasses">CheckOverridesVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html" title="class in com.google.template.soy.sharedpasses">CheckSoyDocVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/ClearSoyDocStringsVisitor.html" title="class in com.google.template.soy.sharedpasses">ClearSoyDocStringsVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/CombineConsecutiveRawTextNodesVisitor.html" title="class in com.google.template.soy.sharedpasses">CombineConsecutiveRawTextNodesVisitor</a>, <a href="../../../../../com/google/template/soy/msgs/internal/ExtractMsgsVisitor.html" title="class in com.google.template.soy.msgs.internal">ExtractMsgsVisitor</a>, <a href="../../../../../com/google/template/soy/shared/internal/FindCalleesNotInFileVisitor.html" title="class in com.google.template.soy.shared.internal">FindCalleesNotInFileVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html" title="class in com.google.template.soy.sharedpasses">FindIndirectParamsVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/FindTransitiveDepTemplatesVisitor.html" title="class in com.google.template.soy.sharedpasses">FindTransitiveDepTemplatesVisitor</a>, <a href="../../../../../com/google/template/soy/parseinfo/passes/GenerateParseInfoVisitor.html" title="class in com.google.template.soy.parseinfo.passes">GenerateParseInfoVisitor</a>, <a href="../../../../../com/google/template/soy/jssrc/internal/GenJsExprsVisitor.html" title="class in com.google.template.soy.jssrc.internal">GenJsExprsVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/HandleCssCommandVisitor.html" title="class in com.google.template.soy.parsepasses">HandleCssCommandVisitor</a>, <a href="../../../../../com/google/template/soy/shared/internal/HasNodeTypesVisitor.html" title="class in com.google.template.soy.shared.internal">HasNodeTypesVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/InferRequiredSyntaxVersionVisitor.html" title="class in com.google.template.soy.parsepasses">InferRequiredSyntaxVersionVisitor</a>, <a href="../../../../../com/google/template/soy/msgs/internal/InsertMsgsVisitor.html" title="class in com.google.template.soy.msgs.internal">InsertMsgsVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/MarkLocalVarDataRefsVisitor.html" title="class in com.google.template.soy.sharedpasses">MarkLocalVarDataRefsVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/PerformAutoescapeVisitor.html" title="class in com.google.template.soy.parsepasses">PerformAutoescapeVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/RemoveHtmlCommentsVisitor.html" title="class in com.google.template.soy.sharedpasses">RemoveHtmlCommentsVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/RenameCssVisitor.html" title="class in com.google.template.soy.sharedpasses">RenameCssVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/render/RenderVisitor.html" title="class in com.google.template.soy.sharedpasses.render">RenderVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/ReplaceHasDataFunctionVisitor.html" title="class in com.google.template.soy.parsepasses">ReplaceHasDataFunctionVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/ReportSyntaxVersionErrorsVisitor.html" title="class in com.google.template.soy.sharedpasses">ReportSyntaxVersionErrorsVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/ResolveExpressionTypesVisitor.html" title="class in com.google.template.soy.sharedpasses">ResolveExpressionTypesVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/ResolveNamesVisitor.html" title="class in com.google.template.soy.sharedpasses">ResolveNamesVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/RewriteGenderMsgsVisitor.html" title="class in com.google.template.soy.parsepasses">RewriteGenderMsgsVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/RewriteRemainderNodesVisitor.html" title="class in com.google.template.soy.parsepasses">RewriteRemainderNodesVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/SetDefaultForDelcallAllowsEmptyDefaultVisitor.html" title="class in com.google.template.soy.parsepasses">SetDefaultForDelcallAllowsEmptyDefaultVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/SetFullCalleeNamesVisitor.html" title="class in com.google.template.soy.parsepasses">SetFullCalleeNamesVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/opti/SimplifyVisitor.html" title="class in com.google.template.soy.sharedpasses.opti">SimplifyVisitor</a>, <a href="../../../../../com/google/template/soy/sharedpasses/UnmarkLocalVarDataRefsVisitor.html" title="class in com.google.template.soy.sharedpasses">UnmarkLocalVarDataRefsVisitor</a>, <a href="../../../../../com/google/template/soy/parsepasses/VerifyPhnameAttrOnlyOnPlaceholdersVisitor.html" title="class in com.google.template.soy.parsepasses">VerifyPhnameAttrOnlyOnPlaceholdersVisitor</a></dd>
+</dl>
+<hr>
+<br>
+<pre>public abstract class <span class="strong">AbstractSoyNodeVisitor&lt;R&gt;</span>
+extends <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>,R&gt;</pre>
+<div class="block">Abstract base class for all SoyNode visitors. A visitor is basically a function implemented for
  some or all SoyNodes, where the implementation can be different for each specific node class.
 
- <p> Same as <A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="class in com.google.template.soy.soytree"><CODE>AbstractReturningSoyNodeVisitor</CODE></A> except that in this class, internal
+ <p> Same as <a href="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="class in com.google.template.soy.soytree"><code>AbstractReturningSoyNodeVisitor</code></a> except that in this class, internal
  <code>visit()</code> calls do not return a value.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -121,1060 +123,832 @@ Abstract base class for all SoyNode visitors. A visitor is basically a function 
  <li> Subclass this class.
  <li> Implement <code>visit*Node()</code> methods for some specific node types.
  <li> Implement fallback methods for node types not specifically handled. The most general
-      fallback method is <A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)"><CODE>visitSoyNode()</CODE></A>, which is usually needed. Other
+      fallback method is <a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)"><code>visitSoyNode()</code></a>, which is usually needed. Other
       fallback methods include <code>visitLoopNode()</code> and <code>visitCallParamNode()</code>.
  <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- <li> Maybe implement <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)"><CODE>exec()</CODE></A> if this visitor needs to return a non-null final result
+ <li> Maybe implement <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)"><code>exec()</code></a> if this visitor needs to return a non-null final result
       and/or if this visitor has state that needs to be setup/reset before each unrelated use of
       <code>visit()</code>.
- </ol>
-<P>
-
-<P>
-<DL>
-<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="class in com.google.template.soy.soytree"><CODE>AbstractReturningSoyNodeVisitor</CODE></A></DL>
-<HR>
-
-<P>
-
+ </ol></div>
+<dl><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../com/google/template/soy/soytree/AbstractReturningSoyNodeVisitor.html" title="class in com.google.template.soy.soytree"><code>AbstractReturningSoyNodeVisitor</code></a></dd></dl>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
-
-<A NAME="constructor_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Constructor Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#AbstractSoyNodeVisitor()">AbstractSoyNodeVisitor</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-</TABLE>
-&nbsp;
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#AbstractSoyNodeVisitor()">AbstractSoyNodeVisitor</a></strong>()</code>&nbsp;</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visit(com.google.template.soy.soytree.SoyNode)">visit</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Visits the given node to execute the function defined by this visitor.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)">visitCallBasicNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CallBasicNode.html" title="class in com.google.template.soy.soytree">CallBasicNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallDelegateNode(com.google.template.soy.soytree.CallDelegateNode)">visitCallDelegateNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CallDelegateNode.html" title="class in com.google.template.soy.soytree">CallDelegateNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallNode(com.google.template.soy.soytree.CallNode)">visitCallNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CallNode.html" title="class in com.google.template.soy.soytree">CallNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamContentNode(com.google.template.soy.soytree.CallParamContentNode)">visitCallParamContentNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamContentNode.html" title="class in com.google.template.soy.soytree">CallParamContentNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamNode(com.google.template.soy.soytree.CallParamNode)">visitCallParamNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamValueNode(com.google.template.soy.soytree.CallParamValueNode)">visitCallParamValueNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamValueNode.html" title="class in com.google.template.soy.soytree">CallParamValueNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildren</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;?&gt;&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Helper to visit all the children of a node, in order.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildrenAllowingConcurrentModification</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;?&gt;&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Helper to visit all the children of a node, in order.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCssNode(com.google.template.soy.soytree.CssNode)">visitCssNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/CssNode.html" title="class in com.google.template.soy.soytree">CssNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)">visitDebuggerNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)">visitForeachIfemptyNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachIfemptyNode.html" title="class in com.google.template.soy.soytree">ForeachIfemptyNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachNode(com.google.template.soy.soytree.ForeachNode)">visitForeachNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachNode.html" title="class in com.google.template.soy.soytree">ForeachNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)">visitForeachNonemptyNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html" title="class in com.google.template.soy.soytree">ForeachNonemptyNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForNode(com.google.template.soy.soytree.ForNode)">visitForNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/ForNode.html" title="class in com.google.template.soy.soytree">ForNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)">visitGoogMsgNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)">visitGoogMsgRefNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfCondNode(com.google.template.soy.soytree.IfCondNode)">visitIfCondNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/IfCondNode.html" title="class in com.google.template.soy.soytree">IfCondNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfElseNode(com.google.template.soy.soytree.IfElseNode)">visitIfElseNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/IfElseNode.html" title="class in com.google.template.soy.soytree">IfElseNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfNode(com.google.template.soy.soytree.IfNode)">visitIfNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/IfNode.html" title="class in com.google.template.soy.soytree">IfNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetContentNode(com.google.template.soy.soytree.LetContentNode)">visitLetContentNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LetContentNode.html" title="class in com.google.template.soy.soytree">LetContentNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetValueNode(com.google.template.soy.soytree.LetValueNode)">visitLetValueNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LetValueNode.html" title="class in com.google.template.soy.soytree">LetValueNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLogNode(com.google.template.soy.soytree.LogNode)">visitLogNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLoopNode(com.google.template.soy.soytree.SoyNode.LoopNode)">visitLoopNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgHtmlTagNode(com.google.template.soy.soytree.MsgHtmlTagNode)">visitMsgHtmlTagNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgHtmlTagNode.html" title="class in com.google.template.soy.soytree">MsgHtmlTagNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgNode(com.google.template.soy.soytree.MsgNode)">visitMsgNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)">visitMsgPlaceholderNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPlaceholderNode.html" title="class in com.google.template.soy.soytree">MsgPlaceholderNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)">visitMsgPluralCaseNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralCaseNode.html" title="class in com.google.template.soy.soytree">MsgPluralCaseNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)">visitMsgPluralDefaultNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralDefaultNode.html" title="class in com.google.template.soy.soytree">MsgPluralDefaultNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)">visitMsgPluralNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralNode.html" title="class in com.google.template.soy.soytree">MsgPluralNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)">visitMsgPluralRemainderNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralRemainderNode.html" title="class in com.google.template.soy.soytree">MsgPluralRemainderNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)">visitMsgSelectCaseNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectCaseNode.html" title="class in com.google.template.soy.soytree">MsgSelectCaseNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)">visitMsgSelectDefaultNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)">visitMsgSelectNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectNode.html" title="class in com.google.template.soy.soytree">MsgSelectNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitPrintDirectiveNode(com.google.template.soy.soytree.PrintDirectiveNode)">visitPrintDirectiveNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitPrintNode(com.google.template.soy.soytree.PrintNode)">visitPrintNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/PrintNode.html" title="class in com.google.template.soy.soytree">PrintNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitRawTextNode(com.google.template.soy.soytree.RawTextNode)">visitRawTextNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/RawTextNode.html" title="class in com.google.template.soy.soytree">RawTextNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)">visitSoyNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchCaseNode(com.google.template.soy.soytree.SwitchCaseNode)">visitSwitchCaseNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SwitchCaseNode.html" title="class in com.google.template.soy.soytree">SwitchCaseNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchDefaultNode(com.google.template.soy.soytree.SwitchDefaultNode)">visitSwitchDefaultNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SwitchDefaultNode.html" title="class in com.google.template.soy.soytree">SwitchDefaultNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchNode(com.google.template.soy.soytree.SwitchNode)">visitSwitchNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/SwitchNode.html" title="class in com.google.template.soy.soytree">SwitchNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateBasicNode(com.google.template.soy.soytree.TemplateBasicNode)">visitTemplateBasicNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateBasicNode.html" title="class in com.google.template.soy.soytree">TemplateBasicNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateDelegateNode(com.google.template.soy.soytree.TemplateDelegateNode)">visitTemplateDelegateNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>protected &nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode</A></B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&nbsp;node)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNodeVisitor"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class com.google.template.soy.basetree.<A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)">exec</A>, <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildren(com.google.template.soy.basetree.ParentNode)">visitChildren</A>, <A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.basetree.ParentNode)">visitChildrenAllowingConcurrentModification</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visit(com.google.template.soy.soytree.SoyNode)">visit</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>&nbsp;node)</code>
+<div class="block">Visits the given node to execute the function defined by this visitor.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)">visitCallBasicNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CallBasicNode.html" title="class in com.google.template.soy.soytree">CallBasicNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallDelegateNode(com.google.template.soy.soytree.CallDelegateNode)">visitCallDelegateNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CallDelegateNode.html" title="class in com.google.template.soy.soytree">CallDelegateNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallNode(com.google.template.soy.soytree.CallNode)">visitCallNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CallNode.html" title="class in com.google.template.soy.soytree">CallNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamContentNode(com.google.template.soy.soytree.CallParamContentNode)">visitCallParamContentNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CallParamContentNode.html" title="class in com.google.template.soy.soytree">CallParamContentNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamNode(com.google.template.soy.soytree.CallParamNode)">visitCallParamNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCallParamValueNode(com.google.template.soy.soytree.CallParamValueNode)">visitCallParamValueNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CallParamValueNode.html" title="class in com.google.template.soy.soytree">CallParamValueNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildren</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a>&lt;?&gt;&nbsp;node)</code>
+<div class="block">Helper to visit all the children of a node, in order.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">visitChildrenAllowingConcurrentModification</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a>&lt;?&gt;&nbsp;node)</code>
+<div class="block">Helper to visit all the children of a node, in order.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitCssNode(com.google.template.soy.soytree.CssNode)">visitCssNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/CssNode.html" title="class in com.google.template.soy.soytree">CssNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)">visitDebuggerNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)">visitForeachIfemptyNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/ForeachIfemptyNode.html" title="class in com.google.template.soy.soytree">ForeachIfemptyNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachNode(com.google.template.soy.soytree.ForeachNode)">visitForeachNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/ForeachNode.html" title="class in com.google.template.soy.soytree">ForeachNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)">visitForeachNonemptyNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html" title="class in com.google.template.soy.soytree">ForeachNonemptyNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitForNode(com.google.template.soy.soytree.ForNode)">visitForNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/ForNode.html" title="class in com.google.template.soy.soytree">ForNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgDefNode(com.google.template.soy.soytree.jssrc.GoogMsgDefNode)">visitGoogMsgDefNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgDefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgDefNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)">visitGoogMsgRefNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfCondNode(com.google.template.soy.soytree.IfCondNode)">visitIfCondNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/IfCondNode.html" title="class in com.google.template.soy.soytree">IfCondNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfElseNode(com.google.template.soy.soytree.IfElseNode)">visitIfElseNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/IfElseNode.html" title="class in com.google.template.soy.soytree">IfElseNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitIfNode(com.google.template.soy.soytree.IfNode)">visitIfNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/IfNode.html" title="class in com.google.template.soy.soytree">IfNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetContentNode(com.google.template.soy.soytree.LetContentNode)">visitLetContentNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/LetContentNode.html" title="class in com.google.template.soy.soytree">LetContentNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetNode(com.google.template.soy.soytree.LetNode)">visitLetNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLetValueNode(com.google.template.soy.soytree.LetValueNode)">visitLetValueNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/LetValueNode.html" title="class in com.google.template.soy.soytree">LetValueNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLogNode(com.google.template.soy.soytree.LogNode)">visitLogNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitLoopNode(com.google.template.soy.soytree.SoyNode.LoopNode)">visitLoopNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgFallbackGroupNode(com.google.template.soy.soytree.MsgFallbackGroupNode)">visitMsgFallbackGroupNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgFallbackGroupNode.html" title="class in com.google.template.soy.soytree">MsgFallbackGroupNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgHtmlTagNode(com.google.template.soy.soytree.MsgHtmlTagNode)">visitMsgHtmlTagNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgHtmlTagNode.html" title="class in com.google.template.soy.soytree">MsgHtmlTagNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgNode(com.google.template.soy.soytree.MsgNode)">visitMsgNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)">visitMsgPlaceholderNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgPlaceholderNode.html" title="class in com.google.template.soy.soytree">MsgPlaceholderNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)">visitMsgPluralCaseNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgPluralCaseNode.html" title="class in com.google.template.soy.soytree">MsgPluralCaseNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)">visitMsgPluralDefaultNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgPluralDefaultNode.html" title="class in com.google.template.soy.soytree">MsgPluralDefaultNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)">visitMsgPluralNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgPluralNode.html" title="class in com.google.template.soy.soytree">MsgPluralNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)">visitMsgPluralRemainderNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgPluralRemainderNode.html" title="class in com.google.template.soy.soytree">MsgPluralRemainderNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)">visitMsgSelectCaseNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgSelectCaseNode.html" title="class in com.google.template.soy.soytree">MsgSelectCaseNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)">visitMsgSelectDefaultNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)">visitMsgSelectNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/MsgSelectNode.html" title="class in com.google.template.soy.soytree">MsgSelectNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitMsgSubstUnitNode(com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode)">visitMsgSubstUnitNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyNode.MsgSubstUnitNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgSubstUnitNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitPrintDirectiveNode(com.google.template.soy.soytree.PrintDirectiveNode)">visitPrintDirectiveNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitPrintNode(com.google.template.soy.soytree.PrintNode)">visitPrintNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/PrintNode.html" title="class in com.google.template.soy.soytree">PrintNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitRawTextNode(com.google.template.soy.soytree.RawTextNode)">visitRawTextNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/RawTextNode.html" title="class in com.google.template.soy.soytree">RawTextNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">visitSoyFileNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">visitSoyFileSetNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSoyNode(com.google.template.soy.soytree.SoyNode)">visitSoyNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchCaseNode(com.google.template.soy.soytree.SwitchCaseNode)">visitSwitchCaseNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SwitchCaseNode.html" title="class in com.google.template.soy.soytree">SwitchCaseNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchDefaultNode(com.google.template.soy.soytree.SwitchDefaultNode)">visitSwitchDefaultNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SwitchDefaultNode.html" title="class in com.google.template.soy.soytree">SwitchDefaultNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitSwitchNode(com.google.template.soy.soytree.SwitchNode)">visitSwitchNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/SwitchNode.html" title="class in com.google.template.soy.soytree">SwitchNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateBasicNode(com.google.template.soy.soytree.TemplateBasicNode)">visitTemplateBasicNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/TemplateBasicNode.html" title="class in com.google.template.soy.soytree">TemplateBasicNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateDelegateNode(com.google.template.soy.soytree.TemplateDelegateNode)">visitTemplateDelegateNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitXidNode(com.google.template.soy.soytree.XidNode)">visitXidNode</a></strong>(<a href="../../../../../com/google/template/soy/soytree/XidNode.html" title="class in com.google.template.soy.soytree">XidNode</a>&nbsp;node)</code>&nbsp;</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.basetree.AbstractNodeVisitor">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;com.google.template.soy.basetree.<a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a></h3>
+<code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#exec(N)">exec</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildren(com.google.template.soy.basetree.ParentNode)">visitChildren</a>, <a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.basetree.ParentNode)">visitChildrenAllowingConcurrentModification</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
-
-<A NAME="constructor_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Constructor Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="AbstractSoyNodeVisitor()"><!-- --></A><H3>
-AbstractSoyNodeVisitor</H3>
-<PRE>
-public <B>AbstractSoyNodeVisitor</B>()</PRE>
-<DL>
-</DL>
-
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="AbstractSoyNodeVisitor()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>AbstractSoyNodeVisitor</h4>
+<pre>public&nbsp;AbstractSoyNodeVisitor()</pre>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="visit(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
-visit</H3>
-<PRE>
-protected void <B>visit</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><B>Description copied from class: <CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">AbstractNodeVisitor</A></CODE></B></DD>
-<DD>Visits the given node to execute the function defined by this visitor.
-<P>
-<DD><DL>
-<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">visit</A></CODE> in class <CODE><A HREF="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</A>&lt;<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>,<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="type parameter in AbstractSoyNodeVisitor">R</A>&gt;</CODE></DL>
-</DD>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The node to visit.</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)"><!-- --></A><H3>
-visitChildren</H3>
-<PRE>
-protected void <B>visitChildren</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;?&gt;&nbsp;node)</PRE>
-<DL>
-<DD>Helper to visit all the children of a node, in order.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The parent node whose children to visit.<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)"><CODE>visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode<?>)</CODE></A></DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)"><!-- --></A><H3>
-visitChildrenAllowingConcurrentModification</H3>
-<PRE>
-protected void <B>visitChildrenAllowingConcurrentModification</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</A>&lt;?&gt;&nbsp;node)</PRE>
-<DL>
-<DD>Helper to visit all the children of a node, in order.
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="visit(com.google.template.soy.soytree.SoyNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visit</h4>
+<pre>protected&nbsp;void&nbsp;visit(<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>&nbsp;node)</pre>
+<div class="block"><strong>Description copied from class:&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">AbstractNodeVisitor</a></code></strong></div>
+<div class="block">Visits the given node to execute the function defined by this visitor.</div>
+<dl>
+<dt><strong>Specified by:</strong></dt>
+<dd><code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">visit</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a>&lt;<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>,<a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" title="type parameter in AbstractSoyNodeVisitor">R</a>&gt;</code></dd>
+<dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The node to visit.</dd></dl>
+</li>
+</ul>
+<a name="visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitChildren</h4>
+<pre>protected&nbsp;void&nbsp;visitChildren(<a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a>&lt;?&gt;&nbsp;node)</pre>
+<div class="block">Helper to visit all the children of a node, in order.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The parent node whose children to visit.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)"><code>visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode&lt;?&gt;)</code></a></dd></dl>
+</li>
+</ul>
+<a name="visitChildrenAllowingConcurrentModification(com.google.template.soy.soytree.SoyNode.ParentSoyNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitChildrenAllowingConcurrentModification</h4>
+<pre>protected&nbsp;void&nbsp;visitChildrenAllowingConcurrentModification(<a href="../../../../../com/google/template/soy/soytree/SoyNode.ParentSoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode.ParentSoyNode</a>&lt;?&gt;&nbsp;node)</pre>
+<div class="block">Helper to visit all the children of a node, in order.
 
  This method differs from <code>visitChildren</code> in that we are iterating through a copy of the
- children. Thus, concurrent modification of the list of children is allowed.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - The parent node whose children to visit.<DT><B>See Also:</B><DD><A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)"><CODE>visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode<?>)</CODE></A></DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)"><!-- --></A><H3>
-visitSoyFileSetNode</H3>
-<PRE>
-protected void <B>visitSoyFileSetNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)"><!-- --></A><H3>
-visitSoyFileNode</H3>
-<PRE>
-protected void <B>visitSoyFileNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitTemplateBasicNode(com.google.template.soy.soytree.TemplateBasicNode)"><!-- --></A><H3>
-visitTemplateBasicNode</H3>
-<PRE>
-protected void <B>visitTemplateBasicNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateBasicNode.html" title="class in com.google.template.soy.soytree">TemplateBasicNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitTemplateDelegateNode(com.google.template.soy.soytree.TemplateDelegateNode)"><!-- --></A><H3>
-visitTemplateDelegateNode</H3>
-<PRE>
-protected void <B>visitTemplateDelegateNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitTemplateNode(com.google.template.soy.soytree.TemplateNode)"><!-- --></A><H3>
-visitTemplateNode</H3>
-<PRE>
-protected void <B>visitTemplateNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitRawTextNode(com.google.template.soy.soytree.RawTextNode)"><!-- --></A><H3>
-visitRawTextNode</H3>
-<PRE>
-protected void <B>visitRawTextNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/RawTextNode.html" title="class in com.google.template.soy.soytree">RawTextNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGoogMsgNode(com.google.template.soy.soytree.jssrc.GoogMsgNode)"><!-- --></A><H3>
-visitGoogMsgNode</H3>
-<PRE>
-protected void <B>visitGoogMsgNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)"><!-- --></A><H3>
-visitGoogMsgRefNode</H3>
-<PRE>
-protected void <B>visitGoogMsgRefNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgNode(com.google.template.soy.soytree.MsgNode)"><!-- --></A><H3>
-visitMsgNode</H3>
-<PRE>
-protected void <B>visitMsgNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)"><!-- --></A><H3>
-visitMsgPluralNode</H3>
-<PRE>
-protected void <B>visitMsgPluralNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralNode.html" title="class in com.google.template.soy.soytree">MsgPluralNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)"><!-- --></A><H3>
-visitMsgPluralCaseNode</H3>
-<PRE>
-protected void <B>visitMsgPluralCaseNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralCaseNode.html" title="class in com.google.template.soy.soytree">MsgPluralCaseNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)"><!-- --></A><H3>
-visitMsgPluralDefaultNode</H3>
-<PRE>
-protected void <B>visitMsgPluralDefaultNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralDefaultNode.html" title="class in com.google.template.soy.soytree">MsgPluralDefaultNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)"><!-- --></A><H3>
-visitMsgPluralRemainderNode</H3>
-<PRE>
-protected void <B>visitMsgPluralRemainderNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPluralRemainderNode.html" title="class in com.google.template.soy.soytree">MsgPluralRemainderNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)"><!-- --></A><H3>
-visitMsgSelectNode</H3>
-<PRE>
-protected void <B>visitMsgSelectNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectNode.html" title="class in com.google.template.soy.soytree">MsgSelectNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)"><!-- --></A><H3>
-visitMsgSelectCaseNode</H3>
-<PRE>
-protected void <B>visitMsgSelectCaseNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectCaseNode.html" title="class in com.google.template.soy.soytree">MsgSelectCaseNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)"><!-- --></A><H3>
-visitMsgSelectDefaultNode</H3>
-<PRE>
-protected void <B>visitMsgSelectDefaultNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)"><!-- --></A><H3>
-visitMsgPlaceholderNode</H3>
-<PRE>
-protected void <B>visitMsgPlaceholderNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgPlaceholderNode.html" title="class in com.google.template.soy.soytree">MsgPlaceholderNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitMsgHtmlTagNode(com.google.template.soy.soytree.MsgHtmlTagNode)"><!-- --></A><H3>
-visitMsgHtmlTagNode</H3>
-<PRE>
-protected void <B>visitMsgHtmlTagNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/MsgHtmlTagNode.html" title="class in com.google.template.soy.soytree">MsgHtmlTagNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitPrintNode(com.google.template.soy.soytree.PrintNode)"><!-- --></A><H3>
-visitPrintNode</H3>
-<PRE>
-protected void <B>visitPrintNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/PrintNode.html" title="class in com.google.template.soy.soytree">PrintNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitPrintDirectiveNode(com.google.template.soy.soytree.PrintDirectiveNode)"><!-- --></A><H3>
-visitPrintDirectiveNode</H3>
-<PRE>
-protected void <B>visitPrintDirectiveNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCssNode(com.google.template.soy.soytree.CssNode)"><!-- --></A><H3>
-visitCssNode</H3>
-<PRE>
-protected void <B>visitCssNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CssNode.html" title="class in com.google.template.soy.soytree">CssNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLetValueNode(com.google.template.soy.soytree.LetValueNode)"><!-- --></A><H3>
-visitLetValueNode</H3>
-<PRE>
-protected void <B>visitLetValueNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/LetValueNode.html" title="class in com.google.template.soy.soytree">LetValueNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLetContentNode(com.google.template.soy.soytree.LetContentNode)"><!-- --></A><H3>
-visitLetContentNode</H3>
-<PRE>
-protected void <B>visitLetContentNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/LetContentNode.html" title="class in com.google.template.soy.soytree">LetContentNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLetNode(com.google.template.soy.soytree.LetNode)"><!-- --></A><H3>
-visitLetNode</H3>
-<PRE>
-protected void <B>visitLetNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitIfNode(com.google.template.soy.soytree.IfNode)"><!-- --></A><H3>
-visitIfNode</H3>
-<PRE>
-protected void <B>visitIfNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/IfNode.html" title="class in com.google.template.soy.soytree">IfNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitIfCondNode(com.google.template.soy.soytree.IfCondNode)"><!-- --></A><H3>
-visitIfCondNode</H3>
-<PRE>
-protected void <B>visitIfCondNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/IfCondNode.html" title="class in com.google.template.soy.soytree">IfCondNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitIfElseNode(com.google.template.soy.soytree.IfElseNode)"><!-- --></A><H3>
-visitIfElseNode</H3>
-<PRE>
-protected void <B>visitIfElseNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/IfElseNode.html" title="class in com.google.template.soy.soytree">IfElseNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitSwitchNode(com.google.template.soy.soytree.SwitchNode)"><!-- --></A><H3>
-visitSwitchNode</H3>
-<PRE>
-protected void <B>visitSwitchNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SwitchNode.html" title="class in com.google.template.soy.soytree">SwitchNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitSwitchCaseNode(com.google.template.soy.soytree.SwitchCaseNode)"><!-- --></A><H3>
-visitSwitchCaseNode</H3>
-<PRE>
-protected void <B>visitSwitchCaseNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SwitchCaseNode.html" title="class in com.google.template.soy.soytree">SwitchCaseNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitSwitchDefaultNode(com.google.template.soy.soytree.SwitchDefaultNode)"><!-- --></A><H3>
-visitSwitchDefaultNode</H3>
-<PRE>
-protected void <B>visitSwitchDefaultNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SwitchDefaultNode.html" title="class in com.google.template.soy.soytree">SwitchDefaultNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitForeachNode(com.google.template.soy.soytree.ForeachNode)"><!-- --></A><H3>
-visitForeachNode</H3>
-<PRE>
-protected void <B>visitForeachNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachNode.html" title="class in com.google.template.soy.soytree">ForeachNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)"><!-- --></A><H3>
-visitForeachIfemptyNode</H3>
-<PRE>
-protected void <B>visitForeachIfemptyNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachIfemptyNode.html" title="class in com.google.template.soy.soytree">ForeachIfemptyNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)"><!-- --></A><H3>
-visitForeachNonemptyNode</H3>
-<PRE>
-protected void <B>visitForeachNonemptyNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html" title="class in com.google.template.soy.soytree">ForeachNonemptyNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitForNode(com.google.template.soy.soytree.ForNode)"><!-- --></A><H3>
-visitForNode</H3>
-<PRE>
-protected void <B>visitForNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/ForNode.html" title="class in com.google.template.soy.soytree">ForNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLoopNode(com.google.template.soy.soytree.SoyNode.LoopNode)"><!-- --></A><H3>
-visitLoopNode</H3>
-<PRE>
-protected void <B>visitLoopNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)"><!-- --></A><H3>
-visitCallBasicNode</H3>
-<PRE>
-protected void <B>visitCallBasicNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallBasicNode.html" title="class in com.google.template.soy.soytree">CallBasicNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCallDelegateNode(com.google.template.soy.soytree.CallDelegateNode)"><!-- --></A><H3>
-visitCallDelegateNode</H3>
-<PRE>
-protected void <B>visitCallDelegateNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallDelegateNode.html" title="class in com.google.template.soy.soytree">CallDelegateNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCallNode(com.google.template.soy.soytree.CallNode)"><!-- --></A><H3>
-visitCallNode</H3>
-<PRE>
-protected void <B>visitCallNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallNode.html" title="class in com.google.template.soy.soytree">CallNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCallParamValueNode(com.google.template.soy.soytree.CallParamValueNode)"><!-- --></A><H3>
-visitCallParamValueNode</H3>
-<PRE>
-protected void <B>visitCallParamValueNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamValueNode.html" title="class in com.google.template.soy.soytree">CallParamValueNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCallParamContentNode(com.google.template.soy.soytree.CallParamContentNode)"><!-- --></A><H3>
-visitCallParamContentNode</H3>
-<PRE>
-protected void <B>visitCallParamContentNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamContentNode.html" title="class in com.google.template.soy.soytree">CallParamContentNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitCallParamNode(com.google.template.soy.soytree.CallParamNode)"><!-- --></A><H3>
-visitCallParamNode</H3>
-<PRE>
-protected void <B>visitCallParamNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitLogNode(com.google.template.soy.soytree.LogNode)"><!-- --></A><H3>
-visitLogNode</H3>
-<PRE>
-protected void <B>visitLogNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)"><!-- --></A><H3>
-visitDebuggerNode</H3>
-<PRE>
-protected void <B>visitDebuggerNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="visitSoyNode(com.google.template.soy.soytree.SoyNode)"><!-- --></A><H3>
-visitSoyNode</H3>
-<PRE>
-protected void <B>visitSoyNode</B>(<A HREF="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</A>&nbsp;node)</PRE>
-<DL>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>node</CODE> - the visited node.</DL>
-</DD>
-</DL>
+ children. Thus, concurrent modification of the list of children is allowed.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - The parent node whose children to visit.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNodeVisitor.html#visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode)"><code>visitChildren(com.google.template.soy.soytree.SoyNode.ParentSoyNode&lt;?&gt;)</code></a></dd></dl>
+</li>
+</ul>
+<a name="visitSoyFileSetNode(com.google.template.soy.soytree.SoyFileSetNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitSoyFileSetNode</h4>
+<pre>protected&nbsp;void&nbsp;visitSoyFileSetNode(<a href="../../../../../com/google/template/soy/soytree/SoyFileSetNode.html" title="class in com.google.template.soy.soytree">SoyFileSetNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitSoyFileNode(com.google.template.soy.soytree.SoyFileNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitSoyFileNode</h4>
+<pre>protected&nbsp;void&nbsp;visitSoyFileNode(<a href="../../../../../com/google/template/soy/soytree/SoyFileNode.html" title="class in com.google.template.soy.soytree">SoyFileNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitTemplateBasicNode(com.google.template.soy.soytree.TemplateBasicNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitTemplateBasicNode</h4>
+<pre>protected&nbsp;void&nbsp;visitTemplateBasicNode(<a href="../../../../../com/google/template/soy/soytree/TemplateBasicNode.html" title="class in com.google.template.soy.soytree">TemplateBasicNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitTemplateDelegateNode(com.google.template.soy.soytree.TemplateDelegateNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitTemplateDelegateNode</h4>
+<pre>protected&nbsp;void&nbsp;visitTemplateDelegateNode(<a href="../../../../../com/google/template/soy/soytree/TemplateDelegateNode.html" title="class in com.google.template.soy.soytree">TemplateDelegateNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitTemplateNode</h4>
+<pre>protected&nbsp;void&nbsp;visitTemplateNode(<a href="../../../../../com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitRawTextNode(com.google.template.soy.soytree.RawTextNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitRawTextNode</h4>
+<pre>protected&nbsp;void&nbsp;visitRawTextNode(<a href="../../../../../com/google/template/soy/soytree/RawTextNode.html" title="class in com.google.template.soy.soytree">RawTextNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitGoogMsgDefNode(com.google.template.soy.soytree.jssrc.GoogMsgDefNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitGoogMsgDefNode</h4>
+<pre>protected&nbsp;void&nbsp;visitGoogMsgDefNode(<a href="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgDefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgDefNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitGoogMsgRefNode(com.google.template.soy.soytree.jssrc.GoogMsgRefNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitGoogMsgRefNode</h4>
+<pre>protected&nbsp;void&nbsp;visitGoogMsgRefNode(<a href="../../../../../com/google/template/soy/soytree/jssrc/GoogMsgRefNode.html" title="class in com.google.template.soy.soytree.jssrc">GoogMsgRefNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgFallbackGroupNode(com.google.template.soy.soytree.MsgFallbackGroupNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgFallbackGroupNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgFallbackGroupNode(<a href="../../../../../com/google/template/soy/soytree/MsgFallbackGroupNode.html" title="class in com.google.template.soy.soytree">MsgFallbackGroupNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgNode(com.google.template.soy.soytree.MsgNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgNode(<a href="../../../../../com/google/template/soy/soytree/MsgNode.html" title="class in com.google.template.soy.soytree">MsgNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgPluralNode(com.google.template.soy.soytree.MsgPluralNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgPluralNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgPluralNode(<a href="../../../../../com/google/template/soy/soytree/MsgPluralNode.html" title="class in com.google.template.soy.soytree">MsgPluralNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgPluralCaseNode(com.google.template.soy.soytree.MsgPluralCaseNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgPluralCaseNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgPluralCaseNode(<a href="../../../../../com/google/template/soy/soytree/MsgPluralCaseNode.html" title="class in com.google.template.soy.soytree">MsgPluralCaseNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgPluralDefaultNode(com.google.template.soy.soytree.MsgPluralDefaultNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgPluralDefaultNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgPluralDefaultNode(<a href="../../../../../com/google/template/soy/soytree/MsgPluralDefaultNode.html" title="class in com.google.template.soy.soytree">MsgPluralDefaultNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgPluralRemainderNode(com.google.template.soy.soytree.MsgPluralRemainderNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgPluralRemainderNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgPluralRemainderNode(<a href="../../../../../com/google/template/soy/soytree/MsgPluralRemainderNode.html" title="class in com.google.template.soy.soytree">MsgPluralRemainderNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgSelectNode(com.google.template.soy.soytree.MsgSelectNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgSelectNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgSelectNode(<a href="../../../../../com/google/template/soy/soytree/MsgSelectNode.html" title="class in com.google.template.soy.soytree">MsgSelectNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgSelectCaseNode(com.google.template.soy.soytree.MsgSelectCaseNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgSelectCaseNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgSelectCaseNode(<a href="../../../../../com/google/template/soy/soytree/MsgSelectCaseNode.html" title="class in com.google.template.soy.soytree">MsgSelectCaseNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgSelectDefaultNode(com.google.template.soy.soytree.MsgSelectDefaultNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgSelectDefaultNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgSelectDefaultNode(<a href="../../../../../com/google/template/soy/soytree/MsgSelectDefaultNode.html" title="class in com.google.template.soy.soytree">MsgSelectDefaultNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgPlaceholderNode(com.google.template.soy.soytree.MsgPlaceholderNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgPlaceholderNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgPlaceholderNode(<a href="../../../../../com/google/template/soy/soytree/MsgPlaceholderNode.html" title="class in com.google.template.soy.soytree">MsgPlaceholderNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgHtmlTagNode(com.google.template.soy.soytree.MsgHtmlTagNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgHtmlTagNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgHtmlTagNode(<a href="../../../../../com/google/template/soy/soytree/MsgHtmlTagNode.html" title="class in com.google.template.soy.soytree">MsgHtmlTagNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitMsgSubstUnitNode(com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitMsgSubstUnitNode</h4>
+<pre>protected&nbsp;void&nbsp;visitMsgSubstUnitNode(<a href="../../../../../com/google/template/soy/soytree/SoyNode.MsgSubstUnitNode.html" title="interface in com.google.template.soy.soytree">SoyNode.MsgSubstUnitNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitPrintNode(com.google.template.soy.soytree.PrintNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitPrintNode</h4>
+<pre>protected&nbsp;void&nbsp;visitPrintNode(<a href="../../../../../com/google/template/soy/soytree/PrintNode.html" title="class in com.google.template.soy.soytree">PrintNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitPrintDirectiveNode(com.google.template.soy.soytree.PrintDirectiveNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitPrintDirectiveNode</h4>
+<pre>protected&nbsp;void&nbsp;visitPrintDirectiveNode(<a href="../../../../../com/google/template/soy/soytree/PrintDirectiveNode.html" title="class in com.google.template.soy.soytree">PrintDirectiveNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCssNode(com.google.template.soy.soytree.CssNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCssNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCssNode(<a href="../../../../../com/google/template/soy/soytree/CssNode.html" title="class in com.google.template.soy.soytree">CssNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitXidNode(com.google.template.soy.soytree.XidNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitXidNode</h4>
+<pre>protected&nbsp;void&nbsp;visitXidNode(<a href="../../../../../com/google/template/soy/soytree/XidNode.html" title="class in com.google.template.soy.soytree">XidNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLetValueNode(com.google.template.soy.soytree.LetValueNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLetValueNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLetValueNode(<a href="../../../../../com/google/template/soy/soytree/LetValueNode.html" title="class in com.google.template.soy.soytree">LetValueNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLetContentNode(com.google.template.soy.soytree.LetContentNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLetContentNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLetContentNode(<a href="../../../../../com/google/template/soy/soytree/LetContentNode.html" title="class in com.google.template.soy.soytree">LetContentNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLetNode(com.google.template.soy.soytree.LetNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLetNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLetNode(<a href="../../../../../com/google/template/soy/soytree/LetNode.html" title="class in com.google.template.soy.soytree">LetNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitIfNode(com.google.template.soy.soytree.IfNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitIfNode</h4>
+<pre>protected&nbsp;void&nbsp;visitIfNode(<a href="../../../../../com/google/template/soy/soytree/IfNode.html" title="class in com.google.template.soy.soytree">IfNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitIfCondNode(com.google.template.soy.soytree.IfCondNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitIfCondNode</h4>
+<pre>protected&nbsp;void&nbsp;visitIfCondNode(<a href="../../../../../com/google/template/soy/soytree/IfCondNode.html" title="class in com.google.template.soy.soytree">IfCondNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitIfElseNode(com.google.template.soy.soytree.IfElseNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitIfElseNode</h4>
+<pre>protected&nbsp;void&nbsp;visitIfElseNode(<a href="../../../../../com/google/template/soy/soytree/IfElseNode.html" title="class in com.google.template.soy.soytree">IfElseNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitSwitchNode(com.google.template.soy.soytree.SwitchNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitSwitchNode</h4>
+<pre>protected&nbsp;void&nbsp;visitSwitchNode(<a href="../../../../../com/google/template/soy/soytree/SwitchNode.html" title="class in com.google.template.soy.soytree">SwitchNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitSwitchCaseNode(com.google.template.soy.soytree.SwitchCaseNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitSwitchCaseNode</h4>
+<pre>protected&nbsp;void&nbsp;visitSwitchCaseNode(<a href="../../../../../com/google/template/soy/soytree/SwitchCaseNode.html" title="class in com.google.template.soy.soytree">SwitchCaseNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitSwitchDefaultNode(com.google.template.soy.soytree.SwitchDefaultNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitSwitchDefaultNode</h4>
+<pre>protected&nbsp;void&nbsp;visitSwitchDefaultNode(<a href="../../../../../com/google/template/soy/soytree/SwitchDefaultNode.html" title="class in com.google.template.soy.soytree">SwitchDefaultNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitForeachNode(com.google.template.soy.soytree.ForeachNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitForeachNode</h4>
+<pre>protected&nbsp;void&nbsp;visitForeachNode(<a href="../../../../../com/google/template/soy/soytree/ForeachNode.html" title="class in com.google.template.soy.soytree">ForeachNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitForeachIfemptyNode(com.google.template.soy.soytree.ForeachIfemptyNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitForeachIfemptyNode</h4>
+<pre>protected&nbsp;void&nbsp;visitForeachIfemptyNode(<a href="../../../../../com/google/template/soy/soytree/ForeachIfemptyNode.html" title="class in com.google.template.soy.soytree">ForeachIfemptyNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitForeachNonemptyNode(com.google.template.soy.soytree.ForeachNonemptyNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitForeachNonemptyNode</h4>
+<pre>protected&nbsp;void&nbsp;visitForeachNonemptyNode(<a href="../../../../../com/google/template/soy/soytree/ForeachNonemptyNode.html" title="class in com.google.template.soy.soytree">ForeachNonemptyNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitForNode(com.google.template.soy.soytree.ForNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitForNode</h4>
+<pre>protected&nbsp;void&nbsp;visitForNode(<a href="../../../../../com/google/template/soy/soytree/ForNode.html" title="class in com.google.template.soy.soytree">ForNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLoopNode(com.google.template.soy.soytree.SoyNode.LoopNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLoopNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLoopNode(<a href="../../../../../com/google/template/soy/soytree/SoyNode.LoopNode.html" title="interface in com.google.template.soy.soytree">SoyNode.LoopNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCallBasicNode(com.google.template.soy.soytree.CallBasicNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCallBasicNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCallBasicNode(<a href="../../../../../com/google/template/soy/soytree/CallBasicNode.html" title="class in com.google.template.soy.soytree">CallBasicNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCallDelegateNode(com.google.template.soy.soytree.CallDelegateNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCallDelegateNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCallDelegateNode(<a href="../../../../../com/google/template/soy/soytree/CallDelegateNode.html" title="class in com.google.template.soy.soytree">CallDelegateNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCallNode(com.google.template.soy.soytree.CallNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCallNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCallNode(<a href="../../../../../com/google/template/soy/soytree/CallNode.html" title="class in com.google.template.soy.soytree">CallNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCallParamValueNode(com.google.template.soy.soytree.CallParamValueNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCallParamValueNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCallParamValueNode(<a href="../../../../../com/google/template/soy/soytree/CallParamValueNode.html" title="class in com.google.template.soy.soytree">CallParamValueNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCallParamContentNode(com.google.template.soy.soytree.CallParamContentNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCallParamContentNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCallParamContentNode(<a href="../../../../../com/google/template/soy/soytree/CallParamContentNode.html" title="class in com.google.template.soy.soytree">CallParamContentNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitCallParamNode(com.google.template.soy.soytree.CallParamNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitCallParamNode</h4>
+<pre>protected&nbsp;void&nbsp;visitCallParamNode(<a href="../../../../../com/google/template/soy/soytree/CallParamNode.html" title="class in com.google.template.soy.soytree">CallParamNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitLogNode(com.google.template.soy.soytree.LogNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitLogNode</h4>
+<pre>protected&nbsp;void&nbsp;visitLogNode(<a href="../../../../../com/google/template/soy/soytree/LogNode.html" title="class in com.google.template.soy.soytree">LogNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitDebuggerNode(com.google.template.soy.soytree.DebuggerNode)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>visitDebuggerNode</h4>
+<pre>protected&nbsp;void&nbsp;visitDebuggerNode(<a href="../../../../../com/google/template/soy/soytree/DebuggerNode.html" title="class in com.google.template.soy.soytree">DebuggerNode</a>&nbsp;node)</pre>
+</li>
+</ul>
+<a name="visitSoyNode(com.google.template.soy.soytree.SoyNode)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>visitSoyNode</h4>
+<pre>protected&nbsp;void&nbsp;visitSoyNode(<a href="../../../../../com/google/template/soy/soytree/SoyNode.html" title="interface in com.google.template.soy.soytree">SoyNode</a>&nbsp;node)</pre>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>node</code> - the visited node.</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../index.html?com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="AbstractSoyNodeVisitor.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../com/google/template/soy/soytree/AbstractSoyNode.html" title="class in com.google.template.soy.soytree"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../index.html?com/google/template/soy/soytree/AbstractSoyNodeVisitor.html" target="_top">Frames</a></li>
+<li><a href="AbstractSoyNodeVisitor.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_summary">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -1191,6 +965,6 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;<A HREF="#constructor_detail">CONSTR</A>&nbsp;|&n
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

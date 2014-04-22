@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.Objects;
 import com.google.template.soy.msgs.SoyMsgException;
 
 import java.util.EnumMap;
@@ -99,8 +100,24 @@ public class SoyMsgPluralCaseSpec {
     return explicitValue;
   }
 
+
   @Override
   public String toString() {
     return (type == Type.EXPLICIT) ? "=" + explicitValue : TYPE_TO_STRING.get(type);
+  }
+
+
+  @Override public boolean equals(Object other) {
+    if (!(other instanceof SoyMsgPluralCaseSpec)) {
+      return false;
+    }
+    SoyMsgPluralCaseSpec otherSpec = (SoyMsgPluralCaseSpec) other;
+    return type == otherSpec.type
+        && explicitValue == otherSpec.explicitValue;
+  }
+
+
+  @Override public int hashCode() {
+    return Objects.hashCode(SoyMsgPluralCaseSpec.class, type, explicitValue);
   }
 }

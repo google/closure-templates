@@ -17,14 +17,13 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -40,8 +39,8 @@ import javax.inject.Singleton;
  * @author Kai Huang
  */
 @Singleton
-public class TruncateDirective extends SoyAbstractTofuPrintDirective
-    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+@SoyPurePrintDirective
+public class TruncateDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
 
 
   @Inject
@@ -63,7 +62,7 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
 
     int maxLen;
     try {
@@ -74,9 +73,9 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
               args.get(0).stringValue() + "\").");
     }
 
-    String str = value.toString();
+    String str = value.coerceToString();
     if (str.length() <= maxLen) {
-      return SoyData.createFromExistingData(str);  // no need to truncate
+      return StringData.forValue(str);  // no need to truncate
     }
 
     boolean doAddEllipsis;
@@ -115,7 +114,7 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
       str += "...";
     }
 
-    return SoyData.createFromExistingData(str);
+    return StringData.forValue(str);
   }
 
 
@@ -128,21 +127,6 @@ public class TruncateDirective extends SoyAbstractTofuPrintDirective
         "soy.$$truncate(" +
             value.getText() + ", " + maxLenExprText + ", " + doAddEllipsisExprText + ")",
         Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
-
-    String valueExprText = JavaCodeUtils.genCoerceString(value);
-    String maxLenExprText = JavaCodeUtils.genIntegerValue(args.get(0));
-    String doAddEllipsisExprText =
-        (args.size() == 2) ? JavaCodeUtils.genBooleanValue(args.get(1)) : "true" /*default*/;
-
-    return new JavaExpr(
-        JavaCodeUtils.genFunctionCall(
-            JavaCodeUtils.UTILS_LIB + ".$$truncate",
-            valueExprText, maxLenExprText, doAddEllipsisExprText),
-        String.class, Integer.MAX_VALUE);
   }
 
 }

@@ -18,9 +18,9 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 
 import java.util.Set;
 
@@ -63,13 +63,11 @@ class FindIjParamsInExprHelperVisitor extends AbstractExprNodeVisitor<Set<String
   // ------ Implementations for specific nodes. ------
 
 
-  @Override protected void visitDataRefNode(DataRefNode node) {
+  @Override protected void visitVarRefNode(VarRefNode node) {
 
-    if (node.isIjDataRef()) {
-      usedIjParamsInExpr.add(node.getFirstKey());
+    if (node.isInjected()) {
+      usedIjParamsInExpr.add(node.getName());
     }
-
-    visitChildren(node);
   }
 
 

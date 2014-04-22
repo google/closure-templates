@@ -20,6 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -235,17 +236,19 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             "{template .foo}",
             "  {print bogus()}",
             "{/template}"),
-        true);
+        SyntaxVersion.V1_0);
   }
 
 
   private void applyCheckFunctionCallsVisitor(String soyContent) throws Exception {
-    applyCheckFunctionCallsVisitor(soyContent, false);
+    applyCheckFunctionCallsVisitor(soyContent, SyntaxVersion.V2_0);
   }
 
 
-  private void applyCheckFunctionCallsVisitor(String soyContent, boolean allowExterns)
+  private void applyCheckFunctionCallsVisitor(
+      String soyContent, SyntaxVersion declaredSyntaxVersion)
       throws Exception {
+
     SoyFileSetNode fileSet = SharedTestUtils.parseSoyFiles(soyContent);
     Map<String, SoyFunction> soyFunctions = ImmutableMap.<String, SoyFunction>of(
         "min",
@@ -258,9 +261,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             return ImmutableSet.of(2);
           }
         });
-    CheckFunctionCallsVisitor v = new CheckFunctionCallsVisitor(soyFunctions);
-    v.setAllowExternallyDefinedFunctions(allowExterns);
-    v.exec(fileSet);
+    CheckFunctionCallsVisitor visitor =
+        new CheckFunctionCallsVisitor(soyFunctions, declaredSyntaxVersion);
+    visitor.exec(fileSet);
   }
 
 

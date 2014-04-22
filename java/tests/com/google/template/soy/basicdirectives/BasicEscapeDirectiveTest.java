@@ -105,37 +105,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
   }
 
 
-  public final void testApplyCleanHtml() {
-    BasicEscapeDirective cleanHtml = new BasicEscapeDirective.CleanHtml();
-
-    assertTofuOutput("boo hoo", "boo hoo", cleanHtml);
-    assertTofuOutput("3 &lt; 5", "3 < 5", cleanHtml);
-    assertTofuOutput("", "<script type=\"text/javascript\">", cleanHtml);
-    assertTofuOutput("", "<script><!--\nbeEvil();//--></script>", cleanHtml);
-    // Known safe content is preserved.
-    assertTofuOutput(
-        "<script>beAwesome()</script>",
-        // Sanitized HTML is not exempt from escaping when embedded in JS.
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<script>beAwesome()</script>", SanitizedContent.ContentKind.HTML),
-        cleanHtml);
-    // Entities are preserved
-    assertTofuOutput("&nbsp;&nbsp;", "&nbsp;&nbsp;", cleanHtml);
-    // Safe tags are preserved.  Others are not.
-    assertTofuOutput("Hello, <b>World!</b>",
-                     "Hello, <b>World!<object></b>", cleanHtml);
-
-    new JsSrcPrintDirectiveTestBuilder()
-      .addTest("boo hoo", " 'boo hoo' ", cleanHtml)
-      .addTest("3 &lt; 5", " '3 < 5' ", cleanHtml)
-      .addTest("", " '<script type=\"text/javascript\">' ", cleanHtml)
-      .addTest("&nbsp;&nbsp;", " '&nbsp;&nbsp;' ", cleanHtml)
-      .addTest("Hello, <b>World!</b>",
-               " 'Hello, <b>World!<object></b>' ", cleanHtml)
-               .runTests();
-  }
-
-
   public final void testApplyFilterNormalizeUri() {
     BasicEscapeDirective filterNormalizeUri = new BasicEscapeDirective.FilterNormalizeUri();
     assertTofuOutput("", "", filterNormalizeUri);

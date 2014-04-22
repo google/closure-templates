@@ -17,9 +17,10 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.inject.Inject;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.shared.internal.SharedModule.Shared;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Deque;
@@ -40,8 +41,8 @@ import javax.inject.Singleton;
 public class PrerenderVisitorFactory {
 
 
-  /** Map of all SoyJavaRuntimePrintDirectives (name to directive). */
-  private final Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap;
+  /** Map of all SoyJavaPrintDirectives (name to directive). */
+  private final Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
 
   /** Factory for creating an instance of PreevalVisitor. */
   private final PreevalVisitorFactory preevalVisitorFactory;
@@ -49,9 +50,9 @@ public class PrerenderVisitorFactory {
 
   @Inject
   public PrerenderVisitorFactory(
-      Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap,
+      @Shared Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory) {
-    this.soyJavaRuntimeDirectivesMap = soyJavaRuntimeDirectivesMap;
+    this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.preevalVisitorFactory = preevalVisitorFactory;
   }
 
@@ -66,11 +67,11 @@ public class PrerenderVisitorFactory {
    * @return The newly created PrerenderVisitor instance.
    */
   public PrerenderVisitor create(
-      Appendable outputBuf, TemplateRegistry templateRegistry, SoyMapData data,
-      @Nullable Deque<Map<String, SoyData>> env) {
+      Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
+      @Nullable Deque<Map<String, SoyValue>> env) {
 
     return new PrerenderVisitor(
-        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry, data, env);
+        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry, data, env);
   }
 
 }

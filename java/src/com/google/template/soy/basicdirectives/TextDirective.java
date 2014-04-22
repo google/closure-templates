@@ -18,13 +18,12 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcPrintDirective;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
 import java.util.List;
 import java.util.Set;
@@ -43,8 +42,8 @@ import javax.inject.Singleton;
  * @author Garrett Boyer
  */
 @Singleton
-public class TextDirective extends SoyAbstractTofuPrintDirective
-    implements SoyJsSrcPrintDirective, SoyJavaSrcPrintDirective {
+@SoyPurePrintDirective
+public class TextDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
 
 
   @Inject
@@ -69,7 +68,7 @@ public class TextDirective extends SoyAbstractTofuPrintDirective
   }
 
 
-  @Override public SoyData apply(SoyData value, List<SoyData> args) {
+  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     // TODO: If this directive is opened up to users, this needs to coerce the value to a string.
     return value;
   }
@@ -79,12 +78,6 @@ public class TextDirective extends SoyAbstractTofuPrintDirective
     // Coerce to string, since sometimes this will be the root of an expression and will be used as
     // a return value or let-block assignment.
     return JsExprUtils.concatJsExprs(ImmutableList.of(new JsExpr("''", Integer.MAX_VALUE), value));
-  }
-
-
-  @Override public JavaExpr applyForJavaSrc(JavaExpr value, List<JavaExpr> args) {
-    // TODO: If this directive is opened up to users, this needs to coerce the value to a string.
-    return value;
   }
 
 }

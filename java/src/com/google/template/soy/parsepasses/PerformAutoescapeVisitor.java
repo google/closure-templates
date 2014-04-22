@@ -18,7 +18,7 @@ package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;

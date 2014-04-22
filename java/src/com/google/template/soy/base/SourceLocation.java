@@ -16,6 +16,8 @@
 
 package com.google.template.soy.base;
 
+import com.google.common.base.CharMatcher;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -30,7 +32,9 @@ public final class SourceLocation {
 
 
   /** A file path or URI useful for error messages. */
-  private final @Nonnull String filePath;
+  @Nonnull private final String filePath;
+
+  private final String fileName;
 
   /** The line number in the source file (1-based), or 0 if associated with the entire file instead
    *  of a line. */
@@ -53,6 +57,13 @@ public final class SourceLocation {
       filePath = filePath.substring(lastBangIndex + 1);
     }
 
+    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
+    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
+      this.fileName = filePath.substring(lastSlashIndex + 1);
+    } else {
+      this.fileName = filePath;
+    }
+
     this.filePath = filePath;
     this.lineNumber = lineNumber;
   }
@@ -62,8 +73,18 @@ public final class SourceLocation {
    * Returns a file path or URI useful for error messages. This should not be used to fetch content
    *     from the file system.
    */
-  public @Nonnull String getFilePath() {
+  @Nonnull public String getFilePath() {
     return filePath;
+  }
+
+
+  @Nullable public String getFileName() {
+    if (UNKNOWN.equals(this)) {
+      // This is to replicate old behavior where SoyFileNode#getFileName returns null when an
+      // invalid SoyFileNode is created.
+      return null;
+    }
+    return fileName;
   }
 
 

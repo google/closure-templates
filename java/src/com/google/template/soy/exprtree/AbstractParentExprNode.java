@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.types.SoyType;
 
 import java.util.List;
 
@@ -36,8 +37,21 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   private final MixinParentNode<ExprNode> parentMixin;
 
 
+  /**
+   * Data type of this expression. If null, it indicates that the type has not yet been
+   * filled in (and should be).
+   */
+  private SoyType type;
+
+
   protected AbstractParentExprNode() {
+    this((SoyType) null);
+  }
+
+
+  protected AbstractParentExprNode(SoyType type) {
     parentMixin = new MixinParentNode<ExprNode>(this);
+    this.type = type;
   }
 
 
@@ -48,6 +62,17 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   protected AbstractParentExprNode(AbstractParentExprNode orig) {
     super(orig);
     this.parentMixin = new MixinParentNode<ExprNode>(orig.parentMixin, this);
+    this.type = orig.type;
+  }
+
+
+  @Override public SoyType getType() {
+    return type;
+  }
+
+
+  public void setType(SoyType type) {
+    this.type = type;
   }
 
 

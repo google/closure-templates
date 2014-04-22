@@ -16,22 +16,17 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.javasrc.restricted.SoyJavaSrcFunctionUtils.toIntegerJavaExpr;
-import static com.google.template.soy.shared.restricted.SoyJavaRuntimeFunctionUtils.toSoyData;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.javasrc.restricted.JavaCodeUtils;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
-import com.google.template.soy.javasrc.restricted.SoyJavaSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -43,8 +38,7 @@ import java.util.Set;
  * @author Kai Huang
  */
 @Singleton
-class RandomIntFunction extends SoyAbstractTofuFunction
-    implements SoyJsSrcFunction, SoyJavaSrcFunction {
+class RandomIntFunction implements SoyJavaFunction, SoyJsSrcFunction {
 
 
   @Inject
@@ -61,10 +55,10 @@ class RandomIntFunction extends SoyAbstractTofuFunction
   }
 
 
-  @Override public SoyData compute(List<SoyData> args) {
-    SoyData arg = args.get(0);
+  @Override public SoyValue computeForJava(List<SoyValue> args) {
+    SoyValue arg = args.get(0);
 
-    return toSoyData((int) Math.floor(Math.random() * arg.integerValue()));
+    return IntegerData.forValue((long) Math.floor(Math.random() * arg.longValue()));
   }
 
 
@@ -75,14 +69,6 @@ class RandomIntFunction extends SoyAbstractTofuFunction
     JsExpr randomTimesArg =
         SoyJsCodeUtils.genJsExprUsingSoySyntax(Operator.TIMES, Lists.newArrayList(random, arg));
     return new JsExpr("Math.floor(" + randomTimesArg.getText() + ")", Integer.MAX_VALUE);
-  }
-
-
-  @Override public JavaExpr computeForJavaSrc(List<JavaExpr> args) {
-    JavaExpr arg = args.get(0);
-
-    return toIntegerJavaExpr(JavaCodeUtils.genNewIntegerData(
-        "(int) Math.floor(Math.random() * " + JavaCodeUtils.genIntegerValue(arg) + ")"));
   }
 
 }

@@ -1,7 +1,6 @@
 com.google.template.soy
 com.google.template.soy.base
 com.google.template.soy.data
-com.google.template.soy.javasrc
 com.google.template.soy.jssrc
 com.google.template.soy.msgs
 com.google.template.soy.parseinfo

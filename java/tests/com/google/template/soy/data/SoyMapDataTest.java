@@ -164,10 +164,10 @@ public class SoyMapDataTest extends TestCase {
     SoyMapData smd2 = new SoyMapData(existingMap);
     smd2.put("moo", "bleh", "too.seven", 2.71828);
 
-    assertEquals("{}", smd0.toString());
-    assertEquals("{boo: foo}", smd1.toString());
+    assertEquals("{}", smd0.coerceToString());
+    assertEquals("{boo: foo}", smd1.coerceToString());
 
-    String smd2Str = smd2.toString();
+    String smd2Str = smd2.coerceToString();
     assertTrue(smd2Str.contains("boo: 8"));
     assertTrue(smd2Str.contains("foo: null"));
     assertTrue(smd2Str.contains("goo: {buntu: blah, dy: true}") ||
@@ -175,9 +175,9 @@ public class SoyMapDataTest extends TestCase {
     assertTrue(smd2Str.contains("moo: bleh"));
     assertTrue(smd2Str.contains("too: {seven: 2.71828}"));
 
-    assertEquals(true, smd0.toBoolean());
-    assertEquals(true, smd1.toBoolean());
-    assertEquals(true, smd2.toBoolean());
+    assertEquals(true, smd0.coerceToBoolean());
+    assertEquals(true, smd1.coerceToBoolean());
+    assertEquals(true, smd2.coerceToBoolean());
   }
 
 
@@ -192,4 +192,14 @@ public class SoyMapDataTest extends TestCase {
     assertFalse(smd0.equals(new SoyMapData()));
   }
 
+  public void testLongHandling() {
+    // long value will loose precision if converted to double.
+    long l = 987654321987654321L;
+    SoyMapData smd = new SoyMapData();
+    smd.put("long", l);
+    assertEquals(l, smd.getLong("long"));
+
+    smd = new SoyMapData("long", l);
+    assertEquals(l, smd.getLong("long"));
+  }
 }

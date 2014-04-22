@@ -16,11 +16,16 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.IdGenerator;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -36,6 +41,56 @@ public class SoytreeUtils {
 
 
   private SoytreeUtils() {}
+
+
+  /**
+   * Retrieves all nodes in a tree that are an instance of a particular class.
+   *
+   * @param <T> The type of node to retrieve.
+   * @param rootSoyNode The parse tree to search.
+   * @param classObject The class whose instances to search for, including subclasses.
+   * @return The nodes in the order they appear.
+   */
+  public static <T extends SoyNode> List<T> getAllNodesOfType(
+      SoyNode rootSoyNode, final Class<T> classObject) {
+    return getAllNodesOfType(rootSoyNode, classObject, true);
+  }
+
+
+  /**
+   * Retrieves all nodes in a tree that are an instance of a particular class.
+   *
+   * @param <T> The type of node to retrieve.
+   * @param rootSoyNode The parse tree to search.
+   * @param classObject The class whose instances to search for, including subclasses.
+   * @param doSearchSubtreesOfMatchedNodes Whether to keep searching subtrees of matched nodes for
+   *     more nodes of the given type.
+   * @return The nodes in the order they appear.
+   */
+  public static <T extends SoyNode> List<T> getAllNodesOfType(
+      SoyNode rootSoyNode, final Class<T> classObject,
+      final boolean doSearchSubtreesOfMatchedNodes) {
+
+    final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
+
+    AbstractSoyNodeVisitor<Void> visitor = new AbstractSoyNodeVisitor<Void>() {
+      @SuppressWarnings("unchecked") // Casting safe after isAssignableFrom check.
+      @Override public void visitSoyNode(SoyNode soyNode) {
+        if (classObject.isAssignableFrom(soyNode.getClass())) {
+          matchedNodesBuilder.add((T) soyNode);
+          if (! doSearchSubtreesOfMatchedNodes) {
+            return;
+          }
+        }
+        if (soyNode instanceof ParentSoyNode<?>) {
+          visitChildren((ParentSoyNode<?>) soyNode);
+        }
+      }
+    };
+
+    visitor.exec(rootSoyNode);
+    return matchedNodesBuilder.build();
+  }
 
 
   // -----------------------------------------------------------------------------------------------
@@ -163,19 +218,56 @@ public class SoytreeUtils {
    * @param origNode The original node to be cloned. This node must be part of a full Soy tree,
    *     because the generator for the new node ids will be retrieved from the root (SoyFileSetNode)
    *     of the tree.
+   * @param nodeIdGen The ID generator used for the tree.
    * @return The cloned node, with all new ids for its subtree.
    */
-  public static <T extends SoyNode> T cloneWithNewIds(T origNode) {
+  public static <T extends SoyNode> T cloneWithNewIds(T origNode, IdGenerator nodeIdGen) {
 
     // Clone the node.
     @SuppressWarnings("unchecked")
     T clone = (T) origNode.clone();
 
     // Generate new ids.
-    IdGenerator nodeIdGen = origNode.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
     (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
 
     return clone;
+  }
+
+
+  /**
+   * Clones the given list of nodes and then generates and sets new ids on all the cloned nodes (by
+   * default, SoyNode.clone() creates cloned nodes with the same ids as the original nodes).
+   *
+   * <p> This function will use the original Soy tree's node id generator to generate the new node
+   * ids for the cloned nodes. Thus, the original nodes to be cloned must be part of a full Soy
+   * tree. However, this does not mean that the cloned nodes will become part of the original tree
+   * (unless they are manually attached later). The cloned nodes will be independent subtrees with
+   * parents set to null.
+   *
+   * @param <T> The type of the nodes being cloned.
+   * @param origNodes The original nodes to be cloned. These nodes must be part of a full Soy tree,
+   *     because the generator for the new node ids will be retrieved from the root (SoyFileSetNode)
+   *     of the tree.
+   * @param nodeIdGen The ID generator used for the tree.
+   * @return The cloned nodes, with all new ids for their subtrees.
+   */
+  public static <T extends SoyNode> List<T> cloneListWithNewIds(
+      List<T> origNodes, IdGenerator nodeIdGen) {
+
+    Preconditions.checkNotNull(origNodes);
+    if (origNodes.size() == 0) {
+      return Lists.newArrayListWithCapacity(0);
+    }
+
+    List<T> clones = Lists.newArrayListWithCapacity(origNodes.size());
+    for (T origNode : origNodes) {
+      @SuppressWarnings("unchecked")
+      T clone = (T) origNode.clone();
+      (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
+      clones.add(clone);
+    }
+
+    return clones;
   }
 
 
@@ -201,5 +293,4 @@ public class SoytreeUtils {
       }
     }
   }
-
 }

@@ -16,19 +16,22 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyMapData;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.LogNode;
-import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.PrintDirectiveNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.jssrc.GoogMsgNode;
+import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import java.util.Deque;
@@ -51,7 +54,7 @@ class PrerenderVisitor extends RenderVisitor {
 
 
   /**
-   * @param soyJavaRuntimeDirectivesMap Map of all SoyJavaRuntimePrintDirectives (name to
+   * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to
    *     directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
@@ -60,21 +63,21 @@ class PrerenderVisitor extends RenderVisitor {
    * @param env The current environment, or null if this is the initial call.
    */
   PrerenderVisitor(
-      Map<String, SoyJavaRuntimePrintDirective> soyJavaRuntimeDirectivesMap,
+      Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory, Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry, SoyMapData data,
-      @Nullable Deque<Map<String, SoyData>> env) {
+      @Nullable TemplateRegistry templateRegistry, SoyRecord data,
+      @Nullable Deque<Map<String, SoyValue>> env) {
 
     super(
-        soyJavaRuntimeDirectivesMap, preevalVisitorFactory, outputBuf,
-        templateRegistry, data, null, env, null, null, null);
+        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf,
+        templateRegistry, data, null, env, null, null, null, null);
   }
 
 
-  @Override protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyMapData data) {
+  @Override protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
 
     return new PrerenderVisitor(
-        soyJavaRuntimeDirectivesMap, (PreevalVisitorFactory) evalVisitorFactory, outputBuf,
+        soyJavaDirectivesMap, (PreevalVisitorFactory) evalVisitorFactory, outputBuf,
         templateRegistry, data, null);
   }
 
@@ -91,7 +94,7 @@ class PrerenderVisitor extends RenderVisitor {
       throw e;
 
     } catch (RuntimeException e) {
-      throw new RenderException("Failed prerender due to exception: " + e.getMessage());
+      throw new RenderException("Failed prerender due to exception: " + e.getMessage(), e);
     }
   }
 
@@ -100,13 +103,13 @@ class PrerenderVisitor extends RenderVisitor {
   // Implementations for specific nodes.
 
 
-  @Override protected void visitMsgNode(MsgNode node) {
-    throw new RenderException("Cannot prerender MsgNode.");
+  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    throw new RenderException("Cannot prerender MsgFallbackGroupNode.");
   }
 
 
-  @Override protected void visitGoogMsgNode(GoogMsgNode node) {
-    throw new RenderException("Cannot prerender GoogMsgNode.");
+  @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
+    throw new RenderException("Cannot prerender GoogMsgDefNode.");
   }
 
 
@@ -132,6 +135,31 @@ class PrerenderVisitor extends RenderVisitor {
 
   @Override protected void visitDebuggerNode(DebuggerNode node) {
     throw new RenderException("Cannot prerender DebuggerNode.");
+  }
+
+
+  @Override protected void visitPrintNode(PrintNode node) {
+    for (PrintDirectiveNode directiveNode : node.getChildren()) {
+      if (!isSoyPurePrintDirective(directiveNode)) {
+        throw new RenderException("Cannot prerender a node with some impure print directive.");
+      }
+    }
+    super.visitPrintNode(node);
+  }
+
+
+  @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+    if (!isSoyPurePrintDirective(node)) {
+      throw new RenderException("Cannot prerender impure print directive.");
+    }
+    super.visitPrintDirectiveNode(node);
+  }
+
+
+  private boolean isSoyPurePrintDirective(PrintDirectiveNode node) {
+    SoyJavaPrintDirective directive = soyJavaDirectivesMap.get(node.getName());
+    return directive != null &&
+        directive.getClass().isAnnotationPresent(SoyPurePrintDirective.class);
   }
 
 }

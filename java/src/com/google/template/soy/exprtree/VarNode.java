@@ -16,6 +16,8 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.types.SoyType;
+
 
 /**
  * Node representing a variable.
@@ -26,7 +28,6 @@ package com.google.template.soy.exprtree;
  * Important: This type of node never appears in expression parse trees. It is only created if you
  * explicitly parse an input as a variable using ExpressionParser.parseVariable().
  *
- * @see DataRefNode
  * @author Kai Huang
  */
 public class VarNode extends AbstractExprNode {
@@ -56,6 +57,11 @@ public class VarNode extends AbstractExprNode {
 
   @Override public Kind getKind() {
     return Kind.VAR_NODE;
+  }
+
+
+  @Override public SoyType getType() {
+    throw new UnsupportedOperationException();
   }
 
 

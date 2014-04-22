@@ -16,14 +16,17 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.template.soy.base.BaseUtils;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoyFileKind;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
@@ -46,9 +49,14 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
 
 
-  /** Decomposes namespace command text into a namespace (group 1) and attributes (group 2). */
-  private static final Pattern CMD_TEXT_PATTERN = Pattern.compile(
-      "\\s* (" + BaseUtils.DOTTED_IDENT_RE + ") (\\s .*)?", Pattern.COMMENTS);
+  /** Pattern for pre-trimmed 'namespace' cmd text. Group 1 = namespace, group 2 = attributes. */
+  private static final Pattern NAMESPACE_CMD_TEXT_PATTERN = Pattern.compile(
+      "(" + BaseUtils.DOTTED_IDENT_RE + ") (\\s .*)?", Pattern.COMMENTS | Pattern.DOTALL);
+
+  /** Pattern for pre-trimmed 'alias' cmd text. Group 1 = namespace, group 2 = alias (or null). */
+  private static final Pattern ALIAS_CMD_TEXT_PATTERN = Pattern.compile(
+      "(" + BaseUtils.DOTTED_IDENT_RE + ") (?: \\s+ as \\s+ (" + BaseUtils.IDENT_RE + ") )?",
+      Pattern.COMMENTS);
 
   /** The default autoescape mode if none is specified in the command text. */
   private static final AutoescapeMode DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE =
@@ -58,8 +66,15 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
       new CommandTextAttributesParser("namespace",
           new Attribute("autoescape", AutoescapeMode.getAttributeValues(),
-              DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE.getAttributeValue()));
+              DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE.getAttributeValue()),
+          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null));
 
+  public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE = new Predicate<SoyFileNode>() {
+    @Override
+    public boolean apply(@Nullable SoyFileNode input) {
+      return input != null && input.getSoyFileKind() == SoyFileKind.SRC;
+    }
+  };
 
   /** The kind of this Soy file */
   private final SoyFileKind soyFileKind;
@@ -72,6 +87,9 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** The autoescape mode for templates in this file that do not declare an autoescape mode. */
   private final AutoescapeMode defaultAutoescapeMode;
+
+  /** CSS namespaces required by this file (usable in any template in this file). */
+  private final ImmutableList<String> requiredCssNamespaces;
 
   /** Map from aliases to namespaces for this file. */
   private final ImmutableMap<String, String> aliasToNamespaceMap;
@@ -98,7 +116,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.soyFileKind = soyFileKind;
 
     if (delpackageCmdText != null) {
-      this.delPackageName = delpackageCmdText.trim();
+      this.delPackageName = delpackageCmdText;
       if (! BaseUtils.isDottedIdentifier(delPackageName)) {
         throw SoySyntaxException.createWithoutMetaInfo(
             "Invalid delegate package name \"" + delPackageName + "\".");
@@ -109,17 +127,22 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
     String namespace = null;
     AutoescapeMode defaultAutoescapeMode = DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE;
+    ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
 
     if (namespaceCmdText != null) {
-      Matcher matcher = CMD_TEXT_PATTERN.matcher(namespaceCmdText);
-      if (matcher.matches()) {
-        namespace = matcher.group(1);
-        String attributeText = matcher.group(2);
+      Matcher nctMatcher = NAMESPACE_CMD_TEXT_PATTERN.matcher(namespaceCmdText);
+      if (nctMatcher.matches()) {
+        namespace = nctMatcher.group(1);
+        String attributeText = nctMatcher.group(2);
         if (attributeText != null) {
           attributeText = attributeText.trim();
           Map<String, String> attributes = ATTRIBUTES_PARSER.parse(attributeText);
           if (attributes.containsKey("autoescape")) {
             defaultAutoescapeMode = AutoescapeMode.forAttributeValue(attributes.get("autoescape"));
+          }
+          if (attributes.containsKey("requirecss")) {
+            requiredCssNamespaces =
+                RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss"));
           }
         }
       } else {
@@ -130,8 +153,10 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
     this.namespace = namespace;
     this.defaultAutoescapeMode = defaultAutoescapeMode;
+    this.requiredCssNamespaces = requiredCssNamespaces;
     if (namespace == null) {
-      maybeSetSyntaxVersion(SyntaxVersion.V1);
+      maybeSetSyntaxVersionBound(new SyntaxVersionBound(
+          SyntaxVersion.V2_0, "Soy V2 files must have a namespace declaration."));
     } else if (!BaseUtils.isDottedIdentifier(namespace)) {
       throw SoySyntaxException.createWithoutMetaInfo(
           "Invalid namespace name \"" + namespace + "\".");
@@ -142,10 +167,18 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       String aliasForFileNamespace = BaseUtils.extractPartAfterLastDot(this.namespace);
       Map<String, String> tempAliasToNamespaceMap = Maps.newLinkedHashMap();
       for (String aliasCmdText : aliasCmdTexts) {
-        // Note: The form of the 'alias' tag with "as ..." is currently disabled in the parser.
-        String aliasNamespace = aliasCmdText.trim();
+        Matcher actMatcher = ALIAS_CMD_TEXT_PATTERN.matcher(aliasCmdText);
+        Preconditions.checkArgument(actMatcher.matches());
+        String aliasNamespace = actMatcher.group(1);
         Preconditions.checkArgument(BaseUtils.isDottedIdentifier(aliasNamespace));
-        String alias = BaseUtils.extractPartAfterLastDot(aliasNamespace);
+        String alias = actMatcher.group(2) != null ?
+            actMatcher.group(2) : BaseUtils.extractPartAfterLastDot(aliasNamespace);
+        if (alias.equals("as")) {
+          throw SoySyntaxException.createWithoutMetaInfo(String.format(
+              "Not allowed to use the string 'as' as a namespace alias (found while aliasing" +
+                  " namespace \"%s\").",
+              aliasNamespace));
+        }
         if (alias.equals(aliasForFileNamespace) && ! aliasNamespace.equals(this.namespace)) {
           throw SoySyntaxException.createWithoutMetaInfo(String.format(
               "Not allowed to alias the last part of the file's namespace to some other namespace" +
@@ -176,6 +209,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.delPackageName = orig.delPackageName;
     this.namespace = orig.namespace;
     this.defaultAutoescapeMode = orig.defaultAutoescapeMode;
+    this.requiredCssNamespaces = orig.requiredCssNamespaces;  // immutable
     this.aliasToNamespaceMap = orig.aliasToNamespaceMap;  // immutable
     this.fileName = orig.fileName;
   }
@@ -210,6 +244,12 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   }
 
 
+  /** Returns the CSS namespaces required by this file (usable in any template in this file). */
+  public ImmutableList<String> getRequiredCssNamespaces() {
+    return requiredCssNamespaces;
+  }
+
+
   /** Returns the map from aliases to namespaces for this file. */
   public ImmutableMap<String, String> getAliasToNamespaceMap() {
     return aliasToNamespaceMap;
@@ -218,14 +258,6 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   @Override public void setSourceLocation(SourceLocation srcLoc) {
     super.setSourceLocation(srcLoc);
-
-    String filePath = srcLoc.getFilePath();
-    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
-    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
-      fileName = filePath.substring(lastSlashIndex + 1);
-    } else {
-      fileName = filePath;
-    }
   }
 
 
@@ -243,7 +275,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** Returns this Soy file's name (null if not supplied). */
   @Nullable public String getFileName() {
-    return fileName;
+    return getSourceLocation().getFileName();
   }
 
 
@@ -260,8 +292,14 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
     if (aliasToNamespaceMap.size() > 0) {
       sb.append("\n");
-      for (String aliasNamespace : aliasToNamespaceMap.values()) {
-        sb.append("{alias ").append(aliasNamespace).append("}\n");
+      for (Map.Entry<String, String> entry : aliasToNamespaceMap.entrySet()) {
+        String alias = entry.getKey();
+        String aliasNamespace = entry.getValue();
+        if (aliasNamespace.equals(alias) || aliasNamespace.endsWith("." + alias)) {
+          sb.append("{alias ").append(aliasNamespace).append("}\n");
+        } else {
+          sb.append("{alias ").append(aliasNamespace).append(" as ").append(alias).append("}\n");
+        }
       }
     }
 

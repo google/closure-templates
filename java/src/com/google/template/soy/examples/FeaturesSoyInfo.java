@@ -13,14 +13,14 @@ import com.google.template.soy.parseinfo.SoyTemplateInfo;
 /**
  * Soy parse info for features.soy.
  */
-public class FeaturesSoyInfo extends SoyFileInfo {
+public final class FeaturesSoyInfo extends SoyFileInfo {
 
 
   /** This Soy file's namespace. */
   public static final String __NAMESPACE__ = "soy.examples.features";
 
 
-  public static class TemplateName {
+  public static final class TemplateName {
     private TemplateName() {}
 
     /** The full template name of the .demoComments template. */
@@ -71,7 +71,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Param names from all templates in this Soy file.
    */
-  public static class Param {
+  public static final class Param {
     private Param() {}
 
     /** Listed by .demoBidiSupport. */
@@ -141,7 +141,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo comments.
    */
-  public static class DemoCommentsSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoCommentsSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoComments";
@@ -173,7 +173,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo line joining.
    */
-  public static class DemoLineJoiningSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoLineJoiningSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoLineJoining";
@@ -205,7 +205,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo raw text commands.
    */
-  public static class DemoRawTextCommandsSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoRawTextCommandsSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoRawTextCommands";
@@ -237,7 +237,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'print'.
    */
-  public static class DemoPrintSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoPrintSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoPrint";
@@ -277,7 +277,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo print directives.
    */
-  public static class DemoPrintDirectivesSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoPrintDirectivesSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoPrintDirectives";
@@ -320,7 +320,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo autoescape true.
    */
-  public static class DemoAutoescapeTrueSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoAutoescapeTrueSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoAutoescapeTrue";
@@ -357,7 +357,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo autoescape false.
    */
-  public static class DemoAutoescapeFalseSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoAutoescapeFalseSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoAutoescapeFalse";
@@ -394,7 +394,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'msg'.
    */
-  public static class DemoMsgSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoMsgSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoMsg";
@@ -434,7 +434,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'if'.
    */
-  public static class DemoIfSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoIfSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoIf";
@@ -471,7 +471,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'switch'.
    */
-  public static class DemoSwitchSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoSwitchSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoSwitch";
@@ -508,7 +508,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'foreach'.
    */
-  public static class DemoForeachSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoForeachSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoForeach";
@@ -545,7 +545,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'for'.
    */
-  public static class DemoForSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoForSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoFor";
@@ -582,7 +582,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'call' without 'param's.
    */
-  public static class DemoCallWithoutParamSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoCallWithoutParamSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoCallWithoutParam";
@@ -627,7 +627,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'call' with 'param's.
    */
-  public static class DemoCallWithParamSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoCallWithParamSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoCallWithParam";
@@ -670,7 +670,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo 'call' with a 'param' block.
    */
-  public static class DemoCallWithParamBlockSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoCallWithParamBlockSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoCallWithParamBlock";
@@ -707,7 +707,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo {param} blocks with 'kind' attribute.
    */
-  public static class DemoParamWithKindAttributeSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoParamWithKindAttributeSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoParamWithKindAttribute";
@@ -747,7 +747,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo expressions.
    */
-  public static class DemoExpressionsSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoExpressionsSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoExpressions";
@@ -787,7 +787,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo double braces.
    */
-  public static class DemoDoubleBracesSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoDoubleBracesSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoDoubleBraces";
@@ -827,7 +827,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Demo BiDi support.
    */
-  public static class DemoBidiSupportSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class DemoBidiSupportSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.demoBidiSupport";
@@ -874,7 +874,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
    * Template that outputs -1 in a right-to-left page and 1 in a left-to-right page, i.e. basically
    * exposes the results of Soy's bidiGlobalDir() to scripts.
    */
-  public static class BidiGlobalDirSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class BidiGlobalDirSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.bidiGlobalDir";
@@ -906,7 +906,7 @@ public class FeaturesSoyInfo extends SoyFileInfo {
   /**
    * Template for printing the header to add before each example.
    */
-  public static class ExampleHeaderSoyTemplateInfo extends SoyTemplateInfo {
+  public static final class ExampleHeaderSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
     public static final String __NAME__ = "soy.examples.features.exampleHeader";

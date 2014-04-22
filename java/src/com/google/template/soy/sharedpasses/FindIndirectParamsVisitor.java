@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
@@ -35,9 +36,10 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -66,12 +68,15 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
    */
   public static class IndirectParamsInfo {
 
-    /** Map from indirect param key to the param's SoyDoc info. */
-    public final SortedMap<String, SoyDocParam> indirectParams;
+    /** Map from indirect param key to param object. */
+    public final SortedMap<String, TemplateParam> indirectParams;
 
-    /** Multimap from param key (direct or indirect) to transitive callees that explicitly list the
+    /** Multimap from param key (direct or indirect) to transitive callees that declare the
      *  param. */
     public final Multimap<String, TemplateNode> paramKeyToCalleesMultimap;
+
+    /** Multimap from indirect param key to param types. */
+    public final Multimap<String, SoyType> indirectParamTypes;
 
     /** Whether the template (that the pass was run on) may have indirect params in external
      *  basic calls. */
@@ -91,12 +96,14 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
      *     on) may have indirect params in external delegate calls.
      */
     public IndirectParamsInfo(
-        SortedMap<String, SoyDocParam> indirectParams,
+        SortedMap<String, TemplateParam> indirectParams,
         Multimap<String, TemplateNode> paramKeyToCalleesMultimap,
+        Multimap<String, SoyType> indirectParamTypes,
         boolean mayHaveIndirectParamsInExternalCalls,
         boolean mayHaveIndirectParamsInExternalDelCalls) {
       this.indirectParams = indirectParams;
       this.paramKeyToCalleesMultimap = paramKeyToCalleesMultimap;
+      this.indirectParamTypes = indirectParamTypes;
       this.mayHaveIndirectParamsInExternalCalls = mayHaveIndirectParamsInExternalCalls;
       this.mayHaveIndirectParamsInExternalDelCalls = mayHaveIndirectParamsInExternalDelCalls;
     }
@@ -206,11 +213,14 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
   /** The stack of info about callers to reach the current location (during pass). */
   private Deque<CallerFrame> callerStack;
 
-  /** Map from indirect param key to the param's SoyDoc info. */
-  private Map<String, SoyDocParam> indirectParams;
+  /** Map from indirect param key to param object. */
+  private Map<String, TemplateParam> indirectParams;
 
   /** Multimap from param key (direct or indirect) to callees that explicitly list the param. */
   private Multimap<String, TemplateNode> paramKeyToCalleesMultimap;
+
+  /** Multimap from indirect param key to param types. */
+  public Multimap<String, SoyType> indirectParamTypes;
 
   /** Whether the template (that the pass was run on) may have indirect params in external
    *  basic calls. */
@@ -241,6 +251,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
         new CallerFrame(null, ImmutableSet.<TemplateNode>of(), ImmutableSet.<String>of()));
     indirectParams = Maps.newHashMap();
     paramKeyToCalleesMultimap = HashMultimap.create();
+    indirectParamTypes = HashMultimap.create();
     mayHaveIndirectParamsInExternalCalls = false;
     mayHaveIndirectParamsInExternalDelCalls = false;
 
@@ -248,6 +259,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
     return new IndirectParamsInfo(
         ImmutableSortedMap.copyOf(indirectParams), paramKeyToCalleesMultimap,
+        ImmutableMultimap.copyOf(indirectParamTypes),
         mayHaveIndirectParamsInExternalCalls, mayHaveIndirectParamsInExternalDelCalls);
   }
 
@@ -269,19 +281,21 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
     } else {
       // Add the params listed by this template.
-      List<SoyDocParam> soyDocParams = node.getSoyDocParams();
-      if (soyDocParams == null) {
-        // We can't tell what's going on because this template doesn't have SoyDoc.
+      List<TemplateParam> params = node.getParams();
+      if (params == null) {
+        // We can't tell what's going on because this template doesn't have param decls.
         mayHaveIndirectParamsInExternalCalls = true;
       } else {
-        for (SoyDocParam param : soyDocParams) {
-          if (callerStack.peek().allCallParamKeys.contains(param.key)) {
+        for (TemplateParam param : params) {
+          if (callerStack.peek().allCallParamKeys.contains(param.name())) {
             continue;  // param is actually not being passed by data="all"
           }
-          if (! indirectParams.containsKey(param.key)) {
-            indirectParams.put(param.key, param);
+          if (! indirectParams.containsKey(param.name())) {
+            indirectParams.put(param.name(), param);
           }
-          paramKeyToCalleesMultimap.put(param.key, node);
+          paramKeyToCalleesMultimap.put(param.name(), node);
+          Preconditions.checkNotNull(param.type());
+          indirectParamTypes.put(param.name(), param.type());
         }
       }
     }

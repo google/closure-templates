@@ -18,7 +18,8 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.BaseUtils;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
@@ -58,17 +59,18 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     private final boolean isPassingData;
     @Nullable private final ExprRootNode<?> dataExpr;
     @Nullable private final String userSuppliedPlaceholderName;
-    protected final SyntaxVersion syntaxVersion;
+    @Nullable protected final SyntaxVersionBound syntaxVersionBound;
 
     public CommandTextInfo(
         String commandText, boolean isPassingData, @Nullable ExprRootNode<?> dataExpr,
-        @Nullable String userSuppliedPlaceholderName, SyntaxVersion syntaxVersion) {
+        @Nullable String userSuppliedPlaceholderName,
+        @Nullable SyntaxVersionBound syntaxVersionBound) {
       Preconditions.checkArgument(isPassingData || dataExpr == null);
       this.commandText = commandText;
       this.isPassingData = isPassingData;
       this.dataExpr = dataExpr;
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-      this.syntaxVersion = syntaxVersion;
+      this.syntaxVersionBound = syntaxVersionBound;
     }
   }
 
@@ -116,7 +118,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.dataExpr = commandTextInfo.dataExpr;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = escapingDirectiveNames;
-    maybeSetSyntaxVersion(commandTextInfo.syntaxVersion);
+    maybeSetSyntaxVersionBound(commandTextInfo.syntaxVersionBound);
   }
 
 
@@ -127,7 +129,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * @param commandTextForErrorMsgs The call command text for use in error messages.
    * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
-  protected static final Pair<Boolean, ExprRootNode<?>> parseDataAttributeHelper(
+  protected static Pair<Boolean, ExprRootNode<?>> parseDataAttributeHelper(
       String dataAttr, String commandTextForErrorMsgs) {
 
     boolean isPassingData;
@@ -153,6 +155,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
+  @SuppressWarnings("ConstantConditions")  // for IntelliJ
   protected CallNode(CallNode orig) {
     super(orig);
     this.isPassingData = orig.isPassingData;
@@ -182,7 +185,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
 
-  @Override public String getUserSuppliedPlaceholderName() {
+  @Override public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
@@ -203,7 +206,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
 
-  @Override public String genBasePlaceholderName() {
+  @Override public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
@@ -213,6 +216,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
 
+  @SuppressWarnings("UnnecessaryBoxing")  // for IntelliJ
   @Override public Object genSamenessKey() {
     // CallNodes are never considered the same placeholder. We return the node id as the info for
     // determining sameness. The node id should be unique among all nodes in the tree.

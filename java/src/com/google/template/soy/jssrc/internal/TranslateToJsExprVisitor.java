@@ -16,23 +16,23 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
-import com.google.template.soy.base.BaseUtils;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefAccessIndexNode;
-import com.google.template.soy.exprtree.DataRefAccessKeyNode;
-import com.google.template.soy.exprtree.DataRefAccessNode;
-import com.google.template.soy.exprtree.DataRefNode;
+import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ConstantNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.Operator;
@@ -40,11 +40,15 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.types.SoyObjectType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.UnionType;
 
 import java.util.Deque;
 import java.util.List;
@@ -101,6 +105,16 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   }
 
 
+  /**
+   * Method that returns code to access a named parameter.
+   * @param paramName the name of the parameter.
+   * @return The code to access the value of that parameter.
+   */
+  static String genCodeForParamAccess(String paramName) {
+    return "opt_data" + genCodeForKeyAccess(paramName);
+  }
+
+
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
 
@@ -116,13 +130,10 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
   @Override protected JsExpr visitStringNode(StringNode node) {
 
-    // Note: StringNode.toSourceString() produces a Soy string, which is usually a valid JS string.
-    // The rare exception is a string containing a Unicode Format character (Unicode category "Cf")
-    // because of the JavaScript language quirk that requires all category "Cf" characters to be
-    // escaped in JS strings. Therefore, we must call JsSrcUtils.escapeUnicodeFormatChars() on the
-    // result.
+    // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
+    // JS source files.
     return new JsExpr(
-        JsSrcUtils.escapeUnicodeFormatChars(node.toSourceString()),
+        BaseUtils.escapeToSoyString(node.getValue(), true),
         Integer.MAX_VALUE);
   }
 
@@ -216,6 +227,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         strKeysEntriesSnippet.append(": ").append(visit(valueNode).getText());
 
       } else if (keyNode instanceof ConstantNode) {
+        // TODO: Support map literal with nonstring key. We can probably just remove this case and
+        // roll it into the next case.
         throw SoySyntaxException.createWithoutMetaInfo(
             "Map literal must have keys that are strings or expressions that will evaluate to" +
                 " strings at render time (found non-string key \"" + keyNode.toSourceString() +
@@ -250,86 +263,139 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   // Implementations for data references.
 
 
-  @Override protected JsExpr visitDataRefNode(DataRefNode node) {
+  @Override protected JsExpr visitVarRefNode(VarRefNode node) {
+    return visitNullSafeNode(node);
+  }
 
-    // Note: Using String instead of StringBuilder for readability. No performance concern here.
-    String nullSafetyPrefix = "";
-    String refText;
 
-    // ------ Translate first key, which may reference a variable, data, or injected data. ------
-    String firstKey = node.getFirstKey();
-    if (node.isIjDataRef()) {
-      // Case 1: Injected data reference.
-      refText = "opt_ijData" + genCodeForKeyAccess(firstKey);
-      if (node.isNullSafeIjDataRef()) {
-        nullSafetyPrefix = "(opt_ijData == null) ? null : ";
-      }
-    } else {
-      JsExpr translation = getLocalVarTranslation(firstKey);
-      if (translation != null) {
-        // Case 2: In-scope local var.
-        refText = translation.getText();
-      } else {
-        // Case 3: Data reference.
-        refText = "opt_data" + genCodeForKeyAccess(firstKey);
-      }
-    }
+  @Override protected JsExpr visitDataAccessNode(DataAccessNode node) {
+    return visitNullSafeNode(node);
+  }
 
-    // ------ Translate the rest of the keys, if any. ------
-    for (ExprNode child : node.getChildren()) {
-      DataRefAccessNode accessNode = (DataRefAccessNode) child;
 
-      if (accessNode.isNullSafe()) {
-        // Note: In JavaScript, "x == null" is equivalent to "x === undefined || x === null".
-        nullSafetyPrefix += "(" + refText + " == null) ? null : ";
-      }
-
-      switch (accessNode.getKind()) {
-        case DATA_REF_ACCESS_KEY_NODE:
-          refText += genCodeForKeyAccess(((DataRefAccessKeyNode) accessNode).getKey());
-          break;
-        case DATA_REF_ACCESS_INDEX_NODE:
-          refText += "[" + ((DataRefAccessIndexNode) accessNode).getIndex() + "]";
-          break;
-        case DATA_REF_ACCESS_EXPR_NODE:
-          JsExpr keyJsExpr = visit(accessNode.getChild(0));
-          refText += "[" + keyJsExpr.getText() + "]";
-          break;
-        default:
-          throw new AssertionError();
-      }
-    }
+  private JsExpr visitNullSafeNode(ExprNode node) {
+    StringBuilder nullSafetyPrefix = new StringBuilder();
+    String refText = visitNullSafeNodeRecurse(node, nullSafetyPrefix);
 
     if (nullSafetyPrefix.length() == 0) {
       return new JsExpr(refText, Integer.MAX_VALUE);
     } else {
-      return new JsExpr(nullSafetyPrefix + refText, Operator.CONDITIONAL.getPrecedence());
+      return new JsExpr(
+          nullSafetyPrefix.toString() + refText, Operator.CONDITIONAL.getPrecedence());
+    }
+  }
+
+
+  private String visitNullSafeNodeRecurse(ExprNode node, StringBuilder nullSafetyPrefix) {
+
+    switch (node.getKind()) {
+      case VAR_REF_NODE: {
+        VarRefNode varRef = (VarRefNode) node;
+        if (varRef.isInjected()) {
+          // Case 1: Injected data reference.
+          if (varRef.isNullSafeInjected()) {
+            nullSafetyPrefix.append("(opt_ijData == null) ? null : ");
+          }
+          return "opt_ijData" + genCodeForKeyAccess(varRef.getName());
+        } else {
+          JsExpr translation = getLocalVarTranslation(varRef.getName());
+          if (translation != null) {
+            // Case 2: In-scope local var.
+            return translation.getText();
+          } else {
+            // Case 3: Data reference.
+            return "opt_data" + genCodeForKeyAccess(varRef.getName());
+          }
+        }
+      }
+
+      case FIELD_ACCESS_NODE:
+      case ITEM_ACCESS_NODE: {
+        DataAccessNode dataAccess = (DataAccessNode) node;
+        // First recursively visit base expression.
+        String refText = visitNullSafeNodeRecurse(dataAccess.getBaseExprChild(), nullSafetyPrefix);
+
+        // Generate null safety check for base expression.
+        if (dataAccess.isNullSafe()) {
+          // Note: In JavaScript, "x == null" is equivalent to "x === undefined || x === null".
+          nullSafetyPrefix.append("(" + refText + " == null) ? null : ");
+        }
+
+        // Generate access to field
+        if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
+          FieldAccessNode fieldAccess = (FieldAccessNode) node;
+          return refText + genCodeForFieldAccess(
+              fieldAccess.getBaseExprChild().getType(), fieldAccess.getFieldName());
+        } else {
+          // Generate access to item.
+          ItemAccessNode itemAccess = (ItemAccessNode) node;
+          if (itemAccess.getKeyExprChild() instanceof IntegerNode) {
+            return refText + "[" + ((IntegerNode) itemAccess.getKeyExprChild()).getValue() + "]";
+          } else {
+            JsExpr keyJsExpr = visit(itemAccess.getKeyExprChild());
+            return refText + "[" + keyJsExpr.getText() + "]";
+          }
+        }
+      }
+
+      default: {
+        JsExpr value = visit(node);
+        return genMaybeProtect(value, Integer.MAX_VALUE);
+      }
     }
   }
 
 
   /**
-   * Private helper for {@code visitDataRefNode()} to generate the code for a key access, e.g.
+   * Private helper for {@code visitDataAccessNode()} to generate the code for a key access, e.g.
    * ".foo" or "['class']". Handles JS reserved words.
    * @param key The key.
    */
-  private static String genCodeForKeyAccess(String key) {
-    return JS_RESERVED_WORDS.contains(key) ? "['" + key + "']" : "." + key;
+  static String genCodeForKeyAccess(String key) {
+    return JsSrcUtils.isReservedWord(key) ? "['" + key + "']" : "." + key;
   }
 
 
   /**
-   * Set of words that JavaScript considers reserved words.  These words cannot
-   * be used as identifiers.  This list is from the ECMA-262 v5, section 7.6.1:
-   * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
-   * plus the keywords for boolean values and {@code null}.
+   * Private helper for {@code visitDataAccessNode()} to generate the code for a field
+   * name access, e.g. ".foo" or "['class']". Handles JS reserved words. If the base type
+   * is an object type, then it delegates the generation of the JS code to the type
+   * object.
+   * @param baseType The type of the object that contains the field.
+   * @param fieldName The field name.
    */
-  private static final ImmutableSet<String> JS_RESERVED_WORDS = ImmutableSet.of(
-      "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do",
-      "else", "enum", "export", "extends", "false", "finally", "for", "function", "if",
-      "implements", "import", "in", "instanceof", "interface", "let", "null", "new", "package",
-      "private", "protected", "public", "return", "static", "super", "switch", "this", "throw",
-      "true", "try", "typeof", "var", "void", "while", "with", "yield");
+  private static String genCodeForFieldAccess(SoyType baseType, String fieldName) {
+    if (baseType != null) {
+      // For unions, attempt to generate the field access code for each member
+      // type, and then see if they all agree.
+      if (baseType.getKind() == SoyType.Kind.UNION) {
+        UnionType unionType = (UnionType) baseType;
+        String fieldAccessCode = null;
+        for (SoyType memberType : unionType.getMembers()) {
+          if (memberType.getKind() != SoyType.Kind.NULL) {
+            String fieldAccessForType = genCodeForFieldAccess(memberType, fieldName);
+            if (fieldAccessCode == null) {
+              fieldAccessCode = fieldAccessForType;
+            } else if (!fieldAccessCode.equals(fieldAccessForType)) {
+              throw SoySyntaxException.createWithoutMetaInfo(
+                  "Cannot access field '" + fieldName + "' of type'" + baseType.toString() +
+                  ", because the different union member types have different access methods.");
+            }
+          }
+        }
+        return fieldAccessCode;
+      }
+
+      if (baseType.getKind() == SoyType.Kind.OBJECT) {
+        SoyObjectType objType = (SoyObjectType) baseType;
+        String accessExpr = objType.getFieldAccessor(fieldName, SoyBackendKind.JS_SRC);
+        if (accessExpr != null) {
+          return accessExpr;
+        }
+      }
+    }
+    return genCodeForKeyAccess(fieldName);
+  }
 
 
   @Override protected JsExpr visitGlobalNode(GlobalNode node) {
@@ -420,19 +486,19 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
 
   private JsExpr visitIsFirstFunction(FunctionNode node) {
-    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    String varName = ((VarRefNode) node.getChild(0)).getName();
     return getLocalVarTranslation(varName + "__isFirst");
   }
 
 
   private JsExpr visitIsLastFunction(FunctionNode node) {
-    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    String varName = ((VarRefNode) node.getChild(0)).getName();
     return getLocalVarTranslation(varName + "__isLast");
   }
 
 
   private JsExpr visitIndexFunction(FunctionNode node) {
-    String varName = ((DataRefNode) node.getChild(0)).getFirstKey();
+    String varName = ((VarRefNode) node.getChild(0)).getName();
     return getLocalVarTranslation(varName + "__index");
   }
 
@@ -487,4 +553,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         opNode.getOperator(), operandJsExprs, newToken);
   }
 
+
+  public static String genMaybeProtect(JsExpr expr, int minSafePrecedence) {
+    return (expr.getPrecedence() >= minSafePrecedence) ?
+           expr.getText() : "(" + expr.getText() + ")";
+  }
 }

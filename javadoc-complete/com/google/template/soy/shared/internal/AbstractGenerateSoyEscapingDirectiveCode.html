@@ -1,0 +1,712 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>AbstractGenerateSoyEscapingDirectiveCode (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
+    if (location.href.indexOf('is-external=true') == -1) {
+        parent.document.title="AbstractGenerateSoyEscapingDirectiveCode (Soy Complete)";
+    }
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
+<!-- ========= START OF TOP NAVBAR ======= -->
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li>Prev Class</li>
+<li><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html" target="_top">Frames</a></li>
+<li><a href="AbstractGenerateSoyEscapingDirectiveCode.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
+  if(window==top) {
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
+  }
+  //-->
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li><a href="#nested_class_summary">Nested</a>&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
+<!-- ========= END OF TOP NAVBAR ========= -->
+<!-- ======== START OF CLASS DATA ======== -->
+<div class="header">
+<div class="subTitle">com.google.template.soy.shared.internal</div>
+<h2 title="Class AbstractGenerateSoyEscapingDirectiveCode" class="title">Class AbstractGenerateSoyEscapingDirectiveCode</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li>Task</li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.shared.internal.AbstractGenerateSoyEscapingDirectiveCode</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl>
+<dt>Direct Known Subclasses:</dt>
+<dd><a href="../../../../../../com/google/template/soy/jssrc/internal/GenerateSoyUtilsEscapingDirectiveCode.html" title="class in com.google.template.soy.jssrc.internal">GenerateSoyUtilsEscapingDirectiveCode</a></dd>
+</dl>
+<hr>
+<br>
+<pre><a href="http://java.sun.com/javase/6/docs/api/javax/annotation/ParametersAreNonnullByDefault.html?is-external=true" title="class or interface in javax.annotation">@ParametersAreNonnullByDefault</a>
+public abstract class <span class="strong">AbstractGenerateSoyEscapingDirectiveCode</span>
+extends Task</pre>
+<div class="block">Abstract class for generating code relied upon by escaping directives.</div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<ul class="blockList">
+<li class="blockList"><a name="nested_class_summary">
+<!--   -->
+</a>
+<h3>Nested Class Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Nested Class Summary table, listing nested classes, and an explanation">
+<caption><span>Nested Classes</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Class and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static class&nbsp;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FileRef</a></strong></code>
+<div class="block">A file reference like <code>&lt;input path="foo.txt"/&gt;</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static class&nbsp;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate</a></strong></code>
+<div class="block">A wrapper around a library function name predicate like <code>&lt;libdefined name="goog.*"/&gt;</code>.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
+<!-- =========== FIELD SUMMARY =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_summary">
+<!--   -->
+</a>
+<h3>Field Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Field Summary table, listing fields, and an explanation">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Field and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected com.google.common.base.Predicate&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#availableIdentifiers">availableIdentifiers</a></strong></code>
+<div class="block">Matches functions available in the environment in which output will be run including things
+ like <code>EscapingConventions.CrossLanguageStringXform#getLangFunctionNames</code>.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
+<!-- ======== CONSTRUCTOR SUMMARY ======== -->
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#AbstractGenerateSoyEscapingDirectiveCode()">AbstractGenerateSoyEscapingDirectiveCode</a></strong>()</code>&nbsp;</td>
+</tr>
+</table>
+</li>
+</ul>
+<!-- ========== METHOD SUMMARY =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#addConfiguredLibdefined(com.google.template.soy.shared.internal.AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate)">addConfiguredLibdefined</a></strong>(<a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate</a>&nbsp;p)</code>
+<div class="block">Called reflectively when Ant sees <code>&lt;libdefined&gt;</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#configure(java.lang.String[])">configure</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>[]&nbsp;args)</code>
+<div class="block">Setup method to read arguments and setup initial configuration.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#convertFromJavaRegex(java.util.regex.Pattern)">convertFromJavaRegex</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/util/regex/Pattern.html?is-external=true" title="class or interface in java.util.regex">Pattern</a>&nbsp;javaPattern)</code>
+<div class="block">Converts the given pattern from a Java Pattern syntax to the language specific syntax.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FileRef</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#createInput()">createInput</a></strong>()</code>
+<div class="block">Called reflectively when Ant sees <code>&lt;input&gt;</code> to specify a file that uses the generated
+ helper functions.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FileRef</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#createOutput()">createOutput</a></strong>()</code>
+<div class="block">Called reflectively when Ant sees <code>&lt;output&gt;</code> to specify the file that should receive
+ the output.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#execute()">execute</a></strong>()</code>
+<div class="block">Called to actually build the output by Ant.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#generateCharacterMapSignature(java.lang.StringBuilder, java.lang.String)">generateCharacterMapSignature</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                             <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;mapName)</code>
+<div class="block">Generate the signature to a map object to hold character mapping.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#generateCommonConstants(java.lang.StringBuilder)">generateCommonConstants</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode)</code>
+<div class="block">Generate common constants used elsewhere by the utility.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#generateFilter(java.lang.StringBuilder, java.lang.String, java.lang.String)">generateFilter</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
+              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filter)</code>
+<div class="block">Generate the constant to store the given filter regular expression.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#generateHelperFunction(java.lang.StringBuilder, com.google.template.soy.shared.internal.DirectiveDigest)">generateHelperFunction</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                      <a href="../../../../../../com/google/template/soy/shared/internal/DirectiveDigest.html" title="class in com.google.template.soy.shared.internal">DirectiveDigest</a>&nbsp;digest)</code>
+<div class="block">Generate the helper function to execute the escaping, filtering, and replacing.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#generateMatcher(java.lang.StringBuilder, java.lang.String, java.lang.String)">generateMatcher</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+               <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
+               <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;matcher)</code>
+<div class="block">Generate the constant to store the given matcher regular expression.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#generateReplacerFunction(java.lang.StringBuilder, java.lang.String)">generateReplacerFunction</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                        <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;mapName)</code>
+<div class="block">Generate the function to handle replacement of a given character.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>com.google.common.base.Predicate&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#getAvailableIdentifiers()">getAvailableIdentifiers</a></strong>()</code>
+<div class="block">A matcher for functions available in the environment in which output will be run including
+ things like <code>EscapingConventions.CrossLanguageStringXform#getLangFunctionNames</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected abstract <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.EscapingLanguage.html" title="enum in com.google.template.soy.shared.restricted">EscapingConventions.EscapingLanguage</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#getLanguage()">getLanguage</a></strong>()</code>
+<div class="block">Get the language being generated here.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#getLineCommentSyntax()">getLineCommentSyntax</a></strong>()</code>
+<div class="block">Return the syntax for starting a one line comment.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected abstract <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#getLineEndSyntax()">getLineEndSyntax</a></strong>()</code>
+<div class="block">Return the syntax for ending a line.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#getRegexEnd()">getRegexEnd</a></strong>()</code>
+<div class="block">Return the syntax for ending a regex string.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected abstract <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#getRegexStart()">getRegexStart</a></strong>()</code>
+<div class="block">Return the syntax for starting a regex string.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected abstract void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#useExistingLibraryFunction(java.lang.StringBuilder, java.lang.String, java.lang.String)">useExistingLibraryFunction</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                          <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;identifier,
+                          <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;existingFunction)</code>
+<div class="block">Use an existing library function to execute the escaping, filtering, and replacing.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected static void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html#writeStringLiteral(java.lang.String, java.lang.StringBuilder)">writeStringLiteral</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
+                  <a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;out)</code>
+<div class="block">Appends a string literal with the given value onto the given buffer.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
+<!-- ============ FIELD DETAIL =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a name="availableIdentifiers">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>availableIdentifiers</h4>
+<pre>protected&nbsp;com.google.common.base.Predicate&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt; availableIdentifiers</pre>
+<div class="block">Matches functions available in the environment in which output will be run including things
+ like <code>EscapingConventions.CrossLanguageStringXform#getLangFunctionNames</code>.</div>
+</li>
+</ul>
+</li>
+</ul>
+<!-- ========= CONSTRUCTOR DETAIL ======== -->
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="AbstractGenerateSoyEscapingDirectiveCode()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>AbstractGenerateSoyEscapingDirectiveCode</h4>
+<pre>public&nbsp;AbstractGenerateSoyEscapingDirectiveCode()</pre>
+</li>
+</ul>
+</li>
+</ul>
+<!-- ============ METHOD DETAIL ========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="getAvailableIdentifiers()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getAvailableIdentifiers</h4>
+<pre>public&nbsp;com.google.common.base.Predicate&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;getAvailableIdentifiers()</pre>
+<div class="block">A matcher for functions available in the environment in which output will be run including
+ things like <code>EscapingConventions.CrossLanguageStringXform#getLangFunctionNames</code>.</div>
+</li>
+</ul>
+<a name="createInput()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createInput</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FileRef</a>&nbsp;createInput()</pre>
+<div class="block">Called reflectively when Ant sees <code>&lt;input&gt;</code> to specify a file that uses the generated
+ helper functions.</div>
+</li>
+</ul>
+<a name="createOutput()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createOutput</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FileRef</a>&nbsp;createOutput()</pre>
+<div class="block">Called reflectively when Ant sees <code>&lt;output&gt;</code> to specify the file that should receive
+ the output.</div>
+</li>
+</ul>
+<a name="addConfiguredLibdefined(com.google.template.soy.shared.internal.AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>addConfiguredLibdefined</h4>
+<pre>public&nbsp;void&nbsp;addConfiguredLibdefined(<a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate.html" title="class in com.google.template.soy.shared.internal">AbstractGenerateSoyEscapingDirectiveCode.FunctionNamePredicate</a>&nbsp;p)</pre>
+<div class="block">Called reflectively when Ant sees <code>&lt;libdefined&gt;</code>.</div>
+</li>
+</ul>
+<a name="configure(java.lang.String[])">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>configure</h4>
+<pre>protected&nbsp;void&nbsp;configure(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>[]&nbsp;args)
+                  throws <a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></pre>
+<div class="block">Setup method to read arguments and setup initial configuration.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>args</code> - Main method input arguments.</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></code></dd></dl>
+</li>
+</ul>
+<a name="execute()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>execute</h4>
+<pre>public&nbsp;void&nbsp;execute()</pre>
+<div class="block">Called to actually build the output by Ant.</div>
+</li>
+</ul>
+<a name="writeStringLiteral(java.lang.String, java.lang.StringBuilder)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>writeStringLiteral</h4>
+<pre>protected static&nbsp;void&nbsp;writeStringLiteral(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
+                      <a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;out)</pre>
+<div class="block">Appends a string literal with the given value onto the given buffer.</div>
+</li>
+</ul>
+<a name="getLanguage()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getLanguage</h4>
+<pre>protected abstract&nbsp;<a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.EscapingLanguage.html" title="enum in com.google.template.soy.shared.restricted">EscapingConventions.EscapingLanguage</a>&nbsp;getLanguage()</pre>
+<div class="block">Get the language being generated here.</div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>The language being generated.</dd></dl>
+</li>
+</ul>
+<a name="getLineCommentSyntax()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getLineCommentSyntax</h4>
+<pre>protected abstract&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getLineCommentSyntax()</pre>
+<div class="block">Return the syntax for starting a one line comment.</div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>The syntax for starting a one line comment.</dd></dl>
+</li>
+</ul>
+<a name="getLineEndSyntax()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getLineEndSyntax</h4>
+<pre>protected abstract&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getLineEndSyntax()</pre>
+<div class="block">Return the syntax for ending a line.</div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>The syntax for ending a line.</dd></dl>
+</li>
+</ul>
+<a name="getRegexStart()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getRegexStart</h4>
+<pre>protected abstract&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getRegexStart()</pre>
+<div class="block">Return the syntax for starting a regex string.</div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>The syntax for starting a regex string.</dd></dl>
+</li>
+</ul>
+<a name="getRegexEnd()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getRegexEnd</h4>
+<pre>protected abstract&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getRegexEnd()</pre>
+<div class="block">Return the syntax for ending a regex string.</div>
+<dl><dt><span class="strong">Returns:</span></dt><dd>The syntax for ending a regex string.</dd></dl>
+</li>
+</ul>
+<a name="convertFromJavaRegex(java.util.regex.Pattern)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>convertFromJavaRegex</h4>
+<pre>protected abstract&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;convertFromJavaRegex(<a href="http://java.sun.com/javase/6/docs/api/java/util/regex/Pattern.html?is-external=true" title="class or interface in java.util.regex">Pattern</a>&nbsp;javaPattern)</pre>
+<div class="block">Converts the given pattern from a Java Pattern syntax to the language specific syntax.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>javaPattern</code> - The Java regular expression to convert.</dd>
+<dt><span class="strong">Returns:</span></dt><dd>A string representing the given pattern syntax in the specific language.</dd></dl>
+</li>
+</ul>
+<a name="generateCharacterMapSignature(java.lang.StringBuilder, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateCharacterMapSignature</h4>
+<pre>protected abstract&nbsp;void&nbsp;generateCharacterMapSignature(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                                 <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;mapName)</pre>
+<div class="block">Generate the signature to a map object to hold character mapping. All necessary comments and
+ variable declarations should be included in the signature. The map assignment will be
+ appended to the signature.
+
+ For example. In Javascript the following should be returned:
+ <pre>
+   /**
+    * Maps characters to the escaped versions for the named escape directives.\n")
+    * @type {Object.<string, string>}\n")
+    * @private\n")
+    *\/
+     soy.esc.$$ESCAPE_MAP_FOR_&lt;NAME&gt;_
+ </pre></div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd><dd><code>mapName</code> - The name of this map.</dd></dl>
+</li>
+</ul>
+<a name="generateMatcher(java.lang.StringBuilder, java.lang.String, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateMatcher</h4>
+<pre>protected abstract&nbsp;void&nbsp;generateMatcher(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
+                   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;matcher)</pre>
+<div class="block">Generate the constant to store the given matcher regular expression.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd><dd><code>name</code> - The name of the current matcher.</dd><dd><code>matcher</code> - The regular expression string.</dd></dl>
+</li>
+</ul>
+<a name="generateFilter(java.lang.StringBuilder, java.lang.String, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateFilter</h4>
+<pre>protected abstract&nbsp;void&nbsp;generateFilter(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                  <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
+                  <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filter)</pre>
+<div class="block">Generate the constant to store the given filter regular expression.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd><dd><code>name</code> - The name of the current filter.</dd><dd><code>filter</code> - The regular expression string.</dd></dl>
+</li>
+</ul>
+<a name="generateReplacerFunction(java.lang.StringBuilder, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateReplacerFunction</h4>
+<pre>protected abstract&nbsp;void&nbsp;generateReplacerFunction(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                            <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;mapName)</pre>
+<div class="block">Generate the function to handle replacement of a given character.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd><dd><code>mapName</code> - The name of the map to use for replacement.</dd></dl>
+</li>
+</ul>
+<a name="useExistingLibraryFunction(java.lang.StringBuilder, java.lang.String, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>useExistingLibraryFunction</h4>
+<pre>protected abstract&nbsp;void&nbsp;useExistingLibraryFunction(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;identifier,
+                              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;existingFunction)</pre>
+<div class="block">Use an existing library function to execute the escaping, filtering, and replacing.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd><dd><code>identifier</code> - The identifier of the escape directive.</dd><dd><code>existingFunction</code> - The existing function to reuse.</dd></dl>
+</li>
+</ul>
+<a name="generateHelperFunction(java.lang.StringBuilder, com.google.template.soy.shared.internal.DirectiveDigest)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateHelperFunction</h4>
+<pre>protected abstract&nbsp;void&nbsp;generateHelperFunction(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode,
+                          <a href="../../../../../../com/google/template/soy/shared/internal/DirectiveDigest.html" title="class in com.google.template.soy.shared.internal">DirectiveDigest</a>&nbsp;digest)</pre>
+<div class="block">Generate the helper function to execute the escaping, filtering, and replacing.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd><dd><code>digest</code> - The DirectiveDigest which contains the appropriate patterns and replacer keys.</dd></dl>
+</li>
+</ul>
+<a name="generateCommonConstants(java.lang.StringBuilder)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>generateCommonConstants</h4>
+<pre>protected abstract&nbsp;void&nbsp;generateCommonConstants(<a href="http://java.sun.com/javase/6/docs/api/java/lang/StringBuilder.html?is-external=true" title="class or interface in java.lang">StringBuilder</a>&nbsp;outputCode)</pre>
+<div class="block">Generate common constants used elsewhere by the utility.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>outputCode</code> - The StringBuilder where generated code should be appended.</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<!-- ========= END OF CLASS DATA ========= -->
+<!-- ======= START OF BOTTOM NAVBAR ====== -->
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li>Prev Class</li>
+<li><a href="../../../../../../com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.FileRef.html" title="class in com.google.template.soy.shared.internal"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/shared/internal/AbstractGenerateSoyEscapingDirectiveCode.html" target="_top">Frames</a></li>
+<li><a href="AbstractGenerateSoyEscapingDirectiveCode.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
+  if(window==top) {
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
+  }
+  //-->
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li><a href="#nested_class_summary">Nested</a>&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
+<!-- ======== END OF BOTTOM NAVBAR ======= -->
+<p class="legalCopy"><small>
+        
+          <div id="footer">
+            <div id="footerlogo" style="float:left">
+              <img src="http://www.google.com/images/art.gif"
+                   alt="Google colored balls">
+            </div>
+            <div id="copyright" style="float:left">
+              <p>
+                &copy; 2009 Google -
+                <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
+                <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
+                <a href="http://www.google.com/about.html">About Google</a>
+              </p>
+            </div>
+          </div>
+        
+      </small></p>
+</body>
+</html>

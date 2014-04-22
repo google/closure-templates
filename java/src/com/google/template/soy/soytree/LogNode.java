@@ -52,7 +52,7 @@ public class LogNode extends AbstractBlockCommandNode implements StandaloneNode,
   }
 
 
-  @Override public SoyNode clone() {
+  @Override public LogNode clone() {
     return new LogNode(this);
   }
 

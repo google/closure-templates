@@ -52,7 +52,7 @@ public class DebuggerNode extends AbstractCommandNode implements StandaloneNode,
   }
 
 
-  @Override public SoyNode clone() {
+  @Override public DebuggerNode clone() {
     return new DebuggerNode(this);
   }
 

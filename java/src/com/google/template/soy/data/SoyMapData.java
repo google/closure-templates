@@ -16,21 +16,28 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
+import com.google.template.soy.data.restricted.StringData;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 
 /**
  * A map data node in a Soy data tree.
  *
+ * <p> Important: Even though this class is not marked 'final', do not extend this class.
+ *
  * @author Kai Huang
  */
-public class SoyMapData extends CollectionData {
+public class SoyMapData extends CollectionData implements SoyDict {
 
 
   /** Underlying map. */
@@ -65,7 +72,6 @@ public class SoyMapData extends CollectionData {
 
       try {
         map.put(key, SoyData.createFromExistingData(value));
-
       } catch (SoyDataException sde) {
         sde.prependKeyToDataPath(key);
         throw sde;
@@ -131,7 +137,7 @@ public class SoyMapData extends CollectionData {
       } else {
         mapStr.append(", ");
       }
-      mapStr.append(entry.getKey()).append(": ").append(entry.getValue().toString());
+      mapStr.append(entry.getKey()).append(": ").append(entry.getValue().coerceToString());
     }
 
     mapStr.append('}');
@@ -144,11 +150,13 @@ public class SoyMapData extends CollectionData {
    *
    * <p> A map is always truthy.
    */
+  @Deprecated
   @Override public boolean toBoolean() {
     return true;
   }
 
 
+  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override public boolean equals(Object other) {
     return this == other;  // fall back to object equality
   }
@@ -190,6 +198,89 @@ public class SoyMapData extends CollectionData {
    */
   @Override public SoyData getSingle(String key) {
     return map.get(key);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyDict.
+
+
+  @Override @Nonnull public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
+    return asMap();
+  }
+
+
+  @Override @Nonnull public Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
+    return asMap();
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyRecord.
+
+
+  @Override public boolean hasField(String name) {
+    return getSingle(name) != null;
+  }
+
+
+  @Override public SoyValue getField(String name) {
+    return getSingle(name);
+  }
+
+
+  @Override public SoyValueProvider getFieldProvider(String name) {
+    return getSingle(name);
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // SoyMap.
+
+
+  @Override public int getItemCnt() {
+    return getKeys().size();
+  }
+
+
+  @Override @Nonnull public Iterable<StringData> getItemKeys() {
+    Set<String> internalKeys = getKeys();
+    List<StringData> keys = Lists.newArrayListWithCapacity(internalKeys.size());
+    for (String internalKey : internalKeys) {
+      keys.add(StringData.forValue(internalKey));
+    }
+    return keys;
+  }
+
+
+  @Override public boolean hasItem(SoyValue key) {
+    return getSingle(getStringKey(key)) != null;
+  }
+
+
+  @Override public SoyValue getItem(SoyValue key) {
+    return getSingle(getStringKey(key));
+  }
+
+
+  @Override public SoyValueProvider getItemProvider(SoyValue key) {
+    return getSingle(getStringKey(key));
+  }
+
+
+  /**
+   * Gets the string key out of a SoyValue key, or throws SoyDataException if the key is not a
+   * string.
+   * @param key The SoyValue key.
+   * @return The string key.
+   */
+  private String getStringKey(SoyValue key) {
+    try {
+      return ((StringData) key).getValue();
+    } catch (ClassCastException e) {
+      throw new SoyDataException(
+          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
+    }
   }
 
 }

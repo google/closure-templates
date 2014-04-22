@@ -23,7 +23,7 @@ import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectPa
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyDocParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
 import junit.framework.TestCase;
 
@@ -131,7 +131,7 @@ public class FindIndirectParamsVisitorTest extends TestCase {
     assertEquals(false, ipi.mayHaveIndirectParamsInExternalCalls);
     assertEquals(false, ipi.mayHaveIndirectParamsInExternalDelCalls);
 
-    Map<String, SoyDocParam> ipMap = ipi.indirectParams;
+    Map<String, TemplateParam> ipMap = ipi.indirectParams;
     assertEquals(6, ipMap.size());
     assertFalse(ipMap.containsKey("a0"));
     assertTrue(ipMap.containsKey("a1"));

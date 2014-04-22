@@ -18,8 +18,8 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 
@@ -42,8 +42,7 @@ public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "<div>Test</div>", SanitizedContent.ContentKind.HTML),
         textDirective);
-    assertTofuOutput(SoyData.createFromExistingData(123), SoyData.createFromExistingData(123),
-        textDirective);
+    assertTofuOutput(IntegerData.forValue(123), IntegerData.forValue(123), textDirective);
   }
 
 

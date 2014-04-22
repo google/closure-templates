@@ -16,12 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
+
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.javasrc.restricted.JavaExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 import junit.framework.TestCase;
@@ -35,31 +37,49 @@ import junit.framework.TestCase;
 public class StrContainsFunctionTest extends TestCase {
 
 
-  public void testComputeForTofu_containsString() {
-    SoyData arg0 = StringData.forValue("foobarfoo");
-    SoyData arg1 = StringData.forValue("bar");
+  public void testComputeForJava_containsString() {
+    SoyValue arg0 = StringData.forValue("foobarfoo");
+    SoyValue arg1 = StringData.forValue("bar");
 
     StrContainsFunction f = new StrContainsFunction();
-    assertEquals(BooleanData.TRUE, f.computeForTofu(ImmutableList.of(arg0, arg1)));
+    assertEquals(BooleanData.TRUE, f.computeForJava(ImmutableList.of(arg0, arg1)));
   }
 
 
-  public void testComputeForTofu_doesNotContainString() {
-    SoyData arg0 = StringData.forValue("foobarfoo");
-    SoyData arg1 = StringData.forValue("baz");
+  public void testComputeForJava_containsSanitizedContent() {
+    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
+    SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
 
     StrContainsFunction f = new StrContainsFunction();
-    assertEquals(BooleanData.FALSE, f.computeForTofu(ImmutableList.of(arg0, arg1)));
+    assertEquals(BooleanData.TRUE, f.computeForJava(ImmutableList.of(arg0, arg1)));
+  }
+
+
+  public void testComputeForJava_doesNotContainString() {
+    SoyValue arg0 = StringData.forValue("foobarfoo");
+    SoyValue arg1 = StringData.forValue("baz");
+
+    StrContainsFunction f = new StrContainsFunction();
+    assertEquals(BooleanData.FALSE, f.computeForJava(ImmutableList.of(arg0, arg1)));
+  }
+
+
+  public void testComputeForJava_doesNotContainSanitizedContent() {
+    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
+    SoyValue arg1 = ordainAsSafe("baz", ContentKind.TEXT);
+
+    StrContainsFunction f = new StrContainsFunction();
+    assertEquals(BooleanData.FALSE, f.computeForJava(ImmutableList.of(arg0, arg1)));
   }
 
 
   public void testComputeForJsSrc_lowPrecedenceArg() {
-
     StrContainsFunction f = new StrContainsFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
-    JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
+    JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
     assertEquals(
-        new JsExpr("('foo' + 'bar').indexOf('bar') != -1", Operator.NOT_EQUAL.getPrecedence()),
+        new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r')) != -1",
+            Operator.NOT_EQUAL.getPrecedence()),
         f.computeForJsSrc(ImmutableList.of(arg0, arg1)));
   }
 
@@ -70,20 +90,9 @@ public class StrContainsFunctionTest extends TestCase {
     JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
     JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
     assertEquals(
-        new JsExpr("'foobar'.indexOf('bar') != -1", Operator.NOT_EQUAL.getPrecedence()),
+        new JsExpr("('foobar').indexOf('bar') != -1",
+            Operator.NOT_EQUAL.getPrecedence()),
         f.computeForJsSrc(ImmutableList.of(arg0, arg1)));
   }
 
-
-  public void testComputeForJavaSrc() {
-
-    StrContainsFunction f = new StrContainsFunction();
-    JavaExpr arg0 = new JavaExpr("A", StringData.class, Integer.MAX_VALUE);
-    JavaExpr arg1 = new JavaExpr("B", StringData.class, Integer.MAX_VALUE);
-    assertEquals(
-        new JavaExpr(
-            "com.google.template.soy.data.restricted.BooleanData.forValue((A).contains(B))",
-            BooleanData.class, Integer.MAX_VALUE),
-        f.computeForJavaSrc(ImmutableList.of(arg0, arg1)));
-  }
 }

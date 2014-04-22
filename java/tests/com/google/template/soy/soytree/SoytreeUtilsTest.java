@@ -18,15 +18,17 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.base.IncrementingIdGenerator;
-import com.google.template.soy.base.SoyFileKind;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.TestCase;
 
@@ -149,35 +151,66 @@ public class SoytreeUtilsTest extends TestCase {
   public final void testClone() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    SoyFileSetNode fileSetNode = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    SoyFileNode fileNode =
-        (new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC, "test.soy", nodeIdGen))
+    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    SoyFileNode soyFile =
+        (new SoyFileParser(
+            new SoyTypeRegistry(), nodeIdGen, SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC,
+            "test.soy"))
             .parseSoyFile();
-    fileSetNode.addChild(fileNode);
+    soyTree.addChild(soyFile);
 
-    SoyFileSetNode clone = fileSetNode.clone();
+    SoyFileSetNode clone = soyTree.clone();
     assertEquals(1, clone.numChildren());
 
-    assertEquals(clone.toTreeString(0), fileSetNode.toTreeString(0));
-    assertEquals(clone.getChild(0).toSourceString(), fileNode.toSourceString());
+    assertEquals(clone.toTreeString(0), soyTree.toTreeString(0));
+    assertEquals(clone.getChild(0).toSourceString(), soyFile.toSourceString());
   }
 
 
   public final void testCloneWithNewIds() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    SoyFileSetNode fileSetNode = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    SoyFileNode fileNode =
-        (new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC, "test.soy", nodeIdGen))
+    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    SoyFileNode soyFile =
+        (new SoyFileParser(
+            new SoyTypeRegistry(), nodeIdGen, SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC,
+            "test.soy"))
             .parseSoyFile();
-    fileSetNode.addChild(fileNode);
+    soyTree.addChild(soyFile);
 
-    SoyFileSetNode clone = SoytreeUtils.cloneWithNewIds(fileSetNode);
+    SoyFileSetNode clone = SoytreeUtils.cloneWithNewIds(soyTree, nodeIdGen);
     assertEquals(1, clone.numChildren());
 
-    assertFalse(clone.getId() == fileSetNode.getId());
-    assertEquals(ignoreNodeIds(clone.toTreeString(0)), ignoreNodeIds(fileSetNode.toTreeString(0)));
-    assertEquals(clone.getChild(0).toSourceString(), fileNode.toSourceString());
+    assertFalse(clone.getId() == soyTree.getId());
+    assertEquals(ignoreNodeIds(clone.toTreeString(0)), ignoreNodeIds(soyTree.toTreeString(0)));
+    assertEquals(clone.getChild(0).toSourceString(), soyFile.toSourceString());
+  }
+
+
+  public final void testCloneListWithNewIds() throws Exception {
+
+    IdGenerator nodeIdGen = new IncrementingIdGenerator();
+    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    SoyFileNode soyFile =
+        (new SoyFileParser(new SoyTypeRegistry(), nodeIdGen, SOY_SOURCE_FOR_TESTING_CLONING,
+            SoyFileKind.SRC, "test.soy"))
+            .parseSoyFile();
+    soyTree.addChild(soyFile);
+
+    TemplateNode template = soyFile.getChild(0);
+    int numChildren = template.numChildren();
+
+    List<StandaloneNode> clones = SoytreeUtils.cloneListWithNewIds(
+        template.getChildren(), nodeIdGen);
+    assertEquals(numChildren, clones.size());
+
+    for (int i = 0; i < numChildren; i++) {
+      StandaloneNode clone = clones.get(i);
+      StandaloneNode child = template.getChild(i);
+      assertFalse(clone.getId() == child.getId());
+      assertEquals(ignoreNodeIds(child.toTreeString(0)), ignoreNodeIds(clone.toTreeString(0)));
+      assertEquals(child.toSourceString(), clone.toSourceString());
+    }
   }
 
 
@@ -195,15 +228,17 @@ public class SoytreeUtilsTest extends TestCase {
   public final void testMsgHtmlTagNode() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    SoyFileSetNode fileSetNode = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    SoyFileNode fileNode =
-        (new SoyFileParser(SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC, "test.soy", nodeIdGen))
+    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    SoyFileNode soyFile =
+        (new SoyFileParser(
+            new SoyTypeRegistry(), nodeIdGen, SOY_SOURCE_FOR_TESTING_CLONING, SoyFileKind.SRC,
+            "test.soy"))
             .parseSoyFile();
-    fileSetNode.addChild(fileNode);
+    soyTree.addChild(soyFile);
 
     FindNodeByTypeVisitor<MsgHtmlTagNode> visitor =
         new FindNodeByTypeVisitor<MsgHtmlTagNode>(MsgHtmlTagNode.class);
-    List<MsgHtmlTagNode> msgHtmlTagNodes = visitor.exec(fileNode);
+    List<MsgHtmlTagNode> msgHtmlTagNodes = visitor.exec(soyFile);
     assertFalse(msgHtmlTagNodes.isEmpty());
 
     for (MsgHtmlTagNode origMsgHtmlTagNode : msgHtmlTagNodes) {
@@ -213,7 +248,8 @@ public class SoytreeUtilsTest extends TestCase {
       assertEquals(clonedMsgHtmlTagNode.getId(), origMsgHtmlTagNode.getId());
       assertEquals(clonedMsgHtmlTagNode.getFullTagText(), origMsgHtmlTagNode.getFullTagText());
       assertEquals(clonedMsgHtmlTagNode.getLcTagName(), origMsgHtmlTagNode.getLcTagName());
-      assertEquals(clonedMsgHtmlTagNode.getSyntaxVersion(), origMsgHtmlTagNode.getSyntaxVersion());
+      assertEquals(
+          clonedMsgHtmlTagNode.getSyntaxVersionBound(), origMsgHtmlTagNode.getSyntaxVersionBound());
     }
   }
 

@@ -1,0 +1,601 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>TypeParser (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
+    if (location.href.indexOf('is-external=true') == -1) {
+        parent.document.title="TypeParser (Soy Complete)";
+    }
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
+<!-- ========= START OF TOP NAVBAR ======= -->
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/types/parse/TokenMgrError.html" title="class in com.google.template.soy.types.parse"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html" title="interface in com.google.template.soy.types.parse"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/types/parse/TypeParser.html" target="_top">Frames</a></li>
+<li><a href="TypeParser.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
+  if(window==top) {
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
+  }
+  //-->
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
+<!-- ========= END OF TOP NAVBAR ========= -->
+<!-- ======== START OF CLASS DATA ======== -->
+<div class="header">
+<div class="subTitle">com.google.template.soy.types.parse</div>
+<h2 title="Class TypeParser" class="title">Class TypeParser</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.types.parse.TypeParser</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<dl>
+<dt>All Implemented Interfaces:</dt>
+<dd><a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html" title="interface in com.google.template.soy.types.parse">TypeParserConstants</a></dd>
+</dl>
+<hr>
+<br>
+<pre>public class <span class="strong">TypeParser</span>
+extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>
+implements <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html" title="interface in com.google.template.soy.types.parse">TypeParserConstants</a></pre>
+<div class="block">This parser's specification is in TypeParser.jj, which is read by JavaCC and transformed
+ into TypeParser.java. To modify this parser, please edit TypeParser.jj. Do not edit
+ TypeParser.java directly.
+
+ <p> Important: Do not use outside of Soy code (treat as superpackage-private).</div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
+<!-- =========== FIELD SUMMARY =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_summary">
+<!--   -->
+</a>
+<h3>Field Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Field Summary table, listing fields, and an explanation">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Field and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#jj_nt">jj_nt</a></strong></code>
+<div class="block">Next token.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#token">token</a></strong></code>
+<div class="block">Current token.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/parse/TypeParserTokenManager.html" title="class in com.google.template.soy.types.parse">TypeParserTokenManager</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#token_source">token_source</a></strong></code>
+<div class="block">Generated Token Manager.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="fields_inherited_from_class_com.google.template.soy.types.parse.TypeParserConstants">
+<!--   -->
+</a>
+<h3>Fields inherited from interface&nbsp;com.google.template.soy.types.parse.<a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html" title="interface in com.google.template.soy.types.parse">TypeParserConstants</a></h3>
+<code><a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#COLON">COLON</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#COMMA">COMMA</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#DEFAULT">DEFAULT</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#DOT">DOT</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#EOF">EOF</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#GENERIC_LIST">GENERIC_LIST</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#GENERIC_MAP">GENERIC_MAP</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#IDENT">IDENT</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#LANGLE">LANGLE</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#LBRACKET">LBRACKET</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#QMARK">QMARK</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#RANGLE">RANGLE</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#RBRACKET">RBRACKET</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#tokenImage">tokenImage</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#VBAR">VBAR</a>, <a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html#WS">WS</a></code></li>
+</ul>
+</li>
+</ul>
+<!-- ======== CONSTRUCTOR SUMMARY ======== -->
+<ul class="blockList">
+<li class="blockList"><a name="constructor_summary">
+<!--   -->
+</a>
+<h3>Constructor Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Constructor Summary table, listing constructors, and an explanation">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Constructor and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#TypeParser(java.io.InputStream)">TypeParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</code>
+<div class="block">Constructor with InputStream.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#TypeParser(java.io.InputStream, java.lang.String)">TypeParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+          <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</code>
+<div class="block">Constructor with InputStream and supplied encoding</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#TypeParser(java.io.Reader)">TypeParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</code>
+<div class="block">Constructor.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#TypeParser(java.lang.String, com.google.template.soy.types.SoyTypeRegistry)">TypeParser</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;input,
+          <a href="../../../../../../com/google/template/soy/types/SoyTypeRegistry.html" title="class in com.google.template.soy.types">SoyTypeRegistry</a>&nbsp;typeRegistry)</code>
+<div class="block">Constructor that takes a string input.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#TypeParser(com.google.template.soy.types.parse.TypeParserTokenManager)">TypeParser</a></strong>(<a href="../../../../../../com/google/template/soy/types/parse/TypeParserTokenManager.html" title="class in com.google.template.soy.types.parse">TypeParserTokenManager</a>&nbsp;tm)</code>
+<div class="block">Constructor with generated Token Manager.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
+<!-- ========== METHOD SUMMARY =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#disable_tracing()">disable_tracing</a></strong>()</code>
+<div class="block">Disable tracing.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#enable_tracing()">enable_tracing</a></strong>()</code>
+<div class="block">Enable tracing.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/parse/ParseException.html" title="class in com.google.template.soy.types.parse">ParseException</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#generateParseException()">generateParseException</a></strong>()</code>
+<div class="block">Generate ParseException.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#getNextToken()">getNextToken</a></strong>()</code>
+<div class="block">Get the next Token.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#getToken(int)">getToken</a></strong>(int&nbsp;index)</code>
+<div class="block">Get the specific Token.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#parseTypeDeclaration()">parseTypeDeclaration</a></strong>()</code>
+<div class="block">Attempts to parse the input as a type declaration.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#parseTypeExpression()">parseTypeExpression</a></strong>()</code>
+<div class="block">Attempts to parse the input as a type expression.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#ReInit(java.io.InputStream)">ReInit</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#ReInit(java.io.InputStream, java.lang.String)">ReInit</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#ReInit(java.io.Reader)">ReInit</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/types/parse/TypeParser.html#ReInit(com.google.template.soy.types.parse.TypeParserTokenManager)">ReInit</a></strong>(<a href="../../../../../../com/google/template/soy/types/parse/TypeParserTokenManager.html" title="class in com.google.template.soy.types.parse">TypeParserTokenManager</a>&nbsp;tm)</code>
+<div class="block">Reinitialise.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
+<!-- ============ FIELD DETAIL =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a name="token_source">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>token_source</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/types/parse/TypeParserTokenManager.html" title="class in com.google.template.soy.types.parse">TypeParserTokenManager</a> token_source</pre>
+<div class="block">Generated Token Manager.</div>
+</li>
+</ul>
+<a name="token">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>token</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a> token</pre>
+<div class="block">Current token.</div>
+</li>
+</ul>
+<a name="jj_nt">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>jj_nt</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a> jj_nt</pre>
+<div class="block">Next token.</div>
+</li>
+</ul>
+</li>
+</ul>
+<!-- ========= CONSTRUCTOR DETAIL ======== -->
+<ul class="blockList">
+<li class="blockList"><a name="constructor_detail">
+<!--   -->
+</a>
+<h3>Constructor Detail</h3>
+<a name="TypeParser(java.lang.String, com.google.template.soy.types.SoyTypeRegistry)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>TypeParser</h4>
+<pre>public&nbsp;TypeParser(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;input,
+          <a href="../../../../../../com/google/template/soy/types/SoyTypeRegistry.html" title="class in com.google.template.soy.types">SoyTypeRegistry</a>&nbsp;typeRegistry)</pre>
+<div class="block">Constructor that takes a string input.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>input</code> - The input to parse.</dd><dd><code>typeRegistry</code> - The type registry.</dd></dl>
+</li>
+</ul>
+<a name="TypeParser(java.io.InputStream)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>TypeParser</h4>
+<pre>public&nbsp;TypeParser(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</pre>
+<div class="block">Constructor with InputStream.</div>
+</li>
+</ul>
+<a name="TypeParser(java.io.InputStream, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>TypeParser</h4>
+<pre>public&nbsp;TypeParser(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+          <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</pre>
+<div class="block">Constructor with InputStream and supplied encoding</div>
+</li>
+</ul>
+<a name="TypeParser(java.io.Reader)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>TypeParser</h4>
+<pre>public&nbsp;TypeParser(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</pre>
+<div class="block">Constructor.</div>
+</li>
+</ul>
+<a name="TypeParser(com.google.template.soy.types.parse.TypeParserTokenManager)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>TypeParser</h4>
+<pre>public&nbsp;TypeParser(<a href="../../../../../../com/google/template/soy/types/parse/TypeParserTokenManager.html" title="class in com.google.template.soy.types.parse">TypeParserTokenManager</a>&nbsp;tm)</pre>
+<div class="block">Constructor with generated Token Manager.</div>
+</li>
+</ul>
+</li>
+</ul>
+<!-- ============ METHOD DETAIL ========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="parseTypeExpression()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseTypeExpression</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a>&nbsp;parseTypeExpression()
+                            throws <a href="../../../../../../com/google/template/soy/types/parse/TokenMgrError.html" title="class in com.google.template.soy.types.parse">TokenMgrError</a>,
+                                   <a href="../../../../../../com/google/template/soy/types/parse/ParseException.html" title="class in com.google.template.soy.types.parse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as a type expression.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../../com/google/template/soy/types/parse/TokenMgrError.html" title="class in com.google.template.soy.types.parse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../../com/google/template/soy/types/parse/ParseException.html" title="class in com.google.template.soy.types.parse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="parseTypeDeclaration()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>parseTypeDeclaration</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a>&nbsp;parseTypeDeclaration()
+                             throws <a href="../../../../../../com/google/template/soy/types/parse/TokenMgrError.html" title="class in com.google.template.soy.types.parse">TokenMgrError</a>,
+                                    <a href="../../../../../../com/google/template/soy/types/parse/ParseException.html" title="class in com.google.template.soy.types.parse">ParseException</a></pre>
+<div class="block">Attempts to parse the input as a type declaration.</div>
+<dl><dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="../../../../../../com/google/template/soy/types/parse/TokenMgrError.html" title="class in com.google.template.soy.types.parse">TokenMgrError</a></code> - When the input has a token error.</dd>
+<dd><code><a href="../../../../../../com/google/template/soy/types/parse/ParseException.html" title="class in com.google.template.soy.types.parse">ParseException</a></code> - When the input has a parse error.</dd></dl>
+</li>
+</ul>
+<a name="ReInit(java.io.InputStream)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="ReInit(java.io.InputStream, java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="http://java.sun.com/javase/6/docs/api/java/io/InputStream.html?is-external=true" title="class or interface in java.io">InputStream</a>&nbsp;stream,
+          <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;encoding)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="ReInit(java.io.Reader)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&nbsp;stream)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="ReInit(com.google.template.soy.types.parse.TypeParserTokenManager)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ReInit</h4>
+<pre>public&nbsp;void&nbsp;ReInit(<a href="../../../../../../com/google/template/soy/types/parse/TypeParserTokenManager.html" title="class in com.google.template.soy.types.parse">TypeParserTokenManager</a>&nbsp;tm)</pre>
+<div class="block">Reinitialise.</div>
+</li>
+</ul>
+<a name="getNextToken()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getNextToken</h4>
+<pre>public final&nbsp;<a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a>&nbsp;getNextToken()</pre>
+<div class="block">Get the next Token.</div>
+</li>
+</ul>
+<a name="getToken(int)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getToken</h4>
+<pre>public final&nbsp;<a href="../../../../../../com/google/template/soy/types/parse/Token.html" title="class in com.google.template.soy.types.parse">Token</a>&nbsp;getToken(int&nbsp;index)</pre>
+<div class="block">Get the specific Token.</div>
+</li>
+</ul>
+<a name="generateParseException()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>generateParseException</h4>
+<pre>public&nbsp;<a href="../../../../../../com/google/template/soy/types/parse/ParseException.html" title="class in com.google.template.soy.types.parse">ParseException</a>&nbsp;generateParseException()</pre>
+<div class="block">Generate ParseException.</div>
+</li>
+</ul>
+<a name="enable_tracing()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>enable_tracing</h4>
+<pre>public final&nbsp;void&nbsp;enable_tracing()</pre>
+<div class="block">Enable tracing.</div>
+</li>
+</ul>
+<a name="disable_tracing()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>disable_tracing</h4>
+<pre>public final&nbsp;void&nbsp;disable_tracing()</pre>
+<div class="block">Disable tracing.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<!-- ========= END OF CLASS DATA ========= -->
+<!-- ======= START OF BOTTOM NAVBAR ====== -->
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/types/parse/TokenMgrError.html" title="class in com.google.template.soy.types.parse"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../../com/google/template/soy/types/parse/TypeParserConstants.html" title="interface in com.google.template.soy.types.parse"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/types/parse/TypeParser.html" target="_top">Frames</a></li>
+<li><a href="TypeParser.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
+  if(window==top) {
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
+  }
+  //-->
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_summary">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#constructor_detail">Constr</a>&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
+<!-- ======== END OF BOTTOM NAVBAR ======= -->
+<p class="legalCopy"><small>
+        
+          <div id="footer">
+            <div id="footerlogo" style="float:left">
+              <img src="http://www.google.com/images/art.gif"
+                   alt="Google colored balls">
+            </div>
+            <div id="copyright" style="float:left">
+              <p>
+                &copy; 2009 Google -
+                <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
+                <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
+                <a href="http://www.google.com/about.html">About Google</a>
+              </p>
+            </div>
+          </div>
+        
+      </small></p>
+</body>
+</html>

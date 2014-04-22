@@ -19,8 +19,11 @@ package com.google.template.soy.shared.restricted;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -28,14 +31,13 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.base.CharEscapers;
 
 import java.io.IOException;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
- 
+
 
 /**
  * Java implementations of functions that escape, normalize, and filter untrusted strings to
@@ -58,11 +60,11 @@ public final class Sanitizers {
   /**
    * Converts the input to HTML by entity escaping.
    */
-  public static String escapeHtml(SoyData value) {
+  public static String escapeHtml(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
-      return value.toString();
+      return value.coerceToString();
     }
-    return escapeHtml(value.toString());
+    return escapeHtml(value.coerceToString());
   }
 
 
@@ -75,37 +77,60 @@ public final class Sanitizers {
 
 
   /**
-   * Normalizes the input HTML while preserving "safe" tags.
+   * Normalizes the input HTML while preserving "safe" tags and the known directionality.
+   *
+   * @return the normalized input, in the form of {@link SanitizedContent} of
+   *         {@link ContentKind#HTML}
    */
-  public static String cleanHtml(SoyData value) {
-    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
-      return value.toString();
+  public static SanitizedContent cleanHtml(SoyValue value) {
+    Dir valueDir = null;
+    if (value instanceof SanitizedContent) {
+      SanitizedContent sanitizedContent = (SanitizedContent) value;
+      if (sanitizedContent.getContentKind() == SanitizedContent.ContentKind.HTML) {
+        return (SanitizedContent) value;
+      }
+      valueDir = sanitizedContent.getContentDirection();
     }
-    return cleanHtml(value.toString());
+    return cleanHtml(value.coerceToString(), valueDir);
   }
 
 
   /**
-   * Normalizes the input HTML while preserving "safe" tags.
+   * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
+   *
+   * @return the normalized input, in the form of {@link SanitizedContent} of
+   *         {@link ContentKind#HTML}
    */
-  public static String cleanHtml(String value) {
-    return stripHtmlTags(value, TagWhitelist.FORMATTING, true);
+  public static SanitizedContent cleanHtml(String value) {
+    return cleanHtml(value, null);
+  }
+
+
+  /**
+   * Normalizes the input HTML of a given directionality while preserving "safe" tags.
+   *
+   * @return the normalized input, in the form of {@link SanitizedContent} of
+   *         {@link ContentKind#HTML}
+   */
+  public static SanitizedContent cleanHtml(String value, Dir contentDir) {
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        stripHtmlTags(value, TagWhitelist.FORMATTING, true), ContentKind.HTML, contentDir);
   }
 
 
   /**
    * Converts the input to HTML suitable for use inside {@code <textarea>} by entity escaping.
    */
-  public static String escapeHtmlRcdata(SoyData value) {
+  public static String escapeHtmlRcdata(SoyValue value) {
 
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
       // We can't allow tags in the output, because that would allow safe HTML containing
       // "<textarea>" to prematurely close the textarea.
       // Instead, we normalize which is semantics preserving in RCDATA.
-      return normalizeHtml(value.toString());
+      return normalizeHtml(value.coerceToString());
     }
 
-    return escapeHtml(value.toString());
+    return escapeHtml(value.coerceToString());
   }
 
 
@@ -120,8 +145,8 @@ public final class Sanitizers {
   /**
    * Normalizes HTML to HTML making sure quotes and other specials are entity encoded.
    */
-  public static String normalizeHtml(SoyData value) {
-    return normalizeHtml(value.toString());
+  public static String normalizeHtml(SoyValue value) {
+    return normalizeHtml(value.coerceToString());
   }
 
 
@@ -137,8 +162,8 @@ public final class Sanitizers {
    * Normalizes HTML to HTML making sure quotes, spaces and other specials are entity encoded
    * so that the result can be safely embedded in a valueless attribute.
    */
-  public static String normalizeHtmlNospace(SoyData value) {
-    return normalizeHtmlNospace(value.toString());
+  public static String normalizeHtmlNospace(SoyValue value) {
+    return normalizeHtmlNospace(value.coerceToString());
   }
 
 
@@ -155,12 +180,12 @@ public final class Sanitizers {
    * Converts the input to HTML by entity escaping, stripping tags in sanitized content so the
    * result can safely be embedded in an HTML attribute value.
    */
-  public static String escapeHtmlAttribute(SoyData value) {
+  public static String escapeHtmlAttribute(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
       // |escapeHtmlAttribute should only be used on attribute values that cannot have tags.
-      return stripHtmlTags(value.toString(), null, true);
+      return stripHtmlTags(value.coerceToString(), null, true);
     }
-    return escapeHtmlAttribute(value.toString());
+    return escapeHtmlAttribute(value.coerceToString());
   }
 
 
@@ -177,12 +202,12 @@ public final class Sanitizers {
    * Converts plain text to HTML by entity escaping, stripping tags in sanitized content so the
    * result can safely be embedded in an unquoted HTML attribute value.
    */
-  public static String escapeHtmlAttributeNospace(SoyData value) {
+  public static String escapeHtmlAttributeNospace(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.HTML)) {
       // |escapeHtmlAttributeNospace should only be used on attribute values that cannot have tags.
-      return stripHtmlTags(value.toString(), null, false);
+      return stripHtmlTags(value.coerceToString(), null, false);
     }
-    return escapeHtmlAttributeNospace(value.toString());
+    return escapeHtmlAttributeNospace(value.coerceToString());
   }
 
 
@@ -198,11 +223,11 @@ public final class Sanitizers {
   /**
    * Converts the input to the body of a JavaScript string by using {@code \n} style escapes.
    */
-  public static String escapeJsString(SoyData value) {
+  public static String escapeJsString(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS_STR_CHARS)) {
-      return value.toString();
+      return value.coerceToString();
     }
-    return escapeJsString(value.toString());
+    return escapeJsString(value.coerceToString());
   }
 
 
@@ -218,7 +243,7 @@ public final class Sanitizers {
    * Converts the input to a JavaScript expression.  The resulting expression can be a boolean,
    * number, string literal, or {@code null}.
    */
-  public static String escapeJsValue(SoyData value) {
+  public static String escapeJsValue(SoyValue value) {
     // We surround values with spaces so that they can't be interpolated into identifiers
     // by accident.  We could use parentheses but those might be interpreted as a function call.
     if (NullData.INSTANCE == value) {
@@ -232,9 +257,9 @@ public final class Sanitizers {
     } else if (value instanceof BooleanData) {
       return " " + value.booleanValue() + " ";
     } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
-      return value.toString();
+      return value.coerceToString();
     } else {
-      return escapeJsValue(value.toString());
+      return escapeJsValue(value.coerceToString());
     }
   }
 
@@ -250,8 +275,8 @@ public final class Sanitizers {
   /**
    * Converts the input to the body of a JavaScript regular expression literal.
    */
-  public static String escapeJsRegex(SoyData value) {
-    return escapeJsRegex(value.toString());
+  public static String escapeJsRegex(SoyValue value) {
+    return escapeJsRegex(value.coerceToString());
   }
 
 
@@ -266,8 +291,8 @@ public final class Sanitizers {
   /**
    * Converts the input to the body of a CSS string literal.
    */
-  public static String escapeCssString(SoyData value) {
-    return escapeCssString(value.toString());
+  public static String escapeCssString(SoyValue value) {
+    return escapeCssString(value.coerceToString());
   }
 
 
@@ -283,11 +308,11 @@ public final class Sanitizers {
    * Makes sure that the input is a valid CSS identifier part, CLASS or ID part, quantity, or
    * CSS keyword part.
    */
-  public static String filterCssValue(SoyData value) {
+  public static String filterCssValue(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.CSS)) {
-      return value.toString();
+      return value.coerceToString();
     }
-    return NullData.INSTANCE == value ? "" : filterCssValue(value.toString());
+    return NullData.INSTANCE == value ? "" : filterCssValue(value.coerceToString());
   }
 
 
@@ -300,18 +325,18 @@ public final class Sanitizers {
       return value;
     }
     LOGGER.log(Level.WARNING, "|filterCssValue received bad value {0}", value);
-    return EscapingConventions.INNOCUOUS_OUTPUT;
+    return EscapingConventions.FilterCssValue.INSTANCE.getInnocuousOutput();
   }
 
 
   /**
    * Converts the input to a piece of a URI by percent encoding assuming a UTF-8 encoding.
    */
-  public static String escapeUri(SoyData value) {
+  public static String escapeUri(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)) {
       return normalizeUri(value);
     }
-    return escapeUri(value.toString());
+    return escapeUri(value.coerceToString());
   }
 
 
@@ -327,8 +352,8 @@ public final class Sanitizers {
    * Converts a piece of URI content to a piece of URI content that can be safely embedded
    * in an HTML attribute by percent encoding.
    */
-  public static String normalizeUri(SoyData value) {
-    return normalizeUri(value.toString());
+  public static String normalizeUri(SoyValue value) {
+    return normalizeUri(value.coerceToString());
   }
 
 
@@ -345,11 +370,11 @@ public final class Sanitizers {
    * Makes sure that the given input doesn't specify a dangerous protocol and also
    * {@link #normalizeUri normalizes} it.
    */
-  public static String filterNormalizeUri(SoyData value) {
+  public static String filterNormalizeUri(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)) {
       return normalizeUri(value);
     }
-    return filterNormalizeUri(value.toString());
+    return filterNormalizeUri(value.coerceToString());
   }
 
 
@@ -362,7 +387,33 @@ public final class Sanitizers {
       return EscapingConventions.FilterNormalizeUri.INSTANCE.escape(value);
     }
     LOGGER.log(Level.WARNING, "|filterNormalizeUri received bad value {0}", value);
-    return "#" + EscapingConventions.INNOCUOUS_OUTPUT;
+    return EscapingConventions.FilterNormalizeUri.INSTANCE.getInnocuousOutput();
+  }
+
+
+  /**
+   * Makes sure that the given input is a data URI corresponding to an image.
+   *
+   * SanitizedContent kind does not apply -- the directive is also used to ensure no foreign
+   * resources are loaded.
+   */
+  public static SanitizedContent filterImageDataUri(SoyValue value) {
+    return filterImageDataUri(value.coerceToString());
+  }
+
+
+  /**
+   * Makes sure that the given input is a data URI corresponding to an image.
+   */
+  public static SanitizedContent filterImageDataUri(String value) {
+    if (EscapingConventions.FilterImageDataUri.INSTANCE.getValueFilter().matcher(value).find()) {
+      // NOTE: No need to escape.
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
+    }
+    LOGGER.log(Level.WARNING, "|filterImageDataUri received bad value {0}", value);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        EscapingConventions.FilterImageDataUri.INSTANCE.getInnocuousOutput(),
+        SanitizedContent.ContentKind.URI);
   }
 
 
@@ -370,7 +421,7 @@ public final class Sanitizers {
    * Checks that the input is a valid HTML attribute name with normal keyword or textual content
    * or known safe attribute content.
    */
-  public static String filterHtmlAttributes(SoyData value) {
+  public static String filterHtmlAttributes(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.ATTRIBUTES)) {
       // We're guaranteed to be in a case where key=value pairs are expected. However, if it would
       // cause issues to directly abut this with more attributes, add a space. For example:
@@ -378,7 +429,7 @@ public final class Sanitizers {
       // correctly, but not in the case where $a is foo="bar".
       // TODO: We should be able to get rid of this if the compiler can guarantee spaces between
       // adjacent print statements in attribute context at compile time.
-      String content = value.toString();
+      String content = value.coerceToString();
       if (content.length() > 0) {
         char lastChar = content.charAt(content.length() - 1);
         if (lastChar != '"' && lastChar != '\'' && !Character.isWhitespace(lastChar)) {
@@ -387,7 +438,7 @@ public final class Sanitizers {
       }
       return content;
     }
-    return filterHtmlAttributes(value.toString());
+    return filterHtmlAttributes(value.coerceToString());
   }
 
 
@@ -399,15 +450,15 @@ public final class Sanitizers {
       return value;
     }
     LOGGER.log(Level.WARNING, "|filterHtmlAttributes received bad value {0}", value);
-    return EscapingConventions.INNOCUOUS_OUTPUT;
+    return EscapingConventions.FilterHtmlAttributes.INSTANCE.getInnocuousOutput();
   }
 
 
   /**
    * Checks that the input is part of the name of an innocuous element.
    */
-  public static String filterHtmlElementName(SoyData value) {
-    return filterHtmlElementName(value.toString());
+  public static String filterHtmlElementName(SoyValue value) {
+    return filterHtmlElementName(value.coerceToString());
   }
 
 
@@ -419,7 +470,7 @@ public final class Sanitizers {
       return value;
     }
     LOGGER.log(Level.WARNING, "|filterHtmlElementName received bad value {0}", value);
-    return EscapingConventions.INNOCUOUS_OUTPUT;
+    return EscapingConventions.FilterHtmlElementName.INSTANCE.getInnocuousOutput();
   }
 
   /**
@@ -429,22 +480,23 @@ public final class Sanitizers {
    * used unescaped. Specifically, {let} and {param} blocks of kind "text" are explicitly
    * forbidden from being noAutoescaped to avoid XSS regressions during application transition.
    */
-  public static SoyData filterNoAutoescape(SoyData data) {
+  public static SoyValue filterNoAutoescape(SoyValue value) {
     // TODO: Consider also checking for things that are never valid, like null characters.
-    if (isSanitizedContentOfKind(data, SanitizedContent.ContentKind.TEXT)) {
+    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TEXT)) {
       LOGGER.log(Level.WARNING,
-          "|noAutoescape received data explicitly tagged as ContentKind.TEXT: {0}", data);
-      return SoyData.createFromExistingData(EscapingConventions.INNOCUOUS_OUTPUT);
+          "|noAutoescape received value explicitly tagged as ContentKind.TEXT: {0}", value);
+      return StringData.forValue(EscapingConventions.INNOCUOUS_OUTPUT);
     }
-    return data instanceof StringData ? data : SoyData.createFromExistingData(data.toString());
+    return value;
   }
 
 
   /**
-   * True iff the given data is sanitized content of the given kind.
+   * True iff the given value is sanitized content of the given kind.
    */
-  private static boolean isSanitizedContentOfKind(SoyData data, SanitizedContent.ContentKind kind) {
-    return data instanceof SanitizedContent && kind == ((SanitizedContent) data).getContentKind();
+  private static boolean isSanitizedContentOfKind(
+      SoyValue value, SanitizedContent.ContentKind kind) {
+    return value instanceof SanitizedContent && kind == ((SanitizedContent) value).getContentKind();
   }
 
 
@@ -495,7 +547,6 @@ public final class Sanitizers {
         }
 
         if (safeTags != null) {
-          int limit = matcher.end();
           String tagName = matcher.group(1);
           if (tagName != null) {
             // Use locale so that <I> works when the default locale is Turkish

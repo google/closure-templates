@@ -16,7 +16,7 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.template.soy.base.IdGenerator;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;

@@ -72,6 +72,8 @@ public final class ContextualAutoescaper {
   /** The conclusions drawn by the last {@link #rewrite}. */
   private Inferences inferences;
 
+  /** Raw text nodes sliced by context. */
+  private List<SlicedRawTextNode> slicedRawTextNodes;
 
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
@@ -115,9 +117,6 @@ public final class ContextualAutoescaper {
    * context in which it appears.
    *
    * @param fileSet Modified in place.
-   * @param assumeNoExternalCalls Whether it's safe to assume this SoyFileSet gives a complete set
-   *     of templates that could ever get called at runtime; in other words, whether this is a
-   *     monolithic compile versus separately linked compiles.
    * @return Extra templates which were derived from templates under fileSet and which must be
    *     compiled with fileSet to produce a correct output.  See {@link DerivedTemplateUtils} for an
    *     explanation of these.
@@ -130,7 +129,7 @@ public final class ContextualAutoescaper {
    *     //<textarea><script></script><textarea></textarea>
    *     </xmp>
    */
-  public List<TemplateNode> rewrite(SoyFileSetNode fileSet, boolean assumeNoExternalCalls)
+  public List<TemplateNode> rewrite(SoyFileSetNode fileSet)
       throws SoyAutoescapeException {
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
@@ -140,8 +139,9 @@ public final class ContextualAutoescaper {
     // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
     // we choose.
     Inferences inferences = new Inferences(
-        autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(),
-        templatesByName, assumeNoExternalCalls);
+        autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(), templatesByName);
+    ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder = ImmutableList.builder();
+
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
     TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
     // Generate a call graph, creating a dummy root that calls all non-private template in
@@ -161,12 +161,16 @@ public final class ContextualAutoescaper {
           Context.getStartContextForContentKind(templateNode.getContentKind()) :
           Context.HTML_PCDATA;
       InferenceEngine.inferTemplateEndContext(
-          templateNode, startContext, inferences, autoescapeCancellingDirectives);
+          templateNode, startContext, inferences, autoescapeCancellingDirectives,
+          slicedRawTextNodesBuilder);
     }
 
     // Store inferences so that after processing, clients can access the output contexts for
     // templates.
     this.inferences = inferences;
+
+    // Store context boundaries so that later passes can make use of element/attribute boundaries.
+    this.slicedRawTextNodes = slicedRawTextNodesBuilder.build();
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
     return new Rewriter(inferences, sanitizedContentOperators).rewrite(fileSet);
@@ -191,6 +195,13 @@ public final class ContextualAutoescaper {
     return inferences.getPrintNodeStartContexts();
   }
 
+  /**
+   * Maps ranges of text-nodes to contexts so that later parse passes can add attributes or
+   * elements.
+   */
+  public List<SlicedRawTextNode> getSlicedRawTextNodes() {
+    return slicedRawTextNodes;
+  }
 
   /**
    * Fills in the {@link Inferences} template name to node map.

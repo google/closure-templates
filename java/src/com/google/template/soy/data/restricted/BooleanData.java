@@ -27,13 +27,15 @@ import javax.annotation.concurrent.Immutable;
  * @author Kai Huang
  */
 @Immutable
-public class BooleanData extends PrimitiveData {
+public final class BooleanData extends PrimitiveData {
 
 
   /** Static instance of BooleanData with value 'true'. */
+  @SuppressWarnings("deprecation")
   public static final BooleanData TRUE = new BooleanData(true);
 
   /** Static instance of BooleanData with value 'false'. */
+  @SuppressWarnings("deprecation")
   public static final BooleanData FALSE = new BooleanData(false);
 
 
@@ -78,6 +80,7 @@ public class BooleanData extends PrimitiveData {
   }
 
 
+  @Deprecated
   @Override public boolean toBoolean() {
     return value;
   }
@@ -90,7 +93,7 @@ public class BooleanData extends PrimitiveData {
 
 
   @Override public int hashCode() {
-    return (new Boolean(value)).hashCode();
+    return Boolean.valueOf(value).hashCode();
   }
 
 }

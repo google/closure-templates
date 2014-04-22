@@ -17,25 +17,24 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgNode;
+import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import java.util.List;
 
 
 /**
- * Visitor for replacing {@code MsgNode}s with corresponding pairs of {@code GoogMsgNode}s and
- * {@code GoogMsgRefNode}s.
+ * Visitor for replacing {@code MsgFallbackGroupNode}s with corresponding pairs of
+ * {@code GoogMsgDefNode}s and {@code GoogMsgRefNode}s.
  *
  * <p> {@link #exec} must be called on a full parse tree.
  *
@@ -44,21 +43,12 @@ import java.util.List;
 class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
-  /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
-
-  /** The list of MsgNodes found in the given node's subtree. */
-  private List<MsgNode> msgNodes;
-
-
-  @Inject
-  public ReplaceMsgsWithGoogMsgsVisitor(SoyJsSrcOptions jsSrcOptions) {
-    this.jsSrcOptions = jsSrcOptions;
-  }
+  /** The list of MsgFallbackGroupNodes found in the given node's subtree. */
+  private List<MsgFallbackGroupNode> msgFbGrpNodes;
 
 
   @Override public Void exec(SoyNode node) {
-    msgNodes = Lists.newArrayList();
+    msgFbGrpNodes = Lists.newArrayList();
     visit(node);
     return null;
   }
@@ -70,22 +60,22 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
-    // We find all the MsgNodes before replacing them because we don't want the modifications to
-    // interfere with the traversal.
+    // We find all the MsgFallbackGroupNodes before replacing them because we don't want the
+    // modifications to interfere with the traversal.
 
-    // This pass simply finds all the MsgNodes.
+    // This pass simply finds all the MsgFallbackGroupNodes.
     visitChildren(node);
 
-    // Perform the replacments.
+    // Perform the replacements.
     IdGenerator nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
-    for (MsgNode msgNode : msgNodes) {
-      replaceMsgNodeHelper(msgNode, nodeIdGen);
+    for (MsgFallbackGroupNode msgFbGrpNode : msgFbGrpNodes) {
+      replaceMsgFallbackGroupNodeHelper(msgFbGrpNode, nodeIdGen);
     }
   }
 
 
-  @Override protected void visitMsgNode(MsgNode node) {
-    msgNodes.add(node);
+  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    msgFbGrpNodes.add(node);
     visitChildren(node);
   }
 
@@ -105,21 +95,22 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
   // Helpers.
 
 
-  private void replaceMsgNodeHelper(MsgNode msgNode, IdGenerator nodeIdGen) {
+  private void replaceMsgFallbackGroupNodeHelper(
+      MsgFallbackGroupNode msgFbGrpNode, IdGenerator nodeIdGen) {
 
-    int googMsgNodeId = nodeIdGen.genId();
-    String googMsgVarName = jsSrcOptions.googMsgsAreExternal() ?
-        "MSG_EXTERNAL_" + MsgUtils.computeMsgIdForDualFormat(msgNode) :
-        "MSG_UNNAMED_" + googMsgNodeId;
-
-    GoogMsgNode googMsgNode = new GoogMsgNode(googMsgNodeId, msgNode, googMsgVarName);
+    List<Long> childMsgIds = Lists.newArrayListWithCapacity(msgFbGrpNode.numChildren());
+    for (MsgNode msgNode : msgFbGrpNode.getChildren()) {
+      childMsgIds.add(MsgUtils.computeMsgIdForDualFormat(msgNode));
+    }
+    GoogMsgDefNode googMsgDefNode =
+        new GoogMsgDefNode(nodeIdGen.genId(), msgFbGrpNode, childMsgIds);
     GoogMsgRefNode googMsgRefNode =
-        new GoogMsgRefNode(nodeIdGen.genId(), googMsgNode.getRenderedGoogMsgVarName());
+        new GoogMsgRefNode(nodeIdGen.genId(), googMsgDefNode.getRenderedGoogMsgVarName());
 
-    BlockNode parent = msgNode.getParent();
-    int msgNodeIndex = parent.getChildIndex(msgNode);
-    parent.replaceChild(msgNodeIndex, googMsgNode);
-    parent.addChild(msgNodeIndex + 1, googMsgRefNode);
+    BlockNode parent = msgFbGrpNode.getParent();
+    int index = parent.getChildIndex(msgFbGrpNode);
+    parent.replaceChild(index, googMsgDefNode);
+    parent.addChild(index + 1, googMsgRefNode);
   }
 
 }

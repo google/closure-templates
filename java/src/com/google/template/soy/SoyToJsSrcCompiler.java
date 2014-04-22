@@ -33,7 +33,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-
 /**
  * Executable for compiling a set of Soy files into corresponding JS source files.
  *
@@ -67,6 +66,11 @@ public final class SoyToJsSrcCompiler {
           handler = MainClassUtils.StringListOptionHandler.class)
   private List<String> deps = Lists.newArrayList();
 
+  @Option(name = "--indirectDeps",
+          usage = "Soy files required by deps, but which may not be used by srcs.",
+          handler = MainClassUtils.StringListOptionHandler.class)
+  private List<String> indirectDeps = Lists.newArrayList();
+
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
                   " existing projects should remove existing external calls and then set this" +
@@ -87,6 +91,10 @@ public final class SoyToJsSrcCompiler {
                   " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes" +
                   " pt_br.")
   private String outputPathFormat = "";
+
+  @Option(name = "--syntaxVersion",
+          usage = "User-declared syntax version for the Soy file bundle (e.g. 2.0, 2.3).")
+  private String syntaxVersion = "";
 
   @Option(name = "--isUsingIjData",
           usage = "Whether to enable use of injected data (syntax is '$ij.*').",
@@ -210,6 +218,15 @@ public final class SoyToJsSrcCompiler {
                   " print directive plugins (comma-delimited list).")
   private String pluginModules = "";
 
+  @Option(name = "--supportContentSecurityPolicy",
+          usage = "Adds attributes so that browsers that support the Content Security Policy" +
+                  " (CSP) can distinguish inline scripts written by the template author from" +
+                  " any injected via XSS.  If true, the parameter {$ij.csp_nonce} should" +
+                  " contain an unpredictable per-page-render secret consisting of ASCII" +
+                  " alpha-numerics, plus (+), and solidus (/).  Off by default.",
+          handler = MainClassUtils.BooleanOptionHandler.class)
+  private boolean supportContentSecurityPolicy = false;
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument
   private List<String> arguments = Lists.newArrayList();
@@ -242,16 +259,21 @@ public final class SoyToJsSrcCompiler {
     };
 
     if (outputPathFormat.length() == 0) {
-      MainClassUtils.exitWithError(
-          "Must provide the output path format.", cmdLineParser, USAGE_PREFIX);
+      exitWithErrorFn.apply("Must provide the output path format.");
     }
 
     Injector injector = MainClassUtils.createInjector(messagePluginModule, pluginModules);
 
     // Create SoyFileSet.
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments, deps,
-        exitWithErrorFn);
+    MainClassUtils.addSoyFilesToBuilder(
+        sfsBuilder, inputPrefix, srcs, arguments, deps, indirectDeps, exitWithErrorFn);
+    if (syntaxVersion.length() > 0) {
+      if (syntaxVersion.equals("1.0")) {
+        exitWithErrorFn.apply("Declared syntax version must be 2.0 or greater.");
+      }
+      sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
+    }
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
     sfsBuilder.setCssHandlingScheme(
@@ -260,6 +282,7 @@ public final class SoyToJsSrcCompiler {
     if (compileTimeGlobalsFile.length() > 0) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
+    sfsBuilder.setSupportContentSecurityPolicy(supportContentSecurityPolicy);
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyJsSrcOptions.

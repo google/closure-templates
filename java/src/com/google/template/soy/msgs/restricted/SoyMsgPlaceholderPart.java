@@ -16,13 +16,15 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.Objects;
+
 
 /**
  * Represents a placeholder within a message.
  *
  * @author Kai Huang
  */
-public class SoyMsgPlaceholderPart extends SoyMsgPart {
+public final class SoyMsgPlaceholderPart extends SoyMsgPart {
 
 
   /** The placeholder name (as seen by translators). */
@@ -42,4 +44,14 @@ public class SoyMsgPlaceholderPart extends SoyMsgPart {
     return placeholderName;
   }
 
+
+  @Override public boolean equals(Object other) {
+    return other instanceof SoyMsgPlaceholderPart
+        && placeholderName.equals(((SoyMsgPlaceholderPart) other).placeholderName);
+  }
+
+
+  @Override public int hashCode() {
+    return Objects.hashCode(SoyMsgPlaceholderPart.class, placeholderName.hashCode());
+  }
 }

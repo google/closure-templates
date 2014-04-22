@@ -19,9 +19,9 @@ package com.google.template.soy.sharedpasses;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -40,8 +40,8 @@ import java.util.Set;
 
 
 /**
- * Visitor to determine and mark which DataRefNodes are actually local var data refs. Marking is
- * done by calling {@link DataRefNode#setIsLocalVarDataRef}.
+ * Visitor to determine and mark which VarRefNodes are actually local var data refs. Marking is
+ * done by calling {@link VarRefNode#setIsLocalVarDataRef}.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -141,7 +141,7 @@ public class MarkLocalVarDataRefsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
-   * Helper visitor to determine and mark which DataRefNodes within an expression are actually local
+   * Helper visitor to determine and mark which VarRefNodes within an expression are actually local
    * var data refs.
    */
   private static class MarkLocalVarDataRefsInExprVisitor extends AbstractExprNodeVisitor<Void> {
@@ -158,28 +158,25 @@ public class MarkLocalVarDataRefsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // ------ Implementations for specific nodes. ------
 
-    @Override protected void visitDataRefNode(DataRefNode node) {
+    @Override protected void visitVarRefNode(VarRefNode node) {
 
-      // Determine whether the first key references a local variable.
-      boolean firstKeyIsLocalVar;
-      if (node.isIjDataRef()) {
-        firstKeyIsLocalVar = false;
+      // Determine whether this is a reference to a local variable.
+      boolean isLocalVar;
+      if (node.isInjected()) {
+        isLocalVar = false;
       } else {
-        String firstKey = node.getFirstKey();
-        firstKeyIsLocalVar = false;
+        String name = node.getName();
+        isLocalVar = false;
         for (Set<String> localVarFrame : localVarFrames) {
-          if (localVarFrame.contains(firstKey)) {
-            firstKeyIsLocalVar = true;
+          if (localVarFrame.contains(name)) {
+            isLocalVar = true;
             break;
           }
         }
       }
 
       // Mark whether the node references local var data.
-      node.setIsLocalVarDataRef(firstKeyIsLocalVar);
-
-      // Important: Must visit children since children may be expressions that contain data refs.
-      visitChildren(node);
+      node.setIsLocalVar(isLocalVar);
     }
 
     // ------ Fallback implementation. ------

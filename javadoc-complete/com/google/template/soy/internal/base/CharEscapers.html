@@ -1,387 +1,341 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<!--NewPage-->
-<HTML>
-<HEAD>
-<TITLE>
-CharEscapers (Soy Complete)
-</TITLE>
-
-
-<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../../../stylesheet.css" TITLE="Style">
-
-<SCRIPT type="text/javascript">
-function windowTitle()
-{
+<!-- NewPage -->
+<html lang="en">
+<head>
+<title>CharEscapers (Soy Complete)</title>
+<link rel="stylesheet" type="text/css" href="../../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<script type="text/javascript"><!--
     if (location.href.indexOf('is-external=true') == -1) {
         parent.document.title="CharEscapers (Soy Complete)";
     }
-}
-</SCRIPT>
-<NOSCRIPT>
-</NOSCRIPT>
-
-</HEAD>
-
-<BODY BGCOLOR="white" onload="windowTitle();">
-<HR>
-
-
+//-->
+</script>
+<noscript>
+<div>JavaScript is disabled on your browser.</div>
+</noscript>
 <!-- ========= START OF TOP NAVBAR ======= -->
-<A NAME="navbar_top"><!-- --></A>
-<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_top_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaperBuilder.html" title="class in com.google.template.soy.internal.base"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/internal/base/CharEscapers.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="CharEscapers.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="topNav"><a name="navbar_top">
+<!--   -->
+</a><a href="#skip-navbar_top" title="Skip navigation links"></a><a name="navbar_top_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/internal/base/CharEscaperBuilder.html" title="class in com.google.template.soy.internal.base"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/internal/base/CharEscapers.html" target="_top">Frames</a></li>
+<li><a href="CharEscapers.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_top">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_top");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_top"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li>Constr&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li>Constr&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_top">
+<!--   -->
+</a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-
-<HR>
 <!-- ======== START OF CLASS DATA ======== -->
-<H2>
-<FONT SIZE="-1">
-com.google.template.soy.internal.base</FONT>
-<BR>
-Class CharEscapers</H2>
-<PRE>
-<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</A>
-  <IMG SRC="../../../../../../resources/inherit.gif" ALT="extended by "><B>com.google.template.soy.internal.base.CharEscapers</B>
-</PRE>
-<HR>
-<DL>
-<DT><PRE>public final class <B>CharEscapers</B><DT>extends <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></DL>
-</PRE>
-
-<P>
-Utility functions for dealing with <code>CharEscaper</code>s, and some commonly
- used <code>CharEscaper</code> instances.
-<P>
-
-<P>
-<HR>
-
-<P>
-
+<div class="header">
+<div class="subTitle">com.google.template.soy.internal.base</div>
+<h2 title="Class CharEscapers" class="title">Class CharEscapers</h2>
+</div>
+<div class="contentContainer">
+<ul class="inheritance">
+<li><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">java.lang.Object</a></li>
+<li>
+<ul class="inheritance">
+<li>com.google.template.soy.internal.base.CharEscapers</li>
+</ul>
+</li>
+</ul>
+<div class="description">
+<ul class="blockList">
+<li class="blockList">
+<hr>
+<br>
+<pre>public final class <span class="strong">CharEscapers</span>
+extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></pre>
+<div class="block">Utility functions for dealing with <code>CharEscaper</code>s, and some commonly
+ used <code>CharEscaper</code> instances.</div>
+</li>
+</ul>
+</div>
+<div class="summary">
+<ul class="blockList">
+<li class="blockList">
 <!-- ========== METHOD SUMMARY =========== -->
-
-<A NAME="method_summary"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="2"><FONT SIZE="+2">
-<B>Method Summary</B></FONT></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#asciiHtmlEscaper()">asciiHtmlEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+<ul class="blockList">
+<li class="blockList"><a name="method_summary">
+<!--   -->
+</a>
+<h3>Method Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span>Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#asciiHtmlEscaper()">asciiHtmlEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an HTML document in either element
- content or attribute values.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#cppUriEscaper()">cppUriEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java characters in a manner
+ content or attribute values.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#cppUriEscaper()">cppUriEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java characters in a manner
  compatible with the C++ webutil/url URL class (the <code>kGoogle1Escape</code>
- set).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#fallThrough(com.google.template.soy.internal.base.CharEscaper, com.google.template.soy.internal.base.CharEscaper)">fallThrough</A></B>(<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A>&nbsp;primary,
-            <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A>&nbsp;secondary)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a composite <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that tries to escape
+ set).</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#fallThrough(com.google.template.soy.internal.base.CharEscaper, com.google.template.soy.internal.base.CharEscaper)">fallThrough</a></strong>(<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;primary,
+           <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;secondary)</code>
+<div class="block">Returns a composite <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that tries to escape
  characters using a primary <code>CharEscaper</code> first and falls back to a
- secondary one if there is no escaping.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#htmlEscaper()">htmlEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ secondary one if there is no escaping.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#htmlEscaper()">htmlEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an HTML document in either element
- content or attribute values.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaCharEscaper()">javaCharEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
- string so it can safely be included in a Java char or string literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javascriptEscaper()">javascriptEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes non-ASCII characters in
- a string so it can safely be included in a Javascript string literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaStringEscaper()">javaStringEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
- string so it can safely be included in a Java string literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaStringUnicodeEscaper()">javaStringUnicodeEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that replaces non-ASCII characters
+ content or attribute values.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaCharEscaper()">javaCharEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
+ string so it can safely be included in a Java char or string literal.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javascriptEscaper()">javascriptEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes non-ASCII characters in
+ a string so it can safely be included in a Javascript string literal.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaStringEscaper()">javaStringEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
+ string so it can safely be included in a Java string literal.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaStringUnicodeEscaper()">javaStringUnicodeEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that replaces non-ASCII characters
  in a string with their Unicode escape sequences (<code>\\uxxxx</code> where
- <code>xxxx</code> is a hex number).</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#nullEscaper()">nullEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> that does no escaping.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#pythonEscaper()">pythonEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters from
- a string so it can safely be included in a Python string literal.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper()">uriEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns an <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
- safely included in URIs.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper(boolean)">uriEscaper</A></B>(boolean&nbsp;plusForSpace)</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java characters so they can
- be safely included in URIs.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriPathEscaper()">uriPathEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns an <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
- safely included in URI path segments.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriQueryStringEscaper()">uriQueryStringEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns an <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
- safely included in URI query string segments.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#xmlContentEscaper()">xmlContentEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
- string so it can safely be included in an XML document in element content.</TD>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
-<CODE>static&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A></CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#xmlEscaper()">xmlEscaper</A></B>()</CODE>
-
-<BR>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ <code>xxxx</code> is a hex number).</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#nullEscaper()">nullEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> that does no escaping.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#pythonEscaper()">pythonEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters from
+ a string so it can safely be included in a Python string literal.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper()">uriEscaper</a></strong>()</code>
+<div class="block">Returns an <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java chars so they can be
+ safely included in URIs.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper(boolean)">uriEscaper</a></strong>(boolean&nbsp;plusForSpace)</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java characters so they can
+ be safely included in URIs.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriPathEscaper()">uriPathEscaper</a></strong>()</code>
+<div class="block">Returns an <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java chars so they can be
+ safely included in URI path segments.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriQueryStringEscaper()">uriQueryStringEscaper</a></strong>()</code>
+<div class="block">Returns an <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java chars so they can be
+ safely included in URI query string segments.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#xmlContentEscaper()">xmlContentEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
+ string so it can safely be included in an XML document in element content.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#xmlEscaper()">xmlEscaper</a></strong>()</code>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an XML document in either element
- content or attribute values.</TD>
-</TR>
-</TABLE>
-&nbsp;<A NAME="methods_inherited_from_class_java.lang.Object"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#EEEEFF" CLASS="TableSubHeadingColor">
-<TH ALIGN="left"><B>Methods inherited from class java.lang.<A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</A></B></TH>
-</TR>
-<TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</A>, <A HREF="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</A></CODE></TD>
-</TR>
-</TABLE>
-&nbsp;
-<P>
-
+ content or attribute values.</div>
+</td>
+</tr>
+</table>
+<ul class="blockList">
+<li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;java.lang.<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></h3>
+<code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#clone()" title="class or interface in java.lang">clone</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#equals(java.lang.Object)" title="class or interface in java.lang">equals</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#finalize()" title="class or interface in java.lang">finalize</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#getClass()" title="class or interface in java.lang">getClass</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#hashCode()" title="class or interface in java.lang">hashCode</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notify()" title="class or interface in java.lang">notify</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#notifyAll()" title="class or interface in java.lang">notifyAll</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#toString()" title="class or interface in java.lang">toString</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait()" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long)" title="class or interface in java.lang">wait</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true#wait(long, int)" title="class or interface in java.lang">wait</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="details">
+<ul class="blockList">
+<li class="blockList">
 <!-- ============ METHOD DETAIL ========== -->
-
-<A NAME="method_detail"><!-- --></A>
-<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
-<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
-<TH ALIGN="left" COLSPAN="1"><FONT SIZE="+2">
-<B>Method Detail</B></FONT></TH>
-</TR>
-</TABLE>
-
-<A NAME="nullEscaper()"><!-- --></A><H3>
-nullEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>nullEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> that does no escaping.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="xmlEscaper()"><!-- --></A><H3>
-xmlEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>xmlEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+<ul class="blockList">
+<li class="blockList"><a name="method_detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="nullEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>nullEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;nullEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> that does no escaping.</div>
+</li>
+</ul>
+<a name="xmlEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>xmlEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;xmlEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an XML document in either element
  content or attribute values.
 
  <p><b>Note</b></p>: silently removes null-characters and control
- characters, as there is no way to represent them in XML.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="xmlContentEscaper()"><!-- --></A><H3>
-xmlContentEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>xmlContentEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ characters, as there is no way to represent them in XML.</div>
+</li>
+</ul>
+<a name="xmlContentEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>xmlContentEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;xmlContentEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an XML document in element content.
 
  <p><b>Note</b></p>: double and single quotes are not escaped, so it is not
  safe to use this escaper to escape attribute values. Use the
- <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#xmlEscaper()"><CODE>xmlEscaper()</CODE></A> escaper to escape attribute values or if you are
+ <a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#xmlEscaper()"><code>xmlEscaper()</code></a> escaper to escape attribute values or if you are
  unsure. Also silently removes non-whitespace control characters, as there
- is no way to represent them in XML.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="htmlEscaper()"><!-- --></A><H3>
-htmlEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>htmlEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ is no way to represent them in XML.</div>
+</li>
+</ul>
+<a name="htmlEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>htmlEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;htmlEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an HTML document in either element
  content or attribute values.
 
  <p><b>Note</b></p>: alters non-ASCII and control characters.
 
  The entity list was taken from:
- <a href="http://www.w3.org/TR/html4/sgml/entities.html">here</a>
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="asciiHtmlEscaper()"><!-- --></A><H3>
-asciiHtmlEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>asciiHtmlEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ <a href="http://www.w3.org/TR/html4/sgml/entities.html">here</a></div>
+</li>
+</ul>
+<a name="asciiHtmlEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>asciiHtmlEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;asciiHtmlEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in an HTML document in either element
  content or attribute values.
 
- <p><b>Note</b></p>: does not alter non-ASCII and control characters.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="uriEscaper()"><!-- --></A><H3>
-uriEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A> <B>uriEscaper</B>()</PRE>
-<DL>
-<DD>Returns an <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
+ <p><b>Note</b></p>: does not alter non-ASCII and control characters.</div>
+</li>
+</ul>
+<a name="uriEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>uriEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a>&nbsp;uriEscaper()</pre>
+<div class="block">Returns an <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java chars so they can be
  safely included in URIs. For details on escaping URIs, see section 2.4 of
  <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>.
 
@@ -406,27 +360,24 @@ public static <A HREF="../../../../../../com/google/template/soy/internal/base/E
  <p>This escaper has identical behavior to (but is potentially much faster
  than):
  <ul>
- <li><CODE>com.google.common.net.UriEncoder#encode(String)</CODE>
- <li><CODE>com.google.common.net.UriEncoder#encode(String,java.nio.charset.Charset)</CODE>
+ <li><code>com.google.common.net.UriEncoder#encode(String)</code>
+ <li><code>com.google.common.net.UriEncoder#encode(String,java.nio.charset.Charset)</code>
      with the UTF_8 Charset
- <li><A HREF="http://java.sun.com/javase/6/docs/api/java/net/URLEncoder.html?is-external=true#encode(java.lang.String, java.lang.String)" title="class or interface in java.net"><CODE>URLEncoder.encode(String, String)</CODE></A>
+ <li><a href="http://java.sun.com/javase/6/docs/api/java/net/URLEncoder.html?is-external=true#encode(java.lang.String, java.lang.String)" title="class or interface in java.net"><code>URLEncoder.encode(String, String)</code></a>
      with the encoding name "UTF-8"
  </ul>
 
- <p>This method is equivalent to <code>uriEscaper(true)</code>.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="uriPathEscaper()"><!-- --></A><H3>
-uriPathEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A> <B>uriPathEscaper</B>()</PRE>
-<DL>
-<DD>Returns an <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
+ <p>This method is equivalent to <code>uriEscaper(true)</code>.</div>
+</li>
+</ul>
+<a name="uriPathEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>uriPathEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a>&nbsp;uriPathEscaper()</pre>
+<div class="block">Returns an <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java chars so they can be
  safely included in URI path segments. For details on escaping URIs, see
  section 2.4 of <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
 
@@ -449,20 +400,17 @@ public static <A HREF="../../../../../../com/google/template/soy/internal/base/E
  hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
  RFC 3986</a>:<br>
  <i>"URI producers and normalizers should use uppercase hexadecimal digits
- for all percent-encodings."</i>
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="uriQueryStringEscaper()"><!-- --></A><H3>
-uriQueryStringEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A> <B>uriQueryStringEscaper</B>()</PRE>
-<DL>
-<DD>Returns an <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java chars so they can be
+ for all percent-encodings."</i></div>
+</li>
+</ul>
+<a name="uriQueryStringEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>uriQueryStringEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a>&nbsp;uriQueryStringEscaper()</pre>
+<div class="block">Returns an <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java chars so they can be
  safely included in URI query string segments. When the query string
  consists of a sequence of name=value pairs separated by &amp;, the names
  and values should be individually encoded. If you escape an entire query
@@ -496,20 +444,17 @@ public static <A HREF="../../../../../../com/google/template/soy/internal/base/E
  hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
  RFC 3986</a>:<br>
  <i>"URI producers and normalizers should use uppercase hexadecimal digits
- for all percent-encodings."</i>
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="uriEscaper(boolean)"><!-- --></A><H3>
-uriEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A> <B>uriEscaper</B>(boolean&nbsp;plusForSpace)</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java characters so they can
+ for all percent-encodings."</i></div>
+</li>
+</ul>
+<a name="uriEscaper(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>uriEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a>&nbsp;uriEscaper(boolean&nbsp;plusForSpace)</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java characters so they can
  be safely included in URIs. For details on escaping URIs, see section 2.4
  of <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>.
 
@@ -530,25 +475,23 @@ public static <A HREF="../../../../../../com/google/template/soy/internal/base/E
  hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
  RFC 3986</a>:<br>
  <i>"URI producers and normalizers should use uppercase hexadecimal digits
- for all percent-encodings."</i>
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>plusForSpace</CODE> - if <code>true</code> space is escaped to <code>+</code> otherwise
+ for all percent-encodings."</i></div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>plusForSpace</code> - if <code>true</code> space is escaped to <code>+</code> otherwise
         it is escaped to <code>%20</code>. Although common, the escaping of
         spaces as plus signs has a very ambiguous status in the relevant
         specifications. You should prefer <code>%20</code> unless you are doing
         exact character-by-character comparisons of URLs and backwards
-        compatibility requires you to use plus signs.<DT><B>See Also:</B><DD><A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper()"><CODE>uriEscaper()</CODE></A></DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="cppUriEscaper()"><!-- --></A><H3>
-cppUriEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</A> <B>cppUriEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><CODE>Escaper</CODE></A> instance that escapes Java characters in a manner
+        compatibility requires you to use plus signs.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper()"><code>uriEscaper()</code></a></dd></dl>
+</li>
+</ul>
+<a name="cppUriEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>cppUriEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base">Escaper</a>&nbsp;cppUriEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><code>Escaper</code></a> instance that escapes Java characters in a manner
  compatible with the C++ webutil/url URL class (the <code>kGoogle1Escape</code>
  set).
 
@@ -575,101 +518,83 @@ public static <A HREF="../../../../../../com/google/template/soy/internal/base/E
  compliant</em> with <a href="http://www.ietf.org/rfc/rfc2396.txt">
  RFC 2396</a>. Specifically it will not escape "/", ":" and ",". This is
  only provided for certain limited use cases and you should favor using
- <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper()"><CODE>uriEscaper()</CODE></A> whenever possible.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="javaStringEscaper()"><!-- --></A><H3>
-javaStringEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>javaStringEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ <a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#uriEscaper()"><code>uriEscaper()</code></a> whenever possible.</div>
+</li>
+</ul>
+<a name="javaStringEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>javaStringEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;javaStringEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in a Java string literal.
 
  <p><b>Note</b></p>: does not escape single quotes, so use the escaper
- returned by <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaCharEscaper()"><CODE>javaCharEscaper()</CODE></A> if you are generating char
- literals or if you are unsure.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="javaCharEscaper()"><!-- --></A><H3>
-javaCharEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>javaCharEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters in a
+ returned by <a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaCharEscaper()"><code>javaCharEscaper()</code></a> if you are generating char
+ literals or if you are unsure.</div>
+</li>
+</ul>
+<a name="javaCharEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>javaCharEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;javaCharEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters in a
  string so it can safely be included in a Java char or string literal. The
  behavior of this escaper is the same as that of the
- <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaStringEscaper()"><CODE>javaStringEscaper()</CODE></A>, except it also escapes single quotes.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="javaStringUnicodeEscaper()"><!-- --></A><H3>
-javaStringUnicodeEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>javaStringUnicodeEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that replaces non-ASCII characters
+ <a href="../../../../../../com/google/template/soy/internal/base/CharEscapers.html#javaStringEscaper()"><code>javaStringEscaper()</code></a>, except it also escapes single quotes.</div>
+</li>
+</ul>
+<a name="javaStringUnicodeEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>javaStringUnicodeEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;javaStringUnicodeEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that replaces non-ASCII characters
  in a string with their Unicode escape sequences (<code>\\uxxxx</code> where
- <code>xxxx</code> is a hex number). Existing escape sequences won't be affected.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="pythonEscaper()"><!-- --></A><H3>
-pythonEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>pythonEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes special characters from
+ <code>xxxx</code> is a hex number). Existing escape sequences won't be affected.</div>
+</li>
+</ul>
+<a name="pythonEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>pythonEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;pythonEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes special characters from
  a string so it can safely be included in a Python string literal. Does not
- have any special handling for non-ASCII characters.
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="javascriptEscaper()"><!-- --></A><H3>
-javascriptEscaper</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>javascriptEscaper</B>()</PRE>
-<DL>
-<DD>Returns a <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that escapes non-ASCII characters in
+ have any special handling for non-ASCII characters.</div>
+</li>
+</ul>
+<a name="javascriptEscaper()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>javascriptEscaper</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;javascriptEscaper()</pre>
+<div class="block">Returns a <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that escapes non-ASCII characters in
  a string so it can safely be included in a Javascript string literal.
  Non-ASCII characters are replaced with their ASCII javascript escape
- sequences (e.g., \\uhhhh or \xhh).
-<P>
-<DD><DL>
-</DL>
-</DD>
-</DL>
-<HR>
-
-<A NAME="fallThrough(com.google.template.soy.internal.base.CharEscaper, com.google.template.soy.internal.base.CharEscaper)"><!-- --></A><H3>
-fallThrough</H3>
-<PRE>
-public static <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A> <B>fallThrough</B>(<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A>&nbsp;primary,
-                                      <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</A>&nbsp;secondary)</PRE>
-<DL>
-<DD>Returns a composite <A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><CODE>CharEscaper</CODE></A> instance that tries to escape
+ sequences (e.g., \\uhhhh or \xhh).</div>
+</li>
+</ul>
+<a name="fallThrough(com.google.template.soy.internal.base.CharEscaper, com.google.template.soy.internal.base.CharEscaper)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>fallThrough</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;fallThrough(<a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;primary,
+                      <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base">CharEscaper</a>&nbsp;secondary)</pre>
+<div class="block">Returns a composite <a href="../../../../../../com/google/template/soy/internal/base/CharEscaper.html" title="class in com.google.template.soy.internal.base"><code>CharEscaper</code></a> instance that tries to escape
  characters using a primary <code>CharEscaper</code> first and falls back to a
  secondary one if there is no escaping.
 
@@ -681,76 +606,80 @@ public static <A HREF="../../../../../../com/google/template/soy/internal/base/C
  will not be used at all for that character; the escaped output of the
  primary is not run through the secondary. For a case where you would like
  to first escape with one escaper, and then with another, it is recommended
- that you call each escaper in order.
-<P>
-<DD><DL>
-<DT><B>Parameters:</B><DD><CODE>primary</CODE> - The primary <code>CharEscaper</code> to use<DD><CODE>secondary</CODE> - The secondary <code>CharEscaper</code> to use if the first one
-     has no escaping rule for a character
-<DT><B>Throws:</B>
-<DD><CODE><A HREF="http://java.sun.com/javase/6/docs/api/java/lang/NullPointerException.html?is-external=true" title="class or interface in java.lang">NullPointerException</A></CODE> - if any of the arguments is null</DL>
-</DD>
-</DL>
+ that you call each escaper in order.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>primary</code> - The primary <code>CharEscaper</code> to use</dd><dd><code>secondary</code> - The secondary <code>CharEscaper</code> to use if the first one
+     has no escaping rule for a character</dd>
+<dt><span class="strong">Throws:</span></dt>
+<dd><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/NullPointerException.html?is-external=true" title="class or interface in java.lang">NullPointerException</a></code> - if any of the arguments is null</dd></dl>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <!-- ========= END OF CLASS DATA ========= -->
-<HR>
-
-
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
-<A NAME="navbar_bottom"><!-- --></A>
-<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
-<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
-<TR>
-<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
-<A NAME="navbar_bottom_firstrow"><!-- --></A>
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
-  <TR ALIGN="center" VALIGN="top">
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-summary.html"><FONT CLASS="NavBarFont1"><B>Package</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Class</B></FONT>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="package-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
-  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="../../../../../../help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
-  </TR>
-</TABLE>
-</TD>
-<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
-</EM>
-</TD>
-</TR>
-
-<TR>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/CharEscaperBuilder.html" title="class in com.google.template.soy.internal.base"><B>PREV CLASS</B></A>&nbsp;
-&nbsp;<A HREF="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><B>NEXT CLASS</B></A></FONT></TD>
-<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
-  <A HREF="../../../../../../index.html?com/google/template/soy/internal/base/CharEscapers.html" target="_top"><B>FRAMES</B></A>  &nbsp;
-&nbsp;<A HREF="CharEscapers.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
-&nbsp;<SCRIPT type="text/javascript">
-  <!--
+<div class="bottomNav"><a name="navbar_bottom">
+<!--   -->
+</a><a href="#skip-navbar_bottom" title="Skip navigation links"></a><a name="navbar_bottom_firstrow">
+<!--   -->
+</a>
+<ul class="navList" title="Navigation">
+<li><a href="../../../../../../overview-summary.html">Overview</a></li>
+<li><a href="package-summary.html">Package</a></li>
+<li class="navBarCell1Rev">Class</li>
+<li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../../help-doc.html">Help</a></li>
+</ul>
+</div>
+<div class="subNav">
+<ul class="navList">
+<li><a href="../../../../../../com/google/template/soy/internal/base/CharEscaperBuilder.html" title="class in com.google.template.soy.internal.base"><span class="strong">Prev Class</span></a></li>
+<li><a href="../../../../../../com/google/template/soy/internal/base/Escaper.html" title="interface in com.google.template.soy.internal.base"><span class="strong">Next Class</span></a></li>
+</ul>
+<ul class="navList">
+<li><a href="../../../../../../index.html?com/google/template/soy/internal/base/CharEscapers.html" target="_top">Frames</a></li>
+<li><a href="CharEscapers.html" target="_top">No Frames</a></li>
+</ul>
+<ul class="navList" id="allclasses_navbar_bottom">
+<li><a href="../../../../../../allclasses-noframe.html">All Classes</a></li>
+</ul>
+<div>
+<script type="text/javascript"><!--
+  allClassesLink = document.getElementById("allclasses_navbar_bottom");
   if(window==top) {
-    document.writeln('<A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>');
+    allClassesLink.style.display = "block";
+  }
+  else {
+    allClassesLink.style.display = "none";
   }
   //-->
-</SCRIPT>
-<NOSCRIPT>
-  <A HREF="../../../../../../allclasses-noframe.html"><B>All Classes</B></A>
-</NOSCRIPT>
-
-
-</FONT></TD>
-</TR>
-<TR>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-  SUMMARY:&nbsp;NESTED&nbsp;|&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_summary">METHOD</A></FONT></TD>
-<TD VALIGN="top" CLASS="NavBarCell3"><FONT SIZE="-2">
-DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHOD</A></FONT></TD>
-</TR>
-</TABLE>
-<A NAME="skip-navbar_bottom"></A>
+</script>
+</div>
+<div>
+<ul class="subNavList">
+<li>Summary:&nbsp;</li>
+<li>Nested&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li>Constr&nbsp;|&nbsp;</li>
+<li><a href="#method_summary">Method</a></li>
+</ul>
+<ul class="subNavList">
+<li>Detail:&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
+<li>Constr&nbsp;|&nbsp;</li>
+<li><a href="#method_detail">Method</a></li>
+</ul>
+</div>
+<a name="skip-navbar_bottom">
+<!--   -->
+</a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-
-<HR>
-
+<p class="legalCopy"><small>
         
           <div id="footer">
             <div id="footerlogo" style="float:left">
@@ -767,6 +696,6 @@ DETAIL:&nbsp;FIELD&nbsp;|&nbsp;CONSTR&nbsp;|&nbsp;<A HREF="#method_detail">METHO
             </div>
           </div>
         
-      
-</BODY>
-</HTML>
+      </small></p>
+</body>
+</html>

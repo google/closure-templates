@@ -16,18 +16,21 @@
 
 package com.google.template.soy.soyparse;
 
-import com.google.template.soy.base.IdGenerator;
-import com.google.template.soy.base.IncrementingIdGenerator;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprtree.DataRefNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -45,6 +48,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -58,10 +62,11 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoyNode.SyntaxVersion;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
+import com.google.template.soy.soytree.XidNode;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
@@ -75,6 +80,43 @@ import java.util.List;
  * @author Kai Huang
  */
 public class TemplateParserTest extends TestCase {
+
+
+  public void testMaybeWhitespaceEmitsLineNumberOnError() {
+
+    // Check that the line number is included.
+    try {
+      parseMaybeWhitespace("ErrorMessage", "foo");
+      fail("Should have failed with a ParseException");
+    } catch (ParseException pe) {
+      assertTrue("Expected [Found on line 1], received: " + pe.getMessage(),
+          pe.getMessage().contains("Found on line 1"));
+    }
+
+    // The line number is correct following a newline.
+    try {
+      parseMaybeWhitespace("ErrorMessage", "\nfoo");
+      fail("Should have failed with a ParseException");
+    } catch (ParseException pe) {
+      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
+          pe.getMessage().contains("Found on line 2"));
+    }
+
+    // The line number is correct even when the template doesn't start on line 1.
+    try {
+      IdGenerator nodeIdGen = new IncrementingIdGenerator();
+      (new TemplateParser(nodeIdGen, "foo", "test.soy", /* start line number */ 2))
+          .MaybeWhitespace("ErrorMessage");
+      fail("Should have failed with a ParseException");
+    } catch (ParseException pe) {
+      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
+          pe.getMessage().contains("Found on line 2"));
+    }
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Tests for recognition only.
 
 
   public void testRecognizeSoyTag() throws Exception {
@@ -107,13 +149,124 @@ public class TemplateParserTest extends TestCase {
 
     assertIsTemplateBody("blah>blah<blah<blah>blah>blah>blah>blah<blah");
     assertIsTemplateBody("{sp}{nil}{\\n}{{\\r}}{\\t}{lb}{{rb}}");
-    assertIsTemplateBody("blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" +
-                         "}}}}}}}}}{ { {{/literal}blah");
+    assertIsTemplateBody(
+        "blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" +
+            "}}}}}}}}}{ { {{/literal}blah");
 
     assertIsNotTemplateBody("{sp ace}");
     assertIsNotTemplateBody("{/literal}");
-    assertIsNotTemplateBody("{literal attrib=\"value\"}");
+    assertIsNotTemplateBody("{literal attr=\"value\"}");
     assertIsNotTemplateBody("{literal}{literal}{/literal}");
+  }
+
+
+  public void testRecognizeComments() throws Exception {
+
+    assertIsTemplateBody("" +
+        "blah // }\n" +
+        "{$boo}{msg desc=\"\"} //}\n" +
+        "{/msg} // {/msg}\n" +
+        "{foreach $item in $items}\t// }\n" +
+        "{$item.name}{/foreach} //{{{{\n");
+
+    assertIsTemplateBody("" +
+        "blah /* } */\n" +
+        "{msg desc=\"\"} /*}*/{$boo}\n" +
+        "/******************/ {/msg}\n" +
+        "/* {}} { }* }* / }/ * { **}  //}{ { } {\n" +
+        "\n  } {//*} {* /} { /* /}{} {}/ } **}}} */\n" +
+        "{foreach $item in $items} /* }\n" +
+        "{{{{{*/{$item.name}{/foreach}/*{{{{*/\n");
+
+    assertIsTemplateBody("" +
+        "blah /** } */\n" +
+        "{msg desc=\"\"} /**}*/{$boo}\n" +
+        "/******************/ {/msg}\n" +
+        "/** {}} { }* }* / }/ * { **}  //}{ { } {\n" +
+        "\n  } {//**} {* /} { /** /}{} {}/ } **}}} */\n" +
+        "{foreach $item in $items} /** }\n" +
+        "{{{{{*/{$item.name}{/foreach}/**{{{{*/\n");
+
+    assertIsTemplateBody("//}\n");
+    assertIsTemplateBody(" //}\n");
+    assertIsTemplateBody("\n//}\n");
+    assertIsTemplateBody("\n //}\n");
+
+    assertIsTemplateBody("/*}*/\n");
+    assertIsTemplateBody(" /*}*/\n");
+    assertIsTemplateBody("\n/*}\n}*/\n");
+    assertIsTemplateBody("\n /*}\n*/\n");
+
+    assertIsTemplateBody("/**}*/\n");
+    assertIsTemplateBody(" /**}*/\n");
+    assertIsTemplateBody("\n/**}\n}*/\n");
+    assertIsTemplateBody("\n /**}\n*/\n");
+
+    assertIsNotTemplateBody("{blah /* { */ blah}");
+    assertIsNotTemplateBody("{foreach $item // }\n" +
+                            "         in $items}\n" +
+                            "{$item}{/foreach}\n");
+    assertIsNotTemplateBody("aa////}\n");
+    assertIsNotTemplateBody("{nil}//}\n");
+  }
+
+
+  public void testRecognizeHeaderDecls() throws Exception {
+
+    assertIsTemplateContent("{@param ...}\n");
+    assertIsTemplateContent("{@param ...}\nBODY");
+    assertIsTemplateContent("  {@param ...}\n  BODY");
+    assertIsTemplateContent("\n{@param ...}\n");
+    assertIsTemplateContent("  \n{@param ...}\nBODY");
+    assertIsTemplateContent("  \n  {@param ...\n  ...}\n  BODY");
+
+    assertIsTemplateContent("" +
+        "  {@param ...}  {@param ...}\n" +
+        "  {@param ...}  /** ... */\n" +  // doc comment
+        "  {@param ...}  // ...\n" +  // nondoc comment
+        "  {@param ...\n" +
+        "      ...}  /** ...\n" +  // doc comment
+        "      ...\n" +
+        "      ... */\n" +
+        "  /*\n" +  // nondoc comment
+        "   * ...\n" +
+        "   */\n" +
+        "  /* ... */\n" +  // nondoc comment
+        "  {@param ...}  /**\n" +  // doc comment
+        "      ... */  \n" +
+        "  {@param ...}  /*\n" +  // nondoc comment
+        "      ... */  \n" +
+        "\n" +
+        "  BODY\n");
+
+    assertIsTemplateContent("" +
+        "  /** */{@param ...}\n" +  // doc comment
+        "  /** \n" +  // doc comment
+        "   */{@param ...}\n" +
+        "\n" +
+        "  BODY\n");
+
+    assertIsNotTemplateContent("{@param ...}");
+    assertIsNotTemplateContent("{@ param ...}\n");
+    assertIsNotTemplateContent("{@foo}\n");
+    assertIsNotTemplateContent("{@foo ...}\n");
+
+    assertIsTemplateContent("" +
+        "  /** ... */\n" +  // doc comment
+        "  {@param ...}\n" +
+        "  BODY\n");
+    assertIsTemplateContent("" +
+        "  {@param ...}\n" +
+        "  /**\n" +  // doc comment
+        "   * ...\n" +
+        "   */\n" +
+        "  {@param ...}\n" +
+        "  BODY\n");
+    assertIsTemplateContent("" +
+        "  {@param ...}  /*\n" +
+        "      */  /** ... */\n" +  // doc comment
+        "  {@param ...}\n" +
+        "  BODY\n");
   }
 
 
@@ -123,8 +276,15 @@ public class TemplateParserTest extends TestCase {
         "{msg desc=\"blah\" hidden=\"true\"}\n" +
         "  {$boo} is a <a href=\"{$fooUrl}\">{$foo}</a>.\n" +
         "{/msg}");
+    assertIsTemplateBody("" +
+        "{msg meaning=\"verb\" desc=\"\"}\n" +
+        "  Archive\n" +
+        "{fallbackmsg desc=\"\"}\n" +
+        "  Archive\n" +
+        "{/msg}");
     assertIsTemplateBody("{$aaa + 1}{print $bbb.ccc[$ddd] |noescape}");
     assertIsTemplateBody("{css selected-option}{css CSS_SELECTED_OPTION}{css $cssSelectedOption}");
+    assertIsTemplateBody("{xid selected-option}{xid SELECTED_OPTION_ID}");
     assertIsTemplateBody("{if $boo}foo{elseif $goo}moo{else}zoo{/if}");
     assertIsTemplateBody("" +
         "  {switch $boo}\n" +
@@ -177,57 +337,38 @@ public class TemplateParserTest extends TestCase {
     assertIsTemplateBody("{let $foo}Hello{/let}\n");
     assertIsTemplateBody("{let $foo kind=\"html\"}Hello{/let}\n");
 
+    assertIsNotTemplateBody("{namespace}");
+    assertIsNotTemplateBody("{template}\n" + "blah\n" + "{/template}\n");
     assertIsNotTemplateBody("{msg}blah{/msg}");
     assertIsNotTemplateBody("{/msg}");
     assertIsNotTemplateBody("{msg desc=\"\"}<a href=http://www.google.com{/msg}");
     assertIsNotTemplateBody("{msg desc=\"\"}blah{msg desc=\"\"}bleh{/msg}bluh{/msg}");
     assertIsNotTemplateBody("{msg desc=\"\"}blah{/msg blah}");
-    assertIsNotTemplateBody("{namespace}");
-    assertIsNotTemplateBody("{template}\n" + "blah\n" + "{/template}\n");
     assertIsNotTemplateBody("{msg}<blah<blah>{/msg}");
     assertIsNotTemplateBody("{msg}blah>blah{/msg}");
     assertIsNotTemplateBody("{msg}<blah>blah>{/msg}");
+    assertIsNotTemplateBody("" +
+        "{msg meaning=\"verb\" desc=\"\"}\n" +
+        "  Archive\n" +
+        "{fallbackmsg desc=\"\"}\n" +
+        "  Archive\n" +
+        "{fallbackmsg desc=\"\"}\n" +
+        "  Store\n" +
+        "{/msg}");
     assertIsNotTemplateBody("{print $boo /}");
     assertIsNotTemplateBody("{if true}aaa{else/}bbb{/if}");
     assertIsNotTemplateBody("{call .aaa.bbb /}");
     assertIsNotTemplateBody("{delcall name=\"ddd.eee\"}{param foo: 0}{/call}");
     assertIsNotTemplateBody("{delcall .dddEee /}");
-    assertIsNotTemplateBody("{msg desc=\"\"}{$boo phname=\"boo.foo\"}{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}<br phname=\"boo-foo\" />{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}{call .boo phname=\"boo\" phname=\"boo\" /}{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}<br phname=\"break\" phname=\"break\" />{/msg}");
     assertIsNotTemplateBody("{call name=\".aaa\"}{param boo kind=\"html\": 123 /}{/call}\n");
     assertIsNotTemplateBody("{log}");
     assertIsNotTemplateBody("{log 'Blah blah.'}");
     assertIsNotTemplateBody("{let $foo kind=\"html\" : 1 + 1/}\n");
-  }
-
-
-  public void testRecognizeComments() throws Exception {
-
-    assertIsTemplateBody("blah // }\n" +
-                         "{$boo}{msg desc=\"\"} //}\n" +
-                         "{/msg} // {/msg}\n" +
-                         "{foreach $item in $items}\t// }\n" +
-                         "{$item.name}{/foreach} //{{{{\n");
-    assertIsTemplateBody("blah /* } */\n" +
-                         "{msg desc=\"\"} /*}*/{$boo}\n" +
-                         "/******************/ {/msg}\n" +
-                         "/* {}} { }* }* / }/ * { **}  //}{ { } {\n" +
-                         "\n  } {//*} {* /} { /* /}{} {}/ } **}}} */\n" +
-                         "{foreach $item in $items} /* }\n" +
-                         "{{{{{*/{$item.name}{/foreach}/*{{{{*/\n");
-    assertIsTemplateBody("//}\n");
-    assertIsTemplateBody(" //}\n");
-    assertIsTemplateBody("\n//}\n");
-    assertIsTemplateBody("\n //}\n");
-
-    assertIsNotTemplateBody("{blah /* { */ blah}");
-    assertIsNotTemplateBody("{foreach $item // }\n" +
-                            "         in $items}\n" +
-                            "{$item}{/foreach}\n");
-    assertIsNotTemplateBody("aa////}\n");
-    assertIsNotTemplateBody("{nil}//}\n");
+    assertIsNotTemplateBody("{xid a.b-c}");
+    assertIsNotTemplateBody("{msg desc=\"\"}{$boo phname=\"boo.foo\"}{/msg}");
+    assertIsNotTemplateBody("{msg desc=\"\"}<br phname=\"boo-foo\" />{/msg}");
+    assertIsNotTemplateBody("{msg desc=\"\"}{call .boo phname=\"boo\" phname=\"boo\" /}{/msg}");
+    assertIsNotTemplateBody("{msg desc=\"\"}<br phname=\"break\" phname=\"break\" />{/msg}");
   }
 
 
@@ -462,6 +603,10 @@ public class TemplateParserTest extends TestCase {
   }
 
 
+  // -----------------------------------------------------------------------------------------------
+  // Tests for recognition and parse results.
+
+
   public void testParseRawText() throws Exception {
 
     String templateBody =
@@ -487,18 +632,59 @@ public class TemplateParserTest extends TestCase {
 
   public void testParseComments() throws Exception {
 
-    String templateBody =
+    String templateBody = "" +
         "  {sp}  // {sp}\n" +  // first {sp} outside of comments
         "  /* {sp} {sp} */  // {sp}\n" +
+        "  /** {sp} {sp} */  // {sp}\n" +
         "  /* {sp} */{sp}/* {sp} */\n" +  // middle {sp} outside of comments
+        "  /** {sp} */{sp}/** {sp} */\n" +  // middle {sp} outside of comments
         "  /* {sp}\n" +
         "  {sp} */{sp}\n" +  // last {sp} outside of comments
+        "  /** {sp}\n" +
+        "  {sp} */{sp}\n" +  // last {sp} outside of comments
+        "  {sp}/* {sp}\n" +  // first {sp} outside of comments
+        "  {sp} */\n" +
+        "  {sp}/** {sp}\n" +  // first {sp} outside of comments
+        "  {sp} */\n" +
         "  // {sp} /* {sp} */\n" +
+        "  // {sp} /** {sp} */\n" +
         "  http://www.google.com\n";  // not a comment if "//" preceded by a non-space such as ":"
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(1, nodes.size());
-    assertEquals("   http://www.google.com", ((RawTextNode) nodes.get(0)).getRawText());
+    assertEquals("       http://www.google.com", ((RawTextNode) nodes.get(0)).getRawText());
+  }
+
+
+  public void testParseHeaderDecls() throws Exception {
+
+    String templateHeaderAndBody = "" +
+        "  {@param boo: string}  // Something scary. (Not doc comment.)\n" +
+        "  {@param foo: list<int>}  /** Something random. */\n" +
+        "  {@param goo: string}/** Something\n" +
+        "      slimy. */\n" +
+        "  /* Something strong. (Not doc comment.) */" +
+        "  // {@param commentedOut: string}\n" +
+        "  {@param moo: string}{@param too: string}\n" +
+        "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n" +
+        "  BODY\n";
+
+    Pair<List<DeclInfo>, List<StandaloneNode>> declInfosAndNodes =
+        parseTemplateContent(templateHeaderAndBody);
+    assertEquals(7, declInfosAndNodes.first.size());
+    assertEquals("BODY", declInfosAndNodes.second.get(0).toSourceString());
+
+    List<DeclInfo> declInfos = declInfosAndNodes.first;
+    assertEquals("@param", declInfos.get(0).cmdName);
+    assertEquals("boo: string", declInfos.get(0).cmdText);
+    assertEquals(null, declInfos.get(0).soyDoc);
+    assertEquals("foo: list<int>", declInfos.get(1).cmdText);
+    assertEquals("Something random.", declInfos.get(1).soyDoc);
+    assertEquals("Something\n      slimy.", declInfos.get(2).soyDoc);
+    assertEquals(null, declInfos.get(3).soyDoc);
+    assertEquals(null, declInfos.get(4).soyDoc);
+    assertEquals("Something exciting.", declInfos.get(5).soyDoc);
+    assertEquals(null, declInfos.get(6).soyDoc);
   }
 
 
@@ -506,46 +692,47 @@ public class TemplateParserTest extends TestCase {
 
     String templateBody =
         "  {$boo.foo}{$boo.foo}\n" +
-        "  {$goo + 1 |noescape}\n" +  // note 'noescape' is V1 syntax
+        "  {$goo + 1 |noescape}\n" +  // note '|noescape' is allowed in V2_0 but not V2_1
         "  {print 'blah    blahblahblah' |escapeHtml|insertWordBreaks:8}\n";
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(4, nodes.size());
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
-    assertEquals(SyntaxVersion.V2, pn0.getSyntaxVersion());
+    assertTrue(pn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("$boo.foo", pn0.getExprText());
     assertEquals(0, pn0.getChildren().size());
-    assertEquals("FOO", pn0.genBasePlaceholderName());
+    assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
-    assertTrue(pn0.getExprUnion().getExpr().getChild(0) instanceof DataRefNode);
+    assertTrue(pn0.getExprUnion().getExpr().getChild(0) instanceof FieldAccessNode);
 
     PrintNode pn1 = (PrintNode) nodes.get(1);
     assertTrue(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
-    assertTrue(pn1.getExprUnion().getExpr().getChild(0) instanceof DataRefNode);
+    assertTrue(pn1.getExprUnion().getExpr().getChild(0) instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
-    assertEquals(SyntaxVersion.V2, pn2.getSyntaxVersion());
+    assertTrue(pn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("$goo + 1", pn2.getExprText());
     assertEquals(1, pn2.getChildren().size());
     PrintDirectiveNode pn2d0 = pn2.getChild(0);
-    assertEquals(SyntaxVersion.V1, pn2d0.getSyntaxVersion());
+    assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
+    assertFalse(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_1));
     assertEquals("|noAutoescape", pn2d0.getName());
-    assertEquals("XXX", pn2.genBasePlaceholderName());
+    assertEquals("XXX", pn2.genBasePhName());
     assertTrue(pn2.getExprUnion().getExpr().getChild(0) instanceof PlusOpNode);
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
-    assertEquals(SyntaxVersion.V2, pn3.getSyntaxVersion());
+    assertTrue(pn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("'blah    blahblahblah'", pn3.getExprText());
     assertEquals(2, pn3.getChildren().size());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
-    assertEquals(SyntaxVersion.V2, pn3d0.getSyntaxVersion());
+    assertTrue(pn3d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|escapeHtml", pn3d0.getName());
     PrintDirectiveNode pn3d1 = pn3.getChild(1);
-    assertEquals(SyntaxVersion.V2, pn3d1.getSyntaxVersion());
+    assertTrue(pn3d1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|insertWordBreaks", pn3d1.getName());
     assertEquals(8, ((IntegerNode) pn3d1.getArgs().get(0).getChild(0)).getValue());
-    assertEquals("XXX", pn3.genBasePlaceholderName());
+    assertEquals("XXX", pn3.genBasePhName());
     assertTrue(pn3.getExprUnion().getExpr().getChild(0) instanceof StringNode);
 
     assertFalse(pn0.genSamenessKey().equals(pn2.genSamenessKey()));
@@ -566,25 +753,25 @@ public class TemplateParserTest extends TestCase {
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
     assertEquals("$boo.foo", pn0.getExprText());
-    assertEquals("FOO", pn0.genBasePlaceholderName());
+    assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
 
     PrintNode pn1 = (PrintNode) nodes.get(1);
     assertEquals("$boo.foo", pn1.getExprText());
-    assertEquals("BOO_FOO", pn1.genBasePlaceholderName());
+    assertEquals("BOO_FOO", pn1.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
-    assertEquals(SyntaxVersion.V2, pn1.getSyntaxVersion());
+    assertTrue(pn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(0, pn1.getChildren().size());
-    assertTrue(pn1.getExprUnion().getExpr().getChild(0) instanceof DataRefNode);
+    assertTrue(pn1.getExprUnion().getExpr().getChild(0) instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertEquals("$boo.foo", pn2.getExprText());
-    assertEquals("BOO_FOO", pn2.genBasePlaceholderName());
+    assertEquals("BOO_FOO", pn2.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn2.toSourceString());
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertEquals("$boo.foo", pn3.getExprText());
-    assertEquals("BOO_FOO", pn3.genBasePlaceholderName());
+    assertEquals("BOO_FOO", pn3.genBasePhName());
     assertEquals("{$boo.foo phname=\"boo_foo\"}", pn3.toSourceString());
 
     assertFalse(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
@@ -608,6 +795,21 @@ public class TemplateParserTest extends TestCase {
   }
 
 
+  public void testParseXidStmt() throws Exception {
+
+    String templateBody =
+        "{xid selected-option}\n" +
+        "{xid selected.option}\n" +
+        "{xid XID_SELECTED_OPTION}";
+
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    assertEquals(3, nodes.size());
+    assertEquals("selected-option", ((XidNode) nodes.get(0)).getText());
+    assertEquals("selected.option", ((XidNode) nodes.get(1)).getText());
+    assertEquals("XID_SELECTED_OPTION", ((XidNode) nodes.get(2)).getText());
+  }
+
+
   public void testParseMsgStmt() throws Exception {
 
     String templateBody =
@@ -624,7 +826,7 @@ public class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(5, nodes.size());
 
-    MsgNode mn0 = (MsgNode) nodes.get(0);
+    MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
     assertEquals("Tells user's quota usage.", mn0.getDesc());
     assertEquals(null, mn0.getMeaning());
     assertEquals(false, mn0.isHidden());
@@ -638,7 +840,7 @@ public class TemplateParserTest extends TestCase {
     MsgPlaceholderNode mpn3 = (MsgPlaceholderNode) mn0.getChild(3);
     MsgHtmlTagNode mhtn3 = (MsgHtmlTagNode) mpn3.getChild(0);
     assertEquals("a", mhtn3.getLcTagName());
-    assertEquals("START_LINK", mhtn3.genBasePlaceholderName());
+    assertEquals("START_LINK", mhtn3.genBasePhName());
     assertEquals("<a href=\"{$learnMoreUrl}\">", mhtn3.toSourceString());
 
     assertEquals(3, mhtn3.numChildren());
@@ -651,24 +853,25 @@ public class TemplateParserTest extends TestCase {
     MsgPlaceholderNode mpn5 = (MsgPlaceholderNode) mn0.getChild(5);
     MsgHtmlTagNode mhtn5 = (MsgHtmlTagNode) mpn5.getChild(0);
     assertEquals("/a", mhtn5.getLcTagName());
-    assertEquals("END_LINK", mhtn5.genBasePlaceholderName());
+    assertEquals("END_LINK", mhtn5.genBasePhName());
     assertEquals("</A>", mhtn5.toSourceString());
 
     MsgPlaceholderNode mpn6 = (MsgPlaceholderNode) mn0.getChild(6);
     MsgHtmlTagNode mhtn6 = (MsgHtmlTagNode) mpn6.getChild(0);
-    assertEquals("BREAK", mhtn6.genBasePlaceholderName());
-    assertTrue(mpn6.isSamePlaceholderAs((MsgPlaceholderNode) mn0.getChild(7)));
-    assertTrue(! mpn6.isSamePlaceholderAs(mpn5));
-    assertTrue(! mpn5.isSamePlaceholderAs(mpn3));
+    assertEquals("BREAK", mhtn6.genBasePhName());
+    assertTrue(mpn6.shouldUseSameVarNameAs((MsgPlaceholderNode) mn0.getChild(7)));
+    assertTrue(! mpn6.shouldUseSameVarNameAs(mpn5));
+    assertTrue(! mpn5.shouldUseSameVarNameAs(mpn3));
 
-    MsgNode mn1 = (MsgNode) nodes.get(1);
+    MsgFallbackGroupNode mfgn1 = (MsgFallbackGroupNode) nodes.get(1);
+    assertEquals(
+        "{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}", mfgn1.toSourceString());
+    MsgNode mn1 = mfgn1.getChild(0);
     assertEquals("", mn1.getDesc());
     assertEquals("noun", mn1.getMeaning());
     assertEquals(true, mn1.isHidden());
     assertEquals(1, mn1.numChildren());
     assertEquals("Archive", ((RawTextNode) mn1.getChild(0)).getRawText());
-    assertEquals("{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}",
-                 mn1.toSourceString());
   }
 
 
@@ -685,26 +888,26 @@ public class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(1, nodes.size());
 
-    MsgNode mn0 = (MsgNode) nodes.get(0);
+    MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
     assertEquals(6, mn0.numChildren());
 
     MsgPlaceholderNode mpn0 = (MsgPlaceholderNode) mn0.getChild(0);
     MsgHtmlTagNode mhtn0 = (MsgHtmlTagNode) mpn0.getChild(0);
     assertEquals("a", mhtn0.getLcTagName());
-    assertEquals("BEGIN_LEARN_MORE_LINK", mhtn0.genBasePlaceholderName());
+    assertEquals("BEGIN_LEARN_MORE_LINK", mhtn0.genBasePhName());
     assertEquals(
         "<a href=\"{$learnMoreUrl}\" phname=\"beginLearnMoreLink\">", mhtn0.toSourceString());
 
     MsgPlaceholderNode mpn2 = (MsgPlaceholderNode) mn0.getChild(2);
     MsgHtmlTagNode mhtn2 = (MsgHtmlTagNode) mpn2.getChild(0);
     assertEquals("/a", mhtn2.getLcTagName());
-    assertEquals("END_LEARN_MORE_LINK", mhtn2.genBasePlaceholderName());
+    assertEquals("END_LEARN_MORE_LINK", mhtn2.genBasePhName());
     assertEquals("</A phname=\"end_LearnMore_LINK\">", mhtn2.toSourceString());
 
     MsgPlaceholderNode mpn3 = (MsgPlaceholderNode) mn0.getChild(3);
     MsgHtmlTagNode mhtn3 = (MsgHtmlTagNode) mpn3.getChild(0);
     assertEquals("br", mhtn3.getLcTagName());
-    assertEquals("BREAK_TAG", mhtn3.genBasePlaceholderName());
+    assertEquals("BREAK_TAG", mhtn3.genBasePhName());
     assertEquals("<br  phname=\"breakTag\"/>", mhtn3.toSourceString());
 
     MsgPlaceholderNode mpn4 = (MsgPlaceholderNode) mn0.getChild(4);
@@ -713,7 +916,7 @@ public class TemplateParserTest extends TestCase {
     MsgPlaceholderNode mpn5 = (MsgPlaceholderNode) mn0.getChild(5);
     MsgHtmlTagNode mhtn5 = (MsgHtmlTagNode) mpn5.getChild(0);
     assertEquals("br", mhtn5.getLcTagName());
-    assertEquals("BREAK_TAG", mhtn5.genBasePlaceholderName());
+    assertEquals("BREAK_TAG", mhtn5.genBasePhName());
     assertEquals("<br  phname=\"break_tag\"/>", mhtn5.toSourceString());
 
     assertFalse(mhtn0.genSamenessKey().equals(mhtn2.genSamenessKey()));
@@ -737,7 +940,7 @@ public class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(1, nodes.size());
 
-    MsgNode mn = (MsgNode) nodes.get(0);
+    MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
     assertEquals(5, mn.numChildren());
 
     assertEquals("Blah ", ((RawTextNode) mn.getChild(0)).getRawText());
@@ -767,6 +970,35 @@ public class TemplateParserTest extends TestCase {
     } catch (SoySyntaxException sse) {
       // Test passes.
     }
+  }
+
+
+  public void testParseMsgStmtWithFallback() throws Exception {
+
+    String templateBody = "" +
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\"}\n" +
+        "  Archive\n" +
+        "{fallbackmsg desc=\"\"}\n" +
+        "  Archive\n" +
+        "{/msg}";
+
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    assertEquals(1, nodes.size());
+
+    MsgFallbackGroupNode mfgn = (MsgFallbackGroupNode) nodes.get(0);
+    assertEquals(2, mfgn.numChildren());
+
+    MsgNode mn0 = mfgn.getChild(0);
+    assertEquals("msg", mn0.getCommandName());
+    assertEquals("verb", mn0.getMeaning());
+    assertEquals("Used as a verb.", mn0.getDesc());
+    assertEquals("Archive", ((RawTextNode) mn0.getChild(0)).getRawText());
+
+    MsgNode mn1 = mfgn.getChild(1);
+    assertEquals("fallbackmsg", mn1.getCommandName());
+    assertEquals(null, mn1.getMeaning());
+    assertEquals("", mn1.getDesc());
+    assertEquals("Archive", ((RawTextNode) mn1.getChild(0)).getRawText());
   }
 
 
@@ -844,13 +1076,13 @@ public class TemplateParserTest extends TestCase {
     assertEquals("$zoo", in0icn0.getExprText());
     assertEquals(1, in0icn0.numChildren());
     assertEquals("$zoo", ((PrintNode) in0icn0.getChild(0)).getExprText());
-    assertTrue(in0icn0.getExprUnion().getExpr().getChild(0) instanceof DataRefNode);
+    assertTrue(in0icn0.getExprUnion().getExpr().getChild(0) instanceof VarRefNode);
 
     IfNode in1 = (IfNode) nodes.get(1);
     assertEquals(3, in1.numChildren());
     IfCondNode in1icn0 = (IfCondNode) in1.getChild(0);
     assertEquals("$boo", in1icn0.getExprText());
-    assertTrue(in1icn0.getExprUnion().getExpr().getChild(0) instanceof DataRefNode);
+    assertTrue(in1icn0.getExprUnion().getExpr().getChild(0) instanceof VarRefNode);
     IfCondNode in1icn1 = (IfCondNode) in1.getChild(1);
     assertEquals("$foo.goo > 2", in1icn1.getExprText());
     assertTrue(in1icn1.getExprUnion().getExpr().getChild(0) instanceof GreaterThanOpNode);
@@ -877,7 +1109,7 @@ public class TemplateParserTest extends TestCase {
 
     SwitchNode sn = (SwitchNode) nodes.get(0);
     assertEquals("$boo", sn.getExpr().toSourceString());
-    assertTrue(sn.getExpr().getChild(0) instanceof DataRefNode);
+    assertTrue(sn.getExpr().getChild(0) instanceof VarRefNode);
     assertEquals(4, sn.numChildren());
 
     SwitchCaseNode scn0 = (SwitchCaseNode) sn.getChild(0);
@@ -888,14 +1120,14 @@ public class TemplateParserTest extends TestCase {
     SwitchCaseNode scn1 = (SwitchCaseNode) sn.getChild(1);
     assertEquals("$foo.goo", scn1.getExprListText());
     assertEquals(1, scn1.getExprList().size());
-    assertTrue(scn1.getExprList().get(0).getChild(0) instanceof DataRefNode);
+    assertTrue(scn1.getExprList().get(0).getChild(0) instanceof FieldAccessNode);
 
     SwitchCaseNode scn2 = (SwitchCaseNode) sn.getChild(2);
     assertEquals("-1, 1, $moo", scn2.getExprListText());
     assertEquals(3, scn2.getExprList().size());
     assertTrue(scn2.getExprList().get(0).getChild(0) instanceof NegativeOpNode);
     assertTrue(scn2.getExprList().get(1).getChild(0) instanceof IntegerNode);
-    assertTrue(scn2.getExprList().get(2).getChild(0) instanceof DataRefNode);
+    assertTrue(scn2.getExprList().get(2).getChild(0) instanceof VarRefNode);
     assertEquals("Bluh", ((RawTextNode) scn2.getChild(0)).getRawText());
 
     assertEquals(
@@ -926,7 +1158,7 @@ public class TemplateParserTest extends TestCase {
     ForeachNode fn0 = (ForeachNode) nodes.get(0);
     assertEquals("goo", fn0.getVarName());
     assertEquals("$goose", fn0.getExprText());
-    assertEquals(0, ((DataRefNode) fn0.getExpr().getChild(0)).numChildren());
+    assertTrue(fn0.getExpr().getChild(0) instanceof VarRefNode);
     assertEquals(1, fn0.numChildren());
 
     ForeachNonemptyNode fn0fnn0 = (ForeachNonemptyNode) fn0.getChild(0);
@@ -937,7 +1169,7 @@ public class TemplateParserTest extends TestCase {
     ForeachNode fn1 = (ForeachNode) nodes.get(1);
     assertEquals("boo", fn1.getVarName());
     assertEquals("$foo.booze", fn1.getExprText());
-    assertEquals(1, ((DataRefNode) fn1.getExpr().getChild(0)).numChildren());
+    assertTrue(fn1.getExpr().getChild(0) instanceof FieldAccessNode);
     assertEquals(2, fn1.numChildren());
 
     ForeachNonemptyNode fn1fnn0 = (ForeachNonemptyNode) fn1.getChild(0);
@@ -981,7 +1213,7 @@ public class TemplateParserTest extends TestCase {
     assertTrue(rangeArgs.get(1).getChild(0) instanceof PlusOpNode);
 
     assertEquals(1, fn.numChildren());
-    MsgNode mn = (MsgNode) fn.getChild(0);
+    MsgNode mn = ((MsgFallbackGroupNode) ((ForNode) nodes.get(0)).getChild(0)).getChild(0);
     assertEquals(4, mn.numChildren());
     assertEquals("$i",
         ((PrintNode) ((MsgPlaceholderNode) mn.getChild(0)).getChild(0)).getExprText());
@@ -1013,17 +1245,17 @@ public class TemplateParserTest extends TestCase {
     assertEquals(5, nodes.size());
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
-    assertEquals(SyntaxVersion.V2, cn0.getSyntaxVersion());
+    assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
-    assertEquals("XXX", cn0.genBasePlaceholderName());
+    assertEquals("XXX", cn0.genBasePhName());
     assertEquals(0, cn0.numChildren());
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
-    assertEquals(SyntaxVersion.V1, cn1.getSyntaxVersion());
+    assertFalse(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn1.getCalleeName());
     assertEquals("foo.goo.mooTemplate", cn1.getSrcCalleeName());
     assertEquals(true, cn1.isPassingData());
@@ -1033,7 +1265,7 @@ public class TemplateParserTest extends TestCase {
     assertEquals(0, cn1.numChildren());
 
     CallBasicNode cn2 = (CallBasicNode) nodes.get(2);
-    assertEquals(SyntaxVersion.V2, cn2.getSyntaxVersion());
+    assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn2.getCalleeName());
     assertEquals(".zooTemplate", cn2.getSrcCalleeName());
     assertEquals(true, cn2.isPassingData());
@@ -1065,17 +1297,17 @@ public class TemplateParserTest extends TestCase {
     }
 
     CallBasicNode cn3 = (CallBasicNode) nodes.get(3);
-    assertEquals(SyntaxVersion.V2, cn3.getSyntaxVersion());
+    assertTrue(cn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn3.getCalleeName());
     assertEquals(".booTemplate_", cn3.getSrcCalleeName());
     assertEquals(false, cn3.isPassingData());
     assertEquals(false, cn3.isPassingAllData());
     assertEquals(null, cn3.getDataExpr());
-    assertEquals("XXX", cn3.genBasePlaceholderName());
+    assertEquals("XXX", cn3.genBasePhName());
     assertEquals(0, cn3.numChildren());
 
     CallBasicNode cn4 = (CallBasicNode) nodes.get(4);
-    assertEquals(SyntaxVersion.V2, cn4.getSyntaxVersion());
+    assertTrue(cn4.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn4.getCalleeName());
     assertEquals(".zooTemplate", cn4.getSrcCalleeName());
     assertEquals(true, cn4.isPassingData());
@@ -1129,16 +1361,16 @@ public class TemplateParserTest extends TestCase {
     assertEquals(3, nodes.size());
 
     CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
-    assertEquals(SyntaxVersion.V2, cn0.getSyntaxVersion());
+    assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("booTemplate", cn0.getDelCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
-    assertEquals("XXX", cn0.genBasePlaceholderName());
+    assertEquals("XXX", cn0.genBasePhName());
     assertEquals(0, cn0.numChildren());
 
     CallDelegateNode cn1 = (CallDelegateNode) nodes.get(1);
-    assertEquals(SyntaxVersion.V2, cn1.getSyntaxVersion());
+    assertTrue(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("foo.goo.mooTemplate", cn1.getDelCalleeName());
     assertEquals(true, cn1.isPassingData());
     assertEquals(true, cn1.isPassingAllData());
@@ -1147,7 +1379,7 @@ public class TemplateParserTest extends TestCase {
     assertEquals(0, cn1.numChildren());
 
     CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
-    assertEquals(SyntaxVersion.V2, cn2.getSyntaxVersion());
+    assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.isPassingData());
     assertEquals(false, cn2.isPassingAllData());
@@ -1180,8 +1412,8 @@ public class TemplateParserTest extends TestCase {
     assertEquals(3, nodes.size());
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
-    assertEquals("BOO_TEMPLATE", cn0.genBasePlaceholderName());
-    assertEquals(SyntaxVersion.V2, cn0.getSyntaxVersion());
+    assertEquals("BOO_TEMPLATE", cn0.genBasePhName());
+    assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
     assertEquals(false, cn0.isPassingData());
@@ -1192,8 +1424,8 @@ public class TemplateParserTest extends TestCase {
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
 
     CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
-    assertEquals("SECRET_ZOO", cn2.genBasePlaceholderName());
-    assertEquals(SyntaxVersion.V2, cn2.getSyntaxVersion());
+    assertEquals("SECRET_ZOO", cn2.genBasePhName());
+    assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.isPassingData());
     assertEquals(false, cn2.isPassingAllData());
@@ -1232,7 +1464,7 @@ public class TemplateParserTest extends TestCase {
 
 
   // -----------------------------------------------------------------------------------------------
-  // Plural/select messages.
+  // Tests for plural/select messages.
 
 
   public void testParseMsgStmtWithPlural() throws Exception {
@@ -1250,7 +1482,7 @@ public class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(1, nodes.size());
 
-    MsgNode mn = (MsgNode) nodes.get(0);
+    MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
     assertEquals(1, mn.numChildren());
     assertEquals("A sample plural message", mn.getDesc());
 
@@ -1352,7 +1584,7 @@ public class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(1, nodes.size());
 
-    MsgNode mn = (MsgNode) nodes.get(0);
+    MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
     assertEquals(1, mn.numChildren());
     assertEquals("A sample gender message", mn.getDesc());
 
@@ -1403,7 +1635,7 @@ public class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
     assertEquals(1, nodes.size());
 
-    MsgNode mn = (MsgNode) nodes.get(0);
+    MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
     assertEquals(1, mn.numChildren());
     assertEquals("A sample nested message", mn.getDesc());
 
@@ -1515,39 +1747,6 @@ public class TemplateParserTest extends TestCase {
   }
 
 
-  public void testMaybeWhitespaceEmitsLineNumberOnError() {
-
-    // Check that the line number is included.
-    try {
-      parseMaybeWhitespace("ErrorMessage", "foo");
-      fail("Should have failed with a ParseException");
-    } catch (ParseException pe) {
-      assertTrue("Expected [Found on line 1], received: " + pe.getMessage(),
-          pe.getMessage().contains("Found on line 1"));
-    }
-
-    // The line number is correct following a newline.
-    try {
-      parseMaybeWhitespace("ErrorMessage", "\nfoo");
-      fail("Should have failed with a ParseException");
-    } catch (ParseException pe) {
-      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
-          pe.getMessage().contains("Found on line 2"));
-    }
-
-    // The line number is correct even when the template doesn't start on line 1.
-    try {
-      IdGenerator nodeIdGen = new IncrementingIdGenerator();
-      (new TemplateParser("foo", "test.soy", /* start line number */ 2, nodeIdGen))
-          .MaybeWhitespace("ErrorMessage");
-      fail("Should have failed with a ParseException");
-    } catch (ParseException pe) {
-      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
-          pe.getMessage().contains("Found on line 2"));
-    }
-  }
-
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
@@ -1562,9 +1761,25 @@ public class TemplateParserTest extends TestCase {
    */
   private static List<StandaloneNode> parseTemplateBody(String input)
       throws SoySyntaxException, TokenMgrError, ParseException {
+    Pair<List<DeclInfo>, List<StandaloneNode>> declInfosAndNodes = parseTemplateContent(input);
+    assertNull(declInfosAndNodes.first);
+    return declInfosAndNodes.second;
+  }
+
+
+  /**
+   * Parses the given input as a template content (header and body).
+   * @param input The input string to parse.
+   * @throws SoySyntaxException When the given input has a syntax error.
+   * @throws TokenMgrError When the given input has a token error.
+   * @throws ParseException When the given input has a parse error.
+   * @return The decl infos and parse tree nodes created.
+   */
+  private static Pair<List<DeclInfo>, List<StandaloneNode>> parseTemplateContent(String input)
+      throws SoySyntaxException, TokenMgrError, ParseException {
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    return (new TemplateParser(input, "test.soy", /* start line number */ 1, nodeIdGen))
-        .parseTemplateBody();
+    return (new TemplateParser(nodeIdGen, input, "test.soy", 1 /* start line number */))
+        .parseTemplateContent();
   }
 
 
@@ -1579,7 +1794,7 @@ public class TemplateParserTest extends TestCase {
   private static void parseMaybeWhitespace(String errorMessage, String input)
       throws SoySyntaxException, TokenMgrError, ParseException {
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    (new TemplateParser(input, "test.soy", /* start line number */ 1, nodeIdGen))
+    (new TemplateParser(nodeIdGen, input, "test.soy", /* start line number */ 1))
         .MaybeWhitespace(errorMessage);
   }
 
@@ -1598,6 +1813,19 @@ public class TemplateParserTest extends TestCase {
 
 
   /**
+   * Asserts that the given input is a valid template content (header and body).
+   * @param input The input string to parse.
+   * @throws SoySyntaxException When the given input has a syntax error.
+   * @throws TokenMgrError When the given input has a token error.
+   * @throws ParseException When the given input has a parse error.
+   */
+  private static void assertIsTemplateContent(String input)
+      throws SoySyntaxException, TokenMgrError, ParseException {
+    parseTemplateContent(input);
+  }
+
+
+  /**
    * Asserts that the given input is not a valid template.
    * @param input The input string to parse.
    * @throws AssertionFailedError When the given input is actually a valid template.
@@ -1605,6 +1833,25 @@ public class TemplateParserTest extends TestCase {
   private static void assertIsNotTemplateBody(String input) throws AssertionFailedError {
     try {
       parseTemplateBody(input);
+      fail();
+    } catch (SoySyntaxException sse) {
+      // Test passes.
+    } catch (TokenMgrError tme) {
+      // Test passes.
+    } catch (ParseException pe) {
+      // Test passes.
+    }
+  }
+
+
+  /**
+   * Asserts that the given input is not a valid template content (header and body).
+   * @param input The input string to parse.
+   * @throws AssertionFailedError When the given input is actually a valid template.
+   */
+  private static void assertIsNotTemplateContent(String input) throws AssertionFailedError {
+    try {
+      parseTemplateContent(input);
       fail();
     } catch (SoySyntaxException sse) {
       // Test passes.

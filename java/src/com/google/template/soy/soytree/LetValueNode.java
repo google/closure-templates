@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 
 import java.util.List;
 
@@ -33,13 +34,8 @@ import java.util.List;
  */
 public class LetValueNode extends LetNode implements ExprHolderNode {
 
-
-  /** The local variable name (without preceding '$'). */
-  private final String varName;
-
   /** The value expression that the variable is set to. */
   private final ExprRootNode<?> valueExpr;
-
 
   /**
    * @param id The id for this node.
@@ -52,7 +48,6 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
     super(id, isLocalVarNameUniquified, commandText);
 
     CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
-    varName = parseResult.localVarName;
     valueExpr = parseResult.valueExpr;
 
     if (valueExpr == null) {
@@ -66,6 +61,8 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
           "The 'kind' attribute is not allowed on self-ending 'let' tags that " +
               " contain a value (invalid tag is {let " + commandText + " /}).");
     }
+
+    setVar(new LocalVar(parseResult.localVarName, this, null));
   }
 
 
@@ -75,7 +72,6 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
    */
   protected LetValueNode(LetValueNode orig) {
     super(orig);
-    this.varName = orig.varName;
     this.valueExpr = orig.valueExpr.clone();
   }
 
@@ -85,8 +81,11 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
   }
 
 
-  @Override public String getVarName() {
-    return varName;
+  /**
+   * Return The local variable name (without preceding '$').
+   */
+  @Override public final String getVarName() {
+    return var.name();
   }
 
 
@@ -103,7 +102,7 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
   }
 
 
-  @Override public SoyNode clone() {
+  @Override public LetValueNode clone() {
     return new LetValueNode(this);
   }
 

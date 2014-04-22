@@ -30,14 +30,13 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 public class GoogMsgRefNode extends AbstractSoyNode implements StandaloneNode {
 
 
-  /** The name of the Closure message variable (defined by goog.getMsg). */
+  /** The JS var name of the rendered goog msg.. */
   private final String renderedGoogMsgVarName;
 
 
   /**
    * @param id The id for this node.
-   * @param renderedGoogMsgVarName The name of the Closure message variable
-   * (defined by goog.getMsg).
+   * @param renderedGoogMsgVarName The JS var name of the rendered goog msg.
    */
   public GoogMsgRefNode(int id, String renderedGoogMsgVarName) {
     super(id);
@@ -60,7 +59,7 @@ public class GoogMsgRefNode extends AbstractSoyNode implements StandaloneNode {
   }
 
 
-  /** Returns the name of the Closure message variable (defined by goog.getMsg). */
+  /** Returns the JS var name of the rendered goog msg. */
   public String getRenderedGoogMsgVarName() {
     return renderedGoogMsgVarName;
   }

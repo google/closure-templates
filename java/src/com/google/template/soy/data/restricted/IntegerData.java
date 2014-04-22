@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data.restricted;
 
+import com.google.common.base.Preconditions;
+
 import javax.annotation.concurrent.Immutable;
 
 
@@ -27,59 +29,68 @@ import javax.annotation.concurrent.Immutable;
  * @author Kai Huang
  */
 @Immutable
-public class IntegerData extends NumberData {
+public final class IntegerData extends NumberData {
 
 
   // Note: ZERO, ONE, and MINUS_ONE are public. The rest are private.
 
   /** Static instance of IntegerData with value 0. */
+  @SuppressWarnings("deprecation")
   public static final IntegerData ZERO = new IntegerData(0);
 
   /** Static instance of IntegerData with value 1. */
+  @SuppressWarnings("deprecation")
   public static final IntegerData ONE = new IntegerData(1);
 
   /** Static instance of IntegerData with value -1. */
+  @SuppressWarnings("deprecation")
   public static final IntegerData MINUS_ONE = new IntegerData(-1);
 
   /** Static instance of IntegerData with value 2. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData TWO = new IntegerData(2);
 
   /** Static instance of IntegerData with value 3. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData THREE = new IntegerData(3);
 
   /** Static instance of IntegerData with value 4. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData FOUR = new IntegerData(4);
 
   /** Static instance of IntegerData with value 5. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData FIVE = new IntegerData(5);
 
   /** Static instance of IntegerData with value 6. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData SIX = new IntegerData(6);
 
   /** Static instance of IntegerData with value 7. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData SEVEN = new IntegerData(7);
 
   /** Static instance of IntegerData with value 8. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData EIGHT = new IntegerData(8);
 
   /** Static instance of IntegerData with value 9. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData NINE = new IntegerData(9);
 
   /** Static instance of IntegerData with value 10. */
+  @SuppressWarnings("deprecation")
   private static final IntegerData TEN = new IntegerData(10);
 
 
   /** The integer value. */
-  private final int value;
+  private final long value;
 
 
   /**
    * @param value The integer value.
-   * @deprecated Use {@link IntegerData#ZERO}, {@link IntegerData#ONE},
-   *     {@link IntegerData#MINUS_ONE}, or {@link IntegerData#forValue}.
    */
-  @Deprecated
-  public IntegerData(int value) {
+  IntegerData(long value) {
     this.value = value;
   }
 
@@ -89,8 +100,11 @@ public class IntegerData extends NumberData {
    * @param value The desired value.
    * @return A IntegerData instance with the given value.
    */
-  public static IntegerData forValue(int value) {
-    switch (value) {
+  public static IntegerData forValue(long value) {
+    if (value > 10 || value < -1) {
+      return new IntegerData(value);
+    }
+    switch ((int) value) {
       case -1: return MINUS_ONE;
       case 0: return ZERO;
       case 1: return ONE;
@@ -103,24 +117,31 @@ public class IntegerData extends NumberData {
       case 8: return EIGHT;
       case 9: return NINE;
       case 10: return TEN;
-      default: return new IntegerData(value);
+      default: throw new AssertionError("Impossible case");
     }
   }
 
 
   /** Returns the integer value. */
-  public int getValue() {
+  public long getValue() {
     return value;
   }
 
 
   @Override public int integerValue() {
+    Preconditions.checkState(value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE,
+        "Casting long to integer results in overflow: " + value);
+    return (int) value;
+  }
+
+
+  @Override public long longValue() {
     return value;
   }
 
 
   @Override public String toString() {
-    return Integer.toString(value);
+    return String.valueOf(value);
   }
 
 
@@ -129,6 +150,7 @@ public class IntegerData extends NumberData {
    *
    * <p> 0 is falsy.
    */
+  @Deprecated
   @Override public boolean toBoolean() {
     return value != 0;
   }
@@ -145,7 +167,7 @@ public class IntegerData extends NumberData {
       return false;
     }
     if (other instanceof IntegerData) {
-      return value == ((IntegerData) other).getValue();
+      return this.value == ((IntegerData) other).value;
     } else {
       return super.equals(other);
     }
