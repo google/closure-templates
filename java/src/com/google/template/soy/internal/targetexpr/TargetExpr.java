@@ -22,7 +22,6 @@ package com.google.template.soy.internal.targetexpr;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author David Phillips
  */
 public interface TargetExpr {
 

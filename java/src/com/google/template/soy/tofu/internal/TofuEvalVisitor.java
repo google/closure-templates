@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
  * {@code SoyJavaRuntimeFunction}s. (For new functions that implement {@code SoyJavaFunction}, there
  * is no difference.)
  *
- * @author Kai Huang
  */
 // TODO: Attempt to remove this class.
 class TofuEvalVisitor extends EvalVisitor {

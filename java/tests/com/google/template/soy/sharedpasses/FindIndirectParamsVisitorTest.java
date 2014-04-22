@@ -33,7 +33,6 @@ import java.util.Map;
 /**
  * Unit tests for FindIndirectParamsVisitor.
  *
- * @author Kai Huang
  */
 public class FindIndirectParamsVisitorTest extends TestCase {
 

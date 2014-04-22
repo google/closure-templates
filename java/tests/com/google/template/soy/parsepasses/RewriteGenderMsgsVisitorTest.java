@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for RewriteGenderMsgsVisitor.
  *
- * @author Kai Huang
  */
 public class RewriteGenderMsgsVisitorTest extends TestCase {
 
@@ -178,8 +177,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
     assertEquals(
         // Note: Still has genders="..." in command text.
         "{msg genders=\"$userGender\" desc=\"...\"}" +
-            "{select $userGender}" + 
-            "{case 'female'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}" + 
+            "{select $userGender}" +
+            "{case 'female'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}" +
             "{case 'male'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"  +
             "{default}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"  +
             "{/select}",

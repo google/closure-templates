@@ -31,7 +31,6 @@ import java.util.SortedSet;
  * A visitor to generate a set of Closure JS library names required by the plugins used by this
  * template.
  *
- * @author Jeff Craig
  */
 class GenDirectivePluginRequiresVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
 

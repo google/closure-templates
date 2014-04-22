@@ -49,7 +49,6 @@ import java.util.Map;
  * Visitor which resolves all variable and parameter references to point to
  * the corresponding declaration object.
  *
- * @author Talin
  */
 public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 

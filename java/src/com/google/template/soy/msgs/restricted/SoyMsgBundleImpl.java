@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
  *
  * Important: Only use this class from message plugins!
  *
- * @author Kai Huang
  */
 public class SoyMsgBundleImpl implements SoyMsgBundle {
 

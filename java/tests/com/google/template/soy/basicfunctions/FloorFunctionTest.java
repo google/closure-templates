@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for FloorFunction.
  *
- * @author Kai Huang
  */
 public class FloorFunctionTest extends TestCase {
 

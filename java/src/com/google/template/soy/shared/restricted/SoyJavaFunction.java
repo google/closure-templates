@@ -28,7 +28,6 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing function plugins.
  *
- * @author Kai Huang
  */
 public interface SoyJavaFunction extends SoyFunction {
 

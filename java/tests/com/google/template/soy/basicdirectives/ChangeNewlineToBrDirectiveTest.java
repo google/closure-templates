@@ -24,7 +24,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for ChangeNewlineToBrDirective.
  *
- * @author Felix Chang
  */
 public class ChangeNewlineToBrDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

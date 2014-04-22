@@ -77,7 +77,6 @@ import java.util.List;
 /**
  * Unit tests for the template parser.
  *
- * @author Kai Huang
  */
 public class TemplateParserTest extends TestCase {
 

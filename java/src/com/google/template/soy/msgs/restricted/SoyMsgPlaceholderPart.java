@@ -22,7 +22,6 @@ import com.google.common.base.Objects;
 /**
  * Represents a placeholder within a message.
  *
- * @author Kai Huang
  */
 public final class SoyMsgPlaceholderPart extends SoyMsgPart {
 

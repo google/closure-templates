@@ -96,7 +96,6 @@ import javax.annotation.Nullable;
 /**
  * Visitor which resolves all expression types.
  *
- * @author Talin
  */
 public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 

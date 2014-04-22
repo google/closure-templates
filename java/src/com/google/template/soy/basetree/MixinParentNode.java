@@ -32,7 +32,6 @@ import java.util.List;
  * SoyFileSetNode N is SoyFileNode, for SoyFileNode N is TemplateNode, etc; for a Soy expression
  * parse tree, N is usually ExprNode.
  *
- * @author Kai Huang
  */
 public final class MixinParentNode<N extends Node> {
 

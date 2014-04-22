@@ -20,7 +20,6 @@ package com.google.template.soy.base.internal;
 /**
  * Enum for the kind of an input Soy file.
  *
- * @author Kai Huang
  */
 public enum SoyFileKind {
   /**

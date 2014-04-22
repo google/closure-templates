@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * {@code MsgFallbackGroupNode}s through parsing and middleend passes (backends may have their own
  * special structure for messages).
  *
- * @author Kai Huang
  */
 public class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     implements StandaloneNode, SplitLevelTopNode<MsgNode>, StatementNode {

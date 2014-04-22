@@ -27,7 +27,6 @@ import java.util.Set;
 /**
  * Unit tests for FindCalleesNotInFileVisitor.
  *
- * @author Kai Huang
  */
 public class FindCalleesNotInFileVisitorTest extends TestCase {
 

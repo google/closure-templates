@@ -32,8 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BidiDirAttrFunction.
  *
- * @author Aharon Lanin
- * @author Kai Huang
  */
 public class BidiDirAttrFunctionTest extends TestCase {
 

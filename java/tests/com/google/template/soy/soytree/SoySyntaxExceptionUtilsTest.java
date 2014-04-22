@@ -25,7 +25,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SoySyntaxExceptionUtils.
  *
- * @author Kai Huang
  */
 public class SoySyntaxExceptionUtilsTest extends TestCase {
 

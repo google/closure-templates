@@ -26,7 +26,6 @@ import com.google.template.soy.types.primitive.IntType;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class IntegerNode extends AbstractPrimitiveNode {
 

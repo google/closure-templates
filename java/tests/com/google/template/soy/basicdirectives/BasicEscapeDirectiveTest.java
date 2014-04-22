@@ -22,7 +22,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 
 /**
- * @author Mike Samuel
  */
 public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

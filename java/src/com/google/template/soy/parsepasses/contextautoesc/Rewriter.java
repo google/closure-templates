@@ -42,7 +42,6 @@ import java.util.Set;
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
  *
- * @author Mike Samuel
  */
 final class Rewriter {
 

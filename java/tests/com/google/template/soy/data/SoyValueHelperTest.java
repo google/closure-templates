@@ -36,11 +36,10 @@ import java.util.List;
 /**
  * Unit tests for SoyValueHelper.
  *
- * @author Kai Huang
  */
 public class SoyValueHelperTest extends TestCase {
-  
-  
+
+
   private static final SoyValueHelper UNCUSTOMIZED_HELPER = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
 
 

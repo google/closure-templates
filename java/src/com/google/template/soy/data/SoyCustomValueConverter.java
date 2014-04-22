@@ -24,7 +24,6 @@ package com.google.template.soy.data;
  * A custom converter that knows how to convert some specific Java objects to SoyValues (or
  * SoyValueProviders).
  *
- * @author Talin
  */
 public interface SoyCustomValueConverter {
 

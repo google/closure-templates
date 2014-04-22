@@ -53,7 +53,6 @@ import java.util.regex.Pattern;
 /**
  * Public utilities for Soy users.
  *
- * @author Kai Huang
  */
 public class SoyUtils {
 

@@ -26,7 +26,6 @@ import com.google.common.base.Preconditions;
  *
  * <p> The maximum indent length is 24.
  *
- * @author Kai Huang
  */
 public class IndentedLinesBuilder implements CharSequence, Appendable {
 

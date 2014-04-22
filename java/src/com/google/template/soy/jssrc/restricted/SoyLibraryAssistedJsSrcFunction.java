@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
  *
  * <p> Important: This may only be used in implementing function plugins.
  *
- * @author Jeff Craig
  */
 public interface SoyLibraryAssistedJsSrcFunction extends SoyJsSrcFunction {
 

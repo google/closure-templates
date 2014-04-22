@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CheckCallsVisitor.
  *
- * @author Kai Huang
  */
 public class CheckCallsVisitorTest extends TestCase {
 

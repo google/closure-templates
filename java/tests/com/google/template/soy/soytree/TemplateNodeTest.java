@@ -42,7 +42,6 @@ import java.util.List;
 /**
  * Unit tests for TemplateNode.
  *
- * @author Kai Huang
  */
 public class TemplateNodeTest extends TestCase {
 

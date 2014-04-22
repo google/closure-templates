@@ -23,7 +23,6 @@ package com.google.template.soy.data.restricted;
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  * <p> Important: Even though this class is not marked 'final', do not extend this class.
  *
- * @author Kai Huang
  */
 public abstract class NumberData extends PrimitiveData {
 

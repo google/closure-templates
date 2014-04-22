@@ -49,7 +49,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * Utilities for testing Soy print directives.
  *
- * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {

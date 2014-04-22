@@ -30,7 +30,6 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  * the Soy expression operators matches that of JS (as well as Java), so the precedence numbers are
  * correct when used for generating JS code as well.
  *
- * @author Kai Huang
  */
 public class JsExpr implements TargetExpr {
 

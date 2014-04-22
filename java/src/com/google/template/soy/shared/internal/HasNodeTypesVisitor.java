@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * has at least one template containing at least one node whose type is one
  * of the types given in the constructor.
  *
- * @author Talin
  *
  */
 public class HasNodeTypesVisitor extends AbstractSoyNodeVisitor<Boolean> {

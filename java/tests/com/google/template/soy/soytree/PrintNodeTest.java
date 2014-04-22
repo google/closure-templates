@@ -24,7 +24,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for PrintNode.
  *
- * @author Kai Huang
  */
 public class PrintNodeTest extends TestCase {
 

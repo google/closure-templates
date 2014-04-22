@@ -34,7 +34,6 @@ import java.io.Reader;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Mike Samuel
  */
 public class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
 

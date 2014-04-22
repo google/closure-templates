@@ -34,7 +34,6 @@ import java.util.Set;
  * {@link CallBasicNode call} from the source vertex to the
  * {@link CallBasicNode#getCalleeName() target} vertex.
  *
- * @author Mike Samuel
  */
 final class TemplateCallGraph {
 

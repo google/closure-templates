@@ -21,7 +21,6 @@ import com.google.template.soy.types.SoyType;
 /**
  * A {@link SoyType} subinterface which describes a protocol buffer type.
  *
- * @author Talin
  */
 public interface SoyProtoType {
   /**

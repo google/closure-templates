@@ -26,7 +26,6 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing function plugins.
  *
- * @author Kai Huang
  * @deprecated JavaSrc backend was removed June 2013.
  */
 @Deprecated

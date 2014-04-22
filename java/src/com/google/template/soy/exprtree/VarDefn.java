@@ -24,7 +24,6 @@ import com.google.template.soy.types.SoyType;
  * that a definition does not always have a corresponding declaration in user
  * code. Some definitions are implicit, e.g. in the case of injected params.
  *
- * @author Talin
  */
 public interface VarDefn {
   /**

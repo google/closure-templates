@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
  * {@code SoyJavaRuntimePrintDirective}s. (For new directives that implement
  * {@code SoyJavaPrintDirective}, there is no difference.)
  *
- * @author Kai Huang
  */
 // TODO: Attempt to remove this class.
 class TofuRenderVisitor extends RenderVisitor {

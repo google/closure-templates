@@ -31,7 +31,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for KeysFunction.
  *
- * @author Kai Huang
  */
 public class AugmentMapFunctionTest extends TestCase {
 

@@ -23,7 +23,6 @@ import junit.framework.TestCase;
 /**
  * Unit test for SoyAbstractCachingValueProvider.
  *
- * @author Garrett Boyer
  */
 public class SoyAbstractCachingValueProviderTest extends TestCase {
 

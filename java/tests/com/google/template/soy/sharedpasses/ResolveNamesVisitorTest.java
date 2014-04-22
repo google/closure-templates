@@ -32,7 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ResolveNamesVisitor.
  *
- * @author Talin
  */
 public class ResolveNamesVisitorTest extends TestCase {
 

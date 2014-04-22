@@ -25,7 +25,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * Describes a line in a Soy input file.
  *
- * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 public final class SourceLocation {

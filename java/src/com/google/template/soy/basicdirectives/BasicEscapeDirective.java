@@ -37,7 +37,6 @@ import javax.inject.Singleton;
  * See {@link com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode} which
  * creates the JS code that backs escaping directives.
  *
- * @author Mike Samuel
  */
 public abstract class BasicEscapeDirective
     implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {

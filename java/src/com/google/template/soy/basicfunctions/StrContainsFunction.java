@@ -43,7 +43,6 @@ import java.util.Set;
  * evaluates to <code>true</code> iff <code>expr1</code> contains
  * <code>expr2</code>.  <code>strContains</code> is case sensitive.
  *
- * @author Felix Arends
  */
 @Singleton
 @SoyPureFunction

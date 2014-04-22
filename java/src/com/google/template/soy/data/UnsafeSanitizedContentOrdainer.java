@@ -39,11 +39,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * It's useful to label the protocol message fields with a "SafeHtml" suffix to reinforce.
  * </ul>
  *
- * @author Garrett Boyer
  */
 @ParametersAreNonnullByDefault
 public final class UnsafeSanitizedContentOrdainer {
-  
+
   /** No constructor. */
   private UnsafeSanitizedContentOrdainer() {}
 

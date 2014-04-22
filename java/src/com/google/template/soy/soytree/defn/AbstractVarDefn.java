@@ -23,7 +23,6 @@ import com.google.template.soy.types.SoyType;
 /**
  * Implementation of common features of {@link VarDefn}.
  *
- * @author Talin
  */
 public abstract class AbstractVarDefn implements VarDefn {
 

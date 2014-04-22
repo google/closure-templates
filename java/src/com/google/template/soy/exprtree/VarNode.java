@@ -28,7 +28,6 @@ import com.google.template.soy.types.SoyType;
  * Important: This type of node never appears in expression parse trees. It is only created if you
  * explicitly parse an input as a variable using ExpressionParser.parseVariable().
  *
- * @author Kai Huang
  */
 public class VarNode extends AbstractExprNode {
 

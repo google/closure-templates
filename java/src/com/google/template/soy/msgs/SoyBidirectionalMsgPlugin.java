@@ -23,7 +23,6 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
  * Plugin for implementing a specific message file format. Supports postprocessing of msgs files by
  * having methods to both generate and parse both extracted and translated msgs files.
  *
- * @author Kai Huang
  */
 public interface SoyBidirectionalMsgPlugin extends SoyMsgPlugin {
 

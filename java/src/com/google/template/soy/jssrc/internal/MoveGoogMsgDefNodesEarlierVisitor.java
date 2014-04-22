@@ -38,7 +38,6 @@ import java.util.Map;
  *
  * <p> {@link #exec} must be called on a full parse tree.
  *
- * @author Kai Huang
  */
 class MoveGoogMsgDefNodesEarlierVisitor extends AbstractSoyNodeVisitor<Void> {
 

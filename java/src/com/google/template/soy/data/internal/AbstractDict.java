@@ -39,7 +39,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Garrett Boyer
  */
 @ParametersAreNonnullByDefault
 abstract class AbstractDict extends SoyAbstractMap implements SoyDict {

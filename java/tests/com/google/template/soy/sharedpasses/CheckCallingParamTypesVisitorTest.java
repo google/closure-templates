@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CheckCallingParamTypesVisitor.
  *
- * @author Talin
  */
 public class CheckCallingParamTypesVisitorTest extends TestCase {
 

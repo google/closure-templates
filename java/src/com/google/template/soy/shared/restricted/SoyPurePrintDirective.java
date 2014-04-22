@@ -26,7 +26,6 @@ import java.lang.annotation.Target;
 /**
  * Annotation for a Soy print directive that's pure (e.g. can be prerendered during optimization).
  *
- * @author Jeff Craig
  */
 @Target(TYPE)
 @Retention(RUNTIME)

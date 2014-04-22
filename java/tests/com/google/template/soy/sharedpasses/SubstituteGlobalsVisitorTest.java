@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
 /**
  * Unit tests for SubstituteGlobalsVisitor.
  *
- * @author Kai Huang
  */
 public class SubstituteGlobalsVisitorTest extends TestCase {
 

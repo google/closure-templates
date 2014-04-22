@@ -40,7 +40,6 @@ import com.google.template.soy.soytree.TemplateNode;
  *
  * <p>{@link #exec} should be called on a full parse tree.
  *
- * @author Christoph Kern
  */
 public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Current escaping mode. */

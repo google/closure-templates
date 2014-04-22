@@ -30,10 +30,6 @@
  * by Soy-generated JS code. Please do not use these functions directly from
  * your hand-writen code. Their names all start with '$$'.
  *
- * @author Garrett Boyer
- * @author Mike Samuel
- * @author Kai Huang
- * @author Aharon Lanin
  */
 
 goog.provide('soy');

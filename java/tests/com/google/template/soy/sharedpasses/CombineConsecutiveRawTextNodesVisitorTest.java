@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CombineConsecutiveRawTextNodesVisitor.
  *
- * @author Kai Huang
  */
 public class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
 

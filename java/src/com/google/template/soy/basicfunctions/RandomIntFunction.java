@@ -35,7 +35,6 @@ import java.util.Set;
 /**
  * Soy function that generates a random integer in the range [0, n-1].
  *
- * @author Kai Huang
  */
 @Singleton
 class RandomIntFunction implements SoyJavaFunction, SoyJsSrcFunction {

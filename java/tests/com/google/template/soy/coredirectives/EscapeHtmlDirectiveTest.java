@@ -25,7 +25,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for EscapeHtmlDirective.
  *
- * @author Kai Huang
  */
 public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

@@ -91,7 +91,6 @@ import javax.annotation.Nullable;
  *
  * <p> Note: Soy file (or resource) contents must be encoded in UTF-8.
  *
- * @author Kai Huang
  */
 public final class SoyFileSet {
 

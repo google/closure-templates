@@ -22,7 +22,6 @@ import com.google.common.base.Objects;
 /**
  * Represents the placeholder part in the plural statement (The '#' sign in ICU syntax).
  *
- * @author Mohamed Eldawy
  */
 public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
 

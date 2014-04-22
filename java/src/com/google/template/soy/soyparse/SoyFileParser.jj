@@ -136,7 +136,6 @@ import java.util.regex.*;
  *    + The file must end with a newline.
  * </pre>
  *
- * @author Kai Huang
  */
 public class SoyFileParser {
 

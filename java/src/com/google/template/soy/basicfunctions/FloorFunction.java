@@ -33,7 +33,6 @@ import java.util.Set;
 /**
  * Soy function that takes the floor of a number.
  *
- * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

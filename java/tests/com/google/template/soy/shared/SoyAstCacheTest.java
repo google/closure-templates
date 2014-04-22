@@ -28,7 +28,6 @@ import org.easymock.EasyMock;
 /**
  * Unit tests for SoyAstCache.
  *
- * @author Garrett Boyer
  */
 public class SoyAstCacheTest extends TestCase {
   private SoyAstCache cache = new SoyAstCache();
@@ -57,7 +56,7 @@ public class SoyAstCacheTest extends TestCase {
     EasyMock.expect(fileNode1Clone.clone()).andStubReturn(fileNode1Clone);
     EasyMock.replay(fileNode1Clone);
   }
-  
+
   public void testGetSet() {
 
     // Matching version.

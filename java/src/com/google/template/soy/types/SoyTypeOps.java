@@ -24,7 +24,6 @@ import java.util.Collection;
 /**
  * Common operations on types.
  *
- * @author Talin
  */
 public final class SoyTypeOps {
 

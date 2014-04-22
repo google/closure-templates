@@ -23,7 +23,6 @@ import java.util.Locale;
 /**
  * Helper functions for Internationalization in Soy.
  *
- * @author Jeff Craig
  */
 class I18nUtils {
 

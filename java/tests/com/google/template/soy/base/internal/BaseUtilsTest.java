@@ -22,7 +22,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for BaseUtils.
  *
- * @author Kai Huang
  */
 public class BaseUtilsTest extends TestCase {
 

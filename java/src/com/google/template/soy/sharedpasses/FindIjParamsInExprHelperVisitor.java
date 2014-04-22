@@ -29,7 +29,6 @@ import java.util.Set;
  * Package-private helper for FindIjParamsVisitor and IsUsingIjDataVisitor to find the set of
  * injected params used in an expression.
  *
- * @author Kai Huang
  */
 class FindIjParamsInExprHelperVisitor extends AbstractExprNodeVisitor<Set<String>> {
 

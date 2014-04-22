@@ -23,7 +23,6 @@ import com.google.template.soy.internal.base.Pair;
 /**
  * Represents a select statement within a message.
  *
- * @author Mohamed Eldawy
  */
 public final class SoyMsgSelectPart extends SoyMsgPart {
 

@@ -54,7 +54,6 @@ import java.util.Set;
        {$value|formatNum:'decimal','native'}
    }
  *
- * @author Jeff Craig
  */
 class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsSrcPrintDirective {
 

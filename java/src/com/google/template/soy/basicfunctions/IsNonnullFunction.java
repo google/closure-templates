@@ -38,7 +38,6 @@ import java.util.Set;
 /**
  * Soy function that checks whether its argument is a defined nonnull value.
  *
- * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

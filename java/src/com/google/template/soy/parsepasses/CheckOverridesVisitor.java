@@ -38,12 +38,11 @@ import java.util.Map;
  *
  * <p> Overrides are only allowed in Soy V1. An override is a template with the same name as an
  * earlier template, intended to replace the earlier definition.
- * 
+ *
  * <p> {@link #exec} should be called on a full parse tree. This visitor will check that all
  * overrides are explicit. There is no return value. A {@code SoySyntaxException} is thrown if a
  * non-explicit override is found.
  *
- * @author Kai Huang
  */
 public class CheckOverridesVisitor extends AbstractSoyNodeVisitor<Void> {
 

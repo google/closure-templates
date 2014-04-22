@@ -21,7 +21,6 @@ import com.google.template.soy.types.primitive.UnknownType;
 /**
  * An injected parameter.
  *
- * @author Talin
  */
 public final class InjectedParam extends AbstractVarDefn {
 

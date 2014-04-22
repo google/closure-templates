@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for RemoveHtmlCommentsVisitor.
  *
- * @author Kai Huang
  */
 public class RemoveHtmlCommentsVisitorTest extends TestCase {
 

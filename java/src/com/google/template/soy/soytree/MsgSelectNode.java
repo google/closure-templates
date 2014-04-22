@@ -34,8 +34,6 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
- * @author Mohamed Eldawy
  */
 public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
@@ -114,7 +112,7 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     return selectExpr.toSourceString();
   }
 
-  
+
   /** Returns the expression for the value to select on. */
   public ExprRootNode<?> getExpr() {
     return selectExpr;

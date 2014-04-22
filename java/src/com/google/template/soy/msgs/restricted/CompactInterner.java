@@ -29,7 +29,6 @@ import java.util.Random;
  * little over one reference per item interned. Standard HashMap based interners use many bytes
  * per object interned, partially defeating the memory savings of interning.
  *
- * @author Garrett Boyer
  */
 final class CompactInterner {
 
@@ -55,7 +54,7 @@ final class CompactInterner {
    * checks for a miss because of the increased frequency of rehashes, but has no effect on cache
    * hits. Proof: Let D be GROWTH_DENOMINATOR. Right before a rehash, the total number of times
    * any item has been hashed is computed by assuming all items in the table have been hashed once,
-   * and D/(D+1) have been hashed at least twice, and (D/D+1)^2 have been hashed thrice, etc. 
+   * and D/(D+1) have been hashed at least twice, and (D/D+1)^2 have been hashed thrice, etc.
    * Since the sum of a geometric series on x is 1/(1-x), the number of hashes per item inserted is
    * exactly 1/(1 - (D/D+1)), or (D+1)/(D + 1 - D) or exactly D+1. The number of rehashes per item
    * is exactly D, since its first insertion was not a rehash.
@@ -70,7 +69,7 @@ final class CompactInterner {
 
   /** The total number of collisions, including collisions incurred during a rehash. */
   private long collisions;
-  
+
   public CompactInterner() {
     table = new Object[INITIAL_SIZE];
     count = 0;

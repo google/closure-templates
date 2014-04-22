@@ -51,8 +51,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * Helpers for creating or converting existing data to SoyValue. Replaces the static utilities in
  * the old class SoyData.
  *
- * @author Kai Huang
- * @author Talin
  */
 @ParametersAreNonnullByDefault
 @Singleton

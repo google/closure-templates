@@ -41,7 +41,6 @@ import java.util.List;
  * <p> The command-line arguments should contain command-line flags and the list of paths to the
  * Soy files.
  *
- * @author Kai Huang
  */
 public final class SoyMsgExtractor {
 

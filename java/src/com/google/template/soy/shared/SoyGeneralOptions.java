@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
  *
- * @author Kai Huang
  */
 public class SoyGeneralOptions implements Cloneable {
 
@@ -152,7 +151,7 @@ public class SoyGeneralOptions implements Cloneable {
         InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap));
   }
 
-  
+
   /**
    * Sets the map from compile-time global name to value using Soy primitive types.
    *

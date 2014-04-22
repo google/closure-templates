@@ -34,7 +34,6 @@ import java.util.Set;
  * (see
  * {@link com.google.template.soy.parsepasses.contextautoesc.Context#forContentKind(ContentKind)}).
  *
- * @author Christoph Kern
  */
 public class NodeContentKinds {
 

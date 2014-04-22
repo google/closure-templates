@@ -26,7 +26,6 @@ import com.google.template.soy.basetree.AbstractNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 

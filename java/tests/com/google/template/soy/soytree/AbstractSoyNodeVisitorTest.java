@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for AbstractSoyNodeVisitor.
  *
- * @author Kai Huang
  */
 public class AbstractSoyNodeVisitorTest extends TestCase {
 

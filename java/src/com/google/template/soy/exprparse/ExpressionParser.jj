@@ -163,7 +163,6 @@ import java.util.List;
  *       Examples:   isFirst($item)   foo()   myFunction(2, 'aa')
  * </pre>
  *
- * @author Kai Huang
  */
 public class ExpressionParser {
 

@@ -38,7 +38,6 @@ import java.util.List;
 /**
  * Unit tests for SoytreeUtils.
  *
- * @author Kai Huang
  */
 public class SoytreeUtilsTest extends TestCase {
 

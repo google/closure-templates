@@ -44,8 +44,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * Abstract class for generating code relied upon by escaping directives.
  *
- * @author Mike Samuel
- * @author David Phillips
  */
 @ParametersAreNonnullByDefault
 public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {

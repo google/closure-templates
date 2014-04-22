@@ -55,7 +55,6 @@ import javax.inject.Inject;
  *
  * Package-private helper for {@link SimplifyVisitor}.
  *
- * @author Kai Huang
  */
 class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 

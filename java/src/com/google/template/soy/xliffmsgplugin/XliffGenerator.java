@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
  *
  * <p> XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
  *
- * @author Kai Huang
  */
 class XliffGenerator {
 

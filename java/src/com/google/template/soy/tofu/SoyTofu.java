@@ -36,7 +36,6 @@ import javax.annotation.Nullable;
  * <p> Important: If you're a user of Soy, you should use the methods here (on a SoyTofu object
  * created by Soy), but should not create your own implementations of this interface.
  *
- * @author Kai Huang
  */
 public interface SoyTofu {
 

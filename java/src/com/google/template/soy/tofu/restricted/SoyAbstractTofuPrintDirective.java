@@ -23,7 +23,6 @@ import java.util.List;
 
 
 /**
- * @author Kai Huang
  */
 // TODO SOON: Deprecate.
 public abstract class SoyAbstractTofuPrintDirective

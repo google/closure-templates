@@ -24,7 +24,6 @@ import com.google.template.soy.data.restricted.UndefinedData;
 /**
  * The "null" type.
  *
- * @author Talin
  */
 public final class NullType extends PrimitiveType {
 

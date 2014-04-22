@@ -42,7 +42,6 @@ import javax.annotation.Nullable;
 /**
  * Utilities for generating JS code for calls.
  *
- * @author Kai Huang
  */
 class GenCallCodeUtils {
 

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Some utilities for dealing with JavaScript syntax.
  *
- * @author Mike Samuel
  */
 final class JsUtil {
 

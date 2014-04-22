@@ -61,7 +61,6 @@ import java.util.regex.Pattern;
  *
  * <p> Precondition: MsgNode should not exist in the tree.
  *
- * @author Kai Huang
  */
 class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 

@@ -27,7 +27,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 /**
  * Ways of escaping dynamic content in a template.
  *
- * @author Mike Samuel
  */
 public enum EscapingMode {
 

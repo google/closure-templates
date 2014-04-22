@@ -38,7 +38,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * attacker-controlled SanitizedContent objects. Java's type system is a great tool to achieve
  * this.
  *
- * @author Garrett Boyer
  */
 @ParametersAreNonnullByDefault
 public final class SanitizedContents {

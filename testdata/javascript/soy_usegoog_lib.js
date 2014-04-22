@@ -20,7 +20,6 @@
  * global <code>CLOSURE_NO_DEPS</code> is set to true.  This allows projects to
  * include their own deps file(s) from different locations.
  *
- * @author pupius@google.com (Dan Pupius)
  * @author arv@google.com (Erik Arvidsson)
  *
  * @provideGoog
@@ -3039,7 +3038,6 @@ goog.addDependency('window/window_test.js', ['goog.windowTest'], ['goog.dom', 'g
  * You should never need to throw goog.debug.Error(msg) directly, Error(msg) is
  * sufficient.
  *
- * @author pupius@google.com (Daniel Pupius)
  */
 
 goog.provide('goog.debug.Error');
@@ -3141,7 +3139,6 @@ goog.dom.NodeType = {
 
 /**
  * @fileoverview Utilities for string manipulation.
- * @author pupius@google.com (Daniel Pupius)
  * @author arv@google.com (Erik Arvidsson)
  */
 
@@ -4586,7 +4583,6 @@ goog.string.splitLimit = function(str, separator, limit) {
  * The compiler will leave in foo() (because its return value is used),
  * but it will remove bar() because it assumes it does not have side-effects.
  *
- * @author pallosp@google.com (Peter Pallos)
  * @author agrieve@google.com (Andrew Grieve)
  */
 
@@ -4890,9 +4886,7 @@ goog.asserts.assertObjectPrototypeIsIntact = function() {
 /**
  * @fileoverview Utilities for manipulating arrays.
  *
- * @author pupius@google.com (Daniel Pupius)
  * @author arv@google.com (Erik Arvidsson)
- * @author pallosp@google.com (Peter Pallos)
  */
 
 
@@ -6777,7 +6771,6 @@ goog.functions.cacheReturnValue = function(fn) {
 
 /**
  * @fileoverview Additional mathematical functions.
- * @author pupius@google.com (Daniel Pupius)
  */
 
 goog.provide('goog.math');
@@ -7215,7 +7208,6 @@ goog.math.safeCeil = function(num, opt_epsilon) {
 
 /**
  * @fileoverview A utility class for representing two-dimensional positions.
- * @author pupius@google.com (Daniel Pupius)
  */
 
 
@@ -7485,7 +7477,6 @@ goog.math.Coordinate.prototype.rotateDegrees = function(degrees, opt_center) {
 
 /**
  * @fileoverview A utility class for representing two-dimensional sizes.
- * @author pupius@google.com (Dan Pupius)
  * @author brenneman@google.com (Shawn Brenneman)
  */
 
@@ -7695,9 +7686,7 @@ goog.math.Size.prototype.scaleToFit = function(target) {
 
 /**
  * @fileoverview Utilities for manipulating objects/maps/hashes.
- * @author pupius@google.com (Daniel Pupius)
  * @author arv@google.com (Erik Arvidsson)
- * @author pallosp@google.com (Peter Pallos)
  */
 
 goog.provide('goog.object');
@@ -8498,7 +8487,6 @@ goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
  * sub-namespaces in goog.labs.userAgent, goog.labs.userAgent.platform,
  * goog.labs.userAgent.device respectively.)
  *
- * @author vbhasin@google.com (Vipul Bhasin)
  * @author martone@google.com (Andy Martone)
  */
 
@@ -8772,7 +8760,6 @@ goog.labs.userAgent.browser.getVersionFromTuples_ = function(versionTuples) {
  * For more information on browser brand, platform, or device see the other
  * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
  *
- * @author vbhasin@google.com (Vipul Bhasin)
  */
 
 goog.provide('goog.labs.userAgent.engine');
@@ -8904,7 +8891,6 @@ goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
  * @see <a href="http://www.useragentstring.com/">User agent strings</a>
  * For information on the browser brand (such as Safari versus Chrome), see
  * goog.userAgent.product.
- * @author pupius@google.com (Daniel Pupius)
  * @author arv@google.com (Erik Arvidsson)
  * @see ../demos/useragent.html
  */
@@ -9459,7 +9445,6 @@ goog.userAgent.DOCUMENT_MODE = (function() {
 /**
  * @fileoverview Browser capability checks for the dom package.
  *
- * @author zhyder@google.com (Zohair Hyder)
  */
 
 
@@ -9536,7 +9521,6 @@ goog.dom.BrowserFeature = {
  * Note: these utilities are meant to operate on HTMLElements and
  * will not work on elements with differing interfaces (such as SVGElements).
  *
- * @author pupius@google.com (Daniel Pupius)
  * @author arv@google.com (Erik Arvidsson)
  */
 
@@ -9766,7 +9750,6 @@ goog.dom.classes.toggle = function(element, className) {
  * http://www.w3.org/TR/html401/index/elements.html
  * http://dev.w3.org/html5/spec/section-index.html
  *
- * @author baker@google.com (Greg Baker)
  */
 goog.provide('goog.dom.TagName');
 
@@ -9927,7 +9910,6 @@ goog.dom.TagName = {
  * to a different document object.  This is useful if you are working with
  * frames or multiple windows.
  *
- * @author pupius@google.com (Daniel Pupius)
  * @author arv@google.com (Erik Arvidsson)
  */
 
@@ -12834,8 +12816,6 @@ goog.dom.DomHelper.prototype.getAncestor = goog.dom.getAncestor;
  * @fileoverview Provides inversion and inversion map functionality for storing
  * integer ranges and corresponding values.
  *
- * @author cibu@google.com (Cibu Johny)
- * @author markdavis@google.com (Mark Davis)
  */
 
 goog.provide('goog.structs.InversionMap');
@@ -12993,7 +12973,6 @@ goog.structs.InversionMap.prototype.getLeast = function(intKey) {
  * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
  * Unicode 5.1 UAX#29. Tailoring for Virama × Indic Consonants is used.
  *
- * @author cibu@google.com (Cibu Johny)
  */
 
 goog.provide('goog.i18n.GraphemeBreak');
@@ -13209,7 +13188,6 @@ goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
 /**
  * @fileoverview Provides utility functions for formatting strings, numbers etc.
  *
- * @author pupius@google.com (Daniel Pupius)
  */
 
 goog.provide('goog.format');
@@ -13714,8 +13692,6 @@ goog.format.WbrToken_ = {
 
 /**
  * @fileoverview Utility functions for supporting Bidi issues.
- * @author shanjian@google.com (Shanjian Li)
- * @author dougfelt@google.com (Doug Felt)
  */
 
 
@@ -16410,7 +16386,7 @@ goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
     'data', 'formaction', 'href', 'manifest', 'poster', 'src');
 
 
-// TODO(user): Perhaps add <template> used by Polymer?
+// TODO(jakubvrana): Perhaps add <template> used by Polymer?
 /**
  * Set of tag names that are too dangerous.
  * @const
@@ -16472,7 +16448,7 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
         // If it's goog.string.Const, allow any valid attribute name.
         value = goog.string.Const.unwrap(value);
       } else if (/^on/i.test(name)) {
-        // TODO(user): Disallow more attributes with a special meaning.
+        // TODO(jakubvrana): Disallow more attributes with a special meaning.
         throw Error('Attribute "' + name +
             '" requires goog.string.Const value, "' + value + '" given.');
       } else if (value instanceof goog.html.SafeUrl) {
@@ -16483,7 +16459,7 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
             '" requires goog.string.Const or goog.html.SafeUrl value, "' +
             value + '" given.');
       } else if (value instanceof goog.html.SafeStyle) {
-        // TODO(user): Allow "style" only with SafeStyle when it supports
+        // TODO(jakubvrana): Allow "style" only with SafeStyle when it supports
         // dynamic construction.
         goog.asserts.assert(name.toLowerCase() == 'style',
             'goog.html.SafeStyle is only supported in "style" attribute.');
@@ -17203,8 +17179,6 @@ goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
 
 /**
  * @fileoverview Provides utility methods to render soy template.
- * @author kai@google.com (Kai Huang)
- * @author ptucker@google.com (Philip Tucker)
  * @author chrishenry@google.com (Chris Henry)
  */
 
@@ -17426,7 +17400,6 @@ goog.soy.defaultTemplateData_ = {};
 
 /**
  * @fileoverview Utility for fast string concatenation.
- * @author timman@google.com (Tim Mansfield)
  */
 
 goog.provide('goog.string.StringBuffer');
@@ -17548,10 +17521,6 @@ goog.string.StringBuffer.prototype.toString = function() {
  * by Soy-generated JS code. Please do not use these functions directly from
  * your hand-writen code. Their names all start with '$$'.
  *
- * @author Garrett Boyer
- * @author Mike Samuel
- * @author Kai Huang
- * @author Aharon Lanin
  */
 
 goog.provide('soy');

@@ -26,7 +26,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for TextDirective.
  *
- * @author Garrett Boyer
  */
 public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

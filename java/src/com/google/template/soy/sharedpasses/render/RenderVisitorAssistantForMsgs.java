@@ -58,7 +58,6 @@ import java.util.Map;
 /**
  * Assistant visitor for RenderVisitor to handle messages.
  *
- * @author Kai Huang
  */
 class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 

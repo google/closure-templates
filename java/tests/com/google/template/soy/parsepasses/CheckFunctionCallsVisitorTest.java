@@ -32,7 +32,6 @@ import java.util.Set;
 
 
 /**
- * @author Mike Samuel
  */
 public class CheckFunctionCallsVisitorTest extends TestCase {
 

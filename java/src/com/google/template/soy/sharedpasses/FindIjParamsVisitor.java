@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
  * the tree), it's more efficient to reuse the same instance of this visitor because we memoize
  * results from previous calls to exec.
  *
- * @author Kai Huang
  */
 public class FindIjParamsVisitor {
 

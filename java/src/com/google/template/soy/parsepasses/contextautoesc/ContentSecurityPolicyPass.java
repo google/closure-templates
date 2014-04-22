@@ -78,7 +78,6 @@ import java.util.List;
  * The stock <code>java.util.Random</code> is not strong enough, though a properly seeded
  * <code>SecureRandom</code> is ok.
  *
- * @author Mike Samuel
  */
 public final class ContentSecurityPolicyPass {
 

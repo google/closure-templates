@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
  * produced by templates having a "kind" attribute. All of these types may
  * be implicitly coerced into strings.
  *
- * @author Talin
  */
 public abstract class SanitizedType extends PrimitiveType {
 

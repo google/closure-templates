@@ -24,7 +24,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ListLiteralNode.
  *
- * @author Kai Huang
  */
 public class ListLiteralNodeTest extends TestCase {
 

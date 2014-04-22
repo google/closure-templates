@@ -24,7 +24,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 /**
  * Guice module for basic Soy print directives.
  *
- * @author Kai Huang
  */
 public class BasicDirectivesModule extends AbstractModule {
 

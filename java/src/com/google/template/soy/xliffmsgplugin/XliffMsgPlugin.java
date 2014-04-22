@@ -29,7 +29,6 @@ import org.xml.sax.SAXException;
 /**
  * Message plugin for XLIFF format.
  *
- * @author Kai Huang
  */
 @Singleton
 public class XliffMsgPlugin implements SoyMsgPlugin {

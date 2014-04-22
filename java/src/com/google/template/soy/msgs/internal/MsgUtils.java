@@ -43,7 +43,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 /**
  * Soy-specific utilities for working with messages.
  *
- * @author Kai Huang
  */
 public class MsgUtils {
 

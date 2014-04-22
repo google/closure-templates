@@ -26,7 +26,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * <p>Important: Until this API is more stable and this note is removed, users must not define
  * classes that implement this interface.
  *
- * @author Kai Huang
  */
 @ParametersAreNonnullByDefault
 public interface SoyEasyList extends SoyList, SoyMap {

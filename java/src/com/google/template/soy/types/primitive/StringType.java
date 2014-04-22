@@ -24,7 +24,6 @@ import com.google.template.soy.types.SoyType;
 /**
  * Soy string type.
  *
- * @author Talin
  */
 public final class StringType extends PrimitiveType {
 

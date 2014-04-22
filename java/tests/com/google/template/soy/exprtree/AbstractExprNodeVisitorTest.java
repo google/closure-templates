@@ -31,7 +31,6 @@ import java.util.Map;
 /**
  * Unit tests for AbstractExprNodeVisitor.
  *
- * @author Kai Huang
  */
 public class AbstractExprNodeVisitorTest extends TestCase {
 

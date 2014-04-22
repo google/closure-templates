@@ -30,7 +30,6 @@ import java.util.Set;
 /**
  * Type representing a set of possible alternative types.
  *
- * @author Talin
  */
 public final class UnionType implements SoyType {
 

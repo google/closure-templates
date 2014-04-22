@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ChangeCallsToPassAllDataVisitor,
  *
- * @author Kai Huang
  */
 public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 

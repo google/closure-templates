@@ -24,7 +24,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for TruncateDirective.
  *
- * @author Kai Huang
  */
 public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

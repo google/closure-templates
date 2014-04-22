@@ -44,8 +44,6 @@ import javax.annotation.Nonnull;
  * is only applied when the output text's bidi directionality is different from the bidi global
  * directionality.
  *
- * @author Kai Huang
- * @author Aharon Lanin
  */
 @Singleton
 public class BidiSpanWrapDirective

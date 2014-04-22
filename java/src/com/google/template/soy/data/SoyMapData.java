@@ -35,7 +35,6 @@ import javax.annotation.Nonnull;
  *
  * <p> Important: Even though this class is not marked 'final', do not extend this class.
  *
- * @author Kai Huang
  */
 public class SoyMapData extends CollectionData implements SoyDict {
 

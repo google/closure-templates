@@ -35,7 +35,6 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 

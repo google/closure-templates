@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 /**
  * A class for parsing attributes out of command text.
  *
- * @author Kai Huang
  */
 class CommandTextAttributesParser {
 

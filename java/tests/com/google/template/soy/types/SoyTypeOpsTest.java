@@ -29,7 +29,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SoyTypeOps.
  *
- * @author Talin
  */
 public class SoyTypeOpsTest extends TestCase {
   public final SoyTypeRegistry typeRegistry = new SoyTypeRegistry();

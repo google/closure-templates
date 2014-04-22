@@ -18,9 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.RawTextNode;
@@ -30,7 +28,6 @@ import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
 
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +35,6 @@ import java.util.Map;
 /**
  * Test for {@link SLicedRawTextNode}.
  *
- * @author Mike Samuel
  */
 public final class SlicedRawTextNodeTest extends TestCase {
 

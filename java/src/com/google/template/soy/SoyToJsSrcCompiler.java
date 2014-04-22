@@ -36,7 +36,6 @@ import java.util.List;
 /**
  * Executable for compiling a set of Soy files into corresponding JS source files.
  *
- * @author Kai Huang
  */
 public final class SoyToJsSrcCompiler {
 

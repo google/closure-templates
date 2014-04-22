@@ -36,7 +36,6 @@ import java.util.List;
  *
  * <p> All children are {@code MsgNode}s.
  *
- * @author Kai Huang
  */
 public class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
     implements StandaloneNode, SplitLevelTopNode<MsgNode>, LocalVarInlineNode {

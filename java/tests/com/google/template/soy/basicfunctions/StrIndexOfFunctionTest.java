@@ -32,7 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for {@link com.google.template.soy.basicfunctions.StrIndexOfFunction}.
  *
- * @author Christian Czekay
  */
 public class StrIndexOfFunctionTest extends TestCase {
 

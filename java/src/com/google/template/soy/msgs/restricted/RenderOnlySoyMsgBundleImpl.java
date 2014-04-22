@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
  * binary search instead of hash tables, constructing wrapper objects on the fly, and computing
  * properties of the message instead of storing them.
  *
- * @author Garrett Boyer
  */
 final class RenderOnlySoyMsgBundleImpl implements SoyMsgBundle {
 
@@ -70,7 +69,7 @@ final class RenderOnlySoyMsgBundleImpl implements SoyMsgBundle {
    *     Should only be null for bundles newly extracted from source files. Should always be set
    *     for bundles parsed from message files/resources.
    * @param msgs The list of messages. List order will become the iteration order. Duplicate
-   *     message ID's are not permitted. 
+   *     message ID's are not permitted.
    */
   public RenderOnlySoyMsgBundleImpl(@Nullable String localeString, Iterable<SoyMsg> msgs) {
 

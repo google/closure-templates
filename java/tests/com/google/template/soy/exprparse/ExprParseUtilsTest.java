@@ -26,7 +26,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for ExprParseUtils.
  *
- * @author Kai Huang
  */
 public class ExprParseUtilsTest extends TestCase {
 

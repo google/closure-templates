@@ -25,7 +25,6 @@ package com.google.template.soy.data;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Garrett Boyer
  */
 public abstract class SoyAbstractCachingValueProvider implements SoyValueProvider {
 

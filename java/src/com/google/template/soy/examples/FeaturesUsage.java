@@ -59,7 +59,6 @@ import java.net.URL;
 /**
  * Usage of the features examples.
  *
- * @author Kai Huang
  */
 public class FeaturesUsage {
 

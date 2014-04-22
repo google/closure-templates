@@ -31,7 +31,6 @@ import java.util.List;
 /**
  * Unit tests for SoyListData.
  *
- * @author Kai Huang
  */
 public class SoyListDataTest extends TestCase {
 

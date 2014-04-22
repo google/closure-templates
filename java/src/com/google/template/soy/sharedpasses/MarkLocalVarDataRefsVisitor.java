@@ -52,7 +52,6 @@ import java.util.Set;
  * handle them.
  *
  * @see UnmarkLocalVarDataRefsVisitor
- * @author Kai Huang
  */
 public class MarkLocalVarDataRefsVisitor extends AbstractSoyNodeVisitor<Void> {
 

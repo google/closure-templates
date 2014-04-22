@@ -27,7 +27,6 @@ import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
 /**
  * Unit tests for BidiUnicodeWrapDirective.
  *
- * @author Kai Huang
  */
 public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

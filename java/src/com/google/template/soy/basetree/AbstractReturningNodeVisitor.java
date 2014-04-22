@@ -33,7 +33,6 @@ import java.util.List;
  * @param <R> The return type of this visitor.
  *
  * @see AbstractNodeVisitor
- * @author Kai Huang
  */
 public abstract class AbstractReturningNodeVisitor<N extends Node, R>
     implements NodeVisitor<N, R> {

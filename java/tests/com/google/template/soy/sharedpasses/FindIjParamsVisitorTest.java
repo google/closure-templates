@@ -29,7 +29,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for FindIjParamsVisitor.
  *
- * @author Kai Huang
  */
 public class FindIjParamsVisitorTest extends TestCase {
 

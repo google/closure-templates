@@ -55,9 +55,6 @@ import java.util.Stack;
  *       .in(ScopeAnnotation.class);
  * </pre>
  *
- * @author Jesse Wilson
- * @author Fedor Karpelevitch
- * @author Kai Huang
  */
 public class GuiceSimpleScope implements Scope {
 

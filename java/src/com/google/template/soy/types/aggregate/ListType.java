@@ -28,7 +28,6 @@ import com.google.template.soy.types.SoyType;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Talin
  */
 public class ListType implements SoyType {
 

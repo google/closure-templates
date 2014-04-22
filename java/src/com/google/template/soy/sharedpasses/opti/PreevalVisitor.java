@@ -42,7 +42,6 @@ import java.util.Map;
  * the context of the {@code data} and {@code env} passed into the constructor) is returned as a
  * {@code SoyValue} object.
  *
- * @author Kai Huang
  */
 class PreevalVisitor extends EvalVisitor {
 

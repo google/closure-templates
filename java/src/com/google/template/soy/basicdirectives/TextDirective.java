@@ -39,7 +39,6 @@ import javax.inject.Singleton;
  * performs no escaping, though in the future, it may force autoescaping to
  * re-escape the value.
  *
- * @author Garrett Boyer
  */
 @Singleton
 @SoyPurePrintDirective

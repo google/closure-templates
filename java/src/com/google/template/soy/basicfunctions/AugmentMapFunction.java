@@ -38,7 +38,6 @@ import java.util.Set;
  * Soy function that creates a new map equivalent to augmenting an existing map with additional
  * mappings.
  *
- * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

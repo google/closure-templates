@@ -37,7 +37,6 @@ import java.util.Set;
 /**
  * A directive that HTML-escapes the output.
  *
- * @author Kai Huang
  */
 @Singleton
 @SoyPurePrintDirective

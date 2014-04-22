@@ -29,7 +29,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MarkLocalVarDataRefsVisitor and UnmarkLocalVarDataRefsVisitor.
  *
- * @author Kai Huang
  */
 public class MarkLocalVarDataRefsVisitorTest extends TestCase {
 

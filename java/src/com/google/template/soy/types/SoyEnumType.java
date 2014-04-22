@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Talin
 */
 public interface SoyEnumType extends SoyType {
 

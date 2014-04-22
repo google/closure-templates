@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
  * print command, it may clone a template for each context in which it is called, using the
  * {@link Context#packedBits bitpacked} form of the context to generate a unique template name.
  *
- * @author Mike Samuel
  */
 public final class Context {
 
@@ -350,7 +349,7 @@ public final class Context {
       case SINGLE_QUOTE:
       case DOUBLE_QUOTE:
         if (escapingMode == EscapingMode.NORMALIZE_URI) {
-          // URI's should still be HTML-escaped to escape ampersands, quotes, and other characters. 
+          // URI's should still be HTML-escaped to escape ampersands, quotes, and other characters.
           // Normalizing a URI (which mostly percent-encodes quotes) is unnecessary if it's going
           // to be escaped as an HTML attribute, so as a performance optimization, we simply
           // replace the escaper.

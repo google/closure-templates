@@ -48,7 +48,6 @@ import java.util.List;
  * {@code SoySyntaxException} is thrown if the given node or a descendant does not satisfy the
  * user-declared syntax version.
  *
- * @author Kai Huang
  */
 public class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
 

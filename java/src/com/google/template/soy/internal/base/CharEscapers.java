@@ -24,8 +24,6 @@ import java.io.IOException;
  * Utility functions for dealing with {@code CharEscaper}s, and some commonly
  * used {@code CharEscaper} instances.
  *
- * @author Sven Mawson
- * @author Laurence Gonsalves
  */
 public final class CharEscapers {
 

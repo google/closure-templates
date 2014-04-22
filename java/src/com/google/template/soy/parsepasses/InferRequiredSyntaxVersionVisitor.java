@@ -34,7 +34,6 @@ import java.util.List;
  *
  * <p>The node passed to {@code exec()} must be a {@code SoyFileNode}.
  *
- * @author Kai Huang
  */
 public class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisitor<SyntaxVersion> {
 

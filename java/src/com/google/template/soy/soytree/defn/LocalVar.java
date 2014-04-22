@@ -22,7 +22,6 @@ import com.google.template.soy.types.SoyType;
 /**
  * A local variable declaration.
  *
- * @author Talin
  */
 public final class LocalVar extends AbstractVarDefn {
 

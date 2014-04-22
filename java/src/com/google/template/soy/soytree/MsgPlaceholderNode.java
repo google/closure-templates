@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
 

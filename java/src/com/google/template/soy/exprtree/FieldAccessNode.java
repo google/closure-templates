@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 /**
  * Reference to a named field.
  *
- * @author Talin
  */
 public final class FieldAccessNode extends DataAccessNode {
 

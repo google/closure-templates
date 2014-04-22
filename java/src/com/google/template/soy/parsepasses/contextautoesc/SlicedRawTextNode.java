@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
  * A raw text node divided into a slice for each context found by the inference engine so that later
  * parse passes can take action based on text and attribute boundaries.
  *
- * @author Mike Samuel
  */
 public final class SlicedRawTextNode {
 
@@ -267,7 +266,7 @@ public final class SlicedRawTextNode {
   /**
    * Inserts a slice, updating the offsets of any following slices and returns the newly created
    * slice.
-   */ 
+   */
   RawTextSlice insertSlice(int index, Context context, int length) {
     if (length < 0) {
       throw new IllegalArgumentException("length " + length + " < 0");

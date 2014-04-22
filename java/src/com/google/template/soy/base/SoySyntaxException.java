@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
  * themselves (treat constructors, creation functions, and mutating methods as
  * superpackage-private).
  *
- * @author Kai Huang
  */
 public class SoySyntaxException extends RuntimeException {
 
@@ -229,7 +228,7 @@ public class SoySyntaxException extends RuntimeException {
 
   /**
    * @return The original error message from the Soy compiler without any
-   *     metadata about the location where the error appears.  
+   *     metadata about the location where the error appears.
    */
   public String getOriginalMessage() {
     return super.getMessage();

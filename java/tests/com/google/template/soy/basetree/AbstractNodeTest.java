@@ -22,7 +22,6 @@ import junit.framework.*;
 /**
  * Unit tests for AbstractNode.
  *
- * @author Kai Huang
  */
 public class AbstractNodeTest extends TestCase {
 

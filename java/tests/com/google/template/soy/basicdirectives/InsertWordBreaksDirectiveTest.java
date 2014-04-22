@@ -24,7 +24,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for InsertWordBreaksDirective.
  *
- * @author Kai Huang
  */
 public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

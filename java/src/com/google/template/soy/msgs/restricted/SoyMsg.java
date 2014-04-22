@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 /**
  * Represents a message in some language/locale. Contains information relevant to translation.
  *
- * @author Kai Huang
  */
 public final class SoyMsg {
 

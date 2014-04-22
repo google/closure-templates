@@ -20,7 +20,6 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
 
@@ -28,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SetDefaultForDelcallAllowsEmptyDefaultVisitor.
  *
- * @author Kai Huang
  */
 public class SetDefaultForDelcallAllowsEmptyDefaultVisitorTest extends TestCase {
 

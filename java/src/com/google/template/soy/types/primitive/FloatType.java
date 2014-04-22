@@ -23,7 +23,6 @@ import com.google.template.soy.data.restricted.FloatData;
 /**
  * Soy floating-point type.
  *
- * @author Talin
  */
 public final class FloatType extends PrimitiveType {
 

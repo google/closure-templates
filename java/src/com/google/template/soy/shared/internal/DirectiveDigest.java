@@ -23,8 +23,6 @@ import javax.annotation.Nullable;
 /**
  * The identifiers associated with the support for a particular escaping directive.
  *
- * @author Mike Samuel
- * @author David Phillips
  */
 public final class DirectiveDigest {
 

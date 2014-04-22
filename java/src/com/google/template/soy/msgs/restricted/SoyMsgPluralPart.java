@@ -23,7 +23,6 @@ import com.google.template.soy.internal.base.Pair;
 /**
  * Represents a plural statement within a message.
  *
- * @author Mohamed Eldawy
  */
 public final class SoyMsgPluralPart extends SoyMsgPart {
 

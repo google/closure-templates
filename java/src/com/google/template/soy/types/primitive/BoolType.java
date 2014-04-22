@@ -23,7 +23,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 /**
  * Soy boolean type.
  *
- * @author Talin
  */
 public final class BoolType extends PrimitiveType {
 

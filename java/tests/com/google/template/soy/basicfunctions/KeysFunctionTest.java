@@ -32,7 +32,6 @@ import java.util.Set;
 /**
  * Unit tests for KeysFunction.
  *
- * @author Kai Huang
  */
 public class KeysFunctionTest extends TestCase {
 

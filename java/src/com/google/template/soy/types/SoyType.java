@@ -35,7 +35,6 @@ import com.google.template.soy.data.SoyValue;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Talin
  */
 public interface SoyType {
 

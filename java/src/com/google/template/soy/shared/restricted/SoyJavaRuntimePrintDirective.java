@@ -29,7 +29,6 @@ import java.util.List;
  *
  * <p> Important: This may only be used in implementing print directive plugins.
  *
- * @author Kai Huang
  */
 // TODO SOON: Deprecate.
 public interface SoyJavaRuntimePrintDirective extends SoyPrintDirective {

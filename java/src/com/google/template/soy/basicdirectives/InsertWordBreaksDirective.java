@@ -41,7 +41,6 @@ import javax.annotation.Nonnull;
  * A directive that inserts word breaks as necessary.
  * It takes a single argument : an integer specifying the max number of characters between breaks.
  *
- * @author Kai Huang
  */
 @Singleton
 @SoyPurePrintDirective

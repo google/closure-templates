@@ -38,7 +38,6 @@ import java.util.Map;
  * <p> {@link #exec} should be called on a full parse tree or a Soy file. This pass mutates
  * {@code CallBasicNode}s. There is no return value.
  *
- * @author Kai Huang
  */
 public class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 

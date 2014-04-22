@@ -26,7 +26,6 @@ import javax.annotation.Nonnull;
  * A general converter that knows how to convert all expected Java objects to SoyValues (or
  * SoyValueProviders).
  *
- * @author Talin
  */
 public interface SoyValueConverter {
 

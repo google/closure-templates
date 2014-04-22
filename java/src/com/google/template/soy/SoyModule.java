@@ -36,7 +36,6 @@ import com.google.template.soy.types.SoyTypeOps;
 /**
  * Guice module for Soy's programmatic interface.
  *
- * @author Kai Huang
  */
 public class SoyModule extends AbstractModule {
 

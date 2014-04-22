@@ -35,7 +35,6 @@ import com.google.template.soy.msgs.SoyMsgBundle;
  * <p> This saves an enormous amount of memory, especially since in gender/plural messages, there
  * are many repeated parts.
  *
- * @author Garrett Boyer
  */
 public final class SoyMsgBundleCompactor {
 

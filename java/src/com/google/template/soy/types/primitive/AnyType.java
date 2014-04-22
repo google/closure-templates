@@ -25,7 +25,6 @@ import com.google.template.soy.types.SoyType;
  * on this type are explicit coercions to other types (i.e. downcasting), or operations
  * that implicitly coerce to string or boolean type (e.g. printing).
  *
- * @author Talin
  */
 public final class AnyType extends PrimitiveType {
 

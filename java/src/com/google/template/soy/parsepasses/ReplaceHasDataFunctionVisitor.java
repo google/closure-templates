@@ -38,7 +38,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p> Note: hasData() is a no-op as of March 2012.
  * <p> Note: hasData() is disallowed at syntax version 2.2.
  *
- * @author Kai Huang
  */
 public class ReplaceHasDataFunctionVisitor extends AbstractSoyNodeVisitor<Void> {
 

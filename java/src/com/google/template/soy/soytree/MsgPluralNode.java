@@ -36,8 +36,6 @@ import java.util.regex.Pattern;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
- * @author Mohamed Eldawy
  */
 public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {

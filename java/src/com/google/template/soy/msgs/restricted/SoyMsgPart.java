@@ -20,7 +20,6 @@ package com.google.template.soy.msgs.restricted;
 /**
  * Represents a part of a message (i.e. raw text or placeholder).
  *
- * @author Kai Huang
  */
 public abstract class SoyMsgPart {
 

@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SoyData.
  *
- * @author Kai Huang
  */
 public class SoyDataTest extends TestCase {
 

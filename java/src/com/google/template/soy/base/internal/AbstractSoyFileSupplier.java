@@ -25,7 +25,6 @@ import com.google.common.base.Preconditions;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
 

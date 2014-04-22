@@ -43,7 +43,6 @@ import java.util.Map;
 /**
  * Unit tests for BuildAllDependeesMapVisitor.
  *
- * @author Kai Huang
  */
 public class BuildAllDependeesMapVisitorTest extends TestCase {
 

@@ -36,7 +36,6 @@ import javax.annotation.Nonnull;
 /**
  * A list data node in a Soy data tree.
  *
- * @author Kai Huang
  */
 public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
 

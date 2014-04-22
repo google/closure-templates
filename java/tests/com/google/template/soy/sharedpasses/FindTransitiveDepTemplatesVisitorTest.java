@@ -32,7 +32,6 @@ import java.util.Map;
 /**
  * Unit tests for FindTransitiveDepTemplatesVisitor.
  *
- * @author Kai Huang
  */
 public class FindTransitiveDepTemplatesVisitorTest extends TestCase {
 

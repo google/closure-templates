@@ -32,7 +32,6 @@ import java.util.concurrent.Future;
  *
  * <p> Important: Even though this class is not marked 'final', do not extend this class.
  *
- * @author Kai Huang
  */
 public abstract class SoyData extends SoyAbstractValue {
 

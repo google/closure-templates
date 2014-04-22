@@ -32,7 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for {@link StrContainsFunction}.
  *
- * @author Felix Arends
  */
 public class StrContainsFunctionTest extends TestCase {
 

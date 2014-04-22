@@ -27,8 +27,6 @@ import javax.annotation.Nonnull;
  *
  * SoyValueProvider implementation that represents a wrapped future.
  *
- * @author Talin
- * @author Kai Huang
  */
 public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvider {
 

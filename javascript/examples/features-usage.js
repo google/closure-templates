@@ -15,7 +15,6 @@
  */
 
 // Usage of the features examples.
-// Author: Kai Huang
 
 
 var GLOBAL_STR = 'This is a render-time global.';

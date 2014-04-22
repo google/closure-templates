@@ -59,7 +59,6 @@ import java.util.Set;
  * {@code SoySyntaxException} is thrown if the parameters declared in some template's SoyDoc do not
  * match the data keys referenced in that template.
  *
- * @author Kai Huang
  */
 public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 

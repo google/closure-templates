@@ -29,7 +29,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for AbstractOperatorNode.
  *
- * @author Kai Huang
  */
 public class AbstractOperatorNodeTest extends TestCase {
 

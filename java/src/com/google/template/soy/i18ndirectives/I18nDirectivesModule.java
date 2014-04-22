@@ -24,7 +24,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 /**
  * Guice module for i18n directives.
  *
- * @author Jeff Craig
  */
 public class I18nDirectivesModule extends AbstractModule {
 

@@ -24,7 +24,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for UnsafeSanitizedContentOrdainer utility class.
  *
- * @author Aharon Lanin
  */
 public class UnsafeSanitizedContentOrdainerTest extends TestCase {
 

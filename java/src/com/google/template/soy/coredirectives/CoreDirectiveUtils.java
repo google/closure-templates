@@ -22,7 +22,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 /**
  * Utilities for common operations related to core directives (|escapeHtml, |noAutoescape, |id).
  *
- * @author Kai Huang
  */
 public class CoreDirectiveUtils {
 

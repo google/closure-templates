@@ -32,7 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for {@link StrSubFunction}.
  *
- * @author Christian Czekay
  */
 public class StrSubFunctionTest extends TestCase {
 

@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CheckDelegatesVisitor.
  *
- * @author Kai Huang
  */
 public class CheckDelegatesVisitorTest extends TestCase {
 
@@ -316,7 +315,7 @@ public class CheckDelegatesVisitorTest extends TestCase {
             "{/template}\n");
   }
 
-  
+
   public void testStrictModeContentKindMatches() {
 
     // One is strict and the other is not.

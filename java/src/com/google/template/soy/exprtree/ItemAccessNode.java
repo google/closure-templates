@@ -29,7 +29,6 @@ import com.google.template.soy.basetree.SyntaxVersionBound;
  * $foo[0]. (The old dot-index syntax is supported for legacy reasons, but its
  * use is discouraged in new templates.)
  *
- * @author Talin
  */
 public final class ItemAccessNode extends DataAccessNode {
 

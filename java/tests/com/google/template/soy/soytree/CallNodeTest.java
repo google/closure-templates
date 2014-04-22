@@ -26,7 +26,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CallNode.
  *
- * @author Mike Samuel
  */
 public class CallNodeTest extends TestCase {
 

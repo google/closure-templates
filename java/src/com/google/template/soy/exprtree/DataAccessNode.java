@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
  * such as an object or collection. Syntactically, data accesses are always
  * suffix operators such as base.fieldName or base[expression].
  *
- * @author Talin
  */
 public abstract class DataAccessNode extends AbstractParentExprNode {
 

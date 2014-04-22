@@ -43,7 +43,6 @@ import java.util.List;
 /**
  * Unit tests for XliffMsgPlugin.
  *
- * @author Kai Huang
  */
 public class XliffMsgPluginTest extends TestCase {
 

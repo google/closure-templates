@@ -35,7 +35,6 @@ import java.util.logging.Logger;
  *     be called. This method creates a Guice injector containing only the {@code SoyModule},
  *     which serves to bind the default Soy plugins (e.g. basic functions).
  *
- * @author Kai Huang
  */
 // TODO(gboyer): This class is very unfortunate. Static injection essentially means that whichever
 // Injector installed SoyModule last wins, which can cause bewildering errors.

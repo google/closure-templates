@@ -32,7 +32,6 @@ import com.google.template.soy.data.restricted.StringData;
  *
  * @deprecated Simply use {@code *Data.forValue()} directly.
  *
- * @author Kai Huang
  */
 @Deprecated
 public class SoyJavaRuntimeFunctionUtils {

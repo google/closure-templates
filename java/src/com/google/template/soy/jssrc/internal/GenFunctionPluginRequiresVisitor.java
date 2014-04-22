@@ -33,7 +33,6 @@ import java.util.SortedSet;
  * A visitor to generate a set of Closure JS library names required by the function plugins used by
  * this template.
  *
- * @author Jeff Craig
  */
 class GenFunctionPluginRequiresVisitor {
 

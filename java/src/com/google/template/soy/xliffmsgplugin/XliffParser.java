@@ -44,7 +44,6 @@ import javax.xml.parsers.SAXParserFactory;
  *
  * <p> XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
  *
- * @author Kai Huang
  */
 class XliffParser {
 

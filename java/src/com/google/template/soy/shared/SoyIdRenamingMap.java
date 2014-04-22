@@ -23,8 +23,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * An interface for a one-to-one string mapping function used to rename identifiers.
  * Renaming can be used for minimization, obfuscation, normalization, etc.
  *
- * @author Mark Rawling
- * @author Talin
  */
 @ParametersAreNonnullByDefault
 public interface SoyIdRenamingMap {

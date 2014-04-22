@@ -22,7 +22,6 @@ import java.util.List;
 /**
  * Utilities for dealing with msg parts.
  *
- * @author Kai Huang
  */
 public class MsgPartUtils {
 

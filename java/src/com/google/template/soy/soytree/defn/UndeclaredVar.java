@@ -21,7 +21,6 @@ import com.google.template.soy.types.primitive.UnknownType;
 /**
  * A reference to an undeclared variable, used in legacy templates.
  *
- * @author Talin
  */
 public final class UndeclaredVar extends AbstractVarDefn {
 

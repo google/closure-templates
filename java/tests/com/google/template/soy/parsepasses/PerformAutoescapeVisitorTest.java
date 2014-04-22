@@ -44,7 +44,6 @@ import java.util.Map;
 /**
  * Unit tests for PerformAutoescapeVisitor.
  *
- * @author Kai Huang
  */
 public class PerformAutoescapeVisitorTest extends TestCase {
 

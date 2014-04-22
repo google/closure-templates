@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Talin
  */
 public class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode  {
 

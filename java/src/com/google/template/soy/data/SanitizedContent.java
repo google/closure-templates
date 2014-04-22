@@ -24,7 +24,6 @@ import javax.annotation.concurrent.Immutable;
 /**
  * A chunk of sanitized content of a known kind, e.g. the output of an HTML sanitizer.
  *
- * @author Mike Samuel
  */
 @ParametersAreNonnullByDefault
 @Immutable

@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * @author Kai Huang
  */
 public class JsExprUtils {
 

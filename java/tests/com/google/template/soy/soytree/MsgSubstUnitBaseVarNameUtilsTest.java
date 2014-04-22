@@ -29,7 +29,6 @@ import java.util.List;
 /**
  * Unit tests for MsgSubstUnitBaseVarNameUtils.
  *
- * @author Kai Huang
  */
 public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
 

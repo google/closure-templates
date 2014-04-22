@@ -50,7 +50,6 @@ import java.io.IOException;
  * CharEscapers}. To create your own escapers extend this class and implement
  * the {@link #escape(int)} method.
  *
- * @author David Beaumont
  */
 public abstract class UnicodeEscaper implements Escaper {
 

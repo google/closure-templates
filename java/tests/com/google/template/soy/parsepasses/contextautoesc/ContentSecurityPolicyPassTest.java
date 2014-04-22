@@ -32,7 +32,6 @@ import java.util.List;
 /**
  * Test for {@link ContentSecurityPolicyPass}.
  *
- * @author Mike Samuel
  */
 public final class ContentSecurityPolicyPassTest extends TestCase {
 

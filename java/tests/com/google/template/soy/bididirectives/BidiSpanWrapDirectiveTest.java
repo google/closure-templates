@@ -27,7 +27,6 @@ import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
 /**
  * Unit tests for BidiSpanWrapDirective.
  *
- * @author Kai Huang
  */
 public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

@@ -27,8 +27,6 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
- * @author Talin
  */
 @Immutable
 public abstract class TemplateParam extends AbstractVarDefn {

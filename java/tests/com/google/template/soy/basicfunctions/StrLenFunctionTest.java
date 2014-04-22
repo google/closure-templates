@@ -32,7 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for {@link StrLenFunction}.
  *
- * @author Christian Czekay
  */
 public class StrLenFunctionTest extends TestCase {
 

@@ -50,7 +50,6 @@ import java.util.List;
 /**
  * Unit tests for the Soy expression parser.
  *
- * @author Kai Huang
  */
 public class ExpressionParserTest extends TestCase {
 

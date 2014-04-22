@@ -34,7 +34,6 @@ import java.util.Set;
 /**
  * Soy function that takes the max of two numbers.
  *
- * @author Kai Huang
  */
 @Singleton
 @SoyPureFunction

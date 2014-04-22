@@ -26,7 +26,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for RewriteNullCoalescingOpVisitor.
  *
- * @author Kai Huang
  */
 public class RewriteNullCoalescingOpVisitorTest extends TestCase {
 

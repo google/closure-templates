@@ -60,7 +60,6 @@ import java.util.Set;
  * Note: This pass requires that the ResolveExpressionTypesVisitor has already
  * been run.
  *
- * @author Talin
  */
 public class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 

@@ -26,7 +26,6 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * @author Kai Huang
  */
 @Immutable
 public final class StringData extends PrimitiveData {

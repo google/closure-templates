@@ -32,7 +32,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for IsNonnullFunction.
  *
- * @author Kai Huang
  */
 public class IsNonnullFunctionTest extends TestCase {
 

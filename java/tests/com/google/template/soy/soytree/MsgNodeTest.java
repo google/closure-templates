@@ -25,7 +25,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MsgNode.
  *
- * @author Kai Huang
  */
 public class MsgNodeTest extends TestCase {
 
@@ -276,7 +275,7 @@ public class MsgNodeTest extends TestCase {
     selectNode.addChild(selectDefaultNode);
 
     msg.addChild(selectNode);
-    
+
     // msg.printMessageNode();
 
     // Test.
@@ -286,10 +285,10 @@ public class MsgNodeTest extends TestCase {
 
     MsgPluralNode nodePlural1 = (MsgPluralNode) nodeSelect.getChild(0).getChild(0);
     assertEquals("NUM_1", msg.getPluralVarName(nodePlural1));
-    
+
     MsgPluralNode nodePlural2 = (MsgPluralNode) nodeSelect.getChild(1).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural2));
-    
+
     MsgPluralNode nodePlural3 = (MsgPluralNode) nodeSelect.getChild(2).getChild(0);
     assertEquals("NUM_2", msg.getPluralVarName(nodePlural3));
     assertNotSame(nodePlural2, nodePlural3);

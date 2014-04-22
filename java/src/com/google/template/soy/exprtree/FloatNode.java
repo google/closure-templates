@@ -25,7 +25,6 @@ import com.google.template.soy.types.primitive.FloatType;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class FloatNode extends AbstractPrimitiveNode {
 

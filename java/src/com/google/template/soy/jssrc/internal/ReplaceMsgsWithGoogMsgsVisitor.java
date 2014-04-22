@@ -38,7 +38,6 @@ import java.util.List;
  *
  * <p> {@link #exec} must be called on a full parse tree.
  *
- * @author Kai Huang
  */
 class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 

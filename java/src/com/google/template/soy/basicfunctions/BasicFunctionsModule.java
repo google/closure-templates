@@ -24,7 +24,6 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 /**
  * Guice module for basic Soy functions.
  *
- * @author Kai Huang
  */
 public class BasicFunctionsModule extends AbstractModule {
 

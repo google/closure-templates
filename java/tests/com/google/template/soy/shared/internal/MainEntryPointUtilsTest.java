@@ -20,7 +20,6 @@ import junit.framework.TestCase;
 
 
 /**
- * @author kai@google.com (Kai Huang)
  */
 public class MainEntryPointUtilsTest extends TestCase {
 

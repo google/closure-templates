@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 /**
  * Static methods to compute the unique message id for a message.
  *
- * @author Kai Huang
  */
 public class SoyMsgIdComputer {
 

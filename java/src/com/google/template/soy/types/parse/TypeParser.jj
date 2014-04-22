@@ -38,7 +38,6 @@ PARSER_BEGIN(TypeParser)
 
 package com.google.template.soy.types.parse;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.collect.Maps;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -46,7 +45,6 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.aggregate.RecordType;
-import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 
 import java.io.StringReader;
@@ -62,7 +60,6 @@ import java.util.Map;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Talin
  */
 public class TypeParser {
 

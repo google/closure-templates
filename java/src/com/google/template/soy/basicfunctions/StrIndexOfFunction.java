@@ -47,7 +47,6 @@ import java.util.Set;
  * <code>strIndexOf</code> is case sensitive and the string indices are
  * zero based.
  *
- * @author Christian Czekay
  */
 @Singleton
 @SoyPureFunction

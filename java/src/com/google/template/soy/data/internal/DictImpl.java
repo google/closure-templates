@@ -30,7 +30,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 @ParametersAreNonnullByDefault
 public final class DictImpl extends AbstractDict {

@@ -39,7 +39,6 @@ import java.util.List;
  * Executable for pruning messages from extracted msgs files, given a set of Soy files as reference
  * for which messages to keep.
  *
- * @author Kai Huang
  */
 public class SoyMsgPruner {
 

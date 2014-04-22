@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for MinFunction.
  *
- * @author Kai Huang
  */
 public class MinFunctionTest extends TestCase {
 

@@ -24,7 +24,6 @@ import com.google.template.soy.data.SoyValueProvider;
 /**
  * Transforms on value types used in the implementation.
  *
- * @author Garrett Boyer
  */
 final class Transforms {
   static final Function<SoyValueProvider, SoyValue> RESOLVE_FUNCTION =

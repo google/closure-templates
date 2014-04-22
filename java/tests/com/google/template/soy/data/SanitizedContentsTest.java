@@ -24,7 +24,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for SanitizedContents utility class.
  *
- * @author Garrett Boyer
  */
 public class SanitizedContentsTest extends TestCase {
 

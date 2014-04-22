@@ -48,7 +48,6 @@ import java.util.Set;
  * extend to the end of <code>expr1</code>. Otherwise it will extend to the
  * character at index <code>expr3 - 1</code>.
  *
- * @author Christian Czekay
  */
 @Singleton
 @SoyPureFunction

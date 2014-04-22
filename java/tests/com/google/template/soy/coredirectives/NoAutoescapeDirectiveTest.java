@@ -25,7 +25,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 /**
  * Unit tests for NoAutoescapeDirective.
  *
- * @author Kai Huang
  */
 public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 

@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for CheckSoyDocVisitor.
  *
- * @author Kai Huang
  */
 public class CheckSoyDocVisitorTest extends TestCase {
 

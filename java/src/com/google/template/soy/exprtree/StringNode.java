@@ -26,7 +26,6 @@ import com.google.template.soy.types.primitive.StringType;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public class StringNode extends AbstractPrimitiveNode {
 

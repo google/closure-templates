@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * Unit tests for LengthFunction.
  *
- * @author Kai Huang
  */
 public class LengthFunctionTest extends TestCase {
 

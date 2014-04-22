@@ -29,7 +29,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Garrett Boyer
  */
 @ParametersAreNonnullByDefault
 public final class ListImpl extends ListBackedList {

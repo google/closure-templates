@@ -49,7 +49,6 @@ import java.util.List;
 /**
  * Unit tests for ResolveNamesVisitor.
  *
- * @author Talin
  */
 public class ResolveExpressionTypesVisitorTest extends TestCase {
 

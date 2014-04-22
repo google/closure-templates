@@ -40,7 +40,6 @@ import java.util.Set;
  * <p><code>strLen(expr1)</code> requires <code>expr1</code> to be of type
  * string or {@link com.google.template.soy.data.SanitizedContent}.
  *
- * @author Christian Czekay
  */
 @Singleton
 @SoyPureFunction

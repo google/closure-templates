@@ -41,7 +41,6 @@ import javax.annotation.concurrent.Immutable;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * @author Kai Huang
  */
 public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     implements StandaloneNode, SplitLevelTopNode<CallParamNode>, StatementNode, ExprHolderNode,
@@ -175,7 +174,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** Returns whether we're passing all of the data (i.e. data="all"). */
   public boolean isPassingAllData() {
     return isPassingAllData;
-  
+
   }
 
 

@@ -23,7 +23,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 /**
  * Soy integer type.
  *
- * @author Talin
  */
 public final class IntType extends PrimitiveType {
 
