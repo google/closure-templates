@@ -126,6 +126,19 @@ import java.util.regex.*;
  *        list<int>}  /**
  *        A list of numbers. *&#47;
  *
+ * 3. Injected param declaration:
+ *    + Works exactly like @param except that parameter values are taken from the
+ *      implicit $ij scope.
+ *    + Soy tag with command name "@inject" and command text "key: type".
+ *    + Optional desc string is written as a block doc comment, which either must
+ *      precede the param tag, or must start on the same line as the end of the '@inject' tag.
+ *    + Examples:
+ *    {@inject foo: bool}
+ *    {@inject foo: list<int>}  /** A list of numbers. *&#47;
+ *    {@inject? foo:
+ *        list<int>}  /**
+ *        A list of numbers. *&#47;
+ *
  * Body:
  *
  * 1. Comments:
@@ -624,6 +637,7 @@ TOKEN_MGR_DECLS:
 {
 // --- Decl commands. ---
   < CMD_NAME_PARAM_DECL: "@param" > { switchToStateAfterCmdName(); }
+| < CMD_NAME_INJECTED_PARAM_DECL: "@inject" > { switchToStateAfterCmdName(); }
 
 // --- Invalid decl commands. ---
 | < XXX_CMD_NAME_INVALID_DECL: "@" ( <IDENT> )* >
@@ -1535,48 +1549,6 @@ private void ContiguousRawTextLookaheadHelper() :
 
 
 // -------------------------------------------------------------------------------------------------
-// Declaration tags.
-
-
-/**
- * ParamDeclTag -> SoyTagOpen CmdNameParamDecl WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> ParamDeclTag() :
-{
-  SourceItemInfo<Void> tagOpen;
-  String cmdText;
-}
-{
-  tagOpen = SoyTagOpen()
-  <CMD_NAME_PARAM_DECL> <WS_AFTER_CMD_NAME>
-  cmdText = CmdText()
-  RegSoyTagClose()
-
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
-}
-
-
-/**
- * OptParamDeclTag -> SoyTagOpen CmdNameParamDecl
- *     <QMARK> WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> OptParamDeclTag() :
-{
-  SourceItemInfo<Void> tagOpen;
-  String optText = "";
-  String cmdText;
-}
-{
-  tagOpen = SoyTagOpen()
-  <CMD_NAME_PARAM_DECL> <QMARK> <WS_AFTER_CMD_NAME>
-  cmdText = CmdText()
-  RegSoyTagClose()
-
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
-}
-
-
-// -------------------------------------------------------------------------------------------------
 // Other tags.
 
 
@@ -2247,20 +2219,16 @@ private List<DeclInfo> TemplateHeader() :
 /**
  * Helper for use in LOOKAHEAD to check for Decl preceded by optional whitespace.
  *
- * TemplateHeaderLookaheadHelper -> [ ConsecWs ] SoyTagOpen CmdNameParamDecl WsAfterCmdName
- *     | <BLOCK_DOC_COMMENT> [ ConsecWs() ] SoyTagOpen CmdNameParamDecl WsAfterCmdName
-
+ * TemplateHeaderLookaheadHelper -> [ <BLOCK_DOC_COMMENT> ] [ ConsecWs ]
+ *     SoyTagOpen <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> [ QMARK ] WsAfterCmdName
  */
 private void TemplateHeaderLookaheadHelper() :
 {}
 {
   [ ConsecWs() ]
-  (
-    SoyTagOpen() <CMD_NAME_PARAM_DECL> [ <QMARK> ] <WS_AFTER_CMD_NAME>
-  |
-    <BLOCK_DOC_COMMENT> [ ConsecWs() ] SoyTagOpen() <CMD_NAME_PARAM_DECL>
-    [ <QMARK> ] <WS_AFTER_CMD_NAME>
-  )
+  [ <BLOCK_DOC_COMMENT> [ ConsecWs() ] ]
+  SoyTagOpen()
+  ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
 }
 
 
@@ -2283,24 +2251,33 @@ private DeclInfo Decl() :
 
 
 /**
- * ParamDecl -> ParamDeclTag [ ( TokenWsNotNl )* BlockDocComment ]
+ * ParamDecl -> SoyTagOpen ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
+ *              [ <QMARK> ] <WS_AFTER_CMD_NAME> CmdText RegSoyTagClose
+ *              [ ( TokenWsNotNl )* BlockDocComment ]
  */
 private DeclInfo ParamDecl() :
 {
-  SourceItemInfo<String> cmdText;
+  String cmdText;
   Token blockDocComment;
   String tag;
+  boolean optional = false;
+  boolean injected = false;
 }
 {
+  SoyTagOpen()
   (
-    LOOKAHEAD( SoyTagOpen() <CMD_NAME_PARAM_DECL> <WS_AFTER_CMD_NAME> )
-    cmdText = ParamDeclTag()
+    <CMD_NAME_PARAM_DECL>
     { tag = "@param"; }
   |
-    LOOKAHEAD( SoyTagOpen() <CMD_NAME_PARAM_DECL> <QMARK> )
-    cmdText = OptParamDeclTag()
-    { tag = "@param?"; }
+    <CMD_NAME_INJECTED_PARAM_DECL>
+    { tag = "@inject"; injected = true; }
   )
+
+  [ <QMARK> { optional = true; } ]
+  <WS_AFTER_CMD_NAME>
+
+  cmdText = CmdText()
+  RegSoyTagClose()
 
   { String desc; }
   (
@@ -2316,33 +2293,44 @@ private DeclInfo ParamDecl() :
     { desc = null; }
   )
 
-  { return new DeclInfo(tag, cmdText.parsedContent, desc); }
+  { return new DeclInfo(tag, cmdText, desc, optional); }
 }
 
 
 /**
- * ParamDeclWithDocPrefix -> BlockDocComment [ ConsecWs ] ParamDeclTag
+ * ParamDeclWithDocPrefix -> BlockDocComment [ ConsecWs ] SoyTagOpen
+ *                           ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
+ *                           [ <QMARK> ] <WS_AFTER_CMD_NAME> CmdText RegSoyTagClose
+ *                           [ ( TokenWsNotNl )* BlockDocComment ]
  */
 private DeclInfo ParamDeclWithDocPrefix() :
 {
-  SourceItemInfo<String> cmdText;
+  String cmdText;
   Token blockDocComment;
   String tag;
+  boolean optional = false;
+  boolean injected = false;
 }
 {
   blockDocComment = <BLOCK_DOC_COMMENT>
   [ ConsecWs() ]
+
+  SoyTagOpen()
   (
-    LOOKAHEAD( SoyTagOpen() <CMD_NAME_PARAM_DECL> <WS_AFTER_CMD_NAME> )
-    cmdText = ParamDeclTag()
+    <CMD_NAME_PARAM_DECL>
     { tag = "@param"; }
   |
-    LOOKAHEAD( SoyTagOpen() <CMD_NAME_PARAM_DECL> <QMARK> )
-    cmdText = OptParamDeclTag()
-    { tag = "@param?"; }
+    <CMD_NAME_INJECTED_PARAM_DECL>
+    { tag = "@inject"; injected = true; }
   )
 
-  { return new DeclInfo(tag, cmdText.parsedContent, blockDocComment.image); }
+  [ <QMARK> { optional = true; } ]
+  <WS_AFTER_CMD_NAME>
+
+  cmdText = CmdText()
+  RegSoyTagClose()
+
+  { return new DeclInfo(tag, cmdText, blockDocComment.image, optional); }
 }
 
 

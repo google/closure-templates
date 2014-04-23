@@ -489,6 +489,21 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     assertEquals(BoolType.getInstance(), types.get(2));
   }
 
+  public void testInjectedParamTypes() {
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+        "{@inject pa: bool}",
+        "{@inject? pb: list<int>}",
+        "{$pa}",
+        "{$pb}"));
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+    List<SoyType> types = getPrintStatementTypes(soyTree);
+    assertEquals(BoolType.getInstance(), types.get(0));
+    assertEquals(
+        UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()),
+        types.get(1));
+  }
+
   /**
    * Helper function that constructs a boilerplate template given a list of body
    * statements to insert into the middle of the template. The body statements will be

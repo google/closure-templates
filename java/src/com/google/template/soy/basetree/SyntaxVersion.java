@@ -68,6 +68,10 @@ public enum SyntaxVersion {
       //   + Type bool can no longer be used in nonbool contexts.
       //   + Type bool can no longer be printed.
 
+    V2_4,
+      // Syntax that causes V2.4+ to be inferred:
+      //   + Usage of template header @inject decls (as opposed to $ij variables).
+
   V9_9,
       // For internal use only. Represents a nonexistent future version.
   ;

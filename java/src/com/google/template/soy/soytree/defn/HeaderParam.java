@@ -34,31 +34,31 @@ public final class HeaderParam extends TemplateParam {
   /** The original source string for the param type. May be null if unavailable. */
   @Nullable private final String typeSrc;
 
-
   public HeaderParam(
-      String name, String typeSrc, SoyType type, boolean isRequired, @Nullable String desc) {
-    super(name, type, isRequired, desc);
+      String name,
+      String typeSrc,
+      SoyType type,
+      boolean isRequired,
+      boolean isInjected,
+      @Nullable String desc) {
+    super(name, type, isRequired, isInjected, desc);
     Preconditions.checkArgument(type != null);
     this.typeSrc = typeSrc;
   }
 
-
   @Override public DeclLoc declLoc() {
     return DeclLoc.HEADER;
   }
-
 
   /** Returns the original source string for the param type. May be null if unavailable. */
   public String typeSrc() {
     return typeSrc;
   }
 
-
   @Override public HeaderParam cloneEssential() {
     // Note: 'typeSrc' and 'desc' are nonessential.
-    return new HeaderParam(name(), null, type, isRequired(), null);
+    return new HeaderParam(name(), null, type, isRequired(), isInjected(), null);
   }
-
 
   @Override public boolean equals(Object o) {
     if (this == o) { return true; }
@@ -67,7 +67,6 @@ public final class HeaderParam extends TemplateParam {
     // Note: 'typeSrc' is nonessential.
     return super.abstractEquals(o) && this.type.equals(other.type);
   }
-
 
   @Override public int hashCode() {
     // Note: 'typeSrc' is nonessential.

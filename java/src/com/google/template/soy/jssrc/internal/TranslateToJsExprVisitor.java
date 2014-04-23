@@ -40,12 +40,14 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.UnionType;
@@ -53,7 +55,6 @@ import com.google.template.soy.types.aggregate.UnionType;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an
@@ -63,7 +64,6 @@ import java.util.Map;
  *
  */
 public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<JsExpr> {
-
 
   /**
    * Injectable factory for creating an instance of this class.
@@ -77,7 +77,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     public TranslateToJsExprVisitor create(Deque<Map<String, JsExpr>> localVarTranslations);
   }
 
-
   /** Map of all SoyJsSrcFunctions (name to function). */
   private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
 
@@ -87,7 +86,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
   private final Deque<Map<String, JsExpr>> localVarTranslations;
-
 
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
@@ -103,32 +101,27 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     this.localVarTranslations = localVarTranslations;
   }
 
-
   /**
    * Method that returns code to access a named parameter.
    * @param paramName the name of the parameter.
+   * @param isInjected true if this is an injected parameter.
    * @return The code to access the value of that parameter.
    */
-  static String genCodeForParamAccess(String paramName) {
-    return "opt_data" + genCodeForKeyAccess(paramName);
+  static String genCodeForParamAccess(String paramName, boolean isInjected) {
+    return (isInjected ? "opt_ijData" : "opt_data") + genCodeForKeyAccess(paramName);
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
-
 
   @Override protected JsExpr visitExprRootNode(ExprRootNode<?> node) {
     return visit(node.getChild(0));
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for primitives.
 
-
   @Override protected JsExpr visitStringNode(StringNode node) {
-
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
     // JS source files.
     return new JsExpr(
@@ -136,9 +129,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         Integer.MAX_VALUE);
   }
 
-
   @Override protected JsExpr visitPrimitiveNode(PrimitiveNode node) {
-
     // Note: ExprNode.toSourceString() technically returns a Soy expression. In the case of
     // primitives, the result is usually also the correct JS expression.
     // Note: The rare exception to the above note is a StringNode containing a Unicode Format
@@ -148,10 +139,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return new JsExpr(node.toSourceString(), Integer.MAX_VALUE);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for collections.
-
 
   @Override protected JsExpr visitListLiteralNode(ListLiteralNode node) {
 
@@ -173,11 +162,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return new JsExpr(exprTextSb.toString(), Integer.MAX_VALUE);
   }
 
-
   @Override protected JsExpr visitMapLiteralNode(MapLiteralNode node) {
     return visitMapLiteralNodeHelper(node, false);
   }
-
 
   /**
    * Helper to visit a MapLiteralNode, with the extra option of whether to quote keys.
@@ -257,20 +244,16 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return new JsExpr(fullExprText, Integer.MAX_VALUE);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for data references.
-
 
   @Override protected JsExpr visitVarRefNode(VarRefNode node) {
     return visitNullSafeNode(node);
   }
 
-
   @Override protected JsExpr visitDataAccessNode(DataAccessNode node) {
     return visitNullSafeNode(node);
   }
-
 
   private JsExpr visitNullSafeNode(ExprNode node) {
     StringBuilder nullSafetyPrefix = new StringBuilder();
@@ -283,7 +266,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
           nullSafetyPrefix.toString() + refText, Operator.CONDITIONAL.getPrecedence());
     }
   }
-
 
   private String visitNullSafeNodeRecurse(ExprNode node, StringBuilder nullSafetyPrefix) {
 
@@ -302,8 +284,13 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
             // Case 2: In-scope local var.
             return translation.getText();
           } else {
+            String scope = "opt_data";
+            VarDefn var = varRef.getDefnDecl();
+            if (var.kind() == VarDefn.Kind.PARAM && ((TemplateParam) var).isInjected()) {
+              scope = "opt_ijData";
+            }
             // Case 3: Data reference.
-            return "opt_data" + genCodeForKeyAccess(varRef.getName());
+            return scope + genCodeForKeyAccess(varRef.getName());
           }
         }
       }
@@ -354,7 +341,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return JsSrcUtils.isReservedWord(key) ? "['" + key + "']" : "." + key;
   }
 
-
   /**
    * Private helper for {@code visitDataAccessNode()} to generate the code for a field
    * name access, e.g. ".foo" or "['class']". Handles JS reserved words. If the base type
@@ -396,15 +382,12 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return genCodeForKeyAccess(fieldName);
   }
 
-
   @Override protected JsExpr visitGlobalNode(GlobalNode node) {
     return new JsExpr(node.toSourceString(), Integer.MAX_VALUE);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for operators.
-
 
   @Override protected JsExpr visitNotOpNode(NotOpNode node) {
     // Note: Since we're using Soy syntax for the 'not' operator, we'll end up generating code with
@@ -413,28 +396,22 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return genJsExprUsingSoySyntaxWithNewToken(node, "!");
   }
 
-
   @Override protected JsExpr visitAndOpNode(AndOpNode node) {
     return genJsExprUsingSoySyntaxWithNewToken(node, "&&");
   }
-
 
   @Override protected JsExpr visitOrOpNode(OrOpNode node) {
     return genJsExprUsingSoySyntaxWithNewToken(node, "||");
   }
 
-
   @Override protected JsExpr visitOperatorNode(OperatorNode node) {
     return genJsExprUsingSoySyntax(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for functions.
 
-
   @Override protected JsExpr visitFunctionNode(FunctionNode node) {
-
     String fnName = node.getFunctionName();
     int numArgs = node.numChildren();
 
@@ -501,10 +478,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return getLocalVarTranslation(varName + "__index");
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Private helpers.
-
 
   /**
    * Gets the translated expression for an in-scope local variable (or special "variable" derived
@@ -513,7 +488,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * @return The translated expression for the given variable, or null if not found.
    */
   private JsExpr getLocalVarTranslation(String ident) {
-
     for (Map<String, JsExpr> localVarTranslationsFrame : localVarTranslations) {
       JsExpr translation = localVarTranslationsFrame.get(ident);
       if (translation != null) {
@@ -523,7 +497,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
     return null;
   }
-
 
   /**
    * Generates a JS expression for the given OperatorNode's subtree assuming that the JS expression
@@ -535,7 +508,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     return genJsExprUsingSoySyntaxWithNewToken(opNode, null);
   }
 
-
   /**
    * Generates a JS expression for the given OperatorNode's subtree assuming that the JS expression
    * for the operator uses the same syntax format as the Soy operator, with the exception that the
@@ -545,13 +517,11 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * @return The generated JS expression.
    */
   private JsExpr genJsExprUsingSoySyntaxWithNewToken(OperatorNode opNode, String newToken) {
-
     List<JsExpr> operandJsExprs = visitChildren(opNode);
 
     return SoyJsCodeUtils.genJsExprUsingSoySyntaxWithNewToken(
         opNode.getOperator(), operandJsExprs, newToken);
   }
-
 
   public static String genMaybeProtect(JsExpr expr, int minSafePrecedence) {
     return (expr.getPrecedence() >= minSafePrecedence) ?

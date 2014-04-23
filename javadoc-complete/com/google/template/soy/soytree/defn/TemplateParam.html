@@ -173,9 +173,10 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Abstract
 <th class="colOne" scope="col">Constructor and Description</th>
 </tr>
 <tr class="altColor">
-<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#TemplateParam(java.lang.String, com.google.template.soy.types.SoyType, boolean, java.lang.String)">TemplateParam</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#TemplateParam(java.lang.String, com.google.template.soy.types.SoyType, boolean, boolean, java.lang.String)">TemplateParam</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
              <a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a>&nbsp;type,
              boolean&nbsp;isRequired,
+             boolean&nbsp;isInjected,
              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;desc)</code>&nbsp;</td>
 </tr>
 </table>
@@ -225,11 +226,17 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Abstract
 </tr>
 <tr class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
-<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#isRequired()">isRequired</a></strong>()</code>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#isInjected()">isInjected</a></strong>()</code>
 <div class="block">Returns whether the param is required.</div>
 </td>
 </tr>
 <tr class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#isRequired()">isRequired</a></strong>()</code>
+<div class="block">Returns whether the param is required.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <td class="colFirst"><code><a href="../../../../../../com/google/template/soy/exprtree/VarDefn.Kind.html" title="enum in com.google.template.soy.exprtree">VarDefn.Kind</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#kind()">kind</a></strong>()</code>
 <div class="block">What kind of variable this is (param, local var, etc).</div>
@@ -264,7 +271,7 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Abstract
 <!--   -->
 </a>
 <h3>Constructor Detail</h3>
-<a name="TemplateParam(java.lang.String, com.google.template.soy.types.SoyType, boolean, java.lang.String)">
+<a name="TemplateParam(java.lang.String, com.google.template.soy.types.SoyType, boolean, boolean, java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockListLast">
@@ -273,6 +280,7 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Abstract
 <pre>public&nbsp;TemplateParam(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
              <a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a>&nbsp;type,
              boolean&nbsp;isRequired,
+             boolean&nbsp;isInjected,
              <a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;desc)</pre>
 </li>
@@ -313,6 +321,16 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Abstract
 <li class="blockList">
 <h4>isRequired</h4>
 <pre>public&nbsp;boolean&nbsp;isRequired()</pre>
+<div class="block">Returns whether the param is required.</div>
+</li>
+</ul>
+<a name="isInjected()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isInjected</h4>
+<pre>public&nbsp;boolean&nbsp;isInjected()</pre>
 <div class="block">Returns whether the param is required.</div>
 </li>
 </ul>

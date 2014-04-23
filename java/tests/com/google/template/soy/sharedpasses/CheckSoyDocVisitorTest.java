@@ -30,9 +30,7 @@ import junit.framework.TestCase;
  */
 public class CheckSoyDocVisitorTest extends TestCase {
 
-
   public void testMatchingSimple() throws SoySyntaxException {
-
     // ------ No params ------
     String soyDoc = "";
     String templateBody = "Hello world!";
@@ -54,9 +52,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
   }
 
-
   public void testMatchingWithAdvancedStmts() throws SoySyntaxException {
-
     // ------ 'if', 'elseif', 'else', '/if' ------
     String soyDoc = "@param boo @param foo";
     String templateBody =
@@ -101,9 +97,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
   }
 
-
   public void testCalls() throws SoySyntaxException {
-
     String fileContent1 =
         "{namespace boo}\n" +
         "\n" +
@@ -152,9 +146,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runSoyFilesTestHelper(fileContent1, fileContent2);
   }
 
-
   public void testCallWithMissingParam() throws SoySyntaxException {
-
     String fileContent =
         "{namespace boo}\n" +
         "\n" +
@@ -176,9 +168,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runSoyFilesTestHelper(fileContent);
   }
 
-
   public void testUndeclaredParam() throws SoySyntaxException {
-
     String soyDoc = "@param foo";
     String templateBody = "{$boo.foo}";
     try {
@@ -190,9 +180,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     }
   }
 
-
   public void testUnusedParam() throws SoySyntaxException {
-
     String soyDoc = "@param boo @param? foo";
     String templateBody = "{$boo.foo}";
     try {
@@ -204,9 +192,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     }
   }
 
-
   public void testUnusedParamInCallWithAllData() throws SoySyntaxException {
-
     String fileContent =
         "{namespace boo}\n" +
         "\n" +
@@ -232,9 +218,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     }
   }
 
-
   public void testWithExternalCallWithAllData() throws SoySyntaxException {
-
     String fileContent =
         "{namespace boo}\n" +
         "\n" +
@@ -248,9 +232,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runSoyFilesTestHelper(fileContent);
   }
 
-
   public void testUnusedParamWithRecursiveCall() throws SoySyntaxException {
-
     String soyDoc = "@param boo @param foo";
     String templateBody = "{call name=\".foo\" data=\"all\" /}";
     try {
@@ -262,9 +244,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     }
   }
 
-
   public void testUnusedParamInDelegateTemplate() throws SoySyntaxException {
-
     String fileContent =
         "{namespace boo}\n" +
         "\n" +
@@ -278,9 +258,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runSoyFilesTestHelper(fileContent);
   }
 
-
   public void testDelegateCallVariant() throws SoySyntaxException {
-
     String fileContent = "" +
         "{namespace boo}\n" +
         "\n" +
@@ -294,9 +272,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runSoyFilesTestHelper(fileContent);
   }
 
-
   public void testOnlyCheckFilesInV2() throws SoySyntaxException {
-
     String fileContent0 =
         "{namespace boo0}\n" +
         "\n" +  // file is missing SoyDoc
@@ -330,10 +306,40 @@ public class CheckSoyDocVisitorTest extends TestCase {
     }
   }
 
+  public void testWithHeaderParams() throws SoySyntaxException {
+    String fileContent =
+        "{namespace boo}\n" +
+        "\n" +
+        "/** */\n" +
+        "{template .foo}\n" +
+        "  {@param goo: string}\n" +
+        "  {@inject zoo: string}\n" +
+        "  {$goo}\n" +
+        "  {$zoo}\n" +
+        "{/template}\n";
+
+    runSoyFilesTestHelper(fileContent);
+
+    fileContent =
+        "{namespace boo}\n" +
+        "\n" +
+        "/** */\n" +
+        "{template .foo}\n" +
+        "  {@param goo: string}\n" +
+        "  {@inject zoo: string}\n" +
+        "{/template}\n";
+
+    try {
+      runSoyFilesTestHelper(fileContent);
+      fail();
+    } catch (SoySyntaxException sse) {
+      assertTrue(sse.getMessage().contains(
+          "Found params declared in SoyDoc but not used in template: [goo, zoo]"));
+    }
+  }
 
   private static void runTemplateTestHelper(String soyDoc, String templateBody)
       throws SoySyntaxException {
-
     String testFileContent =
         "{namespace boo}\n" +
         "\n" +
@@ -345,13 +351,10 @@ public class CheckSoyDocVisitorTest extends TestCase {
     runSoyFilesTestHelper(testFileContent);
   }
 
-
   private static void runSoyFilesTestHelper(String... soyFileContents)
       throws SoySyntaxException {
-
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
 
     (new CheckSoyDocVisitor(SyntaxVersion.V1_0)).exec(soyTree);
   }
-
 }

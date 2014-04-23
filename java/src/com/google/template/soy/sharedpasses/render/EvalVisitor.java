@@ -65,6 +65,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.Deque;
 import java.util.List;
@@ -275,7 +276,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    * @return The result of evaluating the node.
    */
   private SoyValue visitNullSafeNodeRecurse(ExprNode node) {
-    SoyValue value = null;
     switch (node.getKind()) {
       case VAR_REF_NODE:
         return visitNullSafeVarRefNode((VarRefNode) node);
@@ -323,8 +323,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       // Retrieve from the data. Do this when (a) we know it's not a local var data ref or
       // (b) we don't know either way, but we failed to retrieve a nonnull value from the
       // environment.
-      if (varKind == VarDefn.Kind.PARAM ||
-          (varKind == VarDefn.Kind.UNDECLARED && result == null)) {
+      if (varKind == VarDefn.Kind.PARAM) {
+        SoyRecord scope = ((TemplateParam) var).isInjected() ? ijData : data;
+        if (scope != null) {
+          result = scope.getField(varRef.getName());
+        }
+      } else if (varKind == VarDefn.Kind.UNDECLARED && result == null) {
         if (data != null) {
           result = data.getField(varRef.getName());
         }

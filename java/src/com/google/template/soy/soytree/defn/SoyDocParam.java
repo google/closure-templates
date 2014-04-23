@@ -32,25 +32,21 @@ import javax.annotation.concurrent.Immutable;
 public final class SoyDocParam extends TemplateParam {
 
   public SoyDocParam(String name, boolean isRequired, @Nullable String desc) {
-    super(name, UnknownType.getInstance(), isRequired, desc);
+    super(name, UnknownType.getInstance(), isRequired, false, desc);
   }
-
 
   @Override public DeclLoc declLoc() {
     return DeclLoc.SOY_DOC;
   }
 
-
   @Override public SoyType type() {
     return UnknownType.getInstance();
   }
-
 
   @Override public SoyDocParam cloneEssential() {
     // Note: 'desc' is nonessential.
     return new SoyDocParam(name(), isRequired(), null);
   }
-
 
   @SuppressWarnings("SimplifiableIfStatement")  // for IntelliJ
   @Override public boolean equals(Object o) {
@@ -58,7 +54,6 @@ public final class SoyDocParam extends TemplateParam {
     if (o == null || this.getClass() != o.getClass()) { return false; }
     return super.abstractEquals(o);
   }
-
 
   @Override public int hashCode() {
     return super.abstractHashCode();

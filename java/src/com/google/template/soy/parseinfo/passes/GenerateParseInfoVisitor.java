@@ -77,6 +77,7 @@ import java.util.SortedSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 /**
  * Visitor for generating Java classes containing the parse info.
  *
@@ -93,12 +94,10 @@ import java.util.regex.Pattern;
  */
 public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMap<String, String>> {
 
-
   /**
    * Represents the source of the generated Java class names.
    */
   @VisibleForTesting static enum JavaClassNameSource {
-
     /** AaaBbb.soy or aaa_bbb.soy --> AaaBbbSoyInfo. */
     SOY_FILE_NAME,
 
@@ -107,7 +106,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
     /** File1SoyInfo, File2SoyInfo, etc. */
     GENERIC;
-
 
     /** Pattern for an all-upper-case word in a file name or identifier. */
     private static final Pattern ALL_UPPER_WORD =
@@ -121,16 +119,13 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     /** Pattern for a character that's not a letter nor a digit. */
     private static final Pattern NON_LETTER_DIGIT = Pattern.compile("[^A-Za-z0-9]");
 
-
     /**
      * Generates the base Java class name for the given Soy file.
      * @param soyFile The Soy file.
      * @return The generated base Java class name (without any suffixes).
      */
     @VisibleForTesting String generateBaseClassName(SoyFileNode soyFile) {
-
       switch (this) {
-
         case SOY_FILE_NAME:
           String fileName = soyFile.getFileName();
           if (fileName == null) {
@@ -157,20 +152,17 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       }
     }
 
-
     /**
      * Creates the upper camel case version of the given string (can be file name or identifier).
      * @param str The string to turn into upper camel case.
      * @return The upper camel case version of the string.
      */
     private static String makeUpperCamelCase(String str) {
-
       str = makeWordsCapitalized(str, ALL_UPPER_WORD);
       str = makeWordsCapitalized(str, ALL_LOWER_WORD);
       str = NON_LETTER_DIGIT.matcher(str).replaceAll("");
       return str;
     }
-
 
     /**
      * Makes all the words in the given string into capitalized format (first letter capital, rest
@@ -180,7 +172,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
      * @return The resulting string with all words in capitalized format.
      */
     private static String makeWordsCapitalized(String str, Pattern wordPattern) {
-
       StringBuffer sb = new StringBuffer();
 
       Matcher wordMatcher = wordPattern.matcher(str);
@@ -201,7 +192,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       return sb.toString();
     }
   }
-
 
   /** The package name of the generated files. */
   private final String javaPackage;
@@ -224,14 +214,12 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   /** Builder for the generated code. */
   private IndentedLinesBuilder ilb;
 
-
   /**
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
    *     "namespace", or "generic".
    */
   public GenerateParseInfoVisitor(String javaPackage, String javaClassNameSource) {
-
     this.javaPackage = javaPackage;
 
     if (javaClassNameSource.equals("filename")) {
@@ -247,7 +235,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
-
   @Override public ImmutableMap<String, String> exec(SoyNode node) {
     generatedFiles = Maps.newLinkedHashMap();
     ilb = null;
@@ -255,13 +242,10 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     return ImmutableMap.copyOf(generatedFiles);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-
     // Figure out the generated class name for each Soy file, including adding number suffixes
     // to resolve collisions, and then adding the common suffix "SoyInfo".
     Multimap<String, SoyFileNode> baseGeneratedClassNameToSoyFilesMap = HashMultimap.create();
@@ -300,9 +284,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
-
   @Override protected void visitSoyFileNode(SoyFileNode node) {
-
     if (node.getSoyFileKind() != SoyFileKind.SRC) {
       return;  // don't generate code for deps
     }
@@ -315,7 +297,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
 
     String javaClassName = soyFileToJavaClassNameMap.get(node);
-
 
     // Collect the following:
     // + all the public basic templates (non-private, non-delegate) in a map from the
@@ -333,9 +314,11 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
       }
-      for (TemplateParam param : template.getParams()) {
-        allParamKeys.add(param.name());
-        paramKeyToTemplatesMultimap.put(param.name(), template);
+      for (TemplateParam param : template.getAllParams()) {
+        if (!param.isInjected()) {
+          allParamKeys.add(param.name());
+          paramKeyToTemplatesMultimap.put(param.name(), template);
+        }
         if (param instanceof HeaderParam) {
           SoyType paramType = ((HeaderParam) param).type();
           findProtoTypesRecurse(paramType, protoTypes);
@@ -356,8 +339,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       }
       allParamKeysMap.put(upperUnderscoreKey, key);
     }
-
-
 
     ilb = new IndentedLinesBuilder(2);
 
@@ -537,9 +518,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb = null;
   }
 
-
   @Override protected void visitTemplateNode(TemplateNode node) {
-
     // Don't generate anything for private or delegate templates.
     if (node.isPrivate() || node instanceof TemplateDelegateNode) {
       return;
@@ -548,12 +527,10 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     // First build list of all transitive params (direct and indirect).
     LinkedHashMap<String, TemplateParam> transitiveParamMap = Maps.newLinkedHashMap();
     // Direct params.
-    List<TemplateParam> params = node.getParams();
-    if (params != null) {
-      for (TemplateParam param : params) {
-        transitiveParamMap.put(param.name(), param);
-      }
+    for (TemplateParam param : node.getParams()) {
+      transitiveParamMap.put(param.name(), param);
     }
+
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
         (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
@@ -704,7 +681,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.decreaseIndent(2);
   }
 
-
   /**
    * Private helper for visitSoyFileNode() and visitTemplateNode() to convert an identifier to upper
    * underscore format.
@@ -717,7 +693,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
    * @return The identifier in upper underscore format.
    */
   private String convertToUpperUnderscore(String ident) {
-
     String result = convertedIdents.get(ident);
     if (result == null) {
       result = BaseUtils.convertToUpperUnderscore(ident);
@@ -818,7 +793,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
-
   /**
    * Private helper for visitTemplateNode() to append the set of injected params.
    *
@@ -826,7 +800,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
    * @param ijParamsInfo Info on injected params for the template being processed.
    */
   private void appendIjParamSet(IndentedLinesBuilder ilb, IjParamsInfo ijParamsInfo) {
-
     List<String> itemSnippets = Lists.newArrayList();
     for (String paramKey : ijParamsInfo.ijParamSet) {
       itemSnippets.add("\"" + paramKey + "\"");
@@ -834,10 +807,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     appendImmutableSortedSet(ilb, "<String>", itemSnippets);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // General helpers.
-
 
   /**
    * Private helper to build the human-readable string for referring to a template in the generated
@@ -869,7 +840,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     return resultSb.toString();
   }
 
-
   /**
    * Private helper to append an ImmutableList to the code.
    *
@@ -883,7 +853,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
         ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
   }
 
-
   /**
    * Private helper to append an ImmutableSortedSet to the code.
    *
@@ -896,7 +865,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     appendListOrSetHelper(
         ilb, "ImmutableSortedSet." + typeParamSnippet + "of", itemSnippets);
   }
-
 
   /**
    * Private helper for appendImmutableList() and appendImmutableSortedSet().
@@ -927,7 +895,6 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
-
   /**
    * Private helper to append an ImmutableMap to the code.
    *
@@ -952,10 +919,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helper visitor to collect CSS names.
-
 
   /**
    * Private helper class for visitSoyFileNode() to collect all the CSS names appearing in a file.
@@ -1005,13 +970,11 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   // -----------------------------------------------------------------------------------------------
   // Helper visitor to collect CSS names.
 
-
   /**
    * Private helper class for visitSoyFileNode() to collect all of the proto
    * extension types used in the template.
    */
   private static class FindUsedProtoTypesVisitor extends AbstractSoyNodeVisitor<Void> {
-
     private final SortedSet<String> protoTypes;
 
     public FindUsedProtoTypesVisitor(SortedSet<String> protoTypes) {
@@ -1043,13 +1006,11 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     }
   }
 
-
   /**
    * Private helper class to collect all of the proto extension types used in
    * an expression.
    */
   private static class FindUsedProtoTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
-
     private final SortedSet<String> protoTypes;
 
     public FindUsedProtoTypesExprVisitor(SortedSet<String> protoTypes) {

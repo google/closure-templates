@@ -31,7 +31,9 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.StringType;
 
 import junit.framework.TestCase;
@@ -45,13 +47,10 @@ import java.util.List;
  */
 public class TemplateNodeTest extends TestCase {
 
-
   private static final SoyFileHeaderInfo SIMPLE_FILE_HEADER_INFO = new SoyFileHeaderInfo("testNs");
   private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
 
-
   public void testParseSoyDoc() {
-
     String soyDoc = "" +
         "/**\n" +
         " * Test template.\n" +
@@ -93,40 +92,66 @@ public class TemplateNodeTest extends TestCase {
   }
 
   public void testParseHeaderDecls() {
-
     TemplateNode tn =
         (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
             .setId(0).setCmdText(".boo").setSoyDoc("/** @param foo */")
             .setHeaderDecls(ImmutableList.of(
-                new DeclInfo("@param", "goo   :   list<int>", null),
-                new DeclInfo("@param", "moo: string", "Something milky.")))
+                new DeclInfo("@param", "goo   :   list<int>", null, false),
+                new DeclInfo("@param", "moo: string", "Something milky.", false),
+                new DeclInfo("@param", "boo: string", "Something scary.", true),
+                new DeclInfo("@inject", "zoo: string", "Something else.", false)))
             .build();
 
     List<TemplateParam> params = tn.getParams();
-    assertEquals(3, params.size());
+    assertEquals(4, params.size());
+
     SoyDocParam soyDocParam0 = (SoyDocParam) params.get(0);
     assertEquals("foo", soyDocParam0.name());
+
     HeaderParam headerParam1 = (HeaderParam) params.get(1);
     assertEquals("goo", headerParam1.name());
     assertEquals("list<int>", headerParam1.typeSrc());
     assertEquals(ListType.of(IntType.getInstance()), headerParam1.type());
-    assertEquals(true, headerParam1.isRequired());
+    assertTrue(headerParam1.isRequired());
+    assertFalse(headerParam1.isInjected());
     assertEquals(null, headerParam1.desc());
+
     HeaderParam headerParam2 = (HeaderParam) params.get(2);
     assertEquals("moo", headerParam2.name());
     assertEquals("string", headerParam2.typeSrc());
     assertEquals(StringType.getInstance(), headerParam2.type());
-    assertEquals(true, headerParam2.isRequired());
+    assertTrue(headerParam2.isRequired());
+    assertFalse(headerParam2.isInjected());
     assertEquals("Something milky.", headerParam2.desc());
+
+    HeaderParam headerParam3 = (HeaderParam) params.get(3);
+    assertEquals("boo", headerParam3.name());
+    assertEquals("string", headerParam3.typeSrc());
+    assertEquals(UnionType.of(StringType.getInstance(), NullType.getInstance()),
+        headerParam3.type());
+    assertFalse(headerParam3.isRequired());
+    assertFalse(headerParam3.isInjected());
+    assertEquals("Something scary.", headerParam3.desc());
+
+    params = tn.getInjectedParams();
+    assertEquals(1, params.size());
+
+    HeaderParam injectedParam = (HeaderParam) params.get(0);
+    assertEquals("zoo", injectedParam.name());
+    assertEquals("string", injectedParam.typeSrc());
+    assertEquals(StringType.getInstance(), injectedParam.type());
+    assertTrue(injectedParam.isRequired());
+    assertTrue(injectedParam.isInjected());
+    assertEquals("Something else.", injectedParam.desc());
+
+    assertEquals(5, ImmutableList.copyOf(tn.getAllParams()).size());
   }
 
-
   public void testInvalidHeaderDecls() {
-
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "33: int", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "33: int", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -136,7 +161,7 @@ public class TemplateNodeTest extends TestCase {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "f-oo: int", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "f-oo: int", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -146,7 +171,7 @@ public class TemplateNodeTest extends TestCase {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -156,7 +181,7 @@ public class TemplateNodeTest extends TestCase {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo:", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo:", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -166,7 +191,7 @@ public class TemplateNodeTest extends TestCase {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", ": int", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", ": int", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -176,7 +201,7 @@ public class TemplateNodeTest extends TestCase {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo int", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo int", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -184,9 +209,7 @@ public class TemplateNodeTest extends TestCase {
     }
   }
 
-
   public void testParamChecks() {
-
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
@@ -201,7 +224,7 @@ public class TemplateNodeTest extends TestCase {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "ij: int", null)))
+          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "ij: int", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -223,9 +246,9 @@ public class TemplateNodeTest extends TestCase {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText(".boo")
           .setHeaderDecls(ImmutableList.of(
-              new DeclInfo("@param", "goo: null", "Something slimy."),
-              new DeclInfo("@param", "foo: string", "Something random."),
-              new DeclInfo("@param", "foo: int", null)))
+              new DeclInfo("@param", "goo: null", "Something slimy.", false),
+              new DeclInfo("@param", "foo: string", "Something random.", false),
+              new DeclInfo("@param", "foo: int", null, false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -237,7 +260,7 @@ public class TemplateNodeTest extends TestCase {
           .setId(0).setCmdText(".boo")
           .setSoyDoc("/** @param? foo Something. */")
           .setHeaderDecls(ImmutableList.of(
-              new DeclInfo("@param", "foo: string", "Something else.")))
+              new DeclInfo("@param", "foo: string", "Something else.", false)))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -245,9 +268,7 @@ public class TemplateNodeTest extends TestCase {
     }
   }
 
-
   public void testCommandTextErrors() {
-
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
           .setId(0).setCmdText("autoescape=\"true\"").setSoyDoc("/***/").build();
@@ -277,7 +298,6 @@ public class TemplateNodeTest extends TestCase {
     }
   }
 
-
   public void testValidStrictTemplates() {
     TemplateNode node;
 
@@ -304,7 +324,6 @@ public class TemplateNodeTest extends TestCase {
     assertEquals(ContentKind.HTML, node.getContentKind());
   }
 
-
   public void testInvalidStrictTemplates() {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
@@ -315,7 +334,6 @@ public class TemplateNodeTest extends TestCase {
           "kind=\"...\" attribute is only valid with autoescape=\"strict\"."));
     }
   }
-
 
   public void testValidRequiredCss() {
     TemplateNode node;
@@ -345,7 +363,6 @@ public class TemplateNodeTest extends TestCase {
             .setSoyDoc("/** Boo. */").build();
     assertEquals(ImmutableList.<String>of("foo.boo", "moo.hoo"), node.getRequiredCssNamespaces());
   }
-
 
   public void testValidVariant() {
     // Variant is a string literal: There's no expression and the value is already resolved.
@@ -387,7 +404,6 @@ public class TemplateNodeTest extends TestCase {
     assertEquals("variant", node.getDelTemplateKey().variant);
   }
 
-
   public void testInvalidVariant() {
     // Try to resolve a global to an invalid type.
     TemplateDelegateNode node =
@@ -415,7 +431,6 @@ public class TemplateNodeTest extends TestCase {
       assertTrue(e.getMessage().contains("a string literal is used, value must be an identifier"));
     }
   }
-
 
   public void testInvalidRequiredCss() {
     try {
@@ -460,9 +475,7 @@ public class TemplateNodeTest extends TestCase {
     }
   }
 
-
   public void testToSourceString() {
-
     TemplateNode tn =
         (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
             .setId(0).setCmdText("name=\".boo\"")
@@ -475,8 +488,8 @@ public class TemplateNodeTest extends TestCase {
                 " *     Goo to print.\n" +
                 " */")
             .setHeaderDecls(ImmutableList.of(
-                new DeclInfo("@param", "moo: bool", "Something milky."),
-                new DeclInfo("@param", "too   :   string|null", null)))
+                new DeclInfo("@param", "moo: bool", "Something milky.", false),
+                new DeclInfo("@param", "too   :   string|null", null, false)))
             .build();
     tn.addChild(new RawTextNode(0, "  "));  // 2 spaces
     tn.addChild(new PrintNode(0, true, "$foo", null));
@@ -498,5 +511,4 @@ public class TemplateNodeTest extends TestCase {
         "{/template}\n",
         tn.toSourceString());
   }
-
 }

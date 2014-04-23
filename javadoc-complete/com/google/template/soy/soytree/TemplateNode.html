@@ -241,21 +241,33 @@ implements <a href="../../../../../com/google/template/soy/soytree/SoyNode.Rende
 </td>
 </tr>
 <tr class="altColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/Iterable.html?is-external=true" title="class or interface in java.lang">Iterable</a>&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNode.html#getAllParams()">getAllParams</a></strong>()</code>
+<div class="block">Returns all params from template header or SoyDoc, both regular and injected.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <td class="colFirst"><code><a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNode.html#getAutoescapeMode()">getAutoescapeMode</a></strong>()</code>
 <div class="block">Returns the mode of autoescaping, if any, done for this template.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code><a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNode.html#getContentKind()">getContentKind</a></strong>()</code>
 <div class="block">Returns the content kind for strict autoescaping.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNode.html#getDelPackageName()">getDelPackageName</a></strong>()</code>
 <div class="block">Returns the name of the containing delegate package, or null if none.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNode.html#getInjectedParams()">getInjectedParams</a></strong>()</code>
+<div class="block">Returns the injected params from template header.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -583,9 +595,29 @@ public&nbsp;<a href="../../../../../com/google/template/soy/data/SanitizedConten
 <ul class="blockList">
 <li class="blockList">
 <h4>getParams</h4>
+<pre>public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;&nbsp;getParams()</pre>
+<div class="block">Returns the params from template header or SoyDoc.</div>
+</li>
+</ul>
+<a name="getInjectedParams()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getInjectedParams</h4>
+<pre>public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;&nbsp;getInjectedParams()</pre>
+<div class="block">Returns the injected params from template header.</div>
+</li>
+</ul>
+<a name="getAllParams()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getAllParams</h4>
 <pre><a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
-public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;&nbsp;getParams()</pre>
-<div class="block">Returns the params from template header or SoyDoc. Null if no decls and no SoyDoc.</div>
+public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/Iterable.html?is-external=true" title="class or interface in java.lang">Iterable</a>&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;&nbsp;getAllParams()</pre>
+<div class="block">Returns all params from template header or SoyDoc, both regular and injected.</div>
 </li>
 </ul>
 <a name="getParent()">

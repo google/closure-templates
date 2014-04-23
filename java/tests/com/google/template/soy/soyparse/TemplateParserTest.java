@@ -145,7 +145,6 @@ public class TemplateParserTest extends TestCase {
 
 
   public void testRecognizeRawText() throws Exception {
-
     assertIsTemplateBody("blah>blah<blah<blah>blah>blah>blah>blah<blah");
     assertIsTemplateBody("{sp}{nil}{\\n}{{\\r}}{\\t}{lb}{{rb}}");
     assertIsTemplateBody(
@@ -158,9 +157,7 @@ public class TemplateParserTest extends TestCase {
     assertIsNotTemplateBody("{literal}{literal}{/literal}");
   }
 
-
   public void testRecognizeComments() throws Exception {
-
     assertIsTemplateBody("" +
         "blah // }\n" +
         "{$boo}{msg desc=\"\"} //}\n" +
@@ -209,9 +206,7 @@ public class TemplateParserTest extends TestCase {
     assertIsNotTemplateBody("{nil}//}\n");
   }
 
-
-  public void testRecognizeHeaderDecls() throws Exception {
-
+  public void testRecognizeHeaderParams() throws Exception {
     assertIsTemplateContent("{@param ...}\n");
     assertIsTemplateContent("{@param ...}\nBODY");
     assertIsTemplateContent("  {@param ...}\n  BODY");
@@ -268,9 +263,64 @@ public class TemplateParserTest extends TestCase {
         "  BODY\n");
   }
 
+  public void testRecognizeHeaderInjectedParams() throws Exception {
+    assertIsTemplateContent("{@inject ...}\n");
+    assertIsTemplateContent("{@inject ...}\nBODY");
+    assertIsTemplateContent("  {@inject ...}\n  BODY");
+    assertIsTemplateContent("\n{@inject ...}\n");
+    assertIsTemplateContent("  \n{@inject ...}\nBODY");
+    assertIsTemplateContent("  \n  {@inject ...\n  ...}\n  BODY");
+
+    assertIsTemplateContent("" +
+        "  {@inject ...}  {@inject ...}\n" +
+        "  {@inject ...}  /** ... */\n" +  // doc comment
+        "  {@inject ...}  // ...\n" +  // nondoc comment
+        "  {@inject ...\n" +
+        "      ...}  /** ...\n" +  // doc comment
+        "      ...\n" +
+        "      ... */\n" +
+        "  /*\n" +  // nondoc comment
+        "   * ...\n" +
+        "   */\n" +
+        "  /* ... */\n" +  // nondoc comment
+        "  {@inject ...}  /**\n" +  // doc comment
+        "      ... */  \n" +
+        "  {@inject ...}  /*\n" +  // nondoc comment
+        "      ... */  \n" +
+        "\n" +
+        "  BODY\n");
+
+    assertIsTemplateContent("" +
+        "  /** */{@inject ...}\n" +  // doc comment
+        "  /** \n" +  // doc comment
+        "   */{@inject ...}\n" +
+        "\n" +
+        "  BODY\n");
+
+    assertIsNotTemplateContent("{@inject ...}");
+    assertIsNotTemplateContent("{@ param ...}\n");
+    assertIsNotTemplateContent("{@foo}\n");
+    assertIsNotTemplateContent("{@foo ...}\n");
+
+    assertIsTemplateContent("" +
+        "  /** ... */\n" +  // doc comment
+        "  {@inject ...}\n" +
+        "  BODY\n");
+    assertIsTemplateContent("" +
+        "  {@inject ...}\n" +
+        "  /**\n" +  // doc comment
+        "   * ...\n" +
+        "   */\n" +
+        "  {@inject ...}\n" +
+        "  BODY\n");
+    assertIsTemplateContent("" +
+        "  {@inject ...}  /*\n" +
+        "      */  /** ... */\n" +  // doc comment
+        "  {@inject ...}\n" +
+        "  BODY\n");
+  }
 
   public void testRecognizeCommands() throws Exception {
-
     assertIsTemplateBody("" +
         "{msg desc=\"blah\" hidden=\"true\"}\n" +
         "  {$boo} is a <a href=\"{$fooUrl}\">{$foo}</a>.\n" +

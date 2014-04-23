@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-
 /**
  * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
  * keys referenced in the template.
@@ -62,7 +61,6 @@ import java.util.Set;
  */
 public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
-
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
 
@@ -72,7 +70,6 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The GetDataKeysInExprVisitor to use for expressions in the current template (during pass). */
   private GetDataKeysInExprVisitor getDataKeysInExprVisitor;
 
-
   /**
    * @param declaredSyntaxVersion User-declared syntax version,
    */
@@ -80,10 +77,8 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
-
 
   /**
    * {@inheritDoc}
@@ -91,7 +86,6 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    *     the data keys referenced in that template.
    */
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-
     // Build templateRegistry.
     templateRegistry = new TemplateRegistry(node);
 
@@ -117,14 +111,12 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
   /**
    * {@inheritDoc}
    * @throws SoySyntaxException If the parameters declared in some template's SoyDoc do not match
    *     the data keys referenced in that template.
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
-
     Set<String> dataKeys = Sets.newHashSet();  // data keys referenced in this template
     getDataKeysInExprVisitor = new GetDataKeysInExprVisitor(dataKeys);
 
@@ -133,9 +125,9 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
 
     List<String> unusedParams = Lists.newArrayList();
-    for (TemplateParam param : node.getParams()) {
+    for (TemplateParam param : node.getAllParams()) {
       if (dataKeys.contains(param.name())) {
-        // Good: Declared in SoyDoc and referenced in template. We remove these from dataKeys so
+        // Good: Declared and referenced in template. We remove these from dataKeys so
         // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
         // but not declared in SoyDoc.
         dataKeys.remove(param.name());
@@ -171,7 +163,6 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
   @Override protected void visitCallNode(CallNode node) {
 
     if (node.isPassingAllData()) {
@@ -186,13 +177,10 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
   @Override protected void visitSoyNode(SoyNode node) {
-
     if (node instanceof ExprHolderNode) {
       visitExprHolderHelper((ExprHolderNode) node);
     }
@@ -202,10 +190,8 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
-
 
   /**
    * Helper for visiting a node that holds one or more expressions. For each expression, collects
@@ -213,12 +199,10 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param exprHolder The node holding the expressions to be visited.
    */
   private void visitExprHolderHelper(ExprHolderNode exprHolder) {
-
     for (ExprUnion exprUnion : exprHolder.getAllExprUnions()) {
       getDataKeysInExprVisitor.exec(exprUnion.getExpr());
     }
   }
-
 
   /**
    * Helper for travering an expression tree and locating all the data keys (excluding local vars
@@ -229,7 +213,6 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * in to the constructor. There is no return value.
    */
   private static class GetDataKeysInExprVisitor extends AbstractExprNodeVisitor<Void> {
-
     /** The set used to collect the data keys found. */
     private final Set<String> dataKeys;
 
@@ -260,5 +243,4 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
       }
     }
   }
-
 }

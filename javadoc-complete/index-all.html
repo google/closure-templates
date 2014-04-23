@@ -1669,6 +1669,10 @@
 <dd>
 <div class="block">RegularExpression Id.</div>
 </dd>
+<dt><span class="strong"><a href="./com/google/template/soy/soyparse/TemplateParserConstants.html#CMD_NAME_INJECTED_PARAM_DECL">CMD_NAME_INJECTED_PARAM_DECL</a></span> - Static variable in interface com.google.template.soy.soyparse.<a href="./com/google/template/soy/soyparse/TemplateParserConstants.html" title="interface in com.google.template.soy.soyparse">TemplateParserConstants</a></dt>
+<dd>
+<div class="block">RegularExpression Id.</div>
+</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/soyparse/TemplateParserConstants.html#CMD_NAME_LB">CMD_NAME_LB</a></span> - Static variable in interface com.google.template.soy.soyparse.<a href="./com/google/template/soy/soyparse/TemplateParserConstants.html" title="interface in com.google.template.soy.soyparse">TemplateParserConstants</a></dt>
 <dd>
 <div class="block">RegularExpression Id.</div>
@@ -4502,6 +4506,10 @@
 <dd>
 <div class="block">Retrieves all nodes in a tree that are an instance of a particular class.</div>
 </dd>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/TemplateNode.html#getAllParams()">getAllParams()</a></span> - Method in class com.google.template.soy.soytree.<a href="./com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a></dt>
+<dd>
+<div class="block">Returns all params from template header or SoyDoc, both regular and injected.</div>
+</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/msgs/restricted/SoyMsg.html#getAltId()">getAltId()</a></span> - Method in class com.google.template.soy.msgs.restricted.<a href="./com/google/template/soy/msgs/restricted/SoyMsg.html" title="class in com.google.template.soy.msgs.restricted">SoyMsg</a></dt>
 <dd>
 <div class="block">Returns the alternate unique id for this message, or -1L if not applicable.</div>
@@ -5219,6 +5227,10 @@
 <dt><span class="strong"><a href="./com/google/template/soy/exprtree/Operator.Operand.html#getIndex()">getIndex()</a></span> - Method in class com.google.template.soy.exprtree.<a href="./com/google/template/soy/exprtree/Operator.Operand.html" title="class in com.google.template.soy.exprtree">Operator.Operand</a></dt>
 <dd>
 <div class="block">Returns the index of this operand.</div>
+</dd>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/TemplateNode.html#getInjectedParams()">getInjectedParams()</a></span> - Method in class com.google.template.soy.soytree.<a href="./com/google/template/soy/soytree/TemplateNode.html" title="class in com.google.template.soy.soytree">TemplateNode</a></dt>
+<dd>
+<div class="block">Returns the injected params from template header.</div>
 </dd>
 <dt><span class="strong"><a href="./com/google/template/soy/shared/internal/DirectiveDigest.html#getInnocuousOutput()">getInnocuousOutput()</a></span> - Method in class com.google.template.soy.shared.internal.<a href="./com/google/template/soy/shared/internal/DirectiveDigest.html" title="class in com.google.template.soy.shared.internal">DirectiveDigest</a></dt>
 <dd>&nbsp;</dd>
@@ -6876,7 +6888,7 @@
 <dd>
 <div class="block">A parameter declared in the template header.</div>
 </dd>
-<dt><span class="strong"><a href="./com/google/template/soy/soytree/defn/HeaderParam.html#HeaderParam(java.lang.String, java.lang.String, com.google.template.soy.types.SoyType, boolean, java.lang.String)">HeaderParam(String, String, SoyType, boolean, String)</a></span> - Constructor for class com.google.template.soy.soytree.defn.<a href="./com/google/template/soy/soytree/defn/HeaderParam.html" title="class in com.google.template.soy.soytree.defn">HeaderParam</a></dt>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/defn/HeaderParam.html#HeaderParam(java.lang.String, java.lang.String, com.google.template.soy.types.SoyType, boolean, boolean, java.lang.String)">HeaderParam(String, String, SoyType, boolean, boolean, String)</a></span> - Constructor for class com.google.template.soy.soytree.defn.<a href="./com/google/template/soy/soytree/defn/HeaderParam.html" title="class in com.google.template.soy.soytree.defn">HeaderParam</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/exprparse/ExpressionParserConstants.html#HEX_DIGIT">HEX_DIGIT</a></span> - Static variable in interface com.google.template.soy.exprparse.<a href="./com/google/template/soy/exprparse/ExpressionParserConstants.html" title="interface in com.google.template.soy.exprparse">ExpressionParserConstants</a></dt>
 <dd>
@@ -7354,6 +7366,10 @@
 <dt><span class="strong"><a href="./com/google/template/soy/exprtree/VarRefNode.html#isInjected()">isInjected()</a></span> - Method in class com.google.template.soy.exprtree.<a href="./com/google/template/soy/exprtree/VarRefNode.html" title="class in com.google.template.soy.exprtree">VarRefNode</a></dt>
 <dd>
 <div class="block">Returns Whether this is an injected parameter reference.</div>
+</dd>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/defn/TemplateParam.html#isInjected()">isInjected()</a></span> - Method in class com.google.template.soy.soytree.defn.<a href="./com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a></dt>
+<dd>
+<div class="block">Returns whether the param is required.</div>
 </dd>
 <dt><span class="strong"><a href="./com/google/template/soy/types/aggregate/ListType.html#isInstance(com.google.template.soy.data.SoyValue)">isInstance(SoyValue)</a></span> - Method in class com.google.template.soy.types.aggregate.<a href="./com/google/template/soy/types/aggregate/ListType.html" title="class in com.google.template.soy.types.aggregate">ListType</a></dt>
 <dd>&nbsp;</dd>
@@ -8808,6 +8824,10 @@
 </dd>
 <dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/opti/OptiModule.html#OptiModule()">OptiModule()</a></span> - Constructor for class com.google.template.soy.sharedpasses.opti.<a href="./com/google/template/soy/sharedpasses/opti/OptiModule.html" title="class in com.google.template.soy.sharedpasses.opti">OptiModule</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/TemplateNodeBuilder.DeclInfo.html#optional">optional</a></span> - Variable in class com.google.template.soy.soytree.<a href="./com/google/template/soy/soytree/TemplateNodeBuilder.DeclInfo.html" title="class in com.google.template.soy.soytree">TemplateNodeBuilder.DeclInfo</a></dt>
+<dd>
+<div class="block">Whether this is an optional parameter.</div>
+</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/data/Dir.html#ord">ord</a></span> - Variable in enum com.google.template.soy.data.<a href="./com/google/template/soy/data/Dir.html" title="enum in com.google.template.soy.data">Dir</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/data/UnsafeSanitizedContentOrdainer.html#ordainAsSafe(java.lang.String, com.google.template.soy.data.SanitizedContent.ContentKind)">ordainAsSafe(String, SanitizedContent.ContentKind)</a></span> - Static method in class com.google.template.soy.data.<a href="./com/google/template/soy/data/UnsafeSanitizedContentOrdainer.html" title="class in com.google.template.soy.data">UnsafeSanitizedContentOrdainer</a></dt>
@@ -11694,13 +11714,13 @@
 <dd>
 <div class="block">Value class used in the input to method <a href="./com/google/template/soy/soytree/TemplateNodeBuilder.html#setHeaderDecls(java.util.List)"><code>TemplateNodeBuilder.setHeaderDecls(java.util.List&lt;com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo&gt;)</code></a>.</div>
 </dd>
-<dt><span class="strong"><a href="./com/google/template/soy/soytree/TemplateNodeBuilder.DeclInfo.html#TemplateNodeBuilder.DeclInfo(java.lang.String, java.lang.String, java.lang.String)">TemplateNodeBuilder.DeclInfo(String, String, String)</a></span> - Constructor for class com.google.template.soy.soytree.<a href="./com/google/template/soy/soytree/TemplateNodeBuilder.DeclInfo.html" title="class in com.google.template.soy.soytree">TemplateNodeBuilder.DeclInfo</a></dt>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/TemplateNodeBuilder.DeclInfo.html#TemplateNodeBuilder.DeclInfo(java.lang.String, java.lang.String, java.lang.String, boolean)">TemplateNodeBuilder.DeclInfo(String, String, String, boolean)</a></span> - Constructor for class com.google.template.soy.soytree.<a href="./com/google/template/soy/soytree/TemplateNodeBuilder.DeclInfo.html" title="class in com.google.template.soy.soytree">TemplateNodeBuilder.DeclInfo</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="./com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn"><span class="strong">TemplateParam</span></a> - Class in <a href="./com/google/template/soy/soytree/defn/package-summary.html">com.google.template.soy.soytree.defn</a></dt>
 <dd>
 <div class="block">An explicitly declared template parameter.</div>
 </dd>
-<dt><span class="strong"><a href="./com/google/template/soy/soytree/defn/TemplateParam.html#TemplateParam(java.lang.String, com.google.template.soy.types.SoyType, boolean, java.lang.String)">TemplateParam(String, SoyType, boolean, String)</a></span> - Constructor for class com.google.template.soy.soytree.defn.<a href="./com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a></dt>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/defn/TemplateParam.html#TemplateParam(java.lang.String, com.google.template.soy.types.SoyType, boolean, boolean, java.lang.String)">TemplateParam(String, SoyType, boolean, boolean, String)</a></span> - Constructor for class com.google.template.soy.soytree.defn.<a href="./com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="./com/google/template/soy/soytree/defn/TemplateParam.DeclLoc.html" title="enum in com.google.template.soy.soytree.defn"><span class="strong">TemplateParam.DeclLoc</span></a> - Enum in <a href="./com/google/template/soy/soytree/defn/package-summary.html">com.google.template.soy.soytree.defn</a></dt>
 <dd>

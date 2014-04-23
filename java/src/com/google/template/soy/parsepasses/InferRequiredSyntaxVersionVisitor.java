@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.List;
 
-
 /**
  * Visitor to infer the required syntax version of a Soy file due to features used.
  *
@@ -37,13 +36,10 @@ import java.util.List;
  */
 public class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisitor<SyntaxVersion> {
 
-
   /** The highest known required syntax version so far (during a pass). */
   private SyntaxVersion knownRequiredSyntaxVersion;
 
-
   @Override public SyntaxVersion exec(SoyNode node) {
-
     Preconditions.checkArgument(node instanceof SoyFileNode);
 
     knownRequiredSyntaxVersion = SyntaxVersion.V1_0;
@@ -51,35 +47,31 @@ public class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisitor<Sy
     return knownRequiredSyntaxVersion;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
   @Override protected void visitTemplateNode(TemplateNode node) {
-
     if (knownRequiredSyntaxVersion.num < SyntaxVersion.V2_3.num) {
       List<TemplateParam> params = node.getParams();
-      if (params != null) {
-        for (TemplateParam param : params) {
-          if (param instanceof HeaderParam) {
-            knownRequiredSyntaxVersion = SyntaxVersion.V2_3;
-            break;
-          }
+      for (TemplateParam param : params) {
+        if (param instanceof HeaderParam) {
+          knownRequiredSyntaxVersion = SyntaxVersion.V2_3;
+          break;
         }
       }
     }
+    if (knownRequiredSyntaxVersion.num < SyntaxVersion.V2_4.num &&
+        !node.getInjectedParams().isEmpty()) {
+      knownRequiredSyntaxVersion = SyntaxVersion.V2_4;
+    }
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
-
 
   @Override protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

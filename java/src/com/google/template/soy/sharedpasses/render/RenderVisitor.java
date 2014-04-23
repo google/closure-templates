@@ -806,18 +806,24 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void checkStrictParamTypes(TemplateNode node) {
     for (TemplateParam param : node.getParams()) {
-      SoyValue paramValue = data.getField(param.name());
-      if (paramValue == null) {
-        paramValue = NullData.INSTANCE;
-      }
-      if (!param.type().isInstance(paramValue)) {
-        throw new RenderException(
-            "Parameter type mismatch: attempt to bind value '" +
-            (paramValue instanceof UndefinedData ? "(undefined)" : paramValue) +
-            "' to parameter '" + param.name() + "' which has declared type '" +
-            param.type().toString() + "'.")
-            .addPartialStackTraceElement(node.getSourceLocation());
-      }
+      checkStrictParamType(node, param, data.getField(param.name()));
+    }
+    for (TemplateParam param : node.getInjectedParams()) {
+      checkStrictParamType(node, param, ijData.getField(param.name()));
+    }
+  }
+
+  private void checkStrictParamType(TemplateNode node, TemplateParam param, SoyValue paramValue) {
+    if (paramValue == null) {
+      paramValue = NullData.INSTANCE;
+    }
+    if (!param.type().isInstance(paramValue)) {
+      throw new RenderException(
+          "Parameter type mismatch: attempt to bind value '" +
+          (paramValue instanceof UndefinedData ? "(undefined)" : paramValue) +
+          "' to parameter '" + param.name() + "' which has declared type '" +
+          param.type().toString() + "'.")
+          .addPartialStackTraceElement(node.getSourceLocation());
     }
   }
 }

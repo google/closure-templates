@@ -35,7 +35,6 @@ import junit.framework.TestCase;
  */
 public class ResolveNamesVisitorTest extends TestCase {
 
-
   private static final SoyTypeProvider typeProvider =
       new SoyTypeProvider() {
         @Override
@@ -50,17 +49,14 @@ public class ResolveNamesVisitorTest extends TestCase {
   private static final SoyTypeRegistry typeRegistry =
       new SoyTypeRegistry(ImmutableSet.of(typeProvider));
 
-
   private static ResolveNamesVisitor createResolveNamesVisitorForMaxSyntaxVersion() {
     return createResolveNamesVisitor(SyntaxVersion.V9_9);
   }
-
 
   private static ResolveNamesVisitor createResolveNamesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
     return new ResolveNamesVisitor(declaredSyntaxVersion);
   }
-
 
   public void testParamNameLookupSuccess() {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
@@ -69,6 +65,12 @@ public class ResolveNamesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
   }
 
+  public void testInjectedParamNameLookupSuccess() {
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+        "{@inject pa: bool}",
+        "{$pa}"));
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+  }
 
   public void testLetNameLookupSuccess() {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
@@ -77,13 +79,11 @@ public class ResolveNamesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
   }
 
-
   public void testNameLookupFailure() {
     assertResolveNamesFails(
         "Undefined variable",
         constructTemplateSource("{$pa}"));
   }
-
 
   /**
    * Helper function that constructs a boilerplate template given a list of body
@@ -100,7 +100,6 @@ public class ResolveNamesVisitorTest extends TestCase {
         "  " + Joiner.on("\n   ").join(body) + "\n" +
         "{/template}\n";
   }
-
 
   /**
    * Assertions function that checks to make sure that name resolution fails with the

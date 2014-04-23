@@ -89,7 +89,7 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
         return;
       }
       CallParamValueNode valueParam = (CallParamValueNode) param;
-      if (! ("$" + valueParam.getKey()).equals(valueParam.getValueExprText())) {
+      if (!("$" + valueParam.getKey()).equals(valueParam.getValueExprText())) {
         return;
       }
       ExprRootNode<?> valueExprRoot = ((CallParamValueNode) param).getValueExprUnion().getExpr();

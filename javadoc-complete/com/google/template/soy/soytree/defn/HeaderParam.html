@@ -168,10 +168,11 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Template
 <th class="colOne" scope="col">Constructor and Description</th>
 </tr>
 <tr class="altColor">
-<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/HeaderParam.html#HeaderParam(java.lang.String, java.lang.String, com.google.template.soy.types.SoyType, boolean, java.lang.String)">HeaderParam</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/soytree/defn/HeaderParam.html#HeaderParam(java.lang.String, java.lang.String, com.google.template.soy.types.SoyType, boolean, boolean, java.lang.String)">HeaderParam</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;name,
            <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;typeSrc,
            <a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a>&nbsp;type,
            boolean&nbsp;isRequired,
+           boolean&nbsp;isInjected,
            <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;desc)</code>&nbsp;</td>
 </tr>
 </table>
@@ -219,7 +220,7 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Template
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;com.google.template.soy.soytree.defn.<a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a></h3>
-<code><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#abstractEquals(java.lang.Object)">abstractEquals</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#abstractHashCode()">abstractHashCode</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#desc()">desc</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#isRequired()">isRequired</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#kind()">kind</a></code></li>
+<code><a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#abstractEquals(java.lang.Object)">abstractEquals</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#abstractHashCode()">abstractHashCode</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#desc()">desc</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#isInjected()">isInjected</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#isRequired()">isRequired</a>, <a href="../../../../../../com/google/template/soy/soytree/defn/TemplateParam.html#kind()">kind</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.soytree.defn.AbstractVarDefn">
@@ -249,7 +250,7 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Template
 <!--   -->
 </a>
 <h3>Constructor Detail</h3>
-<a name="HeaderParam(java.lang.String, java.lang.String, com.google.template.soy.types.SoyType, boolean, java.lang.String)">
+<a name="HeaderParam(java.lang.String, java.lang.String, com.google.template.soy.types.SoyType, boolean, boolean, java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockListLast">
@@ -259,6 +260,7 @@ extends <a href="../../../../../../com/google/template/soy/soytree/defn/Template
            <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;typeSrc,
            <a href="../../../../../../com/google/template/soy/types/SoyType.html" title="interface in com.google.template.soy.types">SoyType</a>&nbsp;type,
            boolean&nbsp;isRequired,
+           boolean&nbsp;isInjected,
            <a href="http://java.sun.com/javase/6/docs/api/javax/annotation/Nullable.html?is-external=true" title="class or interface in javax.annotation">@Nullable</a>
            <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;desc)</pre>
 </li>
