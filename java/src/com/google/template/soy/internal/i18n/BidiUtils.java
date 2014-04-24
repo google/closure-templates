@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.data.Dir;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.util.ULocale;
 
@@ -76,8 +77,12 @@ public class BidiUtils {
    */
   @SuppressWarnings("deprecation")
   public static boolean isRtlLanguage(ULocale locale) {
-    return UScript.isRightToLeft(
-       UScript.getCodeFromName(ULocale.addLikelySubtags(locale).getScript()));
+    try {
+      return UScript.isRightToLeft(UCharacter.getPropertyValueEnum(UProperty.SCRIPT,
+          ULocale.addLikelySubtags(locale).getScript()));
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
   }
 
   /**
