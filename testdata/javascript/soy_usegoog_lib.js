@@ -10499,7 +10499,7 @@ goog.dom.getDocumentScroll_ = function(doc) {
 
 /**
  * Gets the document scroll element.
- * @return {Element} Scrolling element.
+ * @return {!Element} Scrolling element.
  */
 goog.dom.getDocumentScrollElement = function() {
   return goog.dom.getDocumentScrollElement_(document);
@@ -12344,7 +12344,7 @@ goog.dom.DomHelper.prototype.getWindow = function() {
 
 /**
  * Gets the document scroll element.
- * @return {Element} Scrolling element.
+ * @return {!Element} Scrolling element.
  */
 goog.dom.DomHelper.prototype.getDocumentScrollElement = function() {
   return goog.dom.getDocumentScrollElement_(this.document_);

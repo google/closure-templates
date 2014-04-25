@@ -1664,7 +1664,9 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         return true;
       }
     }
-    return !template.getInjectedParams().isEmpty();
+    // Note: If there are only injected params, don't use strong typing for
+    // the function signature, because what it will produce is an empty struct.
+    return false;
   }
 
   /**
