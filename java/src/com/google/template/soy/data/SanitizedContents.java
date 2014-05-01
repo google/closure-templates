@@ -25,6 +25,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -157,7 +158,6 @@ public final class SanitizedContents {
         // - This method currently can't be used for text resources (see pretendValidateResource()).
         getDefaultDir(kind));
   }
-
 
   /**
    * Very basic but strict validation that the resource's extension matches the content kind.

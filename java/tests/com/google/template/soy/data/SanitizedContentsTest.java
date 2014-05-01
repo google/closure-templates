@@ -153,5 +153,4 @@ public class SanitizedContentsTest extends TestCase {
     assertNull(SanitizedContents.getDefaultDir(ContentKind.HTML));
     assertNull(SanitizedContents.getDefaultDir(ContentKind.JS_STR_CHARS));
   }
-
 }

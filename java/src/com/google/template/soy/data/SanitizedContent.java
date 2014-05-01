@@ -177,5 +177,4 @@ public final class SanitizedContent extends SoyData {
   public int hashCode() {
     return content.hashCode() + 31 * contentKind.hashCode();
   }
-
 }
