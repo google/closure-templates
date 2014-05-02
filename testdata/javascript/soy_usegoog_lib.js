@@ -1675,6 +1675,21 @@ goog.scope = function(fn) {
 };
 
 
+/*
+ * To support uncompiled, strict mode bundles that use eval to divide source
+ * like so:
+ *    eval('someSource;//# sourceUrl sourcefile.js');
+ * We need to export the globally defined symbols "goog" and "COMPILED".
+ * Exporting "goog" breaks the compiler optimizations, so we required that
+ * be defined externally.
+ * NOTE: We don't use goog.exportSymbol here because we don't want to trigger
+ * extern generation when that compiler option is enabled.
+ */
+if (!COMPILED) {
+  goog.global['COMPILED'] = COMPILED;
+}
+
+
 
 //javascript/closure/deps.js
 // Copyright 2014 The Closure Library Authors. All Rights Reserved.
@@ -1719,9 +1734,9 @@ goog.addDependency('async/conditionaldelay.js', ['goog.async.ConditionalDelay'],
 goog.addDependency('async/conditionaldelay_test.js', ['goog.async.ConditionalDelayTest'], ['goog.async.ConditionalDelay', 'goog.testing.MockClock', 'goog.testing.jsunit']);
 goog.addDependency('async/delay.js', ['goog.Delay', 'goog.async.Delay'], ['goog.Disposable', 'goog.Timer']);
 goog.addDependency('async/delay_test.js', ['goog.async.DelayTest'], ['goog.async.Delay', 'goog.testing.MockClock', 'goog.testing.jsunit']);
-goog.addDependency('async/nexttick.js', ['goog.async.nextTick'], ['goog.debug.entryPointRegistry', 'goog.functions']);
+goog.addDependency('async/nexttick.js', ['goog.async.nextTick', 'goog.async.throwException'], ['goog.debug.entryPointRegistry', 'goog.functions']);
 goog.addDependency('async/nexttick_test.js', ['goog.async.nextTickTest'], ['goog.async.nextTick', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.testing.AsyncTestCase', 'goog.testing.MockClock', 'goog.testing.jsunit']);
-goog.addDependency('async/run.js', ['goog.async.run', 'goog.async.throwException'], ['goog.async.nextTick', 'goog.testing.watchers']);
+goog.addDependency('async/run.js', ['goog.async.run'], ['goog.async.nextTick', 'goog.async.throwException', 'goog.testing.watchers']);
 goog.addDependency('async/run_test.js', ['goog.async.runTest'], ['goog.async.run', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction']);
 goog.addDependency('async/throttle.js', ['goog.Throttle', 'goog.async.Throttle'], ['goog.Disposable', 'goog.Timer']);
 goog.addDependency('async/throttle_test.js', ['goog.async.ThrottleTest'], ['goog.async.Throttle', 'goog.testing.MockClock', 'goog.testing.jsunit']);
@@ -3751,7 +3766,7 @@ goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
   if (opt_document) {
     div = opt_document.createElement('div');
   } else {
-    div = document.createElement('div');
+    div = goog.global.document.createElement('div');
   }
   // Match as many valid entity characters as possible. If the actual entity
   // happens to be shorter, it will still work as innerHTML will return the
@@ -19305,10 +19320,6 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
 // Generated code.
 
 
-
-
-
-
 // START GENERATED CODE FOR ESCAPERS.
 
 /**
@@ -19325,20 +19336,20 @@ soy.esc.$$escapeUriHelper = function(v) {
  */
 soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
   '\x00': '\x26#0;',
-  '\x22': '\x26quot;',
-  '\x26': '\x26amp;',
-  '\x27': '\x26#39;',
-  '\x3c': '\x26lt;',
-  '\x3e': '\x26gt;',
   '\x09': '\x26#9;',
   '\x0a': '\x26#10;',
   '\x0b': '\x26#11;',
   '\x0c': '\x26#12;',
   '\x0d': '\x26#13;',
   ' ': '\x26#32;',
+  '\x22': '\x26quot;',
+  '\x26': '\x26amp;',
+  '\x27': '\x26#39;',
   '-': '\x26#45;',
   '\/': '\x26#47;',
+  '\x3c': '\x26lt;',
   '\x3d': '\x26#61;',
+  '\x3e': '\x26gt;',
   '`': '\x26#96;',
   '\x85': '\x26#133;',
   '\xa0': '\x26#160;',
@@ -19370,17 +19381,9 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x0c': '\\f',
   '\x0d': '\\r',
   '\x22': '\\x22',
+  '$': '\\x24',
   '\x26': '\\x26',
   '\x27': '\\x27',
-  '\/': '\\\/',
-  '\x3c': '\\x3c',
-  '\x3d': '\\x3d',
-  '\x3e': '\\x3e',
-  '\\': '\\\\',
-  '\x85': '\\x85',
-  '\u2028': '\\u2028',
-  '\u2029': '\\u2029',
-  '$': '\\x24',
   '(': '\\x28',
   ')': '\\x29',
   '*': '\\x2a',
@@ -19388,14 +19391,22 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   ',': '\\x2c',
   '-': '\\x2d',
   '.': '\\x2e',
+  '\/': '\\\/',
   ':': '\\x3a',
+  '\x3c': '\\x3c',
+  '\x3d': '\\x3d',
+  '\x3e': '\\x3e',
   '?': '\\x3f',
   '[': '\\x5b',
+  '\\': '\\\\',
   ']': '\\x5d',
   '^': '\\x5e',
   '{': '\\x7b',
   '|': '\\x7c',
-  '}': '\\x7d'
+  '}': '\\x7d',
+  '\x85': '\\x85',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029'
 };
 
 /**
