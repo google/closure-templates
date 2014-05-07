@@ -546,7 +546,114 @@ if (!goog.string) {
 
       return str.replace(/(\r\n|\r|\n)/g, opt_xml ? '<br />' : '<br>');
     },
+
+    /**
+     * Escapes double quote '"' and single quote '\'' characters in addition to
+     * '&', '<', and '>' so that a string can be included in an HTML tag
+     * attribute value within double or single quotes.
+     *
+     * It should be noted that > doesn't need to be escaped for the HTML or XML
+     * to be valid, but it has been decided to escape it for consistency with
+     * other implementations.
+     *
+     * @param {string} str string to be escaped.
+     * @param {boolean=} opt_isLikelyToContainHtmlChars Don't perform a check to
+     *     see if the character needs replacing - use this option if you expect
+     *     each of the characters to appear often. Leave false if you expect few
+     *     html characters to occur in your strings, such as if you are escaping
+     *     HTML.
+     * @return {string} An escaped copy of {@code str}.
+     */
+    htmlEscape: function(str, opt_isLikelyToContainHtmlChars) {
+
+      if (opt_isLikelyToContainHtmlChars) {
+        str = str.replace(goog.string.AMP_RE_, '&amp;')
+              .replace(goog.string.LT_RE_, '&lt;')
+              .replace(goog.string.GT_RE_, '&gt;')
+              .replace(goog.string.QUOT_RE_, '&quot;')
+              .replace(goog.string.SINGLE_QUOTE_RE_, '&#39;')
+              .replace(goog.string.NULL_RE_, '&#0;');
+        return str;
+
+      } else {
+        // quick test helps in the case when there are no chars to replace, in
+        // worst case this makes barely a difference to the time taken
+        if (!goog.string.ALL_RE_.test(str)) return str;
+
+        // str.indexOf is faster than regex.test in this case
+        if (str.indexOf('&') != -1) {
+          str = str.replace(goog.string.AMP_RE_, '&amp;');
+        }
+        if (str.indexOf('<') != -1) {
+          str = str.replace(goog.string.LT_RE_, '&lt;');
+        }
+        if (str.indexOf('>') != -1) {
+          str = str.replace(goog.string.GT_RE_, '&gt;');
+        }
+        if (str.indexOf('"') != -1) {
+          str = str.replace(goog.string.QUOT_RE_, '&quot;');
+        }
+        if (str.indexOf('\'') != -1) {
+          str = str.replace(goog.string.SINGLE_QUOTE_RE_, '&#39;');
+        }
+        if (str.indexOf('\x00') != -1) {
+          str = str.replace(goog.string.NULL_RE_, '&#0;');
+        }
+        return str;
+      }
+    },
+
     urlEncode: encodeURIComponent,
+
+    /**
+     * Regular expression that matches an ampersand, for use in escaping.
+     * @const {!RegExp}
+     * @private
+     */
+    AMP_RE_: /&/g,
+
+    /**
+     * Regular expression that matches a less than sign, for use in escaping.
+     * @const {!RegExp}
+     * @private
+     */
+    LT_RE_: /</g,
+
+    /**
+     * Regular expression that matches a greater than sign, for use in escaping.
+     * @const {!RegExp}
+     * @private
+     */
+    GT_RE_: />/g,
+
+    /**
+     * Regular expression that matches a double quote, for use in escaping.
+     * @const {!RegExp}
+     * @private
+     */
+    QUOT_RE_: /"/g,
+
+    /**
+     * Regular expression that matches a single quote, for use in escaping.
+     * @const {!RegExp}
+     * @private
+     */
+    SINGLE_QUOTE_RE_: /'/g,
+
+    /**
+     * Regular expression that matches null character, for use in escaping.
+     * @const {!RegExp}
+     * @private
+     */
+    NULL_RE_: /\x00/g,
+
+    /**
+     * Regular expression that matches any character that needs to be escaped.
+     * @const {!RegExp}
+     * @private
+     */
+    ALL_RE_: /[&<>"']/,
+
     /**
      * Regular expression used within newlineToBr().
      * @type {RegExp}
@@ -2782,6 +2889,13 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
 /**
  * @type {function (*) : string}
  */
+soy.esc.$$escapeHtmlHelper = function(v) {
+  return goog.string.htmlEscape(String(v));
+};
+
+/**
+ * @type {function (*) : string}
+ */
 soy.esc.$$escapeUriHelper = function(v) {
   return goog.string.urlEncode(String(v));
 };
@@ -2791,7 +2905,7 @@ soy.esc.$$escapeUriHelper = function(v) {
  * @type {Object.<string, string>}
  * @private
  */
-soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
+soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
   '\x00': '\x26#0;',
   '\x09': '\x26#9;',
   '\x0a': '\x26#10;',
@@ -2820,8 +2934,8 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSP
  * @return {string} A token in the output language.
  * @private
  */
-soy.esc.$$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
+soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
+  return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
 };
 
 /**
@@ -3009,13 +3123,6 @@ soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI_ = function(ch) 
  * @type RegExp
  * @private
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_HTML_ = /[\x00\x22\x26\x27\x3c\x3e]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
- */
 soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
 
 /**
@@ -3096,18 +3203,6 @@ soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!style|on|action|archive|back
 soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!script|style|title|textarea|xmp|no)[a-z0-9_$:-]*$/i;
 
 /**
- * A helper for the Soy directive |escapeHtml
- * @param {*} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$escapeHtmlHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_HTML_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
-};
-
-/**
  * A helper for the Soy directive |normalizeHtml
  * @param {*} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
@@ -3116,7 +3211,7 @@ soy.esc.$$normalizeHtmlHelper = function(value) {
   var str = String(value);
   return str.replace(
       soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
 };
 
 /**
@@ -3128,7 +3223,7 @@ soy.esc.$$escapeHtmlNospaceHelper = function(value) {
   var str = String(value);
   return str.replace(
       soy.esc.$$MATCHER_FOR_ESCAPE_HTML_NOSPACE_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
 };
 
 /**
@@ -3140,7 +3235,7 @@ soy.esc.$$normalizeHtmlNospaceHelper = function(value) {
   var str = String(value);
   return str.replace(
       soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
 };
 
 /**

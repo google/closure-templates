@@ -154,13 +154,20 @@ extends <a href="../../../../../../com/google/template/soy/shared/restricted/Esc
 <div class="block">Returns the escapes used for this escaper.</div>
 </td>
 </tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;</code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.EscapeHtml.html#getLangFunctionNames(com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage)">getLangFunctionNames</a></strong>(<a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.EscapingLanguage.html" title="enum in com.google.template.soy.shared.restricted">EscapingConventions.EscapingLanguage</a>&nbsp;language)</code>
+<div class="block">The names of existing language builtins or available library functions (such as Google
+ Closure) that implement the escaping convention.</div>
+</td>
+</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a name="methods_inherited_from_class_com.google.template.soy.shared.restricted.EscapingConventions.CrossLanguageStringXform">
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;com.google.template.soy.shared.restricted.<a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html" title="class in com.google.template.soy.shared.restricted">EscapingConventions.CrossLanguageStringXform</a></h3>
-<code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#escape(java.lang.Appendable)">escape</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#escape(java.lang.String)">escape</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getDirectiveName()">getDirectiveName</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getEscapes()">getEscapes</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getInnocuousOutput()">getInnocuousOutput</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getLangFunctionNames(com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage)">getLangFunctionNames</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getNonAsciiPrefix()">getNonAsciiPrefix</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getValueFilter()">getValueFilter</a></code></li>
+<code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#escape(java.lang.Appendable)">escape</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#escape(java.lang.String)">escape</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getDirectiveName()">getDirectiveName</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getEscapes()">getEscapes</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getInnocuousOutput()">getInnocuousOutput</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getNonAsciiPrefix()">getNonAsciiPrefix</a>, <a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getValueFilter()">getValueFilter</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a name="methods_inherited_from_class_java.lang.Object">
@@ -204,7 +211,7 @@ extends <a href="../../../../../../com/google/template/soy/shared/restricted/Esc
 <a name="defineEscapes()">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>defineEscapes</h4>
 <pre>protected&nbsp;com.google.common.collect.ImmutableList&lt;<a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.Escape.html" title="class in com.google.template.soy.shared.restricted">EscapingConventions.Escape</a>&gt;&nbsp;defineEscapes()</pre>
@@ -214,6 +221,23 @@ extends <a href="../../../../../../com/google/template/soy/shared/restricted/Esc
 <dt><strong>Specified by:</strong></dt>
 <dd><code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#defineEscapes()">defineEscapes</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html" title="class in com.google.template.soy.shared.restricted">EscapingConventions.CrossLanguageStringXform</a></code></dd>
 </dl>
+</li>
+</ul>
+<a name="getLangFunctionNames(com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>getLangFunctionNames</h4>
+<pre>public&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;getLangFunctionNames(<a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.EscapingLanguage.html" title="enum in com.google.template.soy.shared.restricted">EscapingConventions.EscapingLanguage</a>&nbsp;language)</pre>
+<div class="block"><strong>Description copied from class:&nbsp;<code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getLangFunctionNames(com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage)">EscapingConventions.CrossLanguageStringXform</a></code></strong></div>
+<div class="block">The names of existing language builtins or available library functions (such as Google
+ Closure) that implement the escaping convention.</div>
+<dl>
+<dt><strong>Overrides:</strong></dt>
+<dd><code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html#getLangFunctionNames(com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage)">getLangFunctionNames</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../../com/google/template/soy/shared/restricted/EscapingConventions.CrossLanguageStringXform.html" title="class in com.google.template.soy.shared.restricted">EscapingConventions.CrossLanguageStringXform</a></code></dd>
+<dt><span class="strong">Parameters:</span></dt><dd><code>language</code> - The language being escaped.</dd>
+<dt><span class="strong">Returns:</span></dt><dd><code>null</code> if there is no such function.</dd></dl>
 </li>
 </ul>
 </li>

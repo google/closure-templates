@@ -519,13 +519,12 @@ public final class EscapingConventions {
           .build();
     }
 
-    // TODO(user): enable goog.string.htmlEscape after it escapes single quotes.
-    /*@Override public List<String> getLangFunctionNames(String language) {
-      if (language == "JavaScript") {
+    @Override public List<String> getLangFunctionNames(EscapingLanguage language) {
+      if (language == EscapingLanguage.JAVASCRIPT) {
         return ImmutableList.<String>of("goog.string.htmlEscape");
       }
       return super.getLangFunctionNames(language);
-    }*/
+    }
   }
 
 
