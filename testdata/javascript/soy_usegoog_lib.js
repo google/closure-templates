@@ -2603,7 +2603,7 @@ goog.addDependency('string/parser.js', ['goog.string.Parser'], []);
 goog.addDependency('string/path.js', ['goog.string.path'], ['goog.array', 'goog.string']);
 goog.addDependency('string/path_test.js', ['goog.string.pathTest'], ['goog.string.path', 'goog.testing.jsunit']);
 goog.addDependency('string/string.js', ['goog.string', 'goog.string.Unicode'], []);
-goog.addDependency('string/string_test.js', ['goog.stringTest'], ['goog.functions', 'goog.object', 'goog.string', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit']);
+goog.addDependency('string/string_test.js', ['goog.stringTest'], ['goog.functions', 'goog.object', 'goog.string', 'goog.string.Unicode', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit']);
 goog.addDependency('string/stringbuffer.js', ['goog.string.StringBuffer'], []);
 goog.addDependency('string/stringbuffer_test.js', ['goog.string.StringBufferTest'], ['goog.string.StringBuffer', 'goog.testing.jsunit']);
 goog.addDependency('string/stringformat.js', ['goog.string.format'], ['goog.string']);
@@ -3892,7 +3892,19 @@ goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
  * @return {string} An escaped copy of {@code str}.
  */
 goog.string.whitespaceEscape = function(str, opt_xml) {
+  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
   return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml);
+};
+
+
+/**
+ * Preserve spaces that would be otherwise collapsed in HTML by replacing them
+ * with non-breaking space Unicode characters.
+ * @param {string} str The string in which to preserve whitespace.
+ * @return {string} A copy of {@code str} with preserved whitespace.
+ */
+goog.string.preserveSpaces = function(str) {
+  return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
 };
 
 
