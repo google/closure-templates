@@ -396,7 +396,7 @@ goog.addDependency = function(relPath, provides, requires) {
 // require() with its registered dependencies.
 // User-defined namespaces may need their own deps file.  See http://go/js_deps,
 // http://go/genjsdeps, or, externally, DepsWriter.
-// http://code.google.com/closure/library/docs/depswriter.html
+// https://developers.google.com/closure/library/docs/depswriter
 //
 // Because of legacy clients, the DOM loader can't be easily removed from
 // base.js.  Work is being done to make it disableable or replaceable for
@@ -2041,7 +2041,7 @@ goog.addDependency('events/eventhandler_test.js', ['goog.events.EventHandlerTest
 goog.addDependency('events/eventid.js', ['goog.events.EventId'], []);
 goog.addDependency('events/events.js', ['goog.events', 'goog.events.CaptureSimulationMode', 'goog.events.Key', 'goog.events.ListenableType'], ['goog.asserts', 'goog.debug.entryPointRegistry', 'goog.events.BrowserEvent', 'goog.events.BrowserFeature', 'goog.events.Listenable', 'goog.events.ListenerMap']);
 goog.addDependency('events/events_test.js', ['goog.eventsTest'], ['goog.asserts.AssertionError', 'goog.debug.EntryPointMonitor', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.dom', 'goog.events', 'goog.events.BrowserFeature', 'goog.events.CaptureSimulationMode', 'goog.events.Event', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.Listener', 'goog.functions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction']);
-goog.addDependency('events/eventtarget.js', ['goog.events.EventTarget'], ['goog.Disposable', 'goog.array', 'goog.asserts', 'goog.events', 'goog.events.Event', 'goog.events.Listenable', 'goog.events.ListenerMap', 'goog.object']);
+goog.addDependency('events/eventtarget.js', ['goog.events.EventTarget'], ['goog.Disposable', 'goog.asserts', 'goog.events', 'goog.events.Event', 'goog.events.Listenable', 'goog.events.ListenerMap', 'goog.object']);
 goog.addDependency('events/eventtarget_test.js', ['goog.events.EventTargetTest'], ['goog.events.EventTarget', 'goog.events.Listenable', 'goog.events.eventTargetTester', 'goog.events.eventTargetTester.KeyType', 'goog.events.eventTargetTester.UnlistenReturnType', 'goog.testing.jsunit']);
 goog.addDependency('events/eventtarget_via_googevents_test.js', ['goog.events.EventTargetGoogEventsTest'], ['goog.events', 'goog.events.EventTarget', 'goog.events.eventTargetTester', 'goog.events.eventTargetTester.KeyType', 'goog.events.eventTargetTester.UnlistenReturnType', 'goog.object', 'goog.testing', 'goog.testing.jsunit']);
 goog.addDependency('events/eventtarget_via_w3cinterface_test.js', ['goog.events.EventTargetW3CTest'], ['goog.events.EventTarget', 'goog.events.eventTargetTester', 'goog.events.eventTargetTester.KeyType', 'goog.events.eventTargetTester.UnlistenReturnType', 'goog.testing.jsunit']);
@@ -10475,10 +10475,16 @@ goog.dom.getDocumentHeight_ = function(win) {
     // But there are patterns.  It just takes a lot of time and persistence
     // to figure out.
 
-    // Get the height of the viewport
-    var vh = goog.dom.getViewportSize_(win).height;
+    // If the window has no contents, it has no height. (In IE10,
+    // document.body & document.documentElement are null in an empty iFrame.)
     var body = doc.body;
     var docEl = doc.documentElement;
+    if (!body && !docEl) {
+      return 0;
+    }
+
+    // Get the height of the viewport
+    var vh = goog.dom.getViewportSize_(win).height;
     if (goog.dom.isCss1CompatMode_(doc) && docEl.scrollHeight) {
       // In Strict mode:
       // The inner content height is contained in either:
