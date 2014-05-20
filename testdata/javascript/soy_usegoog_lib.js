@@ -279,7 +279,7 @@ goog.setTestOnly = function(opt_message) {
   if (COMPILED && !goog.DEBUG) {
     opt_message = opt_message || '';
     throw Error('Importing test-only code into non-debug environment' +
-                opt_message ? ': ' + opt_message : '.');
+                (opt_message ? ': ' + opt_message : '.'));
   }
 };
 
@@ -2166,8 +2166,8 @@ goog.addDependency('history/html5history_test.js', ['goog.history.Html5HistoryTe
 goog.addDependency('html/legacyconversions.js', ['goog.html.legacyconversions'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl']);
 goog.addDependency('html/legacyconversions_test.js', ['goog.html.legacyconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.legacyconversions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit']);
 goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString']);
-goog.addDependency('html/safehtml_test.js', ['goog.html.safeHtmlTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.testing', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit']);
-goog.addDependency('html/safestyle.js', ['goog.html.SafeStyle'], ['goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString']);
+goog.addDependency('html/safehtml_test.js', ['goog.html.safeHtmlTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.testing', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit']);
+goog.addDependency('html/safestyle.js', ['goog.html.SafeStyle'], ['goog.array', 'goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString']);
 goog.addDependency('html/safestyle_test.js', ['goog.html.safeStyleTest'], ['goog.html.SafeStyle', 'goog.string.Const', 'goog.testing.jsunit']);
 goog.addDependency('html/safeurl.js', ['goog.html.SafeUrl'], ['goog.asserts', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.string.Const', 'goog.string.TypedString']);
 goog.addDependency('html/safeurl_test.js', ['goog.html.safeUrlTest'], ['goog.html.SafeUrl', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit']);
@@ -2235,7 +2235,6 @@ goog.addDependency('json/json_test.js', ['goog.jsonTest'], ['goog.functions', 'g
 goog.addDependency('json/nativejsonprocessor.js', ['goog.json.NativeJsonProcessor'], ['goog.asserts', 'goog.json', 'goog.json.Processor']);
 goog.addDependency('json/processor.js', ['goog.json.Processor'], ['goog.string.Parser', 'goog.string.Stringifier']);
 goog.addDependency('json/processor_test.js', ['goog.json.processorTest'], ['goog.json.EvalJsonProcessor', 'goog.json.NativeJsonProcessor', 'goog.testing.jsunit', 'goog.userAgent']);
-goog.addDependency('labs/classdef/classdef.js', ['goog.labs.classdef'], []);
 goog.addDependency('labs/dom/pagevisibilitymonitor.js', ['goog.labs.dom.PageVisibilityEvent', 'goog.labs.dom.PageVisibilityMonitor', 'goog.labs.dom.PageVisibilityState'], ['goog.dom', 'goog.dom.vendor', 'goog.events', 'goog.events.Event', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.memoize']);
 goog.addDependency('labs/dom/pagevisibilitymonitor_test.js', ['goog.labs.dom.PageVisibilityMonitorTest'], ['goog.events', 'goog.functions', 'goog.labs.dom.PageVisibilityMonitor', 'goog.testing.PropertyReplacer', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.testing.recordFunction']);
 goog.addDependency('labs/events/nondisposableeventtarget.js', ['goog.labs.events.NonDisposableEventTarget'], ['goog.array', 'goog.asserts', 'goog.events.Event', 'goog.events.Listenable', 'goog.events.ListenerMap', 'goog.object']);
@@ -2940,7 +2939,7 @@ goog.addDependency('ui/richtextspellchecker.js', ['goog.ui.RichTextSpellChecker'
 goog.addDependency('ui/roundedpanel.js', ['goog.ui.BaseRoundedPanel', 'goog.ui.CssRoundedPanel', 'goog.ui.GraphicsRoundedPanel', 'goog.ui.RoundedPanel', 'goog.ui.RoundedPanel.Corner'], ['goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.graphics', 'goog.graphics.Path', 'goog.graphics.SolidFill', 'goog.graphics.Stroke', 'goog.math', 'goog.math.Coordinate', 'goog.style', 'goog.ui.Component', 'goog.userAgent']);
 goog.addDependency('ui/roundedtabrenderer.js', ['goog.ui.RoundedTabRenderer'], ['goog.dom', 'goog.ui.Tab', 'goog.ui.TabBar', 'goog.ui.TabRenderer', 'goog.ui.registry']);
 goog.addDependency('ui/scrollfloater.js', ['goog.ui.ScrollFloater', 'goog.ui.ScrollFloater.EventType'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.events.EventType', 'goog.style', 'goog.ui.Component', 'goog.userAgent']);
-goog.addDependency('ui/select.js', ['goog.ui.Select'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.events.EventType', 'goog.ui.Component', 'goog.ui.IdGenerator', 'goog.ui.MenuButton', 'goog.ui.MenuItem', 'goog.ui.MenuRenderer', 'goog.ui.SelectionModel', 'goog.ui.registry']);
+goog.addDependency('ui/select.js', ['goog.ui.Select'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.events.EventType', 'goog.ui.Component', 'goog.ui.MenuButton', 'goog.ui.MenuItem', 'goog.ui.MenuRenderer', 'goog.ui.SelectionModel', 'goog.ui.registry']);
 goog.addDependency('ui/selectionmenubutton.js', ['goog.ui.SelectionMenuButton', 'goog.ui.SelectionMenuButton.SelectionState'], ['goog.events.EventType', 'goog.style', 'goog.ui.Component', 'goog.ui.MenuButton', 'goog.ui.MenuItem', 'goog.ui.registry']);
 goog.addDependency('ui/selectionmodel.js', ['goog.ui.SelectionModel'], ['goog.array', 'goog.events.EventTarget', 'goog.events.EventType']);
 goog.addDependency('ui/separator.js', ['goog.ui.Separator'], ['goog.a11y.aria', 'goog.asserts', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.MenuSeparatorRenderer', 'goog.ui.registry']);
@@ -2976,7 +2975,7 @@ goog.addDependency('ui/toolbarseparator.js', ['goog.ui.ToolbarSeparator'], ['goo
 goog.addDependency('ui/toolbarseparatorrenderer.js', ['goog.ui.ToolbarSeparatorRenderer'], ['goog.asserts', 'goog.dom.classlist', 'goog.ui.INLINE_BLOCK_CLASSNAME', 'goog.ui.MenuSeparatorRenderer']);
 goog.addDependency('ui/toolbartogglebutton.js', ['goog.ui.ToolbarToggleButton'], ['goog.ui.ToggleButton', 'goog.ui.ToolbarButtonRenderer', 'goog.ui.registry']);
 goog.addDependency('ui/tooltip.js', ['goog.ui.Tooltip', 'goog.ui.Tooltip.CursorTooltipPosition', 'goog.ui.Tooltip.ElementTooltipPosition', 'goog.ui.Tooltip.State'], ['goog.Timer', 'goog.array', 'goog.dom', 'goog.dom.safe', 'goog.events', 'goog.events.EventType', 'goog.html.legacyconversions', 'goog.math.Box', 'goog.math.Coordinate', 'goog.positioning', 'goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus', 'goog.positioning.ViewportPosition', 'goog.structs.Set', 'goog.style', 'goog.ui.Popup', 'goog.ui.PopupBase']);
-goog.addDependency('ui/tree/basenode.js', ['goog.ui.tree.BaseNode', 'goog.ui.tree.BaseNode.EventType'], ['goog.Timer', 'goog.a11y.aria', 'goog.asserts', 'goog.dom.safe', 'goog.events.Event', 'goog.events.KeyCodes', 'goog.html.SafeHtml', 'goog.html.legacyconversions', 'goog.string', 'goog.string.StringBuffer', 'goog.style', 'goog.ui.Component']);
+goog.addDependency('ui/tree/basenode.js', ['goog.ui.tree.BaseNode', 'goog.ui.tree.BaseNode.EventType'], ['goog.Timer', 'goog.a11y.aria', 'goog.asserts', 'goog.dom.safe', 'goog.events.Event', 'goog.events.KeyCodes', 'goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.legacyconversions', 'goog.string', 'goog.string.StringBuffer', 'goog.style', 'goog.ui.Component']);
 goog.addDependency('ui/tree/treecontrol.js', ['goog.ui.tree.TreeControl'], ['goog.a11y.aria', 'goog.asserts', 'goog.dom.classlist', 'goog.events.EventType', 'goog.events.FocusHandler', 'goog.events.KeyHandler', 'goog.html.SafeHtml', 'goog.log', 'goog.ui.tree.BaseNode', 'goog.ui.tree.TreeNode', 'goog.ui.tree.TypeAhead', 'goog.userAgent']);
 goog.addDependency('ui/tree/treenode.js', ['goog.ui.tree.TreeNode'], ['goog.ui.tree.BaseNode']);
 goog.addDependency('ui/tree/typeahead.js', ['goog.ui.tree.TypeAhead', 'goog.ui.tree.TypeAhead.Offset'], ['goog.array', 'goog.events.KeyCodes', 'goog.string', 'goog.structs.Trie']);
@@ -15506,6 +15505,7 @@ goog.string.Const.create__googStringSecurityPrivate_ = function(s) {
 
 goog.provide('goog.html.SafeStyle');
 
+goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.string');
 goog.require('goog.string.Const');
@@ -15520,11 +15520,12 @@ goog.require('goog.string.TypedString');
  * will not cause untrusted script execution (XSS) when evaluated as CSS in a
  * browser.
  *
- * Instances of this type must be created via the factory method,
- * ({@code goog.html.SafeStyle.fromConstant}), and not by invoking its
+ * Instances of this type must be created via the factory methods
+ * ({@code goog.html.SafeStyle.create} or
+ * {@code goog.html.SafeStyle.fromConstant}) and not by invoking its
  * constructor. The constructor intentionally takes no parameters and the type
- * is immutable; hence only a default instance corresponding to the empty
- * string can be obtained via constructor invocation.
+ * is immutable; hence only a default instance corresponding to the empty string
+ * can be obtained via constructor invocation.
  *
  * A SafeStyle's string representation ({@link #getSafeStyleString()}) can
  * safely:
@@ -15589,6 +15590,7 @@ goog.require('goog.string.TypedString');
  *       the value)
  * </ul>
  *
+ * @see goog.html.SafeStyle#create
  * @see goog.html.SafeStyle#fromConstant
  * @see http://www.w3.org/TR/css3-syntax/
  * @constructor
@@ -15656,8 +15658,7 @@ goog.html.SafeStyle.fromConstant = function(style) {
   if (styleString.length === 0) {
     return goog.html.SafeStyle.EMPTY;
   }
-  goog.asserts.assert(!/[<>]/.test(styleString),
-      'Forbidden characters in style string: ' + styleString);
+  goog.html.SafeStyle.checkStyle_(styleString);
   goog.asserts.assert(goog.string.endsWith(styleString, ';'),
       'Last character of style string is not \';\': ' + styleString);
   goog.asserts.assert(goog.string.contains(styleString, ':'),
@@ -15665,6 +15666,17 @@ goog.html.SafeStyle.fromConstant = function(style) {
       'specify a "name: value" pair: ' + styleString);
   return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
       styleString);
+};
+
+
+/**
+ * Checks if the style definition is valid.
+ * @param {string} style
+ * @private
+ */
+goog.html.SafeStyle.checkStyle_ = function(style) {
+  goog.asserts.assert(!/[<>]/.test(style),
+      'Forbidden characters in style string: ' + style);
 };
 
 
@@ -15680,9 +15692,10 @@ goog.html.SafeStyle.fromConstant = function(style) {
  * <pre>
  * var fakeSafeHtml = new String('fake');
  * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.from(fakeSafeHtml);
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
  * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.from() as fakeSafeHtml instanceof goog.html.SafeHtml.
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml
+ * // instanceof goog.html.SafeHtml.
  * </pre>
  *
  * @see goog.html.SafeStyle#unwrap
@@ -15770,6 +15783,97 @@ goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_ =
  */
 goog.html.SafeStyle.EMPTY =
     goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_('');
+
+
+/**
+ * The innocuous string generated by goog.html.SafeUrl.create when passed
+ * an unsafe value.
+ * @const {string}
+ */
+goog.html.SafeStyle.INNOCUOUS_STRING = 'zClosurez';
+
+
+/**
+ * Mapping of property names to their values.
+ * @typedef {!Object.<string, goog.string.Const|string>}
+ */
+goog.html.SafeStyle.PropertyMap;
+
+
+/**
+ * Creates a new SafeStyle object from the properties specified in the map.
+ * @param {goog.html.SafeStyle.PropertyMap} map Mapping of property names to
+ *     their values, for example {'margin': '1px'}. Names must consist of
+ *     [-_a-zA-Z0-9]. Values might be strings consisting of [-.%_!# a-zA-Z0-9].
+ *     Other values must be wrapped in goog.string.Const. Null value causes
+ *     skipping the property.
+ * @return {!goog.html.SafeStyle}
+ * @throws {Error} If invalid name or value is provided.
+ */
+goog.html.SafeStyle.create = function(map) {
+  var style = '';
+  for (var name in map) {
+    if (!/^[-_a-zA-Z0-9]+$/.test(name)) {
+      throw Error('Name allows only [-_a-zA-Z0-9], got: ' + name);
+    }
+    var value = map[name];
+    if (value == null) {
+      continue;
+    }
+    if (value instanceof goog.string.Const) {
+      value = goog.string.Const.unwrap(value);
+    } else if (!goog.html.SafeStyle.VALUE_RE_.test(value)) {
+      goog.asserts.fail(
+          'String value allows only [-.%_!# a-zA-Z0-9], got: ' + value);
+      value = goog.html.SafeStyle.INNOCUOUS_STRING;
+    }
+    style += name + ':' + value + ';';
+  }
+  if (!style) {
+    return goog.html.SafeStyle.EMPTY;
+  }
+  goog.html.SafeStyle.checkStyle_(style);
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
+      style);
+};
+
+
+/**
+ * Regular expression for safe values. Keep in sync with the error string in
+ * create().
+ * @const {!RegExp}
+ * @private
+ */
+goog.html.SafeStyle.VALUE_RE_ = /^[-.%_!# a-zA-Z0-9]+$/;
+
+
+/**
+ * Creates a new SafeStyle object by concatenating the values.
+ * @param {...(!goog.html.SafeStyle|!Array.<!goog.html.SafeStyle>)} var_args
+ *     SafeStyles to concatenate.
+ * @return {!goog.html.SafeStyle}
+ */
+goog.html.SafeStyle.concat = function(var_args) {
+  var style = '';
+
+  /**
+   * @param {!goog.html.SafeStyle|!Array.<!goog.html.SafeStyle>} argument
+   */
+  var addArgument = function(argument) {
+    if (goog.isArray(argument)) {
+      goog.array.forEach(argument, addArgument);
+    } else {
+      style += goog.html.SafeStyle.unwrap(argument);
+    }
+  };
+
+  goog.array.forEach(arguments, addArgument);
+  if (!style) {
+    return goog.html.SafeStyle.EMPTY;
+  }
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
+      style);
+};
 
 //javascript/closure/html/safeurl.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
@@ -15901,9 +16005,10 @@ goog.html.SafeUrl.prototype.implementsGoogStringTypedString = true;
  * <pre>
  * var fakeSafeHtml = new String('fake');
  * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.from(fakeSafeHtml);
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
  * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.from() as fakeSafeHtml instanceof goog.html.SafeHtml.
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml instanceof
+ * // goog.html.SafeHtml.
  * </pre>
  *
  * IMPORTANT: The guarantees of the SafeUrl type contract only extend to the
@@ -16231,12 +16336,12 @@ goog.require('goog.string.TypedString');
  * result in a Cross-Site-Scripting vulnerability.
  *
  * Instances of this type must be created via the factory methods
- * ({@code goog.html.SafeHtml.from}, {@code goog.html.SafeHtml.htmlEscape}), etc
- * and not by invoking its constructor.  The constructor intentionally takes no
- * parameters and the type is immutable; hence only a default instance
+ * ({@code goog.html.SafeHtml.create}, {@code goog.html.SafeHtml.htmlEscape}),
+ * etc and not by invoking its constructor.  The constructor intentionally
+ * takes no parameters and the type is immutable; hence only a default instance
  * corresponding to the empty string can be obtained via constructor invocation.
  *
- * @see goog.html.SafeHtml#from
+ * @see goog.html.SafeHtml#create
  * @see goog.html.SafeHtml#htmlEscape
  * @constructor
  * @final
@@ -16302,9 +16407,10 @@ goog.html.SafeHtml.prototype.implementsGoogStringTypedString = true;
  * <pre>
  * var fakeSafeHtml = new String('fake');
  * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.from(fakeSafeHtml);
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
  * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.from() as fakeSafeHtml instanceof goog.html.SafeHtml.
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml
+ * // instanceof goog.html.SafeHtml.
  * </pre>
  *
  * @see goog.html.SafeHtml#unwrap
@@ -16472,7 +16578,8 @@ goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet('link',
 
 /**
  * @private
- * @typedef {string|goog.string.Const|goog.html.SafeUrl|goog.html.SafeStyle}
+ * @typedef {string|goog.string.Const|goog.html.SafeUrl|goog.html.SafeStyle|
+ *     goog.html.SafeStyle.PropertyMap}
  */
 goog.html.SafeHtml.AttributeValue_;
 
@@ -16480,6 +16587,24 @@ goog.html.SafeHtml.AttributeValue_;
 /**
  * Creates a SafeHtml content consisting of a tag with optional attributes and
  * optional content.
+ *
+ * For convenience tag names and attribute names are accepted as regular
+ * strings, instead of goog.string.Const. Nevertheless, you should not pass
+ * user-controlled values to these parameters. Note that these parameters are
+ * syntactically validated at runtime, and invalid values will result in
+ * an exception.
+ *
+ * Example usage:
+ *
+ * goog.html.SafeHtml.create('br');
+ * goog.html.SafeHtml.create('div', {'class': 'a'});
+ * goog.html.SafeHtml.create('p', {}, 'a');
+ * goog.html.SafeHtml.create('p', {}, goog.html.SafeHtml.create('br'));
+ *
+ * goog.html.SafeHtml.create('span', {
+ *   'style': {'margin': '0'}
+ * });
+ *
  * @param {string} tagName The name of the tag. Only tag names consisting of
  *     [a-zA-Z0-9-] are allowed. <link>, <script> and <style> tags are not
  *     supported.
@@ -16487,9 +16612,10 @@ goog.html.SafeHtml.AttributeValue_;
  *     opt_attributes Mapping from attribute names to their values. Only
  *     attribute names consisting of [a-zA-Z0-9-] are allowed. Attributes with
  *     a special meaning (e.g. on*) require goog.string.Const value, attributes
- *     containing URL require goog.string.Const or goog.html.SafeUrl. Value of
- *     null or undefined causes the attribute to be omitted. Values are
- *     HTML-escaped before usage.
+ *     containing URL require goog.string.Const or goog.html.SafeUrl. The
+ *     "style" attribute accepts goog.html.SafeStyle or a map which will be
+ *     passed to goog.html.SafeStyle.create. Value of null or undefined causes
+ *     the attribute to be omitted. Values are HTML-escaped before usage.
  * @param {!goog.html.SafeHtml.TextOrHtml_|
  *     !Array.<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to put
  *     inside the tag. This must be empty for void tags like <br>. Array
@@ -16521,6 +16647,8 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
       if (value instanceof goog.string.Const) {
         // If it's goog.string.Const, allow any valid attribute name.
         value = goog.string.Const.unwrap(value);
+      } else if (name.toLowerCase() == 'style') {
+        value = goog.html.SafeHtml.getStyleValue_(value);
       } else if (/^on/i.test(name)) {
         // TODO(jakubvrana): Disallow more attributes with a special meaning.
         throw Error('Attribute "' + name +
@@ -16532,13 +16660,9 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
         throw Error('Attribute "' + name +
             '" requires goog.string.Const or goog.html.SafeUrl value, "' +
             value + '" given.');
-      } else if (value instanceof goog.html.SafeStyle) {
-        // TODO(jakubvrana): Allow "style" only with SafeStyle when it supports
-        // dynamic construction.
-        goog.asserts.assert(name.toLowerCase() == 'style',
-            'goog.html.SafeStyle is only supported in "style" attribute.');
-        value = goog.html.SafeStyle.unwrap(value);
       }
+      goog.asserts.assert(goog.isString(value), 'String value expected, got ' +
+          (typeof value) + ' with value: ' + value);
       result += ' ' + name + '="' + goog.string.htmlEscape(value) + '"';
     }
   }
@@ -16573,6 +16697,27 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
 
   return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
       result, dir);
+};
+
+
+/**
+ * Gets value allowed in "style" attribute.
+ * @param {!goog.html.SafeHtml.AttributeValue_} value It could be SafeStyle or
+ *     a map which will be passed to goog.html.SafeStyle.create.
+ * @return {string} Unwrapped value.
+ * @private
+ */
+goog.html.SafeHtml.getStyleValue_ = function(value) {
+  if (!goog.isObject(value)) {
+    // TODO(jakubvrana): Disallow "style" with strings once all call sites are
+    // removed.
+    return value;
+  }
+  if (!(value instanceof goog.html.SafeStyle)) {
+    // Process the property bag into a style object.
+    value = goog.html.SafeStyle.create(value);
+  }
+  return goog.html.SafeStyle.unwrap(value);
 };
 
 
@@ -16779,9 +16924,10 @@ goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
  * <pre>
  * var fakeSafeHtml = new String('fake');
  * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.from(fakeSafeHtml);
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
  * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.from() as fakeSafeHtml instanceof goog.html.SafeHtml.
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml instanceof
+ * // goog.html.SafeHtml.
  * </pre>
  *
  * @see goog.html.TrustedResourceUrl#unwrap
@@ -16940,6 +17086,7 @@ goog.html.TrustedResourceUrl.
  * prefer to create instances of goog.html types using inherently safe builders
  * or template systems.
  *
+ *
  * @visibility {//javascript/closure/html:approved_for_unchecked_conversion}
  * @visibility {//javascript/closure/bin/sizetests:__pkg__}
  */
@@ -16964,7 +17111,6 @@ goog.require('goog.string.Const');
  * that the value of {@code html} satisfies the SafeHtml type contract in all
  * possible program states.
  *
- * TODO(user): Link to guidelines on appropriate uses.
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -17003,7 +17149,6 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  * that the value of {@code style} satisfies the SafeUrl type contract in all
  * possible program states.
  *
- * TODO(user): Link to guidelines on appropriate uses.
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -17039,7 +17184,6 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
  * that the value of {@code url} satisfies the SafeUrl type contract in all
  * possible program states.
  *
- * TODO(user): Link to guidelines on appropriate uses.
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -17074,7 +17218,6 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
  * that the value of {@code url} satisfies the TrustedResourceUrl type contract
  * in all possible program states.
  *
- * TODO(user): Link to guidelines on appropriate uses.
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
