@@ -2078,6 +2078,8 @@ goog.addDependency('format/format.js', ['goog.format'], ['goog.i18n.GraphemeBrea
 goog.addDependency('format/format_test.js', ['goog.formatTest'], ['goog.dom', 'goog.format', 'goog.string', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit']);
 goog.addDependency('format/htmlprettyprinter.js', ['goog.format.HtmlPrettyPrinter', 'goog.format.HtmlPrettyPrinter.Buffer'], ['goog.object', 'goog.string.StringBuffer']);
 goog.addDependency('format/htmlprettyprinter_test.js', ['goog.format.HtmlPrettyPrinterTest'], ['goog.format.HtmlPrettyPrinter', 'goog.testing.MockClock', 'goog.testing.jsunit']);
+goog.addDependency('format/internationalizedemailaddress.js', ['goog.format.InternationalizedEmailAddress'], ['goog.format.EmailAddress']);
+goog.addDependency('format/internationalizedemailaddress_test.js', ['goog.format.InternationalizedEmailAddressTest'], ['goog.array', 'goog.format.InternationalizedEmailAddress', 'goog.testing.jsunit']);
 goog.addDependency('format/jsonprettyprinter.js', ['goog.format.JsonPrettyPrinter', 'goog.format.JsonPrettyPrinter.HtmlDelimiters', 'goog.format.JsonPrettyPrinter.TextDelimiters'], ['goog.json', 'goog.json.Serializer', 'goog.string', 'goog.string.StringBuffer', 'goog.string.format']);
 goog.addDependency('format/jsonprettyprinter_test.js', ['goog.format.JsonPrettyPrinterTest'], ['goog.format.JsonPrettyPrinter', 'goog.testing.jsunit']);
 goog.addDependency('fs/entry.js', ['goog.fs.DirectoryEntry', 'goog.fs.DirectoryEntry.Behavior', 'goog.fs.Entry', 'goog.fs.FileEntry'], []);
@@ -15808,7 +15810,10 @@ goog.html.SafeStyle.PropertyMap;
  *     Other values must be wrapped in goog.string.Const. Null value causes
  *     skipping the property.
  * @return {!goog.html.SafeStyle}
- * @throws {Error} If invalid name or value is provided.
+ * @throws {Error} If invalid name is provided.
+ * @throws {goog.asserts.AssertionError} If invalid value is provided. With
+ *     disabled assertions, invalid value is replaced by
+ *     goog.html.SafeStyle.INNOCUOUS_STRING.
  */
 goog.html.SafeStyle.create = function(map) {
   var style = '';
@@ -15822,6 +15827,9 @@ goog.html.SafeStyle.create = function(map) {
     }
     if (value instanceof goog.string.Const) {
       value = goog.string.Const.unwrap(value);
+      // These characters can be used to change context and we don't want that
+      // even with const values.
+      goog.asserts.assert(!/[{;}]/.test(value), 'Value does not allow [{;}].');
     } else if (!goog.html.SafeStyle.VALUE_RE_.test(value)) {
       goog.asserts.fail(
           'String value allows only [-.%_!# a-zA-Z0-9], got: ' + value);
@@ -15838,9 +15846,9 @@ goog.html.SafeStyle.create = function(map) {
 };
 
 
+// Keep in sync with the error string in create().
 /**
- * Regular expression for safe values. Keep in sync with the error string in
- * create().
+ * Regular expression for safe values.
  * @const {!RegExp}
  * @private
  */
@@ -16702,16 +16710,16 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
 
 /**
  * Gets value allowed in "style" attribute.
- * @param {!goog.html.SafeHtml.AttributeValue_} value It could be SafeStyle or
- *     a map which will be passed to goog.html.SafeStyle.create.
+ * @param {goog.html.SafeHtml.AttributeValue_} value It could be SafeStyle or a
+ *     map which will be passed to goog.html.SafeStyle.create.
  * @return {string} Unwrapped value.
+ * @throws {Error} If string value is given.
  * @private
  */
 goog.html.SafeHtml.getStyleValue_ = function(value) {
   if (!goog.isObject(value)) {
-    // TODO(jakubvrana): Disallow "style" with strings once all call sites are
-    // removed.
-    return value;
+    throw Error('The "style" attribute requires goog.html.SafeStyle or map ' +
+        'of style properties, ' + (typeof value) + ' given: ' + value);
   }
   if (!(value instanceof goog.html.SafeStyle)) {
     // Process the property bag into a style object.
