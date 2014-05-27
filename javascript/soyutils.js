@@ -251,6 +251,15 @@ if (!goog.format) {
 }
 
 
+if (!goog.html) {
+  goog.html = {};
+}
+// This is just a silly stub, not actually useful.
+goog.html.SafeHtml = function() {};
+goog.html.SafeHtml.unwrap = function(html) {};
+goog.html.SafeHtml.prototype.getDirection = function() {};
+
+
 if (!goog.i18n) {
   goog.i18n = {
     bidi: {}
@@ -1283,6 +1292,10 @@ soydata.SanitizedHtml.from = function(value) {
       value.contentKind === soydata.SanitizedContentKind.HTML) {
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
     return /** @type {!soydata.SanitizedHtml} */ (value);
+  }
+  if (value instanceof goog.html.SafeHtml) {
+    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
+        goog.html.SafeHtml.unwrap(value), value.getDirection());
   }
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(
       soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));

@@ -46,6 +46,7 @@ goog.provide('soydata.VERY_UNSAFE');
 goog.require('goog.asserts');
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
+goog.require('goog.html.SafeHtml');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.soy');
@@ -167,6 +168,10 @@ soydata.SanitizedHtml.from = function(value) {
       value.contentKind === soydata.SanitizedContentKind.HTML) {
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
     return /** @type {!soydata.SanitizedHtml} */ (value);
+  }
+  if (value instanceof goog.html.SafeHtml) {
+    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
+        goog.html.SafeHtml.unwrap(value), value.getDirection());
   }
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(
       soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));
