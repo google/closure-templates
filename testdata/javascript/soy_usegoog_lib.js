@@ -1871,8 +1871,8 @@ goog.addDependency('dom/abstractrange.js', ['goog.dom.AbstractRange', 'goog.dom.
 goog.addDependency('dom/abstractrange_test.js', ['goog.dom.AbstractRangeTest'], ['goog.dom', 'goog.dom.AbstractRange', 'goog.dom.Range', 'goog.testing.jsunit']);
 goog.addDependency('dom/animationframe/animationframe.js', ['goog.dom.animationFrame', 'goog.dom.animationFrame.Spec', 'goog.dom.animationFrame.State'], ['goog.dom.animationFrame.polyfill']);
 goog.addDependency('dom/animationframe/polyfill.js', ['goog.dom.animationFrame.polyfill'], []);
-goog.addDependency('dom/annotate.js', ['goog.dom.annotate'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.string']);
-goog.addDependency('dom/annotate_test.js', ['goog.dom.annotateTest'], ['goog.dom', 'goog.dom.annotate', 'goog.testing.jsunit']);
+goog.addDependency('dom/annotate.js', ['goog.dom.annotate', 'goog.dom.annotate.AnnotateFn'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.safe', 'goog.html.SafeHtml']);
+goog.addDependency('dom/annotate_test.js', ['goog.dom.annotateTest'], ['goog.dom', 'goog.dom.annotate', 'goog.html.SafeHtml', 'goog.testing.jsunit']);
 goog.addDependency('dom/browserfeature.js', ['goog.dom.BrowserFeature'], ['goog.userAgent']);
 goog.addDependency('dom/browserrange/abstractrange.js', ['goog.dom.browserrange.AbstractRange'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.RangeEndpoint', 'goog.dom.TagName', 'goog.dom.TextRangeIterator', 'goog.iter', 'goog.math.Coordinate', 'goog.string', 'goog.string.StringBuffer', 'goog.userAgent']);
 goog.addDependency('dom/browserrange/browserrange.js', ['goog.dom.browserrange', 'goog.dom.browserrange.Error'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.browserrange.GeckoRange', 'goog.dom.browserrange.IeRange', 'goog.dom.browserrange.OperaRange', 'goog.dom.browserrange.W3cRange', 'goog.dom.browserrange.WebKitRange', 'goog.userAgent']);
@@ -1892,7 +1892,7 @@ goog.addDependency('dom/controlrange.js', ['goog.dom.ControlRange', 'goog.dom.Co
 goog.addDependency('dom/controlrange_test.js', ['goog.dom.ControlRangeTest'], ['goog.dom', 'goog.dom.ControlRange', 'goog.dom.RangeType', 'goog.dom.TagName', 'goog.dom.TextRange', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent']);
 goog.addDependency('dom/dataset.js', ['goog.dom.dataset'], ['goog.string']);
 goog.addDependency('dom/dataset_test.js', ['goog.dom.datasetTest'], ['goog.dom', 'goog.dom.dataset', 'goog.testing.jsunit']);
-goog.addDependency('dom/dom.js', ['goog.dom', 'goog.dom.Appendable', 'goog.dom.DomHelper'], ['goog.array', 'goog.asserts', 'goog.dom.BrowserFeature', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.classes', 'goog.dom.classlist', 'goog.functions', 'goog.math.Coordinate', 'goog.math.Size', 'goog.object', 'goog.string', 'goog.userAgent']);
+goog.addDependency('dom/dom.js', ['goog.dom', 'goog.dom.Appendable', 'goog.dom.DomHelper'], ['goog.array', 'goog.asserts', 'goog.dom.BrowserFeature', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.classes', 'goog.functions', 'goog.math.Coordinate', 'goog.math.Size', 'goog.object', 'goog.string', 'goog.userAgent']);
 goog.addDependency('dom/dom_test.js', ['goog.dom.dom_test'], ['goog.dom', 'goog.dom.BrowserFeature', 'goog.dom.DomHelper', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.functions', 'goog.object', 'goog.string.Unicode', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion']);
 goog.addDependency('dom/fontsizemonitor.js', ['goog.dom.FontSizeMonitor', 'goog.dom.FontSizeMonitor.EventType'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.userAgent']);
 goog.addDependency('dom/fontsizemonitor_test.js', ['goog.dom.FontSizeMonitorTest'], ['goog.dom', 'goog.dom.FontSizeMonitor', 'goog.events', 'goog.events.Event', 'goog.testing.PropertyReplacer', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent']);
@@ -2299,6 +2299,9 @@ goog.addDependency('labs/testing/decoratormatcher.js', ['goog.labs.testing.Anyth
 goog.addDependency('labs/testing/decoratormatcher_test.js', ['goog.labs.testing.decoratorMatcherTest'], ['goog.labs.testing.AnythingMatcher', 'goog.labs.testing.GreaterThanMatcher', 'goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit']);
 goog.addDependency('labs/testing/dictionarymatcher.js', ['goog.labs.testing.HasEntriesMatcher', 'goog.labs.testing.HasEntryMatcher', 'goog.labs.testing.HasKeyMatcher', 'goog.labs.testing.HasValueMatcher'], ['goog.array', 'goog.asserts', 'goog.labs.testing.Matcher', 'goog.string']);
 goog.addDependency('labs/testing/dictionarymatcher_test.js', ['goog.labs.testing.dictionaryMatcherTest'], ['goog.labs.testing.HasEntryMatcher', 'goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit']);
+goog.addDependency('labs/testing/environment.js', ['goog.labs.testing.Environment'], ['goog.array', 'goog.testing.TestCase', 'goog.testing.jsunit']);
+goog.addDependency('labs/testing/environment_test.js', ['goog.labs.testing.environmentTest'], ['goog.labs.testing.Environment', 'goog.testing.MockControl', 'goog.testing.TestCase', 'goog.testing.jsunit']);
+goog.addDependency('labs/testing/environment_usage_test.js', ['goog.labs.testing.environmentUsageTest'], ['goog.labs.testing.Environment']);
 goog.addDependency('labs/testing/logicmatcher.js', ['goog.labs.testing.AllOfMatcher', 'goog.labs.testing.AnyOfMatcher', 'goog.labs.testing.IsNotMatcher'], ['goog.array', 'goog.labs.testing.Matcher']);
 goog.addDependency('labs/testing/logicmatcher_test.js', ['goog.labs.testing.logicMatcherTest'], ['goog.labs.testing.AllOfMatcher', 'goog.labs.testing.GreaterThanMatcher', 'goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit']);
 goog.addDependency('labs/testing/matcher.js', ['goog.labs.testing.Matcher'], []);
@@ -2847,8 +2850,8 @@ goog.addDependency('ui/editor/bubble.js', ['goog.ui.editor.Bubble'], ['goog.asse
 goog.addDependency('ui/editor/defaulttoolbar.js', ['goog.ui.editor.ButtonDescriptor', 'goog.ui.editor.DefaultToolbar'], ['goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.editor.Command', 'goog.style', 'goog.ui.editor.ToolbarFactory', 'goog.ui.editor.messages', 'goog.userAgent']);
 goog.addDependency('ui/editor/equationeditordialog.js', ['goog.ui.editor.EquationEditorDialog'], ['goog.editor.Command', 'goog.ui.Dialog', 'goog.ui.editor.AbstractDialog', 'goog.ui.editor.EquationEditorOkEvent', 'goog.ui.equation.TexEditor']);
 goog.addDependency('ui/editor/equationeditorokevent.js', ['goog.ui.editor.EquationEditorOkEvent'], ['goog.events.Event', 'goog.ui.editor.AbstractDialog']);
-goog.addDependency('ui/editor/linkdialog.js', ['goog.ui.editor.LinkDialog', 'goog.ui.editor.LinkDialog.BeforeTestLinkEvent', 'goog.ui.editor.LinkDialog.EventType', 'goog.ui.editor.LinkDialog.OkEvent'], ['goog.dom', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Link', 'goog.editor.focus', 'goog.editor.node', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.events.InputHandler', 'goog.string', 'goog.style', 'goog.ui.Button', 'goog.ui.Component', 'goog.ui.LinkButtonRenderer', 'goog.ui.editor.AbstractDialog', 'goog.ui.editor.TabPane', 'goog.ui.editor.messages', 'goog.userAgent', 'goog.window']);
-goog.addDependency('ui/editor/messages.js', ['goog.ui.editor.messages'], []);
+goog.addDependency('ui/editor/linkdialog.js', ['goog.ui.editor.LinkDialog', 'goog.ui.editor.LinkDialog.BeforeTestLinkEvent', 'goog.ui.editor.LinkDialog.EventType', 'goog.ui.editor.LinkDialog.OkEvent'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.safe', 'goog.editor.BrowserFeature', 'goog.editor.Link', 'goog.editor.focus', 'goog.editor.node', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.events.InputHandler', 'goog.html.SafeHtml', 'goog.string', 'goog.string.Unicode', 'goog.style', 'goog.ui.Button', 'goog.ui.Component', 'goog.ui.LinkButtonRenderer', 'goog.ui.editor.AbstractDialog', 'goog.ui.editor.TabPane', 'goog.ui.editor.messages', 'goog.userAgent', 'goog.window']);
+goog.addDependency('ui/editor/messages.js', ['goog.ui.editor.messages'], ['goog.html.uncheckedconversions', 'goog.string.Const']);
 goog.addDependency('ui/editor/tabpane.js', ['goog.ui.editor.TabPane'], ['goog.asserts', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.style', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.Tab', 'goog.ui.TabBar']);
 goog.addDependency('ui/editor/toolbarcontroller.js', ['goog.ui.editor.ToolbarController'], ['goog.editor.Field', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.ui.Component']);
 goog.addDependency('ui/editor/toolbarfactory.js', ['goog.ui.editor.ToolbarFactory'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.string', 'goog.string.Unicode', 'goog.style', 'goog.ui.Component', 'goog.ui.Container', 'goog.ui.Option', 'goog.ui.Toolbar', 'goog.ui.ToolbarButton', 'goog.ui.ToolbarColorMenuButton', 'goog.ui.ToolbarMenuButton', 'goog.ui.ToolbarRenderer', 'goog.ui.ToolbarSelect', 'goog.userAgent']);
@@ -9796,285 +9799,6 @@ goog.dom.classes.toggle = function(element, className) {
   return add;
 };
 
-//javascript/closure/dom/classlist.js
-// Copyright 2012 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities for detecting, adding and removing classes.  Prefer
- * this over goog.dom.classes for new code since it attempts to use classList
- * (DOMTokenList: http://dom.spec.whatwg.org/#domtokenlist) which is faster
- * and requires less code.
- *
- * Note: these utilities are meant to operate on HTMLElements
- * and may have unexpected behavior on elements with differing interfaces
- * (such as SVGElements).
- */
-
-
-goog.provide('goog.dom.classlist');
-
-goog.require('goog.array');
-
-
-/**
- * Override this define at build-time if you know your target supports it.
- * @define {boolean} Whether to use the classList property (DOMTokenList).
- */
-goog.define('goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST', false);
-
-
-/**
- * Gets an array-like object of class names on an element.
- * @param {Element} element DOM node to get the classes of.
- * @return {!goog.array.ArrayLike} Class names on {@code element}.
- */
-goog.dom.classlist.get = function(element) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    return element.classList;
-  }
-
-  var className = element.className;
-  // Some types of elements don't have a className in IE (e.g. iframes).
-  // Furthermore, in Firefox, className is not a string when the element is
-  // an SVG element.
-  return goog.isString(className) && className.match(/\S+/g) || [];
-};
-
-
-/**
- * Sets the entire class name of an element.
- * @param {Element} element DOM node to set class of.
- * @param {string} className Class name(s) to apply to element.
- */
-goog.dom.classlist.set = function(element, className) {
-  element.className = className;
-};
-
-
-/**
- * Returns true if an element has a class.  This method may throw a DOM
- * exception for an invalid or empty class name if DOMTokenList is used.
- * @param {Element} element DOM node to test.
- * @param {string} className Class name to test for.
- * @return {boolean} Whether element has the class.
- */
-goog.dom.classlist.contains = function(element, className) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    return element.classList.contains(className);
-  }
-  return goog.array.contains(goog.dom.classlist.get(element), className);
-};
-
-
-/**
- * Adds a class to an element.  Does not add multiples of class names.  This
- * method may throw a DOM exception for an invalid or empty class name if
- * DOMTokenList is used.
- * @param {Element} element DOM node to add class to.
- * @param {string} className Class name to add.
- */
-goog.dom.classlist.add = function(element, className) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    element.classList.add(className);
-    return;
-  }
-
-  if (!goog.dom.classlist.contains(element, className)) {
-    // Ensure we add a space if this is not the first class name added.
-    element.className += element.className.length > 0 ?
-        (' ' + className) : className;
-  }
-};
-
-
-/**
- * Convenience method to add a number of class names at once.
- * @param {Element} element The element to which to add classes.
- * @param {goog.array.ArrayLike.<string>} classesToAdd An array-like object
- * containing a collection of class names to add to the element.
- * This method may throw a DOM exception if classesToAdd contains invalid
- * or empty class names.
- */
-goog.dom.classlist.addAll = function(element, classesToAdd) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    goog.array.forEach(classesToAdd, function(className) {
-      goog.dom.classlist.add(element, className);
-    });
-    return;
-  }
-
-  var classMap = {};
-
-  // Get all current class names into a map.
-  goog.array.forEach(goog.dom.classlist.get(element),
-      function(className) {
-        classMap[className] = true;
-      });
-
-  // Add new class names to the map.
-  goog.array.forEach(classesToAdd,
-      function(className) {
-        classMap[className] = true;
-      });
-
-  // Flatten the keys of the map into the className.
-  element.className = '';
-  for (var className in classMap) {
-    element.className += element.className.length > 0 ?
-        (' ' + className) : className;
-  }
-};
-
-
-/**
- * Removes a class from an element.  This method may throw a DOM exception
- * for an invalid or empty class name if DOMTokenList is used.
- * @param {Element} element DOM node to remove class from.
- * @param {string} className Class name to remove.
- */
-goog.dom.classlist.remove = function(element, className) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    element.classList.remove(className);
-    return;
-  }
-
-  if (goog.dom.classlist.contains(element, className)) {
-    // Filter out the class name.
-    element.className = goog.array.filter(
-        goog.dom.classlist.get(element),
-        function(c) {
-          return c != className;
-        }).join(' ');
-  }
-};
-
-
-/**
- * Removes a set of classes from an element.  Prefer this call to
- * repeatedly calling {@code goog.dom.classlist.remove} if you want to remove
- * a large set of class names at once.
- * @param {Element} element The element from which to remove classes.
- * @param {goog.array.ArrayLike.<string>} classesToRemove An array-like object
- * containing a collection of class names to remove from the element.
- * This method may throw a DOM exception if classesToRemove contains invalid
- * or empty class names.
- */
-goog.dom.classlist.removeAll = function(element, classesToRemove) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    goog.array.forEach(classesToRemove, function(className) {
-      goog.dom.classlist.remove(element, className);
-    });
-    return;
-  }
-  // Filter out those classes in classesToRemove.
-  element.className = goog.array.filter(
-      goog.dom.classlist.get(element),
-      function(className) {
-        // If this class is not one we are trying to remove,
-        // add it to the array of new class names.
-        return !goog.array.contains(classesToRemove, className);
-      }).join(' ');
-};
-
-
-/**
- * Adds or removes a class depending on the enabled argument.  This method
- * may throw a DOM exception for an invalid or empty class name if DOMTokenList
- * is used.
- * @param {Element} element DOM node to add or remove the class on.
- * @param {string} className Class name to add or remove.
- * @param {boolean} enabled Whether to add or remove the class (true adds,
- *     false removes).
- */
-goog.dom.classlist.enable = function(element, className, enabled) {
-  if (enabled) {
-    goog.dom.classlist.add(element, className);
-  } else {
-    goog.dom.classlist.remove(element, className);
-  }
-};
-
-
-/**
- * Adds or removes a set of classes depending on the enabled argument.  This
- * method may throw a DOM exception for an invalid or empty class name if
- * DOMTokenList is used.
- * @param {!Element} element DOM node to add or remove the class on.
- * @param {goog.array.ArrayLike.<string>} classesToEnable An array-like object
- *     containing a collection of class names to add or remove from the element.
- * @param {boolean} enabled Whether to add or remove the classes (true adds,
- *     false removes).
- */
-goog.dom.classlist.enableAll = function(element, classesToEnable, enabled) {
-  var f = enabled ? goog.dom.classlist.addAll :
-      goog.dom.classlist.removeAll;
-  f(element, classesToEnable);
-};
-
-
-/**
- * Switches a class on an element from one to another without disturbing other
- * classes. If the fromClass isn't removed, the toClass won't be added.  This
- * method may throw a DOM exception if the class names are empty or invalid.
- * @param {Element} element DOM node to swap classes on.
- * @param {string} fromClass Class to remove.
- * @param {string} toClass Class to add.
- * @return {boolean} Whether classes were switched.
- */
-goog.dom.classlist.swap = function(element, fromClass, toClass) {
-  if (goog.dom.classlist.contains(element, fromClass)) {
-    goog.dom.classlist.remove(element, fromClass);
-    goog.dom.classlist.add(element, toClass);
-    return true;
-  }
-  return false;
-};
-
-
-/**
- * Removes a class if an element has it, and adds it the element doesn't have
- * it.  Won't affect other classes on the node.  This method may throw a DOM
- * exception if the class name is empty or invalid.
- * @param {Element} element DOM node to toggle class on.
- * @param {string} className Class to toggle.
- * @return {boolean} True if class was added, false if it was removed
- *     (in other words, whether element has the class after this function has
- *     been called).
- */
-goog.dom.classlist.toggle = function(element, className) {
-  var add = !goog.dom.classlist.contains(element, className);
-  goog.dom.classlist.enable(element, className, add);
-  return add;
-};
-
-
-/**
- * Adds and removes a class of an element.  Unlike
- * {@link goog.dom.classlist.swap}, this method adds the classToAdd regardless
- * of whether the classToRemove was present and had been removed.  This method
- * may throw a DOM exception if the class names are empty or invalid.
- *
- * @param {Element} element DOM node to swap classes on.
- * @param {string} classToRemove Class to remove.
- * @param {string} classToAdd Class to add.
- */
-goog.dom.classlist.addRemove = function(element, classToRemove, classToAdd) {
-  goog.dom.classlist.remove(element, classToRemove);
-  goog.dom.classlist.add(element, classToAdd);
-};
-
 //javascript/closure/dom/tagname.js
 // Copyright 2007 The Closure Library Authors. All Rights Reserved.
 //
@@ -10277,12 +10001,7 @@ goog.require('goog.asserts');
 goog.require('goog.dom.BrowserFeature');
 goog.require('goog.dom.NodeType');
 goog.require('goog.dom.TagName');
-/**
- * TODO: Fix the projects that use goog.dom.classes but only depend on goog.dom.
- * @suppress {extraRequire}
- */
 goog.require('goog.dom.classes');
-goog.require('goog.dom.classlist');
 goog.require('goog.functions');
 goog.require('goog.math.Coordinate');
 goog.require('goog.math.Size');
@@ -10978,7 +10697,7 @@ goog.dom.createDom_ = function(doc, args) {
     if (goog.isString(attributes)) {
       element.className = attributes;
     } else if (goog.isArray(attributes)) {
-      goog.dom.classlist.addAll(element, attributes);
+      goog.dom.classes.add.apply(null, [element].concat(attributes));
     } else {
       goog.dom.setProperties(element, attributes);
     }
@@ -12269,10 +11988,8 @@ goog.dom.getAncestorByTagNameAndClass = function(element, opt_tag, opt_class) {
   var tagName = opt_tag ? opt_tag.toUpperCase() : null;
   return /** @type {Element} */ (goog.dom.getAncestor(element,
       function(node) {
-        return node.nodeType == goog.dom.NodeType.ELEMENT &&
-               (!tagName || node.nodeName == tagName) &&
-               (!opt_class || goog.dom.classlist.contains(
-                   /** @type {!Element} */ (node), opt_class));
+        return (!tagName || node.nodeName == tagName) &&
+               (!opt_class || goog.dom.classes.has(node, opt_class));
       }, true));
 };
 
@@ -16556,7 +16273,9 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_ = function(
  * A SafeHtml instance corresponding to the empty string.
  * @const {!goog.html.SafeHtml}
  */
-goog.html.SafeHtml.EMPTY = goog.html.SafeHtml.htmlEscape('');
+goog.html.SafeHtml.EMPTY =
+    goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+        '', goog.i18n.bidi.Dir.NEUTRAL);
 
 //javascript/closure/i18n/bidiformatter.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
