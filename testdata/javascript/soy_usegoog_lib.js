@@ -2924,7 +2924,7 @@ goog.addDependency('ui/menuseparator.js', ['goog.ui.MenuSeparator'], ['goog.ui.M
 goog.addDependency('ui/menuseparatorrenderer.js', ['goog.ui.MenuSeparatorRenderer'], ['goog.dom', 'goog.dom.classlist', 'goog.ui.ControlContent', 'goog.ui.ControlRenderer']);
 goog.addDependency('ui/mockactivitymonitor.js', ['goog.ui.MockActivityMonitor'], ['goog.events.EventType', 'goog.ui.ActivityMonitor']);
 goog.addDependency('ui/mockactivitymonitor_test.js', ['goog.ui.MockActivityMonitorTest'], ['goog.events', 'goog.functions', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.ui.ActivityMonitor', 'goog.ui.MockActivityMonitor']);
-goog.addDependency('ui/modalpopup.js', ['goog.ui.ModalPopup'], ['goog.Timer', 'goog.a11y.aria', 'goog.a11y.aria.State', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.dom.iframe', 'goog.events', 'goog.events.EventType', 'goog.events.FocusHandler', 'goog.fx.Transition', 'goog.string', 'goog.style', 'goog.ui.Component', 'goog.ui.PopupBase', 'goog.userAgent']);
+goog.addDependency('ui/modalpopup.js', ['goog.ui.ModalPopup'], ['goog.Timer', 'goog.a11y.aria', 'goog.a11y.aria.State', 'goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.dom.iframe', 'goog.events', 'goog.events.EventType', 'goog.events.FocusHandler', 'goog.fx.Transition', 'goog.string', 'goog.style', 'goog.ui.Component', 'goog.ui.PopupBase', 'goog.userAgent']);
 goog.addDependency('ui/nativebuttonrenderer.js', ['goog.ui.NativeButtonRenderer'], ['goog.asserts', 'goog.dom.classlist', 'goog.events.EventType', 'goog.ui.ButtonRenderer', 'goog.ui.Component']);
 goog.addDependency('ui/option.js', ['goog.ui.Option'], ['goog.ui.Component', 'goog.ui.MenuItem', 'goog.ui.registry']);
 goog.addDependency('ui/palette.js', ['goog.ui.Palette'], ['goog.array', 'goog.dom', 'goog.events', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.math.Size', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.PaletteRenderer', 'goog.ui.SelectionModel']);
@@ -4704,6 +4704,20 @@ goog.asserts.AssertionError.prototype.name = 'AssertionError';
 
 
 /**
+ * The default error handler.
+ * @param {!goog.asserts.AssertionError} e The exception to be handled.
+ */
+goog.asserts.DEFAULT_ERROR_HANDLER = function(e) { throw e; };
+
+
+/**
+ * The handler responsible for throwing or logging assertion errors.
+ * @private {function(!goog.asserts.AssertionError)}
+ */
+goog.asserts.errorHandler_ = goog.asserts.DEFAULT_ERROR_HANDLER;
+
+
+/**
  * Throws an exception with the given message and "Assertion failed" prefixed
  * onto it.
  * @param {string} defaultMessage The message to use if givenMessage is empty.
@@ -4727,7 +4741,21 @@ goog.asserts.doAssertFailure_ =
   // a stack trace is added to var message above. With this, a stack trace is
   // not added until this line (it causes the extra garbage to be added after
   // the assertion message instead of in the middle of it).
-  throw new goog.asserts.AssertionError('' + message, args || []);
+  var e = new goog.asserts.AssertionError('' + message, args || []);
+  goog.asserts.errorHandler_(e);
+};
+
+
+/**
+ * Sets a custom error handler that can be used to customize the behavior of
+ * assertion failures, for example by turning all assertion failures into log
+ * messages.
+ * @param {function(goog.asserts.AssertionError)} errorHandler
+ */
+goog.asserts.setErrorHandler = function(errorHandler) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    goog.asserts.errorHandler_ = errorHandler;
+  }
 };
 
 
@@ -4770,9 +4798,9 @@ goog.asserts.assert = function(condition, opt_message, var_args) {
  */
 goog.asserts.fail = function(opt_message, var_args) {
   if (goog.asserts.ENABLE_ASSERTS) {
-    throw new goog.asserts.AssertionError(
+    goog.asserts.errorHandler_(new goog.asserts.AssertionError(
         'Failure' + (opt_message ? ': ' + opt_message : ''),
-        Array.prototype.slice.call(arguments, 1));
+        Array.prototype.slice.call(arguments, 1)));
   }
 };
 
@@ -10001,6 +10029,11 @@ goog.require('goog.asserts');
 goog.require('goog.dom.BrowserFeature');
 goog.require('goog.dom.NodeType');
 goog.require('goog.dom.TagName');
+/**
+ * Some projects use goog.dom.classes but only directly depend on goog.dom.
+ * TODO: Notify the owners then remove goog.require('goog.dom.classes').
+ * @suppress {extraRequire}
+ */
 goog.require('goog.dom.classes');
 goog.require('goog.functions');
 goog.require('goog.math.Coordinate');
@@ -10697,7 +10730,7 @@ goog.dom.createDom_ = function(doc, args) {
     if (goog.isString(attributes)) {
       element.className = attributes;
     } else if (goog.isArray(attributes)) {
-      goog.dom.classes.add.apply(null, [element].concat(attributes));
+      element.className = attributes.join(' ');
     } else {
       goog.dom.setProperties(element, attributes);
     }
@@ -11989,7 +12022,8 @@ goog.dom.getAncestorByTagNameAndClass = function(element, opt_tag, opt_class) {
   return /** @type {Element} */ (goog.dom.getAncestor(element,
       function(node) {
         return (!tagName || node.nodeName == tagName) &&
-               (!opt_class || goog.dom.classes.has(node, opt_class));
+               (!opt_class || goog.isString(node.className) &&
+                   goog.array.contains(node.className.split(/\s+/), opt_class));
       }, true));
 };
 
