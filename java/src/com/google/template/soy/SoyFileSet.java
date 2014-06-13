@@ -66,6 +66,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuOptions;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
@@ -723,7 +724,7 @@ public final class SoyFileSet {
       List<TemplateNode> allPublicTemplates = Lists.newArrayList();
       for (SoyFileNode soyFile : soyTree.getChildren()) {
         for (TemplateNode template : soyFile.getChildren()) {
-          if (! template.isPrivate()) {
+          if (template.getVisibility() == Visibility.PUBLIC) {
             allPublicTemplates.add(template);
           }
         }

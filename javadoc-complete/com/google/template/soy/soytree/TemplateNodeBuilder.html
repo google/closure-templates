@@ -154,51 +154,51 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 </td>
 </tr>
 <tr class="altColor">
-<td class="colFirst"><code>protected <a href="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#isPrivate">isPrivate</a></strong></code>
-<div class="block">Whether this template is private.</div>
-</td>
-</tr>
-<tr class="rowColor">
 <td class="colFirst"><code>protected boolean</code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#isSoyDocSet">isSoyDocSet</a></strong></code>
 <div class="block">Whether setSoyDoc() has been called.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>protected com.google.common.collect.ImmutableList&lt;<a href="../../../../../com/google/template/soy/soytree/defn/TemplateParam.html" title="class in com.google.template.soy.soytree.defn">TemplateParam</a>&gt;</code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#params">params</a></strong></code>
 <div class="block">The params from template header and/or SoyDoc.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>protected <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyDoc">soyDoc</a></strong></code>
 <div class="block">The full SoyDoc, including the start/end tokens, or null.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>protected <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyDocDesc">soyDocDesc</a></strong></code>
 <div class="block">The description portion of the SoyDoc (before declarations), or null.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>protected <a href="../../../../../com/google/template/soy/soytree/TemplateNode.SoyFileHeaderInfo.html" title="class in com.google.template.soy.soytree">TemplateNode.SoyFileHeaderInfo</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyFileHeaderInfo">soyFileHeaderInfo</a></strong></code>
 <div class="block">Info from the containing Soy file's header declarations.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>protected <a href="../../../../../com/google/template/soy/basetree/SyntaxVersionBound.html" title="class in com.google.template.soy.basetree">SyntaxVersionBound</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#syntaxVersionBound">syntaxVersionBound</a></strong></code>
 <div class="block">The lowest known syntax version bound.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>protected <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#templateNameForUserMsgs">templateNameForUserMsgs</a></strong></code>
 <div class="block">A string suitable for display in user msgs as the template name.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>protected <a href="../../../../../com/google/template/soy/soytree/Visibility.html" title="enum in com.google.template.soy.soytree">Visibility</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#visibility">visibility</a></strong></code>
+<div class="block">This template's visibility level.</div>
 </td>
 </tr>
 </table>
@@ -379,14 +379,14 @@ protected&nbsp;<a href="../../../../../com/google/template/soy/basetree/SyntaxVe
 <div class="block">A string suitable for display in user msgs as the template name.</div>
 </li>
 </ul>
-<a name="isPrivate">
+<a name="visibility">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>isPrivate</h4>
-<pre>protected&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang">Boolean</a> isPrivate</pre>
-<div class="block">Whether this template is private.</div>
+<h4>visibility</h4>
+<pre>protected&nbsp;<a href="../../../../../com/google/template/soy/soytree/Visibility.html" title="enum in com.google.template.soy.soytree">Visibility</a> visibility</pre>
+<div class="block">This template's visibility level.</div>
 </li>
 </ul>
 <a name="isSoyDocSet">

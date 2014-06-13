@@ -159,7 +159,31 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       this.isOverride = overrideAttr.equals("true");
     }
 
-    this.isPrivate = attributes.get("private").equals("true");
+    if (attributes.get("private").equals("true")) {
+      visibility = Visibility.PRIVATE;
+    }
+
+    String visibilityName = attributes.get("visibility");
+    if (visibilityName != null) {
+      // It is an error to specify both "private" and "visibility" attrs.
+      if (visibility != null) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Template cannot specify both private=\"true\""
+            + "and visibility=\"" + visibilityName + "\".");
+      }
+      try {
+        visibility = Visibility.valueOf(visibilityName.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Invalid visibility type \"" + visibilityName + "\".");
+      }
+    }
+
+    // If the visibility hasn't been set, through either the old "private" attr
+    // or the new "visibility" attr, default to public.
+    if (visibility == null) {
+      visibility = Visibility.PUBLIC;
+    }
 
     AutoescapeMode autoescapeMode;
     String autoescapeModeStr = attributes.get("autoescape");
@@ -190,7 +214,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
    * @param useAttrStyleForName Whether to use an attribute to specify the name. This is purely
    *     cosmetic for the generated cmdText string.
    * @param isOverride Whether this template overrides another.
-   * @param isPrivate Whether this template is private.
+   * @param visibility Visibility of this template.
    * @param autoescapeMode The mode of autoescaping for this template.
    * @param contentKind Strict mode context. Nonnull iff autoescapeMode is strict.
    * @param requiredCssNamespaces CSS namespaces required to render the template.
@@ -198,7 +222,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
    */
   public TemplateBasicNodeBuilder setCmdTextInfo(
       String templateName, @Nullable String partialTemplateName, boolean useAttrStyleForName,
-      boolean isOverride, boolean isPrivate, AutoescapeMode autoescapeMode,
+      boolean isOverride, Visibility visibility, AutoescapeMode autoescapeMode,
       ContentKind contentKind, ImmutableList<String> requiredCssNamespaces) {
 
     Preconditions.checkState(this.cmdText == null);
@@ -210,7 +234,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     setTemplateNames(templateName, partialTemplateName);
     this.templateNameForUserMsgs = templateName;
     this.isOverride = isOverride;
-    this.isPrivate = isPrivate;
+    this.visibility = visibility;
     setAutoescapeInfo(autoescapeMode, contentKind);
     setRequiredCssNamespaces(requiredCssNamespaces);
 
@@ -229,7 +253,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     if (isOverride) {
       cmdTextBuilder.append(" override=\"true\"");
     }
-    if (isPrivate) {
+    if (visibility == Visibility.PRIVATE) {
+      // TODO(brndn): generate code for other visibility levels. b/15190131
       cmdTextBuilder.append(" private=\"true\"");
     }
     if (!requiredCssNamespaces.isEmpty()) {
@@ -257,7 +282,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
 
     return new TemplateBasicNode(
         id, syntaxVersionBound, cmdText, soyFileHeaderInfo, getTemplateName(),
-        getPartialTemplateName(), templateNameForUserMsgs, isOverride, isPrivate,
+        getPartialTemplateName(), templateNameForUserMsgs, isOverride, visibility,
         getAutoescapeMode(), getContentKind(), getRequiredCssNamespaces(), soyDoc, soyDocDesc,
         params);
   }

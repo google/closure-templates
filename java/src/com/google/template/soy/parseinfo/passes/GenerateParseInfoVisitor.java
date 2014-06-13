@@ -56,6 +56,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyObjectType;
@@ -76,7 +77,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -310,7 +310,8 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
         LinkedHashMultimap.create();
     SortedSet<String> protoTypes = Sets.newTreeSet();
     for (TemplateNode template : node.getChildren()) {
-      if (!template.isPrivate() && template instanceof TemplateBasicNode) {
+      if (template.getVisibility() == Visibility.PUBLIC
+          && template instanceof TemplateBasicNode) {
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
       }
@@ -520,7 +521,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
   @Override protected void visitTemplateNode(TemplateNode node) {
     // Don't generate anything for private or delegate templates.
-    if (node.isPrivate() || node instanceof TemplateDelegateNode) {
+    if (node.getVisibility() == Visibility.PRIVATE || node instanceof TemplateDelegateNode) {
       return;
     }
 
@@ -830,7 +831,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       resultSb.append(template.getTemplateNameForUserMsgs());
     }
 
-    if (template.isPrivate()) {
+    if (template.getVisibility() == Visibility.PRIVATE) {
       resultSb.append(" (private)");
     }
     if (template instanceof TemplateDelegateNode) {

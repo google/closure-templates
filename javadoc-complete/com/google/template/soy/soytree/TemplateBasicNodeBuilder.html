@@ -135,7 +135,7 @@ extends <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuil
 <!--   -->
 </a>
 <h3>Fields inherited from class&nbsp;com.google.template.soy.soytree.<a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html" title="class in com.google.template.soy.soytree">TemplateNodeBuilder</a></h3>
-<code><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#cmdText">cmdText</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#id">id</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#isPrivate">isPrivate</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#isSoyDocSet">isSoyDocSet</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#params">params</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyDoc">soyDoc</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyDocDesc">soyDocDesc</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyFileHeaderInfo">soyFileHeaderInfo</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#syntaxVersionBound">syntaxVersionBound</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#templateNameForUserMsgs">templateNameForUserMsgs</a></code></li>
+<code><a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#cmdText">cmdText</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#id">id</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#isSoyDocSet">isSoyDocSet</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#params">params</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyDoc">soyDoc</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyDocDesc">soyDocDesc</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#soyFileHeaderInfo">soyFileHeaderInfo</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#syntaxVersionBound">syntaxVersionBound</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#templateNameForUserMsgs">templateNameForUserMsgs</a>, <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuilder.html#visibility">visibility</a></code></li>
 </ul>
 </li>
 </ul>
@@ -186,11 +186,11 @@ extends <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuil
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code><a href="../../../../../com/google/template/soy/soytree/TemplateBasicNodeBuilder.html" title="class in com.google.template.soy.soytree">TemplateBasicNodeBuilder</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateBasicNodeBuilder.html#setCmdTextInfo(java.lang.String, java.lang.String, boolean, boolean, boolean, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.data.SanitizedContent.ContentKind, com.google.common.collect.ImmutableList)">setCmdTextInfo</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;templateName,
+<td class="colLast"><code><strong><a href="../../../../../com/google/template/soy/soytree/TemplateBasicNodeBuilder.html#setCmdTextInfo(java.lang.String, java.lang.String, boolean, boolean, com.google.template.soy.soytree.Visibility, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.data.SanitizedContent.ContentKind, com.google.common.collect.ImmutableList)">setCmdTextInfo</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;templateName,
               <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;partialTemplateName,
               boolean&nbsp;useAttrStyleForName,
               boolean&nbsp;isOverride,
-              boolean&nbsp;isPrivate,
+              <a href="../../../../../com/google/template/soy/soytree/Visibility.html" title="enum in com.google.template.soy.soytree">Visibility</a>&nbsp;visibility,
               <a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</a>&nbsp;autoescapeMode,
               <a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</a>&nbsp;contentKind,
               com.google.common.collect.ImmutableList&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;requiredCssNamespaces)</code>
@@ -305,7 +305,7 @@ extends <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuil
 <dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
 </li>
 </ul>
-<a name="setCmdTextInfo(java.lang.String, java.lang.String, boolean, boolean, boolean, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.data.SanitizedContent.ContentKind, com.google.common.collect.ImmutableList)">
+<a name="setCmdTextInfo(java.lang.String, java.lang.String, boolean, boolean, com.google.template.soy.soytree.Visibility, com.google.template.soy.soytree.AutoescapeMode, com.google.template.soy.data.SanitizedContent.ContentKind, com.google.common.collect.ImmutableList)">
 <!--   -->
 </a>
 <ul class="blockList">
@@ -316,7 +316,7 @@ extends <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuil
                                       <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;partialTemplateName,
                                       boolean&nbsp;useAttrStyleForName,
                                       boolean&nbsp;isOverride,
-                                      boolean&nbsp;isPrivate,
+                                      <a href="../../../../../com/google/template/soy/soytree/Visibility.html" title="enum in com.google.template.soy.soytree">Visibility</a>&nbsp;visibility,
                                       <a href="../../../../../com/google/template/soy/soytree/AutoescapeMode.html" title="enum in com.google.template.soy.soytree">AutoescapeMode</a>&nbsp;autoescapeMode,
                                       <a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</a>&nbsp;contentKind,
                                       com.google.common.collect.ImmutableList&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&gt;&nbsp;requiredCssNamespaces)</pre>
@@ -324,7 +324,7 @@ extends <a href="../../../../../com/google/template/soy/soytree/TemplateNodeBuil
  it parsed from the command text string. The cmdText field will be set to a canonical string
  generated from the given info.</div>
 <dl><dt><span class="strong">Parameters:</span></dt><dd><code>templateName</code> - This template's name.</dd><dd><code>partialTemplateName</code> - This template's partial name. Only applicable for V2; null for V1.</dd><dd><code>useAttrStyleForName</code> - Whether to use an attribute to specify the name. This is purely
-     cosmetic for the generated cmdText string.</dd><dd><code>isOverride</code> - Whether this template overrides another.</dd><dd><code>isPrivate</code> - Whether this template is private.</dd><dd><code>autoescapeMode</code> - The mode of autoescaping for this template.</dd><dd><code>contentKind</code> - Strict mode context. Nonnull iff autoescapeMode is strict.</dd><dd><code>requiredCssNamespaces</code> - CSS namespaces required to render the template.</dd>
+     cosmetic for the generated cmdText string.</dd><dd><code>isOverride</code> - Whether this template overrides another.</dd><dd><code>visibility</code> - Visibility of this template.</dd><dd><code>autoescapeMode</code> - The mode of autoescaping for this template.</dd><dd><code>contentKind</code> - Strict mode context. Nonnull iff autoescapeMode is strict.</dd><dd><code>requiredCssNamespaces</code> - CSS namespaces required to render the template.</dd>
 <dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
 </li>
 </ul>

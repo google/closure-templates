@@ -269,7 +269,7 @@ final class Inferences {
                 .setId(cloneId)
                 .setCmdTextInfo(
                     derivedName, derivedPartialName, useAttrStyleForName, tbn.isOverride(),
-                    tn.isPrivate(), tn.getAutoescapeMode(), tn.getContentKind(),
+                    tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
                     tn.getRequiredCssNamespaces())
                 .setSoyDoc(tn.getSoyDoc())
                 .build();

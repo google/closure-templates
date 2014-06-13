@@ -146,7 +146,8 @@ public class TemplateDelegateNode extends TemplateNode implements ExprHolderNode
 
     super(
         id, syntaxVersionBound, "deltemplate", cmdText, soyFileHeaderInfo, templateName,
-        partialTemplateName, templateNameForUserMsgs, false /*deltemplate is never private*/,
+        partialTemplateName, templateNameForUserMsgs,
+        Visibility.PUBLIC /* deltemplate always has public visibility */,
         autoescapeMode, contentKind, requiredCssNamespaces, soyDoc, soyDocDesc, params);
     this.delTemplateName = delTemplateName;
     this.delTemplateVariant = delTemplateVariant;

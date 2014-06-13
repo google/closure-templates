@@ -94,8 +94,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** A string suitable for display in user msgs as the template name. */
   private final String templateNameForUserMsgs;
 
-  /** Whether this template is private. */
-  private final boolean isPrivate;
+  /** Visibility of this template. */
+  private final Visibility visibility;
 
   /** The mode of autoescaping for this template. */
   private final AutoescapeMode autoescapeMode;
@@ -131,7 +131,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    * @param templateName This template's name.
    * @param partialTemplateName This template's partial name. Only applicable for V2; null for V1.
    * @param templateNameForUserMsgs A string suitable for display in user msgs as the template name.
-   * @param isPrivate Whether this template is private.
+   * @param visibility Visibility of this template.
    * @param autoescapeMode The mode of autoescaping for this template.
    * @param contentKind Strict mode context. Nonnull iff autoescapeMode is strict.
    * @param requiredCssNamespaces CSS namespaces required to render the template.
@@ -142,7 +142,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   TemplateNode(
       int id, @Nullable SyntaxVersionBound syntaxVersionBound, String cmdName, String cmdText,
       SoyFileHeaderInfo soyFileHeaderInfo, String templateName,
-      @Nullable String partialTemplateName, String templateNameForUserMsgs, boolean isPrivate,
+      @Nullable String partialTemplateName, String templateNameForUserMsgs, Visibility visibility,
       AutoescapeMode autoescapeMode, ContentKind contentKind,
       ImmutableList<String> requiredCssNamespaces, String soyDoc, String soyDocDesc,
       @Nullable ImmutableList<TemplateParam> params) {
@@ -153,7 +153,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.templateName = templateName;
     this.partialTemplateName = partialTemplateName;
     this.templateNameForUserMsgs = templateNameForUserMsgs;
-    this.isPrivate = isPrivate;
+    this.visibility = visibility;
     this.autoescapeMode = autoescapeMode;
     this.contentKind = contentKind;
     this.requiredCssNamespaces = requiredCssNamespaces;
@@ -188,7 +188,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
     this.templateNameForUserMsgs = orig.templateNameForUserMsgs;
-    this.isPrivate = orig.isPrivate;
+    this.visibility = orig.visibility;
     this.autoescapeMode = orig.autoescapeMode;
     this.contentKind = orig.contentKind;
     this.requiredCssNamespaces = orig.requiredCssNamespaces;
@@ -223,9 +223,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     return partialTemplateName;
   }
 
-  /** Returns whether this template is private. */
-  public boolean isPrivate() {
-    return isPrivate;
+  /** Returns the visibility of this template. */
+  public Visibility getVisibility() {
+    return visibility;
   }
 
   /** Returns the mode of autoescaping, if any, done for this template. */

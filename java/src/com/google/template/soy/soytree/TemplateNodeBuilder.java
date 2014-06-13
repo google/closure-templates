@@ -105,8 +105,8 @@ public abstract class TemplateNodeBuilder {
   /** A string suitable for display in user msgs as the template name. */
   protected String templateNameForUserMsgs;
 
-  /** Whether this template is private. */
-  protected Boolean isPrivate;
+  /** This template's visibility level. */
+  protected Visibility visibility;
 
   /** The mode of autoescaping for this template.
    *  This is private instead of protected to enforce use of setAutoescapeInfo(). */

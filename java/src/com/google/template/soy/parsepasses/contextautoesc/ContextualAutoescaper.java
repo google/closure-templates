@@ -32,6 +32,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
 
 import java.util.Collection;
 import java.util.List;
@@ -248,7 +249,7 @@ public final class ContextualAutoescaper {
           // templates.
           return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT ||
               (templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL &&
-                  !templateNode.isPrivate());
+                  templateNode.getVisibility() != Visibility.PRIVATE);
         }
   };
 

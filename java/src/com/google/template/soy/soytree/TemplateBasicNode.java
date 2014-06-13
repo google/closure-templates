@@ -50,7 +50,7 @@ public class TemplateBasicNode extends TemplateNode {
    * @param partialTemplateName This template's partial name. Only applicable for V2; null for V1.
    * @param templateNameForUserMsgs A string suitable for display in user msgs as the template name.
    * @param isOverride Whether this template overrides another (always false for syntax version V2).
-   * @param isPrivate Whether this template is private.
+   * @param visibility Visibility of this template.
    * @param autoescapeMode The mode of autoescaping for this template.
    * @param contentKind Strict mode context. Nonnull iff autoescapeMode is strict.
    * @param requiredCssNamespaces CSS namespaces required to render the template.
@@ -62,13 +62,13 @@ public class TemplateBasicNode extends TemplateNode {
       int id, @Nullable SyntaxVersionBound syntaxVersionBound, String cmdText,
       SoyFileHeaderInfo soyFileHeaderInfo, String templateName,
       @Nullable String partialTemplateName, String templateNameForUserMsgs, boolean isOverride,
-      boolean isPrivate, AutoescapeMode autoescapeMode, ContentKind contentKind,
+      Visibility visibility, AutoescapeMode autoescapeMode, ContentKind contentKind,
       ImmutableList<String> requiredCssNamespaces, String soyDoc, String soyDocDesc,
       ImmutableList<TemplateParam> params) {
 
     super(
         id, syntaxVersionBound, "template", cmdText, soyFileHeaderInfo, templateName,
-        partialTemplateName, templateNameForUserMsgs, isPrivate, autoescapeMode, contentKind,
+        partialTemplateName, templateNameForUserMsgs, visibility, autoescapeMode, contentKind,
         requiredCssNamespaces, soyDoc, soyDocDesc, params);
     this.isOverride = isOverride;
   }
