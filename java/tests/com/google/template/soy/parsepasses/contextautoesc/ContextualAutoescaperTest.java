@@ -514,27 +514,27 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"contextual\"}\n",
+            "{template foo autoescape=\"deprecated-contextual\"}\n",
               "{call bar data=\"all\" /}",
               "<script>",
               "alert('{call bar__C14 data=\"all\" /}');",
               "</script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"contextual\"}\n",
+            "{template bar autoescape=\"deprecated-contextual\"}\n",
               "Hello, {$world |escapeHtml}!\n",
             "{/template}\n\n",
-            "{template bar__C14 autoescape=\"contextual\"}\n",
+            "{template bar__C14 autoescape=\"deprecated-contextual\"}\n",
               "Hello, {$world |escapeJsString}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"contextual\"}\n",
+            "{template foo autoescape=\"deprecated-contextual\"}\n",
             "  {call bar data=\"all\" /}\n",
             "  <script>\n",
             "  alert('{call bar data=\"all\" /}');\n",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"contextual\"}\n",
+            "{template bar autoescape=\"deprecated-contextual\"}\n",
             "  Hello, {$world}!\n",
             "{/template}"));
   }
@@ -554,7 +554,7 @@ public final class ContextualAutoescaperTest extends TestCase {
                 "{call countDown /}",
               "{/if}\n",
             "{/template}\n\n",
-            "{template countDown__C2010 autoescape=\"contextual\"}\n",
+            "{template countDown__C2010 autoescape=\"deprecated-contextual\"}\n",
               "{if $x gt 0}",
                 "{print --$x |escapeJsValue},",
                 "{call countDown__C2010 /}",
@@ -576,20 +576,20 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"contextual\"}\n",
+            "{template foo autoescape=\"deprecated-contextual\"}\n",
               "<script>",
                 "{if $declare}var {/if}",
                 "x = {call bar__C2010 /}{\\n}",
                 "y = 2",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"contextual\"}\n",
+            "{template bar autoescape=\"deprecated-contextual\"}\n",
               "42",
               "{if $declare}",
                 " , ",
               "{/if}\n",
             "{/template}\n\n",
-            "{template bar__C2010 autoescape=\"contextual\"}\n",
+            "{template bar__C2010 autoescape=\"deprecated-contextual\"}\n",
               "42",
               "{if $declare}",
                 " , ",
@@ -597,7 +597,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"contextual\"}\n",
+            "{template foo autoescape=\"deprecated-contextual\"}\n",
             "  <script>\n",
             "    {if $declare}var{sp}{/if}\n",
             "    x = {call bar /}{\\n}\n",
@@ -606,7 +606,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "    y = 2",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"contextual\"}\n",
+            "{template bar autoescape=\"deprecated-contextual\"}\n",
             // A slash following 42 would be a division operator.
             "  42\n",
             // But a slash following a comma would be a RegExp.
@@ -889,7 +889,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace soy.examples.codelab}\n\n",
             "/** */\n",
-            "{template .main autoescape=\"contextual\"}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
               "<title>{call soy.examples.codelab.pagenum__C81 data=\"all\" /}</title>",
               "",
               "<script>",
@@ -901,27 +901,27 @@ public final class ContextualAutoescaperTest extends TestCase {
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum autoescape=\"contextual\" private=\"true\"}\n",
+            "{template .pagenum autoescape=\"deprecated-contextual\" private=\"true\"}\n",
               "{$pageIndex} of {$pageCount}\n",
             "{/template}\n\n",
             "/**\n",
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum__C81 autoescape=\"contextual\" private=\"true\"}\n",
+            "{template .pagenum__C81 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
               "{$pageIndex |escapeHtmlRcdata} of {$pageCount |escapeHtmlRcdata}\n",
             "{/template}\n\n",
             "/**\n",
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum__C13 autoescape=\"contextual\" private=\"true\"}\n",
+            "{template .pagenum__C13 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
               "{$pageIndex |escapeJsString} of {$pageCount |escapeJsString}\n",
             "{/template}"),
         join(
             "{namespace soy.examples.codelab}\n\n",
             "/** */\n",
-            "{template .main autoescape=\"contextual\"}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <title>{call .pagenum data=\"all\" /}</title>\n",
             "  <script>\n",
             "    var pagenum = \"{call name=\".pagenum\" data=\"all\" /}\";\n",
@@ -932,7 +932,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum autoescape=\"contextual\" private=\"true\"}\n",
+            "{template .pagenum autoescape=\"deprecated-contextual\" private=\"true\"}\n",
             "  {$pageIndex} of {$pageCount}\n",
             "{/template}"));
   }
@@ -1124,25 +1124,25 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{delpackage dp}\n",
             "{namespace ns}\n\n",
-            "{template main autoescape=\"contextual\"}\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
               "<script>{delcall foo__C2010 /}</script>\n",
             "{/template}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"contextual\"}\n",
+            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
               "x = {$x |escapeHtml}\n",
             "{/deltemplate}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo__C2010 autoescape=\"contextual\"}\n",
+            "{deltemplate foo__C2010 autoescape=\"deprecated-contextual\"}\n",
               "x = {$x |escapeJsValue}\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp}\n",
             "{namespace ns}\n\n",
-            "{template main autoescape=\"contextual\"}\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
               "<script>{delcall foo /}</script>\n",
             "{/template}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"contextual\"}\n",
+            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
               "x = {$x}\n",
             "{/deltemplate}"));
   }
@@ -2231,7 +2231,7 @@ public final class ContextualAutoescaperTest extends TestCase {
     // And idempotent from a normalized input if the templates are not autoescape="contextual".
     String input = join(inputs);
     String inputWithoutAutoescape = input
-        .replaceAll("\\s+autoescape\\s*=\\s*\"(contextual|strict)\"", "")
+        .replaceAll("\\s+autoescape\\s*=\\s*\"((deprecated-)?contextual|strict)\"", "")
         .replaceAll("\\s+kind\\s*=\\s*\"([a-z]*)\"", "");
     SoyFileSetNode soyTree2 = SharedTestUtils.parseSoyFiles(inputWithoutAutoescape);
     String original = soyTree2.getChild(0).toSourceString();
