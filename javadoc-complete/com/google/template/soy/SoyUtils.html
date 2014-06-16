@@ -131,7 +131,7 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code>static com.google.common.collect.ImmutableMap&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,<a href="../../../../com/google/template/soy/data/restricted/PrimitiveData.html" title="class in com.google.template.soy.data.restricted">PrimitiveData</a>&gt;</code></td>
-<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyUtils.html#parseCompileTimeGlobals(com.google.common.io.InputSupplier)">parseCompileTimeGlobals</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;inputSupplier)</code>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyUtils.html#parseCompileTimeGlobals(com.google.common.io.CharSource)">parseCompileTimeGlobals</a></strong>(com.google.common.io.CharSource&nbsp;inputSource)</code>
 <div class="block">Parses a globals file in the format created by <a href="../../../../com/google/template/soy/SoyUtils.html#generateCompileTimeGlobalsFile(java.util.Map, java.lang.Appendable)"><code>generateCompileTimeGlobalsFile(java.util.Map&lt;java.lang.String, ?&gt;, java.lang.Appendable)</code></a> into a
  map from global name to primitive value.</div>
 </td>
@@ -199,18 +199,18 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <dd><code><a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></code> - If there is an error appending to the given <code>Appendable</code>.</dd><dt><span class="strong">See Also:</span></dt><dd><a href="../../../../com/google/template/soy/SoyUtils.html#generateCompileTimeGlobalsFile(java.util.Map, java.lang.Appendable)"><code>generateCompileTimeGlobalsFile(Map, Appendable)</code></a></dd></dl>
 </li>
 </ul>
-<a name="parseCompileTimeGlobals(com.google.common.io.InputSupplier)">
+<a name="parseCompileTimeGlobals(com.google.common.io.CharSource)">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>parseCompileTimeGlobals</h4>
-<pre>public static&nbsp;com.google.common.collect.ImmutableMap&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,<a href="../../../../com/google/template/soy/data/restricted/PrimitiveData.html" title="class in com.google.template.soy.data.restricted">PrimitiveData</a>&gt;&nbsp;parseCompileTimeGlobals(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;inputSupplier)
+<pre>public static&nbsp;com.google.common.collect.ImmutableMap&lt;<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,<a href="../../../../com/google/template/soy/data/restricted/PrimitiveData.html" title="class in com.google.template.soy.data.restricted">PrimitiveData</a>&gt;&nbsp;parseCompileTimeGlobals(com.google.common.io.CharSource&nbsp;inputSource)
                                                                                             throws <a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a>,
                                                                                                    <a href="../../../../com/google/template/soy/base/SoySyntaxException.html" title="class in com.google.template.soy.base">SoySyntaxException</a></pre>
 <div class="block">Parses a globals file in the format created by <a href="../../../../com/google/template/soy/SoyUtils.html#generateCompileTimeGlobalsFile(java.util.Map, java.lang.Appendable)"><code>generateCompileTimeGlobalsFile(java.util.Map&lt;java.lang.String, ?&gt;, java.lang.Appendable)</code></a> into a
  map from global name to primitive value.</div>
-<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputSupplier</code> - A supplier that returns a reader for the globals file.</dd>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>inputSource</code> - A source that returns a reader for the globals file.</dd>
 <dt><span class="strong">Returns:</span></dt><dd>The parsed globals map.</dd>
 <dt><span class="strong">Throws:</span></dt>
 <dd><code><a href="http://java.sun.com/javase/6/docs/api/java/io/IOException.html?is-external=true" title="class or interface in java.io">IOException</a></code> - If an error occurs while reading the globals file.</dd>

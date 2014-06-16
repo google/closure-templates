@@ -16,7 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
-import com.google.common.io.InputSupplier;
+import com.google.common.io.CharSource;
 import com.google.template.soy.internal.base.Pair;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.io.Reader;
 
 
 /**
- * Record for one input Soy file. Contains an {@link InputSupplier} to supply a {@code Reader} for
+ * Record for one input Soy file. Contains a {@link CharSource} to supply a {@code Reader} for
  * the file content, and also the file path.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -33,22 +33,22 @@ import java.io.Reader;
 public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
-  /** Supplier of a Reader for the Soy file content. */
-  private final InputSupplier<? extends Reader> contentSupplier;
+  /** Source for the Soy file content. */
+  private final CharSource contentSource;
 
 
   /**
-   * Creates a new {@code SoyFileSupplier} given an {@code InputSupplier} for the file content, as
+   * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content, as
    * well as the desired file path for messages.
    *
-   * @param contentSupplier Supplier of a Reader for the Soy file content.
+   * @param contentSource Source for the Soy file content.
    * @param soyFileKind The kind of this input Soy file.
    * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
    */
   public StableSoyFileSupplier(
-      InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+      CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
     super(soyFileKind, filePath);
-    this.contentSupplier = contentSupplier;
+    this.contentSource = contentSource;
   }
 
 
@@ -60,7 +60,7 @@ public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
   @Override
   public Pair<Reader, Version> open() throws IOException {
-    return Pair.of((Reader) contentSupplier.getInput(), Version.STABLE_VERSION);
+    return Pair.of(contentSource.openStream(), Version.STABLE_VERSION);
   }
 
 }

@@ -131,18 +131,18 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 </tr>
 <tr class="rowColor">
 <td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.html" title="interface in com.google.template.soy.base.internal">SoyFileSupplier</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.Factory.html#create(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">create</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
-      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</code>
-<div class="block">Creates a new <code>SoyFileSupplier</code> given a <code>File</code>.</div>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.Factory.html#create(com.google.common.io.CharSource, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">create</a></strong>(com.google.common.io.CharSource&nbsp;contentSource,
+      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
+      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Creates a new <code>SoyFileSupplier</code> given a <code>CharSource</code> for the file content,
+ as well as the desired file path for messages.</div>
 </td>
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.html" title="interface in com.google.template.soy.base.internal">SoyFileSupplier</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.Factory.html#create(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">create</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
-      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
-      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
-<div class="block">Creates a new <code>SoyFileSupplier</code> given an <code>InputSupplier</code> for the file content,
- as well as the desired file path for messages.</div>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.Factory.html#create(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">create</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
+      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind)</code>
+<div class="block">Creates a new <code>SoyFileSupplier</code> given a <code>File</code>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -183,18 +183,18 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <!--   -->
 </a>
 <h3>Method Detail</h3>
-<a name="create(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
+<a name="create(com.google.common.io.CharSource, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>create</h4>
-<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.html" title="interface in com.google.template.soy.base.internal">SoyFileSupplier</a>&nbsp;create(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/base/internal/SoyFileSupplier.html" title="interface in com.google.template.soy.base.internal">SoyFileSupplier</a>&nbsp;create(com.google.common.io.CharSource&nbsp;contentSource,
                      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
                      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
-<div class="block">Creates a new <code>SoyFileSupplier</code> given an <code>InputSupplier</code> for the file content,
+<div class="block">Creates a new <code>SoyFileSupplier</code> given a <code>CharSource</code> for the file content,
  as well as the desired file path for messages.</div>
-<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSupplier</code> - Supplier of a Reader for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file, used for as a unique map/set key and for messages.</dd></dl>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSource</code> - Source for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file, used for as a unique map/set key and for messages.</dd></dl>
 </li>
 </ul>
 <a name="create(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">

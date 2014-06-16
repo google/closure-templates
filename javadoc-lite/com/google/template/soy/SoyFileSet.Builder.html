@@ -152,16 +152,16 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 </tr>
 <tr class="rowColor">
 <td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.io.File)">add</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile)</code>
-<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(com.google.common.io.CharSource, java.lang.String)">add</a></strong>(com.google.common.io.CharSource&nbsp;contentSource,
+   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given a <code>CharSource</code> for the file content, as well as the
+ desired file path for messages.</div>
 </td>
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(com.google.common.io.InputSupplier, java.lang.String)">add</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
-   <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
-<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
- desired file path for messages.</div>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#add(java.io.File)">add</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile)</code>
+<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -202,18 +202,18 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">addWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
-           com.google.template.soy.base.internal.SoyFileKind&nbsp;soyFileKind)</code>
-<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(com.google.common.io.CharSource, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">addWithKind</a></strong>(com.google.common.io.CharSource&nbsp;contentSource,
+           com.google.template.soy.base.internal.SoyFileKind&nbsp;soyFileKind,
+           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
+<div class="block">Adds an input Soy file, given a <code>CharSource</code> for the file content, as well as the
+ desired file path for messages.</div>
 </td>
 </tr>
 <tr class="rowColor">
 <td class="colFirst"><code><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">addWithKind</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
-           com.google.template.soy.base.internal.SoyFileKind&nbsp;soyFileKind,
-           <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
-<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
- desired file path for messages.</div>
+<td class="colLast"><code><strong><a href="../../../../com/google/template/soy/SoyFileSet.Builder.html#addWithKind(java.io.File, com.google.template.soy.base.internal.SoyFileKind)">addWithKind</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/io/File.html?is-external=true" title="class or interface in java.io">File</a>&nbsp;inputFile,
+           com.google.template.soy.base.internal.SoyFileKind&nbsp;soyFileKind)</code>
+<div class="block">Adds an input Soy file, given a <code>File</code>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -369,32 +369,32 @@ public&nbsp;SoyFileSet.Builder()</pre>
 <dl><dt><span class="strong">Returns:</span></dt><dd>The new <code>SoyFileSet</code>.</dd></dl>
 </li>
 </ul>
-<a name="addWithKind(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
+<a name="addWithKind(com.google.common.io.CharSource, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>addWithKind</h4>
-<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;addWithKind(com.google.common.io.CharSource&nbsp;contentSource,
                              com.google.template.soy.base.internal.SoyFileKind&nbsp;soyFileKind,
                              <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
-<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+<div class="block">Adds an input Soy file, given a <code>CharSource</code> for the file content, as well as the
  desired file path for messages.</div>
-<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSupplier</code> - Supplier of a Reader for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSource</code> - Source for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
 <dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
 </li>
 </ul>
-<a name="add(com.google.common.io.InputSupplier, java.lang.String)">
+<a name="add(com.google.common.io.CharSource, java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>add</h4>
-<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+<pre>public&nbsp;<a href="../../../../com/google/template/soy/SoyFileSet.Builder.html" title="class in com.google.template.soy">SoyFileSet.Builder</a>&nbsp;add(com.google.common.io.CharSource&nbsp;contentSource,
                      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
-<div class="block">Adds an input Soy file, given an <code>InputSupplier</code> for the file content, as well as the
+<div class="block">Adds an input Soy file, given a <code>CharSource</code> for the file content, as well as the
  desired file path for messages.</div>
-<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSupplier</code> - Supplier of a Reader for the Soy file content.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSource</code> - Source for the Soy file content.</dd><dd><code>filePath</code> - The path to the Soy file (used for messages only).</dd>
 <dt><span class="strong">Returns:</span></dt><dd>This builder.</dd></dl>
 </li>
 </ul>

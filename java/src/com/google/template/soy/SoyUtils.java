@@ -20,8 +20,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
 import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.FloatData;
@@ -43,7 +43,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -140,17 +139,17 @@ public class SoyUtils {
   /**
    * Parses a globals file in the format created by {@link #generateCompileTimeGlobalsFile} into a
    * map from global name to primitive value.
-   * @param inputSupplier A supplier that returns a reader for the globals file.
+   * @param inputSource A source that returns a reader for the globals file.
    * @return The parsed globals map.
    * @throws IOException If an error occurs while reading the globals file.
    * @throws SoySyntaxException If the globals file is not in the correct format.
    */
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(
-      InputSupplier<? extends Reader> inputSupplier) throws IOException, SoySyntaxException {
+      CharSource inputSource) throws IOException, SoySyntaxException {
     ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
     List<Pair<CompileTimeGlobalsFileError, String>> errors = Lists.newArrayListWithCapacity(0);
 
-    BufferedReader reader = new BufferedReader(inputSupplier.getInput());
+    BufferedReader reader = new BufferedReader(inputSource.openStream());
     for (String line = reader.readLine(); line != null; line = reader.readLine()) {
 
       if (line.startsWith("//") || line.trim().length() == 0) {

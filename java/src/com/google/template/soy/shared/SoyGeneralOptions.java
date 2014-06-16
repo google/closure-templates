@@ -183,7 +183,7 @@ public class SoyGeneralOptions implements Cloneable {
    */
   public void setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
     setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Files.newReaderSupplier(compileTimeGlobalsFile, UTF_8)));
+        Files.asCharSource(compileTimeGlobalsFile, UTF_8)));
   }
 
 
@@ -206,7 +206,7 @@ public class SoyGeneralOptions implements Cloneable {
    */
   public void setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
     setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Resources.newReaderSupplier(compileTimeGlobalsResource, UTF_8)));
+        Resources.asCharSource(compileTimeGlobalsResource, UTF_8)));
   }
 
 

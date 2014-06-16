@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.InputSupplier;
+import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -78,7 +78,6 @@ import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -205,31 +204,31 @@ public final class SoyFileSet {
 
 
     /**
-     * Adds an input Soy file, given an {@code InputSupplier} for the file content, as well as the
+     * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
      * desired file path for messages.
      *
-     * @param contentSupplier Supplier of a Reader for the Soy file content.
+     * @param contentSource Source for the Soy file content.
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
     public Builder addWithKind(
-        InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
-      setBuilder.add(SoyFileSupplier.Factory.create(contentSupplier, soyFileKind, filePath));
+        CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
+      setBuilder.add(SoyFileSupplier.Factory.create(contentSource, soyFileKind, filePath));
       return this;
     }
 
 
     /**
-     * Adds an input Soy file, given an {@code InputSupplier} for the file content, as well as the
+     * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
      * desired file path for messages.
      *
-     * @param contentSupplier Supplier of a Reader for the Soy file content.
+     * @param contentSource Source for the Soy file content.
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
-    public Builder add(InputSupplier<? extends Reader> contentSupplier, String filePath) {
-      return addWithKind(contentSupplier, SoyFileKind.SRC, filePath);
+    public Builder add(CharSource contentSource, String filePath) {
+      return addWithKind(contentSource, SoyFileKind.SRC, filePath);
     }
 
 

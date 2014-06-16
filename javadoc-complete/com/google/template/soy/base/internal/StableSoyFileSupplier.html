@@ -99,7 +99,7 @@
 <br>
 <pre>public class <span class="strong">StableSoyFileSupplier</span>
 extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></pre>
-<div class="block">Record for one input Soy file. Contains an <code>InputSupplier</code> to supply a <code>Reader</code> for
+<div class="block">Record for one input Soy file. Contains a <code>CharSource</code> to supply a <code>Reader</code> for
  the file content, and also the file path.
 
  <p> Important: Do not use outside of Soy code (treat as superpackage-private).</div>
@@ -163,10 +163,10 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <th class="colOne" scope="col">Constructor and Description</th>
 </tr>
 <tr class="altColor">
-<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/base/internal/StableSoyFileSupplier.html#StableSoyFileSupplier(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">StableSoyFileSupplier</a></strong>(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+<td class="colOne"><code><strong><a href="../../../../../../com/google/template/soy/base/internal/StableSoyFileSupplier.html#StableSoyFileSupplier(com.google.common.io.CharSource, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">StableSoyFileSupplier</a></strong>(com.google.common.io.CharSource&nbsp;contentSource,
                      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
                      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</code>
-<div class="block">Creates a new <code>SoyFileSupplier</code> given an <code>InputSupplier</code> for the file content, as
+<div class="block">Creates a new <code>SoyFileSupplier</code> given a <code>CharSource</code> for the file content, as
  well as the desired file path for messages.</div>
 </td>
 </tr>
@@ -269,18 +269,18 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <!--   -->
 </a>
 <h3>Constructor Detail</h3>
-<a name="StableSoyFileSupplier(com.google.common.io.InputSupplier, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
+<a name="StableSoyFileSupplier(com.google.common.io.CharSource, com.google.template.soy.base.internal.SoyFileKind, java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>StableSoyFileSupplier</h4>
-<pre>public&nbsp;StableSoyFileSupplier(com.google.common.io.InputSupplier&lt;? extends <a href="http://java.sun.com/javase/6/docs/api/java/io/Reader.html?is-external=true" title="class or interface in java.io">Reader</a>&gt;&nbsp;contentSupplier,
+<pre>public&nbsp;StableSoyFileSupplier(com.google.common.io.CharSource&nbsp;contentSource,
                      <a href="../../../../../../com/google/template/soy/base/internal/SoyFileKind.html" title="enum in com.google.template.soy.base.internal">SoyFileKind</a>&nbsp;soyFileKind,
                      <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;filePath)</pre>
-<div class="block">Creates a new <code>SoyFileSupplier</code> given an <code>InputSupplier</code> for the file content, as
+<div class="block">Creates a new <code>SoyFileSupplier</code> given a <code>CharSource</code> for the file content, as
  well as the desired file path for messages.</div>
-<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSupplier</code> - Supplier of a Reader for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file, used for as a unique map/set key and for messages.</dd></dl>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>contentSource</code> - Source for the Soy file content.</dd><dd><code>soyFileKind</code> - The kind of this input Soy file.</dd><dd><code>filePath</code> - The path to the Soy file, used for as a unique map/set key and for messages.</dd></dl>
 </li>
 </ul>
 </li>

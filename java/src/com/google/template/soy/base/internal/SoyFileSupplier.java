@@ -18,15 +18,15 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.io.CharStreams;
+import com.google.common.io.CharSource;
 import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
 import com.google.common.io.Resources;
 import com.google.template.soy.internal.base.Pair;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.net.URL;
 
 
@@ -97,16 +97,16 @@ public interface SoyFileSupplier {
 
 
     /**
-     * Creates a new {@code SoyFileSupplier} given an {@code InputSupplier} for the file content,
+     * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content,
      * as well as the desired file path for messages.
      *
-     * @param contentSupplier Supplier of a Reader for the Soy file content.
+     * @param contentSource Source for the Soy file content.
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
     public static SoyFileSupplier create(
-        InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
-      return new StableSoyFileSupplier(contentSupplier, soyFileKind, filePath);
+        CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
+      return new StableSoyFileSupplier(contentSource, soyFileKind, filePath);
     }
 
 
@@ -118,7 +118,7 @@ public interface SoyFileSupplier {
      */
     public static SoyFileSupplier create(File inputFile, SoyFileKind soyFileKind) {
       return create(
-          Files.newReaderSupplier(inputFile, UTF_8), soyFileKind, inputFile.getPath());
+          Files.asCharSource(inputFile, UTF_8), soyFileKind, inputFile.getPath());
     }
 
 
@@ -138,7 +138,7 @@ public interface SoyFileSupplier {
         return new VolatileSoyFileSupplier(new File(inputFileUrl.getPath()), soyFileKind);
       } else {
         return create(
-            Resources.newReaderSupplier(inputFileUrl, UTF_8), soyFileKind, filePath);
+            Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
       }
     }
 
@@ -169,7 +169,15 @@ public interface SoyFileSupplier {
      */
     public static SoyFileSupplier create(
         CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      return create(CharStreams.newReaderSupplier(content.toString()), soyFileKind, filePath);
+      // TODO(cgdecker): Use CharSource.wrap once the Guava version is updated
+      final String contentString = content.toString();
+      CharSource source = new CharSource() {
+        @Override
+        public Reader openStream() {
+          return new StringReader(contentString);
+        }
+      };
+      return create(source, soyFileKind, filePath);
     }
 
 
