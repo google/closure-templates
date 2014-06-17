@@ -47,11 +47,13 @@ goog.require('goog.asserts');
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
+goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.string');
+goog.require('goog.string.Const');
 goog.require('goog.string.StringBuffer');
 
 
@@ -1705,13 +1707,18 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
   // the output will be treated as HTML, the input had better be safe
   // HTML/HTML-escaped (even if it isn't HTML SanitizedData), or we have an XSS
   // opportunity and a much bigger problem than bidi garbling.
-  var wrappedText = formatter.spanWrapWithKnownDir(
-      soydata.getContentDir(text), text + '', true /* opt_isHtml */);
+  var html = goog.html.uncheckedconversions.
+      safeHtmlFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy |bidiSpanWrap is applied on an autoescaped text.'),
+          String(text));
+  var wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(
+      soydata.getContentDir(text), html);
 
   // Like other directives whose Java class implements SanitizedContentOperator,
   // |bidiSpanWrap is called after the escaping (if any) has already been done,
   // and thus there is no need for it to produce actual SanitizedContent.
-  return wrappedText;
+  return goog.html.SafeHtml.unwrap(wrappedHtml);
 };
 
 

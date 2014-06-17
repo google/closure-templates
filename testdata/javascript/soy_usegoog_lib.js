@@ -2172,8 +2172,8 @@ goog.addDependency('html/utils.js', ['goog.html.utils'], ['goog.string']);
 goog.addDependency('html/utils_test.js', ['goog.html.UtilsTest'], ['goog.array', 'goog.dom.TagName', 'goog.html.utils', 'goog.object', 'goog.testing.jsunit']);
 goog.addDependency('i18n/bidi.js', ['goog.i18n.bidi', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.i18n.bidi.Format'], []);
 goog.addDependency('i18n/bidi_test.js', ['goog.i18n.bidiTest'], ['goog.i18n.bidi', 'goog.i18n.bidi.Dir', 'goog.testing.jsunit']);
-goog.addDependency('i18n/bidiformatter.js', ['goog.i18n.BidiFormatter'], ['goog.i18n.bidi', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.Format', 'goog.string']);
-goog.addDependency('i18n/bidiformatter_test.js', ['goog.i18n.BidiFormatterTest'], ['goog.i18n.BidiFormatter', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.Format', 'goog.testing.jsunit']);
+goog.addDependency('i18n/bidiformatter.js', ['goog.i18n.BidiFormatter'], ['goog.html.SafeHtml', 'goog.html.legacyconversions', 'goog.i18n.bidi', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.Format']);
+goog.addDependency('i18n/bidiformatter_test.js', ['goog.i18n.BidiFormatterTest'], ['goog.html.SafeHtml', 'goog.i18n.BidiFormatter', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.Format', 'goog.testing.jsunit']);
 goog.addDependency('i18n/charlistdecompressor.js', ['goog.i18n.CharListDecompressor'], ['goog.array', 'goog.i18n.uChar']);
 goog.addDependency('i18n/charlistdecompressor_test.js', ['goog.i18n.CharListDecompressorTest'], ['goog.i18n.CharListDecompressor', 'goog.testing.jsunit']);
 goog.addDependency('i18n/charpickerdata.js', ['goog.i18n.CharPickerData'], []);
@@ -16301,6 +16301,474 @@ goog.html.SafeHtml.EMPTY =
     goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
         '', goog.i18n.bidi.Dir.NEUTRAL);
 
+//javascript/closure/html/trustedresourceurl.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview The TrustedResourceUrl type and its builders.
+ *
+ * TODO(user): Link to document stating type contract.
+ */
+
+goog.provide('goog.html.TrustedResourceUrl');
+
+goog.require('goog.asserts');
+goog.require('goog.i18n.bidi.Dir');
+goog.require('goog.i18n.bidi.DirectionalString');
+goog.require('goog.string.Const');
+goog.require('goog.string.TypedString');
+
+
+
+/**
+ * A URL which is under application control and from which script, CSS, and
+ * other resources that represent executable code, can be fetched.
+ *
+ * Given that the URL can only be constructed from strings under application
+ * control and is used to load resources, bugs resulting in a malformed URL
+ * should not have a security impact and are likely to be easily detectable
+ * during testing. Given the wide number of non-RFC compliant URLs in use,
+ * stricter validation could prevent some applications from being able to use
+ * this type.
+ *
+ * Instances of this type must be created via the factory method,
+ * ({@code goog.html.TrustedResourceUrl.fromConstant}), and not by invoking its
+ * constructor. The constructor intentionally takes no parameters and the type
+ * is immutable; hence only a default instance corresponding to the empty
+ * string can be obtained via constructor invocation.
+ *
+ * @see goog.html.TrustedResourceUrl#fromConstant
+ * @constructor
+ * @final
+ * @struct
+ * @implements {goog.i18n.bidi.DirectionalString}
+ * @implements {goog.string.TypedString}
+ */
+goog.html.TrustedResourceUrl = function() {
+  /**
+   * The contained value of this TrustedResourceUrl.  The field has a purposely
+   * ugly name to make (non-compiled) code that attempts to directly access this
+   * field stand out.
+   * @private {string}
+   */
+  this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = '';
+
+  /**
+   * A type marker used to implement additional run-time type checking.
+   * @see goog.html.TrustedResourceUrl#unwrap
+   * @const
+   * @private
+   */
+  this.TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
+      goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+};
+
+
+/**
+ * @override
+ * @const
+ */
+goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
+
+
+/**
+ * Returns this TrustedResourceUrl's value as a string.
+ *
+ * IMPORTANT: In code where it is security relevant that an object's type is
+ * indeed {@code TrustedResourceUrl}, use
+ * {@code goog.html.TrustedResourceUrl.unwrap} instead of this method. If in
+ * doubt, assume that it's security relevant. In particular, note that
+ * goog.html functions which return a goog.html type do not guarantee that
+ * the returned instance is of the right type. For example:
+ *
+ * <pre>
+ * var fakeSafeHtml = new String('fake');
+ * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
+ * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml instanceof
+ * // goog.html.SafeHtml.
+ * </pre>
+ *
+ * @see goog.html.TrustedResourceUrl#unwrap
+ * @override
+ */
+goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function() {
+  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
+};
+
+
+/**
+ * @override
+ * @const
+ */
+goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
+    true;
+
+
+/**
+ * Returns this URLs directionality, which is always {@code LTR}.
+ * @override
+ */
+goog.html.TrustedResourceUrl.prototype.getDirection = function() {
+  return goog.i18n.bidi.Dir.LTR;
+};
+
+
+if (goog.DEBUG) {
+  /**
+   * Returns a debug string-representation of this value.
+   *
+   * To obtain the actual string value wrapped in a TrustedResourceUrl, use
+   * {@code goog.html.TrustedResourceUrl.unwrap}.
+   *
+   * @see goog.html.TrustedResourceUrl#unwrap
+   * @override
+   */
+  goog.html.TrustedResourceUrl.prototype.toString = function() {
+    return 'TrustedResourceUrl{' +
+        this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '}';
+  };
+}
+
+
+/**
+ * Performs a runtime check that the provided object is indeed a
+ * TrustedResourceUrl object, and returns its value.
+ *
+ * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl The object to
+ *     extract from.
+ * @return {string} The trustedResourceUrl object's contained string, unless
+ *     the run-time type check fails. In that case, {@code unwrap} returns an
+ *     innocuous string, or, if assertions are enabled, throws
+ *     {@code goog.asserts.AssertionError}.
+ */
+goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
+  // Perform additional Run-time type-checking to ensure that
+  // trustedResourceUrl is indeed an instance of the expected type.  This
+  // provides some additional protection against security bugs due to
+  // application code that disables type checks.
+  // Specifically, the following checks are performed:
+  // 1. The object is an instance of the expected type.
+  // 2. The object is not an instance of a subclass.
+  // 3. The object carries a type marker for the expected type. "Faking" an
+  // object requires a reference to the type marker, which has names intended
+  // to stand out in code reviews.
+  if (trustedResourceUrl instanceof goog.html.TrustedResourceUrl &&
+      trustedResourceUrl.constructor === goog.html.TrustedResourceUrl &&
+      trustedResourceUrl
+          .TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
+              goog.html.TrustedResourceUrl
+                  .TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+    return trustedResourceUrl
+        .privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
+  } else {
+    goog.asserts.fail('expected object of type TrustedResourceUrl, got \'' +
+                      trustedResourceUrl + '\'');
+    return 'type_error:TrustedResourceUrl';
+
+  }
+};
+
+
+/**
+ * Creates a TrustedResourceUrl object from a compile-time constant string.
+ *
+ * Compile-time constant strings are inherently program-controlled and hence
+ * trusted.
+ *
+ * @param {!goog.string.Const} url A compile-time-constant string from which to
+ *     create a TrustedResourceUrl.
+ * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
+ *     initialized to {@code url}.
+ */
+goog.html.TrustedResourceUrl.fromConstant = function(url) {
+  return goog.html.TrustedResourceUrl
+      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(
+          goog.string.Const.unwrap(url));
+};
+
+
+/**
+ * Type marker for the TrustedResourceUrl type, used to implement additional
+ * run-time type checking.
+ * @const
+ * @private
+ */
+goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+
+
+/**
+ * Utility method to create TrustedResourceUrl instances.
+ *
+ * This function is considered "package private", i.e. calls (using "suppress
+ * visibility") from other files within this package are considered acceptable.
+ * DO NOT call this function from outside the goog.html package; use appropriate
+ * wrappers instead.
+ *
+ * @param {string} url The string to initialize the TrustedResourceUrl object
+ *     with.
+ * @return {!goog.html.TrustedResourceUrl} The initialized TrustedResourceUrl
+ *     object.
+ * @private
+ */
+goog.html.TrustedResourceUrl.
+    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_ = function(url) {
+  var trustedResourceUrl = new goog.html.TrustedResourceUrl();
+  trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
+      url;
+  return trustedResourceUrl;
+};
+
+//javascript/closure/html/legacyconversions.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Conversions from plain string to goog.html types for use in
+ * legacy APIs that do not use goog.html types.
+ *
+ * This file provides conversions to create values of goog.html types from plain
+ * strings.  These conversions are intended for use in legacy APIs that consume
+ * HTML in the form of plain string types, but whose implementations use
+ * goog.html types internally (and expose such types in an augmented, HTML-type-
+ * safe API).
+ *
+ * IMPORTANT: No new code should use the conversion functions in this file.
+ *
+ * The conversion functions in this file are guarded with global flag
+ * (goog.html.legacyconversions.ALLOW_LEGACY_CONVERSIONS). If set to false, it
+ * effectively "locks in" an entire application to only use HTML-type-safe APIs.
+ *
+ * Intended use of the functions in this file are as follows:
+ *
+ * Many Closure and application-specific classes expose methods that consume
+ * values that in the class' implementation are forwarded to DOM APIs that can
+ * result in security vulnerabilities.  For example, goog.ui.Dialog's setContent
+ * method consumes a string that is assigned to an element's innerHTML property;
+ * if this string contains untrusted (attacker-controlled) data, this can result
+ * in a cross-site-scripting vulnerability.
+ *
+ * Widgets such as goog.ui.Dialog are being augmented to expose safe APIs
+ * expressed in terms of goog.html types.  For instance, goog.ui.Dialog has a
+ * method setSafeHtmlContent that consumes an object of type goog.html.SafeHtml,
+ * a type whose contract guarantees that its value is safe to use in HTML
+ * context, i.e. can be safely assigned to .innerHTML. An application that only
+ * uses this API is forced to only supply values of this type, i.e. values that
+ * are safe.
+ *
+ * However, the legacy method setContent cannot (for the time being) be removed
+ * from goog.ui.Dialog, due to a large number of existing callers.  The
+ * implementation of goog.ui.Dialog has been refactored to use
+ * goog.html.SafeHtml throughout.  This in turn requires that the value consumed
+ * by its setContent method is converted to goog.html.SafeHtml in an unchecked
+ * conversion. The conversion function is provided by this file:
+ * goog.html.legacyconversions.safeHtmlFromString.
+ *
+ * Note that the semantics of the conversions in goog.html.legacyconversions are
+ * very different from the ones provided by goog.html.uncheckedconversions:  The
+ * latter are for use in code where it has been established through manual
+ * security review that the value produced by a piece of code must always
+ * satisfy the SafeHtml contract (e.g., the output of a secure HTML sanitizer).
+ * In uses of goog.html.legacyconversions, this guarantee is not given -- the
+ * value in question originates in unreviewed legacy code and there is no
+ * guarantee that it satisfies the SafeHtml contract.
+ *
+ * To establish correctness with confidence, application code should be
+ * refactored to use SafeHtml instead of plain string to represent HTML markup,
+ * and to use goog.html-typed APIs (e.g., goog.ui.Dialog#setSafeHtmlContent
+ * instead of goog.ui.Dialog#setContent).
+ *
+ * To prevent introduction of new vulnerabilities, application owners can
+ * effectively disable unsafe legacy APIs by compiling with the define
+ * goog.html.legacyconversions.ALLOW_LEGACY_CONVERSIONS set to false.  When
+ * set, this define causes the conversion methods in this file to
+ * unconditionally throw an exception.
+ *
+ * Note that new code should always be compiled with
+ * ALLOW_LEGACY_CONVERSIONS=false.  At some future point, the default for this
+ * define may change to false.
+ */
+
+
+goog.provide('goog.html.legacyconversions');
+
+goog.require('goog.html.SafeHtml');
+goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
+
+
+/**
+ * @define {boolean} Whether conversion from string to goog.html types for
+ * legacy API purposes is permitted.
+ *
+ * If false, the conversion functions in this file unconditionally throw an
+ * exception.
+ */
+goog.define('goog.html.legacyconversions.ALLOW_LEGACY_CONVERSIONS', true);
+
+
+/**
+ * Performs an "unchecked conversion" from string to SafeHtml for legacy API
+ * purposes.
+ *
+ * Unchecked conversion will not proceed if ALLOW_LEGACY_CONVERSIONS is false,
+ * and instead this function unconditionally throws an exception.
+ *
+ * @param {string} html A string to be converted to SafeHtml.
+ * @return {!goog.html.SafeHtml} The value of html, wrapped in a SafeHtml
+ *     object.
+ */
+goog.html.legacyconversions.safeHtmlFromString = function(html) {
+  goog.html.legacyconversions.throwIfConversionDisallowed_();
+  return goog.html.legacyconversions.
+      createSafeHtmlSecurityPrivateDoNotAccessOrElse_(html);
+};
+
+
+/**
+ * Performs an "unchecked conversion" from string to TrustedResourceUrl for
+ * legacy API purposes.
+ *
+ * Unchecked conversion will not proceed if ALLOW_LEGACY_CONVERSIONS is false,
+ * and instead this function unconditionally throws an exception.
+ *
+ * @param {string} url A string to be converted to TrustedResourceUrl.
+ * @return {!goog.html.TrustedResourceUrl} The value of url, wrapped in a
+ *     TrustedResourceUrl object.
+ */
+goog.html.legacyconversions.trustedResourceUrlFromString = function(url) {
+  goog.html.legacyconversions.throwIfConversionDisallowed_();
+  return goog.html.legacyconversions.
+      createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(url);
+};
+
+
+/**
+ * Performs an "unchecked conversion" from string to SafeUrl for legacy API
+ * purposes.
+ *
+ * Unchecked conversion will not proceed if ALLOW_LEGACY_CONVERSIONS is false,
+ * and instead this function unconditionally throws an exception.
+ *
+ * @param {string} url A string to be converted to SafeUrl.
+ * @return {!goog.html.SafeUrl} The value of url, wrapped in a SafeUrl
+ *     object.
+ */
+goog.html.legacyconversions.safeUrlFromString = function(url) {
+  goog.html.legacyconversions.throwIfConversionDisallowed_();
+  return goog.html.legacyconversions.
+      createSafeUrlSecurityPrivateDoNotAccessOrElse_(url);
+};
+
+
+/**
+ * @private {function(): undefined}
+ */
+goog.html.legacyconversions.reportCallback_ = goog.nullFunction;
+
+
+/**
+ * Sets a function that will be called every time a legacy conversion is
+ * performed. The function is called with no parameters but it can use
+ * goog.debug.getStacktrace to get a stacktrace.
+ *
+ * @param {function(): undefined} callback Error callback as defined above.
+ */
+goog.html.legacyconversions.setReportCallback = function(callback) {
+  goog.html.legacyconversions.reportCallback_ = callback;
+};
+
+
+/**
+ * Internal wrapper for the package-private
+ * goog.html.SafeHtml.createSafeHtml... function.
+ * @param {string} html A string to be converted to SafeHtml.
+ * @return {!goog.html.SafeHtml}
+ * @private
+ * @suppress {visibility} For access to SafeHtml.create...  Note that this
+ *     use is appropriate since this method is intended to be "package private"
+ *     within goog.html.  DO NOT call SafeHtml.create... from outside this
+ *     package; use appropriate wrappers instead.
+ */
+goog.html.legacyconversions.createSafeHtmlSecurityPrivateDoNotAccessOrElse_ =
+    function(html) {
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+      html, null);
+};
+
+
+/**
+ * Internal wrapper for the package-private
+ * goog.html.TrustedResourceUrl.createTrustedResourceUrl... function.
+ * @param {string} url A string to be converted to TrustedResourceUrl.
+ * @return {!goog.html.TrustedResourceUrl}
+ * @private
+ * @suppress {visibility} For access to TrustedResourceUrl.create...  Note that
+ *     this use is appropriate since this method is intended to be
+ *     "package private" within goog.html.  DO NOT call
+ *     TrustedResourceUrl.create... from outside this package; use appropriate
+ *     wrappers instead.
+ */
+goog.html.legacyconversions.
+    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_ = function(url) {
+  return goog.html.TrustedResourceUrl
+      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(url);
+};
+
+
+/**
+ * Internal wrapper for the package-private goog.html.SafeUrl.createSafeUrl...
+ * function.
+ * @param {string} url A string to be converted to TrustedResourceUrl.
+ * @return {!goog.html.SafeUrl}
+ * @private
+ * @suppress {visibility} For access to SafeUrl.create...  Note that this use
+ *     is appropriate since this method is intended to be "package private"
+ *     within goog.html.  DO NOT call SafeUrl.create... from outside this
+ *     package; use appropriate wrappers instead.
+ */
+goog.html.legacyconversions.createSafeUrlSecurityPrivateDoNotAccessOrElse_ =
+    function(url) {
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse_(url);
+};
+
+
+/**
+ * Checks whether legacy conversion is allowed. Throws an exception if not.
+ * @private
+ */
+goog.html.legacyconversions.throwIfConversionDisallowed_ = function() {
+  if (!goog.html.legacyconversions.ALLOW_LEGACY_CONVERSIONS) {
+    throw Error(
+        'Error: Legacy conversion from string to goog.html types is disabled');
+  }
+  goog.html.legacyconversions.reportCallback_();
+};
+
 //javascript/closure/i18n/bidiformatter.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
 //
@@ -16325,10 +16793,11 @@ goog.html.SafeHtml.EMPTY =
 
 goog.provide('goog.i18n.BidiFormatter');
 
+goog.require('goog.html.SafeHtml');
+goog.require('goog.html.legacyconversions');
 goog.require('goog.i18n.bidi');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.Format');
-goog.require('goog.string');
 
 
 
@@ -16578,8 +17047,8 @@ goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
  * Formats a string of unknown directionality for use in HTML output of the
  * context directionality, so an opposite-directionality string is neither
  * garbled nor garbles what follows it.
- * The algorithm: estimates the directionality of input argument {@code str}. In
- * case its directionality doesn't match the context directionality, wraps it
+ * The algorithm: estimates the directionality of input argument {@code html}.
+ * In case its directionality doesn't match the context directionality, wraps it
  * with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"' or
  * 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
  * with 'span', skipping just the dir attribute when it's not needed.
@@ -16588,6 +17057,21 @@ goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
  * directionality of {@code str} are opposite to the context directionality, a
  * trailing unicode BiDi mark matching the context directionality is appened
  * (LRM or RLM).
+ *
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow {@code html}. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(html,
+    opt_dirReset) {
+  return this.spanWrapSafeHtmlWithKnownDir(null, html, opt_dirReset);
+};
+
+
+/**
+ * String version of {@link #spanWrapSafeHtml}.
  *
  * If !{@code opt_isHtml}, HTML-escapes {@code str} regardless of wrapping.
  *
@@ -16610,13 +17094,33 @@ goog.i18n.BidiFormatter.prototype.spanWrap = function(str, opt_isHtml,
  * context directionality, so an opposite-directionality string is neither
  * garbled nor garbles what follows it.
  * The algorithm: If {@code dir} doesn't match the context directionality, wraps
- * {@code str} with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
+ * {@code html} with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
  * or 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
  * with 'span', skipping just the dir attribute when it's not needed.
  *
  * If {@code opt_dirReset}, and if {@code dir} or the exit directionality of
- * {@code str} are opposite to the context directionality, a trailing unicode
+ * {@code html} are opposite to the context directionality, a trailing unicode
  * BiDi mark matching the context directionality is appened (LRM or RLM).
+ *
+ * @param {?goog.i18n.bidi.Dir} dir {@code html}'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow {@code html}. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(dir,
+    html, opt_dirReset) {
+  if (dir == null) {
+    dir = this.estimateDirection(goog.html.SafeHtml.unwrap(html), true);
+  }
+  return this.spanWrapWithKnownDir_(dir, html, opt_dirReset);
+};
+
+
+/**
+ * String version of {@link #spanWrapSafeHtmlWithKnownDir}.
  *
  * If !{@code opt_isHtml}, HTML-escapes {@code str} regardless of wrapping.
  *
@@ -16632,50 +17136,47 @@ goog.i18n.BidiFormatter.prototype.spanWrap = function(str, opt_isHtml,
  */
 goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir = function(dir, str,
     opt_isHtml, opt_dirReset) {
-  if (dir == null) {
-    dir = this.estimateDirection(str, opt_isHtml);
-  }
-  return this.spanWrapWithKnownDir_(dir, str, opt_isHtml, opt_dirReset);
+  // We're calling legacy conversions, but quickly unwrapping it.
+  var html = opt_isHtml ? goog.html.legacyconversions.safeHtmlFromString(str) :
+      goog.html.SafeHtml.htmlEscape(str);
+  return goog.html.SafeHtml.unwrap(
+      this.spanWrapSafeHtmlWithKnownDir(dir, html, opt_dirReset));
 };
 
 
 /**
- * The internal implementation of spanWrapWithKnownDir for non-null dir, to help
- * the compiler optimize.
+ * The internal implementation of spanWrapSafeHtmlWithKnownDir for non-null dir,
+ * to help the compiler optimize.
  *
  * @param {goog.i18n.bidi.Dir} dir {@code str}'s overall directionality.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
- *     Default: false.
+ * @param {!goog.html.SafeHtml} html The input HTML.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
  *     garbling of whatever may follow {@code str}. Default: true.
- * @return {string} Input text after applying the above processing.
+ * @return {!goog.html.SafeHtml} Input text after applying the above processing.
  * @private
  */
-goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(dir, str,
-    opt_isHtml, opt_dirReset) {
+goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(dir, html,
+    opt_dirReset) {
   opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
-  if (!opt_isHtml) {
-    str = goog.string.htmlEscape(str);
-  }
 
-  var result = [];
+  var result;
   // Whether to add the "dir" attribute.
   var dirCondition =
       dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_;
   if (this.alwaysSpan_ || dirCondition) {  // Wrap is needed
-    result.push('<span');
+    var dirAttribute;
     if (dirCondition) {
-      result.push(dir == goog.i18n.bidi.Dir.RTL ? ' dir="rtl"' : ' dir="ltr"');
+      dirAttribute = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
     }
-    result.push('>' + str + '</span>');
+    result = goog.html.SafeHtml.create('span', {'dir': dirAttribute}, html);
   } else {
-    result.push(str);
+    result = html;
   }
-
-  result.push(this.dirResetIfNeeded_(str, dir, true, opt_dirReset));
-  return result.join('');
+  var str = goog.html.SafeHtml.unwrap(html);
+  result = goog.html.SafeHtml.concatWithDir(goog.i18n.bidi.Dir.NEUTRAL, result,
+      this.dirResetIfNeeded_(str, dir, true, opt_dirReset));
+  return result;
 };
 
 
@@ -16864,237 +17365,6 @@ goog.i18n.BidiFormatter.prototype.startEdge = function() {
 goog.i18n.BidiFormatter.prototype.endEdge = function() {
   return this.contextDir_ == goog.i18n.bidi.Dir.RTL ?
       goog.i18n.bidi.LEFT : goog.i18n.bidi.RIGHT;
-};
-
-//javascript/closure/html/trustedresourceurl.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview The TrustedResourceUrl type and its builders.
- *
- * TODO(user): Link to document stating type contract.
- */
-
-goog.provide('goog.html.TrustedResourceUrl');
-
-goog.require('goog.asserts');
-goog.require('goog.i18n.bidi.Dir');
-goog.require('goog.i18n.bidi.DirectionalString');
-goog.require('goog.string.Const');
-goog.require('goog.string.TypedString');
-
-
-
-/**
- * A URL which is under application control and from which script, CSS, and
- * other resources that represent executable code, can be fetched.
- *
- * Given that the URL can only be constructed from strings under application
- * control and is used to load resources, bugs resulting in a malformed URL
- * should not have a security impact and are likely to be easily detectable
- * during testing. Given the wide number of non-RFC compliant URLs in use,
- * stricter validation could prevent some applications from being able to use
- * this type.
- *
- * Instances of this type must be created via the factory method,
- * ({@code goog.html.TrustedResourceUrl.fromConstant}), and not by invoking its
- * constructor. The constructor intentionally takes no parameters and the type
- * is immutable; hence only a default instance corresponding to the empty
- * string can be obtained via constructor invocation.
- *
- * @see goog.html.TrustedResourceUrl#fromConstant
- * @constructor
- * @final
- * @struct
- * @implements {goog.i18n.bidi.DirectionalString}
- * @implements {goog.string.TypedString}
- */
-goog.html.TrustedResourceUrl = function() {
-  /**
-   * The contained value of this TrustedResourceUrl.  The field has a purposely
-   * ugly name to make (non-compiled) code that attempts to directly access this
-   * field stand out.
-   * @private {string}
-   */
-  this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = '';
-
-  /**
-   * A type marker used to implement additional run-time type checking.
-   * @see goog.html.TrustedResourceUrl#unwrap
-   * @const
-   * @private
-   */
-  this.TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-      goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
-};
-
-
-/**
- * @override
- * @const
- */
-goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
-
-
-/**
- * Returns this TrustedResourceUrl's value as a string.
- *
- * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code TrustedResourceUrl}, use
- * {@code goog.html.TrustedResourceUrl.unwrap} instead of this method. If in
- * doubt, assume that it's security relevant. In particular, note that
- * goog.html functions which return a goog.html type do not guarantee that
- * the returned instance is of the right type. For example:
- *
- * <pre>
- * var fakeSafeHtml = new String('fake');
- * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
- * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml instanceof
- * // goog.html.SafeHtml.
- * </pre>
- *
- * @see goog.html.TrustedResourceUrl#unwrap
- * @override
- */
-goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
-};
-
-
-/**
- * @override
- * @const
- */
-goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
-    true;
-
-
-/**
- * Returns this URLs directionality, which is always {@code LTR}.
- * @override
- */
-goog.html.TrustedResourceUrl.prototype.getDirection = function() {
-  return goog.i18n.bidi.Dir.LTR;
-};
-
-
-if (goog.DEBUG) {
-  /**
-   * Returns a debug string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a TrustedResourceUrl, use
-   * {@code goog.html.TrustedResourceUrl.unwrap}.
-   *
-   * @see goog.html.TrustedResourceUrl#unwrap
-   * @override
-   */
-  goog.html.TrustedResourceUrl.prototype.toString = function() {
-    return 'TrustedResourceUrl{' +
-        this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '}';
-  };
-}
-
-
-/**
- * Performs a runtime check that the provided object is indeed a
- * TrustedResourceUrl object, and returns its value.
- *
- * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl The object to
- *     extract from.
- * @return {string} The trustedResourceUrl object's contained string, unless
- *     the run-time type check fails. In that case, {@code unwrap} returns an
- *     innocuous string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
- */
-goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
-  // Perform additional Run-time type-checking to ensure that
-  // trustedResourceUrl is indeed an instance of the expected type.  This
-  // provides some additional protection against security bugs due to
-  // application code that disables type checks.
-  // Specifically, the following checks are performed:
-  // 1. The object is an instance of the expected type.
-  // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
-  if (trustedResourceUrl instanceof goog.html.TrustedResourceUrl &&
-      trustedResourceUrl.constructor === goog.html.TrustedResourceUrl &&
-      trustedResourceUrl
-          .TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-              goog.html.TrustedResourceUrl
-                  .TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
-    return trustedResourceUrl
-        .privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
-  } else {
-    goog.asserts.fail('expected object of type TrustedResourceUrl, got \'' +
-                      trustedResourceUrl + '\'');
-    return 'type_error:TrustedResourceUrl';
-
-  }
-};
-
-
-/**
- * Creates a TrustedResourceUrl object from a compile-time constant string.
- *
- * Compile-time constant strings are inherently program-controlled and hence
- * trusted.
- *
- * @param {!goog.string.Const} url A compile-time-constant string from which to
- *     create a TrustedResourceUrl.
- * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
- *     initialized to {@code url}.
- */
-goog.html.TrustedResourceUrl.fromConstant = function(url) {
-  return goog.html.TrustedResourceUrl
-      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(
-          goog.string.Const.unwrap(url));
-};
-
-
-/**
- * Type marker for the TrustedResourceUrl type, used to implement additional
- * run-time type checking.
- * @const
- * @private
- */
-goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
-
-
-/**
- * Utility method to create TrustedResourceUrl instances.
- *
- * This function is considered "package private", i.e. calls (using "suppress
- * visibility") from other files within this package are considered acceptable.
- * DO NOT call this function from outside the goog.html package; use appropriate
- * wrappers instead.
- *
- * @param {string} url The string to initialize the TrustedResourceUrl object
- *     with.
- * @return {!goog.html.TrustedResourceUrl} The initialized TrustedResourceUrl
- *     object.
- * @private
- */
-goog.html.TrustedResourceUrl.
-    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_ = function(url) {
-  var trustedResourceUrl = new goog.html.TrustedResourceUrl();
-  trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
-      url;
-  return trustedResourceUrl;
 };
 
 //javascript/closure/html/uncheckedconversions.js
@@ -17826,11 +18096,13 @@ goog.require('goog.asserts');
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
+goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.string');
+goog.require('goog.string.Const');
 goog.require('goog.string.StringBuffer');
 
 
@@ -19484,13 +19756,18 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
   // the output will be treated as HTML, the input had better be safe
   // HTML/HTML-escaped (even if it isn't HTML SanitizedData), or we have an XSS
   // opportunity and a much bigger problem than bidi garbling.
-  var wrappedText = formatter.spanWrapWithKnownDir(
-      soydata.getContentDir(text), text + '', true /* opt_isHtml */);
+  var html = goog.html.uncheckedconversions.
+      safeHtmlFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy |bidiSpanWrap is applied on an autoescaped text.'),
+          String(text));
+  var wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(
+      soydata.getContentDir(text), html);
 
   // Like other directives whose Java class implements SanitizedContentOperator,
   // |bidiSpanWrap is called after the escaping (if any) has already been done,
   // and thus there is no need for it to produce actual SanitizedContent.
-  return wrappedText;
+  return goog.html.SafeHtml.unwrap(wrappedHtml);
 };
 
 
