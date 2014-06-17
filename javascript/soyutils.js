@@ -16,7 +16,8 @@
 
 /**
  * @fileoverview
- * Utility functions and classes for Soy.
+ * Utility functions and classes for Soy. This file is deprecated, please use
+ * soyutils_usegoog.js.
  *
  * <p>
  * The top portion of this file contains utilities for Soy users:<ul>
@@ -249,15 +250,6 @@ if (!goog.format) {
         '<wbr>'
   };
 }
-
-
-if (!goog.html) {
-  goog.html = {};
-}
-// This is just a silly stub, not actually useful.
-goog.html.SafeHtml = function() {};
-goog.html.SafeHtml.unwrap = function(html) {};
-goog.html.SafeHtml.prototype.getDirection = function() {};
 
 
 if (!goog.i18n) {
@@ -1292,10 +1284,6 @@ soydata.SanitizedHtml.from = function(value) {
       value.contentKind === soydata.SanitizedContentKind.HTML) {
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
     return /** @type {!soydata.SanitizedHtml} */ (value);
-  }
-  if (value instanceof goog.html.SafeHtml) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        goog.html.SafeHtml.unwrap(value), value.getDirection());
   }
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(
       soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));
