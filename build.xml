@@ -84,7 +84,7 @@ Author: Neil Sanchala
            includeAntRuntime="true"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />
-      <compilerarg value="-Werror"/>  <!-- warnings become errors -->
+      <!-- compilerarg value="-Werror"/-->  <!-- TODO(bslatkin) Fix: warnings become errors -->
       <compilerarg value="-Xlint:deprecation"/>
     </javac>
 
