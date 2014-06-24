@@ -80,13 +80,16 @@ class GuiceInitializer {
           + " configure Soy at random, so you get an inconsistent set of plugins or Soy types."
           + " To fix, inject SoyFileSet.Builder (with SoyModule installed) instead of new'ing it.";
       LOGGER.log(Level.SEVERE, message, new IllegalStateException(message));
-    } else {
+    }
+    // NOTE(bslatkin): This warning isn't useful in the slightest bit.
+    /* else {
       String message =
           "Falling back to statically-injected SoyFileSetFactory; unpredictable behavior is likely."
           + " Instead of constructing a SoyFileSet.Builder directly, either inject it using Guice"
           + " (with SoyModule installed), or call the static SoyFileSet.builder() method.";
       LOGGER.log(Level.WARNING, message);
     }
+    */
     return soyFileSetFactory;
   }
 }
