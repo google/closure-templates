@@ -249,7 +249,7 @@ public final class ContextualAutoescaper {
           // templates.
           return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT ||
               (templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL &&
-                  templateNode.getVisibility() != Visibility.PRIVATE);
+                  templateNode.getVisibility() != Visibility.LEGACY_PRIVATE);
         }
   };
 

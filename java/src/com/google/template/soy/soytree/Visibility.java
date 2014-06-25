@@ -16,14 +16,39 @@
 
 package com.google.template.soy.soytree;
 
-/**
- * Enumeration of template visibility.
- *
- * @author brndn@google.com
- */
-public enum Visibility {
-  PRIVATE,
-  // PACKAGE, TODO(brndn): support this. b/15190131.
-  PUBLIC;
-}
+import com.google.common.collect.ImmutableMap;
 
+import java.util.Set;
+
+public enum Visibility {
+  // {template .foo visibility="private"}
+  PRIVATE("private"),
+  // {template .foo private="true"}, or {template .foo visibility="legacy-private"}
+  LEGACY_PRIVATE("legacy-private"),
+  // {template .foo visibility="public"} or just {template .foo}
+  PUBLIC("public");
+
+  private final String attributeValue;
+
+  Visibility(String attributeValue) {
+    this.attributeValue = attributeValue;
+  }
+
+  private static final ImmutableMap<String, Visibility> attrValuesToVisibilityLevels;
+
+  static {
+    ImmutableMap.Builder<String, Visibility> builder = ImmutableMap.builder();
+    for (Visibility v : Visibility.values()) {
+      builder.put(v.attributeValue, v);
+    }
+    attrValuesToVisibilityLevels = builder.build();
+  }
+
+  public static Set<String> getAttributeValues() {
+    return attrValuesToVisibilityLevels.keySet();
+  }
+
+  public static Visibility forAttributeValue(String attributeValue) {
+    return attrValuesToVisibilityLevels.get(attributeValue);
+  }
+}

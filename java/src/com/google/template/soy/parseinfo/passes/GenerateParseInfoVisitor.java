@@ -521,7 +521,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
   @Override protected void visitTemplateNode(TemplateNode node) {
     // Don't generate anything for private or delegate templates.
-    if (node.getVisibility() == Visibility.PRIVATE || node instanceof TemplateDelegateNode) {
+    if (node.getVisibility() == Visibility.LEGACY_PRIVATE || node instanceof TemplateDelegateNode) {
       return;
     }
 
@@ -831,7 +831,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       resultSb.append(template.getTemplateNameForUserMsgs());
     }
 
-    if (template.getVisibility() == Visibility.PRIVATE) {
+    if (template.getVisibility() == Visibility.LEGACY_PRIVATE) {
       resultSb.append(" (private)");
     }
     if (template instanceof TemplateDelegateNode) {

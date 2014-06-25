@@ -58,7 +58,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
           new Attribute("override", Attribute.BOOLEAN_VALUES, null),  // V1.0
           new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
           new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
-          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null));
+          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute("visibility", Visibility.getAttributeValues(), null));
 
 
   /** Whether this template overrides another (always false for syntax version V2). */
@@ -159,8 +160,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       this.isOverride = overrideAttr.equals("true");
     }
 
+    // See go/soy-visibility for why this is considered "legacy private".
     if (attributes.get("private").equals("true")) {
-      visibility = Visibility.PRIVATE;
+      visibility = Visibility.LEGACY_PRIVATE;
     }
 
     String visibilityName = attributes.get("visibility");
@@ -171,9 +173,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
             "Template cannot specify both private=\"true\""
             + "and visibility=\"" + visibilityName + "\".");
       }
-      try {
-        visibility = Visibility.valueOf(visibilityName.toUpperCase());
-      } catch (IllegalArgumentException e) {
+      visibility = Visibility.forAttributeValue(visibilityName);
+      if (visibility == null) {
         throw SoySyntaxException.createWithoutMetaInfo(
             "Invalid visibility type \"" + visibilityName + "\".");
       }
@@ -253,7 +254,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     if (isOverride) {
       cmdTextBuilder.append(" override=\"true\"");
     }
-    if (visibility == Visibility.PRIVATE) {
+    if (visibility == Visibility.LEGACY_PRIVATE) {
       // TODO(brndn): generate code for other visibility levels. b/15190131
       cmdTextBuilder.append(" private=\"true\"");
     }
