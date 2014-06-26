@@ -1964,7 +1964,7 @@ goog.addDependency('editor/node_test.js', ['goog.editor.nodeTest'], ['goog.array
 goog.addDependency('editor/plugin.js', ['goog.editor.Plugin'], ['goog.editor.Command', 'goog.events.EventTarget', 'goog.functions', 'goog.log', 'goog.object', 'goog.reflect']);
 goog.addDependency('editor/plugin_test.js', ['goog.editor.PluginTest'], ['goog.editor.Field', 'goog.editor.Plugin', 'goog.functions', 'goog.testing.StrictMock', 'goog.testing.jsunit', 'goog.userAgent']);
 goog.addDependency('editor/plugins/abstractbubbleplugin.js', ['goog.editor.plugins.AbstractBubblePlugin'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.Plugin', 'goog.editor.style', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.actionEventWrapper', 'goog.functions', 'goog.string.Unicode', 'goog.ui.Component', 'goog.ui.editor.Bubble', 'goog.userAgent']);
-goog.addDependency('editor/plugins/abstractbubbleplugin_test.js', ['goog.editor.plugins.AbstractBubblePluginTest'], ['goog.dom', 'goog.editor.plugins.AbstractBubblePlugin', 'goog.events.BrowserEvent', 'goog.events.KeyCodes', 'goog.functions', 'goog.style', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.editor.Bubble']);
+goog.addDependency('editor/plugins/abstractbubbleplugin_test.js', ['goog.editor.plugins.AbstractBubblePluginTest'], ['goog.dom', 'goog.editor.plugins.AbstractBubblePlugin', 'goog.events.BrowserEvent', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.style', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.ui.editor.Bubble', 'goog.userAgent']);
 goog.addDependency('editor/plugins/abstractdialogplugin.js', ['goog.editor.plugins.AbstractDialogPlugin', 'goog.editor.plugins.AbstractDialogPlugin.EventType'], ['goog.dom', 'goog.dom.Range', 'goog.editor.Field.EventType', 'goog.editor.Plugin', 'goog.editor.range', 'goog.events', 'goog.ui.editor.AbstractDialog.EventType']);
 goog.addDependency('editor/plugins/abstractdialogplugin_test.js', ['goog.editor.plugins.AbstractDialogPluginTest'], ['goog.dom.SavedRange', 'goog.editor.Field', 'goog.editor.plugins.AbstractDialogPlugin', 'goog.events.Event', 'goog.events.EventHandler', 'goog.functions', 'goog.testing.MockClock', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.jsunit', 'goog.testing.mockmatchers.ArgumentMatcher', 'goog.ui.editor.AbstractDialog', 'goog.userAgent']);
 goog.addDependency('editor/plugins/abstracttabhandler.js', ['goog.editor.plugins.AbstractTabHandler'], ['goog.editor.Plugin', 'goog.events.KeyCodes']);
@@ -9623,6 +9623,7 @@ goog.require('goog.array');
  * Sets the entire class name of an element.
  * @param {Node} element DOM node to set class of.
  * @param {string} className Class name(s) to apply to element.
+ * @deprecated Use goog.dom.classlist.set instead.
  */
 goog.dom.classes.set = function(element, className) {
   element.className = className;
@@ -9634,6 +9635,7 @@ goog.dom.classes.set = function(element, className) {
  * @param {Node} element DOM node to get class of.
  * @return {!Array} Class names on {@code element}. Some browsers add extra
  *     properties to the array. Do not depend on any of these!
+ * @deprecated Use goog.dom.classlist.get instead.
  */
 goog.dom.classes.get = function(element) {
   var className = element.className;
@@ -9649,6 +9651,7 @@ goog.dom.classes.get = function(element) {
  * @param {Node} element DOM node to add class to.
  * @param {...string} var_args Class names to add.
  * @return {boolean} Whether class was added (or all classes were added).
+ * @deprecated Use goog.dom.classlist.add or goog.dom.classlist.addAll instead.
  */
 goog.dom.classes.add = function(element, var_args) {
   var classes = goog.dom.classes.get(element);
@@ -9666,6 +9669,8 @@ goog.dom.classes.add = function(element, var_args) {
  * @param {...string} var_args Class name(s) to remove.
  * @return {boolean} Whether all classes in {@code var_args} were found and
  *     removed.
+ * @deprecated Use goog.dom.classlist.remove or goog.dom.classlist.removeAll
+ *     instead.
  */
 goog.dom.classes.remove = function(element, var_args) {
   var classes = goog.dom.classes.get(element);
@@ -9717,6 +9722,7 @@ goog.dom.classes.getDifference_ = function(arr1, arr2) {
  * @param {string} fromClass Class to remove.
  * @param {string} toClass Class to add.
  * @return {boolean} Whether classes were switched.
+ * @deprecated Use goog.dom.classlist.swap instead.
  */
 goog.dom.classes.swap = function(element, fromClass, toClass) {
   var classes = goog.dom.classes.get(element);
@@ -9753,6 +9759,7 @@ goog.dom.classes.swap = function(element, fromClass, toClass) {
  *     remove, if null no classes are removed.
  * @param {?(string|Array.<string>)} classesToAdd Class or classes to add, if
  *     null no classes are added.
+ * @deprecated Use goog.dom.classlist.addRemove instead.
  */
 goog.dom.classes.addRemove = function(element, classesToRemove, classesToAdd) {
   var classes = goog.dom.classes.get(element);
@@ -9778,6 +9785,7 @@ goog.dom.classes.addRemove = function(element, classesToRemove, classesToAdd) {
  * @param {Node} element DOM node to test.
  * @param {string} className Class name to test for.
  * @return {boolean} Whether element has the class.
+ * @deprecated Use goog.dom.classlist.contains instead.
  */
 goog.dom.classes.has = function(element, className) {
   return goog.array.contains(goog.dom.classes.get(element), className);
@@ -9790,6 +9798,8 @@ goog.dom.classes.has = function(element, className) {
  * @param {string} className Class name to add or remove.
  * @param {boolean} enabled Whether to add or remove the class (true adds,
  *     false removes).
+ * @deprecated Use goog.dom.classlist.enable or goog.dom.classlist.enableAll
+ *     instead.
  */
 goog.dom.classes.enable = function(element, className, enabled) {
   if (enabled) {
@@ -9808,6 +9818,7 @@ goog.dom.classes.enable = function(element, className, enabled) {
  * @return {boolean} True if class was added, false if it was removed
  *     (in other words, whether element has the class after this function has
  *     been called).
+ * @deprecated Use goog.dom.classlist.toggle instead.
  */
 goog.dom.classes.toggle = function(element, className) {
   var add = !goog.dom.classes.has(element, className);
