@@ -16,9 +16,10 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.types.SoyType;
+
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -158,6 +159,6 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   @Override public int hashCode() {
-    return Objects.hashCode(this.getClass(), name, isInjected, isNullSafeInjected);
+    return Objects.hash(this.getClass(), name, isInjected, isNullSafeInjected);
   }
 }

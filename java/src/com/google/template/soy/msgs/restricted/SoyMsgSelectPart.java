@@ -16,9 +16,10 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.base.Pair;
+
+import java.util.Objects;
 
 /**
  * Represents a select statement within a message.
@@ -66,6 +67,6 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(SoyMsgSelectPart.class, selectVarName, cases);
+    return Objects.hash(SoyMsgSelectPart.class, selectVarName, cases);
   }
 }

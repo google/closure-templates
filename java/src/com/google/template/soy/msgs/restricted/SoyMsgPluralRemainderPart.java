@@ -16,8 +16,7 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import com.google.common.base.Objects;
-
+import java.util.Objects;
 
 /**
  * Represents the placeholder part in the plural statement (The '#' sign in ICU syntax).
@@ -47,6 +46,6 @@ public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
   }
 
   @Override public int hashCode() {
-    return Objects.hashCode(SoyMsgPluralRemainderPart.class, pluralVarName);
+    return Objects.hash(SoyMsgPluralRemainderPart.class, pluralVarName);
   }
 }

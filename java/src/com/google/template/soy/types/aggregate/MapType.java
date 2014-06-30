@@ -16,11 +16,12 @@
 
 package com.google.template.soy.types.aggregate;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
+
+import java.util.Objects;
 
 /**
  * Map type - generalized mapping type with key and value type arguments.
@@ -103,7 +104,7 @@ public class MapType implements SoyType {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(this.getClass(), keyType, valueType);
+    return Objects.hash(this.getClass(), keyType, valueType);
   }
 
 }

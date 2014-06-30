@@ -16,13 +16,12 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import com.google.common.base.Objects;
 import com.google.template.soy.msgs.SoyMsgException;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Locale;
-
+import java.util.Objects;
 
 /**
  * Represents a plural case value.
@@ -117,6 +116,6 @@ public class SoyMsgPluralCaseSpec {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(SoyMsgPluralCaseSpec.class, type, explicitValue);
+    return Objects.hash(SoyMsgPluralCaseSpec.class, type, explicitValue);
   }
 }

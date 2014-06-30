@@ -16,9 +16,10 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.base.Objects;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
+
+import java.util.Objects;
 
 /**
  * Represents the bracket [] operation, which can either be used to access an
@@ -100,6 +101,6 @@ public final class ItemAccessNode extends DataAccessNode {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(this.getClass(), getChild(0), getChild(1));
+    return Objects.hash(this.getClass(), getChild(0), getChild(1));
   }
 }

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
@@ -32,9 +31,9 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Node representing a delegate template.
@@ -78,13 +77,13 @@ public class TemplateDelegateNode extends TemplateNode implements ExprHolderNode
         return false;
       }
       DelTemplateKey otherKey = (DelTemplateKey) other;
-      return Objects.equal(this.name, otherKey.name) &&
-          Objects.equal(this.variant, otherKey.variant) &&
-          Objects.equal(this.variantExpr, otherKey.variantExpr);
+      return Objects.equals(this.name, otherKey.name) &&
+          Objects.equals(this.variant, otherKey.variant) &&
+          Objects.equals(this.variantExpr, otherKey.variantExpr);
     }
 
     @Override public int hashCode() {
-      return Objects.hashCode(name, variant, variantExpr);
+      return Objects.hash(name, variant, variantExpr);
     }
 
     @Override public String toString() {

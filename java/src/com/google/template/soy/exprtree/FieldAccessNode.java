@@ -16,8 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+
+import java.util.Objects;
 
 /**
  * Reference to a named field.
@@ -78,6 +79,6 @@ public final class FieldAccessNode extends DataAccessNode {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(this.getClass(), getChild(0), fieldName, isNullSafe);
+    return Objects.hash(this.getClass(), getChild(0), fieldName, isNullSafe);
   }
 }

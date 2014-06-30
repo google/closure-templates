@@ -16,7 +16,6 @@
 
 package com.google.template.soy.types.aggregate;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SoyRecord;
@@ -25,6 +24,7 @@ import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Dict type - classic dictionary type with string keys. Only works with field
@@ -137,6 +137,6 @@ public final class RecordType implements SoyObjectType {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(this.getClass(), members);
+    return Objects.hash(this.getClass(), members);
   }
 }

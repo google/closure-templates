@@ -18,7 +18,7 @@ package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import com.google.common.base.Objects;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -28,10 +28,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.SortedMap;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Represents all renderable messages in a locale.
@@ -78,7 +78,7 @@ final class RenderOnlySoyMsgBundleImpl implements SoyMsgBundle {
     // First, build a sorted map from message ID to the message representation.
     SortedMap<Long, Object> partsMap = Maps.newTreeMap();
     for (SoyMsg msg : msgs) {
-      checkArgument(Objects.equal(msg.getLocaleString(), localeString));
+      checkArgument(Objects.equals(msg.getLocaleString(), localeString));
       checkArgument(msg.getAltId() < 0,
           "RenderOnlySoyMsgBundleImpl doesn't support alternate ID's.");
       long msgId = msg.getId();

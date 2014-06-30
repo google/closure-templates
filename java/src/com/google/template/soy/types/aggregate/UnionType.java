@@ -17,7 +17,6 @@
 package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
@@ -25,6 +24,7 @@ import com.google.template.soy.types.SoyType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -140,7 +140,7 @@ public final class UnionType implements SoyType {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(this.getClass(), members);
+    return Objects.hash(this.getClass(), members);
   }
 
 

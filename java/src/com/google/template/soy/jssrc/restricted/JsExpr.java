@@ -16,8 +16,9 @@
 
 package com.google.template.soy.jssrc.restricted;
 
-import com.google.common.base.Objects;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
+
+import java.util.Objects;
 
 /**
  * Value class to represent a JS expression. Includes the text of the expression as well as the
@@ -84,7 +85,7 @@ public class JsExpr implements TargetExpr {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(text, precedence);
+    return Objects.hash(text, precedence);
   }
 
 }

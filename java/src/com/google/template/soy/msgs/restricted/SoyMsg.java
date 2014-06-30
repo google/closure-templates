@@ -18,14 +18,13 @@ package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Represents a message in some language/locale. Contains information relevant to translation.
@@ -216,18 +215,18 @@ public final class SoyMsg {
     // NOTE: Source paths are not considered part of the object's identity, since they're mutable.
     return id == other.id
         && altId == other.altId
-        && Objects.equal(localeString, other.localeString)
-        && Objects.equal(meaning, other.meaning)
-        && Objects.equal(desc, other.desc)
+        && Objects.equals(localeString, other.localeString)
+        && Objects.equals(meaning, other.meaning)
+        && Objects.equals(desc, other.desc)
         && isHidden == other.isHidden
-        && Objects.equal(contentType, other.contentType)
+        && Objects.equals(contentType, other.contentType)
         && isPlrselMsg == other.isPlrselMsg
-        && Objects.equal(parts, other.parts);
+        && Objects.equals(parts, other.parts);
   }
 
   @Override public int hashCode() {
     // NOTE: Source paths are not considered part of the object's identity, since they're mutable.
-    return Objects.hashCode(
+    return Objects.hash(
         this.getClass(), id, altId, localeString, meaning, desc, contentType, isPlrselMsg, parts);
   }
 

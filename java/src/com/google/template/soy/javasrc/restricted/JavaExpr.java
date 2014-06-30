@@ -16,7 +16,7 @@
 
 package com.google.template.soy.javasrc.restricted;
 
-import com.google.common.base.Objects;
+import java.util.Objects;
 
 /**
  * Value class to represent a Java expression. Includes the text of the expression as well as the
@@ -92,7 +92,7 @@ public class JavaExpr {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(text, type, precedence);
+    return Objects.hash(text, type, precedence);
   }
 
 }

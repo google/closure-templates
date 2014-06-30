@@ -16,8 +16,8 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import com.google.common.base.Objects;
 import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -25,10 +25,10 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Represents a full set of messages in some language/locale.
@@ -62,7 +62,7 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
 
     SortedMap<Long, SoyMsg> tempMsgMap = Maps.newTreeMap();
     for (SoyMsg msg : msgs) {
-      checkArgument(Objects.equal(msg.getLocaleString(), localeString));
+      checkArgument(Objects.equals(msg.getLocaleString(), localeString));
       long msgId = msg.getId();
 
       if (!tempMsgMap.containsKey(msgId)) {  // new message id

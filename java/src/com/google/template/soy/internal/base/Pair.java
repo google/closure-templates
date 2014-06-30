@@ -16,7 +16,7 @@
 
 package com.google.template.soy.internal.base;
 
-import com.google.common.base.Objects;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -87,13 +87,13 @@ public class Pair<A, B> {
   @Override public boolean equals(@Nullable Object object) {
     if (object instanceof Pair<?,?>) {
       Pair<?,?> that = (Pair<?,?>) object;
-      return Objects.equal(this.first, that.first) && Objects.equal(this.second, that.second);
+      return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second);
     }
     return false;
   }
 
   @Override public int hashCode() {
-    return Objects.hashCode(first, second);
+    return Objects.hash(first, second);
   }
 
   /**

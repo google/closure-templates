@@ -16,8 +16,9 @@
 
 package com.google.template.soy.soytree.defn;
 
-import com.google.common.base.Objects;
 import com.google.template.soy.types.SoyType;
+
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -105,6 +106,6 @@ public abstract class TemplateParam extends AbstractVarDefn {
   protected int abstractHashCode() {
     // Note: This is valid only if you don't try and mix parameters from
     // different templates in the same set.
-    return Objects.hashCode(this.getClass(), name(), isRequired, isInjected);
+    return Objects.hash(this.getClass(), name(), isRequired, isInjected);
   }
 }

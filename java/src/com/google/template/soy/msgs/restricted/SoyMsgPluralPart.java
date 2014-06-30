@@ -16,9 +16,10 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.base.Pair;
+
+import java.util.Objects;
 
 /**
  * Represents a plural statement within a message.
@@ -81,6 +82,6 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
 
 
   @Override public int hashCode() {
-    return Objects.hashCode(SoyMsgPluralPart.class, offset, pluralVarName, cases);
+    return Objects.hash(SoyMsgPluralPart.class, offset, pluralVarName, cases);
   }
 }
