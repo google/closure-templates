@@ -16,9 +16,9 @@
 
 package com.google.template.soy.base.internal;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
+import java.util.Objects;
 
 /**
  * Abstract base implementation of SoyFileSupplier.
@@ -80,6 +80,6 @@ abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
    * Hashes based on the file path.
    */
   @Override public int hashCode() {
-    return Objects.hashCode(filePath, soyFileKind, this.getClass());
+    return Objects.hash(filePath, soyFileKind, this.getClass());
   }
 }
