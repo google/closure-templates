@@ -78,6 +78,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -601,6 +602,9 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         suppressions += "|duplicate";
       }
       jsCodeBuilder.appendLine(" * @suppress {" + suppressions + "}");
+      if (node.getVisibility() == Visibility.PRIVATE) {
+        jsCodeBuilder.appendLine(" * @private");
+      }
       jsCodeBuilder.appendLine(" */");
     }
 
