@@ -4544,6 +4544,8 @@
 <dd>
 <div class="block">Returns a form of this attribute's name suitable for use in a template attribute.</div>
 </dd>
+<dt><span class="strong"><a href="./com/google/template/soy/soytree/Visibility.html#getAttributeValue()">getAttributeValue()</a></span> - Method in enum com.google.template.soy.soytree.<a href="./com/google/template/soy/soytree/Visibility.html" title="enum in com.google.template.soy.soytree">Visibility</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/data/internalutils/NodeContentKinds.html#getAttributeValues()">getAttributeValues()</a></span> - Static method in class com.google.template.soy.data.internalutils.<a href="./com/google/template/soy/data/internalutils/NodeContentKinds.html" title="class in com.google.template.soy.data.internalutils">NodeContentKinds</a></dt>
 <dd>
 <div class="block">The set of permitted values of the <code>kind</code> attribute.</div>
@@ -12935,14 +12937,6 @@ the order they are declared.</div>
 </dd>
 <dt><a href="./com/google/template/soy/soytree/Visibility.html" title="enum in com.google.template.soy.soytree"><span class="strong">Visibility</span></a> - Enum in <a href="./com/google/template/soy/soytree/package-summary.html">com.google.template.soy.soytree</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="./com/google/template/soy/sharedpasses/VisibilityException.html" title="class in com.google.template.soy.sharedpasses"><span class="strong">VisibilityException</span></a> - Exception in <a href="./com/google/template/soy/sharedpasses/package-summary.html">com.google.template.soy.sharedpasses</a></dt>
-<dd>
-<div class="block">Exception thrown when a call is made to a template that is not visible
- from the call site (for example, calling a template marked
- <code>visibility="private"</code> is called from a template in another file).</div>
-</dd>
-<dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/VisibilityException.html#VisibilityException(com.google.template.soy.base.SourceLocation, com.google.template.soy.base.SourceLocation)">VisibilityException(SourceLocation, SourceLocation)</a></span> - Constructor for exception com.google.template.soy.sharedpasses.<a href="./com/google/template/soy/sharedpasses/VisibilityException.html" title="class in com.google.template.soy.sharedpasses">VisibilityException</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/basetree/AbstractNodeVisitor.html#visit(N)">visit(N)</a></span> - Method in class com.google.template.soy.basetree.<a href="./com/google/template/soy/basetree/AbstractNodeVisitor.html" title="class in com.google.template.soy.basetree">AbstractNodeVisitor</a></dt>
 <dd>
 <div class="block">Visits the given node to execute the function defined by this visitor.</div>
@@ -13678,6 +13672,8 @@ the order they are declared.</div>
 <dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/CheckCallingParamTypesVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode(TemplateNode)</a></span> - Method in class com.google.template.soy.sharedpasses.<a href="./com/google/template/soy/sharedpasses/CheckCallingParamTypesVisitor.html" title="class in com.google.template.soy.sharedpasses">CheckCallingParamTypesVisitor</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode(TemplateNode)</a></span> - Method in class com.google.template.soy.sharedpasses.<a href="./com/google/template/soy/sharedpasses/CheckSoyDocVisitor.html" title="class in com.google.template.soy.sharedpasses">CheckSoyDocVisitor</a></dt>
+<dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/CheckTemplateVisibility.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode(TemplateNode)</a></span> - Method in class com.google.template.soy.sharedpasses.<a href="./com/google/template/soy/sharedpasses/CheckTemplateVisibility.html" title="class in com.google.template.soy.sharedpasses">CheckTemplateVisibility</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/ClearSoyDocStringsVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode(TemplateNode)</a></span> - Method in class com.google.template.soy.sharedpasses.<a href="./com/google/template/soy/sharedpasses/ClearSoyDocStringsVisitor.html" title="class in com.google.template.soy.sharedpasses">ClearSoyDocStringsVisitor</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="strong"><a href="./com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html#visitTemplateNode(com.google.template.soy.soytree.TemplateNode)">visitTemplateNode(TemplateNode)</a></span> - Method in class com.google.template.soy.sharedpasses.<a href="./com/google/template/soy/sharedpasses/FindIndirectParamsVisitor.html" title="class in com.google.template.soy.sharedpasses">FindIndirectParamsVisitor</a></dt>

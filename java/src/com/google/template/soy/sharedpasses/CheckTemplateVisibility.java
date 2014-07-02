@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -38,8 +39,9 @@ public class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
-  /** Save the name of the file currently being visited. */
+  /** Save the name of the file and template currently being visited. */
   private String currentFileName;
+  private String currentTemplateName;
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     templateRegistry = new TemplateRegistry(node);
@@ -51,6 +53,12 @@ public class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
     currentFileName = node.getSourceLocation().getFileName();
     visitChildren(node);
     currentFileName = null;
+  }
+
+  @Override protected void visitTemplateNode(TemplateNode node) {
+    currentTemplateName = node.getTemplateName();
+    visitChildren(node);
+    currentTemplateName = null;
   }
 
   @Override protected void visitCallNode(CallNode node) {
@@ -67,10 +75,17 @@ public class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void handleBasicNode(CallBasicNode node) {
-    TemplateNode definition = templateRegistry.getBasicTemplate(node.getCalleeName());
+    String calleeName = node.getCalleeName();
+    TemplateNode definition = templateRegistry.getBasicTemplate(calleeName);
     if (definition != null && !isVisible(definition)) {
-      throw new VisibilityException(
-          node.getSourceLocation(), definition.getSourceLocation());
+      throw SoySyntaxException.createWithMetaInfo(
+          calleeName
+          + " [visibility=\""
+          + definition.getVisibility().getAttributeValue()
+          + "\"] not visible from here",
+          node.getSourceLocation(),
+          null /* srcLoc and filePath can't both be nonnull */,
+          currentTemplateName);
     }
   }
 

@@ -34,6 +34,10 @@ public enum Visibility {
     this.attributeValue = attributeValue;
   }
 
+  public String getAttributeValue() {
+    return this.attributeValue;
+  }
+
   private static final ImmutableMap<String, Visibility> attrValuesToVisibilityLevels;
 
   static {

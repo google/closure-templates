@@ -1681,6 +1681,156 @@ if (!COMPILED) {
 
 
 
+//==============================================================================
+// goog.defineClass implementation
+//==============================================================================
+
+/**
+ * Creates a restricted form of a Closure "class":
+ *   - from the compiler's perspective, the instance returned from the
+ *     constructor is sealed (no new properties may be added).  This enables
+ *     better checks.
+ *   - the compiler will rewrite this definition to a form that is optimal
+ *     for type checking and optimization (initially this will be a more
+ *     traditional form).
+ *
+ * @param {Function} superClass The superclass, Object or null.
+ * @param {goog.defineClass.ClassDescriptor} def
+ *     An object literal describing the
+ *     the class.  It may have the following properties:
+ *     "constructor": the constructor function
+ *     "statics": an object literal containing methods to add to the constructor
+ *        as "static" methods or a function that will receive the constructor
+ *        function as its only parameter to which static properties can
+ *        be added.
+ *     all other properties are added to the prototype.
+ * @return {!Function} The class constructor.
+ */
+goog.defineClass = function(superClass, def) {
+  // TODO(johnlenz): consider making the superClass an optional parameter.
+  var constructor = def.constructor;
+  var statics = def.statics;
+  // Wrap the constructor prior to setting up the prototype and static methods.
+  if (!constructor || constructor == Object.prototype.constructor) {
+    constructor = function() {
+      throw Error('cannot instantiate an interface (no constructor defined).');
+    };
+  }
+
+  var cls = goog.defineClass.createSealingConstructor_(constructor);
+  if (superClass) {
+    goog.inherits(cls, superClass);
+  }
+
+  // Remove all the properties that should not be copied to the prototype.
+  delete def.constructor;
+  delete def.statics;
+
+  goog.defineClass.applyProperties_(cls.prototype, def);
+  if (statics != null) {
+    if (statics instanceof Function) {
+      statics(cls);
+    } else {
+      goog.defineClass.applyProperties_(cls, statics);
+    }
+  }
+
+  return cls;
+};
+
+
+/**
+ * @typedef {
+ *     !Object|
+ *     {constructor:!Function}|
+ *     {constructor:!Function, statics:(Object|function(Function):void)}}
+ */
+goog.defineClass.ClassDescriptor;
+
+
+/**
+ * @define {boolean} Whether the instances returned by
+ * goog.defineClass should be sealed when possible.
+ */
+goog.define('goog.defineClass.SEAL_CLASS_INSTANCES', goog.DEBUG);
+
+
+/**
+ * If goog.defineClass.SEAL_CLASS_INSTANCES is enabled and Object.seal is
+ * defined, this function will wrap the constructor in a function that seals the
+ * results of the provided constructor function.
+ *
+ * @param {!Function} ctr The constructor whose results maybe be sealed.
+ * @return {!Function} The replacement constructor.
+ * @private
+ */
+goog.defineClass.createSealingConstructor_ = function(ctr) {
+  if (goog.defineClass.SEAL_CLASS_INSTANCES &&
+      Object.seal instanceof Function) {
+    /** @this {*} */
+    var wrappedCtr = function() {
+      // Don't seal an instance of a subclass when it calls the constructor of
+      // its super class as there is most likely still setup to do.
+      var instance = ctr.apply(this, arguments) || this;
+      if (this.constructor === wrappedCtr) {
+        Object.seal(instance);
+      }
+      return instance;
+    };
+    return wrappedCtr;
+  }
+  return ctr;
+};
+
+
+// TODO(johnlenz): share these values with the goog.object
+/**
+ * The names of the fields that are defined on Object.prototype.
+ * @type {!Array.<string>}
+ * @private
+ * @const
+ */
+goog.defineClass.OBJECT_PROTOTYPE_FIELDS_ = [
+  'constructor',
+  'hasOwnProperty',
+  'isPrototypeOf',
+  'propertyIsEnumerable',
+  'toLocaleString',
+  'toString',
+  'valueOf'
+];
+
+
+// TODO(johnlenz): share this function with the goog.object
+/**
+ * @param {!Object} target The object to add properties to.
+ * @param {!Object} source The object to copy properites from.
+ * @private
+ */
+goog.defineClass.applyProperties_ = function(target, source) {
+  // TODO(johnlenz): update this to support ES5 getters/setters
+
+  var key;
+  for (key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      target[key] = source[key];
+    }
+  }
+
+  // For IE the for-in-loop does not contain any properties that are not
+  // enumerable on the prototype object (for example isPrototypeOf from
+  // Object.prototype) and it will also not include 'replace' on objects that
+  // extend String and change 'replace' (not that it is common for anyone to
+  // extend anything except Object).
+  for (var i = 0; i < goog.defineClass.OBJECT_PROTOTYPE_FIELDS_.length; i++) {
+    key = goog.defineClass.OBJECT_PROTOTYPE_FIELDS_[i];
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      target[key] = source[key];
+    }
+  }
+};
+
+
 //javascript/closure/deps.js
 // Copyright 2014 The Closure Library Authors. All Rights Reserved.
 //
@@ -15136,7 +15286,7 @@ goog.html.SafeStyle.fromConstant = function(style) {
   goog.asserts.assert(goog.string.contains(styleString, ':'),
       'Style string must contain at least one \':\', to ' +
       'specify a "name: value" pair: ' + styleString);
-  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
       styleString);
 };
 
@@ -15230,18 +15380,13 @@ goog.html.SafeStyle.unwrap = function(safeStyle) {
 
 
 /**
- * Utility method to create SafeStyle instances.
- *
- * This function is considered "package private", i.e. calls (using "suppress
- * visibility") from other files within this package are considered acceptable.
- * DO NOT call this function from outside the goog.html package; use appropriate
- * wrappers instead.
+ * Package-internal utility method to create SafeStyle instances.
  *
  * @param {string} style The string to initialize the SafeStyle object with.
  * @return {!goog.html.SafeStyle} The initialized SafeStyle object.
- * @private
+ * @package
  */
-goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_ =
+goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse =
     function(style) {
   var safeStyle = new goog.html.SafeStyle();
   safeStyle.privateDoNotAccessOrElseSafeStyleWrappedValue_ = style;
@@ -15254,7 +15399,7 @@ goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_ =
  * @const {!goog.html.SafeStyle}
  */
 goog.html.SafeStyle.EMPTY =
-    goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_('');
+    goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse('');
 
 
 /**
@@ -15311,7 +15456,7 @@ goog.html.SafeStyle.create = function(map) {
     return goog.html.SafeStyle.EMPTY;
   }
   goog.html.SafeStyle.checkStyle_(style);
-  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
       style);
 };
 
@@ -15349,7 +15494,7 @@ goog.html.SafeStyle.concat = function(var_args) {
   if (!style) {
     return goog.html.SafeStyle.EMPTY;
   }
-  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
       style);
 };
 
@@ -15593,7 +15738,7 @@ goog.html.SafeUrl.unwrap = function(safeUrl) {
  * @return {!goog.html.SafeUrl} A SafeUrl object initialized to {@code url}.
  */
 goog.html.SafeUrl.fromConstant = function(url) {
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
       goog.string.Const.unwrap(url));
 };
 
@@ -15670,8 +15815,7 @@ goog.html.SafeUrl.sanitize = function(url) {
   } else {
     url = goog.html.SafeUrl.normalize_(url);
   }
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse_(
-      url);
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
 
@@ -15745,18 +15889,13 @@ goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 
 
 /**
- * Utility method to create SafeUrl instances.
- *
- * This function is considered "package private", i.e. calls (using "suppress
- * visibility") from other files within this package are considered acceptable.
- * DO NOT call this function from outside the goog.html package; use appropriate
- * wrappers instead.
+ * Package-internal utility method to create SafeUrl instances.
  *
  * @param {string} url The string to initialize the SafeUrl object with.
  * @return {!goog.html.SafeUrl} The initialized SafeUrl object.
- * @private
+ * @package
  */
-goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse_ = function(
+goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(
     url) {
   var safeUrl = new goog.html.SafeUrl();
   safeUrl.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = url;
@@ -15986,7 +16125,7 @@ goog.html.SafeHtml.htmlEscape = function(textOrHtml) {
   } else {
     textAsString = String(textOrHtml);
   }
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       goog.string.htmlEscape(textAsString), dir);
 };
 
@@ -16004,7 +16143,7 @@ goog.html.SafeHtml.htmlEscapePreservingNewlines = function(textOrHtml) {
     return textOrHtml;
   }
   var html = goog.html.SafeHtml.htmlEscape(textOrHtml);
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       goog.string.newLineToBr(goog.html.SafeHtml.unwrap(html)),
       html.getDirection());
 };
@@ -16174,7 +16313,7 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
     }
   }
 
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       result, dir);
 };
 
@@ -16249,7 +16388,7 @@ goog.html.SafeHtml.concat = function(var_args) {
   };
 
   goog.array.forEach(arguments, addArgument);
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       content, dir);
 };
 
@@ -16280,20 +16419,15 @@ goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 
 
 /**
- * Utility method to create SafeHtml instances.
- *
- * This function is considered "package private", i.e. calls (using "suppress
- * visibility") from other files within this package are considered acceptable.
- * DO NOT call this function from outside the goog.html package; use appropriate
- * wrappers instead.
+ * Package-internal utility method to create SafeHtml instances.
  *
  * @param {string} html The string to initialize the SafeHtml object with.
  * @param {?goog.i18n.bidi.Dir} dir The directionality of the SafeHtml to be
  *     constructed, or null if unknown.
  * @return {!goog.html.SafeHtml} The initialized SafeHtml object.
- * @private
+ * @package
  */
-goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_ = function(
+goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
     html, dir) {
   var safeHtml = new goog.html.SafeHtml();
   safeHtml.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = html;
@@ -16307,7 +16441,7 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_ = function(
  * @const {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.EMPTY =
-    goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+    goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '', goog.i18n.bidi.Dir.NEUTRAL);
 
 //javascript/closure/html/trustedresourceurl.js
@@ -16505,7 +16639,7 @@ goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
  */
 goog.html.TrustedResourceUrl.fromConstant = function(url) {
   return goog.html.TrustedResourceUrl
-      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(
+      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(
           goog.string.Const.unwrap(url));
 };
 
@@ -16520,21 +16654,16 @@ goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 
 
 /**
- * Utility method to create TrustedResourceUrl instances.
- *
- * This function is considered "package private", i.e. calls (using "suppress
- * visibility") from other files within this package are considered acceptable.
- * DO NOT call this function from outside the goog.html package; use appropriate
- * wrappers instead.
+ * Package-internal utility method to create TrustedResourceUrl instances.
  *
  * @param {string} url The string to initialize the TrustedResourceUrl object
  *     with.
  * @return {!goog.html.TrustedResourceUrl} The initialized TrustedResourceUrl
  *     object.
- * @private
+ * @package
  */
 goog.html.TrustedResourceUrl.
-    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_ = function(url) {
+    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
   var trustedResourceUrl = new goog.html.TrustedResourceUrl();
   trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
       url;
@@ -16653,8 +16782,8 @@ goog.define('goog.html.legacyconversions.ALLOW_LEGACY_CONVERSIONS', true);
  */
 goog.html.legacyconversions.safeHtmlFromString = function(html) {
   goog.html.legacyconversions.throwIfConversionDisallowed_();
-  return goog.html.legacyconversions.
-      createSafeHtmlSecurityPrivateDoNotAccessOrElse_(html);
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
+      html, null /* dir */);
 };
 
 
@@ -16671,8 +16800,8 @@ goog.html.legacyconversions.safeHtmlFromString = function(html) {
  */
 goog.html.legacyconversions.trustedResourceUrlFromString = function(url) {
   goog.html.legacyconversions.throwIfConversionDisallowed_();
-  return goog.html.legacyconversions.
-      createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(url);
+  return goog.html.TrustedResourceUrl.
+      createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
 
@@ -16689,8 +16818,7 @@ goog.html.legacyconversions.trustedResourceUrlFromString = function(url) {
  */
 goog.html.legacyconversions.safeUrlFromString = function(url) {
   goog.html.legacyconversions.throwIfConversionDisallowed_();
-  return goog.html.legacyconversions.
-      createSafeUrlSecurityPrivateDoNotAccessOrElse_(url);
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
 
@@ -16709,60 +16837,6 @@ goog.html.legacyconversions.reportCallback_ = goog.nullFunction;
  */
 goog.html.legacyconversions.setReportCallback = function(callback) {
   goog.html.legacyconversions.reportCallback_ = callback;
-};
-
-
-/**
- * Internal wrapper for the package-private
- * goog.html.SafeHtml.createSafeHtml... function.
- * @param {string} html A string to be converted to SafeHtml.
- * @return {!goog.html.SafeHtml}
- * @private
- * @suppress {visibility} For access to SafeHtml.create...  Note that this
- *     use is appropriate since this method is intended to be "package private"
- *     within goog.html.  DO NOT call SafeHtml.create... from outside this
- *     package; use appropriate wrappers instead.
- */
-goog.html.legacyconversions.createSafeHtmlSecurityPrivateDoNotAccessOrElse_ =
-    function(html) {
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
-      html, null);
-};
-
-
-/**
- * Internal wrapper for the package-private
- * goog.html.TrustedResourceUrl.createTrustedResourceUrl... function.
- * @param {string} url A string to be converted to TrustedResourceUrl.
- * @return {!goog.html.TrustedResourceUrl}
- * @private
- * @suppress {visibility} For access to TrustedResourceUrl.create...  Note that
- *     this use is appropriate since this method is intended to be
- *     "package private" within goog.html.  DO NOT call
- *     TrustedResourceUrl.create... from outside this package; use appropriate
- *     wrappers instead.
- */
-goog.html.legacyconversions.
-    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_ = function(url) {
-  return goog.html.TrustedResourceUrl
-      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(url);
-};
-
-
-/**
- * Internal wrapper for the package-private goog.html.SafeUrl.createSafeUrl...
- * function.
- * @param {string} url A string to be converted to TrustedResourceUrl.
- * @return {!goog.html.SafeUrl}
- * @private
- * @suppress {visibility} For access to SafeUrl.create...  Note that this use
- *     is appropriate since this method is intended to be "package private"
- *     within goog.html.  DO NOT call SafeUrl.create... from outside this
- *     package; use appropriate wrappers instead.
- */
-goog.html.legacyconversions.createSafeUrlSecurityPrivateDoNotAccessOrElse_ =
-    function(url) {
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse_(url);
 };
 
 
@@ -17452,7 +17526,7 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
   goog.asserts.assert(
       goog.string.trim(goog.string.Const.unwrap(justification)).length > 0,
       'must provide non-empty justification');
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       html, opt_dir || null);
 };
 
@@ -17473,10 +17547,6 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  *     contract.
  * @return {!goog.html.SafeStyle} The value of {@code style}, wrapped in a
  *     SafeStyle object.
- * @suppress {visibility} For access to SafeStyle.create...  Note that this
- *     use is appropriate since this method is intended to be "package private"
- *     withing goog.html.  DO NOT call SafeStyle.create... from outside this
- *     package; use appropriate wrappers instead.
  */
 goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
     function(justification, style) {
@@ -17487,7 +17557,7 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
   goog.asserts.assert(
       goog.string.trim(goog.string.Const.unwrap(justification)).length > 0,
       'must provide non-empty justification');
-  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse_(
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
       style);
 };
 
@@ -17508,10 +17578,6 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
  *     contract.
  * @return {!goog.html.SafeUrl} The value of {@code url}, wrapped in a SafeUrl
  *     object.
- * @suppress {visibility} For access to SafeUrl.create...  Note that this
- *     use is appropriate since this method is intended to be "package private"
- *     withing goog.html.  DO NOT call SafeUrl.create... from outside this
- *     package; use appropriate wrappers instead.
  */
 goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
     function(justification, url) {
@@ -17522,7 +17588,7 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
   goog.asserts.assert(
       goog.string.trim(goog.string.Const.unwrap(justification)).length > 0,
       'must provide non-empty justification');
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse_(url);
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
 
@@ -17542,10 +17608,6 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
  *     contract.
  * @return {!goog.html.TrustedResourceUrl} The value of {@code url}, wrapped in
  *     a TrustedResourceUrl object.
- * @suppress {visibility} For access to TrustedResourceUrl.create...  Note that
- *     this use is appropriate since this method is intended to be
- *     "package private" withing goog.html.  DO NOT call SafeUrl.create... from
- *     outside this package; use appropriate wrappers instead.
  */
 goog.html.uncheckedconversions.
     trustedResourceUrlFromStringKnownToSatisfyTypeContract =
@@ -17558,7 +17620,7 @@ goog.html.uncheckedconversions.
       goog.string.trim(goog.string.Const.unwrap(justification)).length > 0,
       'must provide non-empty justification');
   return goog.html.TrustedResourceUrl.
-      createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse_(url);
+      createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
 //javascript/closure/soy/data.js
