@@ -37,7 +37,7 @@ public class CheckCallsVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "template ns1.boo: Call to 'ns1.foo' is missing required params [goo, moo].",
         "" +
-            "{namespace ns1}\n" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -55,7 +55,7 @@ public class CheckCallsVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "template ns1.boo: Call to 'ns2.foo_' is missing required param 'moo'.",
         "" +
-            "{namespace ns1}\n" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -64,7 +64,7 @@ public class CheckCallsVisitorTest extends TestCase {
             "  {/call}\n" +
             "{/template}\n",
         "" +
-            "{namespace ns2}\n" +
+            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/**\n" +
             " * @param goo\n" +
@@ -81,7 +81,7 @@ public class CheckCallsVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "template ns1.boo: Call to 'fooFoo' is missing required param 'moo'.",
         "" +
-            "{namespace ns1}\n" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -101,7 +101,7 @@ public class CheckCallsVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "template ns1.boo: Call to 'fooFoo' is missing required params [goo, moo].",
         "" +
-            "{namespace ns1}\n" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -109,7 +109,7 @@ public class CheckCallsVisitorTest extends TestCase {
             "{/template}\n",
         "" +
             "{delpackage secretFeature}\n" +
-            "{namespace ns2}\n" +
+            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/**\n" +
             " * @param goo\n" +
@@ -125,7 +125,7 @@ public class CheckCallsVisitorTest extends TestCase {
 
     assertValidSoyFiles(
         "" +
-            "{namespace ns1}\n" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -142,7 +142,7 @@ public class CheckCallsVisitorTest extends TestCase {
 
     assertValidSoyFiles(
         "" +
-            "{namespace ns1}\n" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -151,7 +151,7 @@ public class CheckCallsVisitorTest extends TestCase {
             "  {/call}\n" +
             "{/template}\n",
         "" +
-            "{namespace ns2}\n" +
+            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
             "/**\n" +
             " * @param goo\n" +

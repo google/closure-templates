@@ -29,19 +29,19 @@ import java.util.Set;
 public enum AutoescapeMode {
 
   /** Auto-escaping is off for the template. */
-  FALSE("deprecated-noautoescape", "false"),
+  FALSE("deprecated-noautoescape"),
   /** Auto-escaping is on for the template so directiveless prints will be HTML escaped. */
-  TRUE("deprecated-noncontextual", "true"),
+  TRUE("deprecated-noncontextual"),
   /**
    * Contextual auto-escaping is on for the template so directiveless prints will be escaped based
    * on the surrounding context.
    */
-  CONTEXTUAL("deprecated-contextual", "contextual"),
+  CONTEXTUAL("deprecated-contextual"),
   /**
    * Strict form of contextual autoescaping in which no autoescape-cancelling print directives nor
    * calls to non-strict templates are allowed.
    */
-  STRICT("strict", null),
+  STRICT("strict"),
   ;
 
   private static final ImmutableMap<String, AutoescapeMode> valueToModeMap;
@@ -50,27 +50,21 @@ public enum AutoescapeMode {
     ImmutableMap.Builder <String, AutoescapeMode> map = ImmutableMap.builder();
     for (AutoescapeMode value : AutoescapeMode.values()) {
       map.put(value.attributeValue, value);
-      if (value.synomym != null) {
-        map.put(value.synomym, value);
-      }
     }
     valueToModeMap = map.build();
   }
 
 
   private final String attributeValue;
-  private final String synomym;
 
 
   /**
    * Constructs an AutoescapeMode enum.
    *
    * @param attributeValue value of the "autoescape" attribute that specifies this autoescape mode.
-   * @param synonym an (optional) synonymous attribute value, for backwards compatibility.
    */
-  AutoescapeMode(String attributeValue, String synonym) {
+  AutoescapeMode(String attributeValue) {
     this.attributeValue = attributeValue;
-    this.synomym = synonym;
   }
 
 

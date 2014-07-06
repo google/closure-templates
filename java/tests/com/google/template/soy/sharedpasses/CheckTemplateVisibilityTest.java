@@ -30,7 +30,7 @@ import junit.framework.TestCase;
 public class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameFile() {
-    assertNoVisibilityError("{namespace ns}\n"
+    assertNoVisibilityError("{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
         + "{template .foo visibility=\"private\"}\n"
         + "oops!\n"
         + "{/template}\n"
@@ -41,12 +41,12 @@ public class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
     assertVisibilityError(
-        "{namespace ns}\n"
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
         + "{template .foo visibility=\"private\"}\n"
         + "oops!\n"
         + "{/template}",
 
-        "{namespace ns}\n"
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
         + "{template .bar}\n"
         + "{call .foo /}\n"
         + "{/template}");
@@ -54,12 +54,12 @@ public class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameNamespaceAndDifferentFile() {
     assertVisibilityError(
-        "{namespace ns}\n"
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
         + "{template .foo visibility=\"private\"}\n"
         + "oops!\n"
         + "{/template}",
 
-        "{namespace ns2}\n"
+        "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
         + "{template .bar}\n"
         + "{call ns.foo /}\n"
         + "{/template}");

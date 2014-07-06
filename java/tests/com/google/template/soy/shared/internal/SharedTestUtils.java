@@ -202,7 +202,7 @@ public class SharedTestUtils {
 
     StringBuilder soyFileContentBuilder = new StringBuilder();
     soyFileContentBuilder
-        .append("{namespace " + namespace + "}\n")
+        .append("{namespace " + namespace + " autoescape=\"deprecated-noncontextual\"}\n")
         .append("\n")
         .append("/** Test template.");
     if (soyDocParamNames != null) {

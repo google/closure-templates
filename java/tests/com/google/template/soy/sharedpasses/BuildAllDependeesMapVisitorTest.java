@@ -50,7 +50,7 @@ public class BuildAllDependeesMapVisitorTest extends TestCase {
   public void testGetTopLevelRefsVisitor() {
 
     String testFileContent =
-        "{namespace boo}\n" +
+        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** Test template */\n" +
         "{template .foo}\n" +

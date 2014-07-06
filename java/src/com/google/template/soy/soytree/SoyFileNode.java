@@ -58,14 +58,12 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       Pattern.COMMENTS);
 
   /** The default autoescape mode if none is specified in the command text. */
-  private static final AutoescapeMode DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE =
-      AutoescapeMode.TRUE;
+  private static final AutoescapeMode DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE = null;
 
   /** Parser for the command text besides the namespace. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
       new CommandTextAttributesParser("namespace",
-          new Attribute("autoescape", AutoescapeMode.getAttributeValues(),
-              DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE.getAttributeValue()),
+          new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
           new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null));
 
   public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE = new Predicate<SoyFileNode>() {

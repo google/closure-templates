@@ -219,7 +219,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
   }
 
   private SoyFileSetNode parseAndInjectIntoScriptTags(String input, String toInject) {
-    String namespace = "{namespace ns autoescape=\"contextual\"}\n\n";
+    String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(namespace + input);
 
     ContextualAutoescaper contextualAutoescaper = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES);
