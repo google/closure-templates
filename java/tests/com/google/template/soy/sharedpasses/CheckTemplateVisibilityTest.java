@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.internal.SharedTestUtils;
-import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
 
@@ -30,10 +29,12 @@ import junit.framework.TestCase;
 public class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameFile() {
-    assertNoVisibilityError("{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+    assertNoVisibilityError("{namespace ns autoescape=\"strict\"}\n"
+        + "/** Private template. */\n"
         + "{template .foo visibility=\"private\"}\n"
         + "oops!\n"
         + "{/template}\n"
+        + "/** Public template. */\n"
         + "{template .bar}\n"
         + "{call .foo /}\n"
         + "{/template}");
@@ -41,12 +42,14 @@ public class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
     assertVisibilityError(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns autoescape=\"strict\"}\n"
+        + "/** Private template. */\n"
         + "{template .foo visibility=\"private\"}\n"
         + "oops!\n"
         + "{/template}",
 
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns autoescape=\"strict\"}\n"
+        + "/** Public template. */\n"
         + "{template .bar}\n"
         + "{call .foo /}\n"
         + "{/template}");
@@ -54,25 +57,24 @@ public class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameNamespaceAndDifferentFile() {
     assertVisibilityError(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns autoescape=\"strict\"}\n"
+        + "/** Private template. */\n"
         + "{template .foo visibility=\"private\"}\n"
         + "oops!\n"
         + "{/template}",
 
-        "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns2 autoescape=\"strict\"}\n"
+        + "/** Public template. */\n"
         + "{template .bar}\n"
         + "{call ns.foo /}\n"
         + "{/template}");
   }
 
   private void assertVisibilityError(String... sources) {
-    SoyFileSetNode fileset = SharedTestUtils.parseSoyFiles(
-        true /* doRunInitialParsingPasses */, sources);
-
     SoySyntaxException sse = null;
-
     try {
-      new CheckTemplateVisibility().exec(fileset);
+      SharedTestUtils.parseSoyFiles(
+        true /* doRunInitialParsingPasses */, true /* doRunCheckingPasses */, sources);
     } catch (SoySyntaxException e) {
       sse = e;
     }
@@ -80,10 +82,9 @@ public class CheckTemplateVisibilityTest extends TestCase {
   }
 
   private void assertNoVisibilityError(String... sources) {
-    SoyFileSetNode fileset = SharedTestUtils.parseSoyFiles(
-        true /* doRunInitialParsingPasses */, sources);
     try {
-      new CheckTemplateVisibility().exec(fileset);
+      SharedTestUtils.parseSoyFiles(
+        true /* doRunInitialParsingPasses */, true /* doRunCheckingPasses */, sources);
     } catch (SoySyntaxException e) {
       fail();
     }
