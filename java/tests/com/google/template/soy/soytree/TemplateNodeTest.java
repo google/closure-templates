@@ -271,16 +271,20 @@ public class TemplateNodeTest extends TestCase {
   public void testCommandTextErrors() {
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
-          .setId(0).setCmdText("autoescape=\"true\"").setSoyDoc("/***/").build();
+          .setId(0).setCmdText("autoescape=\"deprecated-noncontextual\"")
+          .setSoyDoc("/***/")
+          .build();
       fail();
     } catch (SoySyntaxException sse) {
       assertTrue(sse.getMessage().contains(
-          "Invalid 'template' command missing template name: {template autoescape=\"true\"}."));
+          "Invalid 'template' command missing template name: "
+          + "{template autoescape=\"deprecated-noncontextual\"}."));
     }
 
     try {
       (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
-          .setId(0).setCmdText(".foo name=\"x.foo\" autoescape=\"true\"").setSoyDoc("/***/")
+          .setId(0).setCmdText(".foo name=\"x.foo\" autoescape=\"deprecated-noncontextual\"")
+          .setSoyDoc("/***/")
           .build();
       fail();
     } catch (SoySyntaxException sse) {

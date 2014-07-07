@@ -49,7 +49,7 @@ public class SoytreeUtilsTest extends TestCase {
   public void testVisitAllExprs() {
 
     String testFileContent =
-        "{namespace boo}\n" +
+        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** @param items */\n" +
         "{template name=\".foo\"}\n" +
@@ -111,7 +111,7 @@ public class SoytreeUtilsTest extends TestCase {
 
 
   private static final String SOY_SOURCE_FOR_TESTING_CLONING = Joiner.on('\n').join(
-      "{namespace ns}",
+      "{namespace ns autoescape=\"deprecated-noncontextual\"}",
       "{template ex1 private=\"true\"}",
       "  Hello, World!",
       "  {lb}{call foo data=\"all\"}{param x: $x /}{/call}{rb}",

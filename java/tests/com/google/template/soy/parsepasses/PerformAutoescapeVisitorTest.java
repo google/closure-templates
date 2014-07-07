@@ -268,10 +268,11 @@ public class PerformAutoescapeVisitorTest extends TestCase {
       String testPrintTags, boolean shouldAutoescape) throws SoySyntaxException {
 
     String testFileContent =
-        "{namespace boo}\n" +
+        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** Foo template. */\n" +
-        "{template name=\".foo\"" + (shouldAutoescape ? "" : " autoescape=\"false\"") + "}\n" +
+        "{template name=\".foo\"" +
+        (shouldAutoescape ? "" : " autoescape=\"deprecated-noautoescape\"") + "}\n" +
         testPrintTags + "\n" +
         "{/template}\n";
 
