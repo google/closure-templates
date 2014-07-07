@@ -34,7 +34,7 @@ public class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
   public void testCombineConsecutiveRawTextNodes() {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
+        "{namespace boo}\n" +
         "\n" +
         "/** @param goo */\n" +
         "{template name=\".foo\"}\n" +

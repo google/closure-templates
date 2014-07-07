@@ -1,7 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 // Author: Kai Huang
 
-{namespace boo.foo autoescape="deprecated-noncontextual"}
+{namespace boo.foo}
 
 
 /**
@@ -45,7 +45,7 @@
 
 
 /** @param moo One moo. */
-{template .mooHelper_ private="true" autoescape="deprecated-noautoescape"}
+{template .mooHelper_ private="true" autoescape="false"}
   {msg desc="Tells what a cow says."}
     Cow says {$moo}.
   {/msg}{\n}

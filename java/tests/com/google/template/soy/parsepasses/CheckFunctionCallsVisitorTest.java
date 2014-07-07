@@ -38,7 +38,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testPureFunctionOk() throws Exception {
     applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "{namespace ns}\n",
         "/**",
         " * @param x",
         " * @param y",
@@ -55,7 +55,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'min' called with the wrong number of arguments" +
             " (function call \"min($x)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -67,7 +67,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'index' called with the wrong number of arguments" +
             " (function call \"index()\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " */",
             "{template .foo}",
@@ -82,7 +82,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'min' called with the wrong number of arguments (function call" +
             " \"min($x)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " * @param y",
@@ -99,7 +99,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($x)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -115,7 +115,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($x.y)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -131,7 +131,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($ij.data)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " */",
             "{template .foo}",
@@ -147,7 +147,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($x + 1)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " * @param x",
             " */",
@@ -159,7 +159,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
   public final void testLoopVariableOk() throws Exception {
     applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "{namespace ns}\n",
         "/**",
         " * @param elements",
         " */",
@@ -177,7 +177,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($z)\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " * @param elements",
             " */",
@@ -195,7 +195,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
     applyCheckFunctionCallsVisitor(
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/***/",
             "{template .foo}",
             "  {let $m: quoteKeysIfJs(['a': 1, 'b': 'blah']) /}",
@@ -206,7 +206,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             " Function quoteKeysIfJs() must have a map literal as its arg" +
             " (encountered \"quoteKeysIfJs('blah')\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/***/",
             "{template .foo}",
             "  {let $m: quoteKeysIfJs('blah') /}",
@@ -219,7 +219,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
         "In file no-path:6, template ns.foo:" +
             " Unrecognized function 'bogus' (encountered function call \"bogus()\").",
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "/**",
             " */",
             "{template .foo}",
@@ -231,7 +231,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   public final void testUnrecognizedFunctionOkInV1() throws Exception {
     applyCheckFunctionCallsVisitor(
         Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+            "{namespace ns}\n",
             "{template .foo}",
             "  {print bogus()}",
             "{/template}"),

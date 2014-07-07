@@ -34,7 +34,7 @@ public class RenameCssVisitorTest extends TestCase {
 
 
   private static final String TEST_FILE_CONTENT =
-      "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
+      "{namespace boo}\n" +
       "\n" +
       "/** Test template. @param goo */\n" +
       "{template name=\".foo\"}\n" +

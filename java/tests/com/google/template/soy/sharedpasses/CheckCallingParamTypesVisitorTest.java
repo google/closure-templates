@@ -36,7 +36,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -54,7 +54,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -63,7 +63,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "  {/call}\n" +
             "{/template}\n",
         "" +
-            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns2}\n" +
             "\n" +
             "/***/\n" +
             "{template .foo}\n" +
@@ -78,7 +78,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -96,7 +96,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -106,7 +106,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/template}\n",
         "" +
             "{delpackage secretFeature}\n" +
-            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns2}\n" +
             "\n" +
             "/***/\n" +
             "{deltemplate fooFoo}\n" +
@@ -121,7 +121,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertValidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -139,7 +139,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertValidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .boo}\n" +
@@ -148,7 +148,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "  {/call}\n" +
             "{/template}\n",
         "" +
-            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns2}\n" +
             "\n" +
             "/***/\n" +
             "{template .foo}\n" +
@@ -162,7 +162,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertInvalidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .t1}\n" +
@@ -185,7 +185,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertValidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .t1}\n" +
@@ -211,7 +211,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     assertValidSoyFiles(
         "Argument type mismatch",
         "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "{namespace ns1}\n" +
             "\n" +
             "/***/\n" +
             "{template .t1}\n" +

@@ -34,7 +34,7 @@ public class FindCalleesNotInFileVisitorTest extends TestCase {
   public void testFindCalleesNotInFile() {
 
     String testFileContent = "" +
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n" +
+        "{namespace boo.foo}\n" +
         "\n" +
         "/** Test template 1. */\n" +
         "{template .goo}\n" +

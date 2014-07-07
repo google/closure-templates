@@ -94,7 +94,7 @@ public class ResolveNamesVisitorTest extends TestCase {
    */
   private String constructTemplateSource(String... body) {
     return "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
+        "{namespace ns}\n" +
         "/***/\n" +
         "{template .aaa}\n" +
         "  " + Joiner.on("\n   ").join(body) + "\n" +
