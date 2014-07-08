@@ -1656,6 +1656,8 @@ goog.base = function(me, opt_methodName, var_args) {
  * uncompiled code - in compiled code the calls will be inlined and the aliases
  * applied.  In uncompiled code the function is simply run since the aliases as
  * written are valid JavaScript.
+ *
+ *
  * @param {function()} fn Function to call.  This function can contain aliases
  *     to namespaces (e.g. "var dom = goog.dom") or classes
  *     (e.g. "var Timer = goog.Timer").
@@ -9732,7 +9734,12 @@ goog.dom.BrowserFeature = {
    * innerHTML.
    * MSDN: http://msdn.microsoft.com/en-us/library/ms533897(VS.85).aspx#1
    */
-  INNER_HTML_NEEDS_SCOPED_ELEMENT: goog.userAgent.IE
+  INNER_HTML_NEEDS_SCOPED_ELEMENT: goog.userAgent.IE,
+
+  /**
+   * Whether we use legacy IE range API.
+   */
+  LEGACY_IE_RANGES: goog.userAgent.IE && !goog.userAgent.isDocumentModeOrHigher(9)
 };
 
 //javascript/closure/dom/tagname.js
