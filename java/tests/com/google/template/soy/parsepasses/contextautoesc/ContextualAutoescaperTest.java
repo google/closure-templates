@@ -86,6 +86,18 @@ public final class ContextualAutoescaperTest extends TestCase {
       "|bidiSpanWrap", new FakeBidiSpanWrapDirective());
 
 
+  public void testStrictModeIsDefault() {
+    assertRewriteFails(
+        "In file no-path:4, template main: " +
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
+        "with kind=\"html\" or SanitizedContent.",
+        join(
+            "{namespace ns}\n\n",
+            "{template main}\n",
+              "<b>{$foo|noAutoescape}</b>\n",
+            "{/template}"));
+  }
+
   public final void testTrivialTemplate() throws Exception {
     assertContextualRewriting(
         join(
@@ -1729,13 +1741,6 @@ public final class ContextualAutoescaperTest extends TestCase {
             "\n{/template}"));
   }
 
-
-  // Tests for the initial, rudimentary strict contextual mode (which will be initially used only in
-  // param and let nodes of non-text kind).
-  // This basic strict mode
-  // - does not allow autoescape-cancelling print directives
-  // - does not allow any call/delcall commands
-  // - is enabled using autoescape="strict"
 
   public void testStrictModeRejectsAutoescapeCancellingDirectives() {
     assertRewriteFails(

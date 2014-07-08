@@ -166,13 +166,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
     }
 
-    if (autoescapeMode == null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "During transition to default-autoescape mode \"strict\", there is no implicit default. "
-          + "An autoescape mode must be explicitly specified at the "
-          + "{namespace} or {template} level.");
-    }
-
     ContentKind contentKind = (attributes.get("kind") != null) ?
         NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
 
