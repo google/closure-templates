@@ -2233,7 +2233,8 @@ public final class ContextualAutoescaperTest extends TestCase {
       assertEquals(expectedOutput, rewrittenSource(soyTree).trim());
     }
 
-    // And idempotent from a normalized input if the templates are not autoescape="deprecated-contextual".
+    // And idempotent from a normalized input if the templates are not
+    // autoescape="deprecated-contextual".
     String input = join(inputs);
     String inputWithoutAutoescape = input
         .replaceAll("\\s+autoescape\\s*=\\s*\"(deprecated-contextual|strict)\"",

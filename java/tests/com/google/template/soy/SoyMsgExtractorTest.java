@@ -53,8 +53,10 @@ public class SoyMsgExtractorTest extends TestCase {
 
   public final void testOutputPathFormatFlag() throws Exception {
     File soyFile = getTempFile(".soy");
-    Files.write("{namespace ns autoescape=\"deprecated-noncontextual\"}\n/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
-                soyFile, UTF_8);
+    Files.write(
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
+        soyFile, UTF_8);
 
     String dir = soyFile.getParent().toString();
     String name = soyFile.getName();
@@ -71,11 +73,15 @@ public class SoyMsgExtractorTest extends TestCase {
 
   public final void testOutputFileFlag() throws Exception {
     File soyFile1 = getTempFile(".soy");
-    Files.write("{namespace ns autoescape=\"deprecated-noncontextual\"}\n/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
-                soyFile1, UTF_8);
+    Files.write(
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
+        soyFile1, UTF_8);
     File soyFile2 = getTempFile(".soy");
-    Files.write("{namespace ns autoescape=\"deprecated-noncontextual\"}\n/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
-                soyFile2, UTF_8);
+    Files.write(
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
+        soyFile2, UTF_8);
 
     File xmlFile = getTempFile(".xml");
 
