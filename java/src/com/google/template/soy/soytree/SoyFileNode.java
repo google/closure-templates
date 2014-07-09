@@ -66,7 +66,8 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       new CommandTextAttributesParser("namespace",
           new Attribute("autoescape", AutoescapeMode.getAttributeValues(),
               DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE.getAttributeValue()),
-          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null));
+          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null));
 
   public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE = new Predicate<SoyFileNode>() {
     @Override
@@ -89,6 +90,9 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** CSS namespaces required by this file (usable in any template in this file). */
   private final ImmutableList<String> requiredCssNamespaces;
+
+  /** CSS base package for package-relative selectors. */
+  private final String cssBaseNamespace;
 
   /** Map from aliases to namespaces for this file. */
   private final ImmutableMap<String, String> aliasToNamespaceMap;
@@ -127,6 +131,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     String namespace = null;
     AutoescapeMode defaultAutoescapeMode = DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE;
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
+    String cssBaseNamespace = null;
 
     if (namespaceCmdText != null) {
       Matcher nctMatcher = NAMESPACE_CMD_TEXT_PATTERN.matcher(namespaceCmdText);
@@ -143,6 +148,9 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
             requiredCssNamespaces =
                 RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss"));
           }
+          if (attributes.containsKey("cssbase")) {
+            cssBaseNamespace = attributes.get("cssbase");
+          }
         }
       } else {
         throw SoySyntaxException.createWithoutMetaInfo(
@@ -153,6 +161,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.namespace = namespace;
     this.defaultAutoescapeMode = defaultAutoescapeMode;
     this.requiredCssNamespaces = requiredCssNamespaces;
+    this.cssBaseNamespace = cssBaseNamespace;
     if (namespace == null) {
       maybeSetSyntaxVersionBound(new SyntaxVersionBound(
           SyntaxVersion.V2_0, "Soy V2 files must have a namespace declaration."));
@@ -209,6 +218,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.namespace = orig.namespace;
     this.defaultAutoescapeMode = orig.defaultAutoescapeMode;
     this.requiredCssNamespaces = orig.requiredCssNamespaces;  // immutable
+    this.cssBaseNamespace = orig.cssBaseNamespace;
     this.aliasToNamespaceMap = orig.aliasToNamespaceMap;  // immutable
     this.fileName = orig.fileName;
   }
@@ -246,6 +256,12 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Returns the CSS namespaces required by this file (usable in any template in this file). */
   public ImmutableList<String> getRequiredCssNamespaces() {
     return requiredCssNamespaces;
+  }
+
+
+  /** Returns the CSS base namespace for this file (usable in any template in this file). */
+  public String getCssBaseNamespace() {
+    return cssBaseNamespace;
   }
 
 

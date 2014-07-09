@@ -45,7 +45,6 @@ import javax.annotation.Nullable;
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
 
-
   /** Pattern for a template name not listed as an attribute name="...". */
   private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
       Pattern.compile("^ (?! name=\") [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
@@ -59,12 +58,12 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
           new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
           new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
           new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("visibility", Visibility.getAttributeValues(), null));
 
 
   /** Whether this template overrides another (always false for syntax version V2). */
   private Boolean isOverride;
-
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
@@ -72,7 +71,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
   public TemplateBasicNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo) {
     super(soyFileHeaderInfo, null);
   }
-
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
@@ -83,11 +81,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     super(soyFileHeaderInfo, typeRegistry);
   }
 
-
   @Override public TemplateBasicNodeBuilder setId(int id) {
     return (TemplateBasicNodeBuilder) super.setId(id);
   }
-
 
   @Override public TemplateBasicNodeBuilder setCmdText(String cmdText) {
 
@@ -186,24 +182,11 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       visibility = Visibility.PUBLIC;
     }
 
-    AutoescapeMode autoescapeMode;
-    String autoescapeModeStr = attributes.get("autoescape");
-    if (autoescapeModeStr != null) {
-      autoescapeMode = AutoescapeMode.forAttributeValue(autoescapeModeStr);
-    } else {
-      autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
-    }
-
-    ContentKind contentKind = (attributes.get("kind") != null) ?
-        NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
-
-    setAutoescapeInfo(autoescapeMode, contentKind);
-
-    setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss")));
-
+    setAutoescapeCmdText(attributes);
+    setRequireCssCmdText(attributes);
+    setCssBaseCmdText(attributes);
     return this;
   }
-
 
   /**
    * Alternative to {@code setCmdText()} that sets command text info directly as opposed to having
@@ -266,26 +249,16 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     return this;
   }
 
-
   @Override public TemplateBasicNodeBuilder setSoyDoc(String soyDoc) {
     return (TemplateBasicNodeBuilder) super.setSoyDoc(soyDoc);
   }
-
 
   @Override public TemplateBasicNodeBuilder setHeaderDecls(List<DeclInfo> declInfos) {
     return (TemplateBasicNodeBuilder) super.setHeaderDecls(declInfos);
   }
 
-
   @Override public TemplateBasicNode build() {
-
     Preconditions.checkState(id != null && isSoyDocSet && cmdText != null);
-
-    return new TemplateBasicNode(
-        id, syntaxVersionBound, cmdText, soyFileHeaderInfo, getTemplateName(),
-        getPartialTemplateName(), templateNameForUserMsgs, isOverride, visibility,
-        getAutoescapeMode(), getContentKind(), getRequiredCssNamespaces(), soyDoc, soyDocDesc,
-        params);
+    return new TemplateBasicNode(this, soyFileHeaderInfo, isOverride, visibility, params);
   }
-
 }

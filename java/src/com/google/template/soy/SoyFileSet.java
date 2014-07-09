@@ -58,6 +58,7 @@ import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.sharedpasses.AssertNoExternalCallsVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
+import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -970,6 +971,9 @@ public final class SoyFileSet {
     // This really belongs in SoyFileSetParser, but moving it there would cause SoyFileSetParser to
     // need to be injected, and that feels like overkill at this time.
     checkFunctionCallsVisitorFactory.create(declaredSyntaxVersion).exec(soyTree);
+
+    // Do renaming of package-relative class names.
+    new ResolvePackageRelativeCssNamesVisitor().exec(soyTree);
 
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {

@@ -834,13 +834,15 @@ public class TemplateParserTest extends TestCase {
     String templateBody =
         "{css selected-option}\n" +
         "{css CSS_SELECTED_OPTION}\n" +
-        "{css $cssSelectedOption}";
+        "{css $cssSelectedOption}\n" +
+        "{css %SelectedOption}";
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody);
-    assertEquals(3, nodes.size());
+    assertEquals(4, nodes.size());
     assertEquals("selected-option", ((CssNode) nodes.get(0)).getCommandText());
     assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getCommandText());
     assertEquals("$cssSelectedOption", ((CssNode) nodes.get(2)).getCommandText());
+    assertEquals("%SelectedOption", ((CssNode) nodes.get(3)).getCommandText());
   }
 
 

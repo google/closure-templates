@@ -47,7 +47,6 @@ import java.util.regex.Pattern;
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
-
   /** Pattern for the command text. */
   // 2 capturing groups: del template name, attributes.
   private static final Pattern COMMAND_TEXT_PATTERN =
@@ -59,8 +58,8 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           new Attribute("variant", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
           new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
-          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null));
-
+          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null));
 
   /** The delegate template name. */
   private String delTemplateName;
@@ -77,14 +76,12 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   /** The delegate priority. */
   private int delPriority;
 
-
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    */
   public TemplateDelegateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo) {
     super(soyFileHeaderInfo, null);
   }
-
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
@@ -94,14 +91,11 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     super(soyFileHeaderInfo, typeRegistry);
   }
 
-
   @Override public TemplateDelegateNodeBuilder setId(int id) {
     return (TemplateDelegateNodeBuilder) super.setId(id);
   }
 
-
   @Override public TemplateDelegateNodeBuilder setCmdText(String cmdText) {
-
     Preconditions.checkState(this.cmdText == null);
     this.cmdText = cmdText;
 
@@ -158,26 +152,14 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           delPriority, TemplateNode.MAX_PRIORITY));
     }
 
-    AutoescapeMode autoescapeMode;
-    String autoescapeModeStr = attributes.get("autoescape");
-    if (autoescapeModeStr != null) {
-      autoescapeMode = AutoescapeMode.forAttributeValue(autoescapeModeStr);
-    } else {
-      autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
-    }
-
-    ContentKind contentKind = (attributes.get("kind") != null) ?
-        NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
-
-    setAutoescapeInfo(autoescapeMode, contentKind);
-
-    setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss")));
+    setAutoescapeCmdText(attributes);
+    setRequireCssCmdText(attributes);
+    setCssBaseCmdText(attributes);
 
     genInternalTemplateNameHelper();
 
     return this;
   }
-
 
   /**
    * Alternative to {@code setCmdText()} that sets command text info directly as opposed to having
@@ -228,13 +210,11 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     return this;
   }
 
-
   /**
    * Private helper for both setCmdText() and setCmdTextInfo() to generate and set the internal-use
    * partial template name and template name.
    */
   private void genInternalTemplateNameHelper() {
-
     Preconditions.checkState(id != null);
 
     // Compute a SHA-1 hash value for the delPackageName plus delTemplateKey, and take the first 32
@@ -255,7 +235,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
   }
 
-
   @Override public TemplateDelegateNodeBuilder setSoyDoc(String soyDoc) {
     if (soyDoc == null) {
       throw SoySyntaxException.createWithoutMetaInfo(
@@ -266,21 +245,16 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc);
   }
 
-
   @Override public TemplateDelegateNodeBuilder setHeaderDecls(List<DeclInfo> declInfos) {
     return (TemplateDelegateNodeBuilder) super.setHeaderDecls(declInfos);
   }
 
-
   @Override public TemplateDelegateNode build() {
-
     Preconditions.checkState(id != null && isSoyDocSet && cmdText != null);
 
     return new TemplateDelegateNode(
-        id, syntaxVersionBound, cmdText, soyFileHeaderInfo, delTemplateName, delTemplateVariant,
-        delTemplateVariantExpr, delTemplateKey, delPriority, getTemplateName(),
-        getPartialTemplateName(), templateNameForUserMsgs, getAutoescapeMode(), getContentKind(),
-        getRequiredCssNamespaces(), soyDoc, soyDocDesc, params);
+        this, soyFileHeaderInfo, delTemplateName, delTemplateVariant,
+        delTemplateVariantExpr, delTemplateKey, delPriority,
+        params);
   }
-
 }

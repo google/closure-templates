@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.SoyDocParam;
@@ -41,6 +42,7 @@ import com.google.template.soy.types.primitive.NullType;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -114,6 +116,9 @@ public abstract class TemplateNodeBuilder {
 
   /** Required CSS namespaces. */
   private ImmutableList<String> requiredCssNamespaces;
+
+  /** Base CSS namespace for package-relative CSS selectors. */
+  private String cssBaseNamespace;
 
   /** Strict mode context. Nonnull iff autoescapeMode is strict.
    *  This is private instead of protected to enforce use of setAutoescapeInfo(). */
@@ -301,6 +306,36 @@ public abstract class TemplateNodeBuilder {
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
+  protected void setAutoescapeCmdText(Map<String, String> attributes) {
+    AutoescapeMode autoescapeMode;
+    String autoescapeModeStr = attributes.get("autoescape");
+    if (autoescapeModeStr != null) {
+      autoescapeMode = AutoescapeMode.forAttributeValue(autoescapeModeStr);
+    } else {
+      autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
+    }
+
+    ContentKind contentKind = (attributes.get("kind") != null) ?
+        NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
+
+    setAutoescapeInfo(autoescapeMode, contentKind);
+  }
+
+  protected void setRequireCssCmdText(Map<String, String> attributes) {
+    setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss")));
+  }
+
+  protected void setCssBaseCmdText(Map<String, String> attributes) {
+    String cssBaseNamespace = attributes.get("cssbase");
+    if (cssBaseNamespace != null) {
+      if (!BaseUtils.isDottedIdentifier(cssBaseNamespace)) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Invalid CSS base namespace name \"" + cssBaseNamespace + "\".");
+      }
+      setCssBaseNamespace(cssBaseNamespace);
+    }
+  }
+
   protected void setAutoescapeInfo(
       AutoescapeMode autoescapeMode, @Nullable ContentKind contentKind) {
 
@@ -318,21 +353,58 @@ public abstract class TemplateNodeBuilder {
     this.contentKind = contentKind;
   }
 
+  /** @return the id for this node. */
+  public Integer getId() {
+    return id;
+  }
+
+  /** @return The lowest known syntax version bound. */
+  public SyntaxVersionBound getSyntaxVersionBound() {
+    return syntaxVersionBound;
+  }
+
+  /** @return The command text. */
+  public String getCmdText() {
+    return cmdText;
+  }
+
+  /** @return The full SoyDoc, including the start/end tokens, or null. */
+  public String getSoyDoc() {
+    return soyDoc;
+  }
+
+  /** @return The description portion of the SoyDoc (before declarations), or null. */
+  public String getSoyDocDesc() {
+    return soyDocDesc;
+  }
+
+  /** @return The mode of autoescaping for this template. */
   protected AutoescapeMode getAutoescapeMode() {
     Preconditions.checkState(autoescapeMode != null);
     return autoescapeMode;
   }
 
+  /** @return Strict mode context. Nonnull iff autoescapeMode is strict. */
   @Nullable protected ContentKind getContentKind() {
     return contentKind;
+  }
+
+  /** @return Required CSS namespaces. */
+  protected ImmutableList<String> getRequiredCssNamespaces() {
+    return Preconditions.checkNotNull(requiredCssNamespaces);
   }
 
   protected void setRequiredCssNamespaces(ImmutableList<String> requiredCssNamespaces) {
     this.requiredCssNamespaces = Preconditions.checkNotNull(requiredCssNamespaces);
   }
 
-  protected ImmutableList<String> getRequiredCssNamespaces() {
-    return Preconditions.checkNotNull(requiredCssNamespaces);
+  /** @return Base CSS namespace for package-relative CSS selectors. */
+  protected String getCssBaseNamespace() {
+    return cssBaseNamespace;
+  }
+
+  protected void setCssBaseNamespace(String cssBaseNamespace) {
+    this.cssBaseNamespace = cssBaseNamespace;
   }
 
   protected void setTemplateNames(String templateName, @Nullable String partialTemplateName) {
@@ -491,7 +563,6 @@ public abstract class TemplateNodeBuilder {
    * @return The description (with trailing whitespace removed).
    */
   private static String parseSoyDocDescHelper(String cleanedSoyDoc) {
-
     Matcher paramMatcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
     int endOfDescPos = (paramMatcher.find()) ? paramMatcher.start() : cleanedSoyDoc.length();
     String soyDocDesc = cleanedSoyDoc.substring(0, endOfDescPos);
@@ -502,7 +573,6 @@ public abstract class TemplateNodeBuilder {
    * Return value for {@code parseSoyDocDeclsHelper()}.
    */
   private static class SoyDocDeclsInfo {
-
     /** The params successfully parsed from the SoyDoc. */
     public List<SoyDocParam> params;
     /** SoyDoc param decl source strings with incorrect syntax. */

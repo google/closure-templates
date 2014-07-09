@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -106,6 +105,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** Required CSS namespaces. */
   private final ImmutableList<String> requiredCssNamespaces;
 
+  /** Base namespace for package-relative class names. */
+  private final String cssBaseNamespace;
+
   /** The full SoyDoc, including the start/end tokens, or null. */
   private String soyDoc;
 
@@ -122,43 +124,29 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
    *
-   * @param id The id for this node.
-   * @param syntaxVersionBound The lowest known upper bound (exclusive!) for the syntax version of
-   *     this node.
+   * @param nodeBuilder Builder containing template initialization params.
    * @param cmdName The command name.
-   * @param cmdText The command text.
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param templateName This template's name.
-   * @param partialTemplateName This template's partial name. Only applicable for V2; null for V1.
-   * @param templateNameForUserMsgs A string suitable for display in user msgs as the template name.
    * @param visibility Visibility of this template.
-   * @param autoescapeMode The mode of autoescaping for this template.
-   * @param contentKind Strict mode context. Nonnull iff autoescapeMode is strict.
-   * @param requiredCssNamespaces CSS namespaces required to render the template.
-   * @param soyDoc The full SoyDoc, including the start/end tokens, or null.
-   * @param soyDocDesc The description portion of the SoyDoc (before declarations), or null.
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
-  TemplateNode(
-      int id, @Nullable SyntaxVersionBound syntaxVersionBound, String cmdName, String cmdText,
-      SoyFileHeaderInfo soyFileHeaderInfo, String templateName,
-      @Nullable String partialTemplateName, String templateNameForUserMsgs, Visibility visibility,
-      AutoescapeMode autoescapeMode, ContentKind contentKind,
-      ImmutableList<String> requiredCssNamespaces, String soyDoc, String soyDocDesc,
+  TemplateNode(TemplateNodeBuilder nodeBuilder, String cmdName,
+      SoyFileHeaderInfo soyFileHeaderInfo, Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params) {
 
-    super(id, cmdName, cmdText);
-    maybeSetSyntaxVersionBound(syntaxVersionBound);
+    super(nodeBuilder.getId(), cmdName, nodeBuilder.getCmdText());
+    maybeSetSyntaxVersionBound(nodeBuilder.getSyntaxVersionBound());
     this.soyFileHeaderInfo = soyFileHeaderInfo;
-    this.templateName = templateName;
-    this.partialTemplateName = partialTemplateName;
-    this.templateNameForUserMsgs = templateNameForUserMsgs;
+    this.templateName = nodeBuilder.getTemplateName();
+    this.partialTemplateName = nodeBuilder.getPartialTemplateName();
+    this.templateNameForUserMsgs = nodeBuilder.getTemplateNameForUserMsgs();
     this.visibility = visibility;
-    this.autoescapeMode = autoescapeMode;
-    this.contentKind = contentKind;
-    this.requiredCssNamespaces = requiredCssNamespaces;
-    this.soyDoc = soyDoc;
-    this.soyDocDesc = soyDocDesc;
+    this.autoescapeMode = nodeBuilder.getAutoescapeMode();
+    this.contentKind = nodeBuilder.getContentKind();
+    this.requiredCssNamespaces = nodeBuilder.getRequiredCssNamespaces();
+    this.cssBaseNamespace = nodeBuilder.getCssBaseNamespace();
+    this.soyDoc = nodeBuilder.getSoyDoc();
+    this.soyDocDesc = nodeBuilder.getSoyDocDesc();
 
     // Split out @inject params into a separate list because we don't want them
     // to be visible to code that looks at the template's calling signature.
@@ -192,6 +180,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.autoescapeMode = orig.autoescapeMode;
     this.contentKind = orig.contentKind;
     this.requiredCssNamespaces = orig.requiredCssNamespaces;
+    this.cssBaseNamespace = orig.cssBaseNamespace;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
     this.params = orig.params;  // immutable
@@ -247,6 +236,22 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    */
   public ImmutableList<String> getRequiredCssNamespaces() {
     return requiredCssNamespaces;
+  }
+
+  /**
+   * Returns the base CSS namespace for resolving package-relative class names.
+   * Package relative class names are ones beginning with a percent (%). The compiler
+   * will replace the percent sign with the name of the current CSS package converted
+   * to camel-case form.
+   *
+   * Packages are defined using dotted-id syntax (foo.bar), which is identical to
+   * the syntax for required CSS namespaces. If no base CSS namespace is defined,
+   * it will use the first required css namespace, if any are present. If there is no
+   * base CSS name, and no required css namespaces, then use of package-relative
+   * class names will be reported as an error.
+   */
+  public String getCssBaseNamespace() {
+    return cssBaseNamespace;
   }
 
   /** Clears the SoyDoc text, description, and param descriptions. */
