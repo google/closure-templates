@@ -46,6 +46,7 @@ import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 
@@ -352,6 +353,8 @@ public class BaseTofu implements SoyTofu {
     TemplateNode template = templateRegistry.getBasicTemplate(templateName);
     if (template == null) {
       throw new SoyTofuException("Attempting to render undefined template '" + templateName + "'.");
+    } else if (template.getVisibility() == Visibility.PRIVATE) {
+      throw new SoyTofuException("Attempting to render private template '" + templateName + "'.");
     }
 
     if (data == null) {
