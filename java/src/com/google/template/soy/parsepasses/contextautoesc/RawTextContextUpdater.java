@@ -496,7 +496,7 @@ final class RawTextContextUpdater {
   }
 
   /** Characters that break a line in JavaScript source suitable for use in a regex charset. */
-  private static final String JS_LINEBREAKS = "\r\n\u2028\u2029";
+  private static final String JS_LINEBREAKS = "\\r\\n\u2028\u2029";
 
   /**
    * For each state, a group of rules for consuming raw text and how that affects the document
@@ -668,9 +668,9 @@ final class RawTextContextUpdater {
           makeEndTagTransition("script"),
           makeTransitionToSelf(
               "(?i)^(?:" +                          // Case-insensitively, from start of string
-                "[^\"\\\\" + JS_LINEBREAKS + "<]" + // match any chars except newlines, quotes, \s;
+                "[^\"\\\\" + JS_LINEBREAKS + "<]+" + // match any chars except newlines, quotes, \s;
                 "|\\\\(?:" +                        // or backslash followed by a
-                  "\\r\\n?" +                    // line continuation
+                  "\\r\\n?" +                       // line continuation
                   "|[^\\r<]" +                      // or an escape
                   "|<(?!/script)" +                 // or less-than that doesn't close the script.
                 ")" +
@@ -681,7 +681,7 @@ final class RawTextContextUpdater {
           makeEndTagTransition("script"),
           makeTransitionToSelf(
               "(?i)^(?:" +                          // Case-insensitively, from start of string
-                "[^'\\\\" + JS_LINEBREAKS + "<]" +  // match any chars except newlines, quotes, \s;
+                "[^'\\\\" + JS_LINEBREAKS + "<]+" + // match any chars except newlines, quotes, \s;
                 "|\\\\(?:" +                        // or a backslash followed by a
                   "\\r\\n?" +                       // line continuation
                   "|[^\\r<]" +                      // or an escape;

@@ -20,12 +20,15 @@ import java.util.Arrays;
 import java.util.Queue;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.template.soy.soytree.RawTextNode;
 
 import junit.framework.TestCase;
 
 public class RawTextContextUpdaterTest extends TestCase {
+  // The letter 'M' repeated 1500 times.
+  private static final String M1500 = Strings.repeat("M", 1500);
 
   public final void testPcdata() throws Exception {
     assertTransition("HTML_PCDATA", "", "HTML_PCDATA");
@@ -419,6 +422,7 @@ public class RawTextContextUpdaterTest extends TestCase {
   public final void testJsDqString() throws Exception {
     assertTransition("JS_DQ_STRING", "", "JS_DQ_STRING");
     assertTransition("JS_DQ_STRING", "Hello, World!", "JS_DQ_STRING");
+    assertTransition("JS_DQ_STRING", M1500, "JS_DQ_STRING"); // Check for stack overflow
     assertTransition("JS_DQ_STRING", "\"", "JS DIV_OP");
     assertTransition(
         "JS_DQ_STRING NORMAL SCRIPT SINGLE_QUOTE", "Hello, World!",
@@ -432,6 +436,7 @@ public class RawTextContextUpdaterTest extends TestCase {
   public final void testJsSqString() throws Exception {
     assertTransition("JS_SQ_STRING", "", "JS_SQ_STRING");
     assertTransition("JS_SQ_STRING", "Hello, World!", "JS_SQ_STRING");
+    assertTransition("JS_SQ_STRING", M1500, "JS_SQ_STRING"); // Check for stack overflow
     assertTransition("JS_SQ_STRING", "/*", "JS_SQ_STRING");
     assertTransition("JS_SQ_STRING", "\"", "JS_SQ_STRING");
     assertTransition("JS_SQ_STRING", "\\x27", "JS_SQ_STRING");
