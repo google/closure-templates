@@ -18,10 +18,7 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.io.CharStreams;
-import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
-import com.google.common.io.Resources;
+import com.google.common.io.*;
 import com.google.template.soy.internal.base.Pair;
 
 import java.io.File;
@@ -107,7 +104,7 @@ public interface SoyFileSupplier {
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
     public static SoyFileSupplier create(
-        InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+            CharSource contentSupplier, SoyFileKind soyFileKind, String filePath) {
       return new StableSoyFileSupplier(contentSupplier, soyFileKind, filePath);
     }
 
@@ -120,7 +117,7 @@ public interface SoyFileSupplier {
      */
     public static SoyFileSupplier create(File inputFile, SoyFileKind soyFileKind) {
       return create(
-          Files.newReaderSupplier(inputFile, UTF_8), soyFileKind, inputFile.getPath());
+          Files.asCharSource(inputFile, UTF_8), soyFileKind, inputFile.getPath());
     }
 
 
@@ -140,7 +137,7 @@ public interface SoyFileSupplier {
         return new VolatileSoyFileSupplier(new File(inputFileUrl.getPath()), soyFileKind);
       } else {
         return create(
-            Resources.newReaderSupplier(inputFileUrl, UTF_8), soyFileKind, filePath);
+            Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
       }
     }
 
@@ -171,7 +168,7 @@ public interface SoyFileSupplier {
      */
     public static SoyFileSupplier create(
         CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      return create(CharStreams.newReaderSupplier(content.toString()), soyFileKind, filePath);
+      return create(CharSource.wrap(content), soyFileKind, filePath);
     }
 
 
