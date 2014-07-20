@@ -16,7 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
-import com.google.common.io.InputSupplier;
+import com.google.common.io.CharSource;
 import com.google.template.soy.internal.base.Pair;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.io.Reader;
 
 
 /**
- * Record for one input Soy file. Contains an {@link InputSupplier} to supply a {@code Reader} for
+ * Record for one input Soy file. Contains a {@link com.google.common.io.CharSource} to supply a {@code Reader} for
  * the file content, and also the file path.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -36,7 +36,7 @@ public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
   /** Supplier of a Reader for the Soy file content. */
-  private final InputSupplier<? extends Reader> contentSupplier;
+  private final CharSource contentSupplier;
 
 
   /**
@@ -47,8 +47,7 @@ public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
    * @param soyFileKind The kind of this input Soy file.
    * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
    */
-  public StableSoyFileSupplier(
-      InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+  public StableSoyFileSupplier(CharSource contentSupplier, SoyFileKind soyFileKind, String filePath) {
     super(soyFileKind, filePath);
     this.contentSupplier = contentSupplier;
   }
@@ -62,7 +61,7 @@ public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
   @Override
   public Pair<Reader, Version> open() throws IOException {
-    return Pair.of((Reader) contentSupplier.getInput(), Version.STABLE_VERSION);
+    return Pair.of(contentSupplier.openStream(), Version.STABLE_VERSION);
   }
 
 }

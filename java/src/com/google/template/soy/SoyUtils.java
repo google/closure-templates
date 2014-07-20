@@ -20,8 +20,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
 import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.FloatData;
@@ -147,11 +147,11 @@ public class SoyUtils {
    * @throws SoySyntaxException If the globals file is not in the correct format.
    */
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(
-      InputSupplier<? extends Reader> inputSupplier) throws IOException, SoySyntaxException {
+      CharSource inputSupplier) throws IOException, SoySyntaxException {
     ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
     List<Pair<CompileTimeGlobalsFileError, String>> errors = Lists.newArrayListWithCapacity(0);
 
-    BufferedReader reader = new BufferedReader(inputSupplier.getInput());
+    BufferedReader reader = inputSupplier.openBufferedStream();
     for (String line = reader.readLine(); line != null; line = reader.readLine()) {
 
       if (line.startsWith("//") || line.trim().length() == 0) {

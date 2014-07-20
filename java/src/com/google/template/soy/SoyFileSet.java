@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.InputSupplier;
+import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -214,7 +214,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addWithKind(
-        InputSupplier<? extends Reader> contentSupplier, SoyFileKind soyFileKind, String filePath) {
+        CharSource contentSupplier, SoyFileKind soyFileKind, String filePath) {
       setBuilder.add(SoyFileSupplier.Factory.create(contentSupplier, soyFileKind, filePath));
       return this;
     }
@@ -228,7 +228,7 @@ public final class SoyFileSet {
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
-    public Builder add(InputSupplier<? extends Reader> contentSupplier, String filePath) {
+    public Builder add(CharSource contentSupplier, String filePath) {
       return addWithKind(contentSupplier, SoyFileKind.SRC, filePath);
     }
 
