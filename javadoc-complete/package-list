@@ -6,6 +6,7 @@ com.google.template.soy.basicdirectives
 com.google.template.soy.basicfunctions
 com.google.template.soy.bididirectives
 com.google.template.soy.bidifunctions
+com.google.template.soy.conformance
 com.google.template.soy.coredirectives
 com.google.template.soy.data
 com.google.template.soy.data.internal

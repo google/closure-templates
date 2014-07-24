@@ -34,6 +34,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.conformance.CheckConformance;
+import com.google.template.soy.conformance.Result;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -575,6 +577,8 @@ public final class SoyFileSet {
   /** The general compiler options. */
   private final SoyGeneralOptions generalOptions;
 
+  private CheckConformance checkConformance;
+
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
 
@@ -632,6 +636,11 @@ public final class SoyFileSet {
   @Inject(optional = true)
   void setMsgBundleHandlerProvider(Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
     this.msgBundleHandlerProvider = msgBundleHandlerProvider;
+  }
+
+  @Inject(optional = true)
+  void setCheckConformance(CheckConformance checkConformance) {
+    this.checkConformance = checkConformance;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -978,6 +987,15 @@ public final class SoyFileSet {
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
       (new AssertNoExternalCallsVisitor()).exec(soyTree);
+    }
+
+    if (checkConformance != null) {
+      ImmutableList<Result> violations = checkConformance.getViolations(soyTree);
+      if (!violations.isEmpty()) {
+        // TODO(brndn): CheckConformance#getViolations should return a list of SoySyntaxExceptions,
+        // so that they can be easily thrown here.
+        throw SoySyntaxException.createWithoutMetaInfo("Conformance violation!");
+      }
     }
 
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
