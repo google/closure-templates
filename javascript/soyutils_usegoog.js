@@ -47,6 +47,8 @@ goog.require('goog.asserts');
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
+goog.require('goog.html.SafeStyle');
+goog.require('goog.html.SafeUrl');
 goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
@@ -157,12 +159,13 @@ soydata.SanitizedHtml.prototype.contentKind = soydata.SanitizedContentKind.HTML;
  * Returns a SanitizedHtml object for a particular value. The content direction
  * is preserved.
  *
- * This HTML-escapes the value unless it is already SanitizedHtml.
+ * This HTML-escapes the value unless it is already SanitizedHtml or SafeHtml.
  *
  * @param {*} value The value to convert. If it is already a SanitizedHtml
  *     object, it is left alone.
  * @return {!soydata.SanitizedHtml} A SanitizedHtml object derived from the
- *     stringified value. It is escaped unless the input is SanitizedHtml.
+ *     stringified value. It is escaped unless the input is SanitizedHtml or
+ *     SafeHtml.
  */
 soydata.SanitizedHtml.from = function(value) {
   // The check is soydata.isContentKind() inlined for performance.
@@ -1345,6 +1348,9 @@ soy.$$escapeUri = function(value) {
     goog.asserts.assert(value.constructor === soydata.SanitizedUri);
     return soy.$$normalizeUri(value);
   }
+  if (value instanceof goog.html.SafeUrl) {
+    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
+  }
   // Apostophes and parentheses are not matched by encodeURIComponent.
   // They are technically special in URIs, but only appear in the obsolete mark
   // production in Appendix D.2 of RFC 3986, so can be encoded without changing
@@ -1382,6 +1388,9 @@ soy.$$filterNormalizeUri = function(value) {
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.URI)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedUri);
     return soy.$$normalizeUri(value);
+  }
+  if (value instanceof goog.html.SafeUrl) {
+    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
   }
   return soy.esc.$$filterNormalizeUriHelper(value);
 };
@@ -1428,6 +1437,9 @@ soy.$$filterCssValue = function(value) {
   // Uses == to intentionally match null and undefined for Java compatibility.
   if (value == null) {
     return '';
+  }
+  if (value instanceof goog.html.SafeStyle) {
+    return goog.html.SafeStyle.unwrap(value);
   }
   return soy.esc.$$filterCssValueHelper(value);
 };
