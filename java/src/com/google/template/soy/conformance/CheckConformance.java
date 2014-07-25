@@ -17,6 +17,7 @@
 package com.google.template.soy.conformance;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 
@@ -30,6 +31,6 @@ public interface CheckConformance {
    * Runs the conformance checks from the given AST root.
    * @return The list of conformance violations.
    */
-  ImmutableList<Result> getViolations(SoyFileSetNode root);
+  ImmutableList<SoySyntaxException> getViolations(SoyFileSetNode root);
 }
 

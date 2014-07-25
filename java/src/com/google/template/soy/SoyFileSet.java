@@ -35,7 +35,6 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.CheckConformance;
-import com.google.template.soy.conformance.Result;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -990,11 +989,10 @@ public final class SoyFileSet {
     }
 
     if (checkConformance != null) {
-      ImmutableList<Result> violations = checkConformance.getViolations(soyTree);
+      ImmutableList<SoySyntaxException> violations = checkConformance.getViolations(soyTree);
       if (!violations.isEmpty()) {
-        // TODO(brndn): CheckConformance#getViolations should return a list of SoySyntaxExceptions,
-        // so that they can be easily thrown here.
-        throw SoySyntaxException.createWithoutMetaInfo("Conformance violation!");
+        // TODO(brndn): merge all violations into one, instead of just showing the first.
+        throw violations.get(0);
       }
     }
 
