@@ -341,8 +341,15 @@ soydata.$$EMPTY_STRING_ = {
  * @private
  */
 soydata.$$makeSanitizedContentFactory_ = function(ctor) {
-  /** @type {function(new: goog.soy.data.SanitizedContent)} */
-  function InstantiableCtor() {}
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {goog.soy.data.SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
   InstantiableCtor.prototype = ctor.prototype;
   /**
    * Creates a ctor-type SanitizedContent instance.
@@ -355,8 +362,7 @@ soydata.$$makeSanitizedContentFactory_ = function(ctor) {
    *     there is no way to express that here.
    */
   function sanitizedContentFactory(content, opt_contentDir) {
-    var result = new InstantiableCtor();
-    result.content = String(content);
+    var result = new InstantiableCtor(String(content));
     if (opt_contentDir !== undefined) {
       result.contentDir = opt_contentDir;
     }
@@ -383,8 +389,15 @@ soydata.$$makeSanitizedContentFactory_ = function(ctor) {
  * @private
  */
 soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
-  /** @type {function(new: goog.soy.data.SanitizedContent)} */
-  function InstantiableCtor() {}
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {goog.soy.data.SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
   InstantiableCtor.prototype = ctor.prototype;
   /**
    * Creates a ctor-type SanitizedContent instance.
@@ -395,8 +408,7 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
    *     there is no way to express that here.
    */
   function sanitizedContentFactory(content) {
-    var result = new InstantiableCtor();
-    result.content = String(content);
+    var result = new InstantiableCtor(String(content));
     return result;
   }
   return sanitizedContentFactory;
@@ -816,8 +828,15 @@ soy.$$EMPTY_TEMPLATE_FN_ = function(opt_data, opt_sb, opt_ijData) {
  * @private
  */
 soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
-  /** @type {function(new: goog.soy.data.SanitizedContent)} */
-  function InstantiableCtor() {}
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {goog.soy.data.SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
   InstantiableCtor.prototype = ctor.prototype;
   /**
    * Creates a ctor-type SanitizedContent instance.
@@ -829,15 +848,13 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
    *     instance, or an empty string. A new instance is actually of type T
    *     above (ctor's type, a descendant of SanitizedContent), but there's no
    *     way to express that here.
-   * a descendant of SanitizedContent), but there's no way to express that here.
    */
   function sanitizedContentFactory(content, opt_contentDir) {
     var contentString = String(content);
     if (!contentString) {
       return soydata.$$EMPTY_STRING_.VALUE;
     }
-    var result = new InstantiableCtor();
-    result.content = String(content);
+    var result = new InstantiableCtor(contentString);
     if (opt_contentDir !== undefined) {
       result.contentDir = opt_contentDir;
     }
@@ -869,8 +886,15 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
  */
 soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
     function(ctor) {
-  /** @type {function(new: goog.soy.data.SanitizedContent)} */
-  function InstantiableCtor() {}
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {goog.soy.data.SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
   InstantiableCtor.prototype = ctor.prototype;
   /**
    * Creates a ctor-type SanitizedContent instance.
@@ -880,15 +904,13 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
    *     instance, or an empty string. A new instance is actually of type T
    *     above (ctor's type, a descendant of SanitizedContent), but there's no
    *     way to express that here.
-   * a descendant of SanitizedContent), but there's no way to express that here.
    */
   function sanitizedContentFactory(content) {
     var contentString = String(content);
     if (!contentString) {
       return soydata.$$EMPTY_STRING_.VALUE;
     }
-    var result = new InstantiableCtor();
-    result.content = String(content);
+    var result = new InstantiableCtor(contentString);
     return result;
   }
   return sanitizedContentFactory;
@@ -1032,7 +1054,7 @@ soy.$$cleanHtml = function(value) {
 soy.$$escapeHtmlRcdata = function(value) {
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.HTML)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
-    return soy.esc.$$normalizeHtmlHelper(value.content);
+    return soy.esc.$$normalizeHtmlHelper(value.getContent());
   }
   return soy.esc.$$escapeHtmlHelper(value);
 };
@@ -1166,7 +1188,8 @@ soy.$$escapeHtmlAttribute = function(value) {
     // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
-    return soy.esc.$$normalizeHtmlHelper(soy.$$stripHtmlTags(value.content));
+    return soy.esc.$$normalizeHtmlHelper(
+        soy.$$stripHtmlTags(value.getContent()));
   }
   return soy.esc.$$escapeHtmlHelper(value);
 };
@@ -1184,7 +1207,7 @@ soy.$$escapeHtmlAttributeNospace = function(value) {
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.HTML)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
     return soy.esc.$$normalizeHtmlNospaceHelper(
-        soy.$$stripHtmlTags(value.content));
+        soy.$$stripHtmlTags(value.getContent()));
   }
   return soy.esc.$$escapeHtmlNospaceHelper(value);
 };
@@ -1208,7 +1231,7 @@ soy.$$filterHtmlAttributes = function(value) {
     // Add a space at the end to ensure this won't get merged into following
     // attributes, unless the interpretation is unambiguous (ending with quotes
     // or a space).
-    return value.content.replace(/([^"'\s])$/, '$1 ');
+    return value.getContent().replace(/([^"'\s])$/, '$1 ');
   }
   // TODO: Dynamically inserting attributes that aren't marked as trusted is
   // probably unnecessary.  Any filtering done here will either be inadequate
@@ -1264,7 +1287,7 @@ soy.$$escapeJsString = function(value) {
     // TODO: It might still be worthwhile to normalize it to remove
     // unescaped quotes, null, etc: replace(/(?:^|[^\])['"]/g, '\\$
     goog.asserts.assert(value.constructor === soydata.SanitizedJsStrChars);
-    return value.content;
+    return value.getContent();
   }
   return soy.esc.$$escapeJsStringHelper(value);
 };
@@ -1290,7 +1313,7 @@ soy.$$escapeJsValue = function(value) {
   }
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.JS)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedJs);
-    return value.content;
+    return value.getContent();
   }
   switch (typeof value) {
     case 'boolean': case 'number':
@@ -1432,7 +1455,7 @@ soy.$$escapeCssString = function(value) {
 soy.$$filterCssValue = function(value) {
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.CSS)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedCss);
-    return value.content;
+    return value.getContent();
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
   if (value == null) {
@@ -1459,7 +1482,7 @@ soy.$$filterNoAutoescape = function(value) {
     // Fail in development mode.
     goog.asserts.fail(
         'Tainted SanitizedContentKind.TEXT for |noAutoescape: `%s`',
-        [value.content]);
+        [value.getContent()]);
     // Return innocuous data in production.
     return 'zSoyz';
   }
