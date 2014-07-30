@@ -3020,7 +3020,7 @@ goog.addDependency('ui/containerrenderer_test.js', ['goog.ui.ContainerRendererTe
 goog.addDependency('ui/containerscroller.js', ['goog.ui.ContainerScroller'], ['goog.Disposable', 'goog.Timer', 'goog.events.EventHandler', 'goog.style', 'goog.ui.Component', 'goog.ui.Container']);
 goog.addDependency('ui/containerscroller_test.js', ['goog.ui.ContainerScrollerTest'], ['goog.dom', 'goog.testing.MockClock', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.Container', 'goog.ui.ContainerScroller']);
 goog.addDependency('ui/control.js', ['goog.ui.Control'], ['goog.array', 'goog.dom', 'goog.events.Event', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.KeyHandler', 'goog.string', 'goog.ui.Component', 'goog.ui.ControlContent', 'goog.ui.ControlRenderer', 'goog.ui.decorate', 'goog.ui.registry', 'goog.userAgent']);
-goog.addDependency('ui/control_test.js', ['goog.ui.ControlTest'], ['goog.array', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.KeyCodes', 'goog.object', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.ControlRenderer', 'goog.ui.registry', 'goog.userAgent']);
+goog.addDependency('ui/control_test.js', ['goog.ui.ControlTest'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.array', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.KeyCodes', 'goog.object', 'goog.string', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.ControlRenderer', 'goog.ui.registry', 'goog.userAgent']);
 goog.addDependency('ui/controlcontent.js', ['goog.ui.ControlContent'], []);
 goog.addDependency('ui/controlrenderer.js', ['goog.ui.ControlRenderer'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.object', 'goog.string', 'goog.style', 'goog.ui.Component', 'goog.userAgent']);
 goog.addDependency('ui/controlrenderer_test.js', ['goog.ui.ControlRendererTest'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.classlist', 'goog.object', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.ControlRenderer', 'goog.userAgent']);
@@ -16097,8 +16097,7 @@ goog.html.SafeHtml.VALID_NAMES_IN_TAG_ = /^[a-zA-Z0-9-]+$/;
 /**
  * Set of attributes containing URL as defined at
  * http://www.w3.org/TR/html5/index.html#attributes-1.
- * @const
- * @private
+ * @private @const {Object.<string,boolean>}
  */
 goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
     'data', 'formaction', 'href', 'manifest', 'poster', 'src');
@@ -16107,8 +16106,7 @@ goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
 // TODO(jakubvrana): Perhaps add <template> used by Polymer?
 /**
  * Set of tag names that are too dangerous.
- * @const
- * @private
+ * @private @const {Object.<string,boolean>}
  */
 goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet('link',
     'script', 'style');
