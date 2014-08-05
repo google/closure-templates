@@ -361,8 +361,10 @@ goog.globalize = function(obj, opt_global) {
  *                         this file provides.
  * @param {Array} requires An array of strings with the names of the objects
  *                         this file requires.
+ * @param {boolean=} opt_isModule Whether this name is a module (to be used in
+ *     in the future).
  */
-goog.addDependency = function(relPath, provides, requires) {
+goog.addDependency = function(relPath, provides, requires, opt_isModule) {
   if (goog.DEPENDENCIES_ENABLED) {
     var provide, require;
     var path = relPath.replace(/\\/g, '/');
@@ -1903,7 +1905,7 @@ goog.addDependency('async/conditionaldelay.js', ['goog.async.ConditionalDelay'],
 goog.addDependency('async/conditionaldelay_test.js', ['goog.async.ConditionalDelayTest'], ['goog.async.ConditionalDelay', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('async/delay.js', ['goog.Delay', 'goog.async.Delay'], ['goog.Disposable', 'goog.Timer'], false);
 goog.addDependency('async/delay_test.js', ['goog.async.DelayTest'], ['goog.async.Delay', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
-goog.addDependency('async/nexttick.js', ['goog.async.nextTick', 'goog.async.throwException'], ['goog.debug.entryPointRegistry', 'goog.functions'], false);
+goog.addDependency('async/nexttick.js', ['goog.async.nextTick', 'goog.async.throwException'], ['goog.debug.entryPointRegistry', 'goog.functions', 'goog.labs.userAgent.browser'], false);
 goog.addDependency('async/nexttick_test.js', ['goog.async.nextTickTest'], ['goog.async.nextTick', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.testing.AsyncTestCase', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('async/run.js', ['goog.async.run'], ['goog.async.nextTick', 'goog.async.throwException', 'goog.testing.watchers'], false);
 goog.addDependency('async/run_test.js', ['goog.async.runTest'], ['goog.async.run', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
