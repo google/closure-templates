@@ -474,7 +474,7 @@ public class BaseTofu implements SoyTofu {
       return sb.toString();
     }
 
-    @Override public void render(Appendable out) {
+    @Override public SanitizedContent.ContentKind render(Appendable out) {
       TemplateNode template = baseTofu.renderMain(
           out, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
           cssRenamingMap, doAddToCache);
@@ -485,6 +485,7 @@ public class BaseTofu implements SoyTofu {
         // place where HTML was implicitly expected.
         enforceContentKind(template);
       }
+      return template.getContentKind();
     }
 
     @Override public SanitizedContent renderStrict() {

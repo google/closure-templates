@@ -260,7 +260,7 @@ public interface SoyTofu {
      * allowed, unless setContentKind was called. The goal is to prevent accidental rendering
      * of unescaped kind="text" in contexts where that could XSS.
      */
-    public void render(Appendable out);
+    public SanitizedContent.ContentKind render(Appendable out);
   }
 
 
