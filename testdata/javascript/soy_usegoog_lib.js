@@ -2481,7 +2481,7 @@ goog.addDependency('labs/testing/objectmatcher.js', ['goog.labs.testing.HasPrope
 goog.addDependency('labs/testing/objectmatcher_test.js', ['goog.labs.testing.objectMatcherTest'], ['goog.labs.testing.MatcherError', 'goog.labs.testing.ObjectEqualsMatcher', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/testing/stringmatcher.js', ['goog.labs.testing.ContainsStringMatcher', 'goog.labs.testing.EndsWithMatcher', 'goog.labs.testing.EqualToIgnoringCaseMatcher', 'goog.labs.testing.EqualToIgnoringWhitespaceMatcher', 'goog.labs.testing.EqualsMatcher', 'goog.labs.testing.RegexMatcher', 'goog.labs.testing.StartsWithMatcher', 'goog.labs.testing.StringContainsInOrderMatcher'], ['goog.asserts', 'goog.labs.testing.Matcher', 'goog.string'], false);
 goog.addDependency('labs/testing/stringmatcher_test.js', ['goog.labs.testing.stringMatcherTest'], ['goog.labs.testing.MatcherError', 'goog.labs.testing.StringContainsInOrderMatcher', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
-goog.addDependency('labs/useragent/browser.js', ['goog.labs.userAgent.browser'], ['goog.array', 'goog.asserts', 'goog.labs.userAgent.util', 'goog.string'], false);
+goog.addDependency('labs/useragent/browser.js', ['goog.labs.userAgent.browser'], ['goog.array', 'goog.asserts', 'goog.labs.userAgent.util', 'goog.object', 'goog.string'], false);
 goog.addDependency('labs/useragent/browser_test.js', ['goog.labs.userAgent.browserTest'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/useragent/device.js', ['goog.labs.userAgent.device'], ['goog.labs.userAgent.util'], false);
 goog.addDependency('labs/useragent/device_test.js', ['goog.labs.userAgent.deviceTest'], ['goog.labs.userAgent.device', 'goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.jsunit'], false);
@@ -2583,17 +2583,17 @@ goog.addDependency('messaging/respondingchannel_test.js', ['goog.messaging.Respo
 goog.addDependency('messaging/testdata/portchannel_worker.js', ['goog.messaging.testdata.portchannel_worker'], ['goog.messaging.PortChannel'], false);
 goog.addDependency('messaging/testdata/portnetwork_worker1.js', ['goog.messaging.testdata.portnetwork_worker1'], ['goog.messaging.PortCaller', 'goog.messaging.PortChannel'], false);
 goog.addDependency('messaging/testdata/portnetwork_worker2.js', ['goog.messaging.testdata.portnetwork_worker2'], ['goog.messaging.PortCaller', 'goog.messaging.PortChannel'], false);
-goog.addDependency('module/abstractmoduleloader.js', ['goog.module.AbstractModuleLoader'], [], false);
-goog.addDependency('module/basemodule.js', ['goog.module.BaseModule'], ['goog.Disposable'], false);
-goog.addDependency('module/loader.js', ['goog.module.Loader'], ['goog.Timer', 'goog.array', 'goog.dom', 'goog.object'], false);
-goog.addDependency('module/module.js', ['goog.module'], ['goog.module.Loader'], false);
-goog.addDependency('module/moduleinfo.js', ['goog.module.ModuleInfo'], ['goog.Disposable', 'goog.functions', 'goog.module.BaseModule', 'goog.module.ModuleLoadCallback'], false);
+goog.addDependency('module/abstractmoduleloader.js', ['goog.module.AbstractModuleLoader'], ['goog.module'], false);
+goog.addDependency('module/basemodule.js', ['goog.module.BaseModule'], ['goog.Disposable', 'goog.module'], false);
+goog.addDependency('module/loader.js', ['goog.module.Loader'], ['goog.Timer', 'goog.array', 'goog.dom', 'goog.module', 'goog.object'], false);
+goog.addDependency('module/module.js', ['goog.module'], [], false);
+goog.addDependency('module/moduleinfo.js', ['goog.module.ModuleInfo'], ['goog.Disposable', 'goog.functions', 'goog.module', 'goog.module.BaseModule', 'goog.module.ModuleLoadCallback'], false);
 goog.addDependency('module/moduleinfo_test.js', ['goog.module.ModuleInfoTest'], ['goog.module.BaseModule', 'goog.module.ModuleInfo', 'goog.testing.jsunit'], false);
-goog.addDependency('module/moduleloadcallback.js', ['goog.module.ModuleLoadCallback'], ['goog.debug.entryPointRegistry', 'goog.debug.errorHandlerWeakDep'], false);
+goog.addDependency('module/moduleloadcallback.js', ['goog.module.ModuleLoadCallback'], ['goog.debug.entryPointRegistry', 'goog.debug.errorHandlerWeakDep', 'goog.module'], false);
 goog.addDependency('module/moduleloadcallback_test.js', ['goog.module.ModuleLoadCallbackTest'], ['goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.functions', 'goog.module.ModuleLoadCallback', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('module/moduleloader.js', ['goog.module.ModuleLoader'], ['goog.Timer', 'goog.array', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.log', 'goog.module.AbstractModuleLoader', 'goog.net.BulkLoader', 'goog.net.EventType', 'goog.net.jsloader', 'goog.userAgent.product'], false);
 goog.addDependency('module/moduleloader_test.js', ['goog.module.ModuleLoaderTest'], ['goog.array', 'goog.dom', 'goog.functions', 'goog.module.ModuleLoader', 'goog.module.ModuleManager', 'goog.module.ModuleManager.CallbackType', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.events.EventObserver', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent.product'], false);
-goog.addDependency('module/modulemanager.js', ['goog.module.ModuleManager', 'goog.module.ModuleManager.CallbackType', 'goog.module.ModuleManager.FailureType'], ['goog.Disposable', 'goog.array', 'goog.asserts', 'goog.async.Deferred', 'goog.debug.Trace', 'goog.dispose', 'goog.log', 'goog.module.ModuleInfo', 'goog.module.ModuleLoadCallback', 'goog.object'], false);
+goog.addDependency('module/modulemanager.js', ['goog.module.ModuleManager', 'goog.module.ModuleManager.CallbackType', 'goog.module.ModuleManager.FailureType'], ['goog.Disposable', 'goog.array', 'goog.asserts', 'goog.async.Deferred', 'goog.debug.Trace', 'goog.dispose', 'goog.log', 'goog.module', 'goog.module.ModuleInfo', 'goog.module.ModuleLoadCallback', 'goog.object'], false);
 goog.addDependency('module/modulemanager_test.js', ['goog.module.ModuleManagerTest'], ['goog.array', 'goog.functions', 'goog.module.BaseModule', 'goog.module.ModuleManager', 'goog.testing', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('module/testdata/modA_1.js', ['goog.module.testdata.modA_1'], [], false);
 goog.addDependency('module/testdata/modA_2.js', ['goog.module.testdata.modA_2'], ['goog.module.ModuleManager'], false);
@@ -2612,7 +2612,7 @@ goog.addDependency('net/cookies_test.js', ['goog.net.cookiesTest'], ['goog.array
 goog.addDependency('net/corsxmlhttpfactory.js', ['goog.net.CorsXmlHttpFactory', 'goog.net.IeCorsXhrAdapter'], ['goog.net.HttpStatus', 'goog.net.XhrLike', 'goog.net.XmlHttp', 'goog.net.XmlHttpFactory'], false);
 goog.addDependency('net/corsxmlhttpfactory_test.js', ['goog.net.CorsXmlHttpFactoryTest'], ['goog.net.CorsXmlHttpFactory', 'goog.net.IeCorsXhrAdapter', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('net/crossdomainrpc.js', ['goog.net.CrossDomainRpc'], ['goog.Uri', 'goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.string', 'goog.userAgent'], false);
-goog.addDependency('net/crossdomainrpc_test.js', ['goog.net.CrossDomainRpcTest'], ['goog.log', 'goog.log.Level', 'goog.net.CrossDomainRpc', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
+goog.addDependency('net/crossdomainrpc_test.js', ['goog.net.CrossDomainRpcTest'], ['goog.log', 'goog.log.Level', 'goog.net.CrossDomainRpc', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('net/errorcode.js', ['goog.net.ErrorCode'], [], false);
 goog.addDependency('net/eventtype.js', ['goog.net.EventType'], [], false);
 goog.addDependency('net/filedownloader.js', ['goog.net.FileDownloader', 'goog.net.FileDownloader.Error'], ['goog.Disposable', 'goog.asserts', 'goog.async.Deferred', 'goog.crypt.hash32', 'goog.debug.Error', 'goog.events', 'goog.events.EventHandler', 'goog.fs', 'goog.fs.DirectoryEntry', 'goog.fs.Error', 'goog.fs.FileSaver', 'goog.net.EventType', 'goog.net.XhrIo', 'goog.net.XhrIoPool', 'goog.object'], false);
@@ -8570,8 +8570,8 @@ goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
 goog.provide('goog.labs.userAgent.browser');
 
 goog.require('goog.array');
-goog.require('goog.asserts');
 goog.require('goog.labs.userAgent.util');
+goog.require('goog.object');
 goog.require('goog.string');
 
 
@@ -8631,9 +8631,11 @@ goog.labs.userAgent.browser.matchChrome_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchAndroidBrowser_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Android') &&
-      !goog.labs.userAgent.util.matchUserAgent('Chrome') &&
-      !goog.labs.userAgent.util.matchUserAgent('CriOS');
+  // Android can appear in the user agent string for Chrome on Android.
+  // This is not the Android standalone browser if it does.
+  return !goog.labs.userAgent.browser.isChrome() &&
+      goog.labs.userAgent.util.matchUserAgent('Android');
+
 };
 
 
@@ -8704,13 +8706,44 @@ goog.labs.userAgent.browser.getVersion = function() {
     return goog.labs.userAgent.browser.getIEVersion_(userAgentString);
   }
 
-  if (goog.labs.userAgent.browser.isOpera()) {
-    return goog.labs.userAgent.browser.getOperaVersion_(userAgentString);
+  var versionTuples = goog.labs.userAgent.util.extractVersionTuples(
+      userAgentString);
+
+  // Construct a map for easy lookup.
+  var versionMap = {};
+  goog.array.forEach(versionTuples, function(tuple) {
+    // Note that the tuple is of length three, but we only care about the
+    // first two.
+    var key = tuple[0];
+    var value = tuple[1];
+    versionMap[key] = value;
+  });
+
+  var versionMapHasKey = goog.partial(goog.object.containsKey, versionMap);
+
+  // Gives the value with the first key it finds, otherwise empty string.
+  function lookUpValueWithKeys(keys) {
+    var key = goog.array.find(keys, versionMapHasKey);
+    return versionMap[key] || '';
   }
 
-  var versionTuples =
-      goog.labs.userAgent.util.extractVersionTuples(userAgentString);
-  return goog.labs.userAgent.browser.getVersionFromTuples_(versionTuples);
+  // Check Opera before Chrome since Opera 15+ has "Chrome" in the string.
+  // See
+  // http://my.opera.com/ODIN/blog/2013/07/15/opera-user-agent-strings-opera-15-and-beyond
+  if (goog.labs.userAgent.browser.isOpera()) {
+    // Opera 10 has Version/10.0 but Opera/9.8, so look for "Version" first.
+    // Opera uses 'OPR' for more recent UAs.
+    return lookUpValueWithKeys(['Version', 'Opera', 'OPR']);
+  }
+
+  if (goog.labs.userAgent.browser.isChrome()) {
+    return lookUpValueWithKeys(['Chrome', 'CriOS']);
+  }
+
+  // Usually products browser versions are in the third tuple after "Mozilla"
+  // and the engine.
+  var tuple = versionTuples[2];
+  return tuple && tuple[1] || '';
 };
 
 
@@ -8778,42 +8811,6 @@ goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
     }
   }
   return version;
-};
-
-
-/**
- * Determines Opera version. More information:
- * http://my.opera.com/ODIN/blog/2013/07/15/opera-user-agent-strings-opera-15-and-beyond
- *
- * @param {string} userAgent The User-Agent.
- * @return {string}
- * @private
- */
-goog.labs.userAgent.browser.getOperaVersion_ = function(userAgent) {
-  var versionTuples =
-      goog.labs.userAgent.util.extractVersionTuples(userAgent);
-  var lastTuple = goog.array.peek(versionTuples);
-  if (lastTuple[0] == 'OPR' && lastTuple[1]) {
-    return lastTuple[1];
-  }
-
-  return goog.labs.userAgent.browser.getVersionFromTuples_(versionTuples);
-};
-
-
-/**
- * Nearly all User-Agents start with Mozilla/N.0. This looks at the second tuple
- * for the actual browser version number.
- * @param {!Array.<!Array.<string>>} versionTuples
- * @return {string} The version or empty string if it cannot be determined.
- * @private
- */
-goog.labs.userAgent.browser.getVersionFromTuples_ = function(versionTuples) {
-  // versionTuples[2] (The first X/Y tuple after the parenthesis) contains the
-  // browser version number.
-  goog.asserts.assert(versionTuples.length > 2,
-      'Couldn\'t extract version tuple from user agent string');
-  return versionTuples[2] && versionTuples[2][1] ? versionTuples[2][1] : '';
 };
 
 //javascript/closure/labs/useragent/engine.js
