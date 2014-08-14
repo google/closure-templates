@@ -96,7 +96,7 @@ Author: Neil Sanchala
           description="generates soyutils.js and soyutils_usegoog.js.">
     <!-- Load a custom ANT task. -->
     <taskdef name="gen.escape.directives"
-             classname="com.google.template.soy.shared.internal.GenerateSoyUtilsEscapingDirectiveCode">
+             classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode">
       <classpath>
         <fileset dir="${java.lib.dir}">
           <include name="*.jar" />
