@@ -30,9 +30,7 @@ import junit.framework.TestCase;
  */
 public class CheckCallingParamTypesVisitorTest extends TestCase {
 
-
   public void testArgumentTypeMismatch() {
-
     assertInvalidSoyFiles(
         "Argument type mismatch",
         "" +
@@ -71,7 +69,6 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "  {$p1}\n" +
             "{/template}\n");
   }
-
 
   public void testArgumentTypeMismatchInDelcall() {
 
@@ -115,11 +112,9 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/deltemplate}\n");
   }
 
-
   public void testNoArgumentTypeMismatch() {
 
     assertValidSoyFiles(
-        "Argument type mismatch",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -137,7 +132,6 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/template}\n");
 
     assertValidSoyFiles(
-        "Argument type mismatch",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -156,7 +150,6 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "  {$p1}\n" +
             "{/template}\n");
   }
-
 
   public void testIndirectParams() {
     assertInvalidSoyFiles(
@@ -183,7 +176,6 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/template}\n");
 
     assertValidSoyFiles(
-        "Argument type mismatch",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -206,10 +198,8 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/template}\n");
   }
 
-
   public void testNullableIndirectParams() {
     assertValidSoyFiles(
-        "Argument type mismatch",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -231,6 +221,25 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/template}\n");
   }
 
+  public void testOverriddenTextTypeParam() {
+    assertValidSoyFiles(
+        "" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "\n" +
+            "/***/\n" +
+            "{template .t1}\n" +
+            "  {@param? p1: string}\n" +
+            "  {call .t2 data=\"all\"}\n" +
+            "    {param p1 kind=\"text\"}{if $p1}foo{/if}{/param}\n" +
+            "  {/call}\n" +
+            "{/template}\n" +
+            "\n" +
+            "/***/\n" +
+            "{template .t2}\n" +
+            "  {@param p1: string}\n" +
+            "  {$p1}\n" +
+            "{/template}\n");
+  }
 
   private void assertValidSoyFiles(String... soyFileContents) {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
@@ -238,9 +247,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     (new CheckCallingParamTypesVisitor()).exec(soyTree);
   }
 
-
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {

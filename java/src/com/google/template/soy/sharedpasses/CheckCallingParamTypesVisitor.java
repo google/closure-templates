@@ -136,22 +136,21 @@ public class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> 
         argType = SanitizedType.getTypeForContentKind(
             ((CallParamContentNode) callerParam).getContentKind());
       }
-      if (argType == null) {
-        continue;
-      }
-      // The types of the parameters. If this is an explicitly declared parameter,
-      // then this collection will have only one member; If it's an implicit
-      // parameter then this may contain multiple types. Note we don't use
-      // a union here because the rules are a bit different than the normal rules
-      // for assigning union types.
-      // It's possible that the set may be empty, because all of the callees
-      // are external. In that case there's nothing we can do, so we don't
-      // report anything.
-      Collection<SoyType> declaredParamTypes = calleeParamTypes.params.get(callerParam.getKey());
-      for (SoyType formalType : declaredParamTypes) {
-        checkArgumentAgainstParamType(
-            call, callerParam.getKey(), argType, formalType,
-            calleeParamTypes.isIndirect(callerParam.getKey()));
+      if (argType != null) {
+        // The types of the parameters. If this is an explicitly declared parameter,
+        // then this collection will have only one member; If it's an implicit
+        // parameter then this may contain multiple types. Note we don't use
+        // a union here because the rules are a bit different than the normal rules
+        // for assigning union types.
+        // It's possible that the set may be empty, because all of the callees
+        // are external. In that case there's nothing we can do, so we don't
+        // report anything.
+        Collection<SoyType> declaredParamTypes = calleeParamTypes.params.get(callerParam.getKey());
+        for (SoyType formalType : declaredParamTypes) {
+          checkArgumentAgainstParamType(
+              call, callerParam.getKey(), argType, formalType,
+              calleeParamTypes.isIndirect(callerParam.getKey()));
+        }
       }
 
       explicitParams.add(callerParam.getKey());
