@@ -246,6 +246,22 @@ public class SharedTestUtils {
    * Parses the given strings as the contents of Soy files.
    *
    * @param doRunInitialParsingPasses Whether to run initial parsing passes.
+   * @param soyFileSuppliers The contents of the Soy files to parse.
+   * @return The resulting Soy tree.
+   */
+  public static SoyFileSetNode parseSoyFiles(
+      boolean doRunInitialParsingPasses, SoyFileSupplier... soyFileSuppliers) {
+    return new SoyFileSetParser(
+        new SoyTypeRegistry(), null /* astCache */, SyntaxVersion.V2_0, soyFileSuppliers)
+        .setDoRunInitialParsingPasses(doRunInitialParsingPasses)
+        .setDoRunCheckingPasses(false)
+        .parse();
+  }
+
+  /**
+   * Parses the given strings as the contents of Soy files.
+   *
+   * @param doRunInitialParsingPasses Whether to run initial parsing passes.
    * @param doRunCheckingPasses Whether to run checking passes.
    * @param soyFileContents The contents of the Soy files to parse.
    * @return The resulting Soy tree.
