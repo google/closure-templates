@@ -283,9 +283,18 @@ goog.provide = function(name) {
  *     "goog.package.part", is expected but not required.
  */
 goog.module = function(name) {
-  if (!goog.inModuleLoader_) {
+  if (!goog.isString(name) || !name) {
+    throw Error('Invalid module identifier');
+  }
+  if (!goog.isInModuleLoader_()) {
     throw Error('Module ' + name + ' has been loaded incorrectly.');
   }
+  if (goog.moduleLoaderState_.moduleName) {
+    throw Error('goog.module may only be called once per module.');
+  }
+
+  // Store the module name for the loader.
+  goog.moduleLoaderState_.moduleName = name;
   if (!COMPILED) {
     // Ensure that the same namespace isn't provided twice.
     // A goog.module/goog.provide maps a goog.require to a specific file
@@ -294,6 +303,22 @@ goog.module = function(name) {
     }
     delete goog.implicitNamespaces_[name];
   }
+};
+
+
+/** @private {{
+ *     moduleName:(string|undefined),
+ *     exportTestMethods:boolean}|null}}
+ */
+goog.moduleLoaderState_ = null;
+
+
+/**
+ * @private
+ * @return {boolean} Whether a goog.module is currently being initialized.
+ */
+goog.isInModuleLoader_ = function() {
+  return goog.moduleLoaderState_ != null;
 };
 
 
@@ -307,7 +332,11 @@ goog.module = function(name) {
  * to minimize boiler plate.
  */
 goog.module.exportTestMethods = function() {
-  goog.exportModuleTestMethods_ = true;
+  if (!goog.isInModuleLoader_()) {
+    throw new Error('goog.module.exportTestMethods must be called from ' +
+        'within a goog.module');
+  }
+  goog.moduleLoaderState_.exportTestMethods = true;
 };
 
 
@@ -424,10 +453,6 @@ goog.addDependency = function(relPath, provides, requires, opt_isModule) {
     var deps = goog.dependencies_;
     for (var i = 0; provide = provides[i]; i++) {
       deps.nameToPath[provide] = path;
-      if (!(path in deps.pathToNames)) {
-        deps.pathToNames[path] = {};
-      }
-      deps.pathToNames[path][provide] = true;
       deps.pathIsModule[path] = !!opt_isModule;
     }
     for (var j = 0; require = requires[j]; j++) {
@@ -504,7 +529,7 @@ goog.require = function(name) {
   //            not remove this code for the compiled output.
   if (!COMPILED) {
     if (goog.isProvided_(name)) {
-      if (goog.inModuleLoader_) {
+      if (goog.isInModuleLoader_()) {
         // goog.require only return a value with-in goog.module files.
         return name in goog.loadedModules_ ?
             goog.loadedModules_[name] :
@@ -669,7 +694,6 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @type {Object}
    */
   goog.dependencies_ = {
-    pathToNames: {}, // 1 to many
     pathIsModule: {}, // 1 to 1
     nameToPath: {}, // many to 1
     requires: {}, // 1 to many
@@ -740,16 +764,14 @@ if (goog.DEPENDENCIES_ENABLED) {
 
 
   /**
-   * Given a URL and moduleName, initiate retrieval and execution of the module.
-   * @param {string} moduleName The module identifier.
+   * Given a URL initiate retrieval and execution of the module.
    * @param {string} src Script source URL.
    * @private
    */
-  goog.importModule_ = function(moduleName, src) {
+  goog.importModule_ = function(src) {
     // In an attempt to keep browsers from timing out loading scripts using
     // synchronous XHRs, put each load in its own script block.
-    var bootstrap = 'goog.retrieveAndExecModule_(' +
-        '"' + moduleName + '","' + src + '");';
+    var bootstrap = 'goog.retrieveAndExecModule_("' + src + '");';
 
     if (goog.importScript_('', bootstrap)) {
       goog.dependencies_.written[src] = true;
@@ -763,11 +785,10 @@ if (goog.DEPENDENCIES_ENABLED) {
 
   /**
    * Retrieve and execute a module.
-   * @param {string} moduleName The module identifier.
    * @param {string} src Script source URL.
    * @private
    */
-  goog.retrieveAndExecModule_ = function(moduleName, src) {
+  goog.retrieveAndExecModule_ = function(src) {
     var importScript = goog.global.CLOSURE_IMPORT_SCRIPT ||
         goog.writeScriptTag_;
 
@@ -785,7 +806,7 @@ if (goog.DEPENDENCIES_ENABLED) {
     scriptText = xhr.responseText;
 
     if (scriptText != null) {
-      var execModuleScript = goog.wrapModule_(moduleName, src, scriptText);
+      var execModuleScript = goog.wrapModule_(src, scriptText);
       var isOldIE = goog.IS_OLD_IE_;
       if (isOldIE) {
         goog.queuedModules_.push(execModuleScript);
@@ -802,15 +823,14 @@ if (goog.DEPENDENCIES_ENABLED) {
   /**
    * Return an appropriate module text. Suitable to insert into
    * a script tag (that is unescaped).
-   * @param {string} moduleName
    * @param {string} srcUrl
    * @param {string} scriptText
    * @return {string}
    * @private
    */
-  goog.wrapModule_ = function(moduleName, srcUrl, scriptText) {
+  goog.wrapModule_ = function(srcUrl, scriptText) {
     return '' +
-        'goog.loadModule("' + moduleName + '", function(exports) {' +
+        'goog.loadModule(function(exports) {' +
         '"use strict";' +
         scriptText +
         '\n' + // terminate any trailing single line comment.
@@ -821,9 +841,10 @@ if (goog.DEPENDENCIES_ENABLED) {
 
 
   /**
-   *
+   * Load any deferred goog.module loads.
+   * @private
    */
-  goog.loadQueuedModules = function() {
+  goog.loadQueuedModules_ = function() {
     var count = goog.queuedModules_.length;
     if (count > 0) {
       var queue = goog.queuedModules_;
@@ -837,21 +858,24 @@ if (goog.DEPENDENCIES_ENABLED) {
 
 
   /**
-   * @param {string} moduleName The module identifier.
    * @param {Function} moduleFn The module creation method.
    */
-  goog.loadModule = function(moduleName, moduleFn) {
-    var deps = goog.dependencies_;
-    var path = deps.nameToPath[moduleName];
+  goog.loadModule = function(moduleFn) {
     try {
-      goog.inModuleLoader_ = true;
+      goog.moduleLoaderState_ = {
+          moduleName: undefined, exportTestMethods: false};
       var exports = {};
       exports = moduleFn(exports);
       if (Object.seal) {
         Object.seal(exports);
       }
+      var moduleName = goog.moduleLoaderState_.moduleName;
+      if (!goog.isString(moduleName) || !moduleName) {
+        throw Error('Invalid module name \"' + moduleName + '\"');
+      }
+
       goog.loadedModules_[moduleName] = exports;
-      if (goog.exportModuleTestMethods_) {
+      if (goog.moduleLoaderState_.exportTestMethods) {
         for (var entry in exports) {
           if (entry.indexOf('test', 0) === 0 ||
               entry == 'tearDown' ||
@@ -861,8 +885,7 @@ if (goog.DEPENDENCIES_ENABLED) {
         }
       }
     } finally {
-      goog.inModuleLoader_ = false;
-      goog.exportModuleTestMethods_ = false;
+      goog.moduleLoaderState_ = null;
     }
   };
 
@@ -939,7 +962,7 @@ if (goog.DEPENDENCIES_ENABLED) {
     // later allow more inter-mingling.
     if (script.readyState == 'complete' &&
         goog.lastNonModuleScriptIndex_ == scriptIndex) {
-      goog.loadQueuedModules();
+      goog.loadQueuedModules_();
     }
     return true;
   };
@@ -1007,8 +1030,8 @@ if (goog.DEPENDENCIES_ENABLED) {
     // If a module is loaded synchronously then we need to
     // clear the current inModuleLoader value, and restore it when we are
     // done loading the current "requires".
-    var moduleState = goog.inModuleLoader_;
-    goog.inModuleLoader_ = false;
+    var moduleState = goog.moduleLoaderState_;
+    goog.moduleLoaderState_ = null;
 
     var loadingModule = false;
     for (var i = 0; i < scripts.length; i++) {
@@ -1018,33 +1041,16 @@ if (goog.DEPENDENCIES_ENABLED) {
           goog.importScript_(goog.basePath + path);
         } else {
           loadingModule = true;
-          goog.importModule_(goog.depsPathToName_(path), goog.basePath + path);
+          goog.importModule_(goog.basePath + path);
         }
       } else {
-        goog.inModuleLoader_ = moduleState;
+        goog.moduleLoaderState_ = moduleState;
         throw Error('Undefined script input');
       }
     }
 
     // restore the current "module loading state"
-    goog.inModuleLoader_ = moduleState;
-  };
-
-
-  /**
-   * @param {string} path
-   * @return {string} The Module Name associated with this path.
-   * @private
-   */
-  goog.depsPathToName_ = function(path) {
-    var names = goog.dependencies_.pathToNames[path];
-
-    for (var name in names) {
-      if (Object.prototype.hasOwnProperty.call(names, name)) {
-        return name;
-      }
-    }
-    throw new Error('missing module namespace');
+    goog.moduleLoaderState_ = moduleState;
   };
 
 
@@ -18025,7 +18031,6 @@ goog.html.uncheckedconversions.
  * @author gboyer@google.com (Garrett Boyer)
  */
 
-goog.provide('goog.soy.data');
 goog.provide('goog.soy.data.SanitizedContent');
 goog.provide('goog.soy.data.SanitizedContentKind');
 
@@ -18058,20 +18063,6 @@ goog.soy.data.SanitizedContentKind = {
    * control.
    */
   JS: goog.DEBUG ? {sanitizedContentJsChars: true} : {},
-
-  /**
-   * A sequence of code units that can appear between quotes (either kind) in a
-   * JS program without causing a parse error, and without causing any side
-   * effects.
-   * <p>
-   * The content should not contain unescaped quotes, newlines, or anything else
-   * that would cause parsing to fail or to cause a JS parser to finish the
-   * string its parsing inside the content.
-   * <p>
-   * The content must also not end inside an escape sequence ; no partial octal
-   * escape sequences or odd number of '{@code \}'s at the end.
-   */
-  JS_STR_CHARS: goog.DEBUG ? {sanitizedContentJsStrChars: true} : {},
 
   /** A properly encoded portion of a URI. */
   URI: goog.DEBUG ? {sanitizedContentUri: true} : {},
@@ -18711,26 +18702,6 @@ soydata.SanitizedJs.prototype.contentKind =
 /** @override */
 soydata.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 
-
-/**
- * Content of type {@link soydata.SanitizedContentKind.JS_STR_CHARS}.
- *
- * The content can be safely inserted as part of a single- or double-quoted
- * string without terminating the string. The default content direction is
- * unknown, i.e. to be estimated when necessary.
- *
- * @constructor
- * @extends {goog.soy.data.SanitizedContent}
- */
-soydata.SanitizedJsStrChars = function() {
-  goog.soy.data.SanitizedContent.call(this);  // Throws an exception.
-};
-goog.inherits(soydata.SanitizedJsStrChars, goog.soy.data.SanitizedContent);
-
-/** @override */
-soydata.SanitizedJsStrChars.prototype.contentKind =
-    soydata.SanitizedContentKind.JS_STR_CHARS;
-
 /**
  * Content of type {@link soydata.SanitizedContentKind.URI}.
  *
@@ -18976,25 +18947,6 @@ soydata.VERY_UNSAFE.ordainSanitizedHtml =
 soydata.VERY_UNSAFE.ordainSanitizedJs =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         soydata.SanitizedJs);
-
-
-// TODO: This function is probably necessary, either externally or internally
-// as an implementation detail. Generally, plain text will always work here,
-// as there's no harm to unescaping the string and then re-escaping when
-// finally printed.
-/**
- * Takes a leap of faith that the provided content can be safely embedded in
- * a Javascript string without re-esacping.
- *
- * @param {*} content Content that can be safely inserted as part of a
- *     single- or double-quoted string without terminating the string.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!soydata.SanitizedJsStrChars} Sanitized content wrapper that
- *     indicates to Soy not to escape when printed in a JS string.
- */
-soydata.VERY_UNSAFE.ordainSanitizedJsStrChars =
-    soydata.$$makeSanitizedContentFactory_(soydata.SanitizedJsStrChars);
 
 
 /**
@@ -19790,12 +19742,6 @@ soy.$$escapeJs = function(value) {
  * @return {string} An escaped version of value.
  */
 soy.$$escapeJsString = function(value) {
-  if (soydata.isContentKind(value, soydata.SanitizedContentKind.JS_STR_CHARS)) {
-    // TODO: It might still be worthwhile to normalize it to remove
-    // unescaped quotes, null, etc: replace(/(?:^|[^\])['"]/g, '\\$
-    goog.asserts.assert(value.constructor === soydata.SanitizedJsStrChars);
-    return value.getContent();
-  }
   return soy.esc.$$escapeJsStringHelper(value);
 };
 
@@ -20308,10 +20254,6 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   }
   if (isHtml) {
     return soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
-  }
-  if (soydata.isContentKind(text, soydata.SanitizedContentKind.JS_STR_CHARS)) {
-    return soydata.VERY_UNSAFE.ordainSanitizedJsStrChars(
-        wrappedText, wrappedTextDir);
   }
 
   // Unicode-wrapping does not conform to the syntax of the other types of

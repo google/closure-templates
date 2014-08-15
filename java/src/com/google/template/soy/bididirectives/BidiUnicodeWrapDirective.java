@@ -102,16 +102,15 @@ public class BidiUnicodeWrapDirective implements SoyJavaPrintDirective, SoyJsSrc
     Dir wrappedValueDir = bidiFormatter.getContextDir();
 
     // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
-    // Unicode-wrapping safe HTML or JS string data gives valid, safe HTML or JS string data.
-    if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML ||
-        valueKind == ContentKind.JS_STR_CHARS) {
+    // Unicode-wrapping safe HTML.
+    if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML) {
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, wrappedValueDir);
     }
 
     // Unicode-wrapping does not conform to the syntax of the other types of content. For lack of
     // anything better to do, we output non-SanitizedContent.
     // TODO(user): Consider throwing a runtime error on receipt of SanitizedContent other than
-    // TEXT, HTML, or JS_STR_CHARS.
+    // TEXT, or HTML.
     if (valueKind != null) {
       return StringData.forValue(wrappedValue);
     }

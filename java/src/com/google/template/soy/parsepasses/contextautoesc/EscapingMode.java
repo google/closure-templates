@@ -66,7 +66,7 @@ public enum EscapingMode {
    * Encode all HTML special characters and quotes, and JS newlines as if to allow them to appear
    * literally in a JS string.
    */
-  ESCAPE_JS_STRING(false, ContentKind.JS_STR_CHARS),
+  ESCAPE_JS_STRING(false, null),
 
   /**
    * If a number or boolean, output as a JS literal.  Otherwise surround in quotes and escape.

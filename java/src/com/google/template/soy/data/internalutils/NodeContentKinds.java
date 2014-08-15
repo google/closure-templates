@@ -53,7 +53,6 @@ public class NodeContentKinds {
           .put(ContentKind.HTML, "soydata.SanitizedHtml")
           .put(ContentKind.ATTRIBUTES, "soydata.SanitizedHtmlAttribute")
           .put(ContentKind.JS, "soydata.SanitizedJs")
-          .put(ContentKind.JS_STR_CHARS, "soydata.SanitizedJsStrChars")
           .put(ContentKind.URI, "soydata.SanitizedUri")
           .put(ContentKind.CSS, "soydata.SanitizedCss")
           // NOTE: Text intentionally doesn't follow the convention. Note that we don't just

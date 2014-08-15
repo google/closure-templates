@@ -64,7 +64,6 @@ public class EscapingConventionsTest extends TestCase {
     assertEquals(expected, actual);
   }
 
-
   public final void testJavaScriptStringDirective() throws Exception {
     assertEscaping(
         // The {$s} in the below is replaced with a bunch of malicious strings.

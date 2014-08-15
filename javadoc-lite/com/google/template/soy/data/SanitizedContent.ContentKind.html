@@ -150,17 +150,11 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Enum.html?is-ex
 </td>
 </tr>
 <tr class="altColor">
-<td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#JS_STR_CHARS">JS_STR_CHARS</a></strong></code>
-<div class="block">A sequence of code units that can appear between quotes (either single or double) in a JS
- program without causing a parse error, and without causing any side effects.</div>
-</td>
-</tr>
-<tr class="rowColor">
 <td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#TEXT">TEXT</a></strong></code>
 <div class="block">Unsanitized plain-text content.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colOne"><code><strong><a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#URI">URI</a></strong></code>
 <div class="block">A properly encoded portion of a URI.</div>
 </td>
@@ -245,24 +239,6 @@ the order they are declared.</div>
  handler context, known to be free of any attacker-controlled scripts. This can either be
  side-effect-free Javascript (such as JSON) or Javascript that entirely under Google's
  control.</div>
-</li>
-</ul>
-<a name="JS_STR_CHARS">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>JS_STR_CHARS</h4>
-<pre>public static final&nbsp;<a href="../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html" title="enum in com.google.template.soy.data">SanitizedContent.ContentKind</a> JS_STR_CHARS</pre>
-<div class="block">A sequence of code units that can appear between quotes (either single or double) in a JS
- program without causing a parse error, and without causing any side effects.
- <p>
- The content should not contain unescaped quotes, newlines, or anything else that would
- cause parsing to fail or to cause a JS parser to finish the string it is parsing inside
- the content.
- <p>
- The content must also not end inside an escape sequence ; no partial octal escape sequences
- or odd number of '<code>\</code>'s at the end.</div>
 </li>
 </ul>
 <a name="URI">

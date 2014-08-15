@@ -162,7 +162,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         case URI:
           varType = SanitizedType.UriType.getInstance();
           break;
-        case JS_STR_CHARS:
         case TEXT:
         default:
           break;

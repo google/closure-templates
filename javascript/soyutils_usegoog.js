@@ -204,26 +204,6 @@ soydata.SanitizedJs.prototype.contentKind =
 /** @override */
 soydata.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 
-
-/**
- * Content of type {@link soydata.SanitizedContentKind.JS_STR_CHARS}.
- *
- * The content can be safely inserted as part of a single- or double-quoted
- * string without terminating the string. The default content direction is
- * unknown, i.e. to be estimated when necessary.
- *
- * @constructor
- * @extends {goog.soy.data.SanitizedContent}
- */
-soydata.SanitizedJsStrChars = function() {
-  goog.soy.data.SanitizedContent.call(this);  // Throws an exception.
-};
-goog.inherits(soydata.SanitizedJsStrChars, goog.soy.data.SanitizedContent);
-
-/** @override */
-soydata.SanitizedJsStrChars.prototype.contentKind =
-    soydata.SanitizedContentKind.JS_STR_CHARS;
-
 /**
  * Content of type {@link soydata.SanitizedContentKind.URI}.
  *
@@ -469,25 +449,6 @@ soydata.VERY_UNSAFE.ordainSanitizedHtml =
 soydata.VERY_UNSAFE.ordainSanitizedJs =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         soydata.SanitizedJs);
-
-
-// TODO: This function is probably necessary, either externally or internally
-// as an implementation detail. Generally, plain text will always work here,
-// as there's no harm to unescaping the string and then re-escaping when
-// finally printed.
-/**
- * Takes a leap of faith that the provided content can be safely embedded in
- * a Javascript string without re-esacping.
- *
- * @param {*} content Content that can be safely inserted as part of a
- *     single- or double-quoted string without terminating the string.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!soydata.SanitizedJsStrChars} Sanitized content wrapper that
- *     indicates to Soy not to escape when printed in a JS string.
- */
-soydata.VERY_UNSAFE.ordainSanitizedJsStrChars =
-    soydata.$$makeSanitizedContentFactory_(soydata.SanitizedJsStrChars);
 
 
 /**
@@ -1283,12 +1244,6 @@ soy.$$escapeJs = function(value) {
  * @return {string} An escaped version of value.
  */
 soy.$$escapeJsString = function(value) {
-  if (soydata.isContentKind(value, soydata.SanitizedContentKind.JS_STR_CHARS)) {
-    // TODO: It might still be worthwhile to normalize it to remove
-    // unescaped quotes, null, etc: replace(/(?:^|[^\])['"]/g, '\\$
-    goog.asserts.assert(value.constructor === soydata.SanitizedJsStrChars);
-    return value.getContent();
-  }
   return soy.esc.$$escapeJsStringHelper(value);
 };
 
@@ -1801,10 +1756,6 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   }
   if (isHtml) {
     return soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
-  }
-  if (soydata.isContentKind(text, soydata.SanitizedContentKind.JS_STR_CHARS)) {
-    return soydata.VERY_UNSAFE.ordainSanitizedJsStrChars(
-        wrappedText, wrappedTextDir);
   }
 
   // Unicode-wrapping does not conform to the syntax of the other types of
