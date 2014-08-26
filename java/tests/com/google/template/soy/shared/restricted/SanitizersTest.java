@@ -338,6 +338,13 @@ public class SanitizersTest extends TestCase {
             "\nj\n\na\nv\na\ns\nc\nr\ni\np\nt\n:\na\nl\ne\nr\nt\n(\n1\n3\n3\n7\n)"));
     assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("\u000e  javascript:alert('XSS');"));
 
+    // Tests of filtering heirarchy within uri path (/.. etc )
+    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("a/../"));
+    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("/..?"));
+    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."));
+    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"));
+
+
     // Things we should accept.
     assertEquals("http://google.com/", Sanitizers.filterNormalizeUri("http://google.com/"));
     assertEquals("https://google.com/", Sanitizers.filterNormalizeUri("https://google.com/"));
@@ -357,6 +364,18 @@ public class SanitizersTest extends TestCase {
     assertEquals("#zSoyz", Sanitizers.filterNormalizeUri(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "javascript:handleClick()", SanitizedContent.ContentKind.HTML)));
+    assertEquals("../", Sanitizers.filterNormalizeUri("../"));
+    assertEquals(".%2E", Sanitizers.filterNormalizeUri(".%2E"));
+    assertEquals("..", Sanitizers.filterNormalizeUri(".."));
+    assertEquals("%2E%2E", Sanitizers.filterNormalizeUri("%2E%2E"));
+    assertEquals("%2e%2e", Sanitizers.filterNormalizeUri("%2e%2e"));
+    assertEquals("%2e.", Sanitizers.filterNormalizeUri("%2e."));
+    assertEquals("http://goodurl.com/.stuff/?/../.",
+        Sanitizers.filterNormalizeUri("http://goodurl.com/.stuff/?/../."));
+    assertEquals("http://good.url.com../..s../.#..",
+        Sanitizers.filterNormalizeUri("http://good.url.com../..s../.#.."));
+    assertEquals("http://goodurl.com/normal/%2e/unsafe?",
+        Sanitizers.filterNormalizeUri("http://goodurl.com/normal/%2e/unsafe?"));
   }
 
   public final void testFilterImageDataUri() {
