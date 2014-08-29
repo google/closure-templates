@@ -306,7 +306,41 @@ goog.module = function(name) {
 };
 
 
-/** @private {{
+/**
+ * @param {string} name The module identifier.
+ * @return {?} The module exports for an already loaded module or null.
+ *
+ * Note: This is not an alternative to goog.require, it does not
+ * indicate a hard dependency, instead it is used to indicate
+ * an optional dependency or to access the exports of a module
+ * that has already been loaded.
+ */
+goog.module.get = function(name) {
+  return goog.module.getInternal_(name);
+};
+
+
+/**
+ * @param {string} name The module identifier.
+ * @return {?} The module exports for an already loaded module or null.
+ * @private
+ */
+goog.module.getInternal_ = function(name) {
+  if (!COMPILED) {
+    if (goog.isProvided_(name)) {
+      // goog.require only return a value with-in goog.module files.
+      return name in goog.loadedModules_ ?
+          goog.loadedModules_[name] :
+          goog.getObjectByName(name);
+    } else {
+      return null;
+    }
+  }
+};
+
+
+/**
+ * @private {{
  *     moduleName:(string|undefined),
  *     declareTestMethods:boolean}|null}}
  */
@@ -525,10 +559,7 @@ goog.require = function(name) {
   if (!COMPILED) {
     if (goog.isProvided_(name)) {
       if (goog.isInModuleLoader_()) {
-        // goog.require only return a value with-in goog.module files.
-        return name in goog.loadedModules_ ?
-            goog.loadedModules_[name] :
-            goog.getObjectByName(name);
+        return goog.module.getInternal_(name);
       } else {
         return null;
       }
@@ -2251,7 +2282,7 @@ goog.addDependency('async/throttle.js', ['goog.Throttle', 'goog.async.Throttle']
 goog.addDependency('async/throttle_test.js', ['goog.async.ThrottleTest'], ['goog.async.Throttle', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('base.js', ['goog'], [], false);
 goog.addDependency('base_module_test.js', ['goog.baseModuleTest'], ['goog.Timer', 'goog.test_module', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], true);
-goog.addDependency('base_test.js', ['an.existing.path', 'dup.base', 'far.out', 'goog.baseTest', 'goog.explicit', 'goog.implicit.explicit', 'goog.test', 'goog.test.name', 'goog.test.name.space', 'goog.xy', 'goog.xy.z', 'ns', 'testDep.bar'], ['goog.Timer', 'goog.functions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], false);
+goog.addDependency('base_test.js', ['an.existing.path', 'dup.base', 'far.out', 'goog.baseTest', 'goog.explicit', 'goog.implicit.explicit', 'goog.test', 'goog.test.name', 'goog.test.name.space', 'goog.xy', 'goog.xy.z', 'ns', 'testDep.bar'], ['goog.Timer', 'goog.functions', 'goog.test_module', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('color/alpha.js', ['goog.color.alpha'], ['goog.color'], false);
 goog.addDependency('color/alpha_test.js', ['goog.color.alphaTest'], ['goog.array', 'goog.color', 'goog.color.alpha', 'goog.testing.jsunit'], false);
 goog.addDependency('color/color.js', ['goog.color', 'goog.color.Hsl', 'goog.color.Hsv', 'goog.color.Rgb'], ['goog.color.names', 'goog.math'], false);
@@ -6735,6 +6766,34 @@ goog.array.stableSort = function(arr, opt_compareFn) {
   for (var i = 0; i < arr.length; i++) {
     arr[i] = arr[i].value;
   }
+};
+
+
+/**
+ * Sort the specified array into ascending order based on item keys
+ * returned by the specified key function.
+ * If no opt_compareFn is specified, the keys are compared in ascending order
+ * using <code>goog.array.defaultCompare</code>.
+ *
+ * Runtime: O(S(f(n)), where S is runtime of <code>goog.array.sort</code>
+ * and f(n) is runtime of the key function.
+ *
+ * @param {Array.<T>} arr The array to be sorted.
+ * @param {function(T): K} keyFn Function taking array element and returning
+ *     a key used for sorting this element.
+ * @param {?function(K, K): number=} opt_compareFn Optional comparison function
+ *     by which the keys are to be ordered. Should take 2 arguments to compare,
+ *     and return a negative number, zero, or a positive number depending on
+ *     whether the first argument is less than, equal to, or greater than the
+ *     second.
+ * @template T
+ * @template K
+ */
+goog.array.sortByKey = function(arr, keyFn, opt_compareFn) {
+  var keyCompareFn = opt_compareFn || goog.array.defaultCompare;
+  goog.array.sort(arr, function(a, b) {
+    return keyCompareFn(keyFn(a), keyFn(b));
+  });
 };
 
 
