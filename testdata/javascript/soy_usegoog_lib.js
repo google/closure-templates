@@ -308,7 +308,7 @@ goog.module = function(name) {
 
 /** @private {{
  *     moduleName:(string|undefined),
- *     exportTestMethods:boolean}|null}}
+ *     declareTestMethods:boolean}|null}}
  */
 goog.moduleLoaderState_ = null;
 
@@ -331,12 +331,12 @@ goog.isInModuleLoader_ = function() {
  * that this isn't necessary. Alternately combine this with goog.setTestOnly
  * to minimize boiler plate.
  */
-goog.module.exportTestMethods = function() {
+goog.module.declareTestMethods = function() {
   if (!goog.isInModuleLoader_()) {
-    throw new Error('goog.module.exportTestMethods must be called from ' +
+    throw new Error('goog.module.declareTestMethods must be called from ' +
         'within a goog.module');
   }
-  goog.moduleLoaderState_.exportTestMethods = true;
+  goog.moduleLoaderState_.declareTestMethods = true;
 };
 
 
@@ -546,10 +546,7 @@ goog.require = function(name) {
     var errorMessage = 'goog.require could not find: ' + name;
     goog.logToConsole_(errorMessage);
 
-
-      throw Error(errorMessage);
-
-    return null;
+    throw Error(errorMessage);
   }
 };
 
@@ -881,7 +878,7 @@ if (goog.DEPENDENCIES_ENABLED) {
     // of the module.
     try {
       goog.moduleLoaderState_ = {
-          moduleName: undefined, exportTestMethods: false};
+          moduleName: undefined, declareTestMethods: false};
       var exports;
       if (goog.isFunction(moduleDef)) {
         exports = moduleDef.call(goog.global, {});
@@ -900,7 +897,7 @@ if (goog.DEPENDENCIES_ENABLED) {
       }
 
       goog.loadedModules_[moduleName] = exports;
-      if (goog.moduleLoaderState_.exportTestMethods) {
+      if (goog.moduleLoaderState_.declareTestMethods) {
         for (var entry in exports) {
           if (entry.indexOf('test', 0) === 0 ||
               entry == 'tearDown' ||
@@ -2122,6 +2119,7 @@ goog.defineClass.createSealingConstructor_ = function(ctr, superClass) {
       // Don't seal an instance of a subclass when it calls the constructor of
       // its super class as there is most likely still setup to do.
       var instance = ctr.apply(this, arguments) || this;
+      instance[goog.UID_PROPERTY_] = instance[goog.UID_PROPERTY_];
       if (this.constructor === wrappedCtr) {
         Object.seal(instance);
       }
@@ -2611,7 +2609,7 @@ goog.addDependency('fx/animation_test.js', ['goog.fx.AnimationTest'], ['goog.eve
 goog.addDependency('fx/animationqueue.js', ['goog.fx.AnimationParallelQueue', 'goog.fx.AnimationQueue', 'goog.fx.AnimationSerialQueue'], ['goog.array', 'goog.asserts', 'goog.events.EventHandler', 'goog.fx.Transition.EventType', 'goog.fx.TransitionBase', 'goog.fx.TransitionBase.State'], false);
 goog.addDependency('fx/animationqueue_test.js', ['goog.fx.AnimationQueueTest'], ['goog.events', 'goog.fx.Animation', 'goog.fx.AnimationParallelQueue', 'goog.fx.AnimationSerialQueue', 'goog.fx.Transition', 'goog.fx.anim', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('fx/css3/fx.js', ['goog.fx.css3'], ['goog.fx.css3.Transition'], false);
-goog.addDependency('fx/css3/transition.js', ['goog.fx.css3.Transition'], ['goog.Timer', 'goog.fx.TransitionBase', 'goog.style', 'goog.style.transition'], false);
+goog.addDependency('fx/css3/transition.js', ['goog.fx.css3.Transition'], ['goog.Timer', 'goog.asserts', 'goog.fx.TransitionBase', 'goog.style', 'goog.style.transition'], false);
 goog.addDependency('fx/css3/transition_test.js', ['goog.fx.css3.TransitionTest'], ['goog.dispose', 'goog.dom', 'goog.events', 'goog.fx.Transition', 'goog.fx.css3.Transition', 'goog.style.transition', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('fx/cssspriteanimation.js', ['goog.fx.CssSpriteAnimation'], ['goog.fx.Animation'], false);
 goog.addDependency('fx/cssspriteanimation_test.js', ['goog.fx.CssSpriteAnimationTest'], ['goog.fx.CssSpriteAnimation', 'goog.math.Box', 'goog.math.Size', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
