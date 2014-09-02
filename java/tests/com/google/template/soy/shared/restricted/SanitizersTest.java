@@ -47,7 +47,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testEscapeJsString() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "\\x00 \\x22 \\x27 \\\\ \\r \\n \\u2028 \\u2029",
         Sanitizers.escapeJsString("\u0000 \" \' \\ \r \n \u2028 \u2029"));
@@ -73,7 +73,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testEscapeJsRegExpString() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "\\x00 \\x22 \\x27 \\\\ \\/ \\r \\n \\u2028 \\u2029" +
         // RegExp operators.
@@ -132,7 +132,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testEscapeCssString() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "\\0  \\22  \\27  \\5c  \\a  \\c  \\d ",
         Sanitizers.escapeCssString("\u0000 \" \' \\ \n \u000c \r"));
@@ -236,7 +236,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testEscapeUri() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "%00%0A%0C%0D%22%23%26%27%2F%3A%3D%3F%40",
         Sanitizers.escapeUri("\u0000\n\f\r\"#&'/:=?@"));
@@ -451,7 +451,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testEscapeHtmlAttributeNospace() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;&amp;",
         Sanitizers.escapeHtmlAttributeNospace("\u0009\n\u000B\u000C\r \"'\u0060<>&"));
@@ -472,7 +472,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testNormalizeHtml() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "&quot;&#39;&lt;&gt;",
         Sanitizers.normalizeHtml("\"'<>"));
@@ -493,7 +493,7 @@ public class SanitizersTest extends TestCase {
 
   public final void testNormalizeHtmlNospace() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local security-team@.
+    // Do not remove anything from this set without talking to your friendly local ise-team@.
     assertEquals(
         "&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;",
         Sanitizers.normalizeHtmlNospace("\u0009\n\u000B\u000C\r \"'\u0060<>"));
