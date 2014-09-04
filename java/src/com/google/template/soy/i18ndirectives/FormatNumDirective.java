@@ -113,6 +113,8 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     if (args.size() > 1) {
       // A keyword for ULocale was passed (like 'native', for instance, to use native characters).
       uLocale = uLocale.setKeywordValue("numbers", args.get(1).stringValue());
+    } else {
+      uLocale.setKeywordValue("numbers", "local");
     }
 
     NumberFormat numberFormat;
