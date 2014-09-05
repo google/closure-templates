@@ -109,12 +109,11 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
 
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    ULocale uLocale = I18nUtils.parseULocale(localeStringProvider.get());
+    ULocale uLocale = I18nUtils.parseULocale(localeStringProvider.get())
+        .setKeywordValue("numbers", "local");
     if (args.size() > 1) {
       // A keyword for ULocale was passed (like 'native', for instance, to use native characters).
       uLocale = uLocale.setKeywordValue("numbers", args.get(1).stringValue());
-    } else {
-      uLocale.setKeywordValue("numbers", "local");
     }
 
     NumberFormat numberFormat;
