@@ -1398,6 +1398,13 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           break;
 
         case BOOL:
+          genParamTypeChecksUsingGeneralAssert(
+              paramName, paramAlias, "!!" + paramVal, param.isInjected(),
+              "goog.isBoolean({0}) || {0} === 1 || {0} === 0",
+              "boolean");
+          isAliasedLocalVar = true;
+          break;
+
         case INT:
         case FLOAT:
         case LIST:
@@ -1405,10 +1412,6 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         case MAP: {
           String assertionFunction = null;
           switch (param.type().getKind()) {
-            case BOOL:
-              assertionFunction = "goog.asserts.assertBoolean";
-              break;
-
             case INT:
             case FLOAT:
               assertionFunction = "goog.asserts.assertNumber";
