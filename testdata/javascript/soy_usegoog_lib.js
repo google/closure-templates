@@ -246,6 +246,19 @@ goog.provide = function(name) {
     if (goog.isProvided_(name)) {
       throw Error('Namespace "' + name + '" already declared.');
     }
+  }
+
+  goog.constructNamespace_(name);
+};
+
+
+/**
+ * @param {string} name Namespace provided by this file in the form
+ *     "goog.package.part".
+ * @param {Object=} opt_obj The object to embed in the namespace.
+ */
+goog.constructNamespace_ = function(name, opt_obj) {
+  if (!COMPILED) {
     delete goog.implicitNamespaces_[name];
 
     var namespace = name;
@@ -257,7 +270,7 @@ goog.provide = function(name) {
     }
   }
 
-  goog.exportPath_(name);
+  goog.exportPath_(name, opt_obj);
 };
 
 
@@ -375,6 +388,28 @@ goog.module.declareTestMethods = function() {
 
 
 /**
+ * Indicate that a module's exports that are known test methods should
+ * be copied to the global object.  This makes the test methods visible to
+ * test runners that inspect the global object.
+ *
+ * TODO(johnlenz): Make the test framework aware of goog.module so
+ * that this isn't necessary. Alternately combine this with goog.setTestOnly
+ * to minimize boiler plate.
+ */
+goog.module.declareLegacyNamespace = function() {
+  if (!COMPILED && !goog.isInModuleLoader_()) {
+    throw new Error('goog.module.declareLegacyNamespace must be called from ' +
+        'within a goog.module');
+  }
+  if (!COMPILED && !goog.moduleLoaderState_.moduleName) {
+    throw Error('goog.module must be called prior to ' + 
+        'goog.module.declareLegacyNamespace.');
+  }
+  goog.moduleLoaderState_.declareLegacyNamespace = true;
+}
+
+
+/**
  * Marks that the current file should only be used for testing, and never for
  * live code in production.
  *
@@ -473,10 +508,10 @@ goog.globalize = function(obj, opt_global) {
 /**
  * Adds a dependency from a file to the files it requires.
  * @param {string} relPath The path to the js file.
- * @param {Array} provides An array of strings with the names of the objects
- *                         this file provides.
- * @param {Array} requires An array of strings with the names of the objects
- *                         this file requires.
+ * @param {Array.<string>} provides An array of strings with
+ *     the names of the objects this file provides.
+ * @param {Array.<string>} requires An array of strings with
+ *     the names of the objects this file requires.
  * @param {boolean=} opt_isModule Whether this dependency must be loaded as
  *     a module as declared by goog.module.
  */
@@ -829,6 +864,18 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.retrieveAndExecModule_ = function(src) {
+    // Canonicalize the path, removing any /./ or /../ since Chrome's debugging
+    // console doesn't auto-canonicalize XHR loads as it does <script> srcs.
+    var separator;
+    while ((separator = src.indexOf('/./')) != -1) {
+      src = src.substr(0, separator) + src.substr(separator + '/.'.length);
+    }
+    while ((separator = src.indexOf('/../')) != -1) {
+      var previousComponent = src.lastIndexOf('/', separator - 1);
+      src = src.substr(0, previousComponent) +
+          src.substr(separator + '/..'.length);
+    }
+
     var importScript = goog.global.CLOSURE_IMPORT_SCRIPT ||
         goog.writeScriptTag_;
 
@@ -926,12 +973,17 @@ if (goog.DEPENDENCIES_ENABLED) {
         throw Error('Invalid module definition');
       }
 
-      if (goog.SEAL_MODULE_EXPORTS && Object.seal) {
-        Object.seal(exports);
-      }
       var moduleName = goog.moduleLoaderState_.moduleName;
       if (!goog.isString(moduleName) || !moduleName) {
         throw Error('Invalid module name \"' + moduleName + '\"');
+      }
+
+      // Don't seal legacy namespaces as they may be uses as a parent of
+      // another namespace
+      if (goog.moduleLoaderState_.declareLegacyNamespace) {
+        goog.constructNamespace_(moduleName, exports);
+      } else if (goog.SEAL_MODULE_EXPORTS && Object.seal) {
+        Object.seal(exports);
       }
 
       goog.loadedModules_[moduleName] = exports;
@@ -2830,7 +2882,6 @@ goog.addDependency('labs/net/xhr.js', ['goog.labs.net.xhr', 'goog.labs.net.xhr.E
 goog.addDependency('labs/net/xhr_test.js', ['goog.labs.net.xhrTest'], ['goog.Promise', 'goog.labs.net.xhr', 'goog.net.XmlHttp', 'goog.string', 'goog.testing.AsyncTestCase', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('labs/object/object.js', ['goog.labs.object'], [], false);
 goog.addDependency('labs/object/object_test.js', ['goog.labs.objectTest'], ['goog.labs.object', 'goog.testing.jsunit'], false);
-goog.addDependency('labs/promise/promise.js', ['goog.labs.Promise', 'goog.labs.Resolver'], ['goog.Promise', 'goog.Thenable', 'goog.promise.Resolver'], false);
 goog.addDependency('labs/pubsub/broadcastpubsub.js', ['goog.labs.pubsub.BroadcastPubSub'], ['goog.Disposable', 'goog.Timer', 'goog.array', 'goog.async.run', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.math', 'goog.pubsub.PubSub', 'goog.storage.Storage', 'goog.storage.mechanism.HTML5LocalStorage', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('labs/pubsub/broadcastpubsub_test.js', ['goog.labs.pubsub.BroadcastPubSubTest'], ['goog.array', 'goog.debug.Logger', 'goog.json', 'goog.labs.pubsub.BroadcastPubSub', 'goog.storage.Storage', 'goog.structs.Map', 'goog.testing.MockClock', 'goog.testing.MockControl', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.testing.mockmatchers', 'goog.testing.mockmatchers.ArgumentMatcher', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('labs/storage/boundedcollectablestorage.js', ['goog.labs.storage.BoundedCollectableStorage'], ['goog.array', 'goog.asserts', 'goog.iter', 'goog.storage.CollectableStorage', 'goog.storage.ErrorCode', 'goog.storage.ExpiringStorage'], false);
@@ -3074,8 +3125,8 @@ goog.addDependency('proto/proto.js', ['goog.proto'], ['goog.proto.Serializer'], 
 goog.addDependency('proto/serializer.js', ['goog.proto.Serializer'], ['goog.json.Serializer', 'goog.string'], false);
 goog.addDependency('proto/serializer_test.js', ['goog.protoTest'], ['goog.proto', 'goog.testing.jsunit'], false);
 goog.addDependency('proto2/descriptor.js', ['goog.proto2.Descriptor', 'goog.proto2.Metadata'], ['goog.array', 'goog.asserts', 'goog.object', 'goog.string'], false);
-goog.addDependency('proto2/descriptor_test.js', ['goog.proto2.DescriptorTest'], ['goog.proto2.Descriptor', 'goog.testing.jsunit'], false);
-goog.addDependency('proto2/fielddescriptor.js', ['goog.proto2.FieldDescriptor'], ['goog.asserts', 'goog.string'], false);
+goog.addDependency('proto2/descriptor_test.js', ['goog.proto2.DescriptorTest'], ['goog.proto2.Descriptor', 'goog.proto2.Message', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
+goog.addDependency('proto2/fielddescriptor.js', ['goog.proto2.FieldDescriptor'], ['goog.asserts', 'goog.proto2.Descriptor', 'goog.string'], false);
 goog.addDependency('proto2/fielddescriptor_test.js', ['goog.proto2.FieldDescriptorTest'], ['goog.proto2.FieldDescriptor', 'goog.proto2.Message', 'goog.testing.jsunit'], false);
 goog.addDependency('proto2/lazydeserializer.js', ['goog.proto2.LazyDeserializer'], ['goog.asserts', 'goog.proto2.Message', 'goog.proto2.Serializer'], false);
 goog.addDependency('proto2/message.js', ['goog.proto2.Message'], ['goog.asserts', 'goog.proto2.Descriptor', 'goog.proto2.FieldDescriptor'], false);
@@ -3322,6 +3373,7 @@ goog.addDependency('testing/style/layoutasserts_test.js', ['goog.testing.style.l
 goog.addDependency('testing/style/style.js', ['goog.testing.style'], ['goog.dom', 'goog.math.Rect', 'goog.style'], false);
 goog.addDependency('testing/style/style_test.js', ['goog.testing.styleTest'], ['goog.dom', 'goog.style', 'goog.testing.jsunit', 'goog.testing.style'], false);
 goog.addDependency('testing/testcase.js', ['goog.testing.TestCase', 'goog.testing.TestCase.Error', 'goog.testing.TestCase.Order', 'goog.testing.TestCase.Result', 'goog.testing.TestCase.Test'], ['goog.object', 'goog.testing.asserts', 'goog.testing.stacktrace'], false);
+goog.addDependency('testing/testcase_test.js', ['goog.testing.TestCaseTest'], ['goog.testing.TestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/testqueue.js', ['goog.testing.TestQueue'], [], false);
 goog.addDependency('testing/testrunner.js', ['goog.testing.TestRunner'], ['goog.testing.TestCase'], false);
 goog.addDependency('testing/ui/rendererasserts.js', ['goog.testing.ui.rendererasserts'], ['goog.testing.asserts'], false);
@@ -3379,7 +3431,7 @@ goog.addDependency('ui/charcounter.js', ['goog.ui.CharCounter', 'goog.ui.CharCou
 goog.addDependency('ui/charcounter_test.js', ['goog.ui.CharCounterTest'], ['goog.dom', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.ui.CharCounter', 'goog.userAgent'], false);
 goog.addDependency('ui/charpicker.js', ['goog.ui.CharPicker'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.events.InputHandler', 'goog.events.KeyCodes', 'goog.events.KeyHandler', 'goog.i18n.CharListDecompressor', 'goog.i18n.uChar', 'goog.structs.Set', 'goog.style', 'goog.ui.Button', 'goog.ui.Component', 'goog.ui.ContainerScroller', 'goog.ui.FlatButtonRenderer', 'goog.ui.HoverCard', 'goog.ui.LabelInput', 'goog.ui.Menu', 'goog.ui.MenuButton', 'goog.ui.MenuItem', 'goog.ui.Tooltip'], false);
 goog.addDependency('ui/charpicker_test.js', ['goog.ui.CharPickerTest'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.dispose', 'goog.dom', 'goog.events.Event', 'goog.events.EventType', 'goog.i18n.CharPickerData', 'goog.i18n.uChar.NameFetcher', 'goog.testing.MockControl', 'goog.testing.events', 'goog.testing.jsunit', 'goog.testing.mockmatchers', 'goog.ui.CharPicker', 'goog.ui.FlatButtonRenderer'], false);
-goog.addDependency('ui/checkbox.js', ['goog.ui.Checkbox', 'goog.ui.Checkbox.State'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.asserts', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.ui.CheckboxRenderer', 'goog.ui.Component.EventType', 'goog.ui.Component.State', 'goog.ui.Control', 'goog.ui.registry'], false);
+goog.addDependency('ui/checkbox.js', ['goog.ui.Checkbox', 'goog.ui.Checkbox.State'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.string', 'goog.ui.CheckboxRenderer', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.registry'], false);
 goog.addDependency('ui/checkbox_test.js', ['goog.ui.CheckboxTest'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.KeyCodes', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.Checkbox', 'goog.ui.CheckboxRenderer', 'goog.ui.Component', 'goog.ui.ControlRenderer', 'goog.ui.decorate'], false);
 goog.addDependency('ui/checkboxmenuitem.js', ['goog.ui.CheckBoxMenuItem'], ['goog.ui.MenuItem', 'goog.ui.registry'], false);
 goog.addDependency('ui/checkboxrenderer.js', ['goog.ui.CheckboxRenderer'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.array', 'goog.asserts', 'goog.dom.classlist', 'goog.object', 'goog.ui.ControlRenderer'], false);
@@ -3650,7 +3702,7 @@ goog.addDependency('useragent/keyboard.js', ['goog.userAgent.keyboard'], ['goog.
 goog.addDependency('useragent/keyboard_test.js', ['goog.userAgent.keyboardTest'], ['goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent.keyboard', 'goog.userAgentTestUtil'], false);
 goog.addDependency('useragent/picasa.js', ['goog.userAgent.picasa'], ['goog.string', 'goog.userAgent'], false);
 goog.addDependency('useragent/platform.js', ['goog.userAgent.platform'], ['goog.userAgent'], false);
-goog.addDependency('useragent/platform_test.js', ['goog.userAgent.platformTest'], ['goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.platform'], false);
+goog.addDependency('useragent/platform_test.js', ['goog.userAgent.platformTest'], ['goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.platform', 'goog.userAgentTestUtil'], false);
 goog.addDependency('useragent/product.js', ['goog.userAgent.product'], ['goog.userAgent'], false);
 goog.addDependency('useragent/product_isversion.js', ['goog.userAgent.product.isVersion'], ['goog.userAgent.product'], false);
 goog.addDependency('useragent/product_test.js', ['goog.userAgent.productTest'], ['goog.array', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion', 'goog.userAgentTestUtil'], false);
@@ -5399,7 +5451,7 @@ goog.asserts.setErrorHandler = function(errorHandler) {
  * @param {T} condition The condition to check.
  * @param {string=} opt_message Error message in case of failure.
  * @param {...*} var_args The items to substitute into the failure message.
- * @return {T} The value of the condition.
+ * @return {!T} The value of the condition.
  * @throws {goog.asserts.AssertionError} When the condition evaluates to false.
  */
 goog.asserts.assert = function(condition, opt_message, var_args) {
@@ -5516,7 +5568,7 @@ goog.asserts.assertObject = function(value, opt_message, var_args) {
  * @param {*} value The value to check.
  * @param {string=} opt_message Error message in case of failure.
  * @param {...*} var_args The items to substitute into the failure message.
- * @return {!Array} The value, guaranteed to be a non-null array.
+ * @return {!Array.<?>} The value, guaranteed to be a non-null array.
  * @throws {goog.asserts.AssertionError} When the value is not an array.
  */
 goog.asserts.assertArray = function(value, opt_message, var_args) {
@@ -5525,7 +5577,7 @@ goog.asserts.assertArray = function(value, opt_message, var_args) {
         [goog.typeOf(value), value], opt_message,
         Array.prototype.slice.call(arguments, 2));
   }
-  return /** @type {!Array} */ (value);
+  return /** @type {!Array.<?>} */ (value);
 };
 
 
@@ -6400,7 +6452,7 @@ goog.array.removeAllIf = function(arr, f, opt_obj) {
  *
  * @param {...*} var_args Items to concatenate.  Arrays will have each item
  *     added, while primitives and objects will be added as is.
- * @return {!Array} The new resultant array.
+ * @return {!Array.<?>} The new resultant array.
  */
 goog.array.concat = function(var_args) {
   return goog.array.ARRAY_PROTOTYPE_.concat.apply(
@@ -7101,7 +7153,7 @@ goog.array.repeat = function(value, n) {
  * expanded in-place recursively.
  *
  * @param {...*} var_args The values to flatten.
- * @return {!Array} An array containing the flattened values.
+ * @return {!Array.<?>} An array containing the flattened values.
  */
 goog.array.flatten = function(var_args) {
   var result = [];
@@ -7178,7 +7230,8 @@ goog.array.moveItem = function(arr, fromIndex, toIndex) {
  * http://docs.python.org/library/functions.html#zip}
  *
  * @param {...!goog.array.ArrayLike} var_args Arrays to be combined.
- * @return {!Array.<!Array>} A new array of arrays created from provided arrays.
+ * @return {!Array.<!Array.<?>>} A new array of arrays created from
+ *     provided arrays.
  */
 goog.array.zip = function(var_args) {
   if (!arguments.length) {
@@ -7208,7 +7261,7 @@ goog.array.zip = function(var_args) {
  *
  * Runtime: O(n)
  *
- * @param {!Array} arr The array to be shuffled.
+ * @param {!Array.<?>} arr The array to be shuffled.
  * @param {function():number=} opt_randFn Optional random function to use for
  *     shuffling.
  *     Takes no arguments, and returns a random number on the interval [0, 1).
@@ -12030,7 +12083,7 @@ goog.dom.getRawTextContent = function(node) {
  * Recursive support function for text content retrieval.
  *
  * @param {Node} node The node from which we are getting content.
- * @param {Array} buf string buffer.
+ * @param {Array.<string>} buf string buffer.
  * @param {boolean} normalizeWhitespace Whether to normalize whitespace.
  * @private
  */
@@ -13107,7 +13160,7 @@ goog.require('goog.array');
  */
 goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
   /**
-   * @protected {Array}
+   * @protected {Array.<number>}
    */
   this.rangeArray = null;
 
@@ -13647,8 +13700,7 @@ goog.format.SCALED_NUMERIC_RE_ = /^([-]?\d+\.?\d*)([K,M,G,T,P,k,m,u,n]?)[B]?$/;
 
 /**
  * Ordered list of scaling prefixes in decreasing order.
- * @type {Array}
- * @private
+ * @private {Array.<string>}
  */
 goog.format.NUMERIC_SCALE_PREFIXES_ = [
   'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'
@@ -14111,13 +14163,7 @@ goog.i18n.bidi.Dir = {
   /**
    * Neither left-to-right nor right-to-left.
    */
-  NEUTRAL: 0,
-
-  /**
-   * A historical misnomer for NEUTRAL.
-   * @deprecated For "neutral", use NEUTRAL; for "unknown", use null.
-   */
-  UNKNOWN: 0
+  NEUTRAL: 0
 };
 
 
@@ -15557,9 +15603,9 @@ goog.require('goog.string.TypedString');
  * trusted code, e.g., as the src of a script tag.
  *
  * Instances of this type must be created via the factory methods
- * ({@code goog.html.SafeUrl.from}, {@code goog.html.SafeUrl.sanitize}), etc and
- * not by invoking its constructor.  The constructor intentionally takes no
- * parameters and the type is immutable; hence only a default instance
+ * ({@code goog.html.SafeUrl.fromConstant}, {@code goog.html.SafeUrl.sanitize}),
+ * etc and not by invoking its constructor.  The constructor intentionally
+ * takes no parameters and the type is immutable; hence only a default instance
  * corresponding to the empty string can be obtained via constructor invocation.
  *
  * @see goog.html.SafeUrl#fromConstant
