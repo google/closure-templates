@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.Inject;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -30,6 +29,7 @@ import com.google.template.soy.shared.internal.NonpluginFunction;
 import java.util.Deque;
 import java.util.Map;
 
+import javax.inject.Inject;
 
 /**
  * Translator of Soy expressions to their equivalent JS expressions.

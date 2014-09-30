@@ -17,7 +17,6 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.Dir;
@@ -35,6 +34,8 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.util.List;
 import java.util.Set;
+
+import javax.inject.Inject;
 
 /**
  * Soy function that maybe inserts an HTML attribute for bidi directionality ('dir=ltr' or

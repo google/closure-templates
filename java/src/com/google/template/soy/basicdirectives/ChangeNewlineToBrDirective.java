@@ -17,7 +17,6 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -35,7 +34,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
-
+import javax.inject.Inject;
 
 /**
  * A directive that replaces newlines (\n, \r, or \r\n) with HTML line breaks (&lt;br&gt;).

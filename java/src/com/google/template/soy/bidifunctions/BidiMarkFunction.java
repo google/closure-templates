@@ -17,7 +17,6 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyValue;
@@ -31,6 +30,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 
 /**
  * Soy function that inserts a bidi mark character (LRM or RLM) for the current global bidi

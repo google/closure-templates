@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
-import com.google.inject.Inject;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -28,6 +27,8 @@ import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.Map;
 import java.util.SortedSet;
+
+import javax.inject.Inject;
 
 /**
  * A visitor to generate a set of Closure JS library names required by the function plugins used by

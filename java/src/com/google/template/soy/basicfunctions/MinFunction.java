@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
@@ -30,6 +29,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 
 /**
  * Soy function that takes the min of two numbers.

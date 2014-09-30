@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -42,6 +41,8 @@ import com.google.template.soy.types.primitive.StringType;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+
+import javax.inject.Inject;
 
 /**
  * Registry of types which can be looked up by name.

@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -31,6 +30,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 
 /**
  * Soy function that generates a random integer in the range [0, n-1].

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import com.google.inject.Inject;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -32,8 +31,8 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import javax.inject.Singleton;
-
 
 /**
  * Default implementation of RenderVisitorFactory.

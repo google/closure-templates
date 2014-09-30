@@ -17,7 +17,6 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.Dir;
@@ -36,6 +35,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 
 /**
  * A directive that maybe wraps the output within Unicode bidi control characters -- start character

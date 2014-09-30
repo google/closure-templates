@@ -16,7 +16,6 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -25,6 +24,7 @@ import com.google.template.soy.msgs.SoyMsgPlugin;
 
 import org.xml.sax.SAXException;
 
+import javax.inject.Inject;
 
 /**
  * Message plugin for XLIFF format.

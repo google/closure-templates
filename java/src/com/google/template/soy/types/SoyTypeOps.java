@@ -16,10 +16,11 @@
 
 package com.google.template.soy.types;
 
-import com.google.inject.Inject;
 import com.google.template.soy.types.primitive.FloatType;
 
 import java.util.Collection;
+
+import javax.inject.Inject;
 
 /**
  * Common operations on types.

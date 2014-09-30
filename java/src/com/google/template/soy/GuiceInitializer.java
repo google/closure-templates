@@ -17,10 +17,11 @@
 package com.google.template.soy;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
 
 /**
  * Helper class to initialize Guice for Soy users that do not use Guice.

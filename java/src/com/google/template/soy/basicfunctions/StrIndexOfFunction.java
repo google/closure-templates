@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
@@ -33,6 +32,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 
 /**
  * A function that determines the index of the first occurrence of a string

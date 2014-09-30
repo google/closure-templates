@@ -17,7 +17,6 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -35,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
-
+import javax.inject.Inject;
 
 /**
  * A directive that inserts word breaks as necessary.

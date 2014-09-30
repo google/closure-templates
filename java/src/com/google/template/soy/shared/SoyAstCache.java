@@ -18,7 +18,6 @@
 package com.google.template.soy.shared;
 
 import com.google.common.collect.Maps;
-import com.google.inject.Inject;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -27,6 +26,8 @@ import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyFileNode;
 
 import java.util.Map;
+
+import javax.inject.Inject;
 
 /**
  * Cache for the soy tree respecting file versions.

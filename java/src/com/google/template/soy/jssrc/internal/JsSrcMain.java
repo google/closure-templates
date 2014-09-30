@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.template.soy.base.SoySyntaxException;
@@ -52,7 +51,7 @@ import java.io.Writer;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
+import javax.inject.Inject;
 
 /**
  * Main entry point for the JS Src backend (output target).
