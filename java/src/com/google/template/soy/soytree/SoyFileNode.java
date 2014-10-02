@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -85,8 +86,8 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** This Soy file's namespace, or null if syntax version V1. */
   @Nullable private final String namespace;
 
-  /** The autoescape mode for templates in this file that do not declare an autoescape mode. */
-  private final AutoescapeMode defaultAutoescapeMode;
+  /** The default autoescape mode declared by this file's namespace, if any. */
+  private final Optional<AutoescapeMode> namespaceAutoescapeMode;
 
   /** CSS namespaces required by this file (usable in any template in this file). */
   private final ImmutableList<String> requiredCssNamespaces;
@@ -129,7 +130,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     }
 
     String namespace = null;
-    AutoescapeMode defaultAutoescapeMode = DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE;
+    AutoescapeMode defaultAutoescapeMode = null;
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     String cssBaseNamespace = null;
 
@@ -159,7 +160,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     }
 
     this.namespace = namespace;
-    this.defaultAutoescapeMode = defaultAutoescapeMode;
+    this.namespaceAutoescapeMode = Optional.fromNullable(defaultAutoescapeMode);
     this.requiredCssNamespaces = requiredCssNamespaces;
     this.cssBaseNamespace = cssBaseNamespace;
     if (namespace == null) {
@@ -216,7 +217,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.soyFileKind = orig.soyFileKind;
     this.delPackageName = orig.delPackageName;
     this.namespace = orig.namespace;
-    this.defaultAutoescapeMode = orig.defaultAutoescapeMode;
+    this.namespaceAutoescapeMode = orig.namespaceAutoescapeMode;
     this.requiredCssNamespaces = orig.requiredCssNamespaces;  // immutable
     this.cssBaseNamespace = orig.cssBaseNamespace;
     this.aliasToNamespaceMap = orig.aliasToNamespaceMap;  // immutable
@@ -249,7 +250,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** Returns the default autoescaping mode for contained templates. */
   public AutoescapeMode getDefaultAutoescapeMode() {
-    return defaultAutoescapeMode;
+    return namespaceAutoescapeMode.or(DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE);
   }
 
 
@@ -302,7 +303,13 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       sb.append("{delpackage ").append(delPackageName).append("}\n");
     }
     if (namespace != null) {
-      sb.append("{namespace ").append(namespace).append("}\n");
+      sb.append("{namespace ").append(namespace);
+      if (this.namespaceAutoescapeMode.isPresent()) {
+        sb.append(" autoescape=\"")
+            .append(this.namespaceAutoescapeMode.get().getAttributeValue())
+            .append("\"");
+      }
+      sb.append("}\n");
     }
 
     if (aliasToNamespaceMap.size() > 0) {

@@ -106,7 +106,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "Hello, World!\n",
             "{/template}"),
         join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n\n",
+            "{namespace ns}\n\n",
             "{template foo}\n",
             "Hello, World!\n",
             "{/template}"));
