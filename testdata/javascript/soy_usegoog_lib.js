@@ -355,7 +355,7 @@ goog.module.getInternal_ = function(name) {
 /**
  * @private {{
  *     moduleName:(string|undefined),
- *     declareTestMethods:boolean}|null}}
+ *     declareTestMethods:boolean}|null}
  */
 goog.moduleLoaderState_ = null;
 
@@ -10615,6 +10615,7 @@ goog.dom.setProperties = function(element, properties) {
  * by goog.dom.setProperties.
  *
  * @private {!Object.<string, string>}
+ * @const
  */
 goog.dom.DIRECT_ATTRIBUTE_MAP_ = {
   'cellpadding': 'cellPadding',
@@ -11905,6 +11906,7 @@ goog.dom.findNodes_ = function(root, p, rv, findOne) {
 /**
  * Map of tags whose content to ignore when calculating text length.
  * @private {!Object.<string, number>}
+ * @const
  */
 goog.dom.TAGS_TO_IGNORE_ = {
   'SCRIPT': 1,
@@ -11918,6 +11920,7 @@ goog.dom.TAGS_TO_IGNORE_ = {
 /**
  * Map of tags which have predefined values with regard to whitespace.
  * @private {!Object.<string, string>}
+ * @const
  */
 goog.dom.PREDEFINED_TAG_VALUES_ = {'IMG': ' ', 'BR': '\n'};
 
