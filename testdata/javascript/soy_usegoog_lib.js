@@ -508,9 +508,9 @@ goog.globalize = function(obj, opt_global) {
 /**
  * Adds a dependency from a file to the files it requires.
  * @param {string} relPath The path to the js file.
- * @param {Array.<string>} provides An array of strings with
+ * @param {!Array.<string>} provides An array of strings with
  *     the names of the objects this file provides.
- * @param {Array.<string>} requires An array of strings with
+ * @param {!Array.<string>} requires An array of strings with
  *     the names of the objects this file requires.
  * @param {boolean=} opt_isModule Whether this dependency must be loaded as
  *     a module as declared by goog.module.
@@ -756,8 +756,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   /**
    * Object used to keep track of urls that have already been added. This record
    * allows the prevention of circular dependencies.
-   * @type {Object}
-   * @private
+   * @private {!Object.<string, boolean>}
    */
   goog.included_ = {};
 
@@ -766,14 +765,24 @@ if (goog.DEPENDENCIES_ENABLED) {
    * This object is used to keep track of dependencies and other data that is
    * used for loading scripts.
    * @private
-   * @type {Object}
+   * @type {{
+   *   pathIsModule: !Object.<string, boolean>,
+   *   nameToPath: !Object.<string, string>,
+   *   requires: !Object.<string, !Object.<string, boolean>>,
+   *   visited: !Object.<string, boolean>,
+   *   written: !Object.<string, boolean>
+   * }}
    */
   goog.dependencies_ = {
     pathIsModule: {}, // 1 to 1
-    nameToPath: {}, // many to 1
+
+    nameToPath: {}, // 1 to 1
+
     requires: {}, // 1 to many
+
     // Used when resolving dependencies to prevent us from visiting file twice.
     visited: {},
+
     written: {} // Used to keep track of script files we have written.
   };
 
@@ -806,7 +815,8 @@ if (goog.DEPENDENCIES_ENABLED) {
     // Search backwards since the current script is in almost all cases the one
     // that has base.js.
     for (var i = scripts.length - 1; i >= 0; --i) {
-      var src = scripts[i].src;
+      var script = /** @type {!HTMLScriptElement} */ (scripts[i]);
+      var src = script.src;
       var qmark = src.lastIndexOf('?');
       var l = qmark == -1 ? src.length : qmark;
       if (src.substr(l - 7, 7) == 'base.js') {
@@ -963,7 +973,7 @@ if (goog.DEPENDENCIES_ENABLED) {
     // of the module.
     try {
       goog.moduleLoaderState_ = {
-          moduleName: undefined, declareTestMethods: false};
+        moduleName: undefined, declareTestMethods: false};
       var exports;
       if (goog.isFunction(moduleDef)) {
         exports = moduleDef.call(goog.global, {});
@@ -991,7 +1001,9 @@ if (goog.DEPENDENCIES_ENABLED) {
         for (var entry in exports) {
           if (entry.indexOf('test', 0) === 0 ||
               entry == 'tearDown' ||
-              entry == 'setup') {
+              entry == 'setUp' ||
+              entry == 'setUpPage' ||
+              entry == 'tearDownPage') {
             goog.global[entry] = exports[entry];
           }
         }
@@ -1098,11 +1110,12 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.writeScripts_ = function() {
-    // The scripts we need to write this time.
+    /** @type {!Array.<string>} The scripts we need to write this time. */
     var scripts = [];
     var seenScript = {};
     var deps = goog.dependencies_;
 
+    /** @param {string} path */
     function visitNode(path) {
       if (path in deps.written) {
         return;
@@ -1745,8 +1758,7 @@ goog.evalWorksForGlobals_ = null;
 /**
  * Optional map of CSS class names to obfuscated names used with
  * goog.getCssName().
- * @type {Object|undefined}
- * @private
+ * @private {!Object.<string, string>|undefined}
  * @see goog.setCssNameMapping
  */
 goog.cssNameMapping_;
@@ -1865,7 +1877,7 @@ goog.setCssNameMapping = function(mapping, opt_style) {
  * are made in uncompiled mode.
  *
  * A hook for overriding the CSS name mapping.
- * @type {Object|undefined}
+ * @type {!Object.<string, string>|undefined}
  */
 goog.global.CLOSURE_CSS_NAME_MAPPING;
 
@@ -1890,7 +1902,7 @@ if (!COMPILED && goog.global.CLOSURE_CSS_NAME_MAPPING) {
  * </code>
  *
  * @param {string} str Translatable string, places holders in the form {$foo}.
- * @param {Object=} opt_values Map of place holder name to value.
+ * @param {Object.<string, string>=} opt_values Maps place holder name to value.
  * @return {string} message with placeholders filled.
  */
 goog.getMsg = function(str, opt_values) {
@@ -2116,6 +2128,7 @@ if (!COMPILED) {
 // goog.defineClass implementation
 //==============================================================================
 
+
 /**
  * Creates a restricted form of a Closure "class":
  *   - from the compiler's perspective, the instance returned from the
@@ -2334,7 +2347,7 @@ goog.addDependency('async/conditionaldelay_test.js', ['goog.async.ConditionalDel
 goog.addDependency('async/delay.js', ['goog.Delay', 'goog.async.Delay'], ['goog.Disposable', 'goog.Timer'], false);
 goog.addDependency('async/delay_test.js', ['goog.async.DelayTest'], ['goog.async.Delay', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('async/nexttick.js', ['goog.async.nextTick', 'goog.async.throwException'], ['goog.debug.entryPointRegistry', 'goog.functions', 'goog.labs.userAgent.browser'], false);
-goog.addDependency('async/nexttick_test.js', ['goog.async.nextTickTest'], ['goog.async.nextTick', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.testing.AsyncTestCase', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
+goog.addDependency('async/nexttick_test.js', ['goog.async.nextTickTest'], ['goog.async.nextTick', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.dom', 'goog.labs.userAgent.browser', 'goog.testing.AsyncTestCase', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('async/run.js', ['goog.async.run'], ['goog.async.nextTick', 'goog.async.throwException', 'goog.testing.watchers'], false);
 goog.addDependency('async/run_test.js', ['goog.async.runTest'], ['goog.async.run', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('async/throttle.js', ['goog.Throttle', 'goog.async.Throttle'], ['goog.Disposable', 'goog.Timer'], false);
@@ -2667,6 +2680,9 @@ goog.addDependency('events/onlinehandler.js', ['goog.events.OnlineHandler', 'goo
 goog.addDependency('events/onlinelistener_test.js', ['goog.events.OnlineHandlerTest'], ['goog.events', 'goog.events.BrowserFeature', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.OnlineHandler', 'goog.net.NetworkStatusMonitor', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('events/pastehandler.js', ['goog.events.PasteHandler', 'goog.events.PasteHandler.EventType', 'goog.events.PasteHandler.State'], ['goog.Timer', 'goog.async.ConditionalDelay', 'goog.events.BrowserEvent', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.log', 'goog.userAgent'], false);
 goog.addDependency('events/pastehandler_test.js', ['goog.events.PasteHandlerTest'], ['goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.PasteHandler', 'goog.testing.MockClock', 'goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent'], false);
+goog.addDependency('events/wheelevent.js', ['goog.events.WheelEvent'], ['goog.asserts', 'goog.events.BrowserEvent'], false);
+goog.addDependency('events/wheelhandler.js', ['goog.events.WheelHandler'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.WheelEvent', 'goog.style', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
+goog.addDependency('events/wheelhandler_test.js', ['goog.events.WheelHandlerTest'], ['goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.WheelEvent', 'goog.events.WheelHandler', 'goog.string', 'goog.testing.PropertyReplacer', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('format/emailaddress.js', ['goog.format.EmailAddress'], ['goog.string'], false);
 goog.addDependency('format/emailaddress_test.js', ['goog.format.EmailAddressTest'], ['goog.array', 'goog.format.EmailAddress', 'goog.testing.jsunit'], false);
 goog.addDependency('format/format.js', ['goog.format'], ['goog.i18n.GraphemeBreak', 'goog.string', 'goog.userAgent'], false);
@@ -3099,7 +3115,7 @@ goog.addDependency('net/xpc/nixtransport.js', ['goog.net.xpc.NixTransport'], ['g
 goog.addDependency('net/xpc/relay.js', ['goog.net.xpc.relay'], [], false);
 goog.addDependency('net/xpc/transport.js', ['goog.net.xpc.Transport'], ['goog.Disposable', 'goog.dom', 'goog.net.xpc.TransportNames'], false);
 goog.addDependency('net/xpc/xpc.js', ['goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.ChannelStates', 'goog.net.xpc.TransportNames', 'goog.net.xpc.TransportTypes', 'goog.net.xpc.UriCfgFields'], ['goog.log'], false);
-goog.addDependency('object/object.js', ['goog.object'], ['goog.array'], false);
+goog.addDependency('object/object.js', ['goog.object'], [], false);
 goog.addDependency('object/object_test.js', ['goog.objectTest'], ['goog.functions', 'goog.object', 'goog.testing.jsunit'], false);
 goog.addDependency('positioning/absoluteposition.js', ['goog.positioning.AbsolutePosition'], ['goog.math.Box', 'goog.math.Coordinate', 'goog.math.Size', 'goog.positioning', 'goog.positioning.AbstractPosition'], false);
 goog.addDependency('positioning/abstractposition.js', ['goog.positioning.AbstractPosition'], ['goog.math.Box', 'goog.math.Size', 'goog.positioning.Corner'], false);
@@ -3709,7 +3725,7 @@ goog.addDependency('useragent/product_test.js', ['goog.userAgent.productTest'], 
 goog.addDependency('useragent/useragent.js', ['goog.userAgent'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.labs.userAgent.util', 'goog.string'], false);
 goog.addDependency('useragent/useragent_quirks_test.js', ['goog.userAgentQuirksTest'], ['goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('useragent/useragent_test.js', ['goog.userAgentTest'], ['goog.array', 'goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgentTestUtil'], false);
-goog.addDependency('useragent/useragenttestutil.js', ['goog.userAgentTestUtil', 'goog.userAgentTestUtil.UserAgents'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.userAgent', 'goog.userAgent.keyboard', 'goog.userAgent.platform', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
+goog.addDependency('useragent/useragenttestutil.js', ['goog.userAgentTestUtil', 'goog.userAgentTestUtil.UserAgents'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.labs.userAgent.platform', 'goog.userAgent', 'goog.userAgent.keyboard', 'goog.userAgent.platform', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('vec/float32array.js', ['goog.vec.Float32Array'], [], false);
 goog.addDependency('vec/float64array.js', ['goog.vec.Float64Array'], [], false);
 goog.addDependency('vec/mat3.js', ['goog.vec.Mat3'], ['goog.vec'], false);
@@ -4546,6 +4562,7 @@ goog.string.unescapeEntitiesWithDocument = function(str, document) {
  * @return {string} The unescaped {@code str} string.
  */
 goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
+  /** @type {!Object.<string, string>} */
   var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
   var div;
   if (opt_document) {
@@ -4748,8 +4765,7 @@ goog.string.truncateMiddle = function(str, chars,
 
 /**
  * Special chars that need to be escaped for goog.string.quote.
- * @private
- * @type {Object}
+ * @private {!Object.<string, string>}
  */
 goog.string.specialEscapeChars_ = {
   '\0': '\\0',
@@ -4766,8 +4782,7 @@ goog.string.specialEscapeChars_ = {
 
 /**
  * Character mappings used internally for goog.string.escapeChar.
- * @private
- * @type {Object}
+ * @private {!Object.<string, string>}
  */
 goog.string.jsEscapeCache_ = {
   '\'': '\\\''
@@ -6023,7 +6038,7 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
  *
  * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
- * @param {?function(this:S, R, T, number, ?) : R} f The function to call for
+ * @param {function(this:S, R, T, number, ?) : R} f The function to call for
  *     every element. This function
  *     takes 4 arguments (the function's previous result or the initial value,
  *     the value of the current array element, the current array index, and the
@@ -8252,8 +8267,6 @@ goog.math.Size.prototype.scaleToFit = function(target) {
 
 goog.provide('goog.object');
 
-goog.require('goog.array');
-
 
 /**
  * Calls a function for each element in an object/map/hash.
@@ -8678,11 +8691,13 @@ goog.object.setIfUndefined = function(obj, key, value) {
  * @template K,V
  */
 goog.object.equals = function(a, b) {
-  if (!goog.array.equals(goog.object.getKeys(a), goog.object.getKeys(b))) {
-    return false;
-  }
   for (var k in a) {
-    if (a[k] !== b[k]) {
+    if (!(k in b) || a[k] !== b[k]) {
+      return false;
+    }
+  }
+  for (var k in b) {
+    if (!(k in a)) {
       return false;
     }
   }
@@ -9738,15 +9753,6 @@ goog.userAgent.initPlatform_ = function() {
   goog.userAgent.detectedLinux_ = goog.string.contains(goog.userAgent.PLATFORM,
       'Linux');
 
-  /**
-   * Whether the user agent is running on a X11 windowing system.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedX11_ = !!goog.userAgent.getNavigator() &&
-      goog.string.contains(goog.userAgent.getNavigator()['appVersion'] || '',
-          'X11');
-
   // Need user agent string for Android/IOS detection
   var ua = goog.userAgent.getUserAgentString();
 
@@ -9804,11 +9810,22 @@ goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
 
 
 /**
+ * @return {boolean} Whether the user agent is an X11 windowing system.
+ * @private
+ */
+goog.userAgent.isX11_ = function() {
+  var navigator = goog.userAgent.getNavigator();
+  return !!navigator &&
+      goog.string.contains(navigator['appVersion'] || '', 'X11');
+};
+
+
+/**
  * Whether the user agent is running on a X11 windowing system.
  * @type {boolean}
  */
 goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_X11 : goog.userAgent.detectedX11_;
+    goog.userAgent.ASSUME_X11 : goog.userAgent.isX11_();
 
 
 /**
@@ -11929,7 +11946,7 @@ goog.dom.PREDEFINED_TAG_VALUES_ = {'IMG': ' ', 'BR': '\n'};
  * Returns true if the element has a tab index that allows it to receive
  * keyboard focus (tabIndex >= 0), false otherwise.  Note that some elements
  * natively support keyboard focus, even if they have no tab index.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element has a tab index that allows keyboard
  *     focus.
  * @see http://fluidproject.org/blog/2008/01/09/getting-setting-and-removing-tabindex-values-with-javascript/
@@ -11967,7 +11984,7 @@ goog.dom.setFocusableTabIndex = function(element, enable) {
  * Returns true if the element can be focused, i.e. it has a tab index that
  * allows it to receive keyboard focus (tabIndex >= 0), or it is an element
  * that natively supports keyboard focus.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element allows keyboard focus.
  */
 goog.dom.isFocusable = function(element) {
@@ -11991,7 +12008,7 @@ goog.dom.isFocusable = function(element) {
 
 /**
  * Returns true if the element has a specified tab index.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element has a specified tab index.
  * @private
  */
@@ -12006,7 +12023,7 @@ goog.dom.hasSpecifiedTabIndex_ = function(element) {
 
 /**
  * Returns true if the element's tab index allows the element to be focused.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element's tab index allows focus.
  * @private
  */
@@ -12019,7 +12036,7 @@ goog.dom.isTabIndexFocusable_ = function(element) {
 
 /**
  * Returns true if the element is focusable even when tabIndex is not set.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element natively supports focus.
  * @private
  */
@@ -12035,7 +12052,7 @@ goog.dom.nativelySupportsFocus_ = function(element) {
 /**
  * Returns true if the element has a bounding rectangle that would be visible
  * (i.e. its width and height are greater than zero).
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element has a non-zero bounding rectangle.
  * @private
  */
@@ -13013,7 +13030,7 @@ goog.dom.DomHelper.prototype.findNodes = goog.dom.findNodes;
  * Returns true if the element has a tab index that allows it to receive
  * keyboard focus (tabIndex >= 0), false otherwise.  Note that some elements
  * natively support keyboard focus, even if they have no tab index.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element has a tab index that allows keyboard
  *     focus.
  */
@@ -13037,7 +13054,7 @@ goog.dom.DomHelper.prototype.setFocusableTabIndex =
  * Returns true if the element can be focused, i.e. it has a tab index that
  * allows it to receive keyboard focus (tabIndex >= 0), or it is an element
  * that natively supports keyboard focus.
- * @param {Element} element Element to check.
+ * @param {!Element} element Element to check.
  * @return {boolean} Whether the element allows keyboard focus.
  */
 goog.dom.DomHelper.prototype.isFocusable = goog.dom.isFocusable;

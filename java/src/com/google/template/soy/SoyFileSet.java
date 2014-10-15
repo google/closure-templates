@@ -673,6 +673,9 @@ public final class SoyFileSet {
         (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
             .parse();
 
+    // Do renaming of package-relative class names.
+    new ResolvePackageRelativeCssNamesVisitor().exec(soyTree);
+
     return (new GenerateParseInfoVisitor(javaPackage, javaClassNameSource)).exec(soyTree);
   }
 
