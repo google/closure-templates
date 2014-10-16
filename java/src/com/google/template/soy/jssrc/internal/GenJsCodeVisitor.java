@@ -596,7 +596,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           ? "string"
           : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
       jsCodeBuilder.appendLine(" * @return {", returnType, "}");
-      String suppressions = "checkTypes|uselessCode";
+      String suppressions = "checkTypes";
       if (node instanceof TemplateBasicNode &&
           ((TemplateBasicNode) node).isOverride()) {
         suppressions += "|duplicate";
