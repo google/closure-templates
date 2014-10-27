@@ -81,7 +81,7 @@ goog.global.CLOSURE_UNCOMPILED_DEFINES;
  *
  * Example:
  * <pre>
- *   var CLOSURE_DEFINES = {'goog.DEBUG': false};
+ *   var CLOSURE_DEFINES = {'goog.DEBUG': false} ;
  * </pre>
  *
  * @type {Object.<string, (string|number|boolean)>|undefined}
@@ -388,13 +388,9 @@ goog.module.declareTestMethods = function() {
 
 
 /**
- * Indicate that a module's exports that are known test methods should
- * be copied to the global object.  This makes the test methods visible to
- * test runners that inspect the global object.
- *
- * TODO(johnlenz): Make the test framework aware of goog.module so
- * that this isn't necessary. Alternately combine this with goog.setTestOnly
- * to minimize boiler plate.
+ * Provide the module's exports as a globally accessible object under the
+ * module's declared name.  This is intended to ease migration to goog.module
+ * for files that have existing usages.
  */
 goog.module.declareLegacyNamespace = function() {
   if (!COMPILED && !goog.isInModuleLoader_()) {
@@ -864,7 +860,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   };
 
 
-  /** @private {Array.<string>} */
+  /** @private {!Array.<string>} */
   goog.queuedModules_ = [];
 
 
@@ -1089,7 +1085,7 @@ if (goog.DEPENDENCIES_ENABLED) {
 
   /**
    * A readystatechange handler for legacy IE
-   * @param {HTMLScriptElement} script
+   * @param {!HTMLScriptElement} script
    * @param {number} scriptIndex
    * @return {boolean}
    * @private
@@ -2794,7 +2790,7 @@ goog.addDependency('html/testing.js', ['goog.html.testing'], ['goog.html.SafeHtm
 goog.addDependency('html/trustedresourceurl.js', ['goog.html.TrustedResourceUrl'], ['goog.asserts', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/trustedresourceurl_test.js', ['goog.html.trustedResourceUrlTest'], ['goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/uncheckedconversions.js', ['goog.html.uncheckedconversions'], ['goog.asserts', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.string', 'goog.string.Const'], false);
-goog.addDependency('html/uncheckedconversions_test.js', ['goog.html.uncheckedconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
+goog.addDependency('html/uncheckedconversions_test.js', ['goog.html.uncheckedconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/utils.js', ['goog.html.utils'], ['goog.string'], false);
 goog.addDependency('html/utils_test.js', ['goog.html.UtilsTest'], ['goog.array', 'goog.dom.TagName', 'goog.html.utils', 'goog.object', 'goog.testing.jsunit'], false);
 goog.addDependency('i18n/bidi.js', ['goog.i18n.bidi', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.i18n.bidi.Format'], [], false);
@@ -5689,7 +5685,8 @@ goog.asserts.assertElement = function(value, opt_message, var_args) {
  */
 goog.asserts.assertInstanceof = function(value, type, opt_message, var_args) {
   if (goog.asserts.ENABLE_ASSERTS && !(value instanceof type)) {
-    goog.asserts.doAssertFailure_('instanceof check failed.', null,
+    goog.asserts.doAssertFailure_('Expected instanceof %s but got %s.',
+        [goog.asserts.getType_(type), goog.asserts.getType_(value)],
         opt_message, Array.prototype.slice.call(arguments, 3));
   }
   return value;
@@ -5703,6 +5700,25 @@ goog.asserts.assertInstanceof = function(value, type, opt_message, var_args) {
 goog.asserts.assertObjectPrototypeIsIntact = function() {
   for (var key in Object.prototype) {
     goog.asserts.fail(key + ' should not be enumerable in Object.prototype.');
+  }
+};
+
+
+/**
+ * Returns the type of a value. If a constructor is passed, and a suitable
+ * string cannot be found, 'unknown type name' will be returned.
+ * @param {*} value A constructor, object, or primitive.
+ * @return {string} The best display name for the value, or 'unknown type name'.
+ * @private
+ */
+goog.asserts.getType_ = function(value) {
+  if (value instanceof Function) {
+    return value.displayName || value.name || 'unknown type name';
+  } else if (value instanceof Object) {
+    return value.constructor.displayName || value.constructor.name ||
+        Object.prototype.toString.call(value);
+  } else {
+    return value === null ? 'null' : typeof value;
   }
 };
 
@@ -18093,7 +18109,6 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} script The string to wrap as a SafeScript.
- *     contract.
  * @return {!goog.html.SafeScript} The value of {@code script}, wrapped in a
  *     SafeScript object.
  */
@@ -18104,7 +18119,7 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
   goog.asserts.assertString(goog.string.Const.unwrap(justification),
                             'must provide justification');
   goog.asserts.assert(
-      goog.string.trim(goog.string.Const.unwrap(justification)).length > 0,
+      !goog.string.isEmpty(goog.string.Const.unwrap(justification)),
       'must provide non-empty justification');
   return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
       script);
@@ -18124,7 +18139,6 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} style The string to wrap as a SafeStyle.
- *     contract.
  * @return {!goog.html.SafeStyle} The value of {@code style}, wrapped in a
  *     SafeStyle object.
  */
@@ -18186,7 +18200,6 @@ goog.html.uncheckedconversions.
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} url The string to wrap as a SafeUrl.
- *     contract.
  * @return {!goog.html.SafeUrl} The value of {@code url}, wrapped in a SafeUrl
  *     object.
  */
@@ -18216,7 +18229,6 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} url The string to wrap as a TrustedResourceUrl.
- *     contract.
  * @return {!goog.html.TrustedResourceUrl} The value of {@code url}, wrapped in
  *     a TrustedResourceUrl object.
  */

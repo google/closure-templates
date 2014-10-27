@@ -93,7 +93,7 @@ Author: Neil Sanchala
 
   <target name="generated-soyutils"
           depends="compile"
-          description="generates soyutils.js and soyutils_usegoog.js.">
+          description="generates soyutils_usegoog.js.">
     <!-- Load a custom ANT task. -->
     <taskdef name="gen.escape.directives"
              classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode">
@@ -106,11 +106,6 @@ Author: Neil Sanchala
     </taskdef>
 
     <mkdir dir="${build.dir}/javascript"/>
-
-    <gen.escape.directives>
-      <input path="${basedir}/javascript/soyutils.js"/>
-      <output path="${build.dir}/javascript/soyutils.js"/>
-    </gen.escape.directives>
 
     <gen.escape.directives>
       <input path="${basedir}/javascript/soyutils_usegoog.js"/>
@@ -643,7 +638,7 @@ Author: Neil Sanchala
       <fileset file="COPYING" />
       <fileset file="${build.dir}/javascript/README" />
       <fileset file="${build.dir}/SoyToJsSrcCompiler.jar" />
-      <fileset dir="${build.dir}/javascript" includes="soyutils.js,soyutils_usegoog.js" />
+      <fileset dir="${build.dir}/javascript" includes="soyutils_usegoog.js" />
     </zip>
   </target>
 

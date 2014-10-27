@@ -501,26 +501,9 @@ public class EscapingConventionsTest extends TestCase {
     assertTrue(untrustedValues.iterator().hasNext());  // not empty
     checkEscaping(
         templateText,
-        applyDirectiveJavaScript(directiveName, untrustedValues),
+        applyDirectiveClosure(directiveName, untrustedValues),
         directiveName + ":javascript",
         lexer, Arrays.asList(expectedTokens));
-    checkEscaping(
-        templateText,
-        applyDirectiveClosure(directiveName, untrustedValues),
-        directiveName + ":closure",
-        lexer, Arrays.asList(expectedTokens));
-  }
-
-  /**
-   * Apply the named directive to the given strings by loading {@code soyutils.js} into Rhino.
-   *
-   * @return Even elements are the raw strings, and odd elements are the corresponding escaped
-   *     versions.
-   */
-  private List<String> applyDirectiveJavaScript(String directiveName, Iterable<String> toEscape)
-      throws Exception {
-    return applyDirectiveInRhino(
-        directiveName, toEscape, getSoyUtilsPath());
   }
 
   /**
@@ -628,10 +611,6 @@ public class EscapingConventionsTest extends TestCase {
    */
   public static final class Navigator {
     public final String userAgent = "testzilla";
-  }
-
-  private static String getSoyUtilsPath() {
-    return "javascript/soyutils.js";
   }
 
   private static String getSoyUtilsUseGoogPath() {

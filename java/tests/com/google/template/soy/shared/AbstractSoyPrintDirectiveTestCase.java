@@ -143,9 +143,16 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
       Context context = new ContextFactory().enterContext();
       context.setOptimizationLevel(-1);  // Only running once.
       ScriptableObject globalScope = context.initStandardObjects();
+
+      // Define a fake navigator object for Closure's userAgent library.
       NativeObject navigator = new NativeObject();
       ScriptableObject.putConstProperty(navigator, "userAgent", "testZilla");
       globalScope.defineProperty("navigator", navigator, ScriptableObject.DONTENUM);
+
+      // Disable asserts, so that zSoyz will be returned instead of throwing an exception.
+      NativeObject defines = new NativeObject();
+      ScriptableObject.putConstProperty(defines, "goog.asserts.ENABLE_ASSERTS", false);
+      globalScope.defineProperty("CLOSURE_UNCOMPILED_DEFINES", defines, ScriptableObject.CONST);
 
       try {
         String soyutilsPath = getSoyUtilsPath();
@@ -180,7 +187,7 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
 
 
   private static String getSoyUtilsPath() {
-    return "javascript/soyutils.js";
+    return "testdata/javascript/soy_usegoog_lib.js";
   }
 
 
