@@ -43,6 +43,7 @@ goog.provide('soydata.SanitizedJsStrChars');
 goog.provide('soydata.SanitizedUri');
 goog.provide('soydata.VERY_UNSAFE');
 
+goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
@@ -52,6 +53,7 @@ goog.require('goog.html.SafeUrl');
 goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
+goog.require('goog.object');
 goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.string');
@@ -981,16 +983,23 @@ soy.$$escapeHtml = function(value) {
  *
  * @param {*} value The string-like value to be escaped. May not be a string,
  *     but the value will be coerced to a string.
+ * @param {Array.<string>=} opt_safeTags Additional tag names to whitelist.
  * @return {!soydata.SanitizedHtml} A sanitized and normalized version of value.
  */
-soy.$$cleanHtml = function(value) {
+soy.$$cleanHtml = function(value, opt_safeTags) {
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.HTML)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedHtml);
     return /** @type {!soydata.SanitizedHtml} */ (value);
   }
+  var tagWhitelist;
+  if (opt_safeTags) {
+    tagWhitelist = goog.object.createSet(opt_safeTags);
+    goog.object.extend(tagWhitelist, soy.esc.$$SAFE_TAG_WHITELIST_);
+  } else {
+    tagWhitelist = soy.esc.$$SAFE_TAG_WHITELIST_;
+  }
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-      soy.$$stripHtmlTags(value, soy.esc.$$SAFE_TAG_WHITELIST_),
-      soydata.getContentDir(value));
+      soy.$$stripHtmlTags(value, tagWhitelist), soydata.getContentDir(value));
 };
 
 
@@ -1039,7 +1048,7 @@ soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
  *
  * @param {*} value The HTML to be escaped. May not be a string, but the
  *     value will be coerced to a string.
- * @param {Object.<string, number>=} opt_tagWhitelist Has an own property whose
+ * @param {Object.<string, boolean>=} opt_tagWhitelist Has an own property whose
  *     name is a lower-case tag name and whose value is {@code 1} for
  *     each element that is allowed in the output.
  * @return {string} A representation of value without disallowed tags,
@@ -1064,6 +1073,8 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
   // [1] which are indices into a list of approved tag names.
   // Replace all other uses of < and > with entities.
   var tags = [];
+  var openListTags = [];
+  var attrs = [];
   html = html.replace(
     soy.esc.$$HTML_TAG_REGEX_,
     function(tok, tagName) {
@@ -1071,9 +1082,32 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
         tagName = tagName.toLowerCase();
         if (opt_tagWhitelist.hasOwnProperty(tagName) &&
             opt_tagWhitelist[tagName]) {
-          var start = tok.charAt(1) === '/' ? '</' : '<';
+          var isClose = tok.charAt(1) == '/';
           var index = tags.length;
+          var start = '</';
+          var attributes = '';
+          if (!isClose) {
+            start = '<';
+            var match;
+            while (match = soy.esc.$$HTML_ATTRIBUTE_REGEX_.exec(tok)) {
+              if (match[1] && match[1].toLowerCase() == 'dir') {
+                var dir = match[2];
+                if (dir) {
+                  if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
+                    dir = dir.substr(1, dir.length - 2);
+                  }
+                  dir = dir.toLowerCase();
+                  if (dir == 'ltr' || dir == 'rtl' || dir == 'auto') {
+                    attributes = ' dir="' + dir + '"';
+                  }
+                }
+                break;
+              }
+            }
+            soy.esc.$$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
+          }
           tags[index] = start + tagName + '>';
+          attrs[index] = attributes;
           return '[' + index + ']';
         }
       }
@@ -1090,8 +1124,12 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
   // part of a tag via a replacement operation and tags only contains
   // approved tags.
   // Reinsert the white-listed tags.
-  html = html.replace(
-       /\[(\d+)\]/g, function(_, index) { return tags[index]; });
+  html = html.replace(/\[(\d+)\]/g, function(_, index) {
+    if (attrs[index] && tags[index]) {
+      return tags[index].substr(0, tags[index].length - 1) + attrs[index] + '>';
+    }
+    return tags[index];
+  });
 
   // Close any still open tags.
   // This prevents unclosed formatting elements like <ol> and <table> from
@@ -1105,8 +1143,9 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
  * If {@code <table>} is used for formatting, embedded HTML shouldn't be able
  * to use a mismatched {@code </table>} to break page layout.
  *
- * @param {Array.<string>} tags an array of tags that will be modified in place
- *    include tags, the empty string, or concatenations of empty tags.
+ * @param {Array.<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
+ *    that will be modified in place to be either an open tag, one or more close
+ *    tags concatenated, or the empty string.
  * @return {string} zero or more closed tags that close all elements that are
  *    opened in tags but not closed.
  * @private
@@ -1115,18 +1154,19 @@ soy.$$balanceTags_ = function(tags) {
   var open = [];
   for (var i = 0, n = tags.length; i < n; ++i) {
     var tag = tags[i];
-    if (tag.charAt(1) === '/') {
-      var openTagIndex = open.length - 1;
-      // NOTE: This is essentially lastIndexOf, but it's not supported in IE.
-      while (openTagIndex >= 0 && open[openTagIndex] != tag) {
-        openTagIndex--;
-      }
+    if (tag.charAt(1) == '/') {
+      var openTagIndex = goog.array.lastIndexOf(open, tag);
       if (openTagIndex < 0) {
-        tags[i] = '';  // Drop close tag.
+        tags[i] = '';  // Drop close tag with no corresponding open tag.
       } else {
         tags[i] = open.slice(openTagIndex).reverse().join('');
         open.length = openTagIndex;
       }
+    } else if (tag == '<li>' &&
+        goog.array.lastIndexOf(open, '</ol>') < 0 &&
+        goog.array.lastIndexOf(open, '</ul>') < 0) {
+      // Drop <li> if it isn't nested in a parent <ol> or <ul>.
+      tags[i] = '';
     } else if (!soy.$$HTML5_VOID_ELEMENTS_.test(tag)) {
       open.push('</' + tag.substring(1));
     }
@@ -1792,8 +1832,7 @@ soy.esc.$$escapeUriHelper = function(v) {
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @type {Object.<string, string>}
- * @private
+ * @private {!Object.<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
   '\x00': '\x26#0;',
@@ -1830,8 +1869,7 @@ soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @type {Object.<string, string>}
- * @private
+ * @private {!Object.<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x00': '\\x00',
@@ -1882,8 +1920,7 @@ soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @type {Object.<string, string>}
- * @private
+ * @private {!Object.<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
   '\x00': '\\0 ',
@@ -1927,8 +1964,7 @@ soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @type {Object.<string, string>}
- * @private
+ * @private {!Object.<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI_ = {
   '\x00': '%00',
@@ -2010,85 +2046,73 @@ soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI_ = function(ch) 
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\\\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_ESCAPE_JS_REGEX_ = /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_ESCAPE_CSS_STRING_ = /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI_ = /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,2}|%)?|!important|)$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?![^#?]*\/(?:\.|%2E){2}(?:[\/?#]|$))(?:(?:https?|mailto):|[^&:\/?#]*(?:[\/?#]|$))/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+\/]+=*$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!style|on|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|src|usemap)(?:[a-z0-9_$:-]*)$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @type RegExp
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!script|style|title|textarea|xmp|no)[a-z0-9_$:-]*$/i;
 
@@ -2254,25 +2278,31 @@ soy.esc.$$filterHtmlElementNameHelper = function(value) {
  * entities we guarantee that the result can be embedded into a
  * an attribute without introducing a tag boundary.
  *
- * @type {RegExp}
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
 
 /**
  * Matches all occurrences of '<'.
  *
- * @type {RegExp}
- * @private
+ * @private {!RegExp}
  */
 soy.esc.$$LT_REGEX_ = /</g;
 
 /**
- * Maps lower-case names of innocuous tags to 1.
+ * Maps lower-case names of innocuous tags to true.
  *
- * @type {Object.<string,number>}
- * @private
+ * @private {!Object.<string, boolean>}
  */
-soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': 1, 'br': 1, 'em': 1, 'i': 1, 's': 1, 'sub': 1, 'sup': 1, 'u': 1};
+soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'sub': true, 'sup': true, 'u': true};
+
+/**
+ * Pattern for matching attribute name and value, where value is single-quoted
+ * or double-quoted.
+ * See http://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#attributes-0
+ *
+ * @private {!RegExp}
+ */
+soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE

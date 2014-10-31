@@ -20,6 +20,7 @@ import com.google.template.soy.shared.internal.AbstractGenerateSoyEscapingDirect
 import com.google.template.soy.shared.internal.DirectiveDigest;
 import com.google.template.soy.shared.restricted.EscapingConventions;
 import com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage;
+import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.TagWhitelist;
 
 import java.io.IOException;
@@ -95,6 +96,9 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
     String body = javaPattern.pattern()
         .replace("\r", "\\r")
         .replace("\n", "\\n")
+        .replace("\t", "\\t")
+        .replace("\u0000", "\\u0000")
+        .replace("\u0020", "\\u0020")
         .replace("\u2028", "\\u2028")
         .replace("\u2029", "\\u2029")
         .replace("\\A", "^")
@@ -128,8 +132,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * Maps characters to the escaped versions for the named escape directives.\n")
-        .append(" * @type {Object.<string, string>}\n")
-        .append(" * @private\n")
+        .append(" * @private {!Object.<string, string>}\n")
         .append(" */\n")
         .append("soy.esc.$$ESCAPE_MAP_FOR_").append(mapName).append("_");
   }
@@ -140,8 +143,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * Matches characters that need to be escaped for the named directives.\n")
-        .append(" * @type RegExp\n")
-        .append(" * @private\n")
+        .append(" * @private {!RegExp}\n")
         .append(" */\n")
         .append("soy.esc.$$MATCHER_FOR_").append(name).append("_ = ").append(matcher)
         .append(";\n");
@@ -153,8 +155,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * A pattern that vets values produced by the named directives.\n")
-        .append(" * @type RegExp\n")
-        .append(" * @private\n")
+        .append(" * @private {!RegExp}\n")
         .append(" */\n")
         .append("soy.esc.$$FILTER_FOR_").append(name).append("_ = ").append(filter)
         .append(";\n");
@@ -171,31 +172,41 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" * entities we guarantee that the result can be embedded into a\n")
         .append(" * an attribute without introducing a tag boundary.\n")
         .append(" *\n")
-        .append(" * @type {RegExp}\n")
-        .append(" * @private\n")
+        .append(" * @private {!RegExp}\n")
         .append(" */\n")
         .append("soy.esc.$$HTML_TAG_REGEX_ = ")
         .append(convertFromJavaRegex(EscapingConventions.HTML_TAG_CONTENT))
-        .append("g;\n")
-        .append("\n")
+        .append("g;\n");
+
+    outputCode.append("\n")
         .append("/**\n")
         .append(" * Matches all occurrences of '<'.\n")
         .append(" *\n")
-        .append(" * @type {RegExp}\n")
-        .append(" * @private\n")
+        .append(" * @private {!RegExp}\n")
         .append(" */\n")
         .append("soy.esc.$$LT_REGEX_ = /</g;\n");
 
     outputCode.append('\n')
         .append("/**\n")
-        .append(" * Maps lower-case names of innocuous tags to 1.\n")
+        .append(" * Maps lower-case names of innocuous tags to true.\n")
         .append(" *\n")
-        .append(" * @type {Object.<string,number>}\n")
-        .append(" * @private\n")
+        .append(" * @private {!Object.<string, boolean>}\n")
         .append(" */\n")
         .append("soy.esc.$$SAFE_TAG_WHITELIST_ = ")
         .append(toJsStringSet(TagWhitelist.FORMATTING.asSet()))
         .append(";\n");
+
+    outputCode.append('\n')
+        .append("/**\n")
+        .append(" * Pattern for matching attribute name and value, where value is single-quoted\n")
+        .append(" * or double-quoted.\n")
+        .append(" * See http://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#attributes-0\n")
+        .append(" *\n")
+        .append(" * @private {!RegExp}\n")
+        .append(" */\n")
+        .append("soy.esc.$$HTML_ATTRIBUTE_REGEX_ = ")
+        .append(convertFromJavaRegex(Sanitizers.HTML_ATTRIBUTE_PATTERN))
+        .append("g;\n");
   }
 
 
@@ -273,7 +284,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
   }
 
 
-  /** ["foo", "bar"] -> '{"foo": 1, "bar": 1}' */
+  /** ["foo", "bar"] -> '{"foo": true, "bar": true}' */
   private static String toJsStringSet(Iterable<? extends String> strings) {
     StringBuilder sb = new StringBuilder();
     boolean isFirst = true;
@@ -282,7 +293,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
       if (!isFirst) { sb.append(", "); }
       isFirst = false;
       writeStringLiteral(str, sb);
-      sb.append(": 1");
+      sb.append(": true");
     }
     sb.append('}');
     return sb.toString();

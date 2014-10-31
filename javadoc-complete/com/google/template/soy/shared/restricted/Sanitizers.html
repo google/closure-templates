@@ -59,13 +59,13 @@
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method_summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method_detail">Method</a></li>
 </ul>
@@ -105,6 +105,27 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <div class="summary">
 <ul class="blockList">
 <li class="blockList">
+<!-- =========== FIELD SUMMARY =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_summary">
+<!--   -->
+</a>
+<h3>Field Summary</h3>
+<table class="overviewSummary" border="0" cellpadding="3" cellspacing="0" summary="Field Summary table, listing fields, and an explanation">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Field and Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="http://java.sun.com/javase/6/docs/api/java/util/regex/Pattern.html?is-external=true" title="class or interface in java.util.regex">Pattern</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#HTML_ATTRIBUTE_PATTERN">HTML_ATTRIBUTE_PATTERN</a></strong></code>
+<div class="block">Pattern for matching attribute name and value, where value is single-quoted or double-quoted.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
 <!-- ========== METHOD SUMMARY =========== -->
 <ul class="blockList">
 <li class="blockList"><a name="method_summary">
@@ -125,14 +146,29 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 </tr>
 <tr class="rowColor">
 <td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(com.google.template.soy.data.SoyValue,%20java.util.Collection)">cleanHtml</a></strong>(<a href="../../../../../../com/google/template/soy/data/SoyValue.html" title="interface in com.google.template.soy.data">SoyValue</a>&nbsp;value,
+         <a href="http://java.sun.com/javase/6/docs/api/java/util/Collection.html?is-external=true" title="class or interface in java.util">Collection</a>&lt;? extends <a href="../../../../../../com/google/template/soy/shared/restricted/TagWhitelist.OptionalSafeTag.html" title="enum in com.google.template.soy.shared.restricted">TagWhitelist.OptionalSafeTag</a>&gt;&nbsp;optionalSafeTags)</code>
+<div class="block">Normalizes the input HTML while preserving "safe" tags and the known directionality.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a></code></td>
 <td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(java.lang.String)">cleanHtml</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value)</code>
+<div class="block">Normalizes the input HTML while preserving "safe" tags.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a></code></td>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(java.lang.String,%20java.util.Collection)">cleanHtml</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
+         <a href="http://java.sun.com/javase/6/docs/api/java/util/Collection.html?is-external=true" title="class or interface in java.util">Collection</a>&lt;? extends <a href="../../../../../../com/google/template/soy/shared/restricted/TagWhitelist.OptionalSafeTag.html" title="enum in com.google.template.soy.shared.restricted">TagWhitelist.OptionalSafeTag</a>&gt;&nbsp;optionalSafeTags)</code>
 <div class="block">Normalizes the input HTML while preserving "safe" tags.</div>
 </td>
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code>static <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a></code></td>
-<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(java.lang.String, com.google.template.soy.data.Dir)">cleanHtml</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
-         <a href="../../../../../../com/google/template/soy/data/Dir.html" title="enum in com.google.template.soy.data">Dir</a>&nbsp;contentDir)</code>
+<td class="colLast"><code><strong><a href="../../../../../../com/google/template/soy/shared/restricted/Sanitizers.html#cleanHtml(java.lang.String,%20com.google.template.soy.data.Dir,%20java.util.Collection)">cleanHtml</a></strong>(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
+         <a href="../../../../../../com/google/template/soy/data/Dir.html" title="enum in com.google.template.soy.data">Dir</a>&nbsp;contentDir,
+         <a href="http://java.sun.com/javase/6/docs/api/java/util/Collection.html?is-external=true" title="class or interface in java.util">Collection</a>&lt;? extends <a href="../../../../../../com/google/template/soy/shared/restricted/TagWhitelist.OptionalSafeTag.html" title="enum in com.google.template.soy.shared.restricted">TagWhitelist.OptionalSafeTag</a>&gt;&nbsp;optionalSafeTags)</code>
 <div class="block">Normalizes the input HTML of a given directionality while preserving "safe" tags.</div>
 </td>
 </tr>
@@ -375,6 +411,24 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <div class="details">
 <ul class="blockList">
 <li class="blockList">
+<!-- ============ FIELD DETAIL =========== -->
+<ul class="blockList">
+<li class="blockList"><a name="field_detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a name="HTML_ATTRIBUTE_PATTERN">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>HTML_ATTRIBUTE_PATTERN</h4>
+<pre>public static final&nbsp;<a href="http://java.sun.com/javase/6/docs/api/java/util/regex/Pattern.html?is-external=true" title="class or interface in java.util.regex">Pattern</a> HTML_ATTRIBUTE_PATTERN</pre>
+<div class="block">Pattern for matching attribute name and value, where value is single-quoted or double-quoted.</div>
+</li>
+</ul>
+</li>
+</ul>
 <!-- ============ METHOD DETAIL ========== -->
 <ul class="blockList">
 <li class="blockList"><a name="method_detail">
@@ -413,6 +467,20 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
          <a href="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML"><code>SanitizedContent.ContentKind.HTML</code></a></dd></dl>
 </li>
 </ul>
+<a name="cleanHtml(com.google.template.soy.data.SoyValue, java.util.Collection)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>cleanHtml</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a>&nbsp;cleanHtml(<a href="../../../../../../com/google/template/soy/data/SoyValue.html" title="interface in com.google.template.soy.data">SoyValue</a>&nbsp;value,
+                         <a href="http://java.sun.com/javase/6/docs/api/java/util/Collection.html?is-external=true" title="class or interface in java.util">Collection</a>&lt;? extends <a href="../../../../../../com/google/template/soy/shared/restricted/TagWhitelist.OptionalSafeTag.html" title="enum in com.google.template.soy.shared.restricted">TagWhitelist.OptionalSafeTag</a>&gt;&nbsp;optionalSafeTags)</pre>
+<div class="block">Normalizes the input HTML while preserving "safe" tags and the known directionality.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>optionalSafeTags</code> - to add to the basic whitelist of formatting safe tags</dd>
+<dt><span class="strong">Returns:</span></dt><dd>the normalized input, in the form of <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><code>SanitizedContent</code></a> of
+         <a href="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML"><code>SanitizedContent.ContentKind.HTML</code></a></dd></dl>
+</li>
+</ul>
 <a name="cleanHtml(java.lang.String)">
 <!--   -->
 </a>
@@ -425,16 +493,32 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
          <a href="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML"><code>SanitizedContent.ContentKind.HTML</code></a></dd></dl>
 </li>
 </ul>
-<a name="cleanHtml(java.lang.String, com.google.template.soy.data.Dir)">
+<a name="cleanHtml(java.lang.String, java.util.Collection)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>cleanHtml</h4>
 <pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a>&nbsp;cleanHtml(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
-                         <a href="../../../../../../com/google/template/soy/data/Dir.html" title="enum in com.google.template.soy.data">Dir</a>&nbsp;contentDir)</pre>
+                         <a href="http://java.sun.com/javase/6/docs/api/java/util/Collection.html?is-external=true" title="class or interface in java.util">Collection</a>&lt;? extends <a href="../../../../../../com/google/template/soy/shared/restricted/TagWhitelist.OptionalSafeTag.html" title="enum in com.google.template.soy.shared.restricted">TagWhitelist.OptionalSafeTag</a>&gt;&nbsp;optionalSafeTags)</pre>
+<div class="block">Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.</div>
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>optionalSafeTags</code> - to add to the basic whitelist of formatting safe tags</dd>
+<dt><span class="strong">Returns:</span></dt><dd>the normalized input, in the form of <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><code>SanitizedContent</code></a> of
+         <a href="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML"><code>SanitizedContent.ContentKind.HTML</code></a></dd></dl>
+</li>
+</ul>
+<a name="cleanHtml(java.lang.String, com.google.template.soy.data.Dir, java.util.Collection)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>cleanHtml</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data">SanitizedContent</a>&nbsp;cleanHtml(<a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;value,
+                         <a href="../../../../../../com/google/template/soy/data/Dir.html" title="enum in com.google.template.soy.data">Dir</a>&nbsp;contentDir,
+                         <a href="http://java.sun.com/javase/6/docs/api/java/util/Collection.html?is-external=true" title="class or interface in java.util">Collection</a>&lt;? extends <a href="../../../../../../com/google/template/soy/shared/restricted/TagWhitelist.OptionalSafeTag.html" title="enum in com.google.template.soy.shared.restricted">TagWhitelist.OptionalSafeTag</a>&gt;&nbsp;optionalSafeTags)</pre>
 <div class="block">Normalizes the input HTML of a given directionality while preserving "safe" tags.</div>
-<dl><dt><span class="strong">Returns:</span></dt><dd>the normalized input, in the form of <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><code>SanitizedContent</code></a> of
+<dl><dt><span class="strong">Parameters:</span></dt><dd><code>optionalSafeTags</code> - to add to the basic whitelist of formatting safe tags</dd>
+<dt><span class="strong">Returns:</span></dt><dd>the normalized input, in the form of <a href="../../../../../../com/google/template/soy/data/SanitizedContent.html" title="class in com.google.template.soy.data"><code>SanitizedContent</code></a> of
          <a href="../../../../../../com/google/template/soy/data/SanitizedContent.ContentKind.html#HTML"><code>SanitizedContent.ContentKind.HTML</code></a></dd></dl>
 </li>
 </ul>
@@ -840,13 +924,13 @@ extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field_summary">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method_summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field_detail">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method_detail">Method</a></li>
 </ul>

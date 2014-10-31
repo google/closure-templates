@@ -17,6 +17,8 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.Dir;
@@ -29,14 +31,17 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.base.CharEscapers;
+import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -82,6 +87,19 @@ public final class Sanitizers {
    *         {@link ContentKind#HTML}
    */
   public static SanitizedContent cleanHtml(SoyValue value) {
+    return cleanHtml(value, ImmutableSet.<OptionalSafeTag>of());
+  }
+
+
+  /**
+   * Normalizes the input HTML while preserving "safe" tags and the known directionality.
+   *
+   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
+   * @return the normalized input, in the form of {@link SanitizedContent} of
+   *         {@link ContentKind#HTML}
+   */
+  public static SanitizedContent cleanHtml(
+      SoyValue value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     Dir valueDir = null;
     if (value instanceof SanitizedContent) {
       SanitizedContent sanitizedContent = (SanitizedContent) value;
@@ -90,7 +108,7 @@ public final class Sanitizers {
       }
       valueDir = sanitizedContent.getContentDirection();
     }
-    return cleanHtml(value.coerceToString(), valueDir);
+    return cleanHtml(value.coerceToString(), valueDir, optionalSafeTags);
   }
 
 
@@ -101,19 +119,34 @@ public final class Sanitizers {
    *         {@link ContentKind#HTML}
    */
   public static SanitizedContent cleanHtml(String value) {
-    return cleanHtml(value, null);
+    return cleanHtml(value, ImmutableSet.<OptionalSafeTag>of());
   }
 
+  /**
+   * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
+   *
+   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
+   * @return the normalized input, in the form of {@link SanitizedContent} of
+   *         {@link ContentKind#HTML}
+   */
+  public static SanitizedContent cleanHtml(
+      String value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
+    return cleanHtml(value, null, optionalSafeTags);
+  }
 
   /**
    * Normalizes the input HTML of a given directionality while preserving "safe" tags.
    *
+   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
    * @return the normalized input, in the form of {@link SanitizedContent} of
    *         {@link ContentKind#HTML}
    */
-  public static SanitizedContent cleanHtml(String value, Dir contentDir) {
+  public static SanitizedContent cleanHtml(
+      String value, Dir contentDir, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        stripHtmlTags(value, TagWhitelist.FORMATTING, true), ContentKind.HTML, contentDir);
+        stripHtmlTags(value, TagWhitelist.FORMATTING.withOptionalSafeTags(optionalSafeTags), true),
+        ContentKind.HTML,
+        contentDir);
   }
 
 
@@ -527,6 +560,7 @@ public final class Sanitizers {
     // when, for example, stripHtmlTags("</table>") is embedded in a page that uses tables for
     // formatting.
     List<String> openTags = null;
+    int openListTagCount = 0;
     try {
       int pos = 0;  // Such that value[:pos] has been sanitized onto out.
       do {
@@ -549,7 +583,6 @@ public final class Sanitizers {
             tagName = tagName.toLowerCase(Locale.ENGLISH);
             if (safeTags.isSafeTag(tagName)) {
               boolean isClose = value.charAt(start + 1) == '/';
-              // TODO: Do we need to make an exception for dir="rtl" and dir="ltr"?
               if (isClose) {
                 if (openTags != null) {
                   int lastIdx = openTags.lastIndexOf(tagName);
@@ -561,18 +594,60 @@ public final class Sanitizers {
                     // This leads to observably different behavior for adoption-agency dependent
                     // tag combinations like "<b><i>Foo</b> Bar</b>" but fails safe.
                     // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-end.html#misnested-tags:-b-i-/b-/i
-                    closeTags(openTags.subList(lastIdx, openTags.size()), out);
+                    List<String> tagsToClose = openTags.subList(lastIdx, openTags.size());
+                    for (String tagToClose : tagsToClose) {
+                      if (isListTag(tagToClose)) {
+                        openListTagCount--;
+                      }
+                    }
+                    closeTags(tagsToClose, out);
                   }
                 }
               } else {
-                // Emit the tag on the un-normalized channel dropping any
-                // attributes on the floor.
-                out.append('<').append(tagName).append('>');
-                if (!HTML5_VOID_ELEMENTS.contains(tagName)) {
-                  if (openTags == null) {
-                    openTags = Lists.newArrayList();
+                // Only allow whitelisted <li> through if it is nested in a parent <ol> or <ul>.
+                if (openListTagCount > 0 || !"li".equals(tagName)) {
+                  if (isListTag(tagName)) {
+                    openListTagCount++;
                   }
-                  openTags.add(tagName);
+
+                  // Emit beginning of the opening tag and tag name on the un-normalized channel.
+                  out.append('<').append(tagName);
+
+                  // Most attributes are dropped, but the dir attribute is preserved if it exists.
+                  // The attribute matching could be made more generic if more attributes need to be
+                  // whitelisted in the future. There are also probably other utilities in common to
+                  // do such parsing of HTML, but this seemed simple enough and keeps with the
+                  // current spirit of this function of doing custom parsing.
+                  Matcher attributeMatcher = HTML_ATTRIBUTE_PATTERN.matcher(matcher.group());
+                  while (attributeMatcher.find()) {
+                    String attributeName = attributeMatcher.group(1);
+                    if (!Strings.isNullOrEmpty(attributeName)
+                        && attributeName.toLowerCase(Locale.ENGLISH).equals("dir")) {
+                      String dir = attributeMatcher.group(2);
+                      if (!Strings.isNullOrEmpty(dir)) {
+                        // Strip quotes if the attribute value was quoted.
+                        if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
+                          dir = dir.substring(1, dir.length() - 1);
+                        }
+                        dir = dir.toLowerCase(Locale.ENGLISH);
+                        if ("ltr".equals(dir) || "rtl".equals(dir) || "auto".equals(dir)) {
+                          out.append(" dir=\"").append(dir).append("\"");
+                        }
+                      }
+                      break;
+                    }
+                  }
+
+                  // Emit the end of the opening tag
+                  out.append('>');
+
+                  // Keep track of tags that need closing.
+                  if (!HTML5_VOID_ELEMENTS.contains(tagName)) {
+                    if (openTags == null) {
+                      openTags = Lists.newArrayList();
+                    }
+                    openTags.add(tagName);
+                  }
                 }
               }
             }
@@ -600,8 +675,32 @@ public final class Sanitizers {
     openTags.clear();
   }
 
+  private static boolean isListTag(String tagName) {
+    return "ol".equals(tagName) || "ul".equals(tagName);
+  }
+
   /** From http://www.w3.org/TR/html-markup/syntax.html#syntax-elements */
   private static final Set<String> HTML5_VOID_ELEMENTS = ImmutableSet.of(
       "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
       "meta", "param", "source", "track", "wbr");
+
+  /**
+   * Pattern for matching attribute name and value, where value is single-quoted or double-quoted.
+   */
+  public static final Pattern HTML_ATTRIBUTE_PATTERN;
+  static {
+    String attributeName = "[a-zA-Z][a-zA-Z0-9:\\-]*";
+    String space = "[\t\n\r ]";
+
+    String doubleQuotedValue = "\"[^\"]*\"";
+    String singleQuotedValue = "'[^']*'";
+    String attributeValue = Joiner.on('|').join(doubleQuotedValue, singleQuotedValue);
+
+    HTML_ATTRIBUTE_PATTERN = Pattern.compile(
+        "(" + attributeName + ")"  // Group 1: Attribute name.
+        + space + "*"
+        + "="
+        + space + "*"
+        + "(" + attributeValue + ")");  // Group 2: Optionally-quoted attributed value.
+  }
 }

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.restricted;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -26,6 +27,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
 
 import junit.framework.TestCase;
 
@@ -588,6 +590,79 @@ public class SanitizersTest extends TestCase {
             "<script>notevil()</script>", ContentKind.HTML),
         Sanitizers.cleanHtml(UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "<script>notevil()</script>", ContentKind.HTML)));
+  }
+
+  public final void testCleanHtml_optionalSafeTags() {
+    // No OptionalSafeTags.
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>ff</em>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"));
+    // One OptionalSafeTag.
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        "<em>f<span>f</span></em>", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"),
+            ImmutableSet.of(OptionalSafeTag.SPAN)));
+    // All OptionalSafeTags.
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        "<em><ul>f</ul><ol><li><span>f</span></li></ol></em>", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"),
+            ImmutableSet.copyOf(OptionalSafeTag.values())));
+
+    // Does not preserve <li> which are not nested in a parent <ol> or <ul>.
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe("foo", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<p><li>foo</li></p>"), ImmutableSet.of(OptionalSafeTag.LI)));
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("a<ul>f</ul><ol>o</ol>o", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<li>a</li><ul>f</ul><ol>o</ol><li>o</li>"),
+            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)));
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("<ul>f<ol>o</ol></ul>o", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<ul>f<ol>o</ul><li>o</li></ol>"),
+            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)));
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "<ol><li>0<ol><li>1</li></ol><li>2</li></li></ol>3", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<ol><li>0<ol><li>1</li></ol><li>2</li></ol><ul><li>3</li></ul>"),
+            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL)));
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("<ul>&lt;3 cookies</ul>", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<ul></ol></foo><3 cookies"),
+            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)));
+    assertEquals(
+        UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            "<span>endless&lt; /span&gt;</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml(
+            StringData.forValue("<span>endless< /span>"),
+            ImmutableSet.of(OptionalSafeTag.SPAN)));
+  }
+
+  public final void testCleanHtml_preservesDirAttribute() {
+    ImmutableSet<OptionalSafeTag> treatSpanSafe = ImmutableSet.of(OptionalSafeTag.SPAN);
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        "<span dir=\"ltr\">foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span dir=\"ltr\" other=\"no\">f<object>oo</span>", treatSpanSafe));
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        "<span dir=\"rtl\">foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span dir=\'Rtl\'>f<object>oo</span>", treatSpanSafe));
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        "<span dir=\"rtl\">foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span DIR=\'RTL\'>f<object>oo</span>", treatSpanSafe));
+
+    // Doesn't preserve malformed directionality.
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span dir='ltr \"onload=alert(1337)//\"'>foo</span>", treatSpanSafe));
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span d\\u0131r=ltr>foo</span>", treatSpanSafe));
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span>foo</span dir=ltr>", treatSpanSafe));
+    assertEquals(UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
+        Sanitizers.cleanHtml("<span dir=ltr>f<object>oo</span>", treatSpanSafe));
   }
 
   public final void testFilterNoAutoescape() {

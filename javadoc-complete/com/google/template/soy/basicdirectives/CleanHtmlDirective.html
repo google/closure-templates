@@ -102,7 +102,12 @@ public class <span class="strong">CleanHtmlDirective</span>
 extends <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>
 implements <a href="../../../../../com/google/template/soy/shared/restricted/SoyJavaPrintDirective.html" title="interface in com.google.template.soy.shared.restricted">SoyJavaPrintDirective</a>, <a href="../../../../../com/google/template/soy/jssrc/restricted/SoyJsSrcPrintDirective.html" title="interface in com.google.template.soy.jssrc.restricted">SoyJsSrcPrintDirective</a></pre>
 <div class="block">Implements the |cleanHtml directive, which removes all but a small, safe
- subset of HTML from its input.
+ subset of HTML from its input. Note that all attributes are removed except
+ dir for directionality.
+
+ <p>
+ It may take a variable number of arguments which are additional tags to be
+ considered safe, from <code>TagWhitelist#OptionalSafeTag</code>.
 
  <p>
  Note that this directive is not autoescape cancelling, and can thus be
