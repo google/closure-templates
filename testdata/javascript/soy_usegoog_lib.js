@@ -63,7 +63,7 @@ goog.global = this;
  *   var CLOSURE_UNCOMPILED_DEFINES = {'goog.DEBUG': false};
  * </pre>
  *
- * @type {Object.<string, (string|number|boolean)>|undefined}
+ * @type {Object<string, (string|number|boolean)>|undefined}
  */
 goog.global.CLOSURE_UNCOMPILED_DEFINES;
 
@@ -84,7 +84,7 @@ goog.global.CLOSURE_UNCOMPILED_DEFINES;
  *   var CLOSURE_DEFINES = {'goog.DEBUG': false} ;
  * </pre>
  *
- * @type {Object.<string, (string|number|boolean)>|undefined}
+ * @type {Object<string, (string|number|boolean)>|undefined}
  */
 goog.global.CLOSURE_DEFINES;
 
@@ -448,7 +448,7 @@ if (!COMPILED) {
    * goog.provide('goog.events.Event') implicitly declares that 'goog' and
    * 'goog.events' must be namespaces.
    *
-   * @type {Object.<string, (boolean|undefined)>}
+   * @type {Object<string, (boolean|undefined)>}
    * @private
    */
   goog.implicitNamespaces_ = {'goog.module': true};
@@ -504,9 +504,9 @@ goog.globalize = function(obj, opt_global) {
 /**
  * Adds a dependency from a file to the files it requires.
  * @param {string} relPath The path to the js file.
- * @param {!Array.<string>} provides An array of strings with
+ * @param {!Array<string>} provides An array of strings with
  *     the names of the objects this file provides.
- * @param {!Array.<string>} requires An array of strings with
+ * @param {!Array<string>} requires An array of strings with
  *     the names of the objects this file requires.
  * @param {boolean=} opt_isModule Whether this dependency must be loaded as
  *     a module as declared by goog.module.
@@ -710,7 +710,7 @@ goog.addSingletonGetter = function(ctor) {
  * All singleton classes that have been instantiated, for testing. Don't read
  * it directly, use the {@code goog.testing.singleton} module. The compiler
  * removes this variable if unused.
- * @type {!Array.<!Function>}
+ * @type {!Array<!Function>}
  * @private
  */
 goog.instantiatedSingletons_ = [];
@@ -736,7 +736,7 @@ goog.define('goog.SEAL_MODULE_EXPORTS', goog.DEBUG);
 /**
  * The registry of initialized modules:
  * the module identifier to module exports map.
- * @private @const {Object.<string, ?>}
+ * @private @const {Object<string, ?>}
  */
 goog.loadedModules_ = {};
 
@@ -752,7 +752,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   /**
    * Object used to keep track of urls that have already been added. This record
    * allows the prevention of circular dependencies.
-   * @private {!Object.<string, boolean>}
+   * @private {!Object<string, boolean>}
    */
   goog.included_ = {};
 
@@ -762,11 +762,11 @@ if (goog.DEPENDENCIES_ENABLED) {
    * used for loading scripts.
    * @private
    * @type {{
-   *   pathIsModule: !Object.<string, boolean>,
-   *   nameToPath: !Object.<string, string>,
-   *   requires: !Object.<string, !Object.<string, boolean>>,
-   *   visited: !Object.<string, boolean>,
-   *   written: !Object.<string, boolean>
+   *   pathIsModule: !Object<string, boolean>,
+   *   nameToPath: !Object<string, string>,
+   *   requires: !Object<string, !Object<string, boolean>>,
+   *   visited: !Object<string, boolean>,
+   *   written: !Object<string, boolean>
    * }}
    */
   goog.dependencies_ = {
@@ -860,7 +860,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   };
 
 
-  /** @private {!Array.<string>} */
+  /** @private {!Array<string>} */
   goog.queuedModules_ = [];
 
 
@@ -1106,7 +1106,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.writeScripts_ = function() {
-    /** @type {!Array.<string>} The scripts we need to write this time. */
+    /** @type {!Array<string>} The scripts we need to write this time. */
     var scripts = [];
     var seenScript = {};
     var deps = goog.dependencies_;
@@ -1756,7 +1756,7 @@ goog.evalWorksForGlobals_ = null;
 /**
  * Optional map of CSS class names to obfuscated names used with
  * goog.getCssName().
- * @private {!Object.<string, string>|undefined}
+ * @private {!Object<string, string>|undefined}
  * @see goog.setCssNameMapping
  */
 goog.cssNameMapping_;
@@ -1875,7 +1875,7 @@ goog.setCssNameMapping = function(mapping, opt_style) {
  * are made in uncompiled mode.
  *
  * A hook for overriding the CSS name mapping.
- * @type {!Object.<string, string>|undefined}
+ * @type {!Object<string, string>|undefined}
  */
 goog.global.CLOSURE_CSS_NAME_MAPPING;
 
@@ -1900,7 +1900,7 @@ if (!COMPILED && goog.global.CLOSURE_CSS_NAME_MAPPING) {
  * </code>
  *
  * @param {string} str Translatable string, places holders in the form {$foo}.
- * @param {Object.<string, string>=} opt_values Maps place holder name to value.
+ * @param {Object<string, string>=} opt_values Maps place holder name to value.
  * @return {string} message with placeholders filled.
  */
 goog.getMsg = function(str, opt_values) {
@@ -2235,7 +2235,7 @@ goog.defineClass.createSealingConstructor_ = function(ctr, superClass) {
 // TODO(johnlenz): share these values with the goog.object
 /**
  * The names of the fields that are defined on Object.prototype.
- * @type {!Array.<string>}
+ * @type {!Array<string>}
  * @private
  * @const
  */
@@ -2337,7 +2337,7 @@ goog.addDependency('a11y/aria/roles.js', ['goog.a11y.aria.Role'], [], false);
 goog.addDependency('array/array.js', ['goog.array', 'goog.array.ArrayLike'], ['goog.asserts'], false);
 goog.addDependency('array/array_test.js', ['goog.arrayTest'], ['goog.array', 'goog.dom', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('asserts/asserts.js', ['goog.asserts', 'goog.asserts.AssertionError'], ['goog.debug.Error', 'goog.dom.NodeType', 'goog.string'], false);
-goog.addDependency('asserts/asserts_test.js', ['goog.assertsTest'], ['goog.asserts', 'goog.asserts.AssertionError', 'goog.dom', 'goog.string', 'goog.testing.jsunit'], false);
+goog.addDependency('asserts/asserts_test.js', ['goog.assertsTest'], ['goog.asserts', 'goog.asserts.AssertionError', 'goog.dom', 'goog.string', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('async/animationdelay.js', ['goog.async.AnimationDelay'], ['goog.Disposable', 'goog.events', 'goog.functions'], false);
 goog.addDependency('async/animationdelay_test.js', ['goog.async.AnimationDelayTest'], ['goog.async.AnimationDelay', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('async/conditionaldelay.js', ['goog.async.ConditionalDelay'], ['goog.Disposable', 'goog.async.Delay'], false);
@@ -2366,7 +2366,7 @@ goog.addDependency('crypt/base64.js', ['goog.crypt.base64'], ['goog.crypt', 'goo
 goog.addDependency('crypt/base64_test.js', ['goog.crypt.base64Test'], ['goog.crypt', 'goog.crypt.base64', 'goog.testing.jsunit'], false);
 goog.addDependency('crypt/basen.js', ['goog.crypt.baseN'], [], false);
 goog.addDependency('crypt/basen_test.js', ['goog.crypt.baseNTest'], ['goog.crypt.baseN', 'goog.testing.jsunit'], false);
-goog.addDependency('crypt/blobhasher.js', ['goog.crypt.BlobHasher', 'goog.crypt.BlobHasher.EventType'], ['goog.asserts', 'goog.crypt', 'goog.crypt.Hash', 'goog.events.EventTarget', 'goog.fs', 'goog.log'], false);
+goog.addDependency('crypt/blobhasher.js', ['goog.crypt.BlobHasher', 'goog.crypt.BlobHasher.EventType'], ['goog.asserts', 'goog.events.EventTarget', 'goog.fs', 'goog.log'], false);
 goog.addDependency('crypt/blobhasher_test.js', ['goog.crypt.BlobHasherTest'], ['goog.crypt', 'goog.crypt.BlobHasher', 'goog.crypt.Md5', 'goog.events', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('crypt/blockcipher.js', ['goog.crypt.BlockCipher'], [], false);
 goog.addDependency('crypt/bytestring_perf.js', ['goog.crypt.byteArrayToStringPerf'], ['goog.array', 'goog.dom', 'goog.testing.PerformanceTable'], false);
@@ -2377,12 +2377,12 @@ goog.addDependency('crypt/crypt_test.js', ['goog.cryptTest'], ['goog.crypt', 'go
 goog.addDependency('crypt/hash.js', ['goog.crypt.Hash'], [], false);
 goog.addDependency('crypt/hash32.js', ['goog.crypt.hash32'], ['goog.crypt'], false);
 goog.addDependency('crypt/hash32_test.js', ['goog.crypt.hash32Test'], ['goog.crypt.hash32', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
-goog.addDependency('crypt/hashtester.js', ['goog.crypt.hashTester'], ['goog.array', 'goog.crypt', 'goog.testing.PerformanceTable', 'goog.testing.PseudoRandom', 'goog.testing.asserts'], false);
+goog.addDependency('crypt/hashtester.js', ['goog.crypt.hashTester'], ['goog.array', 'goog.crypt', 'goog.dom', 'goog.testing.PerformanceTable', 'goog.testing.PseudoRandom', 'goog.testing.asserts'], false);
 goog.addDependency('crypt/hmac.js', ['goog.crypt.Hmac'], ['goog.crypt.Hash'], false);
 goog.addDependency('crypt/hmac_test.js', ['goog.crypt.HmacTest'], ['goog.crypt.Hmac', 'goog.crypt.Sha1', 'goog.crypt.hashTester', 'goog.testing.jsunit'], false);
 goog.addDependency('crypt/md5.js', ['goog.crypt.Md5'], ['goog.crypt.Hash'], false);
 goog.addDependency('crypt/md5_test.js', ['goog.crypt.Md5Test'], ['goog.crypt', 'goog.crypt.Md5', 'goog.crypt.hashTester', 'goog.testing.jsunit'], false);
-goog.addDependency('crypt/pbkdf2.js', ['goog.crypt.pbkdf2'], ['goog.asserts', 'goog.crypt', 'goog.crypt.Hmac', 'goog.crypt.Sha1'], false);
+goog.addDependency('crypt/pbkdf2.js', ['goog.crypt.pbkdf2'], ['goog.array', 'goog.asserts', 'goog.crypt', 'goog.crypt.Hmac', 'goog.crypt.Sha1'], false);
 goog.addDependency('crypt/pbkdf2_test.js', ['goog.crypt.pbkdf2Test'], ['goog.crypt', 'goog.crypt.pbkdf2', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('crypt/sha1.js', ['goog.crypt.Sha1'], ['goog.crypt.Hash'], false);
 goog.addDependency('crypt/sha1_test.js', ['goog.crypt.Sha1Test'], ['goog.crypt', 'goog.crypt.Sha1', 'goog.crypt.hashTester', 'goog.testing.jsunit', 'goog.userAgent'], false);
@@ -2426,7 +2426,7 @@ goog.addDependency('date/relativewithplurals_test.js', ['goog.date.relativeWithP
 goog.addDependency('date/utcdatetime.js', ['goog.date.UtcDateTime'], ['goog.date', 'goog.date.Date', 'goog.date.DateTime', 'goog.date.Interval'], false);
 goog.addDependency('date/utcdatetime_test.js', ['goog.date.UtcDateTimeTest'], ['goog.date.Interval', 'goog.date.UtcDateTime', 'goog.date.month', 'goog.date.weekDay', 'goog.testing.jsunit'], false);
 goog.addDependency('db/cursor.js', ['goog.db.Cursor'], ['goog.async.Deferred', 'goog.db.Error', 'goog.debug', 'goog.events.EventTarget'], false);
-goog.addDependency('db/db.js', ['goog.db'], ['goog.async.Deferred', 'goog.db.Error', 'goog.db.IndexedDb', 'goog.db.Transaction'], false);
+goog.addDependency('db/db.js', ['goog.db', 'goog.db.BlockedCallback', 'goog.db.UpgradeNeededCallback'], ['goog.asserts', 'goog.async.Deferred', 'goog.db.Error', 'goog.db.IndexedDb', 'goog.db.Transaction'], false);
 goog.addDependency('db/db_test.js', ['goog.dbTest'], ['goog.Disposable', 'goog.array', 'goog.async.Deferred', 'goog.async.DeferredList', 'goog.db', 'goog.db.Cursor', 'goog.db.Error', 'goog.db.IndexedDb', 'goog.db.KeyRange', 'goog.db.Transaction', 'goog.events', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('db/error.js', ['goog.db.Error', 'goog.db.Error.ErrorCode', 'goog.db.Error.ErrorName', 'goog.db.Error.VersionChangeBlockedError'], ['goog.debug.Error'], false);
 goog.addDependency('db/index.js', ['goog.db.Index'], ['goog.async.Deferred', 'goog.db.Cursor', 'goog.db.Error', 'goog.debug'], false);
@@ -2434,8 +2434,8 @@ goog.addDependency('db/indexeddb.js', ['goog.db.IndexedDb'], ['goog.async.Deferr
 goog.addDependency('db/keyrange.js', ['goog.db.KeyRange'], [], false);
 goog.addDependency('db/objectstore.js', ['goog.db.ObjectStore'], ['goog.async.Deferred', 'goog.db.Cursor', 'goog.db.Error', 'goog.db.Index', 'goog.debug', 'goog.events'], false);
 goog.addDependency('db/old_db_test.js', ['goog.oldDbTest'], ['goog.async.Deferred', 'goog.db', 'goog.db.Cursor', 'goog.db.Error', 'goog.db.IndexedDb', 'goog.db.KeyRange', 'goog.db.Transaction', 'goog.events', 'goog.testing.AsyncTestCase', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
-goog.addDependency('db/transaction.js', ['goog.db.Transaction', 'goog.db.Transaction.TransactionMode'], ['goog.async.Deferred', 'goog.db.Error', 'goog.db.ObjectStore', 'goog.events.EventHandler', 'goog.events.EventTarget'], false);
-goog.addDependency('debug/console.js', ['goog.debug.Console'], ['goog.debug.LogManager', 'goog.debug.Logger.Level', 'goog.debug.TextFormatter'], false);
+goog.addDependency('db/transaction.js', ['goog.db.Transaction', 'goog.db.Transaction.TransactionMode'], ['goog.async.Deferred', 'goog.db.Error', 'goog.db.ObjectStore', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventTarget'], false);
+goog.addDependency('debug/console.js', ['goog.debug.Console'], ['goog.debug.LogManager', 'goog.debug.Logger', 'goog.debug.TextFormatter'], false);
 goog.addDependency('debug/console_test.js', ['goog.debug.ConsoleTest'], ['goog.debug.Console', 'goog.debug.LogRecord', 'goog.debug.Logger', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('debug/debug.js', ['goog.debug'], ['goog.array', 'goog.string', 'goog.structs.Set', 'goog.userAgent'], false);
 goog.addDependency('debug/debug_test.js', ['goog.debugTest'], ['goog.debug', 'goog.structs.Set', 'goog.testing.jsunit'], false);
@@ -2450,14 +2450,14 @@ goog.addDependency('debug/entrypointregistry.js', ['goog.debug.EntryPointMonitor
 goog.addDependency('debug/entrypointregistry_test.js', ['goog.debug.entryPointRegistryTest'], ['goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/error.js', ['goog.debug.Error'], [], false);
 goog.addDependency('debug/error_test.js', ['goog.debug.ErrorTest'], ['goog.debug.Error', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
-goog.addDependency('debug/errorhandler.js', ['goog.debug.ErrorHandler', 'goog.debug.ErrorHandler.ProtectedFunctionError'], ['goog.asserts', 'goog.debug', 'goog.debug.EntryPointMonitor', 'goog.debug.Trace'], false);
+goog.addDependency('debug/errorhandler.js', ['goog.debug.ErrorHandler', 'goog.debug.ErrorHandler.ProtectedFunctionError'], ['goog.Disposable', 'goog.asserts', 'goog.debug', 'goog.debug.EntryPointMonitor', 'goog.debug.Error', 'goog.debug.Trace'], false);
 goog.addDependency('debug/errorhandler_async_test.js', ['goog.debug.ErrorHandlerAsyncTest'], ['goog.debug.ErrorHandler', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('debug/errorhandler_test.js', ['goog.debug.ErrorHandlerTest'], ['goog.debug.ErrorHandler', 'goog.testing.MockControl', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/errorhandlerweakdep.js', ['goog.debug.errorHandlerWeakDep'], [], false);
 goog.addDependency('debug/errorreporter.js', ['goog.debug.ErrorReporter', 'goog.debug.ErrorReporter.ExceptionEvent'], ['goog.asserts', 'goog.debug', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.events', 'goog.events.Event', 'goog.events.EventTarget', 'goog.log', 'goog.net.XhrIo', 'goog.object', 'goog.string', 'goog.uri.utils', 'goog.userAgent'], false);
 goog.addDependency('debug/errorreporter_test.js', ['goog.debug.ErrorReporterTest'], ['goog.debug.ErrorReporter', 'goog.events', 'goog.functions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('debug/fancywindow.js', ['goog.debug.FancyWindow'], ['goog.array', 'goog.debug.DebugWindow', 'goog.debug.LogManager', 'goog.debug.Logger', 'goog.dom.DomHelper', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.object', 'goog.string', 'goog.userAgent'], false);
-goog.addDependency('debug/formatter.js', ['goog.debug.Formatter', 'goog.debug.HtmlFormatter', 'goog.debug.TextFormatter'], ['goog.debug.RelativeTimeProvider', 'goog.string'], false);
+goog.addDependency('debug/formatter.js', ['goog.debug.Formatter', 'goog.debug.HtmlFormatter', 'goog.debug.TextFormatter'], ['goog.debug.Logger', 'goog.debug.RelativeTimeProvider', 'goog.string'], false);
 goog.addDependency('debug/fpsdisplay.js', ['goog.debug.FpsDisplay'], ['goog.asserts', 'goog.async.AnimationDelay', 'goog.ui.Component'], false);
 goog.addDependency('debug/fpsdisplay_test.js', ['goog.debug.FpsDisplayTest'], ['goog.debug.FpsDisplay', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/gcdiagnostics.js', ['goog.debug.GcDiagnostics'], ['goog.debug.Trace', 'goog.log', 'goog.userAgent'], false);
@@ -2466,10 +2466,10 @@ goog.addDependency('debug/logbuffer_test.js', ['goog.debug.LogBufferTest'], ['go
 goog.addDependency('debug/logger.js', ['goog.debug.LogManager', 'goog.debug.Loggable', 'goog.debug.Logger', 'goog.debug.Logger.Level'], ['goog.array', 'goog.asserts', 'goog.debug', 'goog.debug.LogBuffer', 'goog.debug.LogRecord'], false);
 goog.addDependency('debug/logger_test.js', ['goog.debug.LoggerTest'], ['goog.debug.LogManager', 'goog.debug.Logger', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/logrecord.js', ['goog.debug.LogRecord'], [], false);
-goog.addDependency('debug/logrecordserializer.js', ['goog.debug.logRecordSerializer'], ['goog.debug.LogRecord', 'goog.debug.Logger.Level', 'goog.json', 'goog.object'], false);
+goog.addDependency('debug/logrecordserializer.js', ['goog.debug.logRecordSerializer'], ['goog.debug.LogRecord', 'goog.debug.Logger', 'goog.json', 'goog.object'], false);
 goog.addDependency('debug/logrecordserializer_test.js', ['goog.debug.logRecordSerializerTest'], ['goog.debug.LogRecord', 'goog.debug.Logger', 'goog.debug.logRecordSerializer', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/relativetimeprovider.js', ['goog.debug.RelativeTimeProvider'], [], false);
-goog.addDependency('debug/tracer.js', ['goog.debug.Trace'], ['goog.array', 'goog.iter', 'goog.log', 'goog.structs.Map', 'goog.structs.SimplePool'], false);
+goog.addDependency('debug/tracer.js', ['goog.debug.Trace'], ['goog.array', 'goog.debug.Logger', 'goog.iter', 'goog.log', 'goog.structs.Map', 'goog.structs.SimplePool'], false);
 goog.addDependency('debug/tracer_test.js', ['goog.debug.TraceTest'], ['goog.debug.Trace', 'goog.testing.jsunit'], false);
 goog.addDependency('defineclass_test.js', ['goog.defineClassTest'], ['goog.testing.jsunit'], false);
 goog.addDependency('disposable/disposable.js', ['goog.Disposable', 'goog.dispose', 'goog.disposeAll'], ['goog.disposable.IDisposable'], false);
@@ -2533,7 +2533,7 @@ goog.addDependency('dom/pattern/nodetype.js', ['goog.dom.pattern.NodeType'], ['g
 goog.addDependency('dom/pattern/pattern.js', ['goog.dom.pattern', 'goog.dom.pattern.MatchType'], [], false);
 goog.addDependency('dom/pattern/pattern_test.js', ['goog.dom.patternTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagWalkType', 'goog.dom.pattern.AllChildren', 'goog.dom.pattern.ChildMatches', 'goog.dom.pattern.EndTag', 'goog.dom.pattern.FullTag', 'goog.dom.pattern.MatchType', 'goog.dom.pattern.NodeType', 'goog.dom.pattern.Repeat', 'goog.dom.pattern.Sequence', 'goog.dom.pattern.StartTag', 'goog.dom.pattern.Text', 'goog.testing.jsunit'], false);
 goog.addDependency('dom/pattern/repeat.js', ['goog.dom.pattern.Repeat'], ['goog.dom.NodeType', 'goog.dom.pattern.AbstractPattern', 'goog.dom.pattern.MatchType'], false);
-goog.addDependency('dom/pattern/sequence.js', ['goog.dom.pattern.Sequence'], ['goog.dom.NodeType', 'goog.dom.pattern.AbstractPattern', 'goog.dom.pattern.MatchType'], false);
+goog.addDependency('dom/pattern/sequence.js', ['goog.dom.pattern.Sequence'], ['goog.dom.NodeType', 'goog.dom.pattern', 'goog.dom.pattern.AbstractPattern', 'goog.dom.pattern.MatchType'], false);
 goog.addDependency('dom/pattern/starttag.js', ['goog.dom.pattern.StartTag'], ['goog.dom.TagWalkType', 'goog.dom.pattern.Tag'], false);
 goog.addDependency('dom/pattern/tag.js', ['goog.dom.pattern.Tag'], ['goog.dom.pattern', 'goog.dom.pattern.AbstractPattern', 'goog.dom.pattern.MatchType', 'goog.object'], false);
 goog.addDependency('dom/pattern/text.js', ['goog.dom.pattern.Text'], ['goog.dom.NodeType', 'goog.dom.pattern', 'goog.dom.pattern.AbstractPattern', 'goog.dom.pattern.MatchType'], false);
@@ -2556,7 +2556,7 @@ goog.addDependency('dom/tags.js', ['goog.dom.tags'], ['goog.object'], false);
 goog.addDependency('dom/tags_test.js', ['goog.dom.tagsTest'], ['goog.dom.tags', 'goog.testing.jsunit'], false);
 goog.addDependency('dom/textrange.js', ['goog.dom.TextRange'], ['goog.array', 'goog.dom', 'goog.dom.AbstractRange', 'goog.dom.RangeType', 'goog.dom.SavedRange', 'goog.dom.TagName', 'goog.dom.TextRangeIterator', 'goog.dom.browserrange', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('dom/textrange_test.js', ['goog.dom.TextRangeTest'], ['goog.dom', 'goog.dom.ControlRange', 'goog.dom.Range', 'goog.dom.TextRange', 'goog.math.Coordinate', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('dom/textrangeiterator.js', ['goog.dom.TextRangeIterator'], ['goog.array', 'goog.dom.NodeType', 'goog.dom.RangeIterator', 'goog.dom.TagName', 'goog.iter.StopIteration'], false);
+goog.addDependency('dom/textrangeiterator.js', ['goog.dom.TextRangeIterator'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.RangeIterator', 'goog.dom.TagName', 'goog.iter.StopIteration'], false);
 goog.addDependency('dom/textrangeiterator_test.js', ['goog.dom.TextRangeIteratorTest'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.TextRangeIterator', 'goog.iter.StopIteration', 'goog.testing.dom', 'goog.testing.jsunit'], false);
 goog.addDependency('dom/vendor.js', ['goog.dom.vendor'], ['goog.string', 'goog.userAgent'], false);
 goog.addDependency('dom/vendor_test.js', ['goog.dom.vendorTest'], ['goog.array', 'goog.dom.vendor', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgentTestUtil'], false);
@@ -2566,7 +2566,7 @@ goog.addDependency('dom/xml.js', ['goog.dom.xml'], ['goog.dom', 'goog.dom.NodeTy
 goog.addDependency('dom/xml_test.js', ['goog.dom.xmlTest'], ['goog.dom.xml', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/browserfeature.js', ['goog.editor.BrowserFeature'], ['goog.editor.defines', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('editor/browserfeature_test.js', ['goog.editor.BrowserFeatureTest'], ['goog.dom', 'goog.dom.Range', 'goog.editor.BrowserFeature', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/clicktoeditwrapper.js', ['goog.editor.ClickToEditWrapper'], ['goog.Disposable', 'goog.asserts', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Field.EventType', 'goog.editor.range', 'goog.events.BrowserEvent.MouseButton', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.log'], false);
+goog.addDependency('editor/clicktoeditwrapper.js', ['goog.editor.ClickToEditWrapper'], ['goog.Disposable', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Field', 'goog.editor.range', 'goog.events.BrowserEvent', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.log'], false);
 goog.addDependency('editor/clicktoeditwrapper_test.js', ['goog.editor.ClickToEditWrapperTest'], ['goog.dom', 'goog.dom.Range', 'goog.editor.ClickToEditWrapper', 'goog.editor.SeamlessField', 'goog.testing.MockClock', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('editor/command.js', ['goog.editor.Command'], [], false);
 goog.addDependency('editor/contenteditablefield.js', ['goog.editor.ContentEditableField'], ['goog.asserts', 'goog.editor.Field', 'goog.log'], false);
@@ -2576,24 +2576,24 @@ goog.addDependency('editor/field.js', ['goog.editor.Field', 'goog.editor.Field.E
 goog.addDependency('editor/field_test.js', ['goog.editor.field_test'], ['goog.dom', 'goog.dom.Range', 'goog.editor.BrowserFeature', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.range', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.testing.LooseMock', 'goog.testing.MockClock', 'goog.testing.dom', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('editor/focus.js', ['goog.editor.focus'], ['goog.dom.selection'], false);
 goog.addDependency('editor/focus_test.js', ['goog.editor.focusTest'], ['goog.dom.selection', 'goog.editor.BrowserFeature', 'goog.editor.focus', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/icontent.js', ['goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo'], ['goog.editor.BrowserFeature', 'goog.style', 'goog.userAgent'], false);
+goog.addDependency('editor/icontent.js', ['goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo'], ['goog.dom', 'goog.editor.BrowserFeature', 'goog.style', 'goog.userAgent'], false);
 goog.addDependency('editor/icontent_test.js', ['goog.editor.icontentTest'], ['goog.dom', 'goog.editor.BrowserFeature', 'goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/link.js', ['goog.editor.Link'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.node', 'goog.editor.range', 'goog.string', 'goog.string.Unicode', 'goog.uri.utils', 'goog.uri.utils.ComponentIndex'], false);
 goog.addDependency('editor/link_test.js', ['goog.editor.LinkTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.Link', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/node.js', ['goog.editor.node'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.iter.ChildIterator', 'goog.dom.iter.SiblingIterator', 'goog.iter', 'goog.object', 'goog.string', 'goog.string.Unicode', 'goog.userAgent'], false);
 goog.addDependency('editor/node_test.js', ['goog.editor.nodeTest'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.editor.node', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('editor/plugin.js', ['goog.editor.Plugin'], ['goog.editor.Command', 'goog.events.EventTarget', 'goog.functions', 'goog.log', 'goog.object', 'goog.reflect'], false);
+goog.addDependency('editor/plugin.js', ['goog.editor.Plugin'], ['goog.events.EventTarget', 'goog.functions', 'goog.log', 'goog.object', 'goog.reflect', 'goog.userAgent'], false);
 goog.addDependency('editor/plugin_test.js', ['goog.editor.PluginTest'], ['goog.editor.Field', 'goog.editor.Plugin', 'goog.functions', 'goog.testing.StrictMock', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/abstractbubbleplugin.js', ['goog.editor.plugins.AbstractBubblePlugin'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.editor.Plugin', 'goog.editor.style', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.actionEventWrapper', 'goog.functions', 'goog.string.Unicode', 'goog.ui.Component', 'goog.ui.editor.Bubble', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/abstractbubbleplugin_test.js', ['goog.editor.plugins.AbstractBubblePluginTest'], ['goog.dom', 'goog.editor.plugins.AbstractBubblePlugin', 'goog.events.BrowserEvent', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.style', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.ui.editor.Bubble', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/abstractdialogplugin.js', ['goog.editor.plugins.AbstractDialogPlugin', 'goog.editor.plugins.AbstractDialogPlugin.EventType'], ['goog.dom', 'goog.dom.Range', 'goog.editor.Field.EventType', 'goog.editor.Plugin', 'goog.editor.range', 'goog.events', 'goog.ui.editor.AbstractDialog.EventType'], false);
+goog.addDependency('editor/plugins/abstractdialogplugin.js', ['goog.editor.plugins.AbstractDialogPlugin', 'goog.editor.plugins.AbstractDialogPlugin.EventType'], ['goog.dom', 'goog.dom.Range', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.range', 'goog.events', 'goog.ui.editor.AbstractDialog'], false);
 goog.addDependency('editor/plugins/abstractdialogplugin_test.js', ['goog.editor.plugins.AbstractDialogPluginTest'], ['goog.dom.SavedRange', 'goog.editor.Field', 'goog.editor.plugins.AbstractDialogPlugin', 'goog.events.Event', 'goog.events.EventHandler', 'goog.functions', 'goog.testing.MockClock', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.jsunit', 'goog.testing.mockmatchers.ArgumentMatcher', 'goog.ui.editor.AbstractDialog', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/abstracttabhandler.js', ['goog.editor.plugins.AbstractTabHandler'], ['goog.editor.Plugin', 'goog.events.KeyCodes'], false);
+goog.addDependency('editor/plugins/abstracttabhandler.js', ['goog.editor.plugins.AbstractTabHandler'], ['goog.editor.Plugin', 'goog.events.KeyCodes', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/abstracttabhandler_test.js', ['goog.editor.plugins.AbstractTabHandlerTest'], ['goog.editor.Field', 'goog.editor.plugins.AbstractTabHandler', 'goog.events.BrowserEvent', 'goog.events.KeyCodes', 'goog.testing.StrictMock', 'goog.testing.editor.FieldMock', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/basictextformatter.js', ['goog.editor.plugins.BasicTextFormatter', 'goog.editor.plugins.BasicTextFormatter.COMMAND'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Link', 'goog.editor.Plugin', 'goog.editor.node', 'goog.editor.range', 'goog.editor.style', 'goog.iter', 'goog.iter.StopIteration', 'goog.log', 'goog.object', 'goog.string', 'goog.string.Unicode', 'goog.style', 'goog.ui.editor.messages', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/basictextformatter_test.js', ['goog.editor.plugins.BasicTextFormatterTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.plugins.BasicTextFormatter', 'goog.object', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.LooseMock', 'goog.testing.PropertyReplacer', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit', 'goog.testing.mockmatchers', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/blockquote.js', ['goog.editor.plugins.Blockquote'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Plugin', 'goog.editor.node', 'goog.functions', 'goog.log'], false);
-goog.addDependency('editor/plugins/blockquote_test.js', ['goog.editor.plugins.BlockquoteTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.plugins.Blockquote', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit', 'goog.userAgent'], false);
+goog.addDependency('editor/plugins/blockquote_test.js', ['goog.editor.plugins.BlockquoteTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.plugins.Blockquote', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit'], false);
 goog.addDependency('editor/plugins/emoticons.js', ['goog.editor.plugins.Emoticons'], ['goog.dom.TagName', 'goog.editor.Plugin', 'goog.editor.range', 'goog.functions', 'goog.ui.emoji.Emoji', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/emoticons_test.js', ['goog.editor.plugins.EmoticonsTest'], ['goog.Uri', 'goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.editor.Field', 'goog.editor.plugins.Emoticons', 'goog.testing.jsunit', 'goog.ui.emoji.Emoji', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/enterhandler.js', ['goog.editor.plugins.EnterHandler'], ['goog.dom', 'goog.dom.NodeOffset', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Plugin', 'goog.editor.node', 'goog.editor.plugins.Blockquote', 'goog.editor.range', 'goog.editor.style', 'goog.events.KeyCodes', 'goog.functions', 'goog.object', 'goog.string', 'goog.userAgent'], false);
@@ -2604,25 +2604,25 @@ goog.addDependency('editor/plugins/headerformatter.js', ['goog.editor.plugins.He
 goog.addDependency('editor/plugins/headerformatter_test.js', ['goog.editor.plugins.HeaderFormatterTest'], ['goog.dom', 'goog.editor.Command', 'goog.editor.plugins.BasicTextFormatter', 'goog.editor.plugins.HeaderFormatter', 'goog.events.BrowserEvent', 'goog.testing.LooseMock', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/linkbubble.js', ['goog.editor.plugins.LinkBubble', 'goog.editor.plugins.LinkBubble.Action'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.editor.Command', 'goog.editor.Link', 'goog.editor.plugins.AbstractBubblePlugin', 'goog.editor.range', 'goog.functions', 'goog.string', 'goog.style', 'goog.ui.editor.messages', 'goog.uri.utils', 'goog.window'], false);
 goog.addDependency('editor/plugins/linkbubble_test.js', ['goog.editor.plugins.LinkBubbleTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.Command', 'goog.editor.Link', 'goog.editor.plugins.LinkBubble', 'goog.events.BrowserEvent', 'goog.events.Event', 'goog.events.EventType', 'goog.string', 'goog.style', 'goog.testing.FunctionMock', 'goog.testing.PropertyReplacer', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/linkdialogplugin.js', ['goog.editor.plugins.LinkDialogPlugin'], ['goog.array', 'goog.dom', 'goog.editor.Command', 'goog.editor.plugins.AbstractDialogPlugin', 'goog.events.EventHandler', 'goog.functions', 'goog.ui.editor.AbstractDialog.EventType', 'goog.ui.editor.LinkDialog', 'goog.ui.editor.LinkDialog.EventType', 'goog.ui.editor.LinkDialog.OkEvent', 'goog.uri.utils'], false);
+goog.addDependency('editor/plugins/linkdialogplugin.js', ['goog.editor.plugins.LinkDialogPlugin'], ['goog.array', 'goog.dom', 'goog.editor.Command', 'goog.editor.plugins.AbstractDialogPlugin', 'goog.events.EventHandler', 'goog.functions', 'goog.ui.editor.AbstractDialog', 'goog.ui.editor.LinkDialog', 'goog.uri.utils'], false);
 goog.addDependency('editor/plugins/linkdialogplugin_test.js', ['goog.ui.editor.plugins.LinkDialogTest'], ['goog.dom', 'goog.dom.DomHelper', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Field', 'goog.editor.Link', 'goog.editor.plugins.LinkDialogPlugin', 'goog.string', 'goog.string.Unicode', 'goog.testing.MockControl', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.editor.dom', 'goog.testing.events', 'goog.testing.jsunit', 'goog.testing.mockmatchers', 'goog.ui.editor.AbstractDialog', 'goog.ui.editor.LinkDialog', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/linkshortcutplugin.js', ['goog.editor.plugins.LinkShortcutPlugin'], ['goog.editor.Command', 'goog.editor.Link', 'goog.editor.Plugin', 'goog.string'], false);
+goog.addDependency('editor/plugins/linkshortcutplugin.js', ['goog.editor.plugins.LinkShortcutPlugin'], ['goog.editor.Command', 'goog.editor.Plugin'], false);
 goog.addDependency('editor/plugins/linkshortcutplugin_test.js', ['goog.editor.plugins.LinkShortcutPluginTest'], ['goog.dom', 'goog.editor.Field', 'goog.editor.plugins.BasicTextFormatter', 'goog.editor.plugins.LinkBubble', 'goog.editor.plugins.LinkShortcutPlugin', 'goog.events.KeyCodes', 'goog.testing.PropertyReplacer', 'goog.testing.dom', 'goog.testing.events', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/plugins/listtabhandler.js', ['goog.editor.plugins.ListTabHandler'], ['goog.dom.TagName', 'goog.editor.Command', 'goog.editor.plugins.AbstractTabHandler'], false);
+goog.addDependency('editor/plugins/listtabhandler.js', ['goog.editor.plugins.ListTabHandler'], ['goog.dom', 'goog.dom.TagName', 'goog.editor.Command', 'goog.editor.plugins.AbstractTabHandler', 'goog.iter'], false);
 goog.addDependency('editor/plugins/listtabhandler_test.js', ['goog.editor.plugins.ListTabHandlerTest'], ['goog.dom', 'goog.editor.Command', 'goog.editor.plugins.ListTabHandler', 'goog.events.BrowserEvent', 'goog.events.KeyCodes', 'goog.functions', 'goog.testing.StrictMock', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/plugins/loremipsum.js', ['goog.editor.plugins.LoremIpsum'], ['goog.asserts', 'goog.dom', 'goog.editor.Command', 'goog.editor.Plugin', 'goog.editor.node', 'goog.functions'], false);
+goog.addDependency('editor/plugins/loremipsum.js', ['goog.editor.plugins.LoremIpsum'], ['goog.asserts', 'goog.dom', 'goog.editor.Command', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.node', 'goog.functions', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/loremipsum_test.js', ['goog.editor.plugins.LoremIpsumTest'], ['goog.dom', 'goog.editor.Command', 'goog.editor.Field', 'goog.editor.plugins.LoremIpsum', 'goog.string.Unicode', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/removeformatting.js', ['goog.editor.plugins.RemoveFormatting'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Plugin', 'goog.editor.node', 'goog.editor.range', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/removeformatting_test.js', ['goog.editor.plugins.RemoveFormattingTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.plugins.RemoveFormatting', 'goog.string', 'goog.testing.ExpectedFailures', 'goog.testing.dom', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/spacestabhandler.js', ['goog.editor.plugins.SpacesTabHandler'], ['goog.dom', 'goog.dom.TagName', 'goog.editor.plugins.AbstractTabHandler', 'goog.editor.range'], false);
+goog.addDependency('editor/plugins/spacestabhandler.js', ['goog.editor.plugins.SpacesTabHandler'], ['goog.dom.TagName', 'goog.editor.plugins.AbstractTabHandler', 'goog.editor.range'], false);
 goog.addDependency('editor/plugins/spacestabhandler_test.js', ['goog.editor.plugins.SpacesTabHandlerTest'], ['goog.dom', 'goog.dom.Range', 'goog.editor.plugins.SpacesTabHandler', 'goog.events.BrowserEvent', 'goog.events.KeyCodes', 'goog.functions', 'goog.testing.StrictMock', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/plugins/tableeditor.js', ['goog.editor.plugins.TableEditor'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.editor.Plugin', 'goog.editor.Table', 'goog.editor.node', 'goog.editor.range', 'goog.object'], false);
+goog.addDependency('editor/plugins/tableeditor.js', ['goog.editor.plugins.TableEditor'], ['goog.array', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.Plugin', 'goog.editor.Table', 'goog.editor.node', 'goog.editor.range', 'goog.object', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/tableeditor_test.js', ['goog.editor.plugins.TableEditorTest'], ['goog.dom', 'goog.dom.Range', 'goog.editor.plugins.TableEditor', 'goog.object', 'goog.string', 'goog.testing.ExpectedFailures', 'goog.testing.JsUnitException', 'goog.testing.editor.FieldMock', 'goog.testing.editor.TestHelper', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/tagonenterhandler.js', ['goog.editor.plugins.TagOnEnterHandler'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.Command', 'goog.editor.node', 'goog.editor.plugins.EnterHandler', 'goog.editor.range', 'goog.editor.style', 'goog.events.KeyCodes', 'goog.string', 'goog.style', 'goog.userAgent'], false);
+goog.addDependency('editor/plugins/tagonenterhandler.js', ['goog.editor.plugins.TagOnEnterHandler'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.Command', 'goog.editor.node', 'goog.editor.plugins.EnterHandler', 'goog.editor.range', 'goog.editor.style', 'goog.events.KeyCodes', 'goog.functions', 'goog.string.Unicode', 'goog.style', 'goog.userAgent'], false);
 goog.addDependency('editor/plugins/tagonenterhandler_test.js', ['goog.editor.plugins.TagOnEnterHandlerTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.plugins.TagOnEnterHandler', 'goog.events.KeyCodes', 'goog.string.Unicode', 'goog.testing.dom', 'goog.testing.editor.TestHelper', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('editor/plugins/undoredo.js', ['goog.editor.plugins.UndoRedo'], ['goog.dom', 'goog.dom.NodeOffset', 'goog.dom.Range', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Field.EventType', 'goog.editor.Plugin', 'goog.editor.node', 'goog.editor.plugins.UndoRedoManager', 'goog.editor.plugins.UndoRedoState', 'goog.events', 'goog.events.EventHandler', 'goog.log'], false);
+goog.addDependency('editor/plugins/undoredo.js', ['goog.editor.plugins.UndoRedo'], ['goog.dom', 'goog.dom.NodeOffset', 'goog.dom.Range', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.node', 'goog.editor.plugins.UndoRedoManager', 'goog.editor.plugins.UndoRedoState', 'goog.events', 'goog.events.EventHandler', 'goog.log', 'goog.object'], false);
 goog.addDependency('editor/plugins/undoredo_test.js', ['goog.editor.plugins.UndoRedoTest'], ['goog.array', 'goog.dom', 'goog.dom.browserrange', 'goog.editor.Field', 'goog.editor.plugins.LoremIpsum', 'goog.editor.plugins.UndoRedo', 'goog.events', 'goog.functions', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.StrictMock', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/plugins/undoredomanager.js', ['goog.editor.plugins.UndoRedoManager', 'goog.editor.plugins.UndoRedoManager.EventType'], ['goog.editor.plugins.UndoRedoState', 'goog.events.EventTarget'], false);
+goog.addDependency('editor/plugins/undoredomanager.js', ['goog.editor.plugins.UndoRedoManager', 'goog.editor.plugins.UndoRedoManager.EventType'], ['goog.editor.plugins.UndoRedoState', 'goog.events', 'goog.events.EventTarget'], false);
 goog.addDependency('editor/plugins/undoredomanager_test.js', ['goog.editor.plugins.UndoRedoManagerTest'], ['goog.editor.plugins.UndoRedoManager', 'goog.editor.plugins.UndoRedoState', 'goog.events', 'goog.testing.StrictMock', 'goog.testing.jsunit'], false);
 goog.addDependency('editor/plugins/undoredostate.js', ['goog.editor.plugins.UndoRedoState'], ['goog.events.EventTarget'], false);
 goog.addDependency('editor/plugins/undoredostate_test.js', ['goog.editor.plugins.UndoRedoStateTest'], ['goog.editor.plugins.UndoRedoState', 'goog.testing.jsunit'], false);
@@ -2630,7 +2630,7 @@ goog.addDependency('editor/range.js', ['goog.editor.range', 'goog.editor.range.P
 goog.addDependency('editor/range_test.js', ['goog.editor.rangeTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.range', 'goog.editor.range.Point', 'goog.string', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/seamlessfield.js', ['goog.editor.SeamlessField'], ['goog.cssom.iframe.style', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Field', 'goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo', 'goog.editor.node', 'goog.events', 'goog.events.EventType', 'goog.log', 'goog.style'], false);
 goog.addDependency('editor/seamlessfield_test.js', ['goog.editor.seamlessfield_test'], ['goog.dom', 'goog.dom.DomHelper', 'goog.dom.Range', 'goog.editor.BrowserFeature', 'goog.editor.Field', 'goog.editor.SeamlessField', 'goog.events', 'goog.functions', 'goog.style', 'goog.testing.MockClock', 'goog.testing.MockRange', 'goog.testing.jsunit'], false);
-goog.addDependency('editor/style.js', ['goog.editor.style'], ['goog.dom', 'goog.dom.NodeType', 'goog.editor.BrowserFeature', 'goog.events.EventType', 'goog.object', 'goog.style', 'goog.userAgent'], false);
+goog.addDependency('editor/style.js', ['goog.editor.style'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.events.EventType', 'goog.object', 'goog.style', 'goog.userAgent'], false);
 goog.addDependency('editor/style_test.js', ['goog.editor.styleTest'], ['goog.dom', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.style', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.style', 'goog.testing.LooseMock', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], false);
 goog.addDependency('editor/table.js', ['goog.editor.Table', 'goog.editor.TableCell', 'goog.editor.TableRow'], ['goog.dom', 'goog.dom.DomHelper', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.log', 'goog.string.Unicode', 'goog.style'], false);
 goog.addDependency('editor/table_test.js', ['goog.editor.TableTest'], ['goog.dom', 'goog.editor.Table', 'goog.testing.jsunit', 'goog.userAgent'], false);
@@ -2655,7 +2655,7 @@ goog.addDependency('events/eventtarget_via_w3cinterface_test.js', ['goog.events.
 goog.addDependency('events/eventtargettester.js', ['goog.events.eventTargetTester', 'goog.events.eventTargetTester.KeyType', 'goog.events.eventTargetTester.UnlistenReturnType'], ['goog.array', 'goog.events', 'goog.events.Event', 'goog.events.EventTarget', 'goog.testing.asserts', 'goog.testing.recordFunction'], false);
 goog.addDependency('events/eventtype.js', ['goog.events.EventType'], ['goog.userAgent'], false);
 goog.addDependency('events/eventwrapper.js', ['goog.events.EventWrapper'], [], false);
-goog.addDependency('events/filedrophandler.js', ['goog.events.FileDropHandler', 'goog.events.FileDropHandler.EventType'], ['goog.array', 'goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.log'], false);
+goog.addDependency('events/filedrophandler.js', ['goog.events.FileDropHandler', 'goog.events.FileDropHandler.EventType'], ['goog.array', 'goog.dom', 'goog.events.BrowserEvent', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.log', 'goog.log.Level'], false);
 goog.addDependency('events/filedrophandler_test.js', ['goog.events.FileDropHandlerTest'], ['goog.events', 'goog.events.BrowserEvent', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.FileDropHandler', 'goog.testing.jsunit'], false);
 goog.addDependency('events/focushandler.js', ['goog.events.FocusHandler', 'goog.events.FocusHandler.EventType'], ['goog.events', 'goog.events.BrowserEvent', 'goog.events.EventTarget', 'goog.userAgent'], false);
 goog.addDependency('events/imehandler.js', ['goog.events.ImeHandler', 'goog.events.ImeHandler.Event', 'goog.events.ImeHandler.EventType'], ['goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.userAgent'], false);
@@ -2708,9 +2708,9 @@ goog.addDependency('fx/abstractdragdrop.js', ['goog.fx.AbstractDragDrop', 'goog.
 goog.addDependency('fx/abstractdragdrop_test.js', ['goog.fx.AbstractDragDropTest'], ['goog.array', 'goog.events.EventType', 'goog.functions', 'goog.fx.AbstractDragDrop', 'goog.fx.DragDropItem', 'goog.math.Box', 'goog.math.Coordinate', 'goog.style', 'goog.testing.events', 'goog.testing.jsunit'], false);
 goog.addDependency('fx/anim/anim.js', ['goog.fx.anim', 'goog.fx.anim.Animated'], ['goog.async.AnimationDelay', 'goog.async.Delay', 'goog.object'], false);
 goog.addDependency('fx/anim/anim_test.js', ['goog.fx.animTest'], ['goog.async.AnimationDelay', 'goog.async.Delay', 'goog.events', 'goog.functions', 'goog.fx.Animation', 'goog.fx.anim', 'goog.object', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], false);
-goog.addDependency('fx/animation.js', ['goog.fx.Animation', 'goog.fx.Animation.EventType', 'goog.fx.Animation.State', 'goog.fx.AnimationEvent'], ['goog.array', 'goog.events.Event', 'goog.fx.Transition', 'goog.fx.Transition.EventType', 'goog.fx.TransitionBase.State', 'goog.fx.anim', 'goog.fx.anim.Animated'], false);
+goog.addDependency('fx/animation.js', ['goog.fx.Animation', 'goog.fx.Animation.EventType', 'goog.fx.Animation.State', 'goog.fx.AnimationEvent'], ['goog.array', 'goog.events.Event', 'goog.fx.Transition', 'goog.fx.TransitionBase', 'goog.fx.anim', 'goog.fx.anim.Animated'], false);
 goog.addDependency('fx/animation_test.js', ['goog.fx.AnimationTest'], ['goog.events', 'goog.fx.Animation', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
-goog.addDependency('fx/animationqueue.js', ['goog.fx.AnimationParallelQueue', 'goog.fx.AnimationQueue', 'goog.fx.AnimationSerialQueue'], ['goog.array', 'goog.asserts', 'goog.events.EventHandler', 'goog.fx.Transition.EventType', 'goog.fx.TransitionBase', 'goog.fx.TransitionBase.State'], false);
+goog.addDependency('fx/animationqueue.js', ['goog.fx.AnimationParallelQueue', 'goog.fx.AnimationQueue', 'goog.fx.AnimationSerialQueue'], ['goog.array', 'goog.asserts', 'goog.events', 'goog.fx.Transition', 'goog.fx.TransitionBase'], false);
 goog.addDependency('fx/animationqueue_test.js', ['goog.fx.AnimationQueueTest'], ['goog.events', 'goog.fx.Animation', 'goog.fx.AnimationParallelQueue', 'goog.fx.AnimationSerialQueue', 'goog.fx.Transition', 'goog.fx.anim', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('fx/css3/fx.js', ['goog.fx.css3'], ['goog.fx.css3.Transition'], false);
 goog.addDependency('fx/css3/transition.js', ['goog.fx.css3.Transition'], ['goog.Timer', 'goog.asserts', 'goog.fx.TransitionBase', 'goog.style', 'goog.style.transition'], false);
@@ -2732,7 +2732,7 @@ goog.addDependency('fx/easing_test.js', ['goog.fx.easingTest'], ['goog.fx.easing
 goog.addDependency('fx/fx.js', ['goog.fx'], ['goog.asserts', 'goog.fx.Animation', 'goog.fx.Animation.EventType', 'goog.fx.Animation.State', 'goog.fx.AnimationEvent', 'goog.fx.Transition.EventType', 'goog.fx.easing'], false);
 goog.addDependency('fx/fx_test.js', ['goog.fxTest'], ['goog.fx.Animation', 'goog.object', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('fx/transition.js', ['goog.fx.Transition', 'goog.fx.Transition.EventType'], [], false);
-goog.addDependency('fx/transitionbase.js', ['goog.fx.TransitionBase', 'goog.fx.TransitionBase.State'], ['goog.events.EventTarget', 'goog.fx.Transition', 'goog.fx.Transition.EventType'], false);
+goog.addDependency('fx/transitionbase.js', ['goog.fx.TransitionBase', 'goog.fx.TransitionBase.State'], ['goog.events.EventTarget', 'goog.fx.Transition'], false);
 goog.addDependency('graphics/abstractgraphics.js', ['goog.graphics.AbstractGraphics'], ['goog.dom', 'goog.graphics.Path', 'goog.math.Coordinate', 'goog.math.Size', 'goog.style', 'goog.ui.Component'], false);
 goog.addDependency('graphics/affinetransform.js', ['goog.graphics.AffineTransform'], ['goog.math'], false);
 goog.addDependency('graphics/canvaselement.js', ['goog.graphics.CanvasEllipseElement', 'goog.graphics.CanvasGroupElement', 'goog.graphics.CanvasImageElement', 'goog.graphics.CanvasPathElement', 'goog.graphics.CanvasRectElement', 'goog.graphics.CanvasTextElement'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.graphics.EllipseElement', 'goog.graphics.GroupElement', 'goog.graphics.ImageElement', 'goog.graphics.Path', 'goog.graphics.PathElement', 'goog.graphics.RectElement', 'goog.graphics.TextElement', 'goog.math', 'goog.string'], false);
@@ -2743,12 +2743,12 @@ goog.addDependency('graphics/ext/coordinates.js', ['goog.graphics.ext.coordinate
 goog.addDependency('graphics/ext/element.js', ['goog.graphics.ext.Element'], ['goog.events.EventTarget', 'goog.functions', 'goog.graphics.ext.coordinates'], false);
 goog.addDependency('graphics/ext/ellipse.js', ['goog.graphics.ext.Ellipse'], ['goog.graphics.ext.StrokeAndFillElement'], false);
 goog.addDependency('graphics/ext/ext.js', ['goog.graphics.ext'], ['goog.graphics.ext.Ellipse', 'goog.graphics.ext.Graphics', 'goog.graphics.ext.Group', 'goog.graphics.ext.Image', 'goog.graphics.ext.Rectangle', 'goog.graphics.ext.Shape', 'goog.graphics.ext.coordinates'], false);
-goog.addDependency('graphics/ext/graphics.js', ['goog.graphics.ext.Graphics'], ['goog.events.EventType', 'goog.graphics.ext.Group'], false);
+goog.addDependency('graphics/ext/graphics.js', ['goog.graphics.ext.Graphics'], ['goog.events', 'goog.events.EventType', 'goog.graphics', 'goog.graphics.ext.Group'], false);
 goog.addDependency('graphics/ext/group.js', ['goog.graphics.ext.Group'], ['goog.array', 'goog.graphics.ext.Element'], false);
 goog.addDependency('graphics/ext/image.js', ['goog.graphics.ext.Image'], ['goog.graphics.ext.Element'], false);
-goog.addDependency('graphics/ext/path.js', ['goog.graphics.ext.Path'], ['goog.graphics.AffineTransform', 'goog.graphics.Path', 'goog.math', 'goog.math.Rect'], false);
+goog.addDependency('graphics/ext/path.js', ['goog.graphics.ext.Path'], ['goog.graphics.AffineTransform', 'goog.graphics.Path', 'goog.math.Rect'], false);
 goog.addDependency('graphics/ext/rectangle.js', ['goog.graphics.ext.Rectangle'], ['goog.graphics.ext.StrokeAndFillElement'], false);
-goog.addDependency('graphics/ext/shape.js', ['goog.graphics.ext.Shape'], ['goog.graphics.ext.Path', 'goog.graphics.ext.StrokeAndFillElement', 'goog.math.Rect'], false);
+goog.addDependency('graphics/ext/shape.js', ['goog.graphics.ext.Shape'], ['goog.graphics.ext.StrokeAndFillElement'], false);
 goog.addDependency('graphics/ext/strokeandfillelement.js', ['goog.graphics.ext.StrokeAndFillElement'], ['goog.graphics.ext.Element'], false);
 goog.addDependency('graphics/fill.js', ['goog.graphics.Fill'], [], false);
 goog.addDependency('graphics/font.js', ['goog.graphics.Font'], [], false);
@@ -2772,7 +2772,7 @@ goog.addDependency('history/event.js', ['goog.history.Event'], ['goog.events.Eve
 goog.addDependency('history/eventtype.js', ['goog.history.EventType'], [], false);
 goog.addDependency('history/history.js', ['goog.History', 'goog.History.Event', 'goog.History.EventType'], ['goog.Timer', 'goog.dom', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.history.Event', 'goog.history.EventType', 'goog.labs.userAgent.device', 'goog.memoize', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('history/history_test.js', ['goog.HistoryTest'], ['goog.History', 'goog.dispose', 'goog.dom', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('history/html5history.js', ['goog.history.Html5History', 'goog.history.Html5History.TokenTransformer'], ['goog.asserts', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.history.Event', 'goog.history.EventType'], false);
+goog.addDependency('history/html5history.js', ['goog.history.Html5History', 'goog.history.Html5History.TokenTransformer'], ['goog.asserts', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.history.Event'], false);
 goog.addDependency('history/html5history_test.js', ['goog.history.Html5HistoryTest'], ['goog.history.Html5History', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], false);
 goog.addDependency('html/legacyconversions.js', ['goog.html.legacyconversions'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl'], false);
 goog.addDependency('html/legacyconversions_test.js', ['goog.html.legacyconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.legacyconversions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
@@ -2847,7 +2847,7 @@ goog.addDependency('json/hybridjsonprocessor_test.js', ['goog.json.HybridJsonPro
 goog.addDependency('json/json.js', ['goog.json', 'goog.json.Replacer', 'goog.json.Reviver', 'goog.json.Serializer'], [], false);
 goog.addDependency('json/json_perf.js', ['goog.jsonPerf'], ['goog.dom', 'goog.json', 'goog.math', 'goog.string', 'goog.testing.PerformanceTable', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('json/json_test.js', ['goog.jsonTest'], ['goog.functions', 'goog.json', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('json/nativejsonprocessor.js', ['goog.json.NativeJsonProcessor'], ['goog.asserts', 'goog.json', 'goog.json.Processor'], false);
+goog.addDependency('json/nativejsonprocessor.js', ['goog.json.NativeJsonProcessor'], ['goog.asserts', 'goog.json.Processor'], false);
 goog.addDependency('json/processor.js', ['goog.json.Processor'], ['goog.string.Parser', 'goog.string.Stringifier'], false);
 goog.addDependency('json/processor_test.js', ['goog.json.processorTest'], ['goog.json.EvalJsonProcessor', 'goog.json.NativeJsonProcessor', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('labs/dom/pagevisibilitymonitor.js', ['goog.labs.dom.PageVisibilityEvent', 'goog.labs.dom.PageVisibilityMonitor', 'goog.labs.dom.PageVisibilityState'], ['goog.dom', 'goog.dom.vendor', 'goog.events', 'goog.events.Event', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.memoize'], false);
@@ -2907,11 +2907,11 @@ goog.addDependency('labs/structs/multimap.js', ['goog.labs.structs.Multimap'], [
 goog.addDependency('labs/structs/multimap_test.js', ['goog.labs.structs.MultimapTest'], ['goog.labs.structs.Map', 'goog.labs.structs.Multimap', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/style/pixeldensitymonitor.js', ['goog.labs.style.PixelDensityMonitor', 'goog.labs.style.PixelDensityMonitor.Density', 'goog.labs.style.PixelDensityMonitor.EventType'], ['goog.events', 'goog.events.EventTarget'], false);
 goog.addDependency('labs/style/pixeldensitymonitor_test.js', ['goog.labs.style.PixelDensityMonitorTest'], ['goog.array', 'goog.dom.DomHelper', 'goog.events', 'goog.labs.style.PixelDensityMonitor', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
-goog.addDependency('labs/testing/assertthat.js', ['goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat'], ['goog.asserts', 'goog.debug.Error', 'goog.labs.testing.Matcher'], false);
+goog.addDependency('labs/testing/assertthat.js', ['goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat'], ['goog.debug.Error'], false);
 goog.addDependency('labs/testing/assertthat_test.js', ['goog.labs.testing.assertThatTest'], ['goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('labs/testing/decoratormatcher.js', ['goog.labs.testing.AnythingMatcher'], ['goog.labs.testing.Matcher'], false);
 goog.addDependency('labs/testing/decoratormatcher_test.js', ['goog.labs.testing.decoratorMatcherTest'], ['goog.labs.testing.AnythingMatcher', 'goog.labs.testing.GreaterThanMatcher', 'goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
-goog.addDependency('labs/testing/dictionarymatcher.js', ['goog.labs.testing.HasEntriesMatcher', 'goog.labs.testing.HasEntryMatcher', 'goog.labs.testing.HasKeyMatcher', 'goog.labs.testing.HasValueMatcher'], ['goog.array', 'goog.asserts', 'goog.labs.testing.Matcher', 'goog.string'], false);
+goog.addDependency('labs/testing/dictionarymatcher.js', ['goog.labs.testing.HasEntriesMatcher', 'goog.labs.testing.HasEntryMatcher', 'goog.labs.testing.HasKeyMatcher', 'goog.labs.testing.HasValueMatcher'], ['goog.asserts', 'goog.labs.testing.Matcher', 'goog.object'], false);
 goog.addDependency('labs/testing/dictionarymatcher_test.js', ['goog.labs.testing.dictionaryMatcherTest'], ['goog.labs.testing.HasEntryMatcher', 'goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/testing/environment.js', ['goog.labs.testing.Environment'], ['goog.array', 'goog.debug.Console', 'goog.testing.MockClock', 'goog.testing.MockControl', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/testing/environment_test.js', ['goog.labs.testing.environmentTest'], ['goog.labs.testing.Environment', 'goog.testing.MockControl', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
@@ -2921,9 +2921,9 @@ goog.addDependency('labs/testing/logicmatcher_test.js', ['goog.labs.testing.logi
 goog.addDependency('labs/testing/matcher.js', ['goog.labs.testing.Matcher'], [], false);
 goog.addDependency('labs/testing/numbermatcher.js', ['goog.labs.testing.CloseToMatcher', 'goog.labs.testing.EqualToMatcher', 'goog.labs.testing.GreaterThanEqualToMatcher', 'goog.labs.testing.GreaterThanMatcher', 'goog.labs.testing.LessThanEqualToMatcher', 'goog.labs.testing.LessThanMatcher'], ['goog.asserts', 'goog.labs.testing.Matcher'], false);
 goog.addDependency('labs/testing/numbermatcher_test.js', ['goog.labs.testing.numberMatcherTest'], ['goog.labs.testing.LessThanMatcher', 'goog.labs.testing.MatcherError', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
-goog.addDependency('labs/testing/objectmatcher.js', ['goog.labs.testing.HasPropertyMatcher', 'goog.labs.testing.InstanceOfMatcher', 'goog.labs.testing.IsNullMatcher', 'goog.labs.testing.IsNullOrUndefinedMatcher', 'goog.labs.testing.IsUndefinedMatcher', 'goog.labs.testing.ObjectEqualsMatcher'], ['goog.labs.testing.Matcher', 'goog.string'], false);
+goog.addDependency('labs/testing/objectmatcher.js', ['goog.labs.testing.HasPropertyMatcher', 'goog.labs.testing.InstanceOfMatcher', 'goog.labs.testing.IsNullMatcher', 'goog.labs.testing.IsNullOrUndefinedMatcher', 'goog.labs.testing.IsUndefinedMatcher', 'goog.labs.testing.ObjectEqualsMatcher'], ['goog.labs.testing.Matcher'], false);
 goog.addDependency('labs/testing/objectmatcher_test.js', ['goog.labs.testing.objectMatcherTest'], ['goog.labs.testing.MatcherError', 'goog.labs.testing.ObjectEqualsMatcher', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
-goog.addDependency('labs/testing/stringmatcher.js', ['goog.labs.testing.ContainsStringMatcher', 'goog.labs.testing.EndsWithMatcher', 'goog.labs.testing.EqualToIgnoringCaseMatcher', 'goog.labs.testing.EqualToIgnoringWhitespaceMatcher', 'goog.labs.testing.EqualsMatcher', 'goog.labs.testing.RegexMatcher', 'goog.labs.testing.StartsWithMatcher', 'goog.labs.testing.StringContainsInOrderMatcher'], ['goog.asserts', 'goog.labs.testing.Matcher', 'goog.string'], false);
+goog.addDependency('labs/testing/stringmatcher.js', ['goog.labs.testing.ContainsStringMatcher', 'goog.labs.testing.EndsWithMatcher', 'goog.labs.testing.EqualToIgnoringWhitespaceMatcher', 'goog.labs.testing.EqualsMatcher', 'goog.labs.testing.RegexMatcher', 'goog.labs.testing.StartsWithMatcher', 'goog.labs.testing.StringContainsInOrderMatcher'], ['goog.asserts', 'goog.labs.testing.Matcher', 'goog.string'], false);
 goog.addDependency('labs/testing/stringmatcher_test.js', ['goog.labs.testing.stringMatcherTest'], ['goog.labs.testing.MatcherError', 'goog.labs.testing.StringContainsInOrderMatcher', 'goog.labs.testing.assertThat', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/useragent/browser.js', ['goog.labs.userAgent.browser'], ['goog.array', 'goog.labs.userAgent.util', 'goog.object', 'goog.string'], false);
 goog.addDependency('labs/useragent/browser_test.js', ['goog.labs.userAgent.browserTest'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.jsunit'], false);
@@ -2945,7 +2945,7 @@ goog.addDependency('locale/genericfontnamesdata.js', ['goog.locale.genericFontNa
 goog.addDependency('locale/locale.js', ['goog.locale'], ['goog.locale.nativeNameConstants'], false);
 goog.addDependency('locale/nativenameconstants.js', ['goog.locale.nativeNameConstants'], [], false);
 goog.addDependency('locale/scriptToLanguages.js', ['goog.locale.scriptToLanguages'], ['goog.locale'], false);
-goog.addDependency('locale/timezonedetection.js', ['goog.locale.timeZoneDetection'], ['goog.locale', 'goog.locale.TimeZoneFingerprint'], false);
+goog.addDependency('locale/timezonedetection.js', ['goog.locale.timeZoneDetection'], ['goog.locale.TimeZoneFingerprint'], false);
 goog.addDependency('locale/timezonedetection_test.js', ['goog.locale.timeZoneDetectionTest'], ['goog.locale.timeZoneDetection', 'goog.testing.jsunit'], false);
 goog.addDependency('locale/timezonefingerprint.js', ['goog.locale.TimeZoneFingerprint'], [], false);
 goog.addDependency('locale/timezonelist.js', ['goog.locale.TimeZoneList'], ['goog.locale'], false);
@@ -2967,11 +2967,11 @@ goog.addDependency('math/exponentialbackoff_test.js', ['goog.math.ExponentialBac
 goog.addDependency('math/integer.js', ['goog.math.Integer'], [], false);
 goog.addDependency('math/integer_test.js', ['goog.math.IntegerTest'], ['goog.math.Integer', 'goog.testing.jsunit'], false);
 goog.addDependency('math/interpolator/interpolator1.js', ['goog.math.interpolator.Interpolator1'], [], false);
-goog.addDependency('math/interpolator/linear1.js', ['goog.math.interpolator.Linear1'], ['goog.array', 'goog.math', 'goog.math.interpolator.Interpolator1'], false);
+goog.addDependency('math/interpolator/linear1.js', ['goog.math.interpolator.Linear1'], ['goog.array', 'goog.asserts', 'goog.math', 'goog.math.interpolator.Interpolator1'], false);
 goog.addDependency('math/interpolator/linear1_test.js', ['goog.math.interpolator.Linear1Test'], ['goog.math.interpolator.Linear1', 'goog.testing.jsunit'], false);
 goog.addDependency('math/interpolator/pchip1.js', ['goog.math.interpolator.Pchip1'], ['goog.math', 'goog.math.interpolator.Spline1'], false);
 goog.addDependency('math/interpolator/pchip1_test.js', ['goog.math.interpolator.Pchip1Test'], ['goog.math.interpolator.Pchip1', 'goog.testing.jsunit'], false);
-goog.addDependency('math/interpolator/spline1.js', ['goog.math.interpolator.Spline1'], ['goog.array', 'goog.math', 'goog.math.interpolator.Interpolator1', 'goog.math.tdma'], false);
+goog.addDependency('math/interpolator/spline1.js', ['goog.math.interpolator.Spline1'], ['goog.array', 'goog.asserts', 'goog.math', 'goog.math.interpolator.Interpolator1', 'goog.math.tdma'], false);
 goog.addDependency('math/interpolator/spline1_test.js', ['goog.math.interpolator.Spline1Test'], ['goog.math.interpolator.Spline1', 'goog.testing.jsunit'], false);
 goog.addDependency('math/line.js', ['goog.math.Line'], ['goog.math', 'goog.math.Coordinate'], false);
 goog.addDependency('math/line_test.js', ['goog.math.LineTest'], ['goog.math.Coordinate', 'goog.math.Line', 'goog.testing.jsunit'], false);
@@ -3001,28 +3001,28 @@ goog.addDependency('math/vec3.js', ['goog.math.Vec3'], ['goog.math', 'goog.math.
 goog.addDependency('math/vec3_test.js', ['goog.math.Vec3Test'], ['goog.math.Coordinate3', 'goog.math.Vec3', 'goog.testing.jsunit'], false);
 goog.addDependency('memoize/memoize.js', ['goog.memoize'], [], false);
 goog.addDependency('memoize/memoize_test.js', ['goog.memoizeTest'], ['goog.memoize', 'goog.testing.jsunit'], false);
-goog.addDependency('messaging/abstractchannel.js', ['goog.messaging.AbstractChannel'], ['goog.Disposable', 'goog.debug', 'goog.json', 'goog.log', 'goog.messaging.MessageChannel'], false);
+goog.addDependency('messaging/abstractchannel.js', ['goog.messaging.AbstractChannel'], ['goog.Disposable', 'goog.json', 'goog.log', 'goog.messaging.MessageChannel'], false);
 goog.addDependency('messaging/abstractchannel_test.js', ['goog.messaging.AbstractChannelTest'], ['goog.messaging.AbstractChannel', 'goog.testing.MockControl', 'goog.testing.async.MockControl', 'goog.testing.jsunit'], false);
-goog.addDependency('messaging/bufferedchannel.js', ['goog.messaging.BufferedChannel'], ['goog.Timer', 'goog.Uri', 'goog.debug.Error', 'goog.events', 'goog.log', 'goog.messaging.MessageChannel', 'goog.messaging.MultiChannel'], false);
+goog.addDependency('messaging/bufferedchannel.js', ['goog.messaging.BufferedChannel'], ['goog.Disposable', 'goog.Timer', 'goog.events', 'goog.log', 'goog.messaging.MessageChannel', 'goog.messaging.MultiChannel'], false);
 goog.addDependency('messaging/bufferedchannel_test.js', ['goog.messaging.BufferedChannelTest'], ['goog.debug.Console', 'goog.dom', 'goog.log', 'goog.log.Level', 'goog.messaging.BufferedChannel', 'goog.testing.MockClock', 'goog.testing.MockControl', 'goog.testing.async.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
-goog.addDependency('messaging/deferredchannel.js', ['goog.messaging.DeferredChannel'], ['goog.Disposable', 'goog.async.Deferred', 'goog.messaging.MessageChannel'], false);
+goog.addDependency('messaging/deferredchannel.js', ['goog.messaging.DeferredChannel'], ['goog.Disposable', 'goog.messaging.MessageChannel'], false);
 goog.addDependency('messaging/deferredchannel_test.js', ['goog.messaging.DeferredChannelTest'], ['goog.async.Deferred', 'goog.messaging.DeferredChannel', 'goog.testing.MockControl', 'goog.testing.async.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
 goog.addDependency('messaging/loggerclient.js', ['goog.messaging.LoggerClient'], ['goog.Disposable', 'goog.debug', 'goog.debug.LogManager', 'goog.debug.Logger'], false);
 goog.addDependency('messaging/loggerclient_test.js', ['goog.messaging.LoggerClientTest'], ['goog.debug', 'goog.debug.Logger', 'goog.messaging.LoggerClient', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
-goog.addDependency('messaging/loggerserver.js', ['goog.messaging.LoggerServer'], ['goog.Disposable', 'goog.log'], false);
+goog.addDependency('messaging/loggerserver.js', ['goog.messaging.LoggerServer'], ['goog.Disposable', 'goog.log', 'goog.log.Level'], false);
 goog.addDependency('messaging/loggerserver_test.js', ['goog.messaging.LoggerServerTest'], ['goog.debug.LogManager', 'goog.debug.Logger', 'goog.log', 'goog.log.Level', 'goog.messaging.LoggerServer', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
 goog.addDependency('messaging/messagechannel.js', ['goog.messaging.MessageChannel'], [], false);
-goog.addDependency('messaging/messaging.js', ['goog.messaging'], ['goog.messaging.MessageChannel'], false);
+goog.addDependency('messaging/messaging.js', ['goog.messaging'], [], false);
 goog.addDependency('messaging/messaging_test.js', ['goog.testing.messaging.MockMessageChannelTest'], ['goog.messaging', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
-goog.addDependency('messaging/multichannel.js', ['goog.messaging.MultiChannel', 'goog.messaging.MultiChannel.VirtualChannel'], ['goog.Disposable', 'goog.events.EventHandler', 'goog.log', 'goog.messaging.MessageChannel', 'goog.object'], false);
+goog.addDependency('messaging/multichannel.js', ['goog.messaging.MultiChannel', 'goog.messaging.MultiChannel.VirtualChannel'], ['goog.Disposable', 'goog.log', 'goog.messaging.MessageChannel', 'goog.object'], false);
 goog.addDependency('messaging/multichannel_test.js', ['goog.messaging.MultiChannelTest'], ['goog.messaging.MultiChannel', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel', 'goog.testing.mockmatchers.IgnoreArgument'], false);
 goog.addDependency('messaging/portcaller.js', ['goog.messaging.PortCaller'], ['goog.Disposable', 'goog.async.Deferred', 'goog.messaging.DeferredChannel', 'goog.messaging.PortChannel', 'goog.messaging.PortNetwork', 'goog.object'], false);
 goog.addDependency('messaging/portcaller_test.js', ['goog.messaging.PortCallerTest'], ['goog.events.EventTarget', 'goog.messaging.PortCaller', 'goog.messaging.PortNetwork', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
-goog.addDependency('messaging/portchannel.js', ['goog.messaging.PortChannel'], ['goog.Timer', 'goog.array', 'goog.async.Deferred', 'goog.debug', 'goog.dom', 'goog.dom.DomHelper', 'goog.events', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.messaging.AbstractChannel', 'goog.messaging.DeferredChannel', 'goog.object', 'goog.string', 'goog.userAgent'], false);
+goog.addDependency('messaging/portchannel.js', ['goog.messaging.PortChannel'], ['goog.Timer', 'goog.array', 'goog.async.Deferred', 'goog.debug', 'goog.events', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.messaging.AbstractChannel', 'goog.messaging.DeferredChannel', 'goog.object', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('messaging/portnetwork.js', ['goog.messaging.PortNetwork'], [], false);
 goog.addDependency('messaging/portoperator.js', ['goog.messaging.PortOperator'], ['goog.Disposable', 'goog.asserts', 'goog.log', 'goog.messaging.PortChannel', 'goog.messaging.PortNetwork', 'goog.object'], false);
 goog.addDependency('messaging/portoperator_test.js', ['goog.messaging.PortOperatorTest'], ['goog.messaging.PortNetwork', 'goog.messaging.PortOperator', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel', 'goog.testing.messaging.MockMessagePort'], false);
-goog.addDependency('messaging/respondingchannel.js', ['goog.messaging.RespondingChannel'], ['goog.Disposable', 'goog.log', 'goog.messaging.MessageChannel', 'goog.messaging.MultiChannel', 'goog.messaging.MultiChannel.VirtualChannel'], false);
+goog.addDependency('messaging/respondingchannel.js', ['goog.messaging.RespondingChannel'], ['goog.Disposable', 'goog.log', 'goog.messaging.MultiChannel'], false);
 goog.addDependency('messaging/respondingchannel_test.js', ['goog.messaging.RespondingChannelTest'], ['goog.messaging.RespondingChannel', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
 goog.addDependency('messaging/testdata/portchannel_worker.js', ['goog.messaging.testdata.portchannel_worker'], ['goog.messaging.PortChannel'], false);
 goog.addDependency('messaging/testdata/portnetwork_worker1.js', ['goog.messaging.testdata.portnetwork_worker1'], ['goog.messaging.PortCaller', 'goog.messaging.PortChannel'], false);
@@ -3035,8 +3035,8 @@ goog.addDependency('module/moduleinfo.js', ['goog.module.ModuleInfo'], ['goog.Di
 goog.addDependency('module/moduleinfo_test.js', ['goog.module.ModuleInfoTest'], ['goog.module.BaseModule', 'goog.module.ModuleInfo', 'goog.testing.jsunit'], false);
 goog.addDependency('module/moduleloadcallback.js', ['goog.module.ModuleLoadCallback'], ['goog.debug.entryPointRegistry', 'goog.debug.errorHandlerWeakDep', 'goog.module'], false);
 goog.addDependency('module/moduleloadcallback_test.js', ['goog.module.ModuleLoadCallbackTest'], ['goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.functions', 'goog.module.ModuleLoadCallback', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
-goog.addDependency('module/moduleloader.js', ['goog.module.ModuleLoader'], ['goog.Timer', 'goog.array', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.log', 'goog.module.AbstractModuleLoader', 'goog.net.BulkLoader', 'goog.net.EventType', 'goog.net.jsloader', 'goog.userAgent.product'], false);
-goog.addDependency('module/moduleloader_test.js', ['goog.module.ModuleLoaderTest'], ['goog.array', 'goog.dom', 'goog.functions', 'goog.module.ModuleLoader', 'goog.module.ModuleManager', 'goog.module.ModuleManager.CallbackType', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.events.EventObserver', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent.product'], false);
+goog.addDependency('module/moduleloader.js', ['goog.module.ModuleLoader'], ['goog.Timer', 'goog.array', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.log', 'goog.module.AbstractModuleLoader', 'goog.net.BulkLoader', 'goog.net.EventType', 'goog.net.jsloader', 'goog.userAgent', 'goog.userAgent.product'], false);
+goog.addDependency('module/moduleloader_test.js', ['goog.module.ModuleLoaderTest'], ['goog.array', 'goog.dom', 'goog.events', 'goog.functions', 'goog.module.ModuleLoader', 'goog.module.ModuleManager', 'goog.net.BulkLoader', 'goog.net.XmlHttp', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.events.EventObserver', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('module/modulemanager.js', ['goog.module.ModuleManager', 'goog.module.ModuleManager.CallbackType', 'goog.module.ModuleManager.FailureType'], ['goog.Disposable', 'goog.array', 'goog.asserts', 'goog.async.Deferred', 'goog.debug.Trace', 'goog.dispose', 'goog.log', 'goog.module', 'goog.module.ModuleInfo', 'goog.module.ModuleLoadCallback', 'goog.object'], false);
 goog.addDependency('module/modulemanager_test.js', ['goog.module.ModuleManagerTest'], ['goog.array', 'goog.functions', 'goog.module.BaseModule', 'goog.module.ModuleManager', 'goog.testing', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('module/testdata/modA_1.js', ['goog.module.testdata.modA_1'], [], false);
@@ -3115,21 +3115,21 @@ goog.addDependency('net/xpc/transport.js', ['goog.net.xpc.Transport'], ['goog.Di
 goog.addDependency('net/xpc/xpc.js', ['goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.ChannelStates', 'goog.net.xpc.TransportNames', 'goog.net.xpc.TransportTypes', 'goog.net.xpc.UriCfgFields'], ['goog.log'], false);
 goog.addDependency('object/object.js', ['goog.object'], [], false);
 goog.addDependency('object/object_test.js', ['goog.objectTest'], ['goog.functions', 'goog.object', 'goog.testing.jsunit'], false);
-goog.addDependency('positioning/absoluteposition.js', ['goog.positioning.AbsolutePosition'], ['goog.math.Box', 'goog.math.Coordinate', 'goog.math.Size', 'goog.positioning', 'goog.positioning.AbstractPosition'], false);
-goog.addDependency('positioning/abstractposition.js', ['goog.positioning.AbstractPosition'], ['goog.math.Box', 'goog.math.Size', 'goog.positioning.Corner'], false);
-goog.addDependency('positioning/anchoredposition.js', ['goog.positioning.AnchoredPosition'], ['goog.math.Box', 'goog.positioning', 'goog.positioning.AbstractPosition'], false);
+goog.addDependency('positioning/absoluteposition.js', ['goog.positioning.AbsolutePosition'], ['goog.math.Coordinate', 'goog.positioning', 'goog.positioning.AbstractPosition'], false);
+goog.addDependency('positioning/abstractposition.js', ['goog.positioning.AbstractPosition'], [], false);
+goog.addDependency('positioning/anchoredposition.js', ['goog.positioning.AnchoredPosition'], ['goog.positioning', 'goog.positioning.AbstractPosition'], false);
 goog.addDependency('positioning/anchoredposition_test.js', ['goog.positioning.AnchoredPositionTest'], ['goog.dom', 'goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.style', 'goog.testing.jsunit'], false);
-goog.addDependency('positioning/anchoredviewportposition.js', ['goog.positioning.AnchoredViewportPosition'], ['goog.math.Box', 'goog.positioning', 'goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus'], false);
+goog.addDependency('positioning/anchoredviewportposition.js', ['goog.positioning.AnchoredViewportPosition'], ['goog.positioning', 'goog.positioning.AnchoredPosition', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus'], false);
 goog.addDependency('positioning/anchoredviewportposition_test.js', ['goog.positioning.AnchoredViewportPositionTest'], ['goog.dom', 'goog.math.Box', 'goog.positioning.AnchoredViewportPosition', 'goog.positioning.Corner', 'goog.positioning.OverflowStatus', 'goog.style', 'goog.testing.jsunit'], false);
-goog.addDependency('positioning/clientposition.js', ['goog.positioning.ClientPosition'], ['goog.asserts', 'goog.math.Box', 'goog.math.Coordinate', 'goog.math.Size', 'goog.positioning', 'goog.positioning.AbstractPosition', 'goog.style'], false);
-goog.addDependency('positioning/clientposition_test.js', ['goog.positioning.clientPositionTest'], ['goog.dom', 'goog.positioning.ClientPosition', 'goog.style', 'goog.testing.jsunit'], false);
-goog.addDependency('positioning/menuanchoredposition.js', ['goog.positioning.MenuAnchoredPosition'], ['goog.math.Box', 'goog.math.Size', 'goog.positioning', 'goog.positioning.AnchoredViewportPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow'], false);
+goog.addDependency('positioning/clientposition.js', ['goog.positioning.ClientPosition'], ['goog.asserts', 'goog.dom', 'goog.math.Coordinate', 'goog.positioning', 'goog.positioning.AbstractPosition', 'goog.style'], false);
+goog.addDependency('positioning/clientposition_test.js', ['goog.positioning.clientPositionTest'], ['goog.dom', 'goog.positioning.ClientPosition', 'goog.positioning.Corner', 'goog.style', 'goog.testing.jsunit'], false);
+goog.addDependency('positioning/menuanchoredposition.js', ['goog.positioning.MenuAnchoredPosition'], ['goog.positioning.AnchoredViewportPosition', 'goog.positioning.Overflow'], false);
 goog.addDependency('positioning/menuanchoredposition_test.js', ['goog.positioning.MenuAnchoredPositionTest'], ['goog.dom', 'goog.positioning.Corner', 'goog.positioning.MenuAnchoredPosition', 'goog.testing.jsunit'], false);
 goog.addDependency('positioning/positioning.js', ['goog.positioning', 'goog.positioning.Corner', 'goog.positioning.CornerBit', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus'], ['goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.math.Size', 'goog.style', 'goog.style.bidi'], false);
 goog.addDependency('positioning/positioning_test.js', ['goog.positioningTest'], ['goog.dom', 'goog.dom.DomHelper', 'goog.math.Box', 'goog.math.Coordinate', 'goog.math.Size', 'goog.positioning', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
-goog.addDependency('positioning/viewportclientposition.js', ['goog.positioning.ViewportClientPosition'], ['goog.math.Box', 'goog.math.Coordinate', 'goog.math.Size', 'goog.positioning.ClientPosition'], false);
+goog.addDependency('positioning/viewportclientposition.js', ['goog.positioning.ViewportClientPosition'], ['goog.dom', 'goog.math.Coordinate', 'goog.positioning', 'goog.positioning.ClientPosition', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus', 'goog.style'], false);
 goog.addDependency('positioning/viewportclientposition_test.js', ['goog.positioning.ViewportClientPositionTest'], ['goog.dom', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.ViewportClientPosition', 'goog.style', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('positioning/viewportposition.js', ['goog.positioning.ViewportPosition'], ['goog.math.Box', 'goog.math.Coordinate', 'goog.math.Size', 'goog.positioning.AbstractPosition'], false);
+goog.addDependency('positioning/viewportposition.js', ['goog.positioning.ViewportPosition'], ['goog.math.Coordinate', 'goog.positioning', 'goog.positioning.AbstractPosition', 'goog.positioning.Corner', 'goog.style'], false);
 goog.addDependency('promise/promise.js', ['goog.Promise'], ['goog.Thenable', 'goog.asserts', 'goog.async.run', 'goog.async.throwException', 'goog.debug.Error', 'goog.promise.Resolver'], false);
 goog.addDependency('promise/promise_test.js', ['goog.PromiseTest'], ['goog.Promise', 'goog.Thenable', 'goog.functions', 'goog.testing.AsyncTestCase', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('promise/resolver.js', ['goog.promise.Resolver'], [], false);
@@ -3174,17 +3174,17 @@ goog.addDependency('soy/renderer_test.js', ['goog.soy.RendererTest'], ['goog.dom
 goog.addDependency('soy/soy.js', ['goog.soy'], ['goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string'], false);
 goog.addDependency('soy/soy_test.js', ['goog.soyTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.functions', 'goog.soy', 'goog.soy.testHelper', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('soy/soy_testhelper.js', ['goog.soy.testHelper'], ['goog.dom', 'goog.dom.TagName', 'goog.i18n.bidi.Dir', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string', 'goog.userAgent'], false);
-goog.addDependency('spell/spellcheck.js', ['goog.spell.SpellCheck', 'goog.spell.SpellCheck.WordChangedEvent'], ['goog.Timer', 'goog.events.EventTarget', 'goog.structs.Set'], false);
+goog.addDependency('spell/spellcheck.js', ['goog.spell.SpellCheck', 'goog.spell.SpellCheck.WordChangedEvent'], ['goog.Timer', 'goog.events.Event', 'goog.events.EventTarget', 'goog.structs.Set'], false);
 goog.addDependency('spell/spellcheck_test.js', ['goog.spell.SpellCheckTest'], ['goog.spell.SpellCheck', 'goog.testing.jsunit'], false);
-goog.addDependency('stats/basicstat.js', ['goog.stats.BasicStat'], ['goog.array', 'goog.iter', 'goog.log', 'goog.object', 'goog.string.format', 'goog.structs.CircularBuffer'], false);
+goog.addDependency('stats/basicstat.js', ['goog.stats.BasicStat'], ['goog.asserts', 'goog.log', 'goog.string.format', 'goog.structs.CircularBuffer'], false);
 goog.addDependency('stats/basicstat_test.js', ['goog.stats.BasicStatTest'], ['goog.array', 'goog.stats.BasicStat', 'goog.string.format', 'goog.testing.PseudoRandom', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('storage/collectablestorage.js', ['goog.storage.CollectableStorage'], ['goog.array', 'goog.iter', 'goog.storage.ErrorCode', 'goog.storage.ExpiringStorage', 'goog.storage.RichStorage'], false);
 goog.addDependency('storage/collectablestorage_test.js', ['goog.storage.CollectableStorageTest'], ['goog.storage.CollectableStorage', 'goog.storage.collectableStorageTester', 'goog.storage.storage_test', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.storage.FakeMechanism'], false);
 goog.addDependency('storage/collectablestoragetester.js', ['goog.storage.collectableStorageTester'], ['goog.testing.asserts'], false);
-goog.addDependency('storage/encryptedstorage.js', ['goog.storage.EncryptedStorage'], ['goog.crypt', 'goog.crypt.Arc4', 'goog.crypt.Sha1', 'goog.crypt.base64', 'goog.json', 'goog.json.Serializer', 'goog.storage.CollectableStorage', 'goog.storage.ErrorCode', 'goog.storage.RichStorage', 'goog.storage.RichStorage.Wrapper', 'goog.storage.mechanism.IterableMechanism'], false);
+goog.addDependency('storage/encryptedstorage.js', ['goog.storage.EncryptedStorage'], ['goog.crypt', 'goog.crypt.Arc4', 'goog.crypt.Sha1', 'goog.crypt.base64', 'goog.json', 'goog.json.Serializer', 'goog.storage.CollectableStorage', 'goog.storage.ErrorCode', 'goog.storage.RichStorage'], false);
 goog.addDependency('storage/encryptedstorage_test.js', ['goog.storage.EncryptedStorageTest'], ['goog.json', 'goog.storage.EncryptedStorage', 'goog.storage.ErrorCode', 'goog.storage.RichStorage', 'goog.storage.collectableStorageTester', 'goog.storage.storage_test', 'goog.testing.MockClock', 'goog.testing.PseudoRandom', 'goog.testing.jsunit', 'goog.testing.storage.FakeMechanism'], false);
 goog.addDependency('storage/errorcode.js', ['goog.storage.ErrorCode'], [], false);
-goog.addDependency('storage/expiringstorage.js', ['goog.storage.ExpiringStorage'], ['goog.storage.RichStorage', 'goog.storage.RichStorage.Wrapper', 'goog.storage.mechanism.Mechanism'], false);
+goog.addDependency('storage/expiringstorage.js', ['goog.storage.ExpiringStorage'], ['goog.storage.RichStorage'], false);
 goog.addDependency('storage/expiringstorage_test.js', ['goog.storage.ExpiringStorageTest'], ['goog.storage.ExpiringStorage', 'goog.storage.storage_test', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.storage.FakeMechanism'], false);
 goog.addDependency('storage/mechanism/errorcode.js', ['goog.storage.mechanism.ErrorCode'], [], false);
 goog.addDependency('storage/mechanism/errorhandlingmechanism.js', ['goog.storage.mechanism.ErrorHandlingMechanism'], ['goog.storage.mechanism.Mechanism'], false);
@@ -3197,20 +3197,20 @@ goog.addDependency('storage/mechanism/html5webstorage.js', ['goog.storage.mechan
 goog.addDependency('storage/mechanism/html5webstorage_test.js', ['goog.storage.mechanism.HTML5MockStorage', 'goog.storage.mechanism.HTML5WebStorageTest', 'goog.storage.mechanism.MockThrowableStorage'], ['goog.storage.mechanism.ErrorCode', 'goog.storage.mechanism.HTML5WebStorage', 'goog.testing.jsunit'], false);
 goog.addDependency('storage/mechanism/ieuserdata.js', ['goog.storage.mechanism.IEUserData'], ['goog.asserts', 'goog.iter.Iterator', 'goog.iter.StopIteration', 'goog.storage.mechanism.ErrorCode', 'goog.storage.mechanism.IterableMechanism', 'goog.structs.Map', 'goog.userAgent'], false);
 goog.addDependency('storage/mechanism/ieuserdata_test.js', ['goog.storage.mechanism.IEUserDataTest'], ['goog.storage.mechanism.IEUserData', 'goog.storage.mechanism.mechanismSeparationTester', 'goog.storage.mechanism.mechanismSharingTester', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('storage/mechanism/iterablemechanism.js', ['goog.storage.mechanism.IterableMechanism'], ['goog.array', 'goog.asserts', 'goog.iter', 'goog.iter.Iterator', 'goog.storage.mechanism.Mechanism'], false);
+goog.addDependency('storage/mechanism/iterablemechanism.js', ['goog.storage.mechanism.IterableMechanism'], ['goog.array', 'goog.asserts', 'goog.iter', 'goog.storage.mechanism.Mechanism'], false);
 goog.addDependency('storage/mechanism/iterablemechanismtester.js', ['goog.storage.mechanism.iterableMechanismTester'], ['goog.iter.Iterator', 'goog.storage.mechanism.IterableMechanism', 'goog.testing.asserts'], false);
 goog.addDependency('storage/mechanism/mechanism.js', ['goog.storage.mechanism.Mechanism'], [], false);
-goog.addDependency('storage/mechanism/mechanismfactory.js', ['goog.storage.mechanism.mechanismfactory'], ['goog.storage.mechanism.HTML5LocalStorage', 'goog.storage.mechanism.HTML5SessionStorage', 'goog.storage.mechanism.IEUserData', 'goog.storage.mechanism.IterableMechanism', 'goog.storage.mechanism.PrefixedMechanism'], false);
+goog.addDependency('storage/mechanism/mechanismfactory.js', ['goog.storage.mechanism.mechanismfactory'], ['goog.storage.mechanism.HTML5LocalStorage', 'goog.storage.mechanism.HTML5SessionStorage', 'goog.storage.mechanism.IEUserData', 'goog.storage.mechanism.PrefixedMechanism'], false);
 goog.addDependency('storage/mechanism/mechanismfactory_test.js', ['goog.storage.mechanism.mechanismfactoryTest'], ['goog.storage.mechanism.mechanismfactory', 'goog.testing.jsunit'], false);
-goog.addDependency('storage/mechanism/mechanismseparationtester.js', ['goog.storage.mechanism.mechanismSeparationTester'], ['goog.iter.Iterator', 'goog.storage.mechanism.IterableMechanism', 'goog.testing.asserts'], false);
-goog.addDependency('storage/mechanism/mechanismsharingtester.js', ['goog.storage.mechanism.mechanismSharingTester'], ['goog.iter.Iterator', 'goog.storage.mechanism.IterableMechanism', 'goog.testing.asserts'], false);
-goog.addDependency('storage/mechanism/mechanismtester.js', ['goog.storage.mechanism.mechanismTester'], ['goog.storage.mechanism.ErrorCode', 'goog.storage.mechanism.HTML5LocalStorage', 'goog.storage.mechanism.Mechanism', 'goog.testing.asserts', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
+goog.addDependency('storage/mechanism/mechanismseparationtester.js', ['goog.storage.mechanism.mechanismSeparationTester'], ['goog.iter.StopIteration', 'goog.testing.asserts'], false);
+goog.addDependency('storage/mechanism/mechanismsharingtester.js', ['goog.storage.mechanism.mechanismSharingTester'], ['goog.iter.StopIteration', 'goog.testing.asserts'], false);
+goog.addDependency('storage/mechanism/mechanismtester.js', ['goog.storage.mechanism.mechanismTester'], ['goog.storage.mechanism.ErrorCode', 'goog.testing.asserts', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('storage/mechanism/prefixedmechanism.js', ['goog.storage.mechanism.PrefixedMechanism'], ['goog.iter.Iterator', 'goog.storage.mechanism.IterableMechanism'], false);
 goog.addDependency('storage/mechanism/prefixedmechanism_test.js', ['goog.storage.mechanism.PrefixedMechanismTest'], ['goog.storage.mechanism.HTML5LocalStorage', 'goog.storage.mechanism.PrefixedMechanism', 'goog.storage.mechanism.mechanismSeparationTester', 'goog.storage.mechanism.mechanismSharingTester', 'goog.testing.jsunit'], false);
-goog.addDependency('storage/richstorage.js', ['goog.storage.RichStorage', 'goog.storage.RichStorage.Wrapper'], ['goog.storage.ErrorCode', 'goog.storage.Storage', 'goog.storage.mechanism.Mechanism'], false);
+goog.addDependency('storage/richstorage.js', ['goog.storage.RichStorage', 'goog.storage.RichStorage.Wrapper'], ['goog.storage.ErrorCode', 'goog.storage.Storage'], false);
 goog.addDependency('storage/richstorage_test.js', ['goog.storage.RichStorageTest'], ['goog.storage.ErrorCode', 'goog.storage.RichStorage', 'goog.storage.storage_test', 'goog.testing.jsunit', 'goog.testing.storage.FakeMechanism'], false);
 goog.addDependency('storage/storage.js', ['goog.storage.Storage'], ['goog.json', 'goog.storage.ErrorCode'], false);
-goog.addDependency('storage/storage_test.js', ['goog.storage.storage_test'], ['goog.storage.Storage', 'goog.structs.Map', 'goog.testing.asserts'], false);
+goog.addDependency('storage/storage_test.js', ['goog.storage.storage_test'], ['goog.structs.Map', 'goog.testing.asserts'], false);
 goog.addDependency('string/const.js', ['goog.string.Const'], ['goog.asserts', 'goog.string.TypedString'], false);
 goog.addDependency('string/const_test.js', ['goog.string.constTest'], ['goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('string/linkify.js', ['goog.string.linkify'], ['goog.string'], false);
@@ -3280,18 +3280,18 @@ goog.addDependency('style/transition.js', ['goog.style.transition', 'goog.style.
 goog.addDependency('style/transition_test.js', ['goog.style.transitionTest'], ['goog.style', 'goog.style.transition', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('test_module.js', ['goog.test_module'], ['goog.test_module_dep'], true);
 goog.addDependency('test_module_dep.js', ['goog.test_module_dep'], [], true);
-goog.addDependency('testing/asserts.js', ['goog.testing.JsUnitException', 'goog.testing.asserts'], ['goog.testing.stacktrace'], false);
+goog.addDependency('testing/asserts.js', ['goog.testing.JsUnitException', 'goog.testing.asserts', 'goog.testing.asserts.ArrayLike'], ['goog.testing.stacktrace'], false);
 goog.addDependency('testing/asserts_test.js', ['goog.testing.assertsTest'], ['goog.array', 'goog.dom', 'goog.iter.Iterator', 'goog.iter.StopIteration', 'goog.labs.userAgent.browser', 'goog.string', 'goog.structs.Map', 'goog.structs.Set', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('testing/async/mockcontrol.js', ['goog.testing.async.MockControl'], ['goog.asserts', 'goog.async.Deferred', 'goog.debug', 'goog.testing.asserts', 'goog.testing.mockmatchers.IgnoreArgument'], false);
 goog.addDependency('testing/async/mockcontrol_test.js', ['goog.testing.async.MockControlTest'], ['goog.async.Deferred', 'goog.testing.MockControl', 'goog.testing.asserts', 'goog.testing.async.MockControl', 'goog.testing.jsunit'], false);
-goog.addDependency('testing/asynctestcase.js', ['goog.testing.AsyncTestCase', 'goog.testing.AsyncTestCase.ControlBreakingException'], ['goog.testing.TestCase', 'goog.testing.TestCase.Test', 'goog.testing.asserts'], false);
+goog.addDependency('testing/asynctestcase.js', ['goog.testing.AsyncTestCase', 'goog.testing.AsyncTestCase.ControlBreakingException'], ['goog.testing.TestCase', 'goog.testing.asserts'], false);
 goog.addDependency('testing/asynctestcase_async_test.js', ['goog.testing.AsyncTestCaseAsyncTest'], ['goog.testing.AsyncTestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/asynctestcase_noasync_test.js', ['goog.testing.AsyncTestCaseSyncTest'], ['goog.testing.AsyncTestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/asynctestcase_test.js', ['goog.testing.AsyncTestCaseTest'], ['goog.debug.Error', 'goog.testing.AsyncTestCase', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/benchmark.js', ['goog.testing.benchmark'], ['goog.dom', 'goog.dom.TagName', 'goog.testing.PerformanceTable', 'goog.testing.PerformanceTimer', 'goog.testing.TestCase'], false);
-goog.addDependency('testing/continuationtestcase.js', ['goog.testing.ContinuationTestCase', 'goog.testing.ContinuationTestCase.Step', 'goog.testing.ContinuationTestCase.Test'], ['goog.array', 'goog.events.EventHandler', 'goog.testing.TestCase', 'goog.testing.TestCase.Test', 'goog.testing.asserts'], false);
+goog.addDependency('testing/continuationtestcase.js', ['goog.testing.ContinuationTestCase', 'goog.testing.ContinuationTestCase.Step', 'goog.testing.ContinuationTestCase.Test'], ['goog.array', 'goog.events.EventHandler', 'goog.testing.TestCase', 'goog.testing.asserts'], false);
 goog.addDependency('testing/continuationtestcase_test.js', ['goog.testing.ContinuationTestCaseTest'], ['goog.events', 'goog.events.EventTarget', 'goog.testing.ContinuationTestCase', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
-goog.addDependency('testing/deferredtestcase.js', ['goog.testing.DeferredTestCase'], ['goog.async.Deferred', 'goog.testing.AsyncTestCase', 'goog.testing.TestCase'], false);
+goog.addDependency('testing/deferredtestcase.js', ['goog.testing.DeferredTestCase'], ['goog.testing.AsyncTestCase', 'goog.testing.TestCase'], false);
 goog.addDependency('testing/deferredtestcase_test.js', ['goog.testing.DeferredTestCaseTest'], ['goog.async.Deferred', 'goog.testing.DeferredTestCase', 'goog.testing.TestCase', 'goog.testing.TestRunner', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('testing/dom.js', ['goog.testing.dom'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeIterator', 'goog.dom.NodeType', 'goog.dom.TagIterator', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.iter', 'goog.object', 'goog.string', 'goog.style', 'goog.testing.asserts', 'goog.userAgent'], false);
 goog.addDependency('testing/dom_test.js', ['goog.testing.domTest'], ['goog.dom', 'goog.dom.TagName', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], false);
@@ -3326,16 +3326,16 @@ goog.addDependency('testing/fs/fs.js', ['goog.testing.fs'], ['goog.Timer', 'goog
 goog.addDependency('testing/fs/fs_test.js', ['goog.testing.fsTest'], ['goog.testing.AsyncTestCase', 'goog.testing.fs', 'goog.testing.fs.Blob', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/fs/integration_test.js', ['goog.testing.fs.integrationTest'], ['goog.async.Deferred', 'goog.async.DeferredList', 'goog.events', 'goog.fs', 'goog.fs.DirectoryEntry', 'goog.fs.Error', 'goog.fs.FileSaver', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.fs', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/fs/progressevent.js', ['goog.testing.fs.ProgressEvent'], ['goog.events.Event'], false);
-goog.addDependency('testing/functionmock.js', ['goog.testing', 'goog.testing.FunctionMock', 'goog.testing.GlobalFunctionMock', 'goog.testing.MethodMock'], ['goog.object', 'goog.testing.LooseMock', 'goog.testing.Mock', 'goog.testing.MockInterface', 'goog.testing.PropertyReplacer', 'goog.testing.StrictMock'], false);
+goog.addDependency('testing/functionmock.js', ['goog.testing', 'goog.testing.FunctionMock', 'goog.testing.GlobalFunctionMock', 'goog.testing.MethodMock'], ['goog.object', 'goog.testing.LooseMock', 'goog.testing.Mock', 'goog.testing.PropertyReplacer', 'goog.testing.StrictMock'], false);
 goog.addDependency('testing/functionmock_test.js', ['goog.testing.FunctionMockTest'], ['goog.array', 'goog.string', 'goog.testing', 'goog.testing.FunctionMock', 'goog.testing.Mock', 'goog.testing.StrictMock', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], false);
-goog.addDependency('testing/graphics.js', ['goog.testing.graphics'], ['goog.graphics.Path.Segment', 'goog.testing.asserts'], false);
+goog.addDependency('testing/graphics.js', ['goog.testing.graphics'], ['goog.graphics.Path', 'goog.testing.asserts'], false);
 goog.addDependency('testing/i18n/asserts.js', ['goog.testing.i18n.asserts'], ['goog.testing.jsunit'], false);
 goog.addDependency('testing/i18n/asserts_test.js', ['goog.testing.i18n.assertsTest'], ['goog.testing.ExpectedFailures', 'goog.testing.i18n.asserts'], false);
 goog.addDependency('testing/jsunit.js', ['goog.testing.jsunit'], ['goog.testing.TestCase', 'goog.testing.TestRunner'], false);
 goog.addDependency('testing/loosemock.js', ['goog.testing.LooseExpectationCollection', 'goog.testing.LooseMock'], ['goog.array', 'goog.structs.Map', 'goog.testing.Mock'], false);
 goog.addDependency('testing/loosemock_test.js', ['goog.testing.LooseMockTest'], ['goog.testing.LooseMock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], false);
 goog.addDependency('testing/messaging/mockmessagechannel.js', ['goog.testing.messaging.MockMessageChannel'], ['goog.messaging.AbstractChannel', 'goog.testing.asserts'], false);
-goog.addDependency('testing/messaging/mockmessageevent.js', ['goog.testing.messaging.MockMessageEvent'], ['goog.events.BrowserEvent', 'goog.events.EventType', 'goog.testing.events'], false);
+goog.addDependency('testing/messaging/mockmessageevent.js', ['goog.testing.messaging.MockMessageEvent'], ['goog.events.BrowserEvent', 'goog.events.EventType', 'goog.testing.events.Event'], false);
 goog.addDependency('testing/messaging/mockmessageport.js', ['goog.testing.messaging.MockMessagePort'], ['goog.events.EventTarget'], false);
 goog.addDependency('testing/messaging/mockportnetwork.js', ['goog.testing.messaging.MockPortNetwork'], ['goog.messaging.PortNetwork', 'goog.testing.messaging.MockMessageChannel'], false);
 goog.addDependency('testing/mock.js', ['goog.testing.Mock', 'goog.testing.MockExpectation'], ['goog.array', 'goog.object', 'goog.testing.JsUnitException', 'goog.testing.MockInterface', 'goog.testing.mockmatchers'], false);
@@ -3362,7 +3362,7 @@ goog.addDependency('testing/net/xhrio.js', ['goog.testing.net.XhrIo'], ['goog.ar
 goog.addDependency('testing/net/xhrio_test.js', ['goog.testing.net.XhrIoTest'], ['goog.dom.xml', 'goog.events', 'goog.events.Event', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.XmlHttp', 'goog.object', 'goog.testing.MockControl', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.mockmatchers.InstanceOf', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('testing/net/xhriopool.js', ['goog.testing.net.XhrIoPool'], ['goog.net.XhrIoPool', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('testing/objectpropertystring.js', ['goog.testing.ObjectPropertyString'], [], false);
-goog.addDependency('testing/performancetable.js', ['goog.testing.PerformanceTable'], ['goog.dom', 'goog.testing.PerformanceTimer'], false);
+goog.addDependency('testing/performancetable.js', ['goog.testing.PerformanceTable'], ['goog.dom', 'goog.dom.TagName', 'goog.testing.PerformanceTimer'], false);
 goog.addDependency('testing/performancetimer.js', ['goog.testing.PerformanceTimer', 'goog.testing.PerformanceTimer.Task'], ['goog.array', 'goog.async.Deferred', 'goog.math'], false);
 goog.addDependency('testing/performancetimer_test.js', ['goog.testing.PerformanceTimerTest'], ['goog.async.Deferred', 'goog.dom', 'goog.math', 'goog.testing.MockClock', 'goog.testing.PerformanceTimer', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/propertyreplacer.js', ['goog.testing.PropertyReplacer'], ['goog.testing.ObjectPropertyString', 'goog.userAgent'], false);
@@ -3400,11 +3400,11 @@ goog.addDependency('timer/timer.js', ['goog.Timer'], ['goog.Promise', 'goog.even
 goog.addDependency('timer/timer_test.js', ['goog.TimerTest'], ['goog.Promise', 'goog.Timer', 'goog.events', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('tweak/entries.js', ['goog.tweak.BaseEntry', 'goog.tweak.BasePrimitiveSetting', 'goog.tweak.BaseSetting', 'goog.tweak.BooleanGroup', 'goog.tweak.BooleanInGroupSetting', 'goog.tweak.BooleanSetting', 'goog.tweak.ButtonAction', 'goog.tweak.NumericSetting', 'goog.tweak.StringSetting'], ['goog.array', 'goog.asserts', 'goog.log', 'goog.object'], false);
 goog.addDependency('tweak/entries_test.js', ['goog.tweak.BaseEntryTest'], ['goog.testing.MockControl', 'goog.testing.jsunit', 'goog.tweak.testhelpers'], false);
-goog.addDependency('tweak/registry.js', ['goog.tweak.Registry'], ['goog.asserts', 'goog.log', 'goog.object', 'goog.string', 'goog.tweak.BaseEntry', 'goog.uri.utils'], false);
+goog.addDependency('tweak/registry.js', ['goog.tweak.Registry'], ['goog.array', 'goog.asserts', 'goog.log', 'goog.string', 'goog.tweak.BasePrimitiveSetting', 'goog.tweak.BaseSetting', 'goog.tweak.BooleanSetting', 'goog.tweak.NumericSetting', 'goog.tweak.StringSetting', 'goog.uri.utils'], false);
 goog.addDependency('tweak/registry_test.js', ['goog.tweak.RegistryTest'], ['goog.asserts.AssertionError', 'goog.testing.jsunit', 'goog.tweak', 'goog.tweak.testhelpers'], false);
 goog.addDependency('tweak/testhelpers.js', ['goog.tweak.testhelpers'], ['goog.tweak', 'goog.tweak.BooleanGroup', 'goog.tweak.BooleanInGroupSetting', 'goog.tweak.BooleanSetting', 'goog.tweak.ButtonAction', 'goog.tweak.NumericSetting', 'goog.tweak.Registry', 'goog.tweak.StringSetting'], false);
 goog.addDependency('tweak/tweak.js', ['goog.tweak', 'goog.tweak.ConfigParams'], ['goog.asserts', 'goog.tweak.BaseSetting', 'goog.tweak.BooleanGroup', 'goog.tweak.BooleanInGroupSetting', 'goog.tweak.BooleanSetting', 'goog.tweak.ButtonAction', 'goog.tweak.NumericSetting', 'goog.tweak.Registry', 'goog.tweak.StringSetting'], false);
-goog.addDependency('tweak/tweakui.js', ['goog.tweak.EntriesPanel', 'goog.tweak.TweakUi'], ['goog.array', 'goog.asserts', 'goog.dom.DomHelper', 'goog.object', 'goog.style', 'goog.tweak', 'goog.ui.Zippy', 'goog.userAgent'], false);
+goog.addDependency('tweak/tweakui.js', ['goog.tweak.EntriesPanel', 'goog.tweak.TweakUi'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.object', 'goog.style', 'goog.tweak', 'goog.tweak.BaseEntry', 'goog.tweak.BooleanGroup', 'goog.tweak.BooleanInGroupSetting', 'goog.tweak.BooleanSetting', 'goog.tweak.ButtonAction', 'goog.tweak.NumericSetting', 'goog.tweak.StringSetting', 'goog.ui.Zippy', 'goog.userAgent'], false);
 goog.addDependency('tweak/tweakui_test.js', ['goog.tweak.TweakUiTest'], ['goog.dom', 'goog.string', 'goog.testing.jsunit', 'goog.tweak', 'goog.tweak.TweakUi', 'goog.tweak.testhelpers'], false);
 goog.addDependency('ui/abstractspellchecker.js', ['goog.ui.AbstractSpellChecker', 'goog.ui.AbstractSpellChecker.AsyncResult'], ['goog.a11y.aria', 'goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.classlist', 'goog.dom.selection', 'goog.events', 'goog.events.Event', 'goog.events.EventType', 'goog.math.Coordinate', 'goog.spell.SpellCheck', 'goog.structs.Set', 'goog.style', 'goog.ui.Component', 'goog.ui.MenuItem', 'goog.ui.MenuSeparator', 'goog.ui.PopupMenu'], false);
 goog.addDependency('ui/ac/ac.js', ['goog.ui.ac'], ['goog.ui.ac.ArrayMatcher', 'goog.ui.ac.AutoComplete', 'goog.ui.ac.InputHandler', 'goog.ui.ac.Renderer'], false);
@@ -3433,7 +3433,7 @@ goog.addDependency('ui/advancedtooltip_test.js', ['goog.ui.AdvancedTooltipTest']
 goog.addDependency('ui/animatedzippy.js', ['goog.ui.AnimatedZippy'], ['goog.dom', 'goog.events', 'goog.fx.Animation', 'goog.fx.Transition', 'goog.fx.easing', 'goog.ui.Zippy', 'goog.ui.ZippyEvent'], false);
 goog.addDependency('ui/animatedzippy_test.js', ['goog.ui.AnimatedZippyTest'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.asserts', 'goog.dom', 'goog.events', 'goog.functions', 'goog.fx.Animation', 'goog.fx.Transition', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.ui.AnimatedZippy', 'goog.ui.Zippy'], false);
 goog.addDependency('ui/attachablemenu.js', ['goog.ui.AttachableMenu'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.events.Event', 'goog.events.KeyCodes', 'goog.string', 'goog.style', 'goog.ui.ItemEvent', 'goog.ui.MenuBase', 'goog.ui.PopupBase', 'goog.userAgent'], false);
-goog.addDependency('ui/bidiinput.js', ['goog.ui.BidiInput'], ['goog.dom', 'goog.events', 'goog.events.InputHandler', 'goog.i18n.bidi', 'goog.ui.Component'], false);
+goog.addDependency('ui/bidiinput.js', ['goog.ui.BidiInput'], ['goog.dom', 'goog.events', 'goog.events.InputHandler', 'goog.i18n.bidi', 'goog.i18n.bidi.Dir', 'goog.ui.Component'], false);
 goog.addDependency('ui/bidiinput_test.js', ['goog.ui.BidiInputTest'], ['goog.dom', 'goog.testing.jsunit', 'goog.ui.BidiInput'], false);
 goog.addDependency('ui/bubble.js', ['goog.ui.Bubble'], ['goog.Timer', 'goog.events', 'goog.events.EventType', 'goog.math.Box', 'goog.positioning', 'goog.positioning.AbsolutePosition', 'goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.positioning.CornerBit', 'goog.style', 'goog.ui.Component', 'goog.ui.Popup'], false);
 goog.addDependency('ui/button.js', ['goog.ui.Button', 'goog.ui.Button.Side'], ['goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.KeyHandler', 'goog.ui.ButtonRenderer', 'goog.ui.ButtonSide', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.NativeButtonRenderer', 'goog.ui.registry'], false);
@@ -3591,7 +3591,7 @@ goog.addDependency('ui/menuitemrenderer.js', ['goog.ui.MenuItemRenderer'], ['goo
 goog.addDependency('ui/menuitemrenderer_test.js', ['goog.ui.MenuItemRendererTest'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.dom', 'goog.dom.classlist', 'goog.testing.jsunit', 'goog.testing.ui.rendererasserts', 'goog.ui.Component', 'goog.ui.MenuItem', 'goog.ui.MenuItemRenderer'], false);
 goog.addDependency('ui/menurenderer.js', ['goog.ui.MenuRenderer'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.asserts', 'goog.dom', 'goog.ui.ContainerRenderer', 'goog.ui.Separator'], false);
 goog.addDependency('ui/menuseparator.js', ['goog.ui.MenuSeparator'], ['goog.ui.MenuSeparatorRenderer', 'goog.ui.Separator', 'goog.ui.registry'], false);
-goog.addDependency('ui/menuseparatorrenderer.js', ['goog.ui.MenuSeparatorRenderer'], ['goog.dom', 'goog.dom.classlist', 'goog.ui.ControlContent', 'goog.ui.ControlRenderer'], false);
+goog.addDependency('ui/menuseparatorrenderer.js', ['goog.ui.MenuSeparatorRenderer'], ['goog.dom', 'goog.dom.classlist', 'goog.ui.ControlRenderer'], false);
 goog.addDependency('ui/menuseparatorrenderer_test.js', ['goog.ui.MenuSeparatorRendererTest'], ['goog.dom', 'goog.testing.jsunit', 'goog.ui.MenuSeparator', 'goog.ui.MenuSeparatorRenderer'], false);
 goog.addDependency('ui/mockactivitymonitor.js', ['goog.ui.MockActivityMonitor'], ['goog.events.EventType', 'goog.ui.ActivityMonitor'], false);
 goog.addDependency('ui/mockactivitymonitor_test.js', ['goog.ui.MockActivityMonitorTest'], ['goog.events', 'goog.functions', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.ui.ActivityMonitor', 'goog.ui.MockActivityMonitor'], false);
@@ -3685,6 +3685,7 @@ goog.addDependency('ui/toolbarrenderer.js', ['goog.ui.ToolbarRenderer'], ['goog.
 goog.addDependency('ui/toolbarselect.js', ['goog.ui.ToolbarSelect'], ['goog.ui.Select', 'goog.ui.ToolbarMenuButtonRenderer', 'goog.ui.registry'], false);
 goog.addDependency('ui/toolbarseparator.js', ['goog.ui.ToolbarSeparator'], ['goog.ui.Separator', 'goog.ui.ToolbarSeparatorRenderer', 'goog.ui.registry'], false);
 goog.addDependency('ui/toolbarseparatorrenderer.js', ['goog.ui.ToolbarSeparatorRenderer'], ['goog.asserts', 'goog.dom.classlist', 'goog.ui.INLINE_BLOCK_CLASSNAME', 'goog.ui.MenuSeparatorRenderer'], false);
+goog.addDependency('ui/toolbarseparatorrenderer_test.js', ['goog.ui.ToolbarSeparatorRendererTest'], ['goog.dom', 'goog.dom.classlist', 'goog.testing.jsunit', 'goog.ui.Component', 'goog.ui.INLINE_BLOCK_CLASSNAME', 'goog.ui.ToolbarSeparator', 'goog.ui.ToolbarSeparatorRenderer'], false);
 goog.addDependency('ui/toolbartogglebutton.js', ['goog.ui.ToolbarToggleButton'], ['goog.ui.ToggleButton', 'goog.ui.ToolbarButtonRenderer', 'goog.ui.registry'], false);
 goog.addDependency('ui/tooltip.js', ['goog.ui.Tooltip', 'goog.ui.Tooltip.CursorTooltipPosition', 'goog.ui.Tooltip.ElementTooltipPosition', 'goog.ui.Tooltip.State'], ['goog.Timer', 'goog.array', 'goog.dom', 'goog.dom.safe', 'goog.events', 'goog.events.EventType', 'goog.html.legacyconversions', 'goog.math.Box', 'goog.math.Coordinate', 'goog.positioning', 'goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.OverflowStatus', 'goog.positioning.ViewportPosition', 'goog.structs.Set', 'goog.style', 'goog.ui.Popup', 'goog.ui.PopupBase'], false);
 goog.addDependency('ui/tooltip_test.js', ['goog.ui.TooltipTest'], ['goog.dom', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.html.testing', 'goog.math.Coordinate', 'goog.positioning.AbsolutePosition', 'goog.style', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.TestQueue', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.PopupBase', 'goog.ui.Tooltip', 'goog.userAgent'], false);
@@ -3715,10 +3716,10 @@ goog.addDependency('useragent/jscript_test.js', ['goog.userAgent.jscriptTest'], 
 goog.addDependency('useragent/keyboard.js', ['goog.userAgent.keyboard'], ['goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('useragent/keyboard_test.js', ['goog.userAgent.keyboardTest'], ['goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent.keyboard', 'goog.userAgentTestUtil'], false);
 goog.addDependency('useragent/picasa.js', ['goog.userAgent.picasa'], ['goog.string', 'goog.userAgent'], false);
-goog.addDependency('useragent/platform.js', ['goog.userAgent.platform'], ['goog.userAgent'], false);
+goog.addDependency('useragent/platform.js', ['goog.userAgent.platform'], ['goog.string', 'goog.userAgent'], false);
 goog.addDependency('useragent/platform_test.js', ['goog.userAgent.platformTest'], ['goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.platform', 'goog.userAgentTestUtil'], false);
 goog.addDependency('useragent/product.js', ['goog.userAgent.product'], ['goog.userAgent'], false);
-goog.addDependency('useragent/product_isversion.js', ['goog.userAgent.product.isVersion'], ['goog.userAgent.product'], false);
+goog.addDependency('useragent/product_isversion.js', ['goog.userAgent.product.isVersion'], ['goog.string', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('useragent/product_test.js', ['goog.userAgent.productTest'], ['goog.array', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion', 'goog.userAgentTestUtil'], false);
 goog.addDependency('useragent/useragent.js', ['goog.userAgent'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.labs.userAgent.util', 'goog.string'], false);
 goog.addDependency('useragent/useragent_quirks_test.js', ['goog.userAgentQuirksTest'], ['goog.testing.jsunit', 'goog.userAgent'], false);
@@ -4560,7 +4561,7 @@ goog.string.unescapeEntitiesWithDocument = function(str, document) {
  * @return {string} The unescaped {@code str} string.
  */
 goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
-  /** @type {!Object.<string, string>} */
+  /** @type {!Object<string, string>} */
   var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
   var div;
   if (opt_document) {
@@ -4763,7 +4764,7 @@ goog.string.truncateMiddle = function(str, chars,
 
 /**
  * Special chars that need to be escaped for goog.string.quote.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  */
 goog.string.specialEscapeChars_ = {
   '\0': '\\0',
@@ -4780,7 +4781,7 @@ goog.string.specialEscapeChars_ = {
 
 /**
  * Character mappings used internally for goog.string.escapeChar.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  */
 goog.string.jsEscapeCache_ = {
   '\'': '\\\''
@@ -5333,7 +5334,7 @@ goog.string.parseInt = function(value) {
  * @param {number} limit The limit to the number of splits. The resulting array
  *     will have a maximum length of limit+1.  Negative numbers are the same
  *     as zero.
- * @return {!Array.<string>} The string, split.
+ * @return {!Array<string>} The string, split.
  */
 
 goog.string.splitLimit = function(str, separator, limit) {
@@ -5410,7 +5411,7 @@ goog.define('goog.asserts.ENABLE_ASSERTS', goog.DEBUG);
 /**
  * Error object for failed assertions.
  * @param {string} messagePattern The pattern that was used to form message.
- * @param {!Array.<*>} messageArgs The items to substitute into the pattern.
+ * @param {!Array<*>} messageArgs The items to substitute into the pattern.
  * @constructor
  * @extends {goog.debug.Error}
  * @final
@@ -5454,9 +5455,9 @@ goog.asserts.errorHandler_ = goog.asserts.DEFAULT_ERROR_HANDLER;
  * Throws an exception with the given message and "Assertion failed" prefixed
  * onto it.
  * @param {string} defaultMessage The message to use if givenMessage is empty.
- * @param {Array.<*>} defaultArgs The substitution arguments for defaultMessage.
+ * @param {Array<*>} defaultArgs The substitution arguments for defaultMessage.
  * @param {string|undefined} givenMessage Message supplied by the caller.
- * @param {Array.<*>} givenArgs The substitution arguments for givenMessage.
+ * @param {Array<*>} givenArgs The substitution arguments for givenMessage.
  * @throws {goog.asserts.AssertionError} When the value is not a number.
  * @private
  */
@@ -5616,7 +5617,7 @@ goog.asserts.assertObject = function(value, opt_message, var_args) {
  * @param {*} value The value to check.
  * @param {string=} opt_message Error message in case of failure.
  * @param {...*} var_args The items to substitute into the failure message.
- * @return {!Array.<?>} The value, guaranteed to be a non-null array.
+ * @return {!Array<?>} The value, guaranteed to be a non-null array.
  * @throws {goog.asserts.AssertionError} When the value is not an array.
  */
 goog.asserts.assertArray = function(value, opt_message, var_args) {
@@ -5625,7 +5626,7 @@ goog.asserts.assertArray = function(value, opt_message, var_args) {
         [goog.typeOf(value), value], opt_message,
         Array.prototype.slice.call(arguments, 2));
   }
-  return /** @type {!Array.<?>} */ (value);
+  return /** @type {!Array<?>} */ (value);
 };
 
 
@@ -5785,7 +5786,7 @@ goog.array.ArrayLike;
 /**
  * Returns the last element in an array without removing it.
  * Same as goog.array.last.
- * @param {Array.<T>|goog.array.ArrayLike} array The array.
+ * @param {Array<T>|goog.array.ArrayLike} array The array.
  * @return {T} Last item in array.
  * @template T
  */
@@ -5797,7 +5798,7 @@ goog.array.peek = function(array) {
 /**
  * Returns the last element in an array without removing it.
  * Same as goog.array.peek.
- * @param {Array.<T>|goog.array.ArrayLike} array The array.
+ * @param {Array<T>|goog.array.ArrayLike} array The array.
  * @return {T} Last item in array.
  * @template T
  */
@@ -5824,7 +5825,7 @@ goog.array.ARRAY_PROTOTYPE_ = Array.prototype;
  *
  * See {@link http://tinyurl.com/developer-mozilla-org-array-indexof}
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr The array to be searched.
+ * @param {Array<T>|goog.array.ArrayLike} arr The array to be searched.
  * @param {T} obj The object for which we are searching.
  * @param {number=} opt_fromIndex The index at which to start the search. If
  *     omitted the search starts at index 0.
@@ -5866,7 +5867,7 @@ goog.array.indexOf = goog.NATIVE_ARRAY_PROTOTYPES &&
  *
  * See {@link http://tinyurl.com/developer-mozilla-org-array-lastindexof}
  *
- * @param {!Array.<T>|!goog.array.ArrayLike} arr The array to be searched.
+ * @param {!Array<T>|!goog.array.ArrayLike} arr The array to be searched.
  * @param {T} obj The object for which we are searching.
  * @param {?number=} opt_fromIndex The index at which to start the search. If
  *     omitted the search starts at the end of the array.
@@ -5911,7 +5912,7 @@ goog.array.lastIndexOf = goog.NATIVE_ARRAY_PROTOTYPES &&
  * Calls a function for each element in an array. Skips holes in the array.
  * See {@link http://tinyurl.com/developer-mozilla-org-array-foreach}
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array like object over
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array like object over
  *     which to iterate.
  * @param {?function(this: S, T, number, ?): ?} f The function to call for every
  *     element. This function takes 3 arguments (the element, the index and the
@@ -5942,7 +5943,7 @@ goog.array.forEach = goog.NATIVE_ARRAY_PROTOTYPES &&
  * Calls a function for each element in an array, starting from the last
  * element rather than the first.
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this: S, T, number, ?): ?} f The function to call for every
  *     element. This function
@@ -5969,7 +5970,7 @@ goog.array.forEachRight = function(arr, f, opt_obj) {
  *
  * See {@link http://tinyurl.com/developer-mozilla-org-array-filter}
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?):boolean} f The function to call for
  *     every element. This function
@@ -5978,7 +5979,7 @@ goog.array.forEachRight = function(arr, f, opt_obj) {
  *     result array. If it is false the element is not included.
  * @param {S=} opt_obj The object to be used as the value of 'this'
  *     within f.
- * @return {!Array.<T>} a new array in which only elements that passed the test
+ * @return {!Array<T>} a new array in which only elements that passed the test
  *     are present.
  * @template T,S
  */
@@ -6013,14 +6014,14 @@ goog.array.filter = goog.NATIVE_ARRAY_PROTOTYPES &&
  *
  * See {@link http://tinyurl.com/developer-mozilla-org-array-map}
  *
- * @param {Array.<VALUE>|goog.array.ArrayLike} arr Array or array like object
+ * @param {Array<VALUE>|goog.array.ArrayLike} arr Array or array like object
  *     over which to iterate.
  * @param {function(this:THIS, VALUE, number, ?): RESULT} f The function to call
  *     for every element. This function takes 3 arguments (the element,
  *     the index and the array) and should return something. The result will be
  *     inserted into a new array.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within f.
- * @return {!Array.<RESULT>} a new array with the results from f.
+ * @return {!Array<RESULT>} a new array with the results from f.
  * @template THIS, VALUE, RESULT
  */
 goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
@@ -6054,7 +6055,7 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
  * goog.array.reduce(a, function(r, v, i, arr) {return r + v;}, 0);
  * returns 10
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {function(this:S, R, T, number, ?) : R} f The function to call for
  *     every element. This function
@@ -6098,7 +6099,7 @@ goog.array.reduce = goog.NATIVE_ARRAY_PROTOTYPES &&
  * goog.array.reduceRight(a, function(r, v, i, arr) {return r + v;}, '');
  * returns 'cba'
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, R, T, number, ?) : R} f The function to call for
  *     every element. This function
@@ -6139,7 +6140,7 @@ goog.array.reduceRight = goog.NATIVE_ARRAY_PROTOTYPES &&
  *
  * See {@link http://tinyurl.com/developer-mozilla-org-array-some}
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call for
  *     for every element. This function takes 3 arguments (the element, the
@@ -6176,7 +6177,7 @@ goog.array.some = goog.NATIVE_ARRAY_PROTOTYPES &&
  *
  * See {@link http://tinyurl.com/developer-mozilla-org-array-every}
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call for
  *     for every element. This function takes 3 arguments (the element, the
@@ -6210,7 +6211,7 @@ goog.array.every = goog.NATIVE_ARRAY_PROTOTYPES &&
  * Counts the array elements that fulfill the predicate, i.e. for which the
  * callback function returns true. Skips holes in the array.
  *
- * @param {!(Array.<T>|goog.array.ArrayLike)} arr Array or array like object
+ * @param {!(Array<T>|goog.array.ArrayLike)} arr Array or array like object
  *     over which to iterate.
  * @param {function(this: S, T, number, ?): boolean} f The function to call for
  *     every element. Takes 3 arguments (the element, the index and the array).
@@ -6232,7 +6233,7 @@ goog.array.count = function(arr, f, opt_obj) {
 /**
  * Search an array for the first element that satisfies a given condition and
  * return that element.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call
  *     for every element. This function takes 3 arguments (the element, the
@@ -6251,7 +6252,7 @@ goog.array.find = function(arr, f, opt_obj) {
 /**
  * Search an array for the first element that satisfies a given condition and
  * return its index.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call for
  *     every element. This function
@@ -6277,7 +6278,7 @@ goog.array.findIndex = function(arr, f, opt_obj) {
 /**
  * Search an array (in reverse order) for the last element that satisfies a
  * given condition and return that element.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call
  *     for every element. This function
@@ -6297,7 +6298,7 @@ goog.array.findRight = function(arr, f, opt_obj) {
 /**
  * Search an array (in reverse order) for the last element that satisfies a
  * given condition and return its index.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call
  *     for every element. This function
@@ -6360,7 +6361,7 @@ goog.array.clear = function(arr) {
 
 /**
  * Pushes an item into an array, if it's not already in the array.
- * @param {Array.<T>} arr Array into which to insert the item.
+ * @param {Array<T>} arr Array into which to insert the item.
  * @param {T} obj Value to add.
  * @template T
  */
@@ -6397,7 +6398,7 @@ goog.array.insertArrayAt = function(arr, elementsToAdd, opt_i) {
 
 /**
  * Inserts an object into an array before a specified object.
- * @param {Array.<T>} arr The array to modify.
+ * @param {Array<T>} arr The array to modify.
  * @param {T} obj The object to insert.
  * @param {T=} opt_obj2 The object before which obj should be inserted. If obj2
  *     is omitted or not found, obj is inserted at the end of the array.
@@ -6415,7 +6416,7 @@ goog.array.insertBefore = function(arr, obj, opt_obj2) {
 
 /**
  * Removes the first occurrence of a particular value from an array.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array from which to remove
+ * @param {Array<T>|goog.array.ArrayLike} arr Array from which to remove
  *     value.
  * @param {T} obj Object to remove.
  * @return {boolean} True if an element was removed.
@@ -6450,7 +6451,7 @@ goog.array.removeAt = function(arr, i) {
 
 /**
  * Removes the first value that satisfies the given condition.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call
  *     for every element. This function
@@ -6472,7 +6473,7 @@ goog.array.removeIf = function(arr, f, opt_obj) {
 
 /**
  * Removes all values that satisfy the given condition.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array
  *     like object over which to iterate.
  * @param {?function(this:S, T, number, ?) : boolean} f The function to call
  *     for every element. This function
@@ -6520,7 +6521,7 @@ goog.array.removeAllIf = function(arr, f, opt_obj) {
  *
  * @param {...*} var_args Items to concatenate.  Arrays will have each item
  *     added, while primitives and objects will be added as is.
- * @return {!Array.<?>} The new resultant array.
+ * @return {!Array<?>} The new resultant array.
  */
 goog.array.concat = function(var_args) {
   return goog.array.ARRAY_PROTOTYPE_.concat.apply(
@@ -6530,8 +6531,8 @@ goog.array.concat = function(var_args) {
 
 /**
  * Returns a new array that contains the contents of all the arrays passed.
- * @param {...!Array.<T>} var_args
- * @return {!Array.<T>}
+ * @param {...!Array<T>} var_args
+ * @return {!Array<T>}
  * @template T
  */
 goog.array.join = function(var_args) {
@@ -6542,9 +6543,9 @@ goog.array.join = function(var_args) {
 
 /**
  * Converts an object to an array.
- * @param {Array.<T>|goog.array.ArrayLike} object  The object to convert to an
+ * @param {Array<T>|goog.array.ArrayLike} object  The object to convert to an
  *     array.
- * @return {!Array.<T>} The object converted into an array. If object has a
+ * @return {!Array<T>} The object converted into an array. If object has a
  *     length property, every property indexed with a non-negative number
  *     less than length will be included in the result. If object does not
  *     have a length property, an empty array will be returned.
@@ -6569,9 +6570,9 @@ goog.array.toArray = function(object) {
 
 /**
  * Does a shallow copy of an array.
- * @param {Array.<T>|goog.array.ArrayLike} arr  Array or array-like object to
+ * @param {Array<T>|goog.array.ArrayLike} arr  Array or array-like object to
  *     clone.
- * @return {!Array.<T>} Clone of the input array.
+ * @return {!Array<T>} Clone of the input array.
  * @template T
  */
 goog.array.clone = goog.array.toArray;
@@ -6588,8 +6589,8 @@ goog.array.clone = goog.array.toArray;
  * goog.array.extend(a, 2);
  * a; // [0, 1, 2]
  *
- * @param {Array.<VALUE>} arr1  The array to modify.
- * @param {...(Array.<VALUE>|VALUE)} var_args The elements or arrays of elements
+ * @param {Array<VALUE>} arr1  The array to modify.
+ * @param {...(Array<VALUE>|VALUE)} var_args The elements or arrays of elements
  *     to add to arr1.
  * @template VALUE
  */
@@ -6627,7 +6628,7 @@ goog.array.extend = function(arr1, var_args) {
  * splice. This means that it might work on other objects similar to arrays,
  * such as the arguments object.
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr The array to modify.
+ * @param {Array<T>|goog.array.ArrayLike} arr The array to modify.
  * @param {number|undefined} index The index at which to start changing the
  *     array. If not defined, treated as 0.
  * @param {number} howMany How many elements to remove (0 means no removal. A
@@ -6635,7 +6636,7 @@ goog.array.extend = function(arr1, var_args) {
  *     are floored).
  * @param {...T} var_args Optional, additional elements to insert into the
  *     array.
- * @return {!Array.<T>} the removed elements.
+ * @return {!Array<T>} the removed elements.
  * @template T
  */
 goog.array.splice = function(arr, index, howMany, var_args) {
@@ -6651,11 +6652,11 @@ goog.array.splice = function(arr, index, howMany, var_args) {
  * Array slice. This means that it might work on other objects similar to
  * arrays, such as the arguments object.
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr The array from
+ * @param {Array<T>|goog.array.ArrayLike} arr The array from
  * which to copy a segment.
  * @param {number} start The index of the first element to copy.
  * @param {number=} opt_end The index after the last element to copy.
- * @return {!Array.<T>} A new array containing the specified segment of the
+ * @return {!Array<T>} A new array containing the specified segment of the
  *     original array.
  * @template T
  */
@@ -6688,7 +6689,7 @@ goog.array.slice = function(arr, start, opt_end) {
  * Runtime: N,
  * Worstcase space: 2N (no dupes)
  *
- * @param {Array.<T>|goog.array.ArrayLike} arr The array from which to remove
+ * @param {Array<T>|goog.array.ArrayLike} arr The array from which to remove
  *     duplicates.
  * @param {Array=} opt_rv An optional array in which to return the results,
  *     instead of performing the removal inplace.  If specified, the original
@@ -6734,7 +6735,7 @@ goog.array.removeDuplicates = function(arr, opt_rv, opt_hashFn) {
  *
  * Runtime: O(log n)
  *
- * @param {Array.<VALUE>|goog.array.ArrayLike} arr The array to be searched.
+ * @param {Array<VALUE>|goog.array.ArrayLike} arr The array to be searched.
  * @param {TARGET} target The sought value.
  * @param {function(TARGET, VALUE): number=} opt_compareFn Optional comparison
  *     function by which the array is ordered. Should take 2 arguments to
@@ -6763,7 +6764,7 @@ goog.array.binarySearch = function(arr, target, opt_compareFn) {
  *
  * Runtime: O(log n)
  *
- * @param {Array.<VALUE>|goog.array.ArrayLike} arr The array to be searched.
+ * @param {Array<VALUE>|goog.array.ArrayLike} arr The array to be searched.
  * @param {function(this:THIS, VALUE, number, ?): number} evaluator
  *     Evaluator function that receives 3 arguments (the element, the index and
  *     the array). Should return a negative number, zero, or a positive number
@@ -6796,7 +6797,7 @@ goog.array.binarySelect = function(arr, evaluator, opt_obj) {
  *
  * Runtime: O(log n)
  *
- * @param {Array.<VALUE>|goog.array.ArrayLike} arr The array to be searched.
+ * @param {Array<VALUE>|goog.array.ArrayLike} arr The array to be searched.
  * @param {function(TARGET, VALUE): number|
  *         function(this:THIS, VALUE, number, ?): number} compareFn Either an
  *     evaluator or a comparison function, as defined by binarySearch
@@ -6854,7 +6855,7 @@ goog.array.binarySearch_ = function(arr, compareFn, isEvaluator, opt_target,
  *
  * Runtime: Same as <code>Array.prototype.sort</code>
  *
- * @param {Array.<T>} arr The array to be sorted.
+ * @param {Array<T>} arr The array to be sorted.
  * @param {?function(T,T):number=} opt_compareFn Optional comparison
  *     function by which the
  *     array is to be ordered. Should take 2 arguments to compare, and return a
@@ -6878,7 +6879,7 @@ goog.array.sort = function(arr, opt_compareFn) {
  * Runtime: Same as <code>Array.prototype.sort</code>, plus an additional
  * O(n) overhead of copying the array twice.
  *
- * @param {Array.<T>} arr The array to be sorted.
+ * @param {Array<T>} arr The array to be sorted.
  * @param {?function(T, T): number=} opt_compareFn Optional comparison function
  *     by which the array is to be ordered. Should take 2 arguments to compare,
  *     and return a negative number, zero, or a positive number depending on
@@ -6910,7 +6911,7 @@ goog.array.stableSort = function(arr, opt_compareFn) {
  * Runtime: O(S(f(n)), where S is runtime of <code>goog.array.sort</code>
  * and f(n) is runtime of the key function.
  *
- * @param {Array.<T>} arr The array to be sorted.
+ * @param {Array<T>} arr The array to be sorted.
  * @param {function(T): K} keyFn Function taking array element and returning
  *     a key used for sorting this element.
  * @param {?function(K, K): number=} opt_compareFn Optional comparison function
@@ -6935,7 +6936,7 @@ goog.array.sortByKey = function(arr, keyFn, opt_compareFn) {
  * compared in ascending order using <code>goog.array.defaultCompare</code>.
  * This won't work for keys that get renamed by the compiler. So use
  * {'foo': 1, 'bar': 2} rather than {foo: 1, bar: 2}.
- * @param {Array.<Object>} arr An array of objects to sort.
+ * @param {Array<Object>} arr An array of objects to sort.
  * @param {string} key The object key to sort by.
  * @param {Function=} opt_compareFn The function to use to compare key
  *     values.
@@ -6949,7 +6950,7 @@ goog.array.sortObjectsByKey = function(arr, key, opt_compareFn) {
 
 /**
  * Tells if the array is sorted.
- * @param {!Array.<T>} arr The array.
+ * @param {!Array<T>} arr The array.
  * @param {?function(T,T):number=} opt_compareFn Function to compare the
  *     array elements.
  *     Should take 2 arguments to compare, and return a negative number, zero,
@@ -7002,9 +7003,9 @@ goog.array.equals = function(arr1, arr2, opt_equalsFn) {
 
 /**
  * 3-way array compare function.
- * @param {!Array.<VALUE>|!goog.array.ArrayLike} arr1 The first array to
+ * @param {!Array<VALUE>|!goog.array.ArrayLike} arr1 The first array to
  *     compare.
- * @param {!Array.<VALUE>|!goog.array.ArrayLike} arr2 The second array to
+ * @param {!Array<VALUE>|!goog.array.ArrayLike} arr2 The second array to
  *     compare.
  * @param {function(VALUE, VALUE): number=} opt_compareFn Optional comparison
  *     function by which the array is to be ordered. Should take 2 arguments to
@@ -7057,7 +7058,7 @@ goog.array.defaultCompareEquality = function(a, b) {
 /**
  * Inserts a value into a sorted array. The array is not modified if the
  * value is already present.
- * @param {Array.<VALUE>|goog.array.ArrayLike} array The array to modify.
+ * @param {Array<VALUE>|goog.array.ArrayLike} array The array to modify.
  * @param {VALUE} value The object to insert.
  * @param {function(VALUE, VALUE): number=} opt_compareFn Optional comparison
  *     function by which the array is ordered. Should take 2 arguments to
@@ -7079,7 +7080,7 @@ goog.array.binaryInsert = function(array, value, opt_compareFn) {
 
 /**
  * Removes a value from a sorted array.
- * @param {!Array.<VALUE>|!goog.array.ArrayLike} array The array to modify.
+ * @param {!Array<VALUE>|!goog.array.ArrayLike} array The array to modify.
  * @param {VALUE} value The object to remove.
  * @param {function(VALUE, VALUE): number=} opt_compareFn Optional comparison
  *     function by which the array is ordered. Should take 2 arguments to
@@ -7097,8 +7098,8 @@ goog.array.binaryRemove = function(array, value, opt_compareFn) {
 
 /**
  * Splits an array into disjoint buckets according to a splitting function.
- * @param {Array.<T>} array The array.
- * @param {function(this:S, T,number,Array.<T>):?} sorter Function to call for
+ * @param {Array<T>} array The array.
+ * @param {function(this:S, T,number,Array<T>):?} sorter Function to call for
  *     every element.  This takes 3 arguments (the element, the index and the
  *     array) and must return a valid object key (a string, number, etc), or
  *     undefined, if that object should not be placed in a bucket.
@@ -7129,7 +7130,7 @@ goog.array.bucket = function(array, sorter, opt_obj) {
 /**
  * Creates a new object built from the provided array and the key-generation
  * function.
- * @param {Array.<T>|goog.array.ArrayLike} arr Array or array like object over
+ * @param {Array<T>|goog.array.ArrayLike} arr Array or array like object over
  *     which to iterate whose elements will be the values in the new object.
  * @param {?function(this:S, T, number, ?) : string} keyFunc The function to
  *     call for every element. This function takes 3 arguments (the element, the
@@ -7139,7 +7140,7 @@ goog.array.bucket = function(array, sorter, opt_obj) {
  *     implementation-defined.
  * @param {S=} opt_obj The object to be used as the value of 'this'
  *     within keyFunc.
- * @return {!Object.<T>} The new object.
+ * @return {!Object<T>} The new object.
  * @template T,S
  */
 goog.array.toObject = function(arr, keyFunc, opt_obj) {
@@ -7167,7 +7168,7 @@ goog.array.toObject = function(arr, keyFunc, opt_obj) {
  * @param {number=} opt_end The optional end value of the range.
  * @param {number=} opt_step The step size between range values. Defaults to 1
  *     if opt_step is undefined or 0.
- * @return {!Array.<number>} An array of numbers for the requested range. May be
+ * @return {!Array<number>} An array of numbers for the requested range. May be
  *     an empty array if adding the step would not converge toward the end
  *     value.
  */
@@ -7204,7 +7205,7 @@ goog.array.range = function(startOrEnd, opt_end, opt_step) {
  *
  * @param {VALUE} value The value to repeat.
  * @param {number} n The repeat count.
- * @return {!Array.<VALUE>} An array with the repeated value.
+ * @return {!Array<VALUE>} An array with the repeated value.
  * @template VALUE
  */
 goog.array.repeat = function(value, n) {
@@ -7221,7 +7222,7 @@ goog.array.repeat = function(value, n) {
  * expanded in-place recursively.
  *
  * @param {...*} var_args The values to flatten.
- * @return {!Array.<?>} An array containing the flattened values.
+ * @return {!Array<?>} An array containing the flattened values.
  */
 goog.array.flatten = function(var_args) {
   var result = [];
@@ -7246,9 +7247,9 @@ goog.array.flatten = function(var_args) {
  * For example, suppose list comprises [t, a, n, k, s]. After invoking
  * rotate(array, 1) (or rotate(array, -4)), array will comprise [s, t, a, n, k].
  *
- * @param {!Array.<T>} array The array to rotate.
+ * @param {!Array<T>} array The array to rotate.
  * @param {number} n The amount to rotate.
- * @return {!Array.<T>} The array.
+ * @return {!Array<T>} The array.
  * @template T
  */
 goog.array.rotate = function(array, n) {
@@ -7298,7 +7299,7 @@ goog.array.moveItem = function(arr, fromIndex, toIndex) {
  * http://docs.python.org/library/functions.html#zip}
  *
  * @param {...!goog.array.ArrayLike} var_args Arrays to be combined.
- * @return {!Array.<!Array.<?>>} A new array of arrays created from
+ * @return {!Array<!Array<?>>} A new array of arrays created from
  *     provided arrays.
  */
 goog.array.zip = function(var_args) {
@@ -7329,7 +7330,7 @@ goog.array.zip = function(var_args) {
  *
  * Runtime: O(n)
  *
- * @param {!Array.<?>} arr The array to be shuffled.
+ * @param {!Array<?>} arr The array to be shuffled.
  * @param {function():number=} opt_randFn Optional random function to use for
  *     shuffling.
  *     Takes no arguments, and returns a random number on the interval [0, 1).
@@ -7581,8 +7582,8 @@ goog.math.sign = function(x) {
  *
  * Returns the longest possible array that is subarray of both of given arrays.
  *
- * @param {Array.<Object>} array1 First array of objects.
- * @param {Array.<Object>} array2 Second array of objects.
+ * @param {Array<Object>} array1 First array of objects.
+ * @param {Array<Object>} array2 Second array of objects.
  * @param {Function=} opt_compareFn Function that acts as a custom comparator
  *     for the array ojects. Function should return true if objects are equal,
  *     otherwise false.
@@ -7590,7 +7591,7 @@ goog.math.sign = function(x) {
  *     as a result subsequence. It accepts 2 arguments: index of common element
  *     in the first array and index in the second. The default function returns
  *     element from the first array.
- * @return {!Array.<Object>} A list of objects that are common to both arrays
+ * @return {!Array<Object>} A list of objects that are common to both arrays
  *     such that there is no common subsequence with size greater than the
  *     length of the list.
  */
@@ -8289,8 +8290,8 @@ goog.provide('goog.object');
 /**
  * Calls a function for each element in an object/map/hash.
  *
- * @param {Object.<K,V>} obj The object over which to iterate.
- * @param {function(this:T,V,?,Object.<K,V>):?} f The function to call
+ * @param {Object<K,V>} obj The object over which to iterate.
+ * @param {function(this:T,V,?,Object<K,V>):?} f The function to call
  *     for every element. This function takes 3 arguments (the element, the
  *     index and the object) and the return value is ignored.
  * @param {T=} opt_obj This is used as the 'this' object within f.
@@ -8307,15 +8308,15 @@ goog.object.forEach = function(obj, f, opt_obj) {
  * Calls a function for each element in an object/map/hash. If that call returns
  * true, adds the element to a new object.
  *
- * @param {Object.<K,V>} obj The object over which to iterate.
- * @param {function(this:T,V,?,Object.<K,V>):boolean} f The function to call
+ * @param {Object<K,V>} obj The object over which to iterate.
+ * @param {function(this:T,V,?,Object<K,V>):boolean} f The function to call
  *     for every element. This
  *     function takes 3 arguments (the element, the index and the object)
  *     and should return a boolean. If the return value is true the
  *     element is added to the result object. If it is false the
  *     element is not included.
  * @param {T=} opt_obj This is used as the 'this' object within f.
- * @return {!Object.<K,V>} a new object in which only elements that passed the
+ * @return {!Object<K,V>} a new object in which only elements that passed the
  *     test are present.
  * @template T,K,V
  */
@@ -8334,14 +8335,14 @@ goog.object.filter = function(obj, f, opt_obj) {
  * For every element in an object/map/hash calls a function and inserts the
  * result into a new object.
  *
- * @param {Object.<K,V>} obj The object over which to iterate.
- * @param {function(this:T,V,?,Object.<K,V>):R} f The function to call
+ * @param {Object<K,V>} obj The object over which to iterate.
+ * @param {function(this:T,V,?,Object<K,V>):R} f The function to call
  *     for every element. This function
  *     takes 3 arguments (the element, the index and the object)
  *     and should return something. The result will be inserted
  *     into a new object.
  * @param {T=} opt_obj This is used as the 'this' object within f.
- * @return {!Object.<K,R>} a new object with the results from f.
+ * @return {!Object<K,R>} a new object with the results from f.
  * @template T,K,V,R
  */
 goog.object.map = function(obj, f, opt_obj) {
@@ -8358,8 +8359,8 @@ goog.object.map = function(obj, f, opt_obj) {
  * call returns true, returns true (without checking the rest). If
  * all calls return false, returns false.
  *
- * @param {Object.<K,V>} obj The object to check.
- * @param {function(this:T,V,?,Object.<K,V>):boolean} f The function to
+ * @param {Object<K,V>} obj The object to check.
+ * @param {function(this:T,V,?,Object<K,V>):boolean} f The function to
  *     call for every element. This function
  *     takes 3 arguments (the element, the index and the object) and should
  *     return a boolean.
@@ -8382,8 +8383,8 @@ goog.object.some = function(obj, f, opt_obj) {
  * all calls return true, returns true. If any call returns false, returns
  * false at this point and does not continue to check the remaining elements.
  *
- * @param {Object.<K,V>} obj The object to check.
- * @param {?function(this:T,V,?,Object.<K,V>):boolean} f The function to
+ * @param {Object<K,V>} obj The object to check.
+ * @param {?function(this:T,V,?,Object<K,V>):boolean} f The function to
  *     call for every element. This function
  *     takes 3 arguments (the element, the index and the object) and should
  *     return a boolean.
@@ -8440,7 +8441,7 @@ goog.object.getAnyKey = function(obj) {
  * For map literals the returned value will be the first one in most of the
  * browsers (a know exception is Konqueror).
  *
- * @param {Object.<K,V>} obj The object to pick a value from.
+ * @param {Object<K,V>} obj The object to pick a value from.
  * @return {V|undefined} The value or undefined if the object is empty.
  * @template K,V
  */
@@ -8455,7 +8456,7 @@ goog.object.getAnyValue = function(obj) {
  * Whether the object/hash/map contains the given object as a value.
  * An alias for goog.object.containsValue(obj, val).
  *
- * @param {Object.<K,V>} obj The object in which to look for val.
+ * @param {Object<K,V>} obj The object in which to look for val.
  * @param {V} val The object for which to check.
  * @return {boolean} true if val is present.
  * @template K,V
@@ -8468,8 +8469,8 @@ goog.object.contains = function(obj, val) {
 /**
  * Returns the values of the object/map/hash.
  *
- * @param {Object.<K,V>} obj The object from which to get the values.
- * @return {!Array.<V>} The values in the object/map/hash.
+ * @param {Object<K,V>} obj The object from which to get the values.
+ * @return {!Array<V>} The values in the object/map/hash.
  * @template K,V
  */
 goog.object.getValues = function(obj) {
@@ -8486,7 +8487,7 @@ goog.object.getValues = function(obj) {
  * Returns the keys of the object/map/hash.
  *
  * @param {Object} obj The object from which to get the keys.
- * @return {!Array.<string>} Array of property keys.
+ * @return {!Array<string>} Array of property keys.
  */
 goog.object.getKeys = function(obj) {
   var res = [];
@@ -8504,7 +8505,7 @@ goog.object.getKeys = function(obj) {
  * Example usage: getValueByKeys(jsonObj, 'foo', 'entries', 3)
  *
  * @param {!Object} obj An object to get the value from.  Can be array-like.
- * @param {...(string|number|!Array.<number|string>)} var_args A number of keys
+ * @param {...(string|number|!Array<number|string>)} var_args A number of keys
  *     (as strings, or numbers, for array-like objects).  Can also be
  *     specified as a single array of keys.
  * @return {*} The resulting value.  If, at any point, the value for a key
@@ -8541,7 +8542,7 @@ goog.object.containsKey = function(obj, key) {
 /**
  * Whether the object/map/hash contains the given value. This is O(n).
  *
- * @param {Object.<K,V>} obj The object in which to look for val.
+ * @param {Object<K,V>} obj The object in which to look for val.
  * @param {V} val The value for which to check.
  * @return {boolean} true If the map contains the value.
  * @template K,V
@@ -8559,8 +8560,8 @@ goog.object.containsValue = function(obj, val) {
 /**
  * Searches an object for an element that satisfies the given condition and
  * returns its key.
- * @param {Object.<K,V>} obj The object to search in.
- * @param {function(this:T,V,string,Object.<K,V>):boolean} f The
+ * @param {Object<K,V>} obj The object to search in.
+ * @param {function(this:T,V,string,Object<K,V>):boolean} f The
  *      function to call for every element. Takes 3 arguments (the value,
  *     the key and the object) and should return a boolean.
  * @param {T=} opt_this An optional "this" context for the function.
@@ -8581,8 +8582,8 @@ goog.object.findKey = function(obj, f, opt_this) {
 /**
  * Searches an object for an element that satisfies the given condition and
  * returns its value.
- * @param {Object.<K,V>} obj The object to search in.
- * @param {function(this:T,V,string,Object.<K,V>):boolean} f The function
+ * @param {Object<K,V>} obj The object to search in.
+ * @param {function(this:T,V,string,Object<K,V>):boolean} f The function
  *     to call for every element. Takes 3 arguments (the value, the key
  *     and the object) and should return a boolean.
  * @param {T=} opt_this An optional "this" context for the function.
@@ -8642,7 +8643,7 @@ goog.object.remove = function(obj, key) {
  * Adds a key-value pair to the object. Throws an exception if the key is
  * already in use. Use set if you want to change an existing pair.
  *
- * @param {Object.<K,V>} obj The object to which to add the key-value pair.
+ * @param {Object<K,V>} obj The object to which to add the key-value pair.
  * @param {string} key The key to add.
  * @param {V} val The value to add.
  * @template K,V
@@ -8658,7 +8659,7 @@ goog.object.add = function(obj, key, val) {
 /**
  * Returns the value for the given key.
  *
- * @param {Object.<K,V>} obj The object from which to get the value.
+ * @param {Object<K,V>} obj The object from which to get the value.
  * @param {string} key The key for which to get the value.
  * @param {R=} opt_val The value to return if no item is found for the given
  *     key (default is undefined).
@@ -8676,7 +8677,7 @@ goog.object.get = function(obj, key, opt_val) {
 /**
  * Adds a key-value pair to the object/map/hash.
  *
- * @param {Object.<K,V>} obj The object to which to add the key-value pair.
+ * @param {Object<K,V>} obj The object to which to add the key-value pair.
  * @param {string} key The key to add.
  * @param {V} value The value to add.
  * @template K,V
@@ -8689,7 +8690,7 @@ goog.object.set = function(obj, key, value) {
 /**
  * Adds a key-value pair to the object/map/hash if it doesn't exist yet.
  *
- * @param {Object.<K,V>} obj The object to which to add the key-value pair.
+ * @param {Object<K,V>} obj The object to which to add the key-value pair.
  * @param {string} key The key to add.
  * @param {V} value The value to add if the key wasn't present.
  * @return {V} The value of the entry at the end of the function.
@@ -8703,8 +8704,8 @@ goog.object.setIfUndefined = function(obj, key, value) {
 /**
  * Compares two objects for equality using === on the values.
  *
- * @param {!Object.<K,V>} a
- * @param {!Object.<K,V>} b
+ * @param {!Object<K,V>} a
+ * @param {!Object<K,V>} b
  * @return {boolean}
  * @template K,V
  */
@@ -8726,8 +8727,8 @@ goog.object.equals = function(a, b) {
 /**
  * Does a flat clone of the object.
  *
- * @param {Object.<K,V>} obj Object to clone.
- * @return {!Object.<K,V>} Clone of the input object.
+ * @param {Object<K,V>} obj Object to clone.
+ * @return {!Object<K,V>} Clone of the input object.
  * @template K,V
  */
 goog.object.clone = function(obj) {
@@ -8793,7 +8794,7 @@ goog.object.transpose = function(obj) {
 
 /**
  * The names of the fields that are defined on Object.prototype.
- * @type {Array.<string>}
+ * @type {Array<string>}
  * @private
  */
 goog.object.PROTOTYPE_FIELDS_ = [
@@ -8903,8 +8904,8 @@ goog.object.createSet = function(var_args) {
  * In default mode, writes to this view will fail silently. In strict mode,
  * they will throw an error.
  *
- * @param {!Object.<K,V>} obj An object.
- * @return {!Object.<K,V>} An immutable view of that object, or the
+ * @param {!Object<K,V>} obj An object.
+ * @return {!Object<K,V>} An immutable view of that object, or the
  *     original object if this browser does not support immutables.
  * @template K,V
  */
@@ -9037,7 +9038,7 @@ goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
 /**
  * Parses the user agent into tuples for each section.
  * @param {string} userAgent
- * @return {!Array.<!Array.<string>>} Tuples of key, version, and the contents
+ * @return {!Array<!Array<string>>} Tuples of key, version, and the contents
  *     of the parenthetical.
  */
 goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
@@ -9463,7 +9464,7 @@ goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
 
 
 /**
- * @param {!Array.<!Array.<string>>} tuples Version tuples.
+ * @param {!Array<!Array<string>>} tuples Version tuples.
  * @param {string} key The key to look for.
  * @return {string} The version string of the given key, if present.
  *     Otherwise, the empty string.
@@ -10649,7 +10650,7 @@ goog.dom.setProperties = function(element, properties) {
  * element.setAttribute(key, val) instead of element[key] = val.  Used
  * by goog.dom.setProperties.
  *
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  * @const
  */
 goog.dom.DIRECT_ATTRIBUTE_MAP_ = {
@@ -10944,7 +10945,7 @@ goog.dom.getWindow_ = function(doc) {
  * would return a div with two child paragraphs
  *
  * @param {string} tagName Tag to create.
- * @param {(Object|Array.<string>|string)=} opt_attributes If object, then a map
+ * @param {(Object|Array<string>|string)=} opt_attributes If object, then a map
  *     of name-value pairs for attributes. If a string, then this is the
  *     className of the new element. If an array, the elements will be joined
  *     together as the className of the new element.
@@ -11898,7 +11899,7 @@ goog.dom.findNode = function(root, p) {
 
  * @param {Node} root The root of the tree to search.
  * @param {function(Node) : boolean} p The filter function.
- * @return {!Array.<!Node>} The found nodes or an empty array if none are found.
+ * @return {!Array<!Node>} The found nodes or an empty array if none are found.
  */
 goog.dom.findNodes = function(root, p) {
   var rv = [];
@@ -11912,7 +11913,7 @@ goog.dom.findNodes = function(root, p) {
  * using a depth first search.
  * @param {Node} root The root of the tree to search.
  * @param {function(Node) : boolean} p The filter function.
- * @param {!Array.<!Node>} rv The found nodes are added to this array.
+ * @param {!Array<!Node>} rv The found nodes are added to this array.
  * @param {boolean} findOne If true we exit after the first found node.
  * @return {boolean} Whether the search is complete or not. True in case findOne
  *     is true and the node is found. False otherwise.
@@ -11940,7 +11941,7 @@ goog.dom.findNodes_ = function(root, p, rv, findOne) {
 
 /**
  * Map of tags whose content to ignore when calculating text length.
- * @private {!Object.<string, number>}
+ * @private {!Object<string, number>}
  * @const
  */
 goog.dom.TAGS_TO_IGNORE_ = {
@@ -11954,7 +11955,7 @@ goog.dom.TAGS_TO_IGNORE_ = {
 
 /**
  * Map of tags which have predefined values with regard to whitespace.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  * @const
  */
 goog.dom.PREDEFINED_TAG_VALUES_ = {'IMG': ' ', 'BR': '\n'};
@@ -12147,7 +12148,7 @@ goog.dom.getRawTextContent = function(node) {
  * Recursive support function for text content retrieval.
  *
  * @param {Node} node The node from which we are getting content.
- * @param {Array.<string>} buf string buffer.
+ * @param {Array<string>} buf string buffer.
  * @param {boolean} normalizeWhitespace Whether to normalize whitespace.
  * @private
  */
@@ -13039,7 +13040,7 @@ goog.dom.DomHelper.prototype.findNode = goog.dom.findNode;
  * depth first search.
  * @param {Node} root The root of the tree to search.
  * @param {function(Node) : boolean} p The filter function.
- * @return {Array.<Node>} The found nodes or an empty array if none are found.
+ * @return {Array<Node>} The found nodes or an empty array if none are found.
  */
 goog.dom.DomHelper.prototype.findNodes = goog.dom.findNodes;
 
@@ -13214,9 +13215,9 @@ goog.require('goog.array');
 
 /**
  * Maps ranges to values.
- * @param {Array.<number>} rangeArray An array of monotonically
+ * @param {Array<number>} rangeArray An array of monotonically
  *     increasing integer values, with at least one instance.
- * @param {Array.<T>} valueArray An array of corresponding values.
+ * @param {Array<T>} valueArray An array of corresponding values.
  *     Length must be the same as rangeArray.
  * @param {boolean=} opt_delta If true, saves only delta from previous value.
  * @constructor
@@ -13224,7 +13225,7 @@ goog.require('goog.array');
  */
 goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
   /**
-   * @protected {Array.<number>}
+   * @protected {Array<number>}
    */
   this.rangeArray = null;
 
@@ -13234,7 +13235,7 @@ goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
   }
   this.storeInversion_(rangeArray, opt_delta);
 
-  /** @protected {Array.<T>} */
+  /** @protected {Array<T>} */
   this.values = valueArray;
 };
 
@@ -13244,7 +13245,7 @@ goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
  * If delta is true, the integers are delta from the previous value and
  * will be restored to the absolute value.
  * When used as a set, even indices are IN, and odd are OUT.
- * @param {Array.<number?>} rangeArray An array of monotonically
+ * @param {Array<number?>} rangeArray An array of monotonically
  *     increasing integer values, with at least one instance.
  * @param {boolean=} opt_delta If true, saves only delta from previous value.
  * @private
@@ -13265,9 +13266,9 @@ goog.structs.InversionMap.prototype.storeInversion_ = function(rangeArray,
 
 /**
  * Splices a range -> value map into this inversion map.
- * @param {Array.<number>} rangeArray An array of monotonically
+ * @param {Array<number>} rangeArray An array of monotonically
  *     increasing integer values, with at least one instance.
- * @param {Array.<T>} valueArray An array of corresponding values.
+ * @param {Array<T>} valueArray An array of corresponding values.
  *     Length must be the same as rangeArray.
  * @param {boolean=} opt_delta If true, saves only delta from previous value.
  */
@@ -13764,7 +13765,7 @@ goog.format.SCALED_NUMERIC_RE_ = /^([-]?\d+\.?\d*)([K,M,G,T,P,k,m,u,n]?)[B]?$/;
 
 /**
  * Ordered list of scaling prefixes in decreasing order.
- * @private {Array.<string>}
+ * @private {Array<string>}
  */
 goog.format.NUMERIC_SCALE_PREFIXES_ = [
   'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'
@@ -15527,7 +15528,7 @@ goog.html.SafeStyle.INNOCUOUS_STRING = 'zClosurez';
 
 /**
  * Mapping of property names to their values.
- * @typedef {!Object.<string, goog.string.Const|string>}
+ * @typedef {!Object<string, goog.string.Const|string>}
  */
 goog.html.SafeStyle.PropertyMap;
 
@@ -15587,7 +15588,7 @@ goog.html.SafeStyle.VALUE_RE_ = /^[-.%_!# a-zA-Z0-9]+$/;
 
 /**
  * Creates a new SafeStyle object by concatenating the values.
- * @param {...(!goog.html.SafeStyle|!Array.<!goog.html.SafeStyle>)} var_args
+ * @param {...(!goog.html.SafeStyle|!Array<!goog.html.SafeStyle>)} var_args
  *     SafeStyles to concatenate.
  * @return {!goog.html.SafeStyle}
  */
@@ -15595,7 +15596,7 @@ goog.html.SafeStyle.concat = function(var_args) {
   var style = '';
 
   /**
-   * @param {!goog.html.SafeStyle|!Array.<!goog.html.SafeStyle>} argument
+   * @param {!goog.html.SafeStyle|!Array<!goog.html.SafeStyle>} argument
    */
   var addArgument = function(argument) {
     if (goog.isArray(argument)) {
@@ -15981,7 +15982,7 @@ goog.html.SafeUrl.NORMALIZE_MATCHER_ = /[()']|%5B|%5D|%25/g;
 
 /**
  * Map of replacements to be done in string generated by encodeURI.
- * @const {!Object.<string, string>}
+ * @const {!Object<string, string>}
  * @private
  */
 goog.html.SafeUrl.NORMALIZE_REPLACER_MAP_ = {
@@ -16291,7 +16292,7 @@ goog.html.SafeHtml.VALID_NAMES_IN_TAG_ = /^[a-zA-Z0-9-]+$/;
 /**
  * Set of attributes containing URL as defined at
  * http://www.w3.org/TR/html5/index.html#attributes-1.
- * @private @const {Object.<string,boolean>}
+ * @private @const {Object<string,boolean>}
  */
 goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
     'data', 'formaction', 'href', 'manifest', 'poster', 'src');
@@ -16300,7 +16301,7 @@ goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
 // TODO(jakubvrana): Perhaps add <template> used by Polymer?
 /**
  * Set of tag names that are too dangerous.
- * @private @const {Object.<string,boolean>}
+ * @private @const {Object<string,boolean>}
  */
 goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet('link',
     'script', 'style');
@@ -16338,7 +16339,7 @@ goog.html.SafeHtml.AttributeValue_;
  * @param {string} tagName The name of the tag. Only tag names consisting of
  *     [a-zA-Z0-9-] are allowed. <link>, <script> and <style> tags are not
  *     supported.
- * @param {!Object.<string, goog.html.SafeHtml.AttributeValue_>=}
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
  *     opt_attributes Mapping from attribute names to their values. Only
  *     attribute names consisting of [a-zA-Z0-9-] are allowed. Attributes with
  *     a special meaning (e.g. on*) require goog.string.Const value, attributes
@@ -16347,7 +16348,7 @@ goog.html.SafeHtml.AttributeValue_;
  *     passed to goog.html.SafeStyle.create. Value of null or undefined causes
  *     the attribute to be omitted. Values are HTML-escaped before usage.
  * @param {!goog.html.SafeHtml.TextOrHtml_|
- *     !Array.<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to put
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to put
  *     inside the tag. This must be empty for void tags like <br>. Array
  *     elements are concatenated.
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
@@ -16457,9 +16458,9 @@ goog.html.SafeHtml.getStyleValue_ = function(value) {
  * optional attributes and optional content.
  * @param {!goog.i18n.bidi.Dir} dir Directionality.
  * @param {string} tagName
- * @param {!Object.<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
  * @param {!goog.html.SafeHtml.TextOrHtml_|
- *     !Array.<!goog.html.SafeHtml.TextOrHtml_>=} opt_content
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
  */
 goog.html.SafeHtml.createWithDir = function(dir, tagName, opt_attributes,
@@ -16473,7 +16474,7 @@ goog.html.SafeHtml.createWithDir = function(dir, tagName, opt_attributes,
 /**
  * Creates a new SafeHtml object by concatenating the values.
  * @param {...!goog.html.SafeHtml.TextOrHtml_|
- *     !Array.<!goog.html.SafeHtml.TextOrHtml_>} var_args Elements of array
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>} var_args Elements of array
  *     arguments would be processed recursively.
  * @return {!goog.html.SafeHtml}
  */
@@ -16483,7 +16484,7 @@ goog.html.SafeHtml.concat = function(var_args) {
 
   /**
    * @param {!goog.html.SafeHtml.TextOrHtml_|
-   *     !Array.<!goog.html.SafeHtml.TextOrHtml_>} argument
+   *     !Array<!goog.html.SafeHtml.TextOrHtml_>} argument
    */
   var addArgument = function(argument) {
     if (goog.isArray(argument)) {
@@ -16511,7 +16512,7 @@ goog.html.SafeHtml.concat = function(var_args) {
  * values.
  * @param {!goog.i18n.bidi.Dir} dir Directionality.
  * @param {...!goog.html.SafeHtml.TextOrHtml_|
- *     !Array.<!goog.html.SafeHtml.TextOrHtml_>} var_args Elements of array
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>} var_args Elements of array
  *     arguments would be processed recursively.
  * @return {!goog.html.SafeHtml}
  */
@@ -17618,12 +17619,12 @@ goog.require('goog.string.TypedString');
  * conversions. In this case producers of SafeScript must ensure themselves that
  * the SafeScript does not contain unsafe script. Note in particular that
  * {@code &lt;} is dangerous, even when inside JavaScript strings, and so should
- * always be forbidden or JavaScript escaped in user controlled input. Within an
- * HTML script (raw text) element, HTML character references, such as
- * {@code &amp;lt;}, are not allowed. For example, if
- * {@code &lt;/script&gt;&lt;script&gt;evil&lt;/script&gt;"} were interpolated
- * inside a JavaScript string, it would break out of the context of the original
- * script element and {@code evil} would execute. See
+ * always be forbidden or JavaScript escaped in user controlled input. For
+ * example, if {@code &lt;/script&gt;&lt;script&gt;evil&lt;/script&gt;"} were
+ * interpolated inside a JavaScript string, it would break out of the context
+ * of the original script element and {@code evil} would execute. Also note
+ * that within an HTML script (raw text) element, HTML character references,
+ * such as "&lt;" are not allowed. See
  * http://www.w3.org/TR/html5/scripting-1.html#restrictions-for-contents-of-script-elements.
  *
  * @see goog.html.SafeScript#fromConstant
@@ -17834,12 +17835,12 @@ goog.require('goog.string.TypedString');
  * conversions. In this case producers of SafeStyleSheet must ensure themselves
  * that the SafeStyleSheet does not contain unsafe script. Note in particular
  * that {@code &lt;} is dangerous, even when inside CSS strings, and so should
- * always be forbidden or CSS-escaped in user controlled input. Within an HTML
- * style (raw text) element, HTML character references, such as
- * {@code &amp;lt;}, are not allowed. For example, if
+ * always be forbidden or CSS-escaped in user controlled input. For example, if
  * {@code &lt;/style&gt;&lt;script&gt;evil&lt;/script&gt;"} were interpolated
  * inside a CSS string, it would break out of the context of the original
- * style element and {@code evil} would execute. See
+ * style element and {@code evil} would execute. Also note that within an HTML
+ * style (raw text) element, HTML character references, such as
+ * {@code &amp;lt;}, are not allowed. See
  * http://www.w3.org/TR/html5/scripting-1.html#restrictions-for-contents-of-script-elements
  * (similar considerations apply to the style element).
  *
@@ -18458,7 +18459,7 @@ goog.define('goog.soy.REQUIRE_STRICT_AUTOESCAPE', false);
  * will be easier to audit the code for cross-site scripting vulnerabilities.
  *
  * @param {Element} element The element whose content we are rendering into.
- * @param {null|function(ARG_TYPES, null=, Object.<string, *>=):*} template
+ * @param {null|function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
  * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Object=} opt_injectedData The injected data for the template.
@@ -18481,7 +18482,7 @@ goog.soy.renderElement = function(element, template, opt_templateData,
  * the method). Otherwise a document fragment is returned containing the
  * rendered nodes.
  *
- * @param {null|function(ARG_TYPES, null=, Object.<string, *>=):*} template
+ * @param {null|function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
  * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Object=} opt_injectedData The injected data for the template.
@@ -18508,7 +18509,7 @@ goog.soy.renderAsFragment = function(template, opt_templateData,
  * HTML string represents a single node, then that node is returned. Otherwise,
  * a DIV element is returned containing the rendered nodes.
  *
- * @param {null|function(ARG_TYPES, null=, Object.<string, *>=):*} template
+ * @param {null|function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
  * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Object=} opt_injectedData The injected data for the template.
@@ -18624,8 +18625,7 @@ goog.soy.INVALID_TAG_TO_RENDER_ =
 /**
  * Immutable object that is passed into templates that are rendered
  * without any data.
- * @type {Object}
- * @private
+ * @private @const
  */
 goog.soy.defaultTemplateData_ = {};
 
