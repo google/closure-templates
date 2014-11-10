@@ -26,7 +26,6 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-
 /**
  * Implementation of ParamStore that represents a backing store augmented with additional fields
  * (params). The additional fields may hide fields from the backing store.
@@ -63,7 +62,7 @@ public class AugmentedParamStore extends ParamStore {
 
   @Override public SoyValueProvider getFieldProvider(String name) {
     SoyValueProvider val = localStore.get(name);
-    return (val != null) ? val : backingStore.getField(name);
+    return (val != null) ? val : backingStore.getFieldProvider(name);
   }
 
 }

@@ -2777,8 +2777,8 @@ goog.addDependency('history/html5history.js', ['goog.history.Html5History', 'goo
 goog.addDependency('history/html5history_test.js', ['goog.history.Html5HistoryTest'], ['goog.history.Html5History', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], false);
 goog.addDependency('html/legacyconversions.js', ['goog.html.legacyconversions'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl'], false);
 goog.addDependency('html/legacyconversions_test.js', ['goog.html.legacyconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.legacyconversions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
-goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
-goog.addDependency('html/safehtml_test.js', ['goog.html.safeHtmlTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.testing', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
+goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
+goog.addDependency('html/safehtml_test.js', ['goog.html.safeHtmlTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safescript.js', ['goog.html.SafeScript'], ['goog.asserts', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safescript_test.js', ['goog.html.safeScriptTest'], ['goog.html.SafeScript', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safestyle.js', ['goog.html.SafeStyle'], ['goog.array', 'goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
@@ -16031,6 +16031,232 @@ goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(
   return safeUrl;
 };
 
+//javascript/closure/html/trustedresourceurl.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview The TrustedResourceUrl type and its builders.
+ *
+ * TODO(user): Link to document stating type contract.
+ */
+
+goog.provide('goog.html.TrustedResourceUrl');
+
+goog.require('goog.asserts');
+goog.require('goog.i18n.bidi.Dir');
+goog.require('goog.i18n.bidi.DirectionalString');
+goog.require('goog.string.Const');
+goog.require('goog.string.TypedString');
+
+
+
+/**
+ * A URL which is under application control and from which script, CSS, and
+ * other resources that represent executable code, can be fetched.
+ *
+ * Given that the URL can only be constructed from strings under application
+ * control and is used to load resources, bugs resulting in a malformed URL
+ * should not have a security impact and are likely to be easily detectable
+ * during testing. Given the wide number of non-RFC compliant URLs in use,
+ * stricter validation could prevent some applications from being able to use
+ * this type.
+ *
+ * Instances of this type must be created via the factory method,
+ * ({@code goog.html.TrustedResourceUrl.fromConstant}), and not by invoking its
+ * constructor. The constructor intentionally takes no parameters and the type
+ * is immutable; hence only a default instance corresponding to the empty
+ * string can be obtained via constructor invocation.
+ *
+ * @see goog.html.TrustedResourceUrl#fromConstant
+ * @constructor
+ * @final
+ * @struct
+ * @implements {goog.i18n.bidi.DirectionalString}
+ * @implements {goog.string.TypedString}
+ */
+goog.html.TrustedResourceUrl = function() {
+  /**
+   * The contained value of this TrustedResourceUrl.  The field has a purposely
+   * ugly name to make (non-compiled) code that attempts to directly access this
+   * field stand out.
+   * @private {string}
+   */
+  this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = '';
+
+  /**
+   * A type marker used to implement additional run-time type checking.
+   * @see goog.html.TrustedResourceUrl#unwrap
+   * @const
+   * @private
+   */
+  this.TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
+      goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+};
+
+
+/**
+ * @override
+ * @const
+ */
+goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
+
+
+/**
+ * Returns this TrustedResourceUrl's value as a string.
+ *
+ * IMPORTANT: In code where it is security relevant that an object's type is
+ * indeed {@code TrustedResourceUrl}, use
+ * {@code goog.html.TrustedResourceUrl.unwrap} instead of this method. If in
+ * doubt, assume that it's security relevant. In particular, note that
+ * goog.html functions which return a goog.html type do not guarantee that
+ * the returned instance is of the right type. For example:
+ *
+ * <pre>
+ * var fakeSafeHtml = new String('fake');
+ * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
+ * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml instanceof
+ * // goog.html.SafeHtml.
+ * </pre>
+ *
+ * @see goog.html.TrustedResourceUrl#unwrap
+ * @override
+ */
+goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function() {
+  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
+};
+
+
+/**
+ * @override
+ * @const
+ */
+goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
+    true;
+
+
+/**
+ * Returns this URLs directionality, which is always {@code LTR}.
+ * @override
+ */
+goog.html.TrustedResourceUrl.prototype.getDirection = function() {
+  return goog.i18n.bidi.Dir.LTR;
+};
+
+
+if (goog.DEBUG) {
+  /**
+   * Returns a debug string-representation of this value.
+   *
+   * To obtain the actual string value wrapped in a TrustedResourceUrl, use
+   * {@code goog.html.TrustedResourceUrl.unwrap}.
+   *
+   * @see goog.html.TrustedResourceUrl#unwrap
+   * @override
+   */
+  goog.html.TrustedResourceUrl.prototype.toString = function() {
+    return 'TrustedResourceUrl{' +
+        this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '}';
+  };
+}
+
+
+/**
+ * Performs a runtime check that the provided object is indeed a
+ * TrustedResourceUrl object, and returns its value.
+ *
+ * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl The object to
+ *     extract from.
+ * @return {string} The trustedResourceUrl object's contained string, unless
+ *     the run-time type check fails. In that case, {@code unwrap} returns an
+ *     innocuous string, or, if assertions are enabled, throws
+ *     {@code goog.asserts.AssertionError}.
+ */
+goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
+  // Perform additional Run-time type-checking to ensure that
+  // trustedResourceUrl is indeed an instance of the expected type.  This
+  // provides some additional protection against security bugs due to
+  // application code that disables type checks.
+  // Specifically, the following checks are performed:
+  // 1. The object is an instance of the expected type.
+  // 2. The object is not an instance of a subclass.
+  // 3. The object carries a type marker for the expected type. "Faking" an
+  // object requires a reference to the type marker, which has names intended
+  // to stand out in code reviews.
+  if (trustedResourceUrl instanceof goog.html.TrustedResourceUrl &&
+      trustedResourceUrl.constructor === goog.html.TrustedResourceUrl &&
+      trustedResourceUrl
+          .TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
+              goog.html.TrustedResourceUrl
+                  .TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+    return trustedResourceUrl
+        .privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
+  } else {
+    goog.asserts.fail('expected object of type TrustedResourceUrl, got \'' +
+                      trustedResourceUrl + '\'');
+    return 'type_error:TrustedResourceUrl';
+
+  }
+};
+
+
+/**
+ * Creates a TrustedResourceUrl object from a compile-time constant string.
+ *
+ * Compile-time constant strings are inherently program-controlled and hence
+ * trusted.
+ *
+ * @param {!goog.string.Const} url A compile-time-constant string from which to
+ *     create a TrustedResourceUrl.
+ * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
+ *     initialized to {@code url}.
+ */
+goog.html.TrustedResourceUrl.fromConstant = function(url) {
+  return goog.html.TrustedResourceUrl
+      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(
+          goog.string.Const.unwrap(url));
+};
+
+
+/**
+ * Type marker for the TrustedResourceUrl type, used to implement additional
+ * run-time type checking.
+ * @const
+ * @private
+ */
+goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+
+
+/**
+ * Package-internal utility method to create TrustedResourceUrl instances.
+ *
+ * @param {string} url The string to initialize the TrustedResourceUrl object
+ *     with.
+ * @return {!goog.html.TrustedResourceUrl} The initialized TrustedResourceUrl
+ *     object.
+ * @package
+ */
+goog.html.TrustedResourceUrl.
+    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
+  var trustedResourceUrl = new goog.html.TrustedResourceUrl();
+  trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
+      url;
+  return trustedResourceUrl;
+};
+
 //javascript/closure/html/safehtml.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -16060,6 +16286,7 @@ goog.require('goog.asserts');
 goog.require('goog.dom.tags');
 goog.require('goog.html.SafeStyle');
 goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
 goog.require('goog.object');
@@ -16326,25 +16553,29 @@ goog.html.SafeHtml.VALID_NAMES_IN_TAG_ = /^[a-zA-Z0-9-]+$/;
 /**
  * Set of attributes containing URL as defined at
  * http://www.w3.org/TR/html5/index.html#attributes-1.
- * @private @const {Object<string,boolean>}
+ * @private @const {!Object<string,boolean>}
  */
 goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
     'data', 'formaction', 'href', 'manifest', 'poster', 'src');
 
 
-// TODO(jakubvrana): Perhaps add <template> used by Polymer?
+// TODO(user): Disallow embed, iframe, object and template too. Update
+// create() docs to point to tag-specific create methods.
 /**
- * Set of tag names that are too dangerous.
- * @private @const {Object<string,boolean>}
+ * Tags which are unsupported via create(). They might be supported via a
+ * tag-specific create method. These are tags which might require a
+ * TrustedResourceUrl in one of their attributes or a restricted type for
+ * their content.
+ * @private @const {!Object<string,boolean>}
  */
 goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet('link',
     'script', 'style');
 
 
 /**
+ * @typedef {string|number|goog.string.TypedString|
+ *     goog.html.SafeStyle.PropertyMap}
  * @private
- * @typedef {string|number|goog.string.Const|goog.html.SafeUrl|
- *     goog.html.SafeStyle|goog.html.SafeStyle.PropertyMap}
  */
 goog.html.SafeHtml.AttributeValue_;
 
@@ -16370,21 +16601,27 @@ goog.html.SafeHtml.AttributeValue_;
  *   'style': {'margin': '0'}
  * });
  *
+ * To guarantee SafeHtml's type contract is upheld there are restrictions on
+ * attribute values. These restrictions depend on tag name.
+ *
+ * - For attributes which contain script code (on*), a goog.string.Const is
+ *   required.
+ * - For attributes which contain style (style), a goog.html.SafeStyle or a
+ *   goog.html.SafeStyle.PropertyMap is required.
+ * - For attributes which are interpreted as URLs (e.g. src, href) a
+ *   goog.html.SafeUrl or goog.string.Const is required.
+ *
  * @param {string} tagName The name of the tag. Only tag names consisting of
  *     [a-zA-Z0-9-] are allowed. <link>, <script> and <style> tags are not
  *     supported.
  * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
  *     opt_attributes Mapping from attribute names to their values. Only
- *     attribute names consisting of [a-zA-Z0-9-] are allowed. Attributes with
- *     a special meaning (e.g. on*) require goog.string.Const value, attributes
- *     containing URL require goog.string.Const or goog.html.SafeUrl. The
- *     "style" attribute accepts goog.html.SafeStyle or a map which will be
- *     passed to goog.html.SafeStyle.create. Value of null or undefined causes
- *     the attribute to be omitted. Values are HTML-escaped before usage.
+ *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
+ *     undefined causes the attribute to be omitted.
  * @param {!goog.html.SafeHtml.TextOrHtml_|
- *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to put
- *     inside the tag. This must be empty for void tags like <br>. Array
- *     elements are concatenated.
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to
+ *     HTML-escape and put inside the tag. This must be empty for void tags
+ *     like <br>. Array elements are concatenated.
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
  * @throws {Error} If invalid tag name, attribute name, or attribute value is
  *     provided.
@@ -16397,8 +16634,67 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
   if (tagName.toLowerCase() in goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_) {
     throw Error('Tag name <' + tagName + '> is not allowed for SafeHtml.');
   }
+  return goog.html.SafeHtml.create_(
+      tagName, null, opt_attributes, opt_content);
+};
+
+
+/**
+ * Creates a SafeHtml representing an "embed" tag. All restrictions
+ * imposed by goog.html.SafeHtml.create() also apply.
+ *
+ * @param {!goog.html.TrustedResourceUrl} src Value of "src" attribute.
+ * @param {!goog.string.Const} type Value of "type" attribute. Should be a
+ *     valid MIME type, see
+ *     http://www.w3.org/TR/html5/embedded-content-0.html#attr-embed-type.
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
+ *     opt_attributes Mapping from other attribute names to their values. Only
+ *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
+ *     undefined causes the attribute to be omitted.
+ * @return {!goog.html.SafeHtml} The SafeHtml content with the embed tag.
+ * @throws {Error} If invalid attribute name, or attribute value is
+ *     provided. Also if opt_attributes contains src or type.
+ * @see http://www.w3.org/TR/html5/embedded-content-0.html#the-embed-element
+ */
+goog.html.SafeHtml.createEmbed = function(src, type, opt_attributes) {
+  if (goog.string.isEmpty(goog.string.Const.unwrap(type))) {
+    throw Error('Must provide non-empty "type"');
+  }
+  for (var attr in opt_attributes) {
+    var attrLower = attr.toLowerCase();
+    if (attrLower == 'src' || attrLower == 'type') {
+      throw Error('Cannot override "src" nor "type" attributes, got "' +
+          attr + '" with value "' + opt_attributes[attr] + '"');
+    }
+  }
+
+  var srcValue =
+      goog.string.htmlEscape(goog.html.TrustedResourceUrl.unwrap(src));
+  var typeValue = goog.string.htmlEscape(goog.string.Const.unwrap(type));
+  var srcAndType = 'src="' + srcValue + '" type="' + typeValue + '"';
+  return goog.html.SafeHtml.create_('embed', srcAndType, opt_attributes);
+};
+
+
+/**
+ * @param {string} tagName Tag name. Set or validated by caller.
+ * @param {?string} processedAttributes Already processed attributes which are
+ *     not in opt_attributes.
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
+ * @param {(!goog.html.SafeHtml.TextOrHtml_|
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>)=} opt_content
+ * @return {!goog.html.SafeHtml}
+ * @throws {Error} If invalid or unsafe attribute name or value is provided.
+ * @throws {goog.asserts.AssertionError} If content for void tag is provided.
+ * @private
+ */
+goog.html.SafeHtml.create_ = function(
+    tagName, processedAttributes, opt_attributes, opt_content) {
   var dir = null;
   var result = '<' + tagName;
+  if (processedAttributes) {
+    result += ' ' + processedAttributes;
+  }
 
   if (opt_attributes) {
     for (var name in opt_attributes) {
@@ -16406,30 +16702,11 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
         throw Error('Invalid attribute name "' + name + '".');
       }
       var value = opt_attributes[name];
-      if (value == null) {
+      if (!goog.isDefAndNotNull(value)) {
         continue;
       }
-      if (value instanceof goog.string.Const) {
-        // If it's goog.string.Const, allow any valid attribute name.
-        value = goog.string.Const.unwrap(value);
-      } else if (name.toLowerCase() == 'style') {
-        value = goog.html.SafeHtml.getStyleValue_(value);
-      } else if (/^on/i.test(name)) {
-        // TODO(jakubvrana): Disallow more attributes with a special meaning.
-        throw Error('Attribute "' + name +
-            '" requires goog.string.Const value, "' + value + '" given.');
-      } else if (value instanceof goog.html.SafeUrl) {
-        // If it's goog.html.SafeUrl, allow any non-JavaScript attribute name.
-        value = goog.html.SafeUrl.unwrap(value);
-      } else if (name.toLowerCase() in goog.html.SafeHtml.URL_ATTRIBUTES_) {
-        throw Error('Attribute "' + name +
-            '" requires goog.string.Const or goog.html.SafeUrl value, "' +
-            value + '" given.');
-      }
-      goog.asserts.assert(goog.isString(value) || goog.isNumber(value),
-          'String or number value expected, got ' +
-          (typeof value) + ' with value: ' + value);
-      result += ' ' + name + '="' + goog.string.htmlEscape(String(value)) + '"';
+      result += ' ' +
+          goog.html.SafeHtml.getAttrNameAndValue_(tagName, name, value);
     }
   }
 
@@ -16463,6 +16740,54 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
 
   return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       result, dir);
+};
+
+
+/**
+ * @param {string} tagName The tag name.
+ * @param {string} name The attribute name.
+ * @param {!goog.html.SafeHtml.AttributeValue_} value The attribute value.
+ * @return {string} A "name=value" string.
+ * @throws {Error} If attribute value is unsafe for the given tag and attribute.
+ * @private
+ */
+goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
+  // If it's goog.string.Const, allow any valid attribute name.
+  if (value instanceof goog.string.Const) {
+    value = goog.string.Const.unwrap(value);
+  } else if (name.toLowerCase() == 'style') {
+    value = goog.html.SafeHtml.getStyleValue_(value);
+  } else if (/^on/i.test(name)) {
+    // TODO(jakubvrana): Disallow more attributes with a special meaning.
+    throw Error('Attribute "' + name +
+        '" requires goog.string.Const value, "' + value + '" given.');
+  // URL attributes handled differently accroding to tag.
+  } else if (name.toLowerCase() in goog.html.SafeHtml.URL_ATTRIBUTES_) {
+    if (value instanceof goog.html.TrustedResourceUrl) {
+      value = goog.html.TrustedResourceUrl.unwrap(value);
+    } else if (value instanceof goog.html.SafeUrl) {
+      value = goog.html.SafeUrl.unwrap(value);
+    } else {
+      // TODO(user): Allow strings and sanitize them automatically,
+      // so that it's consistent with accepting a map directly for "style".
+      throw Error('Attribute "' + name + '" on tag "' + tagName +
+          '" requires goog.html.SafeUrl or goog.string.Const value, "' +
+          value + '" given.');
+    }
+  }
+
+  // Accept SafeUrl, TrustedResourceUrl, etc. for attributes which only require
+  // HTML-escaping.
+  if (value.implementsGoogStringTypedString) {
+    // Ok to call getTypedStringValue() since there's no reliance on the type
+    // contract for security here.
+    value = value.getTypedStringValue();
+  }
+
+  goog.asserts.assert(goog.isString(value) || goog.isNumber(value),
+      'String or number value expected, got ' +
+      (typeof value) + ' with value: ' + value);
+  return name + '="' + goog.string.htmlEscape(String(value)) + '"';
 };
 
 
@@ -16591,232 +16916,6 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
 goog.html.SafeHtml.EMPTY =
     goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '', goog.i18n.bidi.Dir.NEUTRAL);
-
-//javascript/closure/html/trustedresourceurl.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview The TrustedResourceUrl type and its builders.
- *
- * TODO(user): Link to document stating type contract.
- */
-
-goog.provide('goog.html.TrustedResourceUrl');
-
-goog.require('goog.asserts');
-goog.require('goog.i18n.bidi.Dir');
-goog.require('goog.i18n.bidi.DirectionalString');
-goog.require('goog.string.Const');
-goog.require('goog.string.TypedString');
-
-
-
-/**
- * A URL which is under application control and from which script, CSS, and
- * other resources that represent executable code, can be fetched.
- *
- * Given that the URL can only be constructed from strings under application
- * control and is used to load resources, bugs resulting in a malformed URL
- * should not have a security impact and are likely to be easily detectable
- * during testing. Given the wide number of non-RFC compliant URLs in use,
- * stricter validation could prevent some applications from being able to use
- * this type.
- *
- * Instances of this type must be created via the factory method,
- * ({@code goog.html.TrustedResourceUrl.fromConstant}), and not by invoking its
- * constructor. The constructor intentionally takes no parameters and the type
- * is immutable; hence only a default instance corresponding to the empty
- * string can be obtained via constructor invocation.
- *
- * @see goog.html.TrustedResourceUrl#fromConstant
- * @constructor
- * @final
- * @struct
- * @implements {goog.i18n.bidi.DirectionalString}
- * @implements {goog.string.TypedString}
- */
-goog.html.TrustedResourceUrl = function() {
-  /**
-   * The contained value of this TrustedResourceUrl.  The field has a purposely
-   * ugly name to make (non-compiled) code that attempts to directly access this
-   * field stand out.
-   * @private {string}
-   */
-  this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = '';
-
-  /**
-   * A type marker used to implement additional run-time type checking.
-   * @see goog.html.TrustedResourceUrl#unwrap
-   * @const
-   * @private
-   */
-  this.TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-      goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
-};
-
-
-/**
- * @override
- * @const
- */
-goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
-
-
-/**
- * Returns this TrustedResourceUrl's value as a string.
- *
- * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code TrustedResourceUrl}, use
- * {@code goog.html.TrustedResourceUrl.unwrap} instead of this method. If in
- * doubt, assume that it's security relevant. In particular, note that
- * goog.html functions which return a goog.html type do not guarantee that
- * the returned instance is of the right type. For example:
- *
- * <pre>
- * var fakeSafeHtml = new String('fake');
- * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
- * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml instanceof
- * // goog.html.SafeHtml.
- * </pre>
- *
- * @see goog.html.TrustedResourceUrl#unwrap
- * @override
- */
-goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
-};
-
-
-/**
- * @override
- * @const
- */
-goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
-    true;
-
-
-/**
- * Returns this URLs directionality, which is always {@code LTR}.
- * @override
- */
-goog.html.TrustedResourceUrl.prototype.getDirection = function() {
-  return goog.i18n.bidi.Dir.LTR;
-};
-
-
-if (goog.DEBUG) {
-  /**
-   * Returns a debug string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a TrustedResourceUrl, use
-   * {@code goog.html.TrustedResourceUrl.unwrap}.
-   *
-   * @see goog.html.TrustedResourceUrl#unwrap
-   * @override
-   */
-  goog.html.TrustedResourceUrl.prototype.toString = function() {
-    return 'TrustedResourceUrl{' +
-        this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '}';
-  };
-}
-
-
-/**
- * Performs a runtime check that the provided object is indeed a
- * TrustedResourceUrl object, and returns its value.
- *
- * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl The object to
- *     extract from.
- * @return {string} The trustedResourceUrl object's contained string, unless
- *     the run-time type check fails. In that case, {@code unwrap} returns an
- *     innocuous string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
- */
-goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
-  // Perform additional Run-time type-checking to ensure that
-  // trustedResourceUrl is indeed an instance of the expected type.  This
-  // provides some additional protection against security bugs due to
-  // application code that disables type checks.
-  // Specifically, the following checks are performed:
-  // 1. The object is an instance of the expected type.
-  // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
-  if (trustedResourceUrl instanceof goog.html.TrustedResourceUrl &&
-      trustedResourceUrl.constructor === goog.html.TrustedResourceUrl &&
-      trustedResourceUrl
-          .TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-              goog.html.TrustedResourceUrl
-                  .TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
-    return trustedResourceUrl
-        .privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
-  } else {
-    goog.asserts.fail('expected object of type TrustedResourceUrl, got \'' +
-                      trustedResourceUrl + '\'');
-    return 'type_error:TrustedResourceUrl';
-
-  }
-};
-
-
-/**
- * Creates a TrustedResourceUrl object from a compile-time constant string.
- *
- * Compile-time constant strings are inherently program-controlled and hence
- * trusted.
- *
- * @param {!goog.string.Const} url A compile-time-constant string from which to
- *     create a TrustedResourceUrl.
- * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
- *     initialized to {@code url}.
- */
-goog.html.TrustedResourceUrl.fromConstant = function(url) {
-  return goog.html.TrustedResourceUrl
-      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(
-          goog.string.Const.unwrap(url));
-};
-
-
-/**
- * Type marker for the TrustedResourceUrl type, used to implement additional
- * run-time type checking.
- * @const
- * @private
- */
-goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
-
-
-/**
- * Package-internal utility method to create TrustedResourceUrl instances.
- *
- * @param {string} url The string to initialize the TrustedResourceUrl object
- *     with.
- * @return {!goog.html.TrustedResourceUrl} The initialized TrustedResourceUrl
- *     object.
- * @package
- */
-goog.html.TrustedResourceUrl.
-    createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
-  var trustedResourceUrl = new goog.html.TrustedResourceUrl();
-  trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
-      url;
-  return trustedResourceUrl;
-};
 
 //javascript/closure/html/legacyconversions.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
