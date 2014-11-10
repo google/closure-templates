@@ -19,6 +19,7 @@ package com.google.template.soy.data;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.Futures;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -31,7 +32,6 @@ import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.List;
-
 
 /**
  * Unit tests for SoyValueHelper.
@@ -109,6 +109,16 @@ public class SoyValueHelperTest extends TestCase {
         ((SoyList) UNCUSTOMIZED_HELPER.convert(ImmutableSet.of("hoo"))).get(0).stringValue());
     assertEquals(3.14, UNCUSTOMIZED_HELPER.convert(3.14).resolve().floatValue());
     assertEquals(3.14F, (float) UNCUSTOMIZED_HELPER.convert(3.14F).resolve().floatValue());
+  }
+
+
+  public void testConvertFuture() {
+    assertTrue(
+        UNCUSTOMIZED_HELPER.convert(Futures.immediateFuture("future"))
+            instanceof SoyFutureValueProvider);
+    assertEquals(
+        "soy",
+        UNCUSTOMIZED_HELPER.convert(Futures.immediateFuture("soy")).resolve().stringValue());
   }
 
 

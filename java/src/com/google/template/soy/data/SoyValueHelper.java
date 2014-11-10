@@ -262,8 +262,6 @@ public final class SoyValueHelper implements SoyValueConverter {
       }
     } else if (obj instanceof FluentIterable<?>) {
       return newEasyListFromJavaIterable((FluentIterable<?>) obj);
-    } else if (obj instanceof Future<?>) {
-      return new SoyFutureValueProvider(this, (Future<?>) obj);
     } else if (obj instanceof SoyGlobalsValue) {
       return convert(((SoyGlobalsValue) obj).getSoyGlobalValue());
     } else {
@@ -323,6 +321,8 @@ public final class SoyValueHelper implements SoyValueConverter {
         // Automatically convert float to double.
         return FloatData.forValue((Float) obj);
       }
+    } else if (obj instanceof Future<?>) {
+      return new SoyFutureValueProvider(this, (Future<?>) obj);
     }
     return null;
   }
