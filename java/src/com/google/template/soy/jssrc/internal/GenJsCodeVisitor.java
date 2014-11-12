@@ -316,17 +316,17 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // not understand them.
     jsCodeBuilder.appendLine();
     jsCodeBuilder.appendLine("/**");
-    if (node.getNamespace() != null) {
-      jsCodeBuilder.appendLine(
-          " * @fileoverview Templates in namespace ", node.getNamespace(), ".");
-    }
+    String fileOverviewDescription = node.getNamespace() == null
+        ? ""
+        : " Templates in namespace " + node.getNamespace() + ".";
+    jsCodeBuilder.appendLine(" * @fileoverview", fileOverviewDescription);
     if (node.getDelPackageName() != null) {
       jsCodeBuilder.appendLine(" * @modName {", node.getDelPackageName(), "}");
     }
     addJsDocToProvideDelTemplates(node);
     addJsDocToRequireDelTemplates(node);
     addCodeToRequireCss(node);
-    jsCodeBuilder.appendLine(" */");
+    jsCodeBuilder.appendLine(" * @public").appendLine(" */");
 
     // Add code to define JS namespaces or add provide/require calls for Closure Library.
     jsCodeBuilder.appendLine();

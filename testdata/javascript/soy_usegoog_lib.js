@@ -448,7 +448,7 @@ if (!COMPILED) {
    * goog.provide('goog.events.Event') implicitly declares that 'goog' and
    * 'goog.events' must be namespaces.
    *
-   * @type {Object<string, (boolean|undefined)>}
+   * @type {!Object<string, (boolean|undefined)>}
    * @private
    */
   goog.implicitNamespaces_ = {'goog.module': true};
@@ -488,7 +488,7 @@ goog.getObjectByName = function(name, opt_obj) {
 /**
  * Globalizes a whole namespace, such as goog or goog.lang.
  *
- * @param {Object} obj The namespace to globalize.
+ * @param {!Object} obj The namespace to globalize.
  * @param {Object=} opt_global The object to add the properties to.
  * @deprecated Properties may be explicitly exported to the global scope, but
  *     this should no longer be done in bulk.
@@ -736,7 +736,7 @@ goog.define('goog.SEAL_MODULE_EXPORTS', goog.DEBUG);
 /**
  * The registry of initialized modules:
  * the module identifier to module exports map.
- * @private @const {Object<string, ?>}
+ * @private @const {!Object<string, ?>}
  */
 goog.loadedModules_ = {};
 
@@ -1455,7 +1455,7 @@ goog.getUid = function(obj) {
  *
  * This does not modify the object.
  *
- * @param {Object} obj The object to check.
+ * @param {!Object} obj The object to check.
  * @return {boolean} Whether there an assigned unique id for the object.
  */
 goog.hasUid = function(obj) {
@@ -3607,7 +3607,7 @@ goog.addDependency('ui/paletterenderer.js', ['goog.ui.PaletteRenderer'], ['goog.
 goog.addDependency('ui/paletterenderer_test.js', ['goog.ui.PaletteRendererTest'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.a11y.aria.State', 'goog.array', 'goog.dom', 'goog.testing.jsunit', 'goog.ui.Palette', 'goog.ui.PaletteRenderer'], false);
 goog.addDependency('ui/plaintextspellchecker.js', ['goog.ui.PlainTextSpellChecker'], ['goog.Timer', 'goog.a11y.aria', 'goog.asserts', 'goog.dom', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.KeyHandler', 'goog.spell.SpellCheck', 'goog.style', 'goog.ui.AbstractSpellChecker', 'goog.ui.Component', 'goog.userAgent'], false);
 goog.addDependency('ui/plaintextspellchecker_test.js', ['goog.ui.PlainTextSpellCheckerTest'], ['goog.Timer', 'goog.dom', 'goog.events.KeyCodes', 'goog.spell.SpellCheck', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.PlainTextSpellChecker'], false);
-goog.addDependency('ui/popup.js', ['goog.ui.Popup', 'goog.ui.Popup.AbsolutePosition', 'goog.ui.Popup.AnchoredPosition', 'goog.ui.Popup.AnchoredViewPortPosition', 'goog.ui.Popup.ClientPosition', 'goog.ui.Popup.Corner', 'goog.ui.Popup.Overflow', 'goog.ui.Popup.ViewPortClientPosition', 'goog.ui.Popup.ViewPortPosition'], ['goog.math.Box', 'goog.positioning.AbsolutePosition', 'goog.positioning.AnchoredPosition', 'goog.positioning.AnchoredViewportPosition', 'goog.positioning.ClientPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.ViewportClientPosition', 'goog.positioning.ViewportPosition', 'goog.style', 'goog.ui.PopupBase'], false);
+goog.addDependency('ui/popup.js', ['goog.ui.Popup', 'goog.ui.Popup.AbsolutePosition', 'goog.ui.Popup.AnchoredPosition', 'goog.ui.Popup.AnchoredViewPortPosition', 'goog.ui.Popup.ClientPosition', 'goog.ui.Popup.Overflow', 'goog.ui.Popup.ViewPortClientPosition', 'goog.ui.Popup.ViewPortPosition'], ['goog.math.Box', 'goog.positioning.AbsolutePosition', 'goog.positioning.AnchoredPosition', 'goog.positioning.AnchoredViewportPosition', 'goog.positioning.ClientPosition', 'goog.positioning.Corner', 'goog.positioning.Overflow', 'goog.positioning.ViewportClientPosition', 'goog.positioning.ViewportPosition', 'goog.style', 'goog.ui.PopupBase'], false);
 goog.addDependency('ui/popup_test.js', ['goog.ui.PopupTest'], ['goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.style', 'goog.testing.jsunit', 'goog.ui.Popup', 'goog.userAgent'], false);
 goog.addDependency('ui/popupbase.js', ['goog.ui.PopupBase', 'goog.ui.PopupBase.EventType', 'goog.ui.PopupBase.Type'], ['goog.Timer', 'goog.array', 'goog.dom', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.fx.Transition', 'goog.style', 'goog.userAgent'], false);
 goog.addDependency('ui/popupbase_test.js', ['goog.ui.PopupBaseTest'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.fx.Transition', 'goog.fx.css3', 'goog.testing.MockClock', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.ui.PopupBase'], false);
@@ -3722,7 +3722,7 @@ goog.addDependency('useragent/platform_test.js', ['goog.userAgent.platformTest']
 goog.addDependency('useragent/product.js', ['goog.userAgent.product'], ['goog.userAgent'], false);
 goog.addDependency('useragent/product_isversion.js', ['goog.userAgent.product.isVersion'], ['goog.string', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('useragent/product_test.js', ['goog.userAgent.productTest'], ['goog.array', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion', 'goog.userAgentTestUtil'], false);
-goog.addDependency('useragent/useragent.js', ['goog.userAgent'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.labs.userAgent.util', 'goog.string'], false);
+goog.addDependency('useragent/useragent.js', ['goog.userAgent'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.labs.userAgent.platform', 'goog.labs.userAgent.util', 'goog.string'], false);
 goog.addDependency('useragent/useragent_quirks_test.js', ['goog.userAgentQuirksTest'], ['goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('useragent/useragent_test.js', ['goog.userAgentTest'], ['goog.array', 'goog.labs.userAgent.testAgents', 'goog.labs.userAgent.util', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgentTestUtil'], false);
 goog.addDependency('useragent/useragenttestutil.js', ['goog.userAgentTestUtil', 'goog.userAgentTestUtil.UserAgents'], ['goog.labs.userAgent.browser', 'goog.labs.userAgent.engine', 'goog.labs.userAgent.platform', 'goog.userAgent', 'goog.userAgent.keyboard', 'goog.userAgent.platform', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
@@ -9483,6 +9483,166 @@ goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
   return pair && pair[1] || '';
 };
 
+//javascript/closure/labs/useragent/platform.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Closure user agent platform detection.
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For more information on browser brand, rendering engine, or device see the
+ * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
+ * respectively).
+ *
+ */
+
+goog.provide('goog.labs.userAgent.platform');
+
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the platform is Android.
+ */
+goog.labs.userAgent.platform.isAndroid = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Android');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPod.
+ */
+goog.labs.userAgent.platform.isIpod = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPod');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPhone.
+ */
+goog.labs.userAgent.platform.isIphone = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPad.
+ */
+goog.labs.userAgent.platform.isIpad = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iOS.
+ */
+goog.labs.userAgent.platform.isIos = function() {
+  return goog.labs.userAgent.platform.isIphone() ||
+      goog.labs.userAgent.platform.isIpad() ||
+      goog.labs.userAgent.platform.isIpod();
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Mac.
+ */
+goog.labs.userAgent.platform.isMacintosh = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Linux.
+ */
+goog.labs.userAgent.platform.isLinux = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Linux');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Windows.
+ */
+goog.labs.userAgent.platform.isWindows = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Windows');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is ChromeOS.
+ */
+goog.labs.userAgent.platform.isChromeOS = function() {
+  return goog.labs.userAgent.util.matchUserAgent('CrOS');
+};
+
+
+/**
+ * The version of the platform. We only determine the version for Windows,
+ * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
+ * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
+ * version 0.0.
+ *
+ * @return {string} The platform version or empty string if version cannot be
+ *     determined.
+ */
+goog.labs.userAgent.platform.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  var version = '', re;
+  if (goog.labs.userAgent.platform.isWindows()) {
+    re = /Windows (?:NT|Phone) ([0-9.]+)/;
+    var match = re.exec(userAgentString);
+    if (match) {
+      version = match[1];
+    } else {
+      version = '0.0';
+    }
+  } else if (goog.labs.userAgent.platform.isIos()) {
+    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
+    var match = re.exec(userAgentString);
+    // Report the version as x.y.z and not x_y_z
+    version = match && match[1].replace(/_/g, '.');
+  } else if (goog.labs.userAgent.platform.isMacintosh()) {
+    re = /Mac OS X ([0-9_.]+)/;
+    var match = re.exec(userAgentString);
+    // Note: some old versions of Camino do not report an OSX version.
+    // Default to 10.
+    version = match ? match[1].replace(/_/g, '.') : '10';
+  } else if (goog.labs.userAgent.platform.isAndroid()) {
+    re = /Android\s+([^\);]+)(\)|;)/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isChromeOS()) {
+    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  }
+  return version || '';
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the browser version is higher or the same as the
+ *     given version.
+ */
+goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
+  return goog.string.compareVersions(goog.labs.userAgent.platform.getVersion(),
+                                     version) >= 0;
+};
+
 //javascript/closure/useragent/useragent.js
 // Copyright 2006 The Closure Library Authors. All Rights Reserved.
 //
@@ -9511,6 +9671,7 @@ goog.provide('goog.userAgent');
 
 goog.require('goog.labs.userAgent.browser');
 goog.require('goog.labs.userAgent.engine');
+goog.require('goog.labs.userAgent.platform');
 goog.require('goog.labs.userAgent.util');
 goog.require('goog.string');
 
@@ -9746,73 +9907,11 @@ goog.userAgent.PLATFORM_KNOWN_ =
 
 
 /**
- * Initialize the goog.userAgent constants that define which platform the user
- * agent is running on.
- * @private
- */
-goog.userAgent.initPlatform_ = function() {
-  /**
-   * Whether the user agent is running on a Macintosh operating system.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedMac_ = goog.string.contains(goog.userAgent.PLATFORM,
-      'Mac');
-
-  /**
-   * Whether the user agent is running on a Windows operating system.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedWindows_ = goog.string.contains(
-      goog.userAgent.PLATFORM, 'Win');
-
-  /**
-   * Whether the user agent is running on a Linux operating system.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedLinux_ = goog.string.contains(goog.userAgent.PLATFORM,
-      'Linux');
-
-  // Need user agent string for Android/IOS detection
-  var ua = goog.userAgent.getUserAgentString();
-
-  /**
-   * Whether the user agent is running on Android.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedAndroid_ = !!ua &&
-      goog.string.contains(ua, 'Android');
-
-  /**
-   * Whether the user agent is running on an iPhone.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedIPhone_ = !!ua && goog.string.contains(ua, 'iPhone');
-
-  /**
-   * Whether the user agent is running on an iPad.
-   * @type {boolean}
-   * @private
-   */
-  goog.userAgent.detectedIPad_ = !!ua && goog.string.contains(ua, 'iPad');
-};
-
-
-if (!goog.userAgent.PLATFORM_KNOWN_) {
-  goog.userAgent.initPlatform_();
-}
-
-
-/**
  * Whether the user agent is running on a Macintosh operating system.
  * @type {boolean}
  */
 goog.userAgent.MAC = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_MAC : goog.userAgent.detectedMac_;
+    goog.userAgent.ASSUME_MAC : goog.labs.userAgent.platform.isMacintosh();
 
 
 /**
@@ -9820,7 +9919,8 @@ goog.userAgent.MAC = goog.userAgent.PLATFORM_KNOWN_ ?
  * @type {boolean}
  */
 goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_WINDOWS : goog.userAgent.detectedWindows_;
+    goog.userAgent.ASSUME_WINDOWS :
+    goog.labs.userAgent.platform.isWindows();
 
 
 /**
@@ -9828,7 +9928,8 @@ goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
  * @type {boolean}
  */
 goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_LINUX : goog.userAgent.detectedLinux_;
+    goog.userAgent.ASSUME_LINUX :
+    goog.labs.userAgent.platform.isLinux();
 
 
 /**
@@ -9847,7 +9948,8 @@ goog.userAgent.isX11_ = function() {
  * @type {boolean}
  */
 goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_X11 : goog.userAgent.isX11_();
+    goog.userAgent.ASSUME_X11 :
+    goog.userAgent.isX11_();
 
 
 /**
@@ -9855,7 +9957,8 @@ goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
  * @type {boolean}
  */
 goog.userAgent.ANDROID = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_ANDROID : goog.userAgent.detectedAndroid_;
+    goog.userAgent.ASSUME_ANDROID :
+    goog.labs.userAgent.platform.isAndroid();
 
 
 /**
@@ -9863,7 +9966,8 @@ goog.userAgent.ANDROID = goog.userAgent.PLATFORM_KNOWN_ ?
  * @type {boolean}
  */
 goog.userAgent.IPHONE = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPHONE : goog.userAgent.detectedIPhone_;
+    goog.userAgent.ASSUME_IPHONE :
+    goog.labs.userAgent.platform.isIphone();
 
 
 /**
@@ -9871,7 +9975,8 @@ goog.userAgent.IPHONE = goog.userAgent.PLATFORM_KNOWN_ ?
  * @type {boolean}
  */
 goog.userAgent.IPAD = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPAD : goog.userAgent.detectedIPad_;
+    goog.userAgent.ASSUME_IPAD :
+    goog.labs.userAgent.platform.isIpad();
 
 
 /**

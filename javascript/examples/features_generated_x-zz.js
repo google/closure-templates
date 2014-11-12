@@ -3,6 +3,7 @@
 
 /**
  * @fileoverview Templates in namespace soy.examples.features.
+ * @public
  */
 
 if (typeof soy == 'undefined') { var soy = {}; }
