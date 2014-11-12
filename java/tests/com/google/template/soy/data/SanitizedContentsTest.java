@@ -129,6 +129,7 @@ public class SanitizedContentsTest extends TestCase {
     assertResourceNameValid(true, "test.js", ContentKind.JS);
     assertResourceNameValid(true, "/test/foo.bar.js", ContentKind.JS);
     assertResourceNameValid(true, "test.html", ContentKind.HTML);
+    assertResourceNameValid(true, "test.svg", ContentKind.HTML);
     assertResourceNameValid(true, "test.css", ContentKind.CSS);
 
     // Wrong resource kind.

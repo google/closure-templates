@@ -20,11 +20,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -42,6 +44,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 @ParametersAreNonnullByDefault
 public final class SanitizedContents {
+  /**
+   * Extensions for static resources that we allow to be treated as safe HTML.
+   */
+  private static final Set<String> SAFE_HTML_FILE_EXTENSIONS = ImmutableSet.of("html", "svg");
 
   /** No constructor. */
   private SanitizedContents() {}
@@ -176,7 +182,7 @@ public final class SanitizedContents {
         Preconditions.checkArgument(fileExtension.equals("js"));
         break;
       case HTML:
-        Preconditions.checkArgument(fileExtension.equals("html"));
+        Preconditions.checkArgument(SAFE_HTML_FILE_EXTENSIONS.contains(fileExtension));
         break;
       case CSS:
         Preconditions.checkArgument(fileExtension.equals("css"));
