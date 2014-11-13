@@ -28,7 +28,9 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -227,6 +229,14 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return (BlockNode) super.getParent();
   }
 
+
+  /**
+   * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
+   * type checking when this node is being rendered.
+   */
+  public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+    return callee.getParams();
+  }
 
   /**
    * Sets the inferred escaping directives.

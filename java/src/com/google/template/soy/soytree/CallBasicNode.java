@@ -26,7 +26,9 @@ import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -87,6 +89,16 @@ public class CallBasicNode extends CallNode {
   /** The full name of the template being called. Briefly null before being set. */
   private String calleeName;
 
+  /**
+   * The list of params that need to be type checked when this node is run.  All the params that
+   * could be statically verified will be checked up front (by the
+   * {@code CheckCallingParamTypesVisitor}), this list contains the params that could not be
+   * statically checked.
+   *
+   * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
+   * passed from this caller.
+   */
+  private ImmutableList<TemplateParam> paramsToRuntimeTypeCheck;
 
   /**
    * @param id The id for this node.
@@ -286,6 +298,7 @@ public class CallBasicNode extends CallNode {
     super(orig);
     this.srcCalleeName = orig.srcCalleeName;
     this.calleeName = orig.calleeName;
+    this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
 
 
@@ -310,6 +323,17 @@ public class CallBasicNode extends CallNode {
     this.calleeName = calleeName;
   }
 
+  /**
+   * Sets the names of the parameters that require runtime type checking against the callees formal
+   * types.
+   */
+  public void setParamsToRuntimeCheck(Collection<TemplateParam> paramNames) {
+    this.paramsToRuntimeTypeCheck = ImmutableList.copyOf(paramNames);
+  }
+
+  @Override public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+    return paramsToRuntimeTypeCheck == null ? callee.getParams() : paramsToRuntimeTypeCheck;
+  }
 
   /** Returns the full name of the template being called, or null if not yet set. */
   public String getCalleeName() {

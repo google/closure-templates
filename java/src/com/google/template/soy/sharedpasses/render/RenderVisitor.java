@@ -20,10 +20,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.template.soy.data.SoyAbstractCachingValueProvider;
+import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
@@ -75,9 +78,11 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateConflictException;
 import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType.Kind;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -208,19 +213,26 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     visit(node);
   }
 
+  /** A private helper to render templates with optimized type checking. */
+  private void renderTemplate(TemplateNode template, Collection<TemplateParam> paramsToTypeCheck) {
+    try {
+      checkStrictParamTypes(template, paramsToTypeCheck);
+      visitBlockHelper(template);
+    } catch (RenderException re) {
+      // This will complete one single StackTraceElement, and rethrow.
+      throw re.completeStackTraceElement(template);
+    }
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-    try {
-      checkStrictParamTypes(node);
-      visitBlockHelper(node);
-    } catch (RenderException re) {
-      // This will complete one single StackTraceElement, and rethrow.
-      throw re.completeStackTraceElement(node);
-    }
+    // check all params of the node. This callpath should only be called in the case of external
+    // calls into soy (e.g. RenderVisitor.exec(node)).  For calls to templates from soy, the
+    // renderTemplate() method is called directly.
+    renderTemplate(node, node.getParams());
   }
 
 
@@ -586,7 +598,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // No escaping at the call site -- render directly into the output buffer.
       RenderVisitor rv = createHelperInstance(currOutputBuf, callData);
       try {
-        rv.exec(callee);
+        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -601,7 +613,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       StringBuilder calleeBuilder = new StringBuilder();
       RenderVisitor rv = createHelperInstance(calleeBuilder, callData);
       try {
-        rv.exec(callee);
+        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -804,25 +816,48 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void checkStrictParamTypes(TemplateNode node) {
-    for (TemplateParam param : node.getParams()) {
-      checkStrictParamType(node, param, data.getField(param.name()));
+  private void checkStrictParamTypes(TemplateNode node, Collection<TemplateParam> params) {
+    for (TemplateParam param : params) {
+      checkStrictParamType(node, param, data.getFieldProvider(param.name()));
     }
     for (TemplateParam param : node.getInjectedParams()) {
-      checkStrictParamType(node, param, ijData.getField(param.name()));
+      checkStrictParamType(node, param, ijData.getFieldProvider(param.name()));
     }
   }
 
-  private void checkStrictParamType(TemplateNode node, TemplateParam param, SoyValue paramValue) {
+  /** Check that the given {@code paramValue} matches the static type of {@code param}. */
+  private void checkStrictParamType(final TemplateNode node, final TemplateParam param,
+      @Nullable SoyValueProvider paramValue) {
+    Kind kind = param.type().getKind();
+    if (kind == Kind.ANY || kind == Kind.UNKNOWN) {
+      // Nothing to check.  ANY and UKNOWN match all types.
+      return;
+    }
     if (paramValue == null) {
       paramValue = NullData.INSTANCE;
+    } else if (paramValue instanceof SoyAbstractCachingValueProvider) {
+      SoyAbstractCachingValueProvider typedValue = (SoyAbstractCachingValueProvider) paramValue;
+      if (!typedValue.isComputed()) {
+        // in order to preserve laziness we tell the value provider to assert the type when
+        // computation is triggered
+        typedValue.addValueAssertion(new ValueAssertion() {
+          @Override public void check(SoyValue value) {
+            checkValueType(param, value, node);
+          }
+        });
+        return;
+      }
     }
-    if (!param.type().isInstance(paramValue)) {
-      throw new RenderException(
-          "Parameter type mismatch: attempt to bind value '" +
-          (paramValue instanceof UndefinedData ? "(undefined)" : paramValue) +
-          "' to parameter '" + param.name() + "' which has declared type '" +
-          param.type().toString() + "'.")
+    checkValueType(param, paramValue.resolve(), node);
+  }
+
+  /** Check that the value matches the given param type. */
+  private void checkValueType(TemplateParam param, SoyValue value, TemplateNode node) {
+    if (!param.type().isInstance(value)) {
+      throw new RenderException("Parameter type mismatch: attempt to bind value '"
+          + (value instanceof UndefinedData ? "(undefined)" : value)
+          + "' to parameter '" + param.name() + "' which has declared type '"
+          + param.type() + "'.")
           .addPartialStackTraceElement(node.getSourceLocation());
     }
   }

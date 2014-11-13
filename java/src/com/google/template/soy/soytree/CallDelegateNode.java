@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -26,7 +27,9 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +97,17 @@ public class CallDelegateNode extends CallNode {
    *  active implementation, or null if the attribute is not specified. */
   private Boolean allowsEmptyDefault;
 
+  /**
+   * The list of params that need to be type checked when this node is run on a per delegate basis.
+   * All the params that could be statically verified will be checked up front (by the
+   * {@code CheckCallingParamTypesVisitor}), this list contains the params that could not be
+   * statically checked.
+   *
+   * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
+   * passed from this caller.
+   */
+  private ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>>
+      paramsToRuntimeCheckByDelegate;
 
   /**
    * @param id The id for this node.
@@ -272,6 +286,7 @@ public class CallDelegateNode extends CallNode {
     this.delCalleeVariantExpr =
         (orig.delCalleeVariantExpr != null) ? orig.delCalleeVariantExpr.clone() : null;
     this.allowsEmptyDefault = orig.allowsEmptyDefault;
+    this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
   }
 
 
@@ -299,6 +314,25 @@ public class CallDelegateNode extends CallNode {
     }
   }
 
+  /**
+   * Sets the template params that require runtime type checking for each possible delegate target.
+   */
+  public void setParamsToRuntimeCheck(
+      ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>> paramsToRuntimeCheck) {
+    this.paramsToRuntimeCheckByDelegate = Preconditions.checkNotNull(paramsToRuntimeCheck);
+  }
+
+  @Override public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+    if (paramsToRuntimeCheckByDelegate == null) {
+      return callee.getParams();
+    }
+    ImmutableList<TemplateParam> params = paramsToRuntimeCheckByDelegate.get(callee);
+    if (params == null) {
+      // The callee was not known when we performed static type checking.  Check all params.
+      return callee.getParams();
+    }
+    return params;
+  }
 
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */
   public boolean allowsEmptyDefault() {

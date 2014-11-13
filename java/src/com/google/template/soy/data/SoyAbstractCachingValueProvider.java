@@ -16,6 +16,10 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.base.Preconditions;
+
+import javax.annotation.Nullable;
+
 
 /**
  * A SoyValueProvider that lazily computes and caches its value.
@@ -29,6 +33,15 @@ package com.google.template.soy.data;
 public abstract class SoyAbstractCachingValueProvider implements SoyValueProvider {
 
   /**
+   * A mechanism to plug in assertions on the computed value that will be run the first time the
+   * value is {@link SoyAbstractCachingValueProvider#compute() computed}.
+   */
+  public abstract static class ValueAssertion {
+    private ValueAssertion next;
+
+    public abstract void check(SoyValue value);
+  }
+  /**
    * The resolved value.
    * <p>
    * This will be set to non-null the first time this is resolved. Note that SoyValue must not be
@@ -36,6 +49,9 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
    */
   private volatile SoyValue resolvedValue = null;
 
+  // We thread a simple linked list through this field to eliminate the cost of allocating a
+  // collection
+  @Nullable private ValueAssertion valueAssertion;
 
   @Override public final SoyValue resolve() {
     // NOTE: If this is used across threads, the worst that will happen is two different providers
@@ -45,7 +61,11 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
     SoyValue localResolvedValue = resolvedValue;
     if (localResolvedValue == null) {
       localResolvedValue = compute();
+      for (ValueAssertion curr = valueAssertion; curr != null; curr = curr.next) {
+        curr.check(localResolvedValue);
+      }
       resolvedValue = localResolvedValue;
+      valueAssertion = null;
     }
     return localResolvedValue;
   }
@@ -73,6 +93,18 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
         "SoyAbstractCachingValueProvider is unsuitable for use as a hash key.");
   }
 
+  /** Returns {@code true} if the caching provider has already been calculated. */
+  public final boolean isComputed() {
+    return resolvedValue != null;
+  }
+
+  /** Registers a {@link ValueAssertion} callback with this caching provider. */
+  public void addValueAssertion(ValueAssertion assertion) {
+    Preconditions.checkState(resolvedValue == null,
+        "ValueAssertions should only be registered if the value is not yet computed.");
+    assertion.next = valueAssertion;
+    valueAssertion = assertion;
+  }
 
   /**
    * Implemented by subclasses to do the heavy-lifting for resolving.
