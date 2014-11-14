@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
-
+import javax.annotation.Nullable;
 
 /**
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -37,6 +37,27 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
   /** The wrapped Future object that will provide the value, if needed. */
   private final Future<?> future;
 
+  // Callback that gets fired when the provider is about to block on a future. That is when the
+  // future reports false for isDone and we are about to call get() on the future.
+  // There is only one of these; adding a second one overrides the first one.
+  @Nullable private FutureBlockCallback futureBlockCallback;
+
+  /**
+   * A callback that gets fired just before this provider will block on a future.
+   */
+  public interface FutureBlockCallback {
+    void beforeBlock();
+  }
+
+  /**
+   * Registers a {@link FutureBlockCallback } callback with this future provider.
+   * If a callback was already registered it is overridden. The specific use case of this is
+   * flushing the output stream just before blocking on a future – and since there is only one
+   * output stream that actually represents the outgoing byte only one such callback is needed.
+   */
+  public void setOrOverrideFutureBlockCallback(FutureBlockCallback callback) {
+    futureBlockCallback = callback;
+  }
 
   /**
    * @param valueHelper The instance of SoyValueHelper to use for converting the future value
@@ -48,6 +69,11 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
     this.future = future;
   }
 
+  /** Returns true if the wrapped future is done. */
+  public boolean isDone() {
+    return future.isDone();
+  }
+
 
   /**
    * Calls Future.get() and then converts the result to SoyValue. Note that
@@ -56,6 +82,9 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
    */
   @Override @Nonnull protected final SoyValue compute() {
     try {
+      if (!future.isDone() && futureBlockCallback != null) {
+        futureBlockCallback.beforeBlock();
+      }
       return valueHelper.convert(future.get()).resolve();
     } catch (ExecutionException e) {
       throw new SoyDataException("Error dereferencing future", e.getCause());

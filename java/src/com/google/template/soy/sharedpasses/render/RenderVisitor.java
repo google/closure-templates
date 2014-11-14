@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyFutureValueProvider;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -80,6 +81,7 @@ import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -99,7 +101,6 @@ import javax.annotation.Nullable;
  *
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
-
 
   /** Map of all SoyJavaPrintDirectives (name to directive). */
   protected final Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
@@ -144,6 +145,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The current Appendable to append the output to. Equals the top element of outputStack. */
   private Appendable currOutputBuf;
 
+  /**
+   * Render visitors have a stack of output buffers and RenderVisitors a nested (to render blocks)
+   * with independent output buffers. Of those, if any, the first one that is passed in can be
+   * flushed – all the others are StringBuilders. This instance variable holds the flushable root
+   * output buffer.
+   */
+  private CountingFlushableAppendable flushable;
+
 
   /**
    * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
@@ -186,6 +195,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.assistantForMsgs = null;  // lazily initialized
 
     this.outputBufStack = new ArrayDeque<Appendable>();
+    if (outputBuf instanceof Flushable) {
+      if (outputBuf instanceof CountingFlushableAppendable) {
+        flushable = (CountingFlushableAppendable) outputBuf;
+      } else {
+        flushable = new CountingFlushableAppendable(outputBuf);
+      }
+      outputBuf = flushable;
+    }
     pushOutputBuf(outputBuf);
   }
 
@@ -204,6 +221,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         data, ijData, null, activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
   }
 
+  private RenderVisitor createHelperInstanceWithFlushable(Appendable outputBuf, SoyRecord data) {
+    RenderVisitor v = this.createHelperInstance(outputBuf, data);
+    if (flushable != null && v.flushable == null) {
+      v.flushable = flushable;
+    }
+    return v;
+  }
 
   /**
    * This method must only be called by assistant visitors, in particular
@@ -216,6 +240,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** A private helper to render templates with optimized type checking. */
   private void renderTemplate(TemplateNode template, Collection<TemplateParam> paramsToTypeCheck) {
     try {
+      flushOnFutureParam(template);
       checkStrictParamTypes(template, paramsToTypeCheck);
       visitBlockHelper(template);
     } catch (RenderException re) {
@@ -596,7 +621,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     if (node.getEscapingDirectiveNames().isEmpty()) {
       // No escaping at the call site -- render directly into the output buffer.
-      RenderVisitor rv = createHelperInstance(currOutputBuf, callData);
+      RenderVisitor rv = createHelperInstanceWithFlushable(currOutputBuf, callData);
       try {
         rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
@@ -611,7 +636,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // eliminates escaping directives when all callers are known.
       // - Instead of creating a temporary buffer and copying, wrap with an escaping StringBuilder.
       StringBuilder calleeBuilder = new StringBuilder();
-      RenderVisitor rv = createHelperInstance(calleeBuilder, callData);
+      RenderVisitor rv = createHelperInstanceWithFlushable(calleeBuilder, callData);
       try {
         rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
@@ -813,6 +838,32 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
           directiveName, node.toSourceString(), e.getMessage()), e)
           .addPartialStackTraceElement(node.getSourceLocation());
+    }
+  }
+
+  /**
+   * Inspects all arguments to a called template and flushes the primary flushable output buffer
+   * if any of the arguments is a future that is not yet done.
+   */
+  private void flushOnFutureParam(TemplateNode node) {
+    if (flushable == null) {
+      return;
+    }
+    for (TemplateParam param : node.getParams()) {
+      maybeFlushEventually(data.getFieldProvider(param.name()));
+    }
+    for (TemplateParam param : node.getInjectedParams()) {
+      maybeFlushEventually(ijData.getFieldProvider(param.name()));
+    }
+  }
+
+  private void maybeFlushEventually(SoyValueProvider value) {
+    if (value instanceof SoyFutureValueProvider) {
+      SoyFutureValueProvider futureProvider = (SoyFutureValueProvider) value;
+      if (futureProvider.isDone()) {
+        return;
+      }
+      futureProvider.setOrOverrideFutureBlockCallback(flushable);
     }
   }
 
