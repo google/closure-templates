@@ -17,13 +17,14 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.tofu.internal.TofuModule.Tofu;
 
+import java.util.Deque;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -54,7 +55,7 @@ class TofuEvalVisitorFactory implements EvalVisitorFactory {
 
 
   @Override public EvalVisitor create(
-      SoyRecord data, @Nullable SoyRecord ijData, Environment env) {
+      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
 
     return new TofuEvalVisitor(valueHelper, soyJavaFunctionsMap, data, ijData, env);
   }

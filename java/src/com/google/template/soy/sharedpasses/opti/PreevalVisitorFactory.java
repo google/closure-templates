@@ -18,12 +18,13 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 
+import java.util.Deque;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -58,14 +59,14 @@ public class PreevalVisitorFactory implements EvalVisitorFactory {
   }
 
 
-  public PreevalVisitor create(SoyRecord data, Environment env) {
+  public PreevalVisitor create(SoyRecord data, Deque<Map<String, SoyValue>> env) {
 
     return new PreevalVisitor(valueHelper, soyJavaFunctionsMap, data, env);
   }
 
 
   @Override public PreevalVisitor create(
-      SoyRecord data, @Nullable SoyRecord ijData, Environment env) {
+      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);

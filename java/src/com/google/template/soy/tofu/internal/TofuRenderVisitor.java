@@ -17,18 +17,20 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.TemplateRegistry;
 
+import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
 
 /**
  * Version of {@code RenderVisitor} for the Tofu backend.
@@ -62,7 +64,7 @@ class TofuRenderVisitor extends RenderVisitor {
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       TofuEvalVisitorFactory tofuEvalVisitorFactory, Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry, SoyRecord data, @Nullable SoyRecord ijData,
-      @Nullable Environment env, @Nullable Set<String> activeDelPackageNames,
+      @Nullable Deque<Map<String, SoyValue>> env, @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
 

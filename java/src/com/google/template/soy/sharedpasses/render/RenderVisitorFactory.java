@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -25,6 +26,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
 
+import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
 
@@ -76,7 +78,7 @@ public class RenderVisitorFactory {
    */
   public RenderVisitor create(
       Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable SoyRecord ijData, @Nullable Environment env,
+      @Nullable SoyRecord ijData, @Nullable Deque<Map<String, SoyValue>> env,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
 

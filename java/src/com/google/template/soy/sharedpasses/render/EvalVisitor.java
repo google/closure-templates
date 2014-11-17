@@ -67,10 +67,12 @@ import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+
 
 /**
  * Visitor for evaluating the expression rooted at a given ExprNode.
@@ -99,7 +101,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      * @return The newly created EvalVisitor instance.
      */
     public EvalVisitor create(
-        SoyRecord data, @Nullable SoyRecord ijData, Environment env);
+        SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env);
   }
 
 
@@ -116,7 +118,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private final SoyRecord ijData;
 
   /** The current environment. */
-  private final Environment env;
+  private final Deque<Map<String, SoyValue>> env;
 
   /**
    * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function). Can be
@@ -128,7 +130,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   protected EvalVisitor(
       SoyValueHelper valueHelper, @Nullable Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      SoyRecord data, @Nullable SoyRecord ijData, Environment env) {
+      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
 
     this.valueHelper = valueHelper;
     this.soyJavaFunctionsMap = soyJavaFunctionsMap;
@@ -309,9 +311,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       // (b) we don't know either way.
       if (varKind == VarDefn.Kind.LOCAL_VAR || varKind == VarDefn.Kind.UNDECLARED) {
         if (env != null) {
-          result = env.getLocalVar(varRef.getName());
-          if (result != null) {
-            return result;
+          for (Map<String, SoyValue> envFrame : env) {
+            result = envFrame.get(varRef.getName());
+            if (result != null) {
+              return result;
+            }
           }
         }
       }
@@ -675,7 +679,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
       String localVarName = dataRef.getName();
-      localVarIndex = env.getIndex(localVarName);
+      localVarIndex = getLocalVar(localVarName + "__index").integerValue();
     } catch (Exception e) {
       throw new RenderException(
           "Failed to evaluate function call " + node.toSourceString() + ".",
@@ -687,17 +691,18 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private SoyValue visitIsLastFunction(FunctionNode node) {
 
-    boolean isLast;
+    int localVarIndex, localVarLastIndex;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
       String localVarName = dataRef.getName();
-      isLast = env.isLastIndex(localVarName);
+      localVarIndex = getLocalVar(localVarName + "__index").integerValue();
+      localVarLastIndex = getLocalVar(localVarName + "__lastIndex").integerValue();
     } catch (Exception e) {
       throw new RenderException(
           "Failed to evaluate function call " + node.toSourceString() + ".",
           e);
     }
-    return convertResult(isLast);
+    return convertResult(localVarIndex == localVarLastIndex);
   }
 
 
@@ -707,7 +712,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
       String localVarName = dataRef.getName();
-      localVarIndex = env.getIndex(localVarName);
+      localVarIndex = getLocalVar(localVarName + "__index").integerValue();
     } catch (Exception e) {
       throw new RenderException(
           "Failed to evaluate function call " + node.toSourceString() + ".",
@@ -754,6 +759,25 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   private SoyValue convertResult(String s) {
     return StringData.forValue(s);
+  }
+
+
+  /**
+   * Private helper to get the value of a local variable (from the environment).
+   * Note: Throws an AssertionError if the given name is not defined in the environment.
+   * @param localVarName The name of the local var to retrieve.
+   * @return The value of the local var.
+   */
+  private SoyValue getLocalVar(String localVarName) {
+
+    for (Map<String, SoyValue> envFrame : env) {
+      SoyValue value = envFrame.get(localVarName);
+      if (value != null) {
+        return value;
+      }
+    }
+
+    throw new AssertionError();
   }
 
 
