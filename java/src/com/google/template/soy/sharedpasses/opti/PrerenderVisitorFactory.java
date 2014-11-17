@@ -17,12 +17,11 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-import java.util.Deque;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -66,7 +65,7 @@ public class PrerenderVisitorFactory {
    */
   public PrerenderVisitor create(
       Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable Deque<Map<String, SoyValue>> env) {
+      @Nullable Environment env) {
 
     return new PrerenderVisitor(
         soyJavaDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry, data, env);

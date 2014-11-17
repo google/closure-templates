@@ -17,9 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -50,10 +48,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.util.ULocale;
 
-import java.util.Deque;
 import java.util.List;
-import java.util.Map;
-
 
 /**
  * Assistant visitor for RenderVisitor to handle messages.
@@ -66,7 +61,7 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
   private final RenderVisitor master;
 
   /** The current environment. */
-  private final Deque<Map<String, SoyValue>> env;
+  private final Environment env;
 
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   private final SoyMsgBundle msgBundle;
@@ -82,7 +77,7 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    *     source.
    */
   RenderVisitorAssistantForMsgs(
-      RenderVisitor master, Deque<Map<String, SoyValue>> env, SoyMsgBundle msgBundle) {
+      RenderVisitor master, Environment env, SoyMsgBundle msgBundle) {
     this.master = master;
     this.env = env;
     this.msgBundle = msgBundle;
@@ -111,7 +106,7 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
     boolean doAddEnvFrame = node.needsEnvFrameDuringInterp() != Boolean.FALSE /*true or unknown*/;
     if (doAddEnvFrame) {
-      env.push(Maps.<String, SoyValue>newHashMap());
+      env.push();
     }
 
     boolean foundTranslation = false;

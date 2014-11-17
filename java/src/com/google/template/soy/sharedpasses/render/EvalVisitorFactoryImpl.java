@@ -17,13 +17,11 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 
-import java.util.Deque;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -56,7 +54,7 @@ public class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 
 
   @Override public EvalVisitor create(
-      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
+      SoyRecord data, @Nullable SoyRecord ijData, Environment env) {
 
     return new EvalVisitor(valueHelper, soyJavaFunctionsMap, data, ijData, env);
   }

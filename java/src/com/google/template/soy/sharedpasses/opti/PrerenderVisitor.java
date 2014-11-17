@@ -17,9 +17,9 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -34,11 +34,9 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
-import java.util.Deque;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Visitor for prerendering the template subtree rooted at a given SoyNode. This is possible when
@@ -65,7 +63,7 @@ class PrerenderVisitor extends RenderVisitor {
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory, Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable Deque<Map<String, SoyValue>> env) {
+      @Nullable Environment env) {
 
     super(
         soyJavaDirectivesMap, preevalVisitorFactory, outputBuf,

@@ -24,13 +24,12 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Visitor for preevaluating expressions in which all data values known at compile time.
@@ -54,7 +53,7 @@ class PreevalVisitor extends EvalVisitor {
    */
   PreevalVisitor(
       SoyValueHelper valueHelper, Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      SoyRecord data, Deque<Map<String, SoyValue>> env) {
+      SoyRecord data, Environment env) {
 
     super(valueHelper, soyJavaFunctionsMap, data, null, env);
   }

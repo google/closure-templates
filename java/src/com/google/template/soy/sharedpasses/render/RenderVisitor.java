@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
 import com.google.template.soy.data.SoyDataException;
@@ -42,6 +41,9 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.sharedpasses.render.Environment.ForEachFrame;
+import com.google.template.soy.sharedpasses.render.Environment.ForFrame;
+import com.google.template.soy.sharedpasses.render.Environment.Snapshot;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -69,6 +71,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -118,7 +121,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final SoyRecord ijData;
 
   /** The current environment. */
-  protected final Deque<Map<String, SoyValue>> env;
+  protected final Environment env;
 
   /** The set of active delegate package names. */
   protected final Set<String> activeDelPackageNames;
@@ -174,7 +177,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       EvalVisitorFactory evalVisitorFactory, Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable SoyRecord ijData, @Nullable Deque<Map<String, SoyValue>> env,
+      @Nullable SoyRecord ijData, @Nullable Environment env,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
@@ -185,7 +188,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.templateRegistry = templateRegistry;
     this.data = data;
     this.ijData = ijData;
-    this.env = (env != null) ? env : new ArrayDeque<Map<String, SoyValue>>();
+    this.env = (env != null) ? env : Environment.create();
     this.activeDelPackageNames = activeDelPackageNames;
     this.msgBundle = msgBundle;
     this.xidRenamingMap = xidRenamingMap;
@@ -344,24 +347,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitLetValueNode(LetValueNode node) {
-    env.peek().put(node.getVarName(), eval(node.getValueExpr(), node));
+    env.bind(node.getVarName(), lazyEval(node.getValueExpr(), node));
   }
 
 
   @Override protected void visitLetContentNode(LetContentNode node) {
-    SoyValue renderedBlock = renderBlock(node);
-
-    // If the let node has a content kind attribute, it will have been autoescaped in the
-    // corresponding context by the strict contextual autoescaper. Hence, the result of evaluating
-    // the let block is wrapped in SanitizedContent of the specified kind.
-    // TODO: Consider adding mutable state to nodes that allows the contextual escaper to tag
-    // nodes it has processed, and assert presence of this tag here.
-    if (node.getContentKind() != null) {
-      renderedBlock = UnsafeSanitizedContentOrdainer.ordainAsSafe(
-          renderedBlock.stringValue(), node.getContentKind());
-    }
-
-    env.peek().put(node.getVarName(), renderedBlock);
+    env.bind(node.getVarName(), renderRenderUnitNode(node));
   }
 
 
@@ -423,19 +414,15 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           "(encountered type " + dataRefValue.getClass().getName() + ").");
     }
     SoyList foreachList = (SoyList) dataRefValue;
-
-    if (foreachList.length() > 0) {
+    int listLength = foreachList.length();
+    if (listLength > 0) {
       // Case 1: Nonempty list.
       String varName = node.getVarName();
 
-      Map<String, SoyValue> newEnvFrame = Maps.newHashMap();
       // Note: No need to save firstIndex as it's always 0.
-      newEnvFrame.put(varName + "__lastIndex", IntegerData.forValue(foreachList.length() - 1));
-      env.push(newEnvFrame);
-
-      for (int i = 0; i < foreachList.length(); ++i) {
-        newEnvFrame.put(varName + "__index", IntegerData.forValue(i));
-        newEnvFrame.put(varName, foreachList.get(i));
+      ForEachFrame frame = env.pushForEachLoop(varName, listLength - 1);
+      for (int i = 0; i < listLength; ++i) {
+        frame.resetLoopVar(foreachList.get(i), i);
         visitChildren((ForeachNonemptyNode) node.getChild(0));
       }
 
@@ -469,11 +456,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     int limit = rangeArgValues.get(0);
 
     String localVarName = node.getVarName();
-    Map<String, SoyValue> newEnvFrame = Maps.newHashMap();
-    env.push(newEnvFrame);
+    ForFrame frame = env.pushForLoop(localVarName);
 
     for (int i = init; i < limit; i += increment) {
-      newEnvFrame.put(localVarName, IntegerData.forValue(i));
+      frame.resetLoopVar(i);
       visitChildren(node);
     }
 
@@ -593,21 +579,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         if (child instanceof CallParamValueNode) {
           mutableCallData.setField(
               child.getKey(),
-              eval(((CallParamValueNode) child).getValueExprUnion().getExpr(), child));
+              lazyEval(((CallParamValueNode) child).getValueExprUnion().getExpr(), child));
 
         } else if (child instanceof CallParamContentNode) {
-          CallParamContentNode childCpcn = (CallParamContentNode) child;
-          SoyValue renderedBlock = renderBlock(childCpcn);
-
-          // If the param node has a content kind attribute, it will have been autoescaped in the
-          // corresponding context by the strict contextual autoescaper. Hence, the result of
-          // evaluating the param block is wrapped in SanitizedContent of the specified kind.
-          if (childCpcn.getContentKind() != null) {
-            renderedBlock = UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                renderedBlock.stringValue(), childCpcn.getContentKind());
-          }
-
-          mutableCallData.setField(child.getKey(), renderedBlock);
+          mutableCallData.setField(
+              child.getKey(),
+              renderRenderUnitNode((CallParamContentNode) child));
 
         } else {
           throw new AssertionError();
@@ -663,7 +640,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitLogNode(LogNode node) {
-    System.out.println(renderBlock(node));
+    renderBlock(node, System.out);
+    System.out.println();  // add a newline
   }
 
 
@@ -730,7 +708,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private void visitBlockHelper(BlockNode node) {
 
     if (node.needsEnvFrameDuringInterp() != Boolean.FALSE /*true or unknown*/) {
-      env.push(Maps.<String, SoyValue>newHashMap());
+      env.push();
       visitChildren(node);
       env.pop();
 
@@ -739,21 +717,35 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
   /**
    * Private helper to render the children of a block into a separate string (not directly appended
    * to the current output buffer).
    * @param block The block whose children are to be rendered.
-   * @return The result of rendering the block's children, as StringData.
    */
-  private StringData renderBlock(BlockNode block) {
-
-    pushOutputBuf(new StringBuilder());
+  private void renderBlock(BlockNode block, Appendable to) {
+    pushOutputBuf(to);
     visitBlockHelper(block);
-    Appendable outputBuf = popOutputBuf();
-    return StringData.forValue(outputBuf.toString());
+    popOutputBuf();
   }
 
+  private SoyValueProvider renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
+    return new LazyEvaluatingValueProvider() {
+      @Override SoyValue doCompute() {
+        StringBuilder outputBuf = new StringBuilder();
+        renderBlock(renderUnitNode, outputBuf);
+        String renderedBlock = outputBuf.toString();
+
+        // If the param node has a content kind attribute, it will have been autoescaped in the
+        // corresponding context by the strict contextual autoescaper. Hence, the result of
+        // evaluating the param block is wrapped in SanitizedContent of the specified kind.
+        if (renderUnitNode.getContentKind() != null) {
+          return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+              renderedBlock, renderUnitNode.getContentKind());
+        }
+        return StringData.forValue(renderedBlock);
+      }
+    };
+  }
 
   /**
    * Private helper to evaluate an expression. Always use this helper instead of using evalVisitor
@@ -780,6 +772,17 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
+  /**
+   * Private helper to evaluate an expression. Always use this helper instead of using evalVisitor
+   * directly, because this helper creates and throws a RenderException if there's an error.
+   */
+  private SoyValueProvider lazyEval(final ExprNode expr, final SoyNode node) {
+    return new LazyEvaluatingValueProvider() {
+      @Override SoyValue doCompute() {
+        return eval(expr, node);
+      }
+    };
+  }
 
   /**
    * This method must only be called by assistant visitors, in particular
@@ -911,5 +914,44 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           + param.type() + "'.")
           .addPartialStackTraceElement(node.getSourceLocation());
     }
+  }
+
+  /**
+   * A {@link SoyAbstractCachingValueProvider} that captures the current {@link #env} at
+   * construction time and ensures that evaluation is performed with the same environment.
+   *
+   * <p>Soy variables bindings are immutable but they can be overridden in a child frame.
+   * <pre>   {@code
+   *
+   *   {template .foo}
+   *     {let $var1: 2 /}
+   *     {let $var2: $var1 + 2 /}
+   *     {for $var1 in range(10)}
+   *       {$var2}
+   *     {/for}
+   *   {/template}}</pre>
+   *
+   * <p>At the time we evaluate {@code $var2} within the for loop the value should be {@code 4}, but
+   * if we didn't snapshot the environment then when evaluating {@code $var2} the first time it
+   * would find the loop variable instead of the initial binding, in which case we would print
+   * {@code 0}.  So to ensure that lazy evaluation ignore overrides in child frames we need to
+   * snapshot the local variable environment at binding time.
+   *
+   * <p>Note: In loops we technically reset bindings on each loop iteration, but since there is no
+   * way for a {let} variable evaluation to escape the context of the loop in which it is defined
+   * there is no risk of reading values from the wrong loop iteration.
+   */
+  private abstract class LazyEvaluatingValueProvider extends SoyAbstractCachingValueProvider {
+    Snapshot environmentSnapshot = env.snapshot();
+    @Override protected SoyValue compute() {
+      Snapshot current = env.snapshot();
+      env.reset(environmentSnapshot);
+      environmentSnapshot = null;
+      SoyValue value = doCompute();
+      env.reset(current);
+      return value;
+    }
+
+    abstract SoyValue doCompute();
   }
 }

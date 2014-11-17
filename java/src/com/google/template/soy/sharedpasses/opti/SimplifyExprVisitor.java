@@ -41,14 +41,10 @@ import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
-
 import javax.inject.Inject;
-
 
 /**
  * Visitor for simplifying expressions based on constant values known at compile time.
@@ -60,8 +56,7 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
   /** Empty env used in creating PreevalVisitors for this class. */
-  private static final Deque<Map<String, SoyValue>> EMPTY_ENV =
-      new ArrayDeque<Map<String, SoyValue>>(0);
+  private static final Environment EMPTY_ENV = Environment.create();
 
 
   /** The PreevalVisitor for this instance (can reuse). */
