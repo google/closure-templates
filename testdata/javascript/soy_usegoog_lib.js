@@ -2889,6 +2889,8 @@ goog.addDependency('history/history.js', ['goog.History', 'goog.History.Event', 
 goog.addDependency('history/history_test.js', ['goog.HistoryTest'], ['goog.History', 'goog.dispose', 'goog.dom', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('history/html5history.js', ['goog.history.Html5History', 'goog.history.Html5History.TokenTransformer'], ['goog.asserts', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.history.Event'], false);
 goog.addDependency('history/html5history_test.js', ['goog.history.Html5HistoryTest'], ['goog.history.Html5History', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], false);
+goog.addDependency('html/flash.js', ['goog.html.flash'], ['goog.html.SafeHtml'], false);
+goog.addDependency('html/flash_test.js', ['goog.html.flashTest'], ['goog.html.SafeHtml', 'goog.html.TrustedResourceUrl', 'goog.html.flash', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/legacyconversions.js', ['goog.html.legacyconversions'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl'], false);
 goog.addDependency('html/legacyconversions_test.js', ['goog.html.legacyconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.legacyconversions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
@@ -9735,6 +9737,8 @@ goog.labs.userAgent.platform.isMacintosh = function() {
 
 
 /**
+ * Note: ChromeOS is not considered to be Linux as it does not report itself
+ * as Linux in the user agent string.
  * @return {boolean} Whether the platform is Linux.
  */
 goog.labs.userAgent.platform.isLinux = function() {
@@ -10093,12 +10097,30 @@ goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
 
 
 /**
+ * Whether the user agent is Linux per the legacy behavior of
+ * goog.userAgent.LINUX, which considered ChromeOS to also be
+ * Linux.
+ * @return {boolean}
+ * @private
+ */
+goog.userAgent.isLegacyLinux_ = function() {
+  return goog.labs.userAgent.platform.isLinux() ||
+      goog.labs.userAgent.platform.isChromeOS();
+};
+
+
+/**
  * Whether the user agent is running on a Linux operating system.
+ *
+ * Note that goog.userAgent.LINUX considers ChromeOS to be Linux,
+ * while goog.labs.userAgent.platform considers ChromeOS and
+ * Linux to be different OSes.
+ *
  * @type {boolean}
  */
 goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
     goog.userAgent.ASSUME_LINUX :
-    goog.labs.userAgent.platform.isLinux();
+    goog.userAgent.isLegacyLinux_();
 
 
 /**
@@ -16909,112 +16931,8 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
   if (tagName.toLowerCase() in goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_) {
     throw Error('Tag name <' + tagName + '> is not allowed for SafeHtml.');
   }
-  return goog.html.SafeHtml.create_(
-      tagName, null, opt_attributes, opt_content);
-};
-
-
-/**
- * Creates a SafeHtml representing an "embed" tag. All restrictions
- * imposed by goog.html.SafeHtml.create() also apply.
- *
- * @param {!goog.html.TrustedResourceUrl} src Value of "src" attribute.
- * @param {!goog.string.Const} type Value of "type" attribute. Should be a
- *     valid MIME type, see
- *     http://www.w3.org/TR/html5/embedded-content-0.html#attr-embed-type.
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
- *     opt_attributes Mapping from other attribute names to their values. Only
- *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
- *     undefined causes the attribute to be omitted.
- * @return {!goog.html.SafeHtml} The SafeHtml content with the embed tag.
- * @throws {Error} If invalid attribute name, or attribute value is
- *     provided. Also if opt_attributes contains src or type.
- * @see http://www.w3.org/TR/html5/embedded-content-0.html#the-embed-element
- */
-goog.html.SafeHtml.createEmbed = function(src, type, opt_attributes) {
-  if (goog.string.isEmpty(goog.string.Const.unwrap(type))) {
-    throw Error('Must provide non-empty "type"');
-  }
-  for (var attr in opt_attributes) {
-    var attrLower = attr.toLowerCase();
-    if (attrLower == 'src' || attrLower == 'type') {
-      throw Error('Cannot override "src" nor "type" attributes, got "' +
-          attr + '" with value "' + opt_attributes[attr] + '"');
-    }
-  }
-
-  var srcValue =
-      goog.string.htmlEscape(goog.html.TrustedResourceUrl.unwrap(src));
-  var typeValue = goog.string.htmlEscape(goog.string.Const.unwrap(type));
-  var srcAndType = 'src="' + srcValue + '" type="' + typeValue + '"';
-  return goog.html.SafeHtml.create_('embed', srcAndType, opt_attributes);
-};
-
-
-/**
- * @param {string} tagName Tag name. Set or validated by caller.
- * @param {?string} processedAttributes Already processed attributes which are
- *     not in opt_attributes.
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
- * @param {(!goog.html.SafeHtml.TextOrHtml_|
- *     !Array<!goog.html.SafeHtml.TextOrHtml_>)=} opt_content
- * @return {!goog.html.SafeHtml}
- * @throws {Error} If invalid or unsafe attribute name or value is provided.
- * @throws {goog.asserts.AssertionError} If content for void tag is provided.
- * @private
- */
-goog.html.SafeHtml.create_ = function(
-    tagName, processedAttributes, opt_attributes, opt_content) {
-  var dir = null;
-  var result = '<' + tagName;
-  if (processedAttributes) {
-    result += ' ' + processedAttributes;
-  }
-
-  if (opt_attributes) {
-    for (var name in opt_attributes) {
-      if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(name)) {
-        throw Error('Invalid attribute name "' + name + '".');
-      }
-      var value = opt_attributes[name];
-      if (!goog.isDefAndNotNull(value)) {
-        continue;
-      }
-      result += ' ' +
-          goog.html.SafeHtml.getAttrNameAndValue_(tagName, name, value);
-    }
-  }
-
-  var content = opt_content;
-  if (!goog.isDef(content)) {
-    content = [];
-  } else if (!goog.isArray(content)) {
-    content = [content];
-  }
-
-  if (goog.dom.tags.isVoidTag(tagName.toLowerCase())) {
-    goog.asserts.assert(!content.length,
-        'Void tag <' + tagName + '> does not allow content.');
-    result += '>';
-  } else {
-    var html = goog.html.SafeHtml.concat(content);
-    result += '>' + goog.html.SafeHtml.unwrap(html) + '</' + tagName + '>';
-    dir = html.getDirection();
-  }
-
-  var dirAttribute = opt_attributes && opt_attributes['dir'];
-  if (dirAttribute) {
-    if (/^(ltr|rtl|auto)$/i.test(dirAttribute)) {
-      // If the tag has the "dir" attribute specified then its direction is
-      // neutral because it can be safely used in any context.
-      dir = goog.i18n.bidi.Dir.NEUTRAL;
-    } else {
-      dir = null;
-    }
-  }
-
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-      result, dir);
+  return goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
+      tagName, opt_attributes, opt_content);
 };
 
 
@@ -17181,6 +17099,70 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
   safeHtml.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = html;
   safeHtml.dir_ = dir;
   return safeHtml;
+};
+
+
+/**
+ * Like create() but does not restrict which tags can be constructed.
+ *
+ * @param {string} tagName Tag name. Set or validated by caller.
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
+ * @param {(!goog.html.SafeHtml.TextOrHtml_|
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>)=} opt_content
+ * @return {!goog.html.SafeHtml}
+ * @throws {Error} If invalid or unsafe attribute name or value is provided.
+ * @throws {goog.asserts.AssertionError} If content for void tag is provided.
+ * @package
+ */
+goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse =
+    function(tagName, opt_attributes, opt_content) {
+  var dir = null;
+  var result = '<' + tagName;
+
+  if (opt_attributes) {
+    for (var name in opt_attributes) {
+      if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(name)) {
+        throw Error('Invalid attribute name "' + name + '".');
+      }
+      var value = opt_attributes[name];
+      if (!goog.isDefAndNotNull(value)) {
+        continue;
+      }
+      result += ' ' +
+          goog.html.SafeHtml.getAttrNameAndValue_(tagName, name, value);
+    }
+  }
+
+  var content = opt_content;
+  if (!goog.isDef(content)) {
+    content = [];
+  } else if (!goog.isArray(content)) {
+    content = [content];
+  }
+
+  if (goog.dom.tags.isVoidTag(tagName.toLowerCase())) {
+    goog.asserts.assert(!content.length,
+        'Void tag <' + tagName + '> does not allow content.');
+    result += '>';
+  } else {
+    var html = goog.html.SafeHtml.concat(content);
+    result += '>' + goog.html.SafeHtml.unwrap(html) + '</' + tagName + '>';
+    dir = html.getDirection();
+  }
+
+  var dirAttribute = opt_attributes && opt_attributes['dir'];
+  if (dirAttribute) {
+    if (/^(ltr|rtl|auto)$/i.test(dirAttribute)) {
+      // If the tag has the "dir" attribute specified then its direction is
+      // neutral because it can be safely used in any context.
+      dir = goog.i18n.bidi.Dir.NEUTRAL;
+    } else {
+      dir = null;
+    }
+  }
+
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
+      result, dir);
 };
 
 
