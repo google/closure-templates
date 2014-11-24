@@ -120,6 +120,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** The injected params from template header. Null if no decls. */
   @Nullable private ImmutableList<TemplateParam> injectedParams;
 
+  private int maxLocalVariableTableSize = -1;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -185,6 +187,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.soyDocDesc = orig.soyDocDesc;
     this.params = orig.params;  // immutable
     this.injectedParams = orig.injectedParams;
+    this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
   }
 
   /** Returns info from the containing Soy file's header declarations. */
@@ -252,6 +255,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    */
   public String getCssBaseNamespace() {
     return cssBaseNamespace;
+  }
+
+  public void setMaxLocalVariableTableSize(int size) {
+    this.maxLocalVariableTableSize = size;
+  }
+
+  public int getMaxLocalVariableTableSize() {
+    return maxLocalVariableTableSize;
   }
 
   /** Clears the SoyDoc text, description, and param descriptions. */

@@ -21,7 +21,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import java.util.List;
 
-
 /**
  * Abstract implementation of a ParentNode and CommandNode.
  *
@@ -63,15 +62,6 @@ public abstract class AbstractParentCommandNode<N extends SoyNode>
     appendSourceStringForChildren(sb);
     sb.append("{/").append(getCommandName()).append('}');
     return sb.toString();
-  }
-
-
-  @Override public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp) {
-    parentMixin.setNeedsEnvFrameDuringInterp(needsEnvFrameDuringInterp);
-  }
-
-  @Override public Boolean needsEnvFrameDuringInterp() {
-    return parentMixin.needsEnvFrameDuringInterp();
   }
 
   @Override public int numChildren() {

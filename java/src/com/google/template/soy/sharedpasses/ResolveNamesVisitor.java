@@ -16,8 +16,12 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -40,9 +44,14 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
+import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
 
+import java.util.ArrayDeque;
+import java.util.BitSet;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -53,85 +62,170 @@ import java.util.Map;
 public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
-   * Represents a naming scope in which variables are defined.
+   * A data structure that assigns a unique (small) integer to all local variable definitions that
+   * are active within a given lexical scope.
+   *
+   * <p>A 'slot' is a small integer that is assigned to a {@link VarDefn} such that at any given
+   * point of execution while that variable could be referenced there is only one variable with that
+   * index.
    */
-  public static class Scope {
-    private final Scope enclosingScope;
-    private final Map<String, VarDefn> varDefnMap = Maps.newHashMap();
+  private static final class LocalVariables {
+    private final BitSet availableSlots = new BitSet();
+    private final Deque<ListMultimap<String, VarDefn>> currentScope = new ArrayDeque<>();
+    private final BitSet slotsToRelease = new BitSet();
+
+    /** Tracks the next unused slot to claim. */
+    private int nextSlotToClaim = 0;
 
     /**
-     * Construct a Scope.
-     * @param enclosingScope The outer scope which encloses this one.
+     * A counter that tracks when to release the {@link #slotsToRelease} set.
+     *
+     * <p>We add {@link #slotsToRelease} to {@link #availableSlots} only when exiting a scope if
+     * this value == 0.
      */
-    public Scope(Scope enclosingScope) {
-      this.enclosingScope = enclosingScope;
+    private int delayReleaseClaims = 0;
+
+    /**
+     * Enters a new scope.  Variables {@link #define defined} will have a lifetime that extends
+     * until a matching call to {@link #exitScope()}.
+     */
+    void enterScope() {
+      currentScope.push(ArrayListMultimap.<String, VarDefn>create());
     }
 
     /**
-     * Construct a Scope and initialize it with one variable.
-     * @param enclosingScope The outer scope which encloses this one.
+     * Enters a new scope.
+     *
+     * <p>Variables defined in a lazy scope have a lifetime that extends to the matching
+     * {@link #exitLazyScope()} call, but the variable slots reserved have their lifetimes extended
+     * until the parent scope closes.
      */
-    public Scope(Scope enclosingScope, VarDefn varDefn) {
-      this.enclosingScope = enclosingScope;
-      define(varDefn);
+    void enterLazyScope() {
+      delayReleaseClaims++;
+      enterScope();
     }
 
     /**
-     * Look up a variable name in this scope and all enclosing scopes.
-     * @param name The name of the variable to look for.
-     * @return The variable, or {@code null} if no such variable exists.
+     * Exits the current scope.
      */
-    public VarDefn lookup(String name) {
-      // Yes we could do this with recursion but why waste stack?
-      for (Scope searchScope = this; searchScope != null;
-          searchScope = searchScope.enclosingScope) {
-        VarDefn var = searchScope.varDefnMap.get(name);
-        if (var != null) {
-          return var;
+    void exitLazyScope() {
+      checkState(delayReleaseClaims > 0, "Exiting a lazy scope when we aren't in one");
+      exitScope();
+      delayReleaseClaims--;
+    }
+
+    /**
+     * Exits the current lazy scope.
+     *
+     * <p>This releases all the variable indices associated with the variables defined in this
+     * frame so that they can be reused.
+     */
+    void exitScope() {
+      ListMultimap<String, VarDefn> variablesGoingOutOfScope = currentScope.pop();
+      for (VarDefn var : variablesGoingOutOfScope.values()) {
+        if (var instanceof LoopVar) {
+          LoopVar loopVar = (LoopVar) var;
+          slotsToRelease.set(loopVar.currentLoopIndexIndex());
+          slotsToRelease.set(loopVar.isLastIteratorIndex());
+        }
+        slotsToRelease.set(var.localVariableIndex());
+      }
+      if (delayReleaseClaims == 0) {
+        availableSlots.or(slotsToRelease);
+        slotsToRelease.clear();
+      }
+    }
+
+    /**
+     * Returns the {@link VarDefn} associated with the given name by searching through the current
+     * scope and all parent scopes.
+     */
+    VarDefn lookup(String name) {
+      for (ListMultimap<String, VarDefn> scope : currentScope) {
+        // Get last to handle the case where multiple variables with the same name are active.
+        // hopefully this will be a temporary situation.
+        VarDefn defn = Iterables.getLast(scope.get(name), null);
+        if (defn != null) {
+          return defn;
         }
       }
       return null;
     }
 
     /**
-     * Define a variable within this scope.
-     * @param varDefn The variable to define.
+     * Defines a {@link LoopVar}. Unlike normal local variables and params loop variables get 2
+     * extra implicit local variables for tracking the current index and whether or not we are at
+     * the last index.
      */
-    public void define(VarDefn varDefn) {
-      varDefnMap.put(varDefn.name(), varDefn);
+    void define(LoopVar defn) {
+      defn.setExtraLoopIndices(claimSlot(), claimSlot());
+      define((VarDefn) defn);
+    }
+
+    /** Defines a variable. */
+    void define(VarDefn defn) {
+      currentScope.peek().put(defn.name(), defn);
+      defn.setLocalVariableIndex(claimSlot());
+    }
+
+    /**
+     * Returns the smallest available local variable slot or claims a new one if there is none
+     * available.
+     */
+    private int claimSlot() {
+      int nextSetBit = availableSlots.nextSetBit(0);
+      int slotToUse;
+      if (nextSetBit != -1) {
+        slotToUse = nextSetBit;
+        availableSlots.clear(nextSetBit);
+      } else {
+        slotToUse = nextSlotToClaim;
+        nextSlotToClaim++;
+      }
+      return slotToUse;
+    }
+
+    void verify() {
+      checkState(delayReleaseClaims == 0, "%s lazy scope(s) are still active", delayReleaseClaims);
+      checkState(slotsToRelease.isEmpty(), "%s slots are waiting to be released", slotsToRelease);
+      BitSet unavailableSlots = new BitSet(nextSlotToClaim);
+      unavailableSlots.set(0, nextSlotToClaim);
+      // now the only bits on will be the ones where available slots has '0'.
+      unavailableSlots.xor(availableSlots);
+      checkState(unavailableSlots.isEmpty(),
+          "Expected all slots to be available: %s", unavailableSlots);
     }
   }
 
-  /** The current innermost scope. */
-  private Scope currentScope = null;
-
-  /** Implicit parameter scope (V1 templates only). */
-  private Scope paramScope;
-
   /** Scope for injected params. */
-  private Scope injectedParamScope;
+  private LocalVariables localVariables;
+  private Map<String, InjectedParam> ijParams;
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
 
   public ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion) {
-    this.paramScope = null;
-    this.injectedParamScope = null;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-    Scope savedScope = currentScope;
     // Create a scope for all parameters.
-    currentScope = new Scope(savedScope);
-    paramScope = currentScope;
+    localVariables = new LocalVariables();
+    localVariables.enterScope();
+    ijParams = new HashMap<>();
 
     // Add both injected and regular params to the param scope.
     for (TemplateParam param : node.getAllParams()) {
-      currentScope.define(param);
+      localVariables.define(param);
     }
 
     visitSoyNode(node);
+    localVariables.exitScope();
+    localVariables.verify();
+    node.setMaxLocalVariableTableSize(localVariables.nextSlotToClaim);
+
+    localVariables = null;
+    ijParams = null;
   }
 
   @Override protected void visitPrintNode(PrintNode node) {
@@ -139,31 +233,32 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override protected void visitLetValueNode(LetValueNode node) {
-    visitSoyNode(node);
-
+    visitExpressions(node);
     // Now after the let-block is complete, define the new variable
     // in the current scope.
-    currentScope.define(node.getVar());
+    localVariables.define(node.getVar());
   }
 
   @Override protected void visitLetContentNode(LetContentNode node) {
-    visitSoyNode(node);
-
-    // Now after the let-block is complete, define the new variable in the current scope.
-    currentScope.define(node.getVar());
+    // LetContent nodes may reserve slots in their sub expressions, but due to lazy evaluation will
+    // not use them immediately, so we can't release the slots until the parent scope is gone.
+    // however the variable lifetime should be limited
+    localVariables.enterLazyScope();
+    visitChildren(node);
+    localVariables.exitLazyScope();
+    localVariables.define(node.getVar());
   }
 
   @Override protected void visitForNode(ForNode node) {
     // Visit the range expressions.
     visitExpressions(node);
 
-    // Create a scope to hold the iteration variable
-    Scope savedScope = currentScope;
-    currentScope = new Scope(savedScope, node.getVar());
+    localVariables.enterScope();
+    localVariables.define(node.getVar());
 
     // Visit the node body
     visitChildren(node);
-    currentScope = savedScope;
+    localVariables.exitScope();
   }
 
   @Override protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
@@ -171,12 +266,12 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     visitExpressions(node.getParent());
 
     // Create a scope to hold the iteration variable
-    Scope savedScope = currentScope;
-    currentScope = new Scope(savedScope, node.getVar());
+    localVariables.enterScope();
+    localVariables.define(node.getVar());
 
     // Visit the node body
     visitChildren(node);
-    currentScope = savedScope;
+    localVariables.exitScope();
   }
 
   @Override protected void visitSoyNode(SoyNode node) {
@@ -186,10 +281,9 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     if (node instanceof ParentSoyNode<?>) {
       if (node instanceof BlockNode) {
-        Scope savedScope = currentScope;
-        currentScope = new Scope(savedScope);
+        localVariables.enterScope();
         visitChildren((BlockNode) node);
-        currentScope = savedScope;
+        localVariables.exitScope();
       } else {
         visitChildren((ParentSoyNode<?>) node);
       }
@@ -253,28 +347,27 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override protected void visitVarRefNode(VarRefNode varRef) {
       if (varRef.isInjected()) {
-        if (injectedParamScope == null) {
-          injectedParamScope = new Scope(null);
+        InjectedParam ijParam = ijParams.get(varRef.getName());
+        if (ijParam == null) {
+          ijParam = new InjectedParam(varRef.getName());
+          ijParams.put(varRef.getName(), ijParam);
         }
-        VarDefn varDefn = injectedParamScope.lookup(varRef.getName());
-        if (varDefn == null) {
-          // Manufacture an injected variable.
-          varDefn = new InjectedParam(varRef.getName());
-          injectedParamScope.define(varDefn);
-        }
-        varRef.setDefn(varDefn);
+        varRef.setDefn(ijParam);
         return;
       }
-      VarDefn varDefn = currentScope.lookup(varRef.getName());
+      VarDefn varDefn = localVariables.lookup(varRef.getName());
       if (varDefn == null) {
         // TODO: Disallow untyped variables starting with some future syntax version.
         if (declaredSyntaxVersion.num >= SyntaxVersion.V9_9.num) {
           throw createExceptionForInvalidExpr("Undefined variable: " + varRef.getName());
         } else {
+          // TODO(lukes): eliminate this case.  It is common in tests because the tests are too lazy
+          // to declare params.  I'm not sure how common it is in general
           // If this is a legacy template, and we can't find a definition for the variable,
           // then create an undefined variable as a placeholder.
+          // Undeclared vars behave more like ijs, and do not get registered in the local variable
+          // table.
           varDefn = new UndeclaredVar(varRef.getName());
-          paramScope.define(varDefn);
         }
       }
       varRef.setDefn(varDefn);

@@ -17,9 +17,10 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -34,11 +35,9 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
-import java.util.Deque;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Visitor for prerendering the template subtree rooted at a given SoyNode. This is possible when
@@ -58,18 +57,15 @@ class PrerenderVisitor extends RenderVisitor {
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
-   * @param data The current template data.
-   * @param env The current environment, or null if this is the initial call.
    */
   PrerenderVisitor(
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory, Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable Deque<Map<String, SoyValue>> env) {
+      @Nullable TemplateRegistry templateRegistry) {
 
     super(
         soyJavaDirectivesMap, preevalVisitorFactory, outputBuf,
-        templateRegistry, data, null, env, null, null, null, null);
+        templateRegistry, SoyValueHelper.EMPTY_DICT, null, null, null, null, null);
   }
 
 
@@ -77,12 +73,13 @@ class PrerenderVisitor extends RenderVisitor {
 
     return new PrerenderVisitor(
         soyJavaDirectivesMap, (PreevalVisitorFactory) evalVisitorFactory, outputBuf,
-        templateRegistry, data, null);
+        templateRegistry);
   }
 
 
   @Override public Void exec(SoyNode soyNode) {
-
+    // Set the environment to be empty for each node.  This will set all params to Undefined.
+    env = Environment.prerenderingEnvironment();
     // Note: This is a catch-all to turn RuntimeExceptions that aren't RenderExceptions into
     // RenderExceptions during prerendering.
 

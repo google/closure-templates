@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -61,18 +63,15 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.LoopVar;
 
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Visitor for evaluating the expression rooted at a given ExprNode.
@@ -86,7 +85,6 @@ import javax.annotation.Nullable;
  */
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
-
   /**
    * Interface for a factory that creates an EvalVisitor.
    */
@@ -95,13 +93,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     /**
      * Creates an EvalVisitor.
      *
-     * @param data The current template data.
      * @param ijData The current injected data.
      * @param env The current environment.
      * @return The newly created EvalVisitor instance.
      */
-    public EvalVisitor create(
-        SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env);
+    public EvalVisitor create(@Nullable SoyRecord ijData, Environment env);
   }
 
 
@@ -111,32 +107,27 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** Map of all SoyJavaFunctions (name to function). */
   private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
 
-  /** The current template data. */
-  private final SoyRecord data;
-
   /** The current injected data. */
   private final SoyRecord ijData;
 
   /** The current environment. */
-  private final Deque<Map<String, SoyValue>> env;
+  private final Environment env;
 
   /**
    * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function). Can be
    *     null if the subclass that is calling this constructor plans to override the default
    *     implementation of {@code computeFunction()}.
-   * @param data The current template data.
    * @param ijData The current injected data.
    * @param env The current environment.
    */
   protected EvalVisitor(
       SoyValueHelper valueHelper, @Nullable Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      SoyRecord data, @Nullable SoyRecord ijData, Deque<Map<String, SoyValue>> env) {
+      @Nullable SoyRecord ijData, Environment env) {
 
     this.valueHelper = valueHelper;
     this.soyJavaFunctionsMap = soyJavaFunctionsMap;
-    this.data = data;
     this.ijData = ijData;
-    this.env = env;
+    this.env = checkNotNull(env);
   }
 
 
@@ -293,6 +284,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private SoyValue visitNullSafeVarRefNode(VarRefNode varRef) {
     SoyValue result = null;
     if (varRef.isInjected()) {
+      // TODO(lukes): it would be nice to move this logic into Environment or even eliminate the
+      // ijData == null case.  It seems like this case is mostly for prerendering, though im not
+      // sure.
       if (ijData != null) {
         result = ijData.getField(varRef.getName());
       } else {
@@ -304,35 +298,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         }
       }
     } else {
-      VarDefn var = varRef.getDefnDecl();
-      VarDefn.Kind varKind = var != null ? var.kind() : VarDefn.Kind.UNDECLARED;
-
-      // Retrieve from the environment. Do this when (a) we know it's a local var data ref or
-      // (b) we don't know either way.
-      if (varKind == VarDefn.Kind.LOCAL_VAR || varKind == VarDefn.Kind.UNDECLARED) {
-        if (env != null) {
-          for (Map<String, SoyValue> envFrame : env) {
-            result = envFrame.get(varRef.getName());
-            if (result != null) {
-              return result;
-            }
-          }
-        }
-      }
-
-      // Retrieve from the data. Do this when (a) we know it's not a local var data ref or
-      // (b) we don't know either way, but we failed to retrieve a nonnull value from the
-      // environment.
-      if (varKind == VarDefn.Kind.PARAM) {
-        SoyRecord scope = ((TemplateParam) var).isInjected() ? ijData : data;
-        if (scope != null) {
-          result = scope.getField(varRef.getName());
-        }
-      } else if (varKind == VarDefn.Kind.UNDECLARED && result == null) {
-        if (data != null) {
-          result = data.getField(varRef.getName());
-        }
-      }
+      return env.getVar(varRef.getDefnDecl());
     }
 
     return (result != null) ? result : UndefinedData.INSTANCE;
@@ -678,8 +644,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     int localVarIndex;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      String localVarName = dataRef.getName();
-      localVarIndex = getLocalVar(localVarName + "__index").integerValue();
+      localVarIndex = env.getIndex((LoopVar) dataRef.getDefnDecl());
     } catch (Exception e) {
       throw new RenderException(
           "Failed to evaluate function call " + node.toSourceString() + ".",
@@ -691,18 +656,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private SoyValue visitIsLastFunction(FunctionNode node) {
 
-    int localVarIndex, localVarLastIndex;
+    boolean isLast;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      String localVarName = dataRef.getName();
-      localVarIndex = getLocalVar(localVarName + "__index").integerValue();
-      localVarLastIndex = getLocalVar(localVarName + "__lastIndex").integerValue();
+      isLast = env.isLast((LoopVar) dataRef.getDefnDecl());
     } catch (Exception e) {
       throw new RenderException(
           "Failed to evaluate function call " + node.toSourceString() + ".",
           e);
     }
-    return convertResult(localVarIndex == localVarLastIndex);
+    return convertResult(isLast);
   }
 
 
@@ -711,8 +674,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     int localVarIndex;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      String localVarName = dataRef.getName();
-      localVarIndex = getLocalVar(localVarName + "__index").integerValue();
+      localVarIndex = env.getIndex((LoopVar) dataRef.getDefnDecl());
     } catch (Exception e) {
       throw new RenderException(
           "Failed to evaluate function call " + node.toSourceString() + ".",
@@ -759,25 +721,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   private SoyValue convertResult(String s) {
     return StringData.forValue(s);
-  }
-
-
-  /**
-   * Private helper to get the value of a local variable (from the environment).
-   * Note: Throws an AssertionError if the given name is not defined in the environment.
-   * @param localVarName The name of the local var to retrieve.
-   * @return The value of the local var.
-   */
-  private SoyValue getLocalVar(String localVarName) {
-
-    for (Map<String, SoyValue> envFrame : env) {
-      SoyValue value = envFrame.get(localVarName);
-      if (value != null) {
-        return value;
-      }
-    }
-
-    throw new AssertionError();
   }
 
 

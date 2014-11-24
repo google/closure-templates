@@ -20,8 +20,15 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -63,6 +70,9 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{@param pa: bool}",
         "{$pa}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    assertEquals(1, n.getMaxLocalVariableTableSize());
+    assertEquals(0, n.getParams().get(0).localVariableIndex());
   }
 
   public void testInjectedParamNameLookupSuccess() {
@@ -70,6 +80,9 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{@inject pa: bool}",
         "{$pa}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    assertEquals(1, n.getMaxLocalVariableTableSize());
+    assertEquals(0, n.getInjectedParams().get(0).localVariableIndex());
   }
 
   public void testLetNameLookupSuccess() {
@@ -77,6 +90,76 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{let $pa: 1 /}",
         "{$pa}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    assertEquals(1, n.getMaxLocalVariableTableSize());
+    assertEquals(0, ((LetValueNode) n.getChild(0)).getVar().localVariableIndex());
+  }
+
+  public void testMultiplLocalsAndScopesNumbering() {
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+        "{@param pa: bool}",
+        "{@param pb: bool}",
+        "{let $la: 1 /}",
+        "{foreach $item in ['a', 'b']}",
+        "  {$pa}{$pb}{$la + $item}",
+        "{/foreach}",
+        "{let $lb: 1 /}"));
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
+    // index, lastIndex) active within the foreach loop.  the $lb can reuse a slot for the foreach
+    // loop variable
+    assertEquals(6, n.getMaxLocalVariableTableSize());
+    assertEquals(0, n.getParams().get(0).localVariableIndex());
+    assertEquals(1, n.getParams().get(1).localVariableIndex());
+    assertEquals(2, ((LetValueNode) n.getChild(0)).getVar().localVariableIndex());
+    ForeachNode foreachNode = (ForeachNode) n.getChild(1);
+    assertEquals(3, foreachNode.getVar().currentLoopIndexIndex());
+    assertEquals(4, foreachNode.getVar().isLastIteratorIndex());
+    assertEquals(5, foreachNode.getVar().localVariableIndex());
+    // The loop variables are out of scope so we can reuse the 3rd slot
+    assertEquals(3, ((LetValueNode) n.getChild(2)).getVar().localVariableIndex());
+  }
+
+  public void testOverwriteLetBindingMultipleLocalsAndScopesNumbering() {
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+        "{let $la: 1 /}",
+        "{let $la: $la /}",
+        "{let $la: $la /}"));
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    // 3 because each new $la binding is a 'new variable'
+    assertEquals(3, n.getMaxLocalVariableTableSize());
+    LetValueNode firstLet = (LetValueNode) n.getChild(0);
+    LetValueNode secondLet = (LetValueNode) n.getChild(1);
+    LetValueNode thirdLet = (LetValueNode) n.getChild(2);
+    assertEquals(0, firstLet.getVar().localVariableIndex());
+    assertEquals(1, secondLet.getVar().localVariableIndex());
+    assertEquals(2, thirdLet.getVar().localVariableIndex());
+    assertEquals(firstLet.getVar(),
+        ((VarRefNode) secondLet.getValueExpr().getChild(0)).getDefnDecl());
+    assertEquals(secondLet.getVar(),
+        ((VarRefNode) thirdLet.getValueExpr().getChild(0)).getDefnDecl());
+  }
+
+  public void testLetContentSlotLifetime() {
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+        "{let $a}",
+        "  {if true}",  // introduce an extra scope
+        "    {let $b: 2 /}",
+        "    {$b}",
+        "  {/if}",
+        "{/let}",
+        "{$a}"));
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    // 1 because each new $la binding overwrites the prior one
+    assertEquals(2, n.getMaxLocalVariableTableSize());
+    LetContentNode aLetNode = (LetContentNode) n.getChild(0);
+    assertEquals(1, aLetNode.getVar().localVariableIndex());
+    LetValueNode bLetNode =
+        (LetValueNode) ((IfCondNode) ((IfNode) aLetNode.getChild(0)).getChild(0)).getChild(0);
+    assertEquals(0, bLetNode.getVar().localVariableIndex());
   }
 
   public void testNameLookupFailure() {

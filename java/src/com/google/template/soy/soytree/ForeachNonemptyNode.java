@@ -20,8 +20,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
-import com.google.template.soy.soytree.defn.LocalVar;
-
+import com.google.template.soy.soytree.defn.LoopVar;
 
 /**
  * Node representing the loop portion of a 'foreach' statement.
@@ -60,7 +59,7 @@ public class ForeachNonemptyNode extends AbstractBlockNode
   }
 
 
-  public final LocalVar getVar() {
+  public final LoopVar getVar() {
     return getParent().getVar();
   }
 

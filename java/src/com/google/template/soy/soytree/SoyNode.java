@@ -25,7 +25,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-
 /**
  * This class defines the base interface for a node in the parse tree, as well as a number of
  * subinterfaces that extend the base interface in various aspects. Every concrete node implements
@@ -152,20 +151,7 @@ public interface SoyNode extends Node {
   /**
    * A node in a Soy parse tree that may be a parent.
    */
-  public static interface ParentSoyNode<N extends SoyNode> extends SoyNode, ParentNode<N> {
-
-    /**
-     * Sets whether this node needs an env frame when the template is being interpreted.
-     * @param needsEnvFrameDuringInterp Whether this node needs an env frame during interpretation,
-     *     or null if unknown.
-     */
-    public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp);
-
-    /**
-     * Returns whether this node needs an env frame during interpretation, or null if unknown.
-     */
-    public Boolean needsEnvFrameDuringInterp();
-  }
+  public static interface ParentSoyNode<N extends SoyNode> extends SoyNode, ParentNode<N> {}
 
 
   // -----------------------------------------------------------------------------------------------

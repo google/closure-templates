@@ -31,8 +31,15 @@ public final class UndeclaredVar extends AbstractVarDefn {
     super(name, UnknownType.getInstance());
   }
 
+  private UndeclaredVar(UndeclaredVar var) {
+    super(var);
+  }
 
   @Override public Kind kind() {
     return Kind.UNDECLARED;
+  }
+
+  @Override public UndeclaredVar clone() {
+    return new UndeclaredVar(this);
   }
 }

@@ -35,6 +35,10 @@ public final class SoyDocParam extends TemplateParam {
     super(name, UnknownType.getInstance(), isRequired, false, desc);
   }
 
+  private SoyDocParam(SoyDocParam soyDocParam) {
+    super(soyDocParam);
+  }
+
   @Override public DeclLoc declLoc() {
     return DeclLoc.SOY_DOC;
   }
@@ -45,7 +49,9 @@ public final class SoyDocParam extends TemplateParam {
 
   @Override public SoyDocParam cloneEssential() {
     // Note: 'desc' is nonessential.
-    return new SoyDocParam(name(), isRequired(), null);
+    SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null);
+    soyDocParam.setLocalVariableIndex(localVariableIndex());
+    return soyDocParam;
   }
 
   @SuppressWarnings("SimplifiableIfStatement")  // for IntelliJ
@@ -57,5 +63,9 @@ public final class SoyDocParam extends TemplateParam {
 
   @Override public int hashCode() {
     return super.abstractHashCode();
+  }
+
+  @Override public SoyDocParam clone() {
+    return new SoyDocParam(this);
   }
 }

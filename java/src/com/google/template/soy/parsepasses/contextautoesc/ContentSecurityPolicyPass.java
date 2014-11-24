@@ -579,6 +579,15 @@ public final class ContentSecurityPolicyPass {
     public StringType type() {
       return StringType.getInstance();
     }
+
+    @Override public int localVariableIndex() {
+      // ij params don't have indices
+      return -1;
+    }
+
+    @Override public void setLocalVariableIndex(int i) {
+      throw new UnsupportedOperationException();
+    }
   }
 
 }

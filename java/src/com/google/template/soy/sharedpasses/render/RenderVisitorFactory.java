@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -26,7 +25,6 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,7 +65,6 @@ public class RenderVisitorFactory {
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
    * @param ijData The current injected data.
-   * @param env The current environment, or null if this is the initial call.
    * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
    *     when known to be irrelevant, i.e. when not using delegates feature.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
@@ -78,13 +75,13 @@ public class RenderVisitorFactory {
    */
   public RenderVisitor create(
       Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable SoyRecord ijData, @Nullable Deque<Map<String, SoyValue>> env,
+      @Nullable SoyRecord ijData,
       @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new RenderVisitor(
         soyJavaDirectivesMap, evalVisitorFactory, outputBuf, templateRegistry, data, ijData,
-        env, activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
+        activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
   }
 
 }

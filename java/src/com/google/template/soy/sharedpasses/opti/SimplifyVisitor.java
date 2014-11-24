@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -57,7 +56,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
 
 import javax.inject.Inject;
-
 
 /**
  * Visitor for simplifying subtrees based on constant values known at compile time.
@@ -146,9 +144,9 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
     StringBuilder prerenderOutputSb = new StringBuilder();
     try {
-      prerenderVisitorFactory.create(
-          prerenderOutputSb, templateRegistry, ParamStore.EMPTY_INSTANCE, null)
-          .exec(node);
+      PrerenderVisitor prerenderer = prerenderVisitorFactory.create(
+          prerenderOutputSb, templateRegistry);
+      prerenderer.exec(node);
     } catch (RenderException pe) {
       return;  // cannot prerender for some other reason not checked above
     }

@@ -19,8 +19,6 @@ package com.google.template.soy.parsepasses;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.sharedpasses.MarkLocalVarDataRefsVisitor;
-import com.google.template.soy.sharedpasses.UnmarkLocalVarDataRefsVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -32,7 +30,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 
 /**
  * Visitor to change {@code call}s to use {@code data="all"} whenever possible.
@@ -51,12 +48,7 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
     Preconditions.checkArgument(
         node instanceof SoyFileSetNode || node instanceof SoyFileNode ||
         node instanceof TemplateNode);
-
-    (new MarkLocalVarDataRefsVisitor()).exec(node);
-
     visit(node);
-
-    (new UnmarkLocalVarDataRefsVisitor()).exec(node);
     return null;
   }
 

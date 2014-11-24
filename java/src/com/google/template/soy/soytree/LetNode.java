@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Abstract node representing a 'let' statement.
  *
@@ -109,7 +108,7 @@ public abstract class LetNode extends AbstractCommandNode
   protected LetNode(LetNode orig) {
     super(orig);
     this.isVarNameUnique = orig.isVarNameUnique;
-    this.var = new LocalVar(orig.var.name(), this, orig.var.type());
+    this.var = orig.var.clone();
   }
 
 

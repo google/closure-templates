@@ -23,50 +23,45 @@ import com.google.template.soy.types.SoyType;
  * A local variable declaration.
  *
  */
-public class LocalVar extends AbstractVarDefn {
+public class LoopVar extends LocalVar {
 
-  private final SoyNode declaringNode;
+  private int currentIndexIndex;
+  private int isLastIndex;
 
   /**
    * @param name The variable name.
    * @param declaringNode The statement in which this variable is defined.
    * @param type The data type of the variable.
    */
-  public LocalVar(String name, SoyNode declaringNode, SoyType type) {
-    super(name, type);
-    this.declaringNode = declaringNode;
+  public LoopVar(String name, SoyNode declaringNode, SoyType type) {
+    super(name, declaringNode, type);
   }
 
-
-  LocalVar(LocalVar localVar) {
-    super(localVar);
-    this.declaringNode = localVar.declaringNode;
+  private LoopVar(LoopVar loop) {
+    super(loop);
+    this.currentIndexIndex = loop.currentIndexIndex;
+    this.isLastIndex = loop.isLastIndex;
   }
-
 
   @Override public Kind kind() {
     return Kind.LOCAL_VAR;
   }
 
 
-  /**
-   * @return The node in which this variable was defined; This is used
-   *     during analysis to infer the variable type.
-   */
-  public SoyNode declaringNode() {
-    return declaringNode;
+  public void setExtraLoopIndices(int currentIndexIndex, int isLastIndex) {
+    this.currentIndexIndex = currentIndexIndex;
+    this.isLastIndex = isLastIndex;
   }
 
-  /**
-   * Setter for the type - this is necessary because sometimes we don't know
-   * the variable type until after analysis.
-   * @param type The data type of the variable.
-   */
-  public void setType(SoyType type) {
-    this.type = type;
+  public int currentLoopIndexIndex() {
+    return this.currentIndexIndex;
   }
 
-  @Override public LocalVar clone() {
-    return new LocalVar(this);
+  public int isLastIteratorIndex() {
+    return this.isLastIndex;
+  }
+
+  @Override public LoopVar clone() {
+    return new LoopVar(this);
   }
 }

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
  * Node representing a 'for' statement.
  *
@@ -104,7 +103,7 @@ public class ForNode extends AbstractBlockCommandNode
    */
   protected ForNode(ForNode orig) {
     super(orig);
-    this.var = new LocalVar(orig.var.name(), this, orig.var.type());
+    this.var = orig.var.clone();
     this.rangeArgTexts = orig.rangeArgTexts;  // safe to reuse (immutable)
     List<ExprRootNode<?>> tempRangeArgs =
         Lists.newArrayListWithCapacity(orig.rangeArgs.size());

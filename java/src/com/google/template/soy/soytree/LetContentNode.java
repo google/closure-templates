@@ -26,7 +26,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Node representing a 'let' statement with content.
  *
@@ -108,14 +107,6 @@ public class LetContentNode extends LetNode implements RenderUnitNode {
     appendSourceStringForChildren(sb);
     sb.append("{/").append(getCommandName()).append("}");
     return sb.toString();
-  }
-
-  @Override public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp) {
-    parentMixin.setNeedsEnvFrameDuringInterp(needsEnvFrameDuringInterp);
-  }
-
-  @Override public Boolean needsEnvFrameDuringInterp() {
-    return parentMixin.needsEnvFrameDuringInterp();
   }
 
   @Override public int numChildren() {

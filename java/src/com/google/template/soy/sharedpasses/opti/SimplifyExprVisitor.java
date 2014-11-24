@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -41,14 +40,10 @@ import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
-
 import javax.inject.Inject;
-
 
 /**
  * Visitor for simplifying expressions based on constant values known at compile time.
@@ -59,18 +54,13 @@ import javax.inject.Inject;
 class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
-  /** Empty env used in creating PreevalVisitors for this class. */
-  private static final Deque<Map<String, SoyValue>> EMPTY_ENV =
-      new ArrayDeque<Map<String, SoyValue>>(0);
-
-
   /** The PreevalVisitor for this instance (can reuse). */
   private final PreevalVisitor preevalVisitor;
 
 
   @Inject
   SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
-    this.preevalVisitor = preevalVisitorFactory.create(SoyValueHelper.EMPTY_DICT, EMPTY_ENV);
+    this.preevalVisitor = preevalVisitorFactory.create(Environment.prerenderingEnvironment());
   }
 
 

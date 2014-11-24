@@ -16,16 +16,12 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-import java.util.Deque;
 import java.util.Map;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -60,16 +56,13 @@ public class PrerenderVisitorFactory {
    *
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
-   * @param data The current template data.
-   * @param env The current environment, or null if this is the initial call.
    * @return The newly created PrerenderVisitor instance.
    */
   public PrerenderVisitor create(
-      Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
-      @Nullable Deque<Map<String, SoyValue>> env) {
+      Appendable outputBuf, TemplateRegistry templateRegistry) {
 
     return new PrerenderVisitor(
-        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry, data, env);
+        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry);
   }
 
 }

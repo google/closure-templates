@@ -38,7 +38,6 @@ import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
-import com.google.template.soy.sharedpasses.MarkLocalVarDataRefsVisitor;
 import com.google.template.soy.sharedpasses.RenameCssVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
@@ -55,7 +54,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Represents a compiled Soy file set. This is the result of compiling Soy to a Java object.
@@ -226,9 +224,6 @@ public class BaseTofu implements SoyTofu {
    * @return The newly built template registry.
    */
   private TemplateRegistry buildTemplateRegistry(SoyFileSetNode soyTree) {
-
-    (new MarkParentNodesNeedingEnvFramesVisitor()).exec(soyTree);
-    (new MarkLocalVarDataRefsVisitor()).exec(soyTree);
     return new TemplateRegistry(soyTree);
   }
 
@@ -363,7 +358,7 @@ public class BaseTofu implements SoyTofu {
 
     try {
       RenderVisitor rv = tofuRenderVisitorFactory.create(
-          outputBuf, templateRegistry, data, ijData, null, activeDelPackageNames, msgBundle,
+          outputBuf, templateRegistry, data, ijData, activeDelPackageNames, msgBundle,
           idRenamingMap, cssRenamingMap);
       rv.exec(template);
 

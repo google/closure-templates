@@ -16,7 +16,6 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -24,13 +23,12 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Visitor for preevaluating expressions in which all data values known at compile time.
@@ -49,14 +47,13 @@ class PreevalVisitor extends EvalVisitor {
   /**
    * @param valueHelper Instance of SoyValueHelper to use.
    * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
-   * @param data The current template data.
    * @param env The current environment.
    */
   PreevalVisitor(
       SoyValueHelper valueHelper, Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      SoyRecord data, Deque<Map<String, SoyValue>> env) {
+      Environment env) {
 
-    super(valueHelper, soyJavaFunctionsMap, data, null, env);
+    super(valueHelper, soyJavaFunctionsMap, null, env);
   }
 
 

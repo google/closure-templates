@@ -64,6 +64,13 @@ public abstract class TemplateParam extends AbstractVarDefn {
     this.desc = desc;
   }
 
+  TemplateParam(TemplateParam param) {
+    super(param);
+    this.isRequired = param.isRequired;
+    this.isInjected = param.isInjected;
+    this.desc = param.desc;
+  }
+
   @Override public Kind kind() {
     return Kind.PARAM;
   }

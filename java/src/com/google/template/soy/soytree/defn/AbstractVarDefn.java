@@ -32,6 +32,8 @@ public abstract class AbstractVarDefn implements VarDefn {
   /** The data type of the value. */
   protected SoyType type;
 
+  private int localVariableIndex = -1;
+
 
   /**
    * @param name The name of the value.
@@ -43,13 +45,27 @@ public abstract class AbstractVarDefn implements VarDefn {
     this.type = type;
   }
 
+  protected AbstractVarDefn(AbstractVarDefn var) {
+    this.name = var.name;
+    this.type = var.type;
+    this.localVariableIndex = var.localVariableIndex;
+  }
 
   @Override public String name() {
     return name;
   }
 
-
   @Override public SoyType type() {
     return type;
   }
+
+  @Override public void setLocalVariableIndex(int i) {
+    localVariableIndex = i;
+  }
+
+  @Override public int localVariableIndex() {
+    return localVariableIndex;
+  }
+
+  @Override public abstract AbstractVarDefn clone();
 }

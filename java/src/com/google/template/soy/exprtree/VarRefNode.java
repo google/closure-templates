@@ -48,13 +48,6 @@ public final class VarRefNode extends AbstractExprNode {
   private SoyType subtituteType;
 
   /**
-   * Temporary (during migration) variable to hold whether or not this is a reference
-   * to a local variable. Won't be needed once 'defn' above is filled in.
-   * A value of {@code null} means "unknown", i.e. the value has not been set yet.
-   */
-  private Boolean isLocalVar;
-
-  /**
    * @param name The name of the variable.
    * @param injected Whether this is an injected variable.
    * @param nullSafeInjected Whether this a null-safe access to an injected parameter.
@@ -67,7 +60,6 @@ public final class VarRefNode extends AbstractExprNode {
     this.isInjected = injected;
     this.isNullSafeInjected = nullSafeInjected;
     this.defn = defn;
-    this.isLocalVar = null;
   }
 
   @Override public Kind getKind() {
@@ -111,7 +103,7 @@ public final class VarRefNode extends AbstractExprNode {
 
   /** Returns whether this is a local variable reference. */
   public Boolean isLocalVar() {
-    return isLocalVar;
+    return defn == null ? null : defn.kind() == VarDefn.Kind.LOCAL_VAR;
   }
 
   /**
@@ -123,14 +115,6 @@ public final class VarRefNode extends AbstractExprNode {
     // the resolve names pass in order for this to be true.
     return defn == null || defn.kind() == VarDefn.Kind.PARAM ||
         defn.kind() == VarDefn.Kind.UNDECLARED;
-  }
-
-  /**
-   * Set whether this variable reference refers to a local variable. (Or {@code null}
-   * if it's not known yet.)
-   */
-  public void setIsLocalVar(Boolean isLocalVar) {
-    this.isLocalVar = isLocalVar;
   }
 
   /**

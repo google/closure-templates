@@ -37,7 +37,9 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -295,7 +297,13 @@ final class Inferences {
       } else {
         throw new AssertionError("Unknown template node type: " + tn.getClass());
       }
-
+      // Reassign all the local variable data which isn't maintained by the cloning process above.
+      clone.setMaxLocalVariableTableSize(tn.getMaxLocalVariableTableSize());
+      Iterator<TemplateParam> tnIterator = tn.getAllParams().iterator();
+      Iterator<TemplateParam> cloneIterator = clone.getAllParams().iterator();
+      while (tnIterator.hasNext()) {
+        cloneIterator.next().setLocalVariableIndex(tnIterator.next().localVariableIndex());
+      }
       clone.setSourceLocation(tn.getSourceLocation());
 
       for (StandaloneNode child : tn.getChildren()) {
