@@ -20,7 +20,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -29,7 +28,26 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvider {
+  private static final FutureBlockCallback NOOP = new FutureBlockCallback() {
+    @Override public void beforeBlock() {}
+  };
 
+  /**
+   * Allows threads to register a {@link FutureBlockCallback}.
+   *
+   * <p>When calling {@link #resolve()} on this {@link SoyFutureValueProvider}, if the thread needs
+   * to block on the future (because {@link Future#isDone()} is {@code false}), then it will call
+   * the currently registered block callback immediately prior blocking.  See
+   * {@code RenderVisitor.exec} for the motivating usecase for this hook.
+   *
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+   */
+  public static final ThreadLocal<FutureBlockCallback> futureBlockCallback =
+      new ThreadLocal<FutureBlockCallback>() {
+        @Override protected FutureBlockCallback initialValue() {
+          return NOOP;
+        }
+      };
 
   /** The instance of SoyValueHelper to use for converting the future value (after retrieval). */
   private final SoyValueHelper valueHelper;
@@ -37,26 +55,11 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
   /** The wrapped Future object that will provide the value, if needed. */
   private final Future<?> future;
 
-  // Callback that gets fired when the provider is about to block on a future. That is when the
-  // future reports false for isDone and we are about to call get() on the future.
-  // There is only one of these; adding a second one overrides the first one.
-  @Nullable private FutureBlockCallback futureBlockCallback;
-
   /**
    * A callback that gets fired just before this provider will block on a future.
    */
   public interface FutureBlockCallback {
     void beforeBlock();
-  }
-
-  /**
-   * Registers a {@link FutureBlockCallback } callback with this future provider.
-   * If a callback was already registered it is overridden. The specific use case of this is
-   * flushing the output stream just before blocking on a future – and since there is only one
-   * output stream that actually represents the outgoing byte only one such callback is needed.
-   */
-  public void setOrOverrideFutureBlockCallback(FutureBlockCallback callback) {
-    futureBlockCallback = callback;
   }
 
   /**
@@ -82,8 +85,8 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
    */
   @Override @Nonnull protected final SoyValue compute() {
     try {
-      if (!future.isDone() && futureBlockCallback != null) {
-        futureBlockCallback.beforeBlock();
+      if (!future.isDone()) {
+        futureBlockCallback.get().beforeBlock();
       }
       return valueHelper.convert(future.get()).resolve();
     } catch (ExecutionException e) {

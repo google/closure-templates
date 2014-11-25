@@ -23,6 +23,7 @@ import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyFutureValueProvider;
+import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -206,6 +207,19 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     pushOutputBuf(outputBuf);
   }
 
+  @Override public Void exec(SoyNode node) {
+    if (flushable != null) {
+      // only do this in exec() so that all recursively called templates flush the correct top-level
+      // output stream
+      FutureBlockCallback old = SoyFutureValueProvider.futureBlockCallback.get();
+      SoyFutureValueProvider.futureBlockCallback.set(flushable);
+      super.exec(node);
+      SoyFutureValueProvider.futureBlockCallback.set(old);
+    } else {
+      super.exec(node);
+    }
+    return null;
+  }
 
   /**
    * Creates a helper instance for rendering a subtemplate.
@@ -221,14 +235,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         data, ijData, activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
   }
 
-  private RenderVisitor createHelperInstanceWithFlushable(Appendable outputBuf, SoyRecord data) {
-    RenderVisitor v = this.createHelperInstance(outputBuf, data);
-    if (flushable != null && v.flushable == null) {
-      v.flushable = flushable;
-    }
-    return v;
-  }
-
   /**
    * This method must only be called by assistant visitors, in particular
    * RenderVisitorAssistantForMsgs.
@@ -241,7 +247,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private void renderTemplate(TemplateNode template, Collection<TemplateParam> paramsToTypeCheck) {
     env = Environment.create(template, data, ijData);
     try {
-      flushOnFutureParam(template);
       checkStrictParamTypes(template, paramsToTypeCheck);
       visitChildren(template);
     } catch (RenderException re) {
@@ -591,7 +596,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     if (node.getEscapingDirectiveNames().isEmpty()) {
       // No escaping at the call site -- render directly into the output buffer.
-      RenderVisitor rv = createHelperInstanceWithFlushable(currOutputBuf, callData);
+      RenderVisitor rv = this.createHelperInstance(currOutputBuf, callData);
       try {
         rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
@@ -606,7 +611,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // eliminates escaping directives when all callers are known.
       // - Instead of creating a temporary buffer and copying, wrap with an escaping StringBuilder.
       StringBuilder calleeBuilder = new StringBuilder();
-      RenderVisitor rv = createHelperInstanceWithFlushable(calleeBuilder, callData);
+      RenderVisitor rv = this.createHelperInstance(calleeBuilder, callData);
       try {
         rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
@@ -814,32 +819,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
           directiveName, node.toSourceString(), e.getMessage()), e)
           .addPartialStackTraceElement(node.getSourceLocation());
-    }
-  }
-
-  /**
-   * Inspects all arguments to a called template and flushes the primary flushable output buffer
-   * if any of the arguments is a future that is not yet done.
-   */
-  private void flushOnFutureParam(TemplateNode node) {
-    if (flushable == null) {
-      return;
-    }
-    for (TemplateParam param : node.getParams()) {
-      maybeFlushEventually(data.getFieldProvider(param.name()));
-    }
-    for (TemplateParam param : node.getInjectedParams()) {
-      maybeFlushEventually(ijData.getFieldProvider(param.name()));
-    }
-  }
-
-  private void maybeFlushEventually(SoyValueProvider value) {
-    if (value instanceof SoyFutureValueProvider) {
-      SoyFutureValueProvider futureProvider = (SoyFutureValueProvider) value;
-      if (futureProvider.isDone()) {
-        return;
-      }
-      futureProvider.setOrOverrideFutureBlockCallback(flushable);
     }
   }
 
