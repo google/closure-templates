@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.Map;
 import java.util.Set;
@@ -142,6 +143,10 @@ public class FindIjParamsVisitor {
 
         for (String localIjParam : templateToLocalIjParamsMap.get(template)) {
           ijParamToCalleesMultimapBuilder.put(localIjParam, template);
+        }
+
+        for (TemplateParam injectedParam : template.getInjectedParams()) {
+          ijParamToCalleesMultimapBuilder.put(injectedParam.name(), template);
         }
       }
 
