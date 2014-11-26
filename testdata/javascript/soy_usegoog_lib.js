@@ -5912,10 +5912,9 @@ goog.asserts.assertObjectPrototypeIsIntact = function() {
  */
 goog.asserts.getType_ = function(value) {
   if (value instanceof Function) {
-    // TODO(martone): unquote this after the next Closure Compiler release.
-    return value['displayName'] || value.name || 'unknown type name';
+    return value.displayName || value.name || 'unknown type name';
   } else if (value instanceof Object) {
-    return value.constructor['displayName'] || value.constructor.name ||
+    return value.constructor.displayName || value.constructor.name ||
         Object.prototype.toString.call(value);
   } else {
     return value === null ? 'null' : typeof value;
@@ -19195,6 +19194,7 @@ goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.object');
 goog.require('goog.soy');
+goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.string');
 goog.require('goog.string.Const');

@@ -55,6 +55,7 @@ goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.object');
 goog.require('goog.soy');
+goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.string');
 goog.require('goog.string.Const');
