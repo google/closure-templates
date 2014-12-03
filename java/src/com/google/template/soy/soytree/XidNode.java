@@ -98,7 +98,8 @@ public class XidNode extends AbstractCommandNode implements StandaloneNode, Stat
         return mappedText;
       }
     }
-    return text;
+    // Default to pseudo obfuscate with trailing _ since that is what the JS implementation does.
+    return text + "_";
   }
 
 
