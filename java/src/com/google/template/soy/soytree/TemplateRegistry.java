@@ -24,6 +24,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +60,7 @@ public class TemplateRegistry {
         int delPriority, Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap) {
       this.delPriority = delPriority;
       this.delPackageNameToDelTemplateMap =
-          Collections.unmodifiableMap(Maps.newHashMap(delPackageNameToDelTemplateMap));
+          Collections.unmodifiableMap(Maps.newLinkedHashMap(delPackageNameToDelTemplateMap));
     }
   }
 
@@ -97,10 +98,10 @@ public class TemplateRegistry {
 
     // ------ Iterate through all templates to collect data. ------
 
-    Map<String, TemplateBasicNode> tempBasicTemplatesMap = Maps.newHashMap();
-    Map<String, Set<DelTemplateKey>> tempDelTemplateNameToKeysMap = Maps.newHashMap();
+    Map<String, TemplateBasicNode> tempBasicTemplatesMap = new LinkedHashMap<>();
+    Map<String, Set<DelTemplateKey>> tempDelTemplateNameToKeysMap = new LinkedHashMap<>();
     Map<DelTemplateKey, Map<Integer, Map<String, TemplateDelegateNode>>> tempDelTemplatesMap =
-        Maps.newHashMap();
+        new LinkedHashMap<>();
 
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       for (TemplateNode template : soyFile.getChildren()) {
@@ -130,13 +131,13 @@ public class TemplateRegistry {
           Map<Integer, Map<String, TemplateDelegateNode>> tempDivisions =
               tempDelTemplatesMap.get(delTemplateKey);
           if (tempDivisions == null) {
-            tempDivisions = Maps.newHashMap();
+            tempDivisions = new LinkedHashMap<>();
             tempDelTemplatesMap.put(delTemplateKey, tempDivisions);
           }
 
           Map<String, TemplateDelegateNode> tempDivision = tempDivisions.get(delPriority);
           if (tempDivision == null) {
-            tempDivision = Maps.newHashMap();
+            tempDivision = new LinkedHashMap<>();
             tempDivisions.put(delPriority, tempDivision);
           }
 
