@@ -263,6 +263,7 @@ goog.provide = function(name) {
  * @param {string} name Namespace provided by this file in the form
  *     "goog.package.part".
  * @param {Object=} opt_obj The object to embed in the namespace.
+ * @private
  */
 goog.constructNamespace_ = function(name, opt_obj) {
   if (!COMPILED) {
@@ -373,9 +374,10 @@ goog.module.getInternal_ = function(name) {
 
 
 /**
- * @private {{
- *     moduleName:(string|undefined),
- *     declareTestMethods:boolean}|null}
+ * @private {?{
+ *   moduleName: (string|undefined),
+ *   declareTestMethods: boolean
+ * }}
  */
 goog.moduleLoaderState_ = null;
 
@@ -422,7 +424,7 @@ goog.module.declareLegacyNamespace = function() {
         'goog.module.declareLegacyNamespace.');
   }
   goog.moduleLoaderState_.declareLegacyNamespace = true;
-}
+};
 
 
 /**
@@ -3025,7 +3027,7 @@ goog.addDependency('labs/i18n/listsymbolsext.js', ['goog.labs.i18n.ListFormatSym
 goog.addDependency('labs/mock/mock.js', ['goog.labs.mock', 'goog.labs.mock.VerificationError'], ['goog.array', 'goog.asserts', 'goog.debug', 'goog.debug.Error', 'goog.functions', 'goog.object'], false);
 goog.addDependency('labs/mock/mock_test.js', ['goog.labs.mockTest'], ['goog.array', 'goog.labs.mock', 'goog.labs.mock.VerificationError', 'goog.labs.testing.AnythingMatcher', 'goog.labs.testing.GreaterThanMatcher', 'goog.string', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/net/image.js', ['goog.labs.net.image'], ['goog.Promise', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.net.EventType', 'goog.userAgent'], false);
-goog.addDependency('labs/net/image_test.js', ['goog.labs.net.imageTest'], ['goog.events', 'goog.labs.net.image', 'goog.string', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
+goog.addDependency('labs/net/image_test.js', ['goog.labs.net.imageTest'], ['goog.labs.net.image', 'goog.string', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('labs/net/webchannel.js', ['goog.net.WebChannel'], ['goog.events', 'goog.events.Event'], false);
 goog.addDependency('labs/net/webchannel/basetestchannel.js', ['goog.labs.net.webChannel.BaseTestChannel'], ['goog.labs.net.webChannel.Channel', 'goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.requestStats', 'goog.labs.net.webChannel.requestStats.Stat'], false);
 goog.addDependency('labs/net/webchannel/channel.js', ['goog.labs.net.webChannel.Channel'], [], false);
@@ -3428,7 +3430,7 @@ goog.addDependency('style/style.js', ['goog.style'], ['goog.array', 'goog.assert
 goog.addDependency('style/style_test.js', ['goog.style_test'], ['goog.array', 'goog.color', 'goog.dom', 'goog.events.BrowserEvent', 'goog.labs.userAgent.util', 'goog.math.Box', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.math.Size', 'goog.object', 'goog.string', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.MockUserAgent', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgentTestUtil', 'goog.userAgentTestUtil.UserAgents'], false);
 goog.addDependency('style/style_webkit_scrollbars_test.js', ['goog.style.webkitScrollbarsTest'], ['goog.asserts', 'goog.style', 'goog.styleScrollbarTester', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('style/stylescrollbartester.js', ['goog.styleScrollbarTester'], ['goog.dom', 'goog.style', 'goog.testing.asserts'], false);
-goog.addDependency('style/transform.js', ['goog.style.transform'], ['goog.functions', 'goog.math.Coordinate', 'goog.style', 'goog.userAgent', 'goog.userAgent.product.isVersion'], false);
+goog.addDependency('style/transform.js', ['goog.style.transform'], ['goog.functions', 'goog.math.Coordinate', 'goog.math.Coordinate3', 'goog.style', 'goog.userAgent', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('style/transform_test.js', ['goog.style.transformTest'], ['goog.dom', 'goog.style.transform', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('style/transition.js', ['goog.style.transition', 'goog.style.transition.Css3Property'], ['goog.array', 'goog.asserts', 'goog.dom.safe', 'goog.dom.vendor', 'goog.functions', 'goog.html.SafeHtml', 'goog.style', 'goog.userAgent'], false);
 goog.addDependency('style/transition_test.js', ['goog.style.transitionTest'], ['goog.style', 'goog.style.transition', 'goog.testing.jsunit', 'goog.userAgent'], false);
@@ -3648,7 +3650,7 @@ goog.addDependency('ui/dialog_test.js', ['goog.ui.DialogTest'], ['goog.a11y.aria
 goog.addDependency('ui/dimensionpicker.js', ['goog.ui.DimensionPicker'], ['goog.events.EventType', 'goog.events.KeyCodes', 'goog.math.Size', 'goog.ui.Component', 'goog.ui.Control', 'goog.ui.DimensionPickerRenderer', 'goog.ui.registry'], false);
 goog.addDependency('ui/dimensionpicker_test.js', ['goog.ui.DimensionPickerTest'], ['goog.dom', 'goog.dom.TagName', 'goog.events.KeyCodes', 'goog.math.Size', 'goog.testing.jsunit', 'goog.testing.ui.rendererasserts', 'goog.ui.DimensionPicker', 'goog.ui.DimensionPickerRenderer'], false);
 goog.addDependency('ui/dimensionpickerrenderer.js', ['goog.ui.DimensionPickerRenderer'], ['goog.a11y.aria.Announcer', 'goog.a11y.aria.LivePriority', 'goog.dom', 'goog.dom.TagName', 'goog.i18n.bidi', 'goog.style', 'goog.ui.ControlRenderer', 'goog.userAgent'], false);
-goog.addDependency('ui/dimensionpickerrenderer_test.js', ['goog.ui.DimensionPickerRendererTest'], ['goog.a11y.aria.LivePriority', 'goog.dom', 'goog.testing.jsunit', 'goog.ui.DimensionPicker', 'goog.ui.DimensionPickerRenderer'], false);
+goog.addDependency('ui/dimensionpickerrenderer_test.js', ['goog.ui.DimensionPickerRendererTest'], ['goog.a11y.aria.LivePriority', 'goog.array', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.ui.DimensionPicker', 'goog.ui.DimensionPickerRenderer'], false);
 goog.addDependency('ui/dragdropdetector.js', ['goog.ui.DragDropDetector', 'goog.ui.DragDropDetector.EventType', 'goog.ui.DragDropDetector.ImageDropEvent', 'goog.ui.DragDropDetector.LinkDropEvent'], ['goog.dom', 'goog.dom.TagName', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.math.Coordinate', 'goog.string', 'goog.style', 'goog.userAgent'], false);
 goog.addDependency('ui/drilldownrow.js', ['goog.ui.DrilldownRow'], ['goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.ui.Component'], false);
 goog.addDependency('ui/drilldownrow_test.js', ['goog.ui.DrilldownRowTest'], ['goog.dom', 'goog.testing.jsunit', 'goog.ui.DrilldownRow'], false);
@@ -3689,7 +3691,7 @@ goog.addDependency('ui/gaugetheme.js', ['goog.ui.GaugeTheme'], ['goog.graphics.L
 goog.addDependency('ui/hovercard.js', ['goog.ui.HoverCard', 'goog.ui.HoverCard.EventType', 'goog.ui.HoverCard.TriggerEvent'], ['goog.array', 'goog.dom', 'goog.events', 'goog.events.Event', 'goog.events.EventType', 'goog.ui.AdvancedTooltip', 'goog.ui.PopupBase', 'goog.ui.Tooltip'], false);
 goog.addDependency('ui/hovercard_test.js', ['goog.ui.HoverCardTest'], ['goog.dom', 'goog.events', 'goog.math.Coordinate', 'goog.style', 'goog.testing.MockClock', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.jsunit', 'goog.ui.HoverCard'], false);
 goog.addDependency('ui/hsvapalette.js', ['goog.ui.HsvaPalette'], ['goog.array', 'goog.color.alpha', 'goog.dom.TagName', 'goog.events', 'goog.events.EventType', 'goog.style', 'goog.ui.Component', 'goog.ui.HsvPalette'], false);
-goog.addDependency('ui/hsvapalette_test.js', ['goog.ui.HsvaPaletteTest'], ['goog.color.alpha', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events', 'goog.events.Event', 'goog.math.Coordinate', 'goog.style', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.ui.HsvaPalette', 'goog.userAgent'], false);
+goog.addDependency('ui/hsvapalette_test.js', ['goog.ui.HsvaPaletteTest'], ['goog.color.alpha', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events.Event', 'goog.math.Coordinate', 'goog.style', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.ui.HsvaPalette', 'goog.userAgent'], false);
 goog.addDependency('ui/hsvpalette.js', ['goog.ui.HsvPalette'], ['goog.color', 'goog.dom.TagName', 'goog.events', 'goog.events.EventType', 'goog.events.InputHandler', 'goog.style', 'goog.style.bidi', 'goog.ui.Component', 'goog.userAgent'], false);
 goog.addDependency('ui/hsvpalette_test.js', ['goog.ui.HsvPaletteTest'], ['goog.color', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events', 'goog.events.Event', 'goog.math.Coordinate', 'goog.style', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.ui.Component', 'goog.ui.HsvPalette', 'goog.userAgent'], false);
 goog.addDependency('ui/idgenerator.js', ['goog.ui.IdGenerator'], [], false);
@@ -7435,11 +7437,19 @@ goog.array.repeat = function(value, n) {
  * @return {!Array<?>} An array containing the flattened values.
  */
 goog.array.flatten = function(var_args) {
+  var CHUNK_SIZE = 8192;
+
   var result = [];
   for (var i = 0; i < arguments.length; i++) {
     var element = arguments[i];
     if (goog.isArray(element)) {
-      result.push.apply(result, goog.array.flatten.apply(null, element));
+      for (var c = 0; c < element.length; c += CHUNK_SIZE) {
+        var chunk = goog.array.slice(element, c, c + CHUNK_SIZE);
+        var recurseResult = goog.array.flatten.apply(null, chunk);
+        for (var r = 0; r < recurseResult.length; r++) {
+          result.push(recurseResult[r]);
+        }
+      }
     } else {
       result.push(element);
     }
@@ -21705,3 +21715,4 @@ soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, '
 soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
+
