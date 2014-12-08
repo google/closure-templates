@@ -130,8 +130,6 @@ Author: Neil Sanchala
       <zipgroupfileset dir="${java.lib.dir}">
         <include name="aopalliance.jar" />
         <include name="args4j*.jar" />
-        <include name="guava*.jar" />
-        <include name="icu4j*.jar" />
         <include name="javax.inject.jar" />
         <include name="jsr305.jar" />
       </zipgroupfileset>
