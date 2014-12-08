@@ -48,11 +48,9 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
-
   // Ant looks for a mutator like createFoo methods when it hits a <foo>.
   // Below we define adders for these inner classes.
   // See http://ant.apache.org/manual/develop.html for more details.
-
 
   /**
    * A file reference like {@code <input path="foo.txt"/>}.
@@ -84,7 +82,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
   }
 
-
   /**
    * A wrapper around a library function name predicate like {@code <libdefined name="goog.*"/>}.
    */
@@ -106,7 +103,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
   }
 
-
   /** JavaScript source files that use the generated helper functions. */
   private List<FileRef> inputs = Lists.newArrayList();
 
@@ -124,7 +120,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
   };
 
-
   /**
    * A matcher for functions available in the environment in which output will be run including
    * things like {@link EscapingConventions.CrossLanguageStringXform#getLangFunctionNames}.
@@ -132,7 +127,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   public Predicate<String> getAvailableIdentifiers() {
     return availableIdentifiers;
   }
-
 
   /**
    * Called reflectively when Ant sees {@code <input>} to specify a file that uses the generated
@@ -172,7 +166,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     });
   }
 
-
   /**
    * Setup method to read arguments and setup initial configuration.
    *
@@ -195,7 +188,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
       }
     }
   }
-
 
   /**
    * Called to actually build the output by Ant.
@@ -254,15 +246,12 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
   }
 
-
   /** A line that precedes the rest of the generated code. */
   final String GENERATED_CODE_START_MARKER = getLineCommentSyntax() +
       " START GENERATED CODE FOR ESCAPERS.";
 
-
   /** A line that follows the rest of the generated code. */
   final String GENERATED_CODE_END_MARKER = getLineCommentSyntax() + " END GENERATED CODE";
-
 
   /**
    * Appends Code to the given buffer.
@@ -291,6 +280,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
     outputCode.append(GENERATED_CODE_START_MARKER).append('\n');
 
+    // Before entering the real logic, generate any needed prefix.
+    generatePrefix(outputCode);
 
     // First we collect all the side tables.
 
@@ -388,7 +379,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
         }
       }
 
-
       // Find a suitable filter or add one to filters.
       int filterVar = -1;
       Pattern filterPatternJava = escaper.getValueFilter();
@@ -410,7 +400,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
           escapeDirectiveIdent, escapesVar, matcherVar, filterVar,
           escaper.getNonAsciiPrefix(), escaper.getInnocuousOutput()));
     }
-
 
     // TODO(user): Maybe use java Soy templates to generate the JS?
 
@@ -464,7 +453,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     outputCode.append('\n').append(GENERATED_CODE_END_MARKER).append('\n');
   }
 
-
   /**
    * True if the two maps have at least one (key, value) pair in common, and no pairs with the
    * same key but different values according to {@link Object#equals}.
@@ -496,9 +484,9 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   /**
    * Appends a string literal with the given value onto the given buffer.
    */
-  protected static void writeStringLiteral(String value, StringBuilder out) {
+  protected void writeStringLiteral(String value, StringBuilder out) {
     out.append('\'')
-        .append(EscapingConventions.EscapeJsString.INSTANCE.escape(value))
+        .append(escapeOutputString(value))
         .append('\'');
   }
 
@@ -506,13 +494,13 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * Appends a string literal which may not be printable with the given value onto the given
    * buffer.
    */
-  private static void writeUnsafeStringLiteral(char value, StringBuilder out) {
+  private void writeUnsafeStringLiteral(char value, StringBuilder out) {
     if (!isPrintable(value)) {
       // Don't emit non-Latin characters or control characters since they don't roundtrip well.
       out.append(String.format(value >= 0x100 ? "'\\u%04x'" : "'\\x%02x'", (int) value));
     } else {
       out.append('\'')
-          .append(EscapingConventions.EscapeJsString.INSTANCE.escape(String.valueOf(value)))
+          .append(escapeOutputString(String.valueOf(value)))
           .append('\'');
     }
   }
@@ -549,14 +537,12 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     return 0x20 <= ch && ch <= 0x7e;
   }
 
-
   /**
    * Get the language being generated here.
    *
    * @return The language being generated.
    */
   protected abstract EscapingLanguage getLanguage();
-
 
   /**
    * Return the syntax for starting a one line comment.
@@ -565,14 +551,12 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    */
   protected abstract String getLineCommentSyntax();
 
-
   /**
    * Return the syntax for ending a line.
    *
    * @return The syntax for ending a line.
    */
   protected abstract String getLineEndSyntax();
-
 
   /**
    * Return the syntax for starting a regex string.
@@ -581,7 +565,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    */
   protected abstract String getRegexStart();
 
-
   /**
    * Return the syntax for ending a regex string.
    *
@@ -589,6 +572,12 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    */
   protected abstract String getRegexEnd();
 
+  /**
+   * Escape a generated string being outputted based on the current language being generated.
+   *
+   * @return The input string escaped for the current output language.
+   */
+  protected abstract String escapeOutputString(String input);
 
   /**
    * Converts the given pattern from a Java Pattern syntax to the language specific syntax.
@@ -598,6 +587,14 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    */
   protected abstract String convertFromJavaRegex(Pattern javaPattern);
 
+  /**
+   * Generate any prefix needed to precede the escapers. This may include library imports and other
+   * similar setup tasks.
+   *
+   * @param outputCode The StringBuilder where generated code should be appended.
+   * @return A string containing the prefix for the generated sanitizer.
+   */
+  protected void generatePrefix(StringBuilder outputCode) { /* NOOP by default. */ }
 
   /**
    * Generate the signature to a map object to hold character mapping. All necessary comments and
@@ -620,7 +617,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    */
   protected abstract void generateCharacterMapSignature(StringBuilder outputCode, String mapName);
 
-
   /**
    * Generate the constant to store the given matcher regular expression.
    *
@@ -629,7 +625,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * @param matcher The regular expression string.
    */
   protected abstract void generateMatcher(StringBuilder outputCode, String name, String matcher);
-
 
   /**
    * Generate the constant to store the given filter regular expression.
@@ -640,7 +635,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    */
   protected abstract void generateFilter(StringBuilder outputCode, String name, String filter);
 
-
   /**
    * Generate the function to handle replacement of a given character.
    *
@@ -648,7 +642,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * @param mapName The name of the map to use for replacement.
    */
   protected abstract void generateReplacerFunction(StringBuilder outputCode, String mapName);
-
 
   /**
    * Use an existing library function to execute the escaping, filtering, and replacing.
@@ -660,7 +653,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   protected abstract void useExistingLibraryFunction(StringBuilder outputCode, String identifier,
       String existingFunction);
 
-
   /**
    * Generate the helper function to execute the escaping, filtering, and replacing.
    *
@@ -668,7 +660,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * @param digest The DirectiveDigest which contains the appropriate patterns and replacer keys.
    */
   protected abstract void generateHelperFunction(StringBuilder outputCode, DirectiveDigest digest);
-
 
   /**
    * Generate common constants used elsewhere by the utility.

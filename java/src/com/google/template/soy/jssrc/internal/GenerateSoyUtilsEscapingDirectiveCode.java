@@ -66,31 +66,29 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public final class GenerateSoyUtilsEscapingDirectiveCode
     extends AbstractGenerateSoyEscapingDirectiveCode {
 
-
   @Override protected EscapingLanguage getLanguage() {
     return EscapingLanguage.JAVASCRIPT;
   }
-
 
   @Override protected String getLineCommentSyntax() {
     return "//";
   }
 
-
   @Override protected String getLineEndSyntax() {
     return ";";
   }
-
 
   @Override protected String getRegexStart() {
     return "/";
   }
 
-
   @Override protected String getRegexEnd() {
     return "/g";
   }
 
+  @Override protected String escapeOutputString(String input) {
+    return EscapingConventions.EscapeJsString.INSTANCE.escape(input);
+  }
 
   @Override protected String convertFromJavaRegex(Pattern javaPattern) {
     String body = javaPattern.pattern()
@@ -126,7 +124,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
     return buffer.toString();
   }
 
-
   @Override protected void generateCharacterMapSignature(StringBuilder outputCode, String mapName) {
     outputCode
         .append('\n')
@@ -136,7 +133,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" */\n")
         .append("soy.esc.$$ESCAPE_MAP_FOR_").append(mapName).append("_");
   }
-
 
   @Override protected void generateMatcher(StringBuilder outputCode, String name, String matcher) {
     outputCode
@@ -149,7 +145,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(";\n");
   }
 
-
   @Override protected void generateFilter(StringBuilder outputCode, String name, String filter) {
     outputCode
         .append('\n')
@@ -160,7 +155,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("soy.esc.$$FILTER_FOR_").append(name).append("_ = ").append(filter)
         .append(";\n");
   }
-
 
   @Override protected void generateCommonConstants(StringBuilder outputCode) {
     // Emit patterns and constants needed by escaping functions that are not part of any one
@@ -209,7 +203,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("g;\n");
   }
 
-
   @Override protected void generateReplacerFunction(StringBuilder outputCode, String mapName) {
     outputCode
         .append('\n')
@@ -226,7 +219,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("};\n");
   }
 
-
   @Override protected void useExistingLibraryFunction(StringBuilder outputCode, String identifier,
       String existingFunction) {
     outputCode
@@ -238,7 +230,6 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("  return ").append(existingFunction).append("(String(v));\n")
         .append("};\n");
   }
-
 
   @Override protected void generateHelperFunction(StringBuilder outputCode,
       DirectiveDigest digest) {
@@ -283,9 +274,8 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
     outputCode.append("};\n");
   }
 
-
   /** ["foo", "bar"] -> '{"foo": true, "bar": true}' */
-  private static String toJsStringSet(Iterable<? extends String> strings) {
+  private String toJsStringSet(Iterable<? extends String> strings) {
     StringBuilder sb = new StringBuilder();
     boolean isFirst = true;
     sb.append('{');
@@ -299,10 +289,8 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
     return sb.toString();
   }
 
-
   /** Matches named character classes in Java regular expressions. */
   private static final Pattern NAMED_CLASS = Pattern.compile("(?<!\\\\)(\\\\{2})*\\\\p\\{");
-
 
   /**
    * A non Ant interface for this class.

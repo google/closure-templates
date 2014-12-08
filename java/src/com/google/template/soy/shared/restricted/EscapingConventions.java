@@ -65,7 +65,7 @@ public final class EscapingConventions {
    * The list of potential languages which are used by the escapers.
    */
   public static enum EscapingLanguage {
-    JAVASCRIPT
+    JAVASCRIPT, PYTHON
   }
 
 
@@ -1040,6 +1040,8 @@ public final class EscapingConventions {
     @Override public List<String> getLangFunctionNames(EscapingLanguage language) {
       if (language == EscapingLanguage.JAVASCRIPT) {
         return ImmutableList.<String>of("goog.string.urlEncode", "encodeURIComponent");
+      } else if (language == EscapingLanguage.PYTHON) {
+        return ImmutableList.<String>of("urllib.quote");
       }
       return super.getLangFunctionNames(language);
     }
