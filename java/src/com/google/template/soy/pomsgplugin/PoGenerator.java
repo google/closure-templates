@@ -55,13 +55,12 @@ public class PoGenerator {
    */
   private static String generateMessage(SoyMsg msg) {
     StringBuilder msgBuilder = new StringBuilder();
-    String meaning = msg.getMeaning();
-    if (meaning != null && meaning.length() > 0) {
-      msgBuilder.append("# Meaning: ").append(meaning).append("\n");
+    String desc = msg.getDesc();
+    if (desc != null && desc.length() > 0) {
+      msgBuilder.append("#. ").append(desc).append("\n");
     }
 
     msgBuilder.append("#: id=").append(msg.getId()).append("\n");
-    msgBuilder.append("#: type=").append(msg.getContentType()).append("\n");
 
     SoyMsgPart firstPart = msg.getParts().get(0);
     if (firstPart instanceof SoyMsgPluralPart && msg.getParts().size() > 1) {
@@ -70,10 +69,10 @@ public class PoGenerator {
               + "plural block. Found: " + msg.getParts().get(1).toString());
     } else if (firstPart instanceof SoyMsgPluralPart) {
       msgBuilder.append(generatePluralVar((SoyMsgPluralPart)firstPart));
-      msgBuilder.append(generateDescription(msg));
+      msgBuilder.append(generateCtxt(msg));
       msgBuilder.append(generatePluralMessage((SoyMsgPluralPart)firstPart));
     } else {
-      msgBuilder.append(generateDescription(msg));
+      msgBuilder.append(generateCtxt(msg));
       msgBuilder.append("msgid \"");
       msgBuilder.append(generateSingularMessage(msg));
       msgBuilder.append("\"\n");
@@ -121,8 +120,8 @@ public class PoGenerator {
    *
    * Returns an empty string if the message has no description.
    */
-  private static String generateDescription(SoyMsg msg) {
-    String desc = msg.getDesc();
+  private static String generateCtxt(SoyMsg msg) {
+    String desc = msg.getMeaning();
     if (desc != null && desc.length() > 0) {
       return "msgctxt \"" + desc + "\"\n";
     }
@@ -147,7 +146,7 @@ public class PoGenerator {
     } else if (msgPart instanceof SoyMsgPlaceholderPart) {
       String placeholderName =
               ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
-      return "{$" + placeholderName + "}";
+      return "{" + placeholderName + "}";
     } else {
       throw new PoException("Unexpected message part type: " + msgPart);
     }
