@@ -238,12 +238,24 @@ goog.define('goog.DISALLOW_TEST_ONLY_CODE', COMPILED && !goog.DEBUG);
 
 
 /**
- * Creates object stubs for a namespace.  The presence of one or more
- * goog.provide() calls indicate that the file defines the given
- * objects/namespaces.  Provided objects must not be null or undefined.
- * Build tools also scan for provide/require statements
+ * Defines a namespace in Closure.
+ *
+ * A namespace may only be defined once in a codebase. It may be defined using
+ * goog.provide() or goog.module().
+ *
+ * The presence of one or more goog.provide() calls in a file indicates
+ * that the file defines the given objects/namespaces.
+ * Provided symbols must not be null or undefined.
+ *
+ * In addition, goog.provide() creates the object stubs for a namespace
+ * (for example, goog.provide("goog.foo.bar") will create the object
+ * goog.foo.bar if it does not already exist).
+ *
+ * Build tools also scan for provide/require/module statements
  * to discern dependencies, build dependency files (see deps.js), etc.
+ *
  * @see goog.require
+ * @see goog.module
  * @param {string} name Namespace provided by this file in the form
  *     "goog.package.part".
  */
@@ -295,22 +307,28 @@ goog.VALID_MODULE_RE_ = /^[a-zA-Z_$][a-zA-Z0-9._$]*$/;
 
 
 /**
- * goog.module serves two purposes:
- * - marks a file that must be loaded as a module
- * - reserves a namespace (it can not also be goog.provided)
- * and has three requirements:
+ * Defines a module in Closure.
+ *
+ * Marks that this file must be loaded as a module and claims the namespace.
+ *
+ * A namespace may only be defined once in a codebase. It may be defined using
+ * goog.provide() or goog.module().
+ *
+ * goog.module() has three requirements:
  * - goog.module may not be used in the same file as goog.provide.
  * - goog.module must be the first statement in the file.
  * - only one goog.module is allowed per file.
- * When a goog.module annotated file is loaded, it is loaded enclosed in
+ *
+ * When a goog.module annotated file is loaded, it is enclosed in
  * a strict function closure. This means that:
- * - any variable declared in a goog.module file are private to the file,
- * not global. Although the compiler is expected to inline the module.
+ * - any variables declared in a goog.module file are private to the file
+ * (not global), though the compiler is expected to inline the module.
  * - The code must obey all the rules of "strict" JavaScript.
  * - the file will be marked as "use strict"
  *
  * NOTE: unlike goog.provide, goog.module does not declare any symbols by
- * itself.
+ * itself. If declared symbols are desired, use
+ * goog.module.declareLegacyNamespace().
  *
  *
  * See the public goog.module proposal: http://goo.gl/Va1hin
@@ -3268,7 +3286,7 @@ goog.addDependency('net/xpc/crosspagechannel.js', ['goog.net.xpc.CrossPageChanne
 goog.addDependency('net/xpc/crosspagechannel_test.js', ['goog.net.xpc.CrossPageChannelTest'], ['goog.Disposable', 'goog.Uri', 'goog.async.Deferred', 'goog.dom', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('net/xpc/crosspagechannelrole.js', ['goog.net.xpc.CrossPageChannelRole'], [], false);
 goog.addDependency('net/xpc/directtransport.js', ['goog.net.xpc.DirectTransport'], ['goog.Timer', 'goog.async.Deferred', 'goog.events.EventHandler', 'goog.log', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.Transport', 'goog.net.xpc.TransportTypes', 'goog.object'], false);
-goog.addDependency('net/xpc/directtransport_test.js', ['goog.net.xpc.DirectTransportTest'], ['goog.dom', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit'], false);
+goog.addDependency('net/xpc/directtransport_test.js', ['goog.net.xpc.DirectTransportTest'], ['goog.dom', 'goog.labs.userAgent.browser', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('net/xpc/frameelementmethodtransport.js', ['goog.net.xpc.FrameElementMethodTransport'], ['goog.log', 'goog.net.xpc', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.Transport', 'goog.net.xpc.TransportTypes'], false);
 goog.addDependency('net/xpc/iframepollingtransport.js', ['goog.net.xpc.IframePollingTransport', 'goog.net.xpc.IframePollingTransport.Receiver', 'goog.net.xpc.IframePollingTransport.Sender'], ['goog.array', 'goog.dom', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.Transport', 'goog.net.xpc.TransportTypes', 'goog.userAgent'], false);
 goog.addDependency('net/xpc/iframepollingtransport_test.js', ['goog.net.xpc.IframePollingTransportTest'], ['goog.Timer', 'goog.dom', 'goog.dom.TagName', 'goog.functions', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.object', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
@@ -9500,16 +9518,17 @@ goog.require('goog.string.TypedString');
  *
  * Values of this type must be composable, i.e. for any two values
  * {@code style1} and {@code style2} of this type,
- * {@code style1.getSafeStyleString() + style2.getSafeStyleString()} must
- * itself be a value that satisfies the SafeStyle type constraint. This
- * requirement implies that for any value {@code style} of this type,
- * {@code style.getSafeStyleString()} must not end in a "property value" or
- * "property name" context. For example, a value of {@code background:url("}
- * or {@code font-} would not satisfy the SafeStyle contract. This is because
- * concatenating such strings with a second value that itself does not contain
- * unsafe CSS can result in an overall string that does. For example, if
- * {@code javascript:evil())"} is appended to {@code background:url("}, the
- * resulting string may result in the execution of a malicious script.
+ * {@code goog.html.SafeStyle.unwrap(style1) +
+ * goog.html.SafeStyle.unwrap(style2)} must itself be a value that satisfies
+ * the SafeStyle type constraint. This requirement implies that for any value
+ * {@code style} of this type, {@code goog.html.SafeStyle.unwrap(style)} must
+ * not end in a "property value" or "property name" context. For example,
+ * a value of {@code background:url("} or {@code font-} would not satisfy the
+ * SafeStyle contract. This is because concatenating such strings with a
+ * second value that itself does not contain unsafe CSS can result in an
+ * overall string that does. For example, if {@code javascript:evil())"} is
+ * appended to {@code background:url("}, the resulting string may result in
+ * the execution of a malicious script.
  *
  * TODO(mlourenco): Consider whether we should implement UTF-8 interchange
  * validity checks and blacklisting of newlines (including Unicode ones) and
