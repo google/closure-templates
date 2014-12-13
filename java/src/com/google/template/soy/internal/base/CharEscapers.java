@@ -714,11 +714,11 @@ public final class CharEscapers {
 
             char[] r = new char[6];
             r[5] = HEX_DIGITS[c & 15];
-            c >>>= 4;
+            c = (char) (c >>> 4);
             r[4] = HEX_DIGITS[c & 15];
-            c >>>= 4;
+            c = (char) (c >>> 4);
             r[3] = HEX_DIGITS[c & 15];
-            c >>>= 4;
+            c = (char) (c >>> 4);
             r[2] = HEX_DIGITS[c & 15];
             r[1] = 'u';
             r[0] = '\\';
@@ -887,9 +887,9 @@ public final class CharEscapers {
         char[] r = new char[4];
         r[0] = '\\';
         r[3] = HEX_DIGITS[c & 7];
-        c >>>= 3;
+        c = (char) (c >>> 3);
         r[2] = HEX_DIGITS[c & 7];
-        c >>>= 3;
+        c = (char) (c >>> 3);
         r[1] = HEX_DIGITS[c & 7];
         return r;
       }
@@ -900,11 +900,11 @@ public final class CharEscapers {
       r[0] = '\\';
       r[1] = 'u';
       r[5] = HEX_DIGITS[c & 15];
-      c >>>= 4;
+      c = (char) (c >>> 4);
       r[4] = HEX_DIGITS[c & 15];
-      c >>>= 4;
+      c = (char) (c >>> 4);
       r[3] = HEX_DIGITS[c & 15];
-      c >>>= 4;
+      c = (char) (c >>> 4);
       r[2] = HEX_DIGITS[c & 15];
       return r;
     }
@@ -939,7 +939,7 @@ public final class CharEscapers {
       if (c < 0x100) {
         char[] r = new char[4];
         r[3] = HEX_DIGITS[c & 0xf];
-        c >>>= 4;
+        c = (char) (c >>> 4);
         r[2] = HEX_DIGITS[c & 0xf];
         r[1] = 'x';
         r[0] = '\\';
@@ -949,11 +949,11 @@ public final class CharEscapers {
       // 4 digit hex escape everything else
       char[] r = new char[6];
       r[5] = HEX_DIGITS[c & 0xf];
-      c >>>= 4;
+      c = (char) (c >>> 4);
       r[4] = HEX_DIGITS[c & 0xf];
-      c >>>= 4;
+      c = (char) (c >>> 4);
       r[3] = HEX_DIGITS[c & 0xf];
-      c >>>= 4;
+      c = (char) (c >>> 4);
       r[2] = HEX_DIGITS[c & 0xf];
       r[1] = 'u';
       r[0] = '\\';
