@@ -525,7 +525,7 @@ final class RawTextContextUpdater {
           // Allows {@code data-foo} and other dashed attribute names, but intentionally disallows
           // "--" as an attribute name so that a tag ending after a value-less attribute named "--"
           // cannot be confused with an HTML comment end ("-->").
-          makeTransitionToAttrName("(?i)^\\s*([a-z](?:[a-z0-9_:\\-]*[a-z0-9])?)"),
+          makeTransitionToAttrName("(?i)^\\s*([a-z](?:[a-z0-9_:\\-]*[a-z0-9?])?)"),
           new Transition("^\\s*/?>") {
             @Override
             Context computeNextContext(Context prior, Matcher matcher) {

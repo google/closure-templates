@@ -140,6 +140,8 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("HTML_TAG NORMAL", " xmlns", "HTML_ATTRIBUTE_NAME NORMAL URI");
     assertTransition("HTML_TAG NORMAL", " xmlns:foo", "HTML_ATTRIBUTE_NAME NORMAL URI");
     assertTransition("HTML_TAG NORMAL", " xmlnsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
+    assertTransition("HTML_TAG NORMAL", " xmlnsxyz?", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
+    assertTransition("HTML_TAG NORMAL", " xml?nsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
     assertTransition("HTML_TAG NORMAL", " svg:style='", "CSS NORMAL STYLE SINGLE_QUOTE");
   }
 
