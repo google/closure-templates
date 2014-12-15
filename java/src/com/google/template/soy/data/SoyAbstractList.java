@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 
+import java.io.IOException;
+
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -102,20 +104,28 @@ public abstract class SoyAbstractList extends SoyAbstractValue implements SoyLis
   @Override public final String coerceToString() {
 
     StringBuilder listStr = new StringBuilder();
-    listStr.append('[');
+    try {
+      render(listStr);
+    } catch (IOException e) {
+      throw new RuntimeException(e);  // impossible
+    }
+    return listStr.toString();
+  }
+
+  @Override public void render(Appendable appendable) throws IOException {
+    appendable.append('[');
 
     boolean isFirst = true;
     for (SoyValueProvider valueProvider : asJavaList()) {
       if (isFirst) {
         isFirst = false;
       } else {
-        listStr.append(", ");
+        appendable.append(", ");
       }
-      listStr.append(valueProvider.resolve().coerceToString());
+      valueProvider.resolve().render(appendable);
     }
 
-    listStr.append(']');
-    return listStr.toString();
+    appendable.append(']');
   }
 
 

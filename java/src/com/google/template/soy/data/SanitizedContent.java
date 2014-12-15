@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+
+import java.io.IOException;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.Immutable;
@@ -133,6 +135,9 @@ public final class SanitizedContent extends SoyData {
     return content.length() != 0;  // Consistent with StringData
   }
 
+  @Override public void render(Appendable appendable) throws IOException {
+    appendable.append(content);
+  }
 
   @Override
   public String toString() {

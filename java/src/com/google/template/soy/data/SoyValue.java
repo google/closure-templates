@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import java.io.IOException;
+
 import javax.annotation.ParametersAreNonnullByDefault;
 
 
@@ -50,6 +52,17 @@ public interface SoyValue extends SoyValueProvider {
    * @return This value coerced into a string.
    */
   public String coerceToString();
+
+  /**
+   * Renders this value to the given appendable.
+   *
+   * <p>This should behave identically to {@code appendable.append(coerceToString())} but is
+   * provided separately to allow more incremental approaches.
+   *
+   * @param appendable The appendable to render to.
+   * @throws IOException
+   */
+  public void render(Appendable appendable) throws IOException;
 
 
   // -----------------------------------------------------------------------------------------------

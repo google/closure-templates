@@ -18,6 +18,8 @@ package com.google.template.soy.data.restricted;
 
 import com.google.template.soy.data.SoyData;
 
+import java.io.IOException;
+
 
 /**
  * Abstract superclass for a node in a Soy data tree that represents a piece of primitive data
@@ -28,6 +30,8 @@ import com.google.template.soy.data.SoyData;
  *
  */
 public abstract class PrimitiveData extends SoyData {
-
-  // Empty.
+  @Override public void render(Appendable appendable) throws IOException {
+    // PrimitiveData instances can't really benefit from any incremental approach anyway.
+    appendable.append(coerceToString());
+  }
 }

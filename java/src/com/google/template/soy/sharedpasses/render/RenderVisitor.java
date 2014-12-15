@@ -309,9 +309,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       result = applyDirective(directiveNode.getName(), result, argsSoyDatas, node);
     }
 
-    // Important: Use coerceToString to make sure we are using the value's preferred way of being
-    // converted to string.
-    append(currOutputBuf, result.coerceToString());
+    append(currOutputBuf, result);
   }
 
 
@@ -324,7 +322,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitCssNode(CssNode node) {
     ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
-      append(currOutputBuf, eval(componentNameExpr, node).toString());
+      append(currOutputBuf, eval(componentNameExpr, node));
       append(currOutputBuf, "-");
     }
 
@@ -626,7 +624,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       for (String directiveName : node.getEscapingDirectiveNames()) {
         resultData = applyDirective(directiveName, resultData, ImmutableList.<SoyValue>of(), node);
       }
-      append(currOutputBuf, resultData.toString());
+      append(currOutputBuf, resultData);
     }
   }
 
@@ -777,6 +775,17 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   static void append(Appendable outputBuf, CharSequence cs) {
     try {
       outputBuf.append(cs);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Helper to append a SoyValue to the output, propagating any exceptions.
+   */
+  static void append(Appendable outputBuf, SoyValue value) {
+    try {
+      value.render(outputBuf);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

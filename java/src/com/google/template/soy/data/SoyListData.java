@@ -16,7 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -25,6 +24,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -38,8 +38,6 @@ import javax.annotation.Nonnull;
  *
  */
 public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
-
-
   /** The underlying list. */
   private final List<SoyData> list;
 
@@ -85,9 +83,27 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    * <p> This method should only be used for debugging purposes.
    */
   @Override public String toString() {
-    return "[" + Joiner.on(", ").join(list) + "]";
+    StringBuilder sb = new StringBuilder();
+    try {
+      render(sb);
+    } catch (IOException e) {
+      throw new RuntimeException(e);  // impossible
+    }
+    return sb.toString();
   }
 
+  @Override public void render(Appendable appendable) throws IOException {
+    appendable.append("[");
+    int size = list.size();
+    if (size != 0) {
+      list.get(0).render(appendable);
+      for (int i = 1; i < size; i++) {
+        appendable.append(", ");
+        list.get(i).render(appendable);
+      }
+    }
+    appendable.append("]");
+  }
 
   /**
    * {@inheritDoc}

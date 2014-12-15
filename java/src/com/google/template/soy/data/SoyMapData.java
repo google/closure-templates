@@ -21,7 +21,9 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.StringData;
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,34 +117,31 @@ public class SoyMapData extends CollectionData implements SoyDict {
    * <p> This method should only be used for debugging purposes.
    */
   @Override public String toString() {
-    return toStringHelper(map);
-  }
-
-
-  /**
-   * Protected helper for {toString()}. Turns a regular Map into a string.
-   * @param map The map to turn into a string.
-   * @return The built string.
-   */
-  protected String toStringHelper(Map<String, SoyData> map) {
-
-    StringBuilder mapStr = new StringBuilder();
-    mapStr.append('{');
-
-    boolean isFirst = true;
-    for (Map.Entry<String, SoyData> entry : map.entrySet()) {
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        mapStr.append(", ");
-      }
-      mapStr.append(entry.getKey()).append(": ").append(entry.getValue().coerceToString());
+    StringBuilder sb = new StringBuilder();
+    try {
+      render(sb);
+    } catch (IOException e) {
+      throw new RuntimeException(e);  // impossible
     }
-
-    mapStr.append('}');
-    return mapStr.toString();
+    return sb.toString();
   }
 
+  @Override public void render(Appendable appendable) throws IOException {
+    appendable.append('{');
+    Iterator<Map.Entry<String, SoyData>> iterator = map.entrySet().iterator();
+    if (iterator.hasNext()) {
+      Map.Entry<String, SoyData> entry = iterator.next();
+      appendable.append(entry.getKey()).append(": ");
+      entry.getValue().render(appendable);
+      while (iterator.hasNext()) {
+        appendable.append(", ");
+        entry = iterator.next();
+        appendable.append(entry.getKey()).append(": ");
+        entry.getValue().render(appendable);
+      }
+    }
+    appendable.append('}');
+  }
 
   /**
    * {@inheritDoc}

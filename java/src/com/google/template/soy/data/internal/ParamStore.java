@@ -20,6 +20,8 @@ import com.google.template.soy.data.SoyAbstractRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 
+import java.io.IOException;
+
 import javax.annotation.Nonnull;
 
 
@@ -49,6 +51,9 @@ public abstract class ParamStore extends SoyAbstractRecord {
     throw new UnsupportedOperationException();
   }
 
+  @Override public void render(Appendable appendable) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 
   @Override public boolean equals(SoyValue other) {
     throw new UnsupportedOperationException();

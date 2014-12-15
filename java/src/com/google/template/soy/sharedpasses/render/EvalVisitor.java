@@ -68,6 +68,7 @@ import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -746,6 +747,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     @Override public String coerceToString() {
       return "null";
+    }
+
+    @Override public void render(Appendable appendable) throws IOException {
+      appendable.append(coerceToString());
     }
   }
 

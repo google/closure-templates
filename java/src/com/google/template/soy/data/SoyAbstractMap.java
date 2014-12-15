@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import java.io.IOException;
+
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -40,9 +42,17 @@ public abstract class SoyAbstractMap extends SoyAbstractValue implements SoyMap 
 
 
   @Override public final String coerceToString() {
-
     StringBuilder mapStr = new StringBuilder();
-    mapStr.append('{');
+    try {
+      render(mapStr);
+    } catch (IOException e) {
+      throw new RuntimeException(e);  // impossible
+    }
+    return mapStr.toString();
+  }
+
+  @Override public void render(Appendable appendable) throws IOException {
+    appendable.append('{');
 
     boolean isFirst = true;
     for (SoyValue key : getItemKeys()) {
@@ -50,15 +60,14 @@ public abstract class SoyAbstractMap extends SoyAbstractValue implements SoyMap 
       if (isFirst) {
         isFirst = false;
       } else {
-        mapStr.append(", ");
+        appendable.append(", ");
       }
-      mapStr.append(key.coerceToString()).append(": ").append(value.coerceToString());
+      key.render(appendable);
+      appendable.append(": ");
+      value.render(appendable);
     }
-
-    mapStr.append('}');
-    return mapStr.toString();
+    appendable.append('}');
   }
-
 
   @Override public final boolean equals(SoyValue other) {
     // Instance equality, to match Javascript behavior.
