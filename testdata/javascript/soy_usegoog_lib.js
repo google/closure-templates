@@ -2964,7 +2964,7 @@ goog.addDependency('html/safescript.js', ['goog.html.SafeScript'], ['goog.assert
 goog.addDependency('html/safescript_test.js', ['goog.html.safeScriptTest'], ['goog.html.SafeScript', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safestyle.js', ['goog.html.SafeStyle'], ['goog.array', 'goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safestyle_test.js', ['goog.html.safeStyleTest'], ['goog.html.SafeStyle', 'goog.string.Const', 'goog.testing.jsunit'], false);
-goog.addDependency('html/safestylesheet.js', ['goog.html.SafeStyleSheet'], ['goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
+goog.addDependency('html/safestylesheet.js', ['goog.html.SafeStyleSheet'], ['goog.array', 'goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safestylesheet_test.js', ['goog.html.safeStyleSheetTest'], ['goog.html.SafeStyleSheet', 'goog.string', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safeurl.js', ['goog.html.SafeUrl'], ['goog.asserts', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safeurl_test.js', ['goog.html.safeUrlTest'], ['goog.html.SafeUrl', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
@@ -3085,7 +3085,7 @@ goog.addDependency('labs/pubsub/broadcastpubsub_test.js', ['goog.labs.pubsub.Bro
 goog.addDependency('labs/storage/boundedcollectablestorage.js', ['goog.labs.storage.BoundedCollectableStorage'], ['goog.array', 'goog.asserts', 'goog.iter', 'goog.storage.CollectableStorage', 'goog.storage.ErrorCode', 'goog.storage.ExpiringStorage'], false);
 goog.addDependency('labs/storage/boundedcollectablestorage_test.js', ['goog.labs.storage.BoundedCollectableStorageTest'], ['goog.labs.storage.BoundedCollectableStorage', 'goog.storage.collectableStorageTester', 'goog.storage.storage_test', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.storage.FakeMechanism'], false);
 goog.addDependency('labs/structs/map.js', ['goog.labs.structs.Map'], ['goog.array', 'goog.asserts', 'goog.labs.object', 'goog.object'], false);
-goog.addDependency('labs/structs/map_perf.js', ['goog.labs.structs.mapPerf'], ['goog.dom', 'goog.labs.structs.Map', 'goog.structs.Map', 'goog.testing.PerformanceTable', 'goog.testing.jsunit'], false);
+goog.addDependency('labs/structs/map_perf.js', ['goog.labs.structs.MapPerf'], ['goog.asserts', 'goog.dom', 'goog.labs.structs.Map', 'goog.structs.Map', 'goog.testing.PerformanceTable', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/structs/map_test.js', ['goog.labs.structs.MapTest'], ['goog.labs.structs.Map', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('labs/structs/multimap.js', ['goog.labs.structs.Multimap'], ['goog.array', 'goog.labs.object', 'goog.labs.structs.Map'], false);
 goog.addDependency('labs/structs/multimap_test.js', ['goog.labs.structs.MultimapTest'], ['goog.labs.structs.Map', 'goog.labs.structs.Multimap', 'goog.testing.jsunit'], false);
@@ -3283,7 +3283,7 @@ goog.addDependency('net/xhrmanager_test.js', ['goog.net.XhrManagerTest'], ['goog
 goog.addDependency('net/xmlhttp.js', ['goog.net.DefaultXmlHttpFactory', 'goog.net.XmlHttp', 'goog.net.XmlHttp.OptionType', 'goog.net.XmlHttp.ReadyState', 'goog.net.XmlHttpDefines'], ['goog.asserts', 'goog.net.WrapperXmlHttpFactory', 'goog.net.XmlHttpFactory'], false);
 goog.addDependency('net/xmlhttpfactory.js', ['goog.net.XmlHttpFactory'], ['goog.net.XhrLike'], false);
 goog.addDependency('net/xpc/crosspagechannel.js', ['goog.net.xpc.CrossPageChannel'], ['goog.Uri', 'goog.async.Deferred', 'goog.async.Delay', 'goog.dispose', 'goog.dom', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.messaging.AbstractChannel', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.ChannelStates', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.DirectTransport', 'goog.net.xpc.FrameElementMethodTransport', 'goog.net.xpc.IframePollingTransport', 'goog.net.xpc.IframeRelayTransport', 'goog.net.xpc.NativeMessagingTransport', 'goog.net.xpc.NixTransport', 'goog.net.xpc.TransportTypes', 'goog.net.xpc.UriCfgFields', 'goog.string', 'goog.uri.utils', 'goog.userAgent'], false);
-goog.addDependency('net/xpc/crosspagechannel_test.js', ['goog.net.xpc.CrossPageChannelTest'], ['goog.Disposable', 'goog.Uri', 'goog.async.Deferred', 'goog.dom', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
+goog.addDependency('net/xpc/crosspagechannel_test.js', ['goog.net.xpc.CrossPageChannelTest'], ['goog.Disposable', 'goog.Uri', 'goog.async.Deferred', 'goog.dom', 'goog.labs.userAgent.browser', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
 goog.addDependency('net/xpc/crosspagechannelrole.js', ['goog.net.xpc.CrossPageChannelRole'], [], false);
 goog.addDependency('net/xpc/directtransport.js', ['goog.net.xpc.DirectTransport'], ['goog.Timer', 'goog.async.Deferred', 'goog.events.EventHandler', 'goog.log', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.Transport', 'goog.net.xpc.TransportTypes', 'goog.object'], false);
 goog.addDependency('net/xpc/directtransport_test.js', ['goog.net.xpc.DirectTransportTest'], ['goog.dom', 'goog.labs.userAgent.browser', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit'], false);
@@ -5753,7 +5753,7 @@ goog.asserts.setErrorHandler = function(errorHandler) {
  * @param {T} condition The condition to check.
  * @param {string=} opt_message Error message in case of failure.
  * @param {...*} var_args The items to substitute into the failure message.
- * @return {!T} The value of the condition.
+ * @return {T} The value of the condition.
  * @throws {goog.asserts.AssertionError} When the condition evaluates to false.
  */
 goog.asserts.assert = function(condition, opt_message, var_args) {
@@ -5934,7 +5934,7 @@ goog.asserts.assertElement = function(value, opt_message, var_args) {
  * @param {...*} var_args The items to substitute into the failure message.
  * @throws {goog.asserts.AssertionError} When the value is not an instance of
  *     type.
- * @return {!T}
+ * @return {T}
  * @template T
  */
 goog.asserts.assertInstanceof = function(value, type, opt_message, var_args) {
@@ -10851,6 +10851,43 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
 
 
 /**
+ * Creates a SafeHtml representing an iframe tag.
+ *
+ * By default the sandbox attribute is set to an empty value, which is the most
+ * secure option, as it confers the iframe the least privileges. If this
+ * is too restrictive then granting individual privileges is the preferable
+ * option. Unsetting the attribute entirely is the least secure option and
+ * should never be done unless it's stricly necessary.
+ *
+ * @param {goog.html.TrustedResourceUrl=} opt_src The value of the src
+ *     attribute. If null or undefined src will not be set.
+ * @param {goog.html.SafeHtml=} opt_srcdoc The value of the srcdoc attribute.
+ *     If null or undefined srcdoc will not be set.
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
+ *     opt_attributes Mapping from attribute names to their values. Only
+ *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
+ *     undefined causes the attribute to be omitted.
+ * @param {!goog.html.SafeHtml.TextOrHtml_|
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to
+ *     HTML-escape and put inside the tag. Array elements are concatenated.
+ * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
+ * @throws {Error} If invalid tag name, attribute name, or attribute value is
+ *     provided. If opt_attributes contains the src or srcdoc attributes.
+ */
+goog.html.SafeHtml.createIframe = function(
+    opt_src, opt_srcdoc, opt_attributes, opt_content) {
+  var fixedAttributes = {};
+  fixedAttributes['src'] = opt_src || null;
+  fixedAttributes['srcdoc'] = opt_srcdoc || null;
+  var defaultAttributes = {'sandbox': ''};
+  var attributes = goog.html.SafeHtml.combineAttributes(
+      fixedAttributes, defaultAttributes, opt_attributes);
+  return goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
+      'iframe', attributes, opt_content);
+};
+
+
+/**
  * @param {string} tagName The tag name.
  * @param {string} name The attribute name.
  * @param {!goog.html.SafeHtml.AttributeValue_} value The attribute value.
@@ -10938,10 +10975,9 @@ goog.html.SafeHtml.createWithDir = function(dir, tagName, opt_attributes,
 
 
 /**
- * Creates a new SafeHtml object by concatenating the values.
- * @param {...!goog.html.SafeHtml.TextOrHtml_|
- *     !Array<!goog.html.SafeHtml.TextOrHtml_>} var_args Elements of array
- *     arguments would be processed recursively.
+ * Creates a new SafeHtml object by concatenating values.
+ * @param {...(!goog.html.SafeHtml.TextOrHtml_|
+ *     !Array<!goog.html.SafeHtml.TextOrHtml_>)} var_args Values to concatenate.
  * @return {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.concat = function(var_args) {
@@ -11077,6 +11113,46 @@ goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse =
 
   return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       result, dir);
+};
+
+
+/**
+ * @param {!Object<string, string>} fixedAttributes
+ * @param {!Object<string, string>} defaultAttributes
+ * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
+ *     opt_attributes Optional attributes passed to create*().
+ * @return {!Object<string, goog.html.SafeHtml.AttributeValue_>}
+ * @throws {Error} If opt_attributes contains an attribute with the same name
+ *     as an attribute in fixedAttributes.
+ * @package
+ */
+goog.html.SafeHtml.combineAttributes = function(
+    fixedAttributes, defaultAttributes, opt_attributes) {
+  var combinedAttributes = {};
+  var name;
+
+  for (name in fixedAttributes) {
+    goog.asserts.assert(name.toLowerCase() == name, 'Must be lower case');
+    combinedAttributes[name] = fixedAttributes[name];
+  }
+  for (name in defaultAttributes) {
+    goog.asserts.assert(name.toLowerCase() == name, 'Must be lower case');
+    combinedAttributes[name] = defaultAttributes[name];
+  }
+
+  for (name in opt_attributes) {
+    var nameLower = name.toLowerCase();
+    if (nameLower in fixedAttributes) {
+      throw Error('Cannot override "' + nameLower + '" attribute, got "' +
+          name + '" with value "' + opt_attributes[name] + '"');
+    }
+    if (nameLower in defaultAttributes) {
+      delete combinedAttributes[nameLower];
+    }
+    combinedAttributes[name] = opt_attributes[name];
+  }
+
+  return combinedAttributes;
 };
 
 
@@ -18543,6 +18619,7 @@ goog.html.SafeScript.EMPTY =
 
 goog.provide('goog.html.SafeStyleSheet');
 
+goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.string');
 goog.require('goog.string.Const');
@@ -18565,6 +18642,15 @@ goog.require('goog.string.TypedString');
  * content of a style element within HTML. The SafeStyleSheet string should
  * not be escaped before interpolation.
  *
+ * Values of this type must be composable, i.e. for any two values
+ * {@code styleSheet1} and {@code styleSheet2} of this type,
+ * {@code goog.html.SafeStyleSheet.unwrap(styleSheet1) +
+ * goog.html.SafeStyleSheet.unwrap(styleSheet2)} must itself be a value that
+ * satisfies the SafeStyleSheet type constraint. This requirement implies that
+ * for any value {@code styleSheet} of this type,
+ * {@code goog.html.SafeStyleSheet.unwrap(styleSheet1)} must end in
+ * "beginning of rule" context.
+
  * A SafeStyleSheet can be constructed via security-reviewed unchecked
  * conversions. In this case producers of SafeStyleSheet must ensure themselves
  * that the SafeStyleSheet does not contain unsafe script. Note in particular
@@ -18618,6 +18704,33 @@ goog.html.SafeStyleSheet.prototype.implementsGoogStringTypedString = true;
  * @private
  */
 goog.html.SafeStyleSheet.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+
+
+/**
+ * Creates a new SafeStyleSheet object by concatenating values.
+ * @param {...(!goog.html.SafeStyleSheet|!Array<!goog.html.SafeStyleSheet>)}
+ *     var_args Values to concatenate.
+ * @return {!goog.html.SafeStyleSheet}
+ */
+goog.html.SafeStyleSheet.concat = function(var_args) {
+  var result = '';
+
+  /**
+   * @param {!goog.html.SafeStyleSheet|!Array<!goog.html.SafeStyleSheet>}
+   *     argument
+   */
+  var addArgument = function(argument) {
+    if (goog.isArray(argument)) {
+      goog.array.forEach(argument, addArgument);
+    } else {
+      result += goog.html.SafeStyleSheet.unwrap(argument);
+    }
+  };
+
+  goog.array.forEach(arguments, addArgument);
+  return goog.html.SafeStyleSheet
+      .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(result);
+};
 
 
 /**
