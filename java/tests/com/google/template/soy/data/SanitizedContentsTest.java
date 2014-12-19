@@ -29,7 +29,7 @@ public class SanitizedContentsTest extends TestCase {
 
   public void testUnsanitizedText() {
     assertEquals(
-        new SanitizedContent("Hello World", ContentKind.TEXT, null),
+        SanitizedContent.create("Hello World", ContentKind.TEXT, null),
         SanitizedContents.unsanitizedText("Hello World"));
   }
 
@@ -38,16 +38,16 @@ public class SanitizedContentsTest extends TestCase {
     String text2 = "two";
     String text3 = "three";
 
-    SanitizedContent content1 = new SanitizedContent(text1, ContentKind.HTML, null);
-    SanitizedContent content2 = new SanitizedContent(text2, ContentKind.HTML, null);
-    SanitizedContent content3 = new SanitizedContent(text3, ContentKind.HTML, null);
+    SanitizedContent content1 = SanitizedContent.create(text1, ContentKind.HTML, null);
+    SanitizedContent content2 = SanitizedContent.create(text2, ContentKind.HTML, null);
+    SanitizedContent content3 = SanitizedContent.create(text3, ContentKind.HTML, null);
 
-    assertEquals(new SanitizedContent(text1 + text2 + text3, ContentKind.HTML, null),
+    assertEquals(SanitizedContent.create(text1 + text2 + text3, ContentKind.HTML, null),
         SanitizedContents.concatHtml(content1, content2, content3));
   }
 
   public void testConcatReturnsEmpty() throws Exception {
-    assertEquals(new SanitizedContent("", ContentKind.HTML, Dir.NEUTRAL),
+    assertEquals(SanitizedContent.create("", ContentKind.HTML, Dir.NEUTRAL),
         SanitizedContents.concatHtml());
   }
 
@@ -64,10 +64,10 @@ public class SanitizedContentsTest extends TestCase {
 
   public void testConcatCombinesHtmlDir() throws Exception {
     SanitizedContent EMPTY_HTML = SanitizedContents.emptyString(ContentKind.HTML);
-    SanitizedContent LTR_HTML = new SanitizedContent(".", ContentKind.HTML, Dir.LTR);
-    SanitizedContent RTL_HTML = new SanitizedContent(".", ContentKind.HTML, Dir.RTL);
-    SanitizedContent NEUTRAL_HTML = new SanitizedContent(".", ContentKind.HTML, Dir.NEUTRAL);
-    SanitizedContent UNKNOWN_DIR_HTML = new SanitizedContent(".", ContentKind.HTML, null);
+    SanitizedContent LTR_HTML = SanitizedContent.create(".", ContentKind.HTML, Dir.LTR);
+    SanitizedContent RTL_HTML = SanitizedContent.create(".", ContentKind.HTML, Dir.RTL);
+    SanitizedContent NEUTRAL_HTML = SanitizedContent.create(".", ContentKind.HTML, Dir.NEUTRAL);
+    SanitizedContent UNKNOWN_DIR_HTML = SanitizedContent.create(".", ContentKind.HTML, null);
 
     // empty -> neutral
     assertEquals(Dir.NEUTRAL, SanitizedContents.concatHtml(EMPTY_HTML).getContentDirection());

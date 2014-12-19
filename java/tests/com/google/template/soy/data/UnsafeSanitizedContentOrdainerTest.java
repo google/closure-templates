@@ -29,34 +29,34 @@ public class UnsafeSanitizedContentOrdainerTest extends TestCase {
 
   public void testOrdainAsSafe() {
     assertEquals(
-        new SanitizedContent("Hello World", ContentKind.TEXT, null),
+        SanitizedContent.create("Hello World", ContentKind.TEXT, null),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT));
     assertEquals(
-        new SanitizedContent("Hello <b>World</b>", ContentKind.HTML, null),
+        SanitizedContent.create("Hello <b>World</b>", ContentKind.HTML, null),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello <b>World</b>", ContentKind.HTML));
     assertEquals(
-        new SanitizedContent("hello_world();", ContentKind.JS, Dir.LTR),
+        SanitizedContent.create("hello_world();", ContentKind.JS, Dir.LTR),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.JS));
     assertEquals(
-        new SanitizedContent("hello_world();", ContentKind.CSS, Dir.LTR),
+        SanitizedContent.create("hello_world();", ContentKind.CSS, Dir.LTR),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.CSS));
     assertEquals(
-        new SanitizedContent("hello/world", ContentKind.URI, Dir.LTR),
+        SanitizedContent.create("hello/world", ContentKind.URI, Dir.LTR),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("hello/world", ContentKind.URI));
     assertEquals(
-        new SanitizedContent("hello=world", ContentKind.ATTRIBUTES, Dir.LTR),
+        SanitizedContent.create("hello=world", ContentKind.ATTRIBUTES, Dir.LTR),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("hello=world", ContentKind.ATTRIBUTES));
   }
 
   public void testOrdainAsSafeWithDir() {
     assertEquals(
-        new SanitizedContent("Hello World", ContentKind.TEXT, Dir.LTR),
+        SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.LTR),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR));
     assertEquals(
-        new SanitizedContent("Hello World", ContentKind.TEXT, Dir.RTL),
+        SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.RTL),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.RTL));
     assertEquals(
-        new SanitizedContent("Hello World", ContentKind.TEXT, Dir.NEUTRAL),
+        SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.NEUTRAL),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.NEUTRAL));
   }
 

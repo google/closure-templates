@@ -57,7 +57,7 @@ public final class SanitizedContents {
    * Creates an empty string constant.
    */
   public static SanitizedContent emptyString(ContentKind kind) {
-    return new SanitizedContent("", kind, Dir.NEUTRAL);  // Empty string is neutral.
+    return SanitizedContent.create("", kind, Dir.NEUTRAL);  // Empty string is neutral.
   }
 
 
@@ -67,7 +67,7 @@ public final class SanitizedContents {
    * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
    */
   public static SanitizedContent unsanitizedText(String text, @Nullable Dir dir) {
-    return new SanitizedContent(text, ContentKind.TEXT, dir);
+    return SanitizedContent.create(text, ContentKind.TEXT, dir);
   }
 
 
@@ -107,7 +107,7 @@ public final class SanitizedContents {
         dir = null;
       }
     }
-    return new SanitizedContent(combined.toString(), ContentKind.HTML, dir);
+    return SanitizedContent.create(combined.toString(), ContentKind.HTML, dir);
   }
 
 
@@ -128,7 +128,7 @@ public final class SanitizedContents {
       Class<?> contextClass, String resourceName, Charset charset, ContentKind kind)
       throws IOException {
     pretendValidateResource(resourceName, kind);
-    return new SanitizedContent(
+    return SanitizedContent.create(
         Resources.toString(Resources.getResource(contextClass, resourceName), charset), kind,
         // Text resources are usually localized, so one might think that the locale direction should
         // be assumed for them. We do not do that because:
@@ -155,7 +155,7 @@ public final class SanitizedContents {
       String resourceName, Charset charset, ContentKind kind)
       throws IOException {
     pretendValidateResource(resourceName, kind);
-    return new SanitizedContent(
+    return SanitizedContent.create(
         Resources.toString(Resources.getResource(resourceName), charset), kind,
         // Text resources are usually localized, so one might think that the locale direction should
         // be assumed for them. We do not do that because:

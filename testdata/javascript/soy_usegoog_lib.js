@@ -11633,6 +11633,7 @@ goog.require('goog.math');
  * Class for representing coordinates and positions.
  * @param {number=} opt_x Left, defaults to 0.
  * @param {number=} opt_y Top, defaults to 0.
+ * @struct
  * @constructor
  */
 goog.math.Coordinate = function(opt_x, opt_y) {
@@ -11902,6 +11903,7 @@ goog.provide('goog.math.Size');
  * width and height support is deprecated and results in compiler warning.
  * @param {number} width Width.
  * @param {number} height Height.
+ * @struct
  * @constructor
  */
 goog.math.Size = function(width, height) {

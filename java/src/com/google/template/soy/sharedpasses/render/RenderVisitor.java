@@ -19,6 +19,8 @@ package com.google.template.soy.sharedpasses.render;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.data.LazySanitizedContents;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
 import com.google.template.soy.data.SoyDataException;
@@ -32,6 +34,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
@@ -702,23 +705,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     popOutputBuf();
   }
 
-  private SoyValueProvider renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
-    return new SoyAbstractCachingValueProvider() {
-      @Override protected SoyValue compute() {
-        StringBuilder outputBuf = new StringBuilder();
-        renderBlock(renderUnitNode, outputBuf);
-        String renderedBlock = outputBuf.toString();
-
-        // If the param node has a content kind attribute, it will have been autoescaped in the
-        // corresponding context by the strict contextual autoescaper. Hence, the result of
-        // evaluating the param block is wrapped in SanitizedContent of the specified kind.
-        if (renderUnitNode.getContentKind() != null) {
-          return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-              renderedBlock, renderUnitNode.getContentKind());
-        }
-        return StringData.forValue(renderedBlock);
+  private SoyValue renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
+    RenderableThunk thunk = new RenderableThunk() {
+      @Override public void render(Appendable appendable) throws IOException {
+        renderBlock(renderUnitNode, appendable);
       }
     };
+    ContentKind contentKind = renderUnitNode.getContentKind();
+    if (contentKind != null) {
+      return LazySanitizedContents.forThunk(thunk, contentKind);
+    } else {
+      return StringData.forThunk(thunk);
+    }
   }
 
   /**

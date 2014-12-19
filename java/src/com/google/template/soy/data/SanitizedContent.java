@@ -17,7 +17,10 @@
 package com.google.template.soy.data;
 
 
+import com.google.template.soy.data.internal.RenderableThunk;
+
 import java.io.IOException;
+
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.Immutable;
@@ -29,8 +32,38 @@ import javax.annotation.concurrent.Immutable;
  */
 @ParametersAreNonnullByDefault
 @Immutable
-public final class SanitizedContent extends SoyData {
+public abstract class SanitizedContent extends SoyData {
+  /**
+   * Creates a SanitizedContent object.
+   *
+   * <p>Package-private. Ideally, if one is available, you should use an existing serializer,
+   * sanitizer, verifier, or extractor that returns SanitizedContent objects. Or, you can use
+   * UnsafeSanitizedContentOrdainer in this package, to make it clear that creating these objects
+   * from arbitrary content is risky unless you absolutely know the input is safe. See the
+   * comments in UnsafeSanitizedContentOrdainer for more recommendations.
+   *
+   * @param content A string of valid content with the given content kind.
+   * @param kind Describes the kind of string that content is.
+   * @param dir The content's direction; null if unknown and thus to be estimated when
+   *     necessary.
+   */
+  static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
+    return new ConstantContent(content, kind, dir);
+  }
 
+  /**
+   * Creates a lazy SanitizedContent object.
+   *
+   * <p>Package-private. This is meant exclusively for use by the rendering infrastructure
+   *
+   * @param thunk A lazy thunk that renders the valid content.
+   * @param kind Describes the kind of string that content is.
+   * @param dir The content's direction; null if unknown and thus to be estimated when
+   *     necessary.
+   */
+  static SanitizedContent createLazy(RenderableThunk thunk, ContentKind kind, @Nullable Dir dir) {
+    return new LazyContent(thunk, kind, dir);
+  }
 
   /**
    * A kind of textual content.
@@ -76,28 +109,15 @@ public final class SanitizedContent extends SoyData {
 
   }
 
-
-  private final String content;
   private final ContentKind contentKind;
   private final Dir contentDir;
 
 
   /**
-   * Creates a SanitizedContent object.
-   *
-   * Package-private. Ideally, if one is available, you should use an existing serializer,
-   * sanitizer, verifier, or extractor that returns SanitizedContent objects. Or, you can use
-   * UnsafeSanitizedContentOrdainer in this package, to make it clear that creating these objects
-   * from arbitrary content is risky unless you absolutely know the input is safe. See the
-   * comments in UnsafeSanitizedContentOrdainer for more recommendations.
-   *
-   * @param content A string of valid content with the given content kind.
-   * @param contentKind Describes the kind of string that content is.
-   * @param contentDir The content's direction; null if unknown and thus to be estimated when
-   *     necessary.
+   * Private constructor to limit subclasses to this file.  This is important to ensure that all
+   * implementations of this class are fully vetted by security.
    */
-  SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
-    this.content = content;
+  private SanitizedContent(ContentKind contentKind, @Nullable Dir contentDir) {
     this.contentKind = contentKind;
     this.contentDir = contentDir;
   }
@@ -106,9 +126,7 @@ public final class SanitizedContent extends SoyData {
   /**
    * Returns a string of valid content with kind {@link #getContentKind}.
    */
-  public String getContent() {
-    return content;
-  }
+  public abstract String getContent();
 
 
   /**
@@ -132,16 +150,13 @@ public final class SanitizedContent extends SoyData {
   @Deprecated
   @Override
   public boolean toBoolean() {
-    return content.length() != 0;  // Consistent with StringData
+    return getContent().length() != 0;  // Consistent with StringData
   }
 
-  @Override public void render(Appendable appendable) throws IOException {
-    appendable.append(content);
-  }
 
   @Override
   public String toString() {
-    return content;
+    return getContent();
   }
 
 
@@ -152,7 +167,7 @@ public final class SanitizedContent extends SoyData {
    */
   @Override
   public String stringValue() {
-    return content;
+    return getContent();
   }
 
 
@@ -161,12 +176,67 @@ public final class SanitizedContent extends SoyData {
     return other instanceof SanitizedContent &&
         this.contentKind == ((SanitizedContent) other).contentKind &&
         this.contentDir == ((SanitizedContent) other).contentDir &&
-        this.content.equals(((SanitizedContent) other).content);
+        this.getContent().equals(((SanitizedContent) other).getContent());
   }
 
 
   @Override
   public int hashCode() {
-    return content.hashCode() + 31 * contentKind.hashCode();
+    return getContent().hashCode() + 31 * contentKind.hashCode();
+  }
+
+  private static final class ConstantContent extends SanitizedContent {
+    final String content;
+
+    ConstantContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
+      super(contentKind, contentDir);
+      this.content = content;
+    }
+
+    @Override
+    public void render(Appendable appendable) throws IOException {
+      appendable.append(content);
+    }
+
+    @Override
+    public String getContent() {
+      return content;
+    }
+  }
+
+  private static final class LazyContent extends SanitizedContent {
+    // N.B. This is nearly identical to StringData.LazyString.  When changing this you
+    // probably need to change that also.
+
+    RenderableThunk thunk;
+    String content;
+
+    LazyContent(RenderableThunk thunk, ContentKind contentKind, @Nullable Dir contentDir) {
+      super(contentKind, contentDir);
+      this.thunk = thunk;
+    }
+
+    @Override
+    public void render(Appendable appendable) throws IOException {
+      if (content == null) {
+        // TODO(lukes): in some cases we know that this will be the only time render is called on
+        // this value.  Consider modifying the render api to accept a 'single-shot' boolean so we
+        // can just call render() instead of renderAndSave().  Then we could save a potentially
+        // large amount of buffering.
+        content = thunk.renderAndSave(appendable);
+        thunk = null;  // allow the thunk to be collected
+      } else {
+        appendable.append(content);
+      }
+    }
+
+    @Override
+    public String getContent() {
+      if (content == null) {
+        content = thunk.renderAsString();
+        thunk = null;  // allow the thunk to be collected
+      }
+      return content;
+    }
   }
 }

@@ -73,6 +73,6 @@ public final class UnsafeSanitizedContentOrdainer {
    * in your code.
    */
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind, @Nullable Dir dir) {
-    return new SanitizedContent(value, kind, dir);
+    return SanitizedContent.create(value, kind, dir);
   }
 }
