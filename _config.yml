@@ -1,5 +1,6 @@
 # Jekyll Settings
 pygments: true
+markdown: kramdown
 
 # Site settings
 title: Closure Templates
