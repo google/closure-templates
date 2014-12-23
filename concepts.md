@@ -1,5 +1,6 @@
 ---
 title: Concepts
+highlighter: pygments
 ---
 
 [TOC]
