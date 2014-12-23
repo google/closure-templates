@@ -2,14 +2,8 @@
 title: Concepts
 ---
 
-<!--#set var="NOLEFTNAV" value=""-->
-<!--#include virtual="/eng/engEDU/templates/start-before-head.shtml" -->
-<!--#if expr="${COMPOSITE} != true" -->
-<!-- gototop.js adds a "back to top" link before each h2 tag -->
-<!--#endif -->
-<!--#include virtual="/eng/engEDU/templates/start-after-head.shtml" -->
-
 [TOC]
+{:toc}
 
 ## Compiler Backends
 
