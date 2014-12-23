@@ -189,14 +189,14 @@ This table describes how to write literals for primitive types, lists, and maps:
 
 Here are the supported operators, listed in decreasing order of precedence (highest precedence at the top):
 
-*   &nbsp; `-` (unary) &nbsp; `not`
-*   &nbsp; `*` &nbsp; `/` &nbsp; `%`
-*   &nbsp; `+` &nbsp; `-` (binary)
-*   &nbsp; `<` &nbsp; `>` &nbsp; `<=` &nbsp; `>=`
-*   &nbsp; `==` &nbsp; `!=`
-*   &nbsp; `and`
-*   &nbsp; `or`
-*   &nbsp; `?:` (binary) &nbsp; `? :` (ternary)
+* `-` (unary) `not`
+* `*` `/` `%`
+* `+` `-` (binary)
+* `<` `>` `<=` `>=`
+* `==` `!=`
+* `and`
+* `or`
+* `?:` (binary) `? :` (ternary)
 
 **Note:** Use parentheses to override precedence rules.
 
@@ -274,8 +274,8 @@ behave in the same way as the ".example" template above despite the lack of any
 
 Comments within Soy templates follow the same syntax as Java or JavaScript:
 
-*   `//` begins a rest-of-line comment
-*   `/* comment */` delimit an arbitrary comment (can be multiline)
+* `//` begins a rest-of-line comment
+* `/* comment */` delimit an arbitrary comment (can be multiline)
 
 Note that `//` only begins a comment if the preceding character is whitespace. This is so that strings like URLs are not interpreted as comments.
 
