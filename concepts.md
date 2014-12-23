@@ -100,7 +100,9 @@ The most common command is `print`, which prints a value. You write either `{pri
 If you need to include brace characters within a Soy tag, use double braces to delimit the Soy tag, e.g.
 
 ```
+{% raw %}
 {{msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}}
+{% endraw %}
 ```
 
 You can find explanations of all the commands in [Commands](./soy_commands.shtml).
