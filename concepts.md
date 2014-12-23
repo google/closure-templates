@@ -32,7 +32,7 @@ var data = {name: 'Melissa', destinations: ['Singapore', 'London', 'New York']};
 
 In Java, a valid data object is either a `SoyMapData` instance or a `Map<String, ?>` (see the [Java Usage](./soy_javausage.shtml) chapter on reasons to use one or the other), for example:
 
-```
+```Java
 SoyMapData data = new SoyMapData(
     "name", "Melissa",
     "destinations", new SoyListData("Singapore", "London", "New York"));
