@@ -26,7 +26,7 @@ Each Soy compiler backend has its own representation for the template data.  For
 
 In JavaScript, a valid data object is any JS object (since all JS objects are maps), for instance:
 
-```
+```JavaScript
 var data = {name: 'Melissa', destinations: ['Singapore', 'London', 'New York']};
 ```
 
