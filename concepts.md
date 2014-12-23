@@ -1,27 +1,22 @@
 ---
+title: Concepts
 ---
 
-<!--#set var="PAGE_TITLE" value="Concepts"-->
-<!--#set var="PAGE_TITLE_TAG" value="Soy - Concepts"-->
-<!--#set var="TOPIC_PAGE_TITLE" value="Soy" -->
-<!--#set var="IS_GUIDE" value="active"-->
 <!--#set var="NOLEFTNAV" value=""-->
 <!--#include virtual="/eng/engEDU/templates/start-before-head.shtml" -->
 <!--#if expr="${COMPOSITE} != true" -->
 <!-- gototop.js adds a "back to top" link before each h2 tag -->
-<script src="https://www.corp.google.com/eng/techpubs/include/gototop.js"
-           type="text/javascript"></script>
 <!--#endif -->
 <!--#include virtual="/eng/engEDU/templates/start-after-head.shtml" -->
 
-<div id="page-toc" class="one-level"></div>
+[TOC]
 
 ## Compiler Backends
 
 The Soy compiler has one frontend for parsing Soy syntax and constructing an intermediate tree representation, and multiple backends for supporting usage from multiple programming languages. Currently, you can use one of two backends:
 
-*   The JavaScript Source backend supports usage in JavaScript. This backend compiles each input Soy file into a corresponding output JS file. Each non-private Soy template maps to a corresponding JS function of the same name.
-*   The Java Tofu backend supports usage in Java. This backend compiles a bundle of Soy files into a Java object representation (called Tofu) that knows how to render any template in the bundle.
+* The JavaScript Source backend supports usage in JavaScript. This backend compiles each input Soy file into a corresponding output JS file. Each non-private Soy template maps to a corresponding JS function of the same name.
+* The Java Tofu backend supports usage in Java. This backend compiles a bundle of Soy files into a Java object representation (called Tofu) that knows how to render any template in the bundle.
 
 ## Template Data
 
@@ -31,22 +26,21 @@ Each Soy compiler backend has its own representation for the template data.  For
 
 In JavaScript, a valid data object is any JS object (since all JS objects are maps), for instance:
 
-<pre class="prettyprint">
+```
 var data = {name: 'Melissa', destinations: ['Singapore', 'London', 'New York']};
-</pre>
+```
 
 In Java, a valid data object is either a `SoyMapData` instance or a `Map<String, ?>` (see the [Java Usage](./soy_javausage.shtml) chapter on reasons to use one or the other), for example:
 
-<pre class="prettyprint">
+```
 SoyMapData data = new SoyMapData(
     "name", "Melissa",
     "destinations", new SoyListData("Singapore", "London", "New York"));
-</pre>
-<pre class="prettyprint">
-Map&lt;String, Object&gt; data = ImmutableMap.&lt;String, Object&gt;of(
+
+Map<String, Object> data = ImmutableMap.<String, Object>of(
     "name", "Melissa",
     "destinations", ImmutableList.of("Singapore", "London", "New York"));
-</pre>
+```
 
 For detailed info on each backend, please refer to the [JavaScript Usage](./soy_javascriptusage.shtml) and [Java Usage](./soy_javausage.shtml) chapters.
 
@@ -56,16 +50,16 @@ Soy templates appear in Soy files, which have the extension `.soy`. Each Soy fil
 
 Every Soy file must, at minimum, have the following components:
 
-*   A namespace declaration.
-*   One or more template definitions.
+* A namespace declaration.
+* One or more template definitions.
 
 #### The Namespace Declaration
 
 A Soy file must have exactly one `namespace` declaration, which  must appear before the templates. A valid namespace is one or more identifiers joined with dots, for example: 
 
-<pre class="prettyprint">
+```
 {namespace examples.simple}
-</pre>
+```
 
 Note that for backends that generate source code (currently just the JavaScript Source backend), the namespace is used in the generated code. See the [JavaScript Usage chapter](soy_javascriptusage.shtml) for more details.
 
@@ -75,7 +69,7 @@ The `namespace` tag has an optional attribute for establishing the default `[aut
 
 Define one or more templates after the namespace declaration, using one  `template` tag per template.  You must create a unique name for each template and begin the template name with a dot, which indicates that the template name is relative to the file's namespace. Put the template's body between the `template` tag and the corresponding `/template` tag. Here is an example template:
 
-<pre class="prettyprint">
+```
 /**
  * Says hello to a person.
  */
@@ -83,7 +77,7 @@ Define one or more templates after the namespace declaration, using one  `templa
   {@param name: string} /** The name of the person to say hello to. */
   Hello {$name}!
 {/template}
-</pre>
+```
 
 Precede each template with a SoyDoc comment that explains the purpose of the template, in the same style as JavaDoc. Add a `@param` declaration for each required parameter and a `@param?` declaration for each optional parameter of the template.
 
@@ -93,10 +87,11 @@ Precede each template with a SoyDoc comment that explains the purpose of the tem
 
 Soy commands are directions for Soy that you write inside of Soy tags, which are delimited by braces. The first item in a Soy tag is the command name. The tag can end there or can contain command text in a format that is specific to the command. For some commands that mirror standard programming constructs, the command text is in a similar style. Here are 3 example Soy tags:
 
-<pre class="prettyprint">{/foreach}
+```
+{/foreach}
 {if length($items) > 5}
 {msg desc="Says hello to the user."}
-</pre>
+```
 
 If a command has a corresponding end command, then the end command's name is a `/` followed by the name of the start command, e.g. `foreach` and `/foreach`.
 
@@ -104,8 +99,9 @@ The most common command is `print`, which prints a value. You write either `{pri
 
 If you need to include brace characters within a Soy tag, use double braces to delimit the Soy tag, e.g.
 
-<pre class="prettyprint">{{msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}}
-</pre>
+```
+{{msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}}
+```
 
 You can find explanations of all the commands in [Commands](./soy_commands.shtml).
 
@@ -150,9 +146,10 @@ This table describes how to write literals for primitive types, lists, and maps:
   <td>Float</td>
   <td>Must be in decimal and must either:
 
-*   Have digits both before and after the decimal point (both can be a single `0`), e.g. `0.5`, `-100.0`, or
-*   Have a lower-case `e` that represents scientific notation, e.g. `-3e-3`, `6.02e23`.
-    Even though the primitive type is named Float, it has the precision of a `number` in JavaScript or a `double` in Java.
+* Have digits both before and after the decimal point (both can be a single `0`), e.g. `0.5`, `-100.0`, or
+* Have a lower-case `e` that represents scientific notation, e.g. `-3e-3`, `6.02e23`.
+  Even though the primitive type is named Float, it has the precision of a `number` in JavaScript or
+  a `double` in Java.
   </td>
 </tr>
 <tr>
