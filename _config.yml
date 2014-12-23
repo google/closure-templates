@@ -1,0 +1,5 @@
+# Jekyll Settings
+pygments: true
+
+# Site settings
+title: Closure Templates
