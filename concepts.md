@@ -141,11 +141,12 @@ This table describes how to write literals for primitive types, lists, and maps:
 <tr>
   <td>Float</td>
   <td>Must be in decimal and must either:
-
-* Have digits both before and after the decimal point (both can be a single `0`), e.g. `0.5`, `-100.0`, or
-* Have a lower-case `e` that represents scientific notation, e.g. `-3e-3`, `6.02e23`.
-  Even though the primitive type is named Float, it has the precision of a `number` in JavaScript or
-  a `double` in Java.
+    <ul>
+      <li>Have digits both before and after the decimal point (both can be a single `0`), e.g. `0.5`, `-100.0`, or</li>
+      <li>Have a lower-case `e` that represents scientific notation, e.g. `-3e-3`, `6.02e23`.</li>
+    </ul>
+    Even though the primitive type is named Float, it has the precision of a `number` in JavaScript or
+    a `double` in Java.
   </td>
 </tr>
 <tr>
@@ -220,7 +221,7 @@ Given the template:
 
 /** Example. */
 {template .example}
-  foo is {**$ij.foo**}
+  foo is {<b>$ij.foo</b>}
 {/template}
 </pre>
 
@@ -231,7 +232,7 @@ In JavaScript, you can pass injected data via the third parameter.
 output = ns.example(
     {},  // data
     null,  // optional output buffer
-    **{'foo': 'injected foo'}**)  // injected data
+    <b>{'foo': 'injected foo'}</b>)  // injected data
 </pre>
 
 In Java, using the Tofu backend, you can inject data by using the `setIjData` method on the `Renderer`.
@@ -242,7 +243,7 @@ ijData.put("foo", "injected foo");
 
 SoyTofu tofu = ...;
 String output = tofu.newRenderer("ns.example")
-    **.setIjData(ijData)**
+    <b>.setIjData(ijData)</b>
     .render();
 </pre>
 
@@ -260,7 +261,7 @@ behave in the same way as the ".example" template above despite the lack of any
 
 /** Helper. */
 {template .helper private="true"}
-  foo is {**$ij.foo**}
+  foo is {<b>$ij.foo</b>}
 {/template}
 </pre>
 
