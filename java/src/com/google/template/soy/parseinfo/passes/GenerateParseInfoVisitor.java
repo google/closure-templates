@@ -222,16 +222,20 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   public GenerateParseInfoVisitor(String javaPackage, String javaClassNameSource) {
     this.javaPackage = javaPackage;
 
-    if (javaClassNameSource.equals("filename")) {
-      this.javaClassNameSource = JavaClassNameSource.SOY_FILE_NAME;
-    } else if (javaClassNameSource.equals("namespace")) {
-      this.javaClassNameSource = JavaClassNameSource.SOY_NAMESPACE_LAST_PART;
-    } else if (javaClassNameSource.equals("generic")) {
-      this.javaClassNameSource = JavaClassNameSource.GENERIC;
-    } else {
-      throw new IllegalArgumentException(
-          "Invalid value for javaClassNameSource \"" + javaClassNameSource + "\"" +
-          " (valid values are \"filename\", \"namespace\", and \"generic\").");
+    switch (javaClassNameSource) {
+      case "filename":
+        this.javaClassNameSource = JavaClassNameSource.SOY_FILE_NAME;
+        break;
+      case "namespace":
+        this.javaClassNameSource = JavaClassNameSource.SOY_NAMESPACE_LAST_PART;
+        break;
+      case "generic":
+        this.javaClassNameSource = JavaClassNameSource.GENERIC;
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid value for javaClassNameSource \""
+            + javaClassNameSource + "\""
+            + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
   }
 
@@ -379,9 +383,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
       ilb.increaseIndent();
       // Note we use fully-qualified names instead of imports to avoid potential collisions.
       List<String> defaultInstances = Lists.newArrayList();
-      for (String protoTypeName : protoTypes) {
-        defaultInstances.add(protoTypeName);
-      }
+      defaultInstances.addAll(protoTypes);
       appendListOrSetHelper(ilb, "return ImmutableList.<Object>of", defaultInstances);
       ilb.appendLineEnd(";");
       ilb.decreaseIndent();
@@ -474,9 +476,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
 
     // Templates.
     itemSnippets = Lists.newArrayList();
-    for (String upperUnderscoreTemplateName : publicBasicTemplateMap.keySet()) {
-      itemSnippets.add(upperUnderscoreTemplateName);
-    }
+    itemSnippets.addAll(publicBasicTemplateMap.keySet());
     appendImmutableList(ilb, "<SoyTemplateInfo>", itemSnippets);
     ilb.appendLineEnd(",");
 
@@ -631,7 +631,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
     ilb.increaseIndent(2);
     ilb.appendLine("\"", node.getTemplateName(), "\",");
 
-    if (transitiveParamMap.size() > 0) {
+    if (!transitiveParamMap.isEmpty()) {
       List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
       for (TemplateParam param : transitiveParamMap.values()) {
         entrySnippetPairs.add(Pair.of(
@@ -877,8 +877,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
    */
   private static void appendListOrSetHelper(
       IndentedLinesBuilder ilb, String creationFunctionSnippet, Collection<String> itemSnippets) {
-
-    if (itemSnippets.size() == 0) {
+    if (itemSnippets.isEmpty()) {
       ilb.appendLineStart(creationFunctionSnippet, "()");
 
     } else {
@@ -907,8 +906,7 @@ public class GenerateParseInfoVisitor extends AbstractSoyNodeVisitor<ImmutableMa
   private static void appendImmutableMap(
       IndentedLinesBuilder ilb, String typeParamSnippet,
       Collection<Pair<String, String>> entrySnippetPairs) {
-
-    if (entrySnippetPairs.size() == 0) {
+    if (entrySnippetPairs.isEmpty()) {
       ilb.appendLineStart("ImmutableMap.", typeParamSnippet, "of()");
 
     } else {

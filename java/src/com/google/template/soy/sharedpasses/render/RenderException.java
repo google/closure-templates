@@ -19,7 +19,8 @@ package com.google.template.soy.sharedpasses.render;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.TemplateNode;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Exception thrown when a rendering or evaluation attempt fails.
@@ -33,7 +34,7 @@ public class RenderException extends RuntimeException {
 
 
   /** The list of all stack traces from the soy rendering. */
-  private final LinkedList<StackTraceElement> soyStackTrace;
+  private final Deque<StackTraceElement> soyStackTrace;
 
 
   /**
@@ -42,7 +43,7 @@ public class RenderException extends RuntimeException {
   public RenderException(String message) {
     super(message);
     this.partialStackTraceElement = null;
-    this.soyStackTrace = new LinkedList<StackTraceElement>();
+    this.soyStackTrace = new ArrayDeque<>();
   }
 
 
@@ -53,7 +54,7 @@ public class RenderException extends RuntimeException {
   public RenderException(String message, Throwable cause) {
     super(message, cause);
     this.partialStackTraceElement = null;
-    this.soyStackTrace = new LinkedList<StackTraceElement>();
+    this.soyStackTrace = new ArrayDeque<>();
   }
 
 

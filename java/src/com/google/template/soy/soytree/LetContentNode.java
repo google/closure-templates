@@ -50,7 +50,7 @@ public class LetContentNode extends LetNode implements RenderUnitNode {
    */
   public LetContentNode(int id, boolean isLocalVarNameUniquified, String commandText) {
     super(id, isLocalVarNameUniquified, commandText);
-    parentMixin = new MixinParentNode<StandaloneNode>(this);
+    parentMixin = new MixinParentNode<>(this);
 
     CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
     contentKind = parseResult.contentKind;
@@ -71,7 +71,7 @@ public class LetContentNode extends LetNode implements RenderUnitNode {
    */
   protected LetContentNode(LetContentNode orig) {
     super(orig);
-    this.parentMixin = new MixinParentNode<StandaloneNode>(orig.parentMixin, this);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
     this.contentKind = orig.contentKind;
   }
 

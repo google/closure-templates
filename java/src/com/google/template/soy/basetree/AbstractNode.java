@@ -18,7 +18,6 @@ package com.google.template.soy.basetree;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Abstract implementation of a Node.
  *
@@ -109,7 +108,7 @@ public abstract class AbstractNode implements Node {
 
 
   @Override public String toTreeString(int indent) {
-    return SPACES.substring(0, indent) + "[" + toString() + "]\n";
+    return SPACES.substring(0, indent) + "[" + this + "]\n";
   }
 
 

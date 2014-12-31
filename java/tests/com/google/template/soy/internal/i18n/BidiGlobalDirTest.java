@@ -16,6 +16,8 @@
 
 package com.google.template.soy.internal.i18n;
 
+import com.google.template.soy.base.SoyBackendKind;
+
 import junit.framework.TestCase;
 
 
@@ -55,9 +57,13 @@ public class BidiGlobalDirTest extends TestCase {
     assertEquals(1, bidiGlobalDir.getStaticValue());
     assertEquals("1", bidiGlobalDir.getCodeSnippet());
 
-    bidiGlobalDir = BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL");
+    bidiGlobalDir = BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
     assertFalse(bidiGlobalDir.isStaticValue());
     assertEquals("IS_RTL?-1:1", bidiGlobalDir.getCodeSnippet());
+
+    bidiGlobalDir = BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.PYTHON_SRC);
+    assertFalse(bidiGlobalDir.isStaticValue());
+    assertEquals("-1 if IS_RTL else 1", bidiGlobalDir.getCodeSnippet());
     try {
       bidiGlobalDir.getStaticValue();
       fail();

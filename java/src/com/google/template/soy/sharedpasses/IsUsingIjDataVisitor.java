@@ -23,7 +23,6 @@ import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
 
 import java.util.Set;
 
-
 /**
  * Visitor for determining whether any code in a Soy tree uses injected data.
  *
@@ -46,11 +45,10 @@ public class IsUsingIjDataVisitor {
         new Shortcircuiter<Set<String>>() {
           @Override
           public boolean shouldShortcircuit(AbstractExprNodeVisitor<Set<String>> exprNodeVisitor) {
-            return ((FindIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().size() > 0;
+            return !((FindIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().isEmpty();
           }
         });
 
-    return helperVisitor.getResult().size() > 0;
+    return !helperVisitor.getResult().isEmpty();
   }
-
 }

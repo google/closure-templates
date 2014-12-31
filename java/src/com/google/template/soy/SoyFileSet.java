@@ -52,6 +52,8 @@ import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyP
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.parsepasses.contextautoesc.SoyAutoescapeException;
+import com.google.template.soy.pysrc.SoyPySrcOptions;
+import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
@@ -59,8 +61,8 @@ import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.sharedpasses.AssertNoExternalCallsVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
-import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
+import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soyparse.SoyFileSetParser;
@@ -168,7 +170,7 @@ public final class SoyFileSet {
     /**
      * Sets all Soy general options.
      *
-     * This must be called before any other setters.
+     * <p>This must be called before any other setters.
      */
     public void setGeneralOptions(SoyGeneralOptions generalOptions) {
       Preconditions.checkState(lazyGeneralOptions == null,
@@ -180,7 +182,7 @@ public final class SoyFileSet {
     /**
      * Returns and/or lazily-creates the SoyGeneralOptions for this builder.
      *
-     * Laziness is an important feature to ensure that setGeneralOptions can fail if options were
+     * <p>Laziness is an important feature to ensure that setGeneralOptions can fail if options were
      * already set.  Otherwise, it'd be easy to set some options on this builder and overwrite them
      * by calling setGeneralOptions.
      */
@@ -201,7 +203,7 @@ public final class SoyFileSet {
         factory = GuiceInitializer.getHackySoyFileSetFactory();
       }
       return factory.create(
-          ImmutableList.copyOf(setBuilder.build()), cache, getGeneralOptions(), localTypeRegistry);
+          setBuilder.build().asList(), cache, getGeneralOptions(), localTypeRegistry);
     }
 
 
@@ -552,6 +554,9 @@ public final class SoyFileSet {
   /** Provider for getting an instance of JsSrcMain. */
   private final Provider<JsSrcMain> jsSrcMainProvider;
 
+  /** Provider for getting an instance of PySrcMain. */
+  private final Provider<PySrcMain> pySrcMainProvider;
+
   /** Factory for creating an instance of CheckFunctionCallsVisitor. */
   private final CheckFunctionCallsVisitorFactory checkFunctionCallsVisitorFactory;
 
@@ -585,6 +590,7 @@ public final class SoyFileSet {
   /**
    * @param baseTofuFactory Factory for creating an instance of BaseTofu.
    * @param jsSrcMainProvider Provider for getting an instance of JsSrcMain.
+   * @param pySrcMainProvider Provider for getting an instance of PySrcMain.
    * @param checkFunctionCallsVisitorFactory Factory for creating an instance of
    *     CheckFunctionCallsVisitor.
    * @param performAutoescapeVisitor The instance of PerformAutoescapeVisitor to use.
@@ -602,6 +608,7 @@ public final class SoyFileSet {
   SoyFileSet(
       BaseTofuFactory baseTofuFactory,
       Provider<JsSrcMain> jsSrcMainProvider,
+      Provider<PySrcMain> pySrcMainProvider,
       CheckFunctionCallsVisitorFactory checkFunctionCallsVisitorFactory,
       PerformAutoescapeVisitor performAutoescapeVisitor,
       ContextualAutoescaper contextualAutoescaper,
@@ -617,13 +624,14 @@ public final class SoyFileSet {
 
     this.baseTofuFactory = baseTofuFactory;
     this.jsSrcMainProvider = jsSrcMainProvider;
+    this.pySrcMainProvider = pySrcMainProvider;
     this.checkFunctionCallsVisitorFactory = checkFunctionCallsVisitorFactory;
     this.performAutoescapeVisitor = performAutoescapeVisitor;
     this.contextualAutoescaper = contextualAutoescaper;
     this.simplifyVisitor = simplifyVisitor;
 
     Preconditions.checkArgument(
-        soyFileSuppliers.size() > 0, "Must have non-zero number of input Soy files.");
+        !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
     this.typeRegistry = localTypeRegistry != null ? localTypeRegistry : typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
     this.cache = cache;
@@ -934,7 +942,7 @@ public final class SoyFileSet {
             .parse();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
-    if (locales.size() == 0) {
+    if (locales.isEmpty()) {
       // Not generating localized JS.
       jsSrcMainProvider.get().genJsFiles(
           soyTree, jsSrcOptions, null, null, outputPathFormat, inputFilePathPrefix);
@@ -963,6 +971,35 @@ public final class SoyFileSet {
             soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
       }
     }
+  }
+
+
+  /**
+   * Compiles this Soy file set into Python source code files and writes these Python files to
+   * disk.
+   *
+   * @param outputPathFormat The format string defining how to build the output file path
+   *     corresponding to an input file path.
+   * @param inputFilePathPrefix The prefix prepended to all input file paths (can be empty string).
+   * @param pySrcOptions The compilation options for the Python Src output target.
+   * @throws SoySyntaxException If a syntax error is found.
+   * @throws IOException If there is an error in opening/reading a message file or opening/writing
+   *     an output JS file.
+   */
+  void compileToPySrcFiles(
+      String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
+      throws SoySyntaxException, IOException {
+
+    SyntaxVersion declaredSyntaxVersion =
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
+
+    SoyFileSetNode soyTree =
+        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
+            .parse();
+    runMiddleendPasses(soyTree, declaredSyntaxVersion);
+
+    pySrcMainProvider.get().genPyFiles(
+        soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
   }
 
 

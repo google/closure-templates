@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 
 import java.util.Random;
 
-
 /**
  * An memory-efficient object canonicalizer.
  *
@@ -106,7 +105,7 @@ final class CompactInterner {
 
       if (candidate.equals(value)) {
         Preconditions.checkArgument(value.getClass() == candidate.getClass(),
-            "Interned objects are equals() but different classes: " + value + " and " + candidate);
+            "Interned objects are equals() but different classes: %s and %s", value, candidate);
         return (T) candidate;
       }
 
@@ -150,7 +149,7 @@ final class CompactInterner {
     // factors but I've not been able to find them quickly. This is some rough empirical work
     // to make sure we get reasonable performance in tests.
     double x = Math.max(MAX_EXPECTED_COLLISION_COUNT, GROWTH_DENOMINATOR);
-    return x * Math.log(x + 1) + 1;
+    return x * Math.log1p(x) + 1;
   }
 
 

@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SoySyntaxException;
@@ -146,7 +147,7 @@ public final class SoyMsgExtractor {
       if (outputFile.length() != 0) {
         exitWithErrorFn.apply("Must provide one of output file path or output path format.");
       }
-      String inputFilePath = inputPrefix + (srcs.size() != 0 ? srcs.get(0) : arguments.get(0));
+      String inputFilePath = inputPrefix + (Iterables.getFirst(srcs, arguments.get(0)));
       String outputFilePath = MainEntryPointUtils.buildFilePath(
           outputPathFormat, null, inputFilePath, inputPrefix);
       outputFile0 = new File(outputFilePath);

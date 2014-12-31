@@ -235,10 +235,11 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
     String fullExprText;
     if (nonstrKeysEntriesSnippet.length() == 0) {
-      fullExprText = "{" + strKeysEntriesSnippet.toString() + "}";
+      fullExprText = "{" + strKeysEntriesSnippet + "}";
     } else {
-      fullExprText = "(function() { var map_s = {" + strKeysEntriesSnippet.toString() + "};" +
-          nonstrKeysEntriesSnippet.toString() + " return map_s; })()";
+      fullExprText =
+          "(function() { var map_s = {" + strKeysEntriesSnippet + "};" + nonstrKeysEntriesSnippet
+          + " return map_s; })()";
     }
 
     return new JsExpr(fullExprText, Integer.MAX_VALUE);
@@ -262,8 +263,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     if (nullSafetyPrefix.length() == 0) {
       return new JsExpr(refText, Integer.MAX_VALUE);
     } else {
-      return new JsExpr(
-          nullSafetyPrefix.toString() + refText, Operator.CONDITIONAL.getPrecedence());
+      return new JsExpr(nullSafetyPrefix + refText, Operator.CONDITIONAL.getPrecedence());
     }
   }
 
@@ -362,9 +362,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
             if (fieldAccessCode == null) {
               fieldAccessCode = fieldAccessForType;
             } else if (!fieldAccessCode.equals(fieldAccessForType)) {
-              throw SoySyntaxException.createWithoutMetaInfo(
-                  "Cannot access field '" + fieldName + "' of type'" + baseType.toString() +
-                  ", because the different union member types have different access methods.");
+              throw SoySyntaxException.createWithoutMetaInfo("Cannot access field '" + fieldName
+                  + "' of type'" + baseType
+                  + ", because the different union member types have different access methods.");
             }
           }
         }

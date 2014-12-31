@@ -297,7 +297,7 @@ public final class SoyToJsSrcCompiler {
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
 
     // Compile.
-    if (locales.size() == 0) {
+    if (locales.isEmpty()) {
       // Not generating localized JS.
       sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
 

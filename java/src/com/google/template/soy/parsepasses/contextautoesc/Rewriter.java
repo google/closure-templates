@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
  *
@@ -179,7 +178,7 @@ final class Rewriter {
       }
 
       // For strict templates, set any necessary escaping directives.
-      ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<String>();
+      ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<>();
       for (EscapingMode escapingMode : inferences.getEscapingModesForId(callNode.getId())) {
         escapingDirectiveNames.add(escapingMode.directiveName);
       }

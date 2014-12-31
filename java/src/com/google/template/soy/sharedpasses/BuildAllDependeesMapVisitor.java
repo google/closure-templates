@@ -51,7 +51,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for building a map from each node to its list of dependees (ordered by nearest dependee
  * first). The map built by this visitor is useful in optimization passes that move nodes within the
@@ -123,8 +122,7 @@ public class BuildAllDependeesMapVisitor
 
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-
-    potentialDependeeFrames = new ArrayDeque<List<SoyNode>>();
+    potentialDependeeFrames = new ArrayDeque<>();
 
     // Note: Add to potential dependees while visiting children because descendents can't be moved
     // out of the template.
@@ -208,7 +206,7 @@ public class BuildAllDependeesMapVisitor
     }
 
     allDependeesMap.put(node, allDependees);
-    if (allDependees.size() == 0) {
+    if (allDependees.isEmpty()) {
       throw new AssertionError();
     }
   }

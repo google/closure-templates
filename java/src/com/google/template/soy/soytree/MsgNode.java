@@ -36,7 +36,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Node representing a 'msg' block. Every child must be a RawTextNode, MsgPlaceholderNode,
  * MsgPluralNode, or MsgSelectNode.
@@ -357,7 +356,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
     ArrayListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = ArrayListMultimap.create();
     Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = Maps.newHashMap();
 
-    Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<MsgSubstUnitNode>();
+    Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<>();
 
     // Seed the traversal queue with the children of this MsgNode.
     for (SoyNode child : msgNode.getChildren()) {
@@ -366,7 +365,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
       }
     }
 
-    while (traversalQueue.size() > 0) {
+    while (!traversalQueue.isEmpty()) {
       MsgSubstUnitNode node = traversalQueue.remove();
 
       if ((node instanceof MsgSelectNode) || (node instanceof MsgPluralNode))  {

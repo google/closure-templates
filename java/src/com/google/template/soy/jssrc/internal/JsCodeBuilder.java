@@ -26,7 +26,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
-
 /**
  * A class for building JS code.
  *
@@ -100,7 +99,7 @@ class JsCodeBuilder {
     this.codeStyle = codeStyle;
     code = new StringBuilder();
     indent = "";
-    outputVars = new ArrayDeque<Pair<String, Boolean>>();
+    outputVars = new ArrayDeque<>();
     currOutputVarName = null;
     currOutputVarIsInited = false;
   }

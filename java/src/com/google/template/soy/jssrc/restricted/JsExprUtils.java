@@ -54,8 +54,7 @@ public class JsExprUtils {
    * @return One JS expression that computes the concatenation of the given JS expressions.
    */
   public static JsExpr concatJsExprs(List<JsExpr> jsExprs) {
-
-    if (jsExprs.size() == 0) {
+    if (jsExprs.isEmpty()) {
       return EMPTY_STRING;
     }
 
@@ -104,7 +103,7 @@ public class JsExprUtils {
   public static JsExpr concatJsExprsForceString(List<JsExpr> jsExprs) {
     // If the first or second expression in the list is a string, the plus operator (if any) will
     // produce a string concatenation, so we are set.
-    if ((jsExprs.size() > 0 && isStringLiteral(jsExprs.get(0)))
+    if ((!jsExprs.isEmpty() && isStringLiteral(jsExprs.get(0)))
         || (jsExprs.size() > 1 && isStringLiteral(jsExprs.get(1)))) {
       return concatJsExprs(jsExprs);
     }

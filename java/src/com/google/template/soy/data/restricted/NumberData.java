@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data.restricted;
 
+import com.google.common.primitives.Longs;
 
 /**
  * Abstract superclass for number data (integers and floats).
@@ -41,13 +42,12 @@ public abstract class NumberData extends PrimitiveData {
 
 
   @Override public boolean equals(Object other) {
-    return other != null && other instanceof NumberData &&
-           ((NumberData) other).toFloat() == this.toFloat();
+    return other instanceof NumberData && ((NumberData) other).toFloat() == this.toFloat();
   }
 
 
   @Override public int hashCode() {
-    return (new Double(toFloat())).hashCode();
+    return Longs.hashCode(Double.doubleToLongBits(toFloat()));
   }
 
 }

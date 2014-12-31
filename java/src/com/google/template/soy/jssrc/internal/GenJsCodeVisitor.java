@@ -253,7 +253,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
         // First add the JsExprs from preceding consecutive siblings that are computable as JS
         // expressions (if any).
-        if (consecChildrenJsExprs.size() > 0) {
+        if (!consecChildrenJsExprs.isEmpty()) {
           jsCodeBuilder.addToOutputVar(consecChildrenJsExprs);
           consecChildrenJsExprs.clear();
         }
@@ -264,7 +264,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Add the JsExprs from the last few children (if any).
-    if (consecChildrenJsExprs.size() > 0) {
+    if (!consecChildrenJsExprs.isEmpty()) {
       jsCodeBuilder.addToOutputVar(consecChildrenJsExprs);
       consecChildrenJsExprs.clear();
     }
@@ -564,7 +564,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     boolean isCodeStyleStringbuilder = jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER;
     boolean useStrongTyping = hasStrictParams(node);
 
-    localVarTranslations = new ArrayDeque<Map<String, JsExpr>>();
+    localVarTranslations = new ArrayDeque<>();
     genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations);
     assistantForMsgs = null;
 
@@ -1431,9 +1431,9 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           }
 
           jsCodeBuilder.appendLine(
-              "var " + paramAlias + " = " + assertionFunction + "(" + paramVal +
-              ", \"expected parameter '" + paramName + "' of type " + param.type().toString() +
-              ".\");");
+              "var " + paramAlias + " = " + assertionFunction
+              + "(" + paramVal + ", \"expected parameter '" + paramName + "' of type "
+              + param.type() + ".\");");
           isAliasedLocalVar = true;
           break;
         }
@@ -1453,9 +1453,9 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
         case ENUM:
           jsCodeBuilder.appendLine(
-              "var " + paramAlias + " = goog.asserts.assertNumber(" + paramVal +
-              ", \"expected param '" + paramName + "' of type " + param.type().toString()
-              + ".\");");
+              "var " + paramAlias + " = goog.asserts.assertNumber("
+              + paramVal + ", \"expected param '" + paramName + "' of type "
+              + param.type() + ".\");");
           isAliasedLocalVar = true;
           break;
 

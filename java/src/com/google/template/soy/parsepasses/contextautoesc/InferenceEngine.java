@@ -18,6 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.base.Pair;
@@ -52,7 +53,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Chooses appropriate escaping modes for <code>{print}</code> commands and derives templates as
@@ -853,8 +853,8 @@ final class InferenceEngine {
        SoyNode node, Context startContext, List<EscapingMode> escapingModes) {
     // TODO: Shouldn't this use the last escaping mode, since the order is from earliest to the
     // latest escaping?
-    Context endContext = startContext.getContextAfterEscaping(
-        escapingModes.isEmpty() ? null : escapingModes.get(0));
+    Context endContext =
+        startContext.getContextAfterEscaping(Iterables.getFirst(escapingModes, null));
     if (endContext.isErrorContext()) {
       if (startContext.uriPart == Context.UriPart.UNKNOWN ||
           startContext.uriPart == Context.UriPart.UNKNOWN_PRE_FRAGMENT) {

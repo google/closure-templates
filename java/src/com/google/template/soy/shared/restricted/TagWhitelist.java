@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -77,7 +78,7 @@ public final class TagWhitelist {
         };
 
     private static final ImmutableMap<String, OptionalSafeTag> OPTIONAL_SAFE_TAGS_BY_TAG_NAME =
-        Maps.uniqueIndex(ImmutableSet.copyOf(OptionalSafeTag.values()), TO_TAG_NAME);
+        Maps.uniqueIndex(EnumSet.allOf(OptionalSafeTag.class), TO_TAG_NAME);
   }
 
   /** Contains lower-case names of innocuous HTML elements. */

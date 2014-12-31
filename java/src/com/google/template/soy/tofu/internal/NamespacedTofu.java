@@ -30,7 +30,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Represents a compiled Soy file set, with a namespace prepended to templates being rendered.
  *
@@ -74,7 +73,7 @@ class NamespacedTofu implements SoyTofu {
       return baseTofu;
     } else {
       checkArgument(namespace.charAt(0) != '.' && namespace.charAt(namespace.length() - 1) != '.',
-          "Invalid namespace '" + namespace + "' (must not begin or end with a dot).");
+          "Invalid namespace '%s' (must not begin or end with a dot).", namespace);
       return new NamespacedTofu(baseTofu, namespace);
     }
   }

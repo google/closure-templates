@@ -64,4 +64,13 @@ public class ApiCallScopeBindingAnnotations {
   @Retention(RUNTIME)
   public @interface LocaleString {}
 
+
+  /**
+   * Annotation for the runtimePath parameter in the ApiCallScope.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface RuntimePath {}
+
 }

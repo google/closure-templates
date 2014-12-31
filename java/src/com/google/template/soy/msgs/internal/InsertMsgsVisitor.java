@@ -41,7 +41,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for inserting translated messages into Soy tree. This pass replaces the
  * MsgFallbackGroupNodes in the tree with sequences of RawTextNodes and other nodes. The only
@@ -228,10 +227,7 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-
-    for (StandaloneNode child : node.getChildren()) {
-      currReplacementNodes.add(child);
-    }
+    currReplacementNodes.addAll(node.getChildren());
   }
 
 

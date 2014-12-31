@@ -229,8 +229,8 @@ class GenCallCodeUtils {
     // In strict mode, escaping directives may apply to the call site.
     for (String directiveName : callNode.getEscapingDirectiveNames()) {
       SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveName);
-      Preconditions.checkNotNull(directive,
-          "Contextual autoescaping produced a bogus directive: " + directiveName);
+      Preconditions.checkNotNull(
+          directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
       result = directive.applyForJsSrc(result, ImmutableList.<JsExpr>of());
     }
 
@@ -352,8 +352,7 @@ class GenCallCodeUtils {
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.isPassingData()) {
       return new JsExpr(
-          "soy.$$augmentMap(" + dataToPass.getText() + ", " + paramsObjSb.toString() + ")",
-          Integer.MAX_VALUE);
+          "soy.$$augmentMap(" + dataToPass.getText() + ", " + paramsObjSb + ")", Integer.MAX_VALUE);
     } else {
       return new JsExpr(paramsObjSb.toString(), Integer.MAX_VALUE);
     }

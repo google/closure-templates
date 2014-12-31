@@ -123,7 +123,7 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
     List<SoyMsgPart> msgParts = translation.getParts();
 
-    if (msgParts.size() > 0) {
+    if (!msgParts.isEmpty()) {
       SoyMsgPart firstPart = msgParts.get(0);
 
       if (firstPart instanceof SoyMsgPluralPart) {
@@ -342,7 +342,7 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             visitPart((SoyMsgPlaceholderPart) casePart);
 
           } else if (casePart instanceof SoyMsgRawTextPart) {
-            visitPart((SoyMsgRawTextPart) casePart);
+            appendRawTextPart((SoyMsgRawTextPart) casePart);
 
           } else {
             throw new RenderException("Unsupported part of type " + casePart.getClass().getName() +
@@ -435,10 +435,10 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
           visitPart((SoyMsgPlaceholderPart) casePart);
 
         } else if (casePart instanceof SoyMsgRawTextPart) {
-          visitPart((SoyMsgRawTextPart) casePart);
+          appendRawTextPart((SoyMsgRawTextPart) casePart);
 
         } else if (casePart instanceof SoyMsgPluralRemainderPart) {
-          visitPart((SoyMsgPluralRemainderPart) casePart);
+          appendPluralRemainder();
 
         } else {
           // Plural parts will not have nested plural/select parts.  So, this is an error.
@@ -455,10 +455,8 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
      * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to
      * the {@code StringBuilder} object in {@code RenderVisitor}.  Since this is precomputed
      * when visiting the {@code SoyMsgPluralPart} object, it is directly used here.
-     * @param remainderPart The {@code SoyMsgPluralRemainderPart} object.
      */
-    @SuppressWarnings("UnusedDeclaration")  // for IntelliJ
-    private void visitPart(SoyMsgPluralRemainderPart remainderPart) {
+    private void appendPluralRemainder() {
       RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(),
           String.valueOf(currentPluralRemainderValue));
     }
@@ -481,7 +479,7 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
      * the {@code StringBuilder} object in {@code RenderVisitor}.
      * @param rawTextPart The raw text part.
      */
-    private void visitPart(SoyMsgRawTextPart rawTextPart) {
+    private void appendRawTextPart(SoyMsgRawTextPart rawTextPart) {
       RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(), rawTextPart.getRawText());
     }
 

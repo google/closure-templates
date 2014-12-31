@@ -23,7 +23,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 
 import java.util.List;
 
-
 /**
  * Utilities for parsing expressions.
  *
@@ -93,9 +92,7 @@ public class ExprParseUtils {
 
     try {
       return (new ExpressionParser(exprText)).parseExpression();
-    } catch (TokenMgrError tme) {
-      return null;
-    } catch (ParseException pe) {
+    } catch (TokenMgrError | ParseException tme) {
       return null;
     }
   }

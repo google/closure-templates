@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
  * Public utilities for Soy users.
  *
@@ -102,10 +101,9 @@ public class SoyUtils {
    */
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, File file) throws IOException {
-
-    BufferedWriter writer = Files.newWriter(file, UTF_8);
-    generateCompileTimeGlobalsFile(compileTimeGlobalsMap, writer);
-    writer.close();
+    try (BufferedWriter writer = Files.newWriter(file, UTF_8)) {
+      generateCompileTimeGlobalsFile(compileTimeGlobalsMap, writer);
+    }
   }
 
 
@@ -197,16 +195,13 @@ public class SoyUtils {
         compileTimeGlobalsBuilder.put(
             name, InternalValueUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr));
 
-      } catch (TokenMgrError tme) {
-        errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
-        continue;
-      } catch (ParseException pe) {
+      } catch (TokenMgrError | ParseException tme) {
         errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
         continue;
       }
     }
 
-    if (errors.size() > 0) {
+    if (!errors.isEmpty()) {
       StringBuilder errorMsgSb =
           new StringBuilder("Compile-time globals file contains the following errors:\n");
       for (Pair<CompileTimeGlobalsFileError, String> error : errors) {

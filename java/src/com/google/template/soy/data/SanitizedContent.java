@@ -16,7 +16,6 @@
 
 package com.google.template.soy.data;
 
-
 import com.google.template.soy.data.internal.RenderableThunk;
 
 import java.io.IOException;
@@ -24,7 +23,6 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.Immutable;
-
 
 /**
  * A chunk of sanitized content of a known kind, e.g. the output of an HTML sanitizer.

@@ -152,8 +152,7 @@ public final class UnionType implements SoyType {
    * @return The set of all types in the input collection.
    */
   private static ImmutableSortedSet<SoyType> flatten(Collection<SoyType> members) {
-    ImmutableSortedSet.Builder<SoyType> builder =
-        new ImmutableSortedSet.Builder<SoyType>(MEMBER_ORDER);
+    ImmutableSortedSet.Builder<SoyType> builder = new ImmutableSortedSet.Builder<>(MEMBER_ORDER);
     for (SoyType type : members) {
       if (type.getKind() == Kind.UNION) {
         builder.addAll(((UnionType) type).members);

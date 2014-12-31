@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-
 /**
  * Node representing a call to a basic template.
  *
@@ -162,7 +161,7 @@ public class CallBasicNode extends CallNode {
     }
 
     String srcCalleeName;
-    if (srcCalleeNames.size() == 0) {
+    if (srcCalleeNames.isEmpty()) {
       throw SoySyntaxException.createWithoutMetaInfo(
           "Invalid 'call' command missing callee name: {call " + cmdText + "}.");
     } else if (srcCalleeNames.size() == 1) {

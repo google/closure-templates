@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  * Checks various rules regarding the use of delegates (including delegate packages, delegate
  * templates, and delegate calls).
@@ -96,10 +95,10 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
         reusedTemplateNames.add(delTemplateKey.name);
       }
     }
-    if (reusedTemplateNames.size() > 0) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Found template name " + reusedTemplateNames + " being reused for both basic and" +
-              " delegate templates.");
+    if (!reusedTemplateNames.isEmpty()) {
+      throw SoySyntaxException.createWithoutMetaInfo("Found template name " + reusedTemplateNames
+          + " being reused for both basic and"
+          + " delegate templates.");
     }
 
     // Check that all delegate templates with the same name have the same declared params and
@@ -117,9 +116,6 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           // Now, over templates in the division (effectively, delpackages):
           for (TemplateDelegateNode delTemplate :
               division.delPackageNameToDelTemplateMap.values()) {
-            String currDelPackageName =  (delTemplate.getDelPackageName() != null) ?
-                delTemplate.getDelPackageName() : "<default>";
-
             if (firstDelTemplate == null) {
               // First template encountered.
               firstDelTemplate = delTemplate;

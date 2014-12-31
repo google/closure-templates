@@ -35,7 +35,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for substituting values of compile-time globals and/or for checking that all globals are
  * defined by the compile-time globals map.
@@ -117,7 +116,7 @@ public class SubstituteGlobalsVisitor {
       }
       String enumTypeName = name.substring(0, lastDot);
       SoyType type = typeRegistry.getType(enumTypeName);
-      if (type != null && type instanceof SoyEnumType) {
+      if (type instanceof SoyEnumType) {
         SoyEnumType enumType = (SoyEnumType) type;
         String enumValueName = name.substring(lastDot + 1);
         Integer enumValue = enumType.getValue(enumValueName);

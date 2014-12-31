@@ -38,7 +38,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Node representing a Soy file.
  *
@@ -312,7 +311,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       sb.append("}\n");
     }
 
-    if (aliasToNamespaceMap.size() > 0) {
+    if (!aliasToNamespaceMap.isEmpty()) {
       sb.append("\n");
       for (Map.Entry<String, String> entry : aliasToNamespaceMap.entrySet()) {
         String alias = entry.getKey();

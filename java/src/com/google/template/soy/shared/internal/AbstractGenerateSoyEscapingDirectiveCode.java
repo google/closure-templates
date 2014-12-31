@@ -30,16 +30,12 @@ import com.google.template.soy.shared.restricted.EscapingConventions.EscapingLan
 import org.apache.tools.ant.Task;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-
 
 /**
  * Abstract class for generating code relied upon by escaping directives.
@@ -234,12 +230,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
     // Output a file now that we know generation hasn't failed.
     try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(output.file), Charsets.UTF_8);
-      try {
-        out.append(sb);
-      } finally {
-        out.close();
-      }
+      Files.write(sb, output.file, Charsets.UTF_8);
     } catch (IOException ex) {
       // Make sure an abortive write does not leave a file w
       output.file.delete();

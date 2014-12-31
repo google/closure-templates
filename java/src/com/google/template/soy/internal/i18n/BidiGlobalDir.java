@@ -17,6 +17,7 @@
 package com.google.template.soy.internal.i18n;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SoyBackendKind;
 import javax.annotation.Nullable;
 
 
@@ -99,11 +100,19 @@ public class BidiGlobalDir {
    *
    * @param isRtlCodeSnippet A code snippet that will evaluate at template runtime to a boolean
    *     value indicating whether the bidi global direction is rtl.
+   * @param backend The current backend target.
    */
-  public static BidiGlobalDir forIsRtlCodeSnippet(String isRtlCodeSnippet) {
+  public static BidiGlobalDir forIsRtlCodeSnippet(String isRtlCodeSnippet, SoyBackendKind backend) {
     Preconditions.checkArgument(isRtlCodeSnippet != null && isRtlCodeSnippet.length() > 0,
         "Bidi global direction source code snippet must be non-empty.");
-    return new BidiGlobalDir(isRtlCodeSnippet + "?-1:1");
+    Preconditions.checkArgument(
+        backend == SoyBackendKind.JS_SRC || backend == SoyBackendKind.PYTHON_SRC,
+        "Bidi code snippets are only used in JS and Python.");
+    if (backend == SoyBackendKind.JS_SRC) {
+      return new BidiGlobalDir(isRtlCodeSnippet + "?-1:1");
+    } else {
+      return new BidiGlobalDir("-1 if " + isRtlCodeSnippet + " else 1");
+    }
   }
 
 

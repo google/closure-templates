@@ -55,7 +55,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
  * Assistant visitor for GenJsCodeVisitor to handle messages.
  *
@@ -294,7 +293,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       jsCodeBuilder.appendLineEnd(googMsgContentStrCode, ");");
 
     } else {
-      if (googMsgCodeGenInfo.placeholderCodeBits.size() == 0) {
+      if (googMsgCodeGenInfo.placeholderCodeBits.isEmpty()) {
         // If no placeholders, we put the message text on the same line.
         jsCodeBuilder.appendLineEnd(googMsgContentStrCode, ");");
       } else {
@@ -459,8 +458,10 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       } else if (child instanceof MsgPluralRemainderNode) {
         // nothing to do
       } else {
-        String nodeStringForErrorMsg = (parentNode instanceof CommandNode) ?
-            "Tag " + ((CommandNode) parentNode).getTagString() : "Node " + parentNode.toString();
+        String nodeStringForErrorMsg =
+            (parentNode instanceof CommandNode)
+                ? "Tag " + ((CommandNode) parentNode).getTagString()
+                : "Node " + parentNode;
         throw SoySyntaxException.createWithoutMetaInfo(
             nodeStringForErrorMsg + " is not allowed to be a direct child of a 'msg' tag.");
       }

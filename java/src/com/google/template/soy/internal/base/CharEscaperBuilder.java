@@ -74,7 +74,7 @@ public class CharEscaperBuilder {
    * Construct a new sparse array builder.
    */
   public CharEscaperBuilder() {
-    this.map = new HashMap<Character, String>();
+    this.map = new HashMap<>();
   }
 
   /**

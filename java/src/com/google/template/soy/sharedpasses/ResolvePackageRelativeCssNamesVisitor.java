@@ -42,7 +42,7 @@ public class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisito
       packagePrefix = toCamelCase(node.getCssBaseNamespace());
     } else if (node.getParent().getCssBaseNamespace() != null) {
       packagePrefix = toCamelCase(node.getParent().getCssBaseNamespace());
-    } else if (node.getParent().getRequiredCssNamespaces().size() > 0) {
+    } else if (!node.getParent().getRequiredCssNamespaces().isEmpty()) {
       packagePrefix = toCamelCase(node.getParent().getRequiredCssNamespaces().get(0));
     }
 

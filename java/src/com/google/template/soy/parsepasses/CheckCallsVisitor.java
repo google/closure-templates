@@ -37,7 +37,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 import java.util.Set;
 
-
 /**
  * Visitor for running some sanity checks on calls.
  *
@@ -106,9 +105,11 @@ public class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
           }
         }
         // Report errors.
-        if (missingParamKeys.size() > 0) {
-          String errorMsgEnd = (missingParamKeys.size() == 1) ?
-              "param '" + missingParamKeys.get(0) + "'" : "params " + missingParamKeys;
+        if (!missingParamKeys.isEmpty()) {
+          String errorMsgEnd =
+              (missingParamKeys.size() == 1)
+                  ? "param '" + missingParamKeys.get(0) + "'"
+                  : "params " + missingParamKeys;
           throw SoySyntaxExceptionUtils.createWithNode(
               String.format(
                   "Call to '%s' is missing required %s.",

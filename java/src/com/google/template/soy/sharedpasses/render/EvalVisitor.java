@@ -421,7 +421,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     } else if (operand0 instanceof StringData || operand1 instanceof StringData) {
       // String concatenation. Note we're calling toString() instead of stringValue() in case one
       // of the operands needs to be coerced to a string.
-      return convertResult(operand0.toString() + operand1.toString());
+      return convertResult(operand0.toString() + operand1);
     } else {
       return convertResult(operand0.numberValue() + operand1.numberValue());
     }

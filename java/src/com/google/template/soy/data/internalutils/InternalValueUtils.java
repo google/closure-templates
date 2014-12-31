@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.StringNode;
 
 import java.util.Map;
 
-
 /**
  * Internal utilities related to Soy values.
  *
@@ -129,7 +128,7 @@ public class InternalValueUtils {
       }
       if (!isValidValue) {
         throw SoySyntaxException.createWithoutMetaInfo(
-            "Compile-time globals map contains invalid value: " + valueObj.toString() + ".");
+            "Compile-time globals map contains invalid value: " + valueObj + ".");
       }
 
       resultMapBuilder.put(entry.getKey(), value);

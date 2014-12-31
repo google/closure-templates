@@ -279,11 +279,10 @@ class MainClassUtils {
       Builder sfsBuilder, String inputPrefix, Collection<String> srcs, Collection<String> args,
       Collection<String> deps, Collection<String> indirectDeps,
       Function<String, Void> exitWithErrorFn) {
-
-    if (srcs.size() == 0 && args.size() == 0) {
+    if (srcs.isEmpty() && args.isEmpty()) {
       exitWithErrorFn.apply("Must provide list of source Soy files (--srcs).");
     }
-    if (srcs.size() != 0 && args.size() != 0) {
+    if (!srcs.isEmpty() && !args.isEmpty()) {
       exitWithErrorFn.apply(
           "Found source Soy files from --srcs and from args (please use --srcs only).");
     }

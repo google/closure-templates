@@ -373,8 +373,7 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void addConsecutiveRawTextNodesAsOneNodeHelper(
       BlockNode parent, List<RawTextNode> consecutiveRawTextNodes) {
-
-    if (consecutiveRawTextNodes.size() == 0) {
+    if (consecutiveRawTextNodes.isEmpty()) {
       return;
     } else if (consecutiveRawTextNodes.size() == 1) {
       // Simply add the one RawTextNode.

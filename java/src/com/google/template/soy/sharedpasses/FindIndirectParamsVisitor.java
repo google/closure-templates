@@ -50,7 +50,6 @@ import java.util.SortedMap;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for finding the indirect params of a given template.
  *
@@ -245,7 +244,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     isStartOfPass = true;
     visitedCallSituations = Sets.newHashSet();
     currTemplate = null;
-    callerStack = new ArrayDeque<CallerFrame>();
+    callerStack = new ArrayDeque<>();
     callerStack.add(
         new CallerFrame(null, ImmutableSet.<TemplateNode>of(), ImmutableSet.<String>of()));
     indirectParams = Maps.newHashMap();
@@ -376,7 +375,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
       }
     }
     Set<String> newAllCallParamKeys;
-    if (additionalCallParamKeys.size() > 0) {
+    if (!additionalCallParamKeys.isEmpty()) {
       newAllCallParamKeys = Sets.newHashSet(prevAllCallParamKeys);
       newAllCallParamKeys.addAll(additionalCallParamKeys);
     } else {

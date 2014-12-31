@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -27,7 +26,6 @@ import com.google.common.io.Files;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -128,7 +126,7 @@ public class JsSrcMain {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
       apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), isUsingIjData);
-      BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromOptions(
+      BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
           jsSrcOptions.getBidiGlobalDir(),
           jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
       ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle, bidiGlobalDir);
@@ -194,8 +192,8 @@ public class JsSrcMain {
           srcsToCompile.size(), jsFileContents.size()));
     }
 
-    Multimap<String, Integer> outputs =
-        mapOutputsToSrcs(locale, outputPathFormat, inputPathsPrefix, srcsToCompile);
+    Multimap<String, Integer> outputs = MainEntryPointUtils.mapOutputsToSrcs(
+        locale, outputPathFormat, inputPathsPrefix, srcsToCompile);
 
     for (String outputFilePath : outputs.keySet()) {
       Writer out = Files.newWriter(new File(outputFilePath), UTF_8);
@@ -216,29 +214,5 @@ public class JsSrcMain {
         out.close();
       }
     }
-  }
-
-  /**
-   * Maps output paths to indices of inputs that should be emitted to them.
-   */
-  private Multimap<String, Integer> mapOutputsToSrcs(String locale, String outputPathFormat,
-      String inputPathsPrefix, ImmutableList<SoyFileNode> fileNodes) {
-    Multimap<String, Integer> outputs = ArrayListMultimap.create();
-
-    // First, check that the parent directories for all output files exist, and group the output
-    // files by the inputs that go there.
-    // This means that the compiled source from multiple input files might be written to a single
-    // output file, as is the case when there are multiple inputs, and the output format string
-    // contains no wildcards.
-    for (int i = 0; i < fileNodes.size(); ++i) {
-      SoyFileNode inputFile = fileNodes.get(i);
-      String inputFilePath = inputFile.getFilePath();
-      String outputFilePath = MainEntryPointUtils.buildFilePath(
-          outputPathFormat, locale, inputFilePath, inputPathsPrefix);
-
-      BaseUtils.ensureDirsExistInPath(outputFilePath);
-      outputs.put(outputFilePath, i);
-    }
-    return outputs;
   }
 }

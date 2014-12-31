@@ -61,21 +61,51 @@ public class SoyBidiUtilsTest extends TestCase {
   }
 
 
-  public void testDecodeBidiGlobalDirFromOptions() {
-    assertNull(SoyBidiUtils.decodeBidiGlobalDirFromOptions(0, false));
+  public void testDecodeBidiGlobalDirFromJsOptions() {
+    assertNull(SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, false));
 
     BidiGlobalDir bidiGlobalDir;
 
-    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromOptions(1, false);
+    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(1, false);
     assertTrue(bidiGlobalDir.isStaticValue());
     assertEquals(bidiGlobalDir.getStaticValue(), 1);
 
-    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromOptions(-1, false);
+    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(-1, false);
     assertTrue(bidiGlobalDir.isStaticValue());
     assertEquals(bidiGlobalDir.getStaticValue(), -1);
 
-    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromOptions(0, true);
+    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, true);
     assertFalse(bidiGlobalDir.isStaticValue());
     assertEquals(bidiGlobalDir.getCodeSnippet(), "soy.$$IS_LOCALE_RTL?-1:1");
+  }
+
+  public void testDecodeBidiGlobalDirFromPyOptions() {
+    assertNull(SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(null));
+    assertNull(SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(""));
+
+    BidiGlobalDir bidiGlobalDir;
+
+    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("mod.is_rtl");
+    assertFalse(bidiGlobalDir.isStaticValue());
+    assertEquals(bidiGlobalDir.getCodeSnippet(), "-1 if external_bidi.is_rtl() else 1");
+
+    bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("package.mod.is_rtl");
+    assertFalse(bidiGlobalDir.isStaticValue());
+    assertEquals(bidiGlobalDir.getCodeSnippet(), "-1 if external_bidi.is_rtl() else 1");
+  }
+
+  public void testInvalidDecodeBidiGlobalDirFromPyOptions() {
+    try {
+      SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("is_rtl");
+      fail("bidiIsRtlFn without a module path did not except");
+    } catch (IllegalArgumentException expected) {
+    }
+
+    try {
+      SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(".is_rtl");
+      SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("is_rtl.");
+      fail("bidiIsRtlFn with invalid path did not except");
+    } catch (IllegalArgumentException expected) {
+    }
   }
 }

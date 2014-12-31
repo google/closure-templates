@@ -18,17 +18,16 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -254,11 +253,7 @@ public class SoytreeUtils {
       List<T> origNodes, IdGenerator nodeIdGen) {
 
     Preconditions.checkNotNull(origNodes);
-    if (origNodes.size() == 0) {
-      return Lists.newArrayListWithCapacity(0);
-    }
-
-    List<T> clones = Lists.newArrayListWithCapacity(origNodes.size());
+    List<T> clones = new ArrayList<>(origNodes.size());
     for (T origNode : origNodes) {
       @SuppressWarnings("unchecked")
       T clone = (T) origNode.clone();

@@ -24,7 +24,6 @@ import com.google.template.soy.data.SoyMapData;
 
 import java.util.List;
 
-
 /**
  * Abstract superclass for a node in a Soy data tree that represents a collection of data (i.e. an
  * internal node).
@@ -168,7 +167,7 @@ public abstract class CollectionData extends SoyData {
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
       SoyData soyData = collectionData.getSingle(keys.get(i));
-      if (soyData == null || !(soyData instanceof CollectionData)) {
+      if (!(soyData instanceof CollectionData)) {
         return;
       }
       collectionData = (CollectionData) soyData;
@@ -195,7 +194,7 @@ public abstract class CollectionData extends SoyData {
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
       SoyData soyData = collectionData.getSingle(keys.get(i));
-      if (soyData == null || !(soyData instanceof CollectionData)) {
+      if (!(soyData instanceof CollectionData)) {
         return null;
       }
       collectionData = (CollectionData) soyData;

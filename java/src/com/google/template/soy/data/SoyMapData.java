@@ -31,7 +31,6 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-
 /**
  * A map data node in a Soy data tree.
  *
@@ -55,11 +54,9 @@ public class SoyMapData extends CollectionData implements SoyDict {
    * @param data The initial data in an existing map.
    */
   public SoyMapData(Map<String, ?> data) {
-
-    map = new LinkedHashMap<String, SoyData>(data.size());
+    map = new LinkedHashMap<>(data.size());
 
     for (Map.Entry<String, ?> entry : data.entrySet()) {
-
       String key;
       try {
         key = entry.getKey();

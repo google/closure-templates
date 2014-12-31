@@ -144,18 +144,18 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     List<String> undeclaredDataKeys = Lists.newArrayList();
-    if (dataKeys.size() > 0) {
+    if (!dataKeys.isEmpty()) {
       // Bad: Referenced in template but not declared in SoyDoc.
       undeclaredDataKeys.addAll(dataKeys);
       Collections.sort(undeclaredDataKeys);
     }
 
-    if (undeclaredDataKeys.size() > 0) {
+    if (!undeclaredDataKeys.isEmpty()) {
       throw SoySyntaxExceptionUtils.createWithNode(
           "Found references to data keys that are not declared in SoyDoc: " + undeclaredDataKeys,
           node);
     }
-    if (unusedParams.size() > 0 && ! (node instanceof TemplateDelegateNode)) {
+    if (!unusedParams.isEmpty() && !(node instanceof TemplateDelegateNode)) {
       // Note: The reason we allow delegate templates to declare unused params (in the if-condition
       // above) is that other implementations of the same delegate may need to use those params.
       throw SoySyntaxExceptionUtils.createWithNode(

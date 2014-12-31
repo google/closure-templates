@@ -75,7 +75,7 @@ abstract class AbstractDict extends SoyAbstractMap implements SoyDict {
 
 
   @Override public final int getItemCnt() {
-    return providerMap.keySet().size();
+    return providerMap.size();
   }
 
 

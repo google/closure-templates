@@ -198,7 +198,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.evalVisitor = null;  // lazily initialized
     this.assistantForMsgs = null;  // lazily initialized
 
-    this.outputBufStack = new ArrayDeque<Appendable>();
+    this.outputBufStack = new ArrayDeque<>();
     if (outputBuf instanceof Flushable) {
       if (outputBuf instanceof CountingFlushableAppendable) {
         flushable = (CountingFlushableAppendable) outputBuf;

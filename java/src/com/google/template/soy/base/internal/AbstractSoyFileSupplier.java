@@ -42,8 +42,8 @@ abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
    */
   public AbstractSoyFileSupplier(SoyFileKind soyFileKind, String filePath) {
     this.soyFileKind = soyFileKind;
-    Preconditions.checkState(filePath != null && !filePath.equals(""),
-        "Soy file path must be non-null and non-empty.");
+    Preconditions.checkState(
+        filePath != null && !filePath.isEmpty(), "Soy file path must be non-null and non-empty.");
     this.filePath = filePath;
   }
 

@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.List;
 
-
 /**
  * Visitor for combining any consecutive sequences of {@code RawTextNode}s into one equivalent
  * {@code RawTextNode}.
@@ -117,8 +116,7 @@ public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisito
    */
   private void addConsecutiveRawTextNodesAsOneNodeHelper(
       BlockNode parent, List<RawTextNode> consecutiveRawTextNodes) {
-
-    if (consecutiveRawTextNodes.size() == 0) {
+    if (consecutiveRawTextNodes.isEmpty()) {
       return;
     } else if (consecutiveRawTextNodes.size() == 1) {
       // Simply add the one RawTextNode.

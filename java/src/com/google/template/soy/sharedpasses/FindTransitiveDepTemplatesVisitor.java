@@ -46,7 +46,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for finding the set of templates transitively called by a given template.
  *
@@ -334,13 +333,13 @@ public class FindTransitiveDepTemplatesVisitor
 
     // Initialize vars for the pass.
     currTemplateVisitInfo = null;
-    activeTemplateVisitInfoStack = new ArrayDeque<TemplateVisitInfo>();
+    activeTemplateVisitInfoStack = new ArrayDeque<>();
     activeTemplateSet = Sets.newHashSet();
     visitedTemplateToInfoMap = Maps.newHashMap();
 
     visit(rootTemplateCast);
 
-    if (activeTemplateVisitInfoStack.size() != 0 || activeTemplateSet.size() != 0) {
+    if (!activeTemplateVisitInfoStack.isEmpty() || !activeTemplateSet.isEmpty()) {
       throw new AssertionError();
     }
 

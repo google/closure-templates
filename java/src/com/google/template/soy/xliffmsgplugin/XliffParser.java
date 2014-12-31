@@ -38,7 +38,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-
 /**
  * Static function for parsing the content of a translated XLIFF file and creating a SoyMsgBundle.
  *
@@ -191,7 +190,7 @@ class XliffParser {
           currRawTextPart = null;
         }
         isInMsg = false;
-        if (currMsgParts.size() > 0) {
+        if (!currMsgParts.isEmpty()) {
           msgs.add(new SoyMsg(
               currMsgId, targetLocaleString, null, null, false, null, null, currMsgParts));
         }

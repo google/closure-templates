@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.SoySyntaxException;
@@ -33,7 +34,6 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 
 import java.util.List;
-
 
 /**
  * Static helpers for generating base names for msg substitution units (i.e. placeholder names and
@@ -98,7 +98,7 @@ public class MsgSubstUnitBaseVarNameUtils {
       ExprRootNode<?> exprRoot, String fallbackBaseName) {
 
     List<String> candidateBaseNames = genCandidateBaseNamesForExpr(exprRoot);
-    return (candidateBaseNames.size() != 0) ? candidateBaseNames.get(0) : fallbackBaseName;
+    return Iterables.getFirst(candidateBaseNames, fallbackBaseName);
   }
 
 
@@ -144,7 +144,7 @@ public class MsgSubstUnitBaseVarNameUtils {
     for (int i = 0; i < numExprs; i++) {
       ExprRootNode<?> exprRoot = exprRoots.get(i);
       List<String> candidateBaseNameList = candidateBaseNameLists.get(i);
-      if (candidateBaseNameList.size() == 0) {
+      if (candidateBaseNameList.isEmpty()) {
         continue;
       }
       String longestCandidate = candidateBaseNameList.get(candidateBaseNameList.size() - 1);
@@ -165,7 +165,7 @@ public class MsgSubstUnitBaseVarNameUtils {
     for (int i = 0; i < numExprs; i++) {
       List<String> candidateBaseNameList = candidateBaseNameLists.get(i);
 
-      if (candidateBaseNameList.size() != 0) {
+      if (!candidateBaseNameList.isEmpty()) {
         // Has candidates: Use the shortest candidate that doesn't collide.
 
         for (String candidateBaseName : candidateBaseNameList) {

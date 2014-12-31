@@ -106,7 +106,7 @@ public final class EasyDictImpl extends AbstractDict implements SoyEasyDict {
 
   @Override public void set(String dottedName, @Nullable Object value) {
     Pair<SoyRecord, String> pair = getLastRecordAndLastName(dottedName, true);
-    if (pair.first == null || ! (pair.first instanceof SoyEasyDict)) {
+    if (!(pair.first instanceof SoyEasyDict)) {
       throw new SoyDataException("Cannot set data at dotted name '" + dottedName + "'.");
     }
     ((SoyEasyDict) pair.first).setField(pair.second, valueHelper.convert(value));
@@ -115,7 +115,7 @@ public final class EasyDictImpl extends AbstractDict implements SoyEasyDict {
 
   @Override public void del(String dottedName) {
     Pair<SoyRecord, String> pair = getLastRecordAndLastName(dottedName, false);
-    if (pair.first == null || ! (pair.first instanceof SoyEasyDict)) {
+    if (!(pair.first instanceof SoyEasyDict)) {
       throw new SoyDataException("Cannot del data at dotted name '" + dottedName + "'.");
     }
     ((SoyEasyDict) pair.first).delField(pair.second);

@@ -16,8 +16,9 @@
 
 package com.google.template.soy.data.restricted;
 
-import javax.annotation.concurrent.Immutable;
+import com.google.common.primitives.Booleans;
 
+import javax.annotation.concurrent.Immutable;
 
 /**
  * Boolean data.
@@ -90,9 +91,7 @@ public final class BooleanData extends PrimitiveData {
            ((BooleanData) other).getValue() == value;
   }
 
-
   @Override public int hashCode() {
-    return Boolean.valueOf(value).hashCode();
+    return Booleans.hashCode(value);
   }
-
 }

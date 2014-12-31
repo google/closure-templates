@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.collect.Maps;
 import com.google.inject.Key;
 import com.google.inject.OutOfScopeException;
@@ -25,7 +26,6 @@ import com.google.inject.Scope;
 
 import java.util.Map;
 import java.util.Stack;
-
 
 /**
  * Scopes a single execution of a block of code.
@@ -84,8 +84,7 @@ public class GuiceSimpleScope implements Scope {
 
 
   /** The ThreadLocal holding all the values in scope. */
-  private final ThreadLocal<Stack<Map<Key<?>, Object>>> scopedValuesTl =
-      new ThreadLocal<Stack<Map<Key<?>, Object>>>();
+  private final ThreadLocal<Stack<Map<Key<?>, Object>>> scopedValuesTl = new ThreadLocal<>();
 
 
   /**
@@ -94,7 +93,7 @@ public class GuiceSimpleScope implements Scope {
   public void enter() {
     Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
     if (stack == null) {
-      stack = new Stack<Map<Key<?>, Object>>();
+      stack = new Stack<>();
       scopedValuesTl.set(stack);
     }
     stack.push(Maps.<Key<?>, Object>newHashMap());

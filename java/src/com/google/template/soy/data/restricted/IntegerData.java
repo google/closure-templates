@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 
 import javax.annotation.concurrent.Immutable;
 
-
 /**
  * Integer data.
  *
@@ -129,7 +128,7 @@ public final class IntegerData extends NumberData {
 
   @Override public int integerValue() {
     Preconditions.checkState(value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE,
-        "Casting long to integer results in overflow: " + value);
+        "Casting long to integer results in overflow: %s", value);
     return (int) value;
   }
 
@@ -161,8 +160,7 @@ public final class IntegerData extends NumberData {
 
 
   @Override public boolean equals(Object other) {
-
-    if (other == null || !(other instanceof NumberData)) {
+    if (!(other instanceof NumberData)) {
       return false;
     }
     if (other instanceof IntegerData) {

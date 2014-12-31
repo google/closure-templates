@@ -18,6 +18,7 @@ package com.google.template.soy.shared.restricted;
 
 import com.google.inject.Provider;
 
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 
 
@@ -36,7 +37,7 @@ public class SharedRestrictedTestUtils {
       BidiGlobalDir.forStaticIsRtl(true);
 
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET =
-      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL");
+      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
 
 
   private SharedRestrictedTestUtils() {}

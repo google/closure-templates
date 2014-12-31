@@ -51,7 +51,7 @@ public class CallParamContentNode extends CallParamNode implements RenderUnitNod
    */
   public CallParamContentNode(int id, String commandText) throws SoySyntaxException {
     super(id, commandText);
-    parentMixin = new MixinParentNode<StandaloneNode>(this);
+    parentMixin = new MixinParentNode<>(this);
 
     CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
     key = parseResult.key;
@@ -71,7 +71,7 @@ public class CallParamContentNode extends CallParamNode implements RenderUnitNod
    */
   protected CallParamContentNode(CallParamContentNode orig) {
     super(orig);
-    this.parentMixin = new MixinParentNode<StandaloneNode>(orig.parentMixin, this);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
     this.key = orig.key;
     this.contentKind = orig.contentKind;
   }

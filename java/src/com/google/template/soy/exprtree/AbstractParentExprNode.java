@@ -22,7 +22,6 @@ import com.google.template.soy.types.SoyType;
 
 import java.util.List;
 
-
 /**
  * Abstract implementation of a ParentExprNode.
  *
@@ -49,7 +48,7 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
 
 
   protected AbstractParentExprNode(SoyType type) {
-    parentMixin = new MixinParentNode<ExprNode>(this);
+    parentMixin = new MixinParentNode<>(this);
     this.type = type;
   }
 
@@ -60,7 +59,7 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
    */
   protected AbstractParentExprNode(AbstractParentExprNode orig) {
     super(orig);
-    this.parentMixin = new MixinParentNode<ExprNode>(orig.parentMixin, this);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
     this.type = orig.type;
   }
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.internal.i18n;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.Dir;
 
 import java.util.regex.Pattern;
@@ -31,6 +32,11 @@ import java.util.regex.Pattern;
 public class SoyBidiUtils {
 
   private SoyBidiUtils() {}
+
+  /**
+   * The name used as an alias for importing a module containing the bidiIsRtlFn.
+   */
+  public static final String IS_RTL_MODULE_ALIAS = "external_bidi";
 
 
   /**
@@ -65,7 +71,7 @@ public class SoyBidiUtils {
    * @return BidiGlobalDir object - or null if bidiGlobalDir is 0.
    */
   public static BidiGlobalDir decodeBidiGlobalDir(int bidiGlobalDir) {
-    return decodeBidiGlobalDirFromOptions(bidiGlobalDir, false);
+    return decodeBidiGlobalDirFromJsOptions(bidiGlobalDir, false);
   }
 
 
@@ -77,13 +83,13 @@ public class SoyBidiUtils {
    *     runtime by evaluating goog.i18n.bidi.IS_RTL.
    * @return BidiGlobalDir object - or null if neither option was specified.
    */
-  public static BidiGlobalDir decodeBidiGlobalDirFromOptions(
+  public static BidiGlobalDir decodeBidiGlobalDirFromJsOptions(
       int bidiGlobalDir, boolean useGoogIsRtlForBidiGlobalDir) {
     if (bidiGlobalDir == 0) {
       if (!useGoogIsRtlForBidiGlobalDir) {
         return null;
       }
-      return BidiGlobalDir.forIsRtlCodeSnippet(GOOG_IS_RTL_CODE_SNIPPET);
+      return BidiGlobalDir.forIsRtlCodeSnippet(GOOG_IS_RTL_CODE_SNIPPET, SoyBackendKind.JS_SRC);
     }
     Preconditions.checkState(
         !useGoogIsRtlForBidiGlobalDir,
@@ -94,6 +100,24 @@ public class SoyBidiUtils {
     return BidiGlobalDir.forStaticIsRtl(bidiGlobalDir < 0);
   }
 
+  /**
+   * Decodes bidi global directionality from the Python bidiIsRtlFn command line option.
+   * @param bidiIsRtlFn The string containing the full module path and function name.
+   * @return BidiGlobalDir object - or null if the option was not specified.
+   */
+  public static BidiGlobalDir decodeBidiGlobalDirFromPyOptions(String bidiIsRtlFn) {
+    if (bidiIsRtlFn == null || bidiIsRtlFn.isEmpty()) {
+      return null;
+    }
+    int dotIndex = bidiIsRtlFn.lastIndexOf('.');
+    Preconditions.checkArgument(
+        dotIndex > 0 && dotIndex < bidiIsRtlFn.length() - 1,
+        "If specified a bidiIsRtlFn must include the module path to allow for proper importing.");
+    // When importing the module, we'll using the constant name to avoid potential conflicts.
+    String fnName = bidiIsRtlFn.substring(dotIndex + 1) + "()";
+    return BidiGlobalDir.forIsRtlCodeSnippet(
+        IS_RTL_MODULE_ALIAS + '.' + fnName, SoyBackendKind.PYTHON_SRC);
+  }
 
   /**
    * A regular expression for matching language codes indicating the FakeBidi pseudo-locale.

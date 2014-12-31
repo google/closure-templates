@@ -122,7 +122,7 @@ public final class RecordType implements SoyObjectType {
       }
       sb.append(entry.getKey());
       sb.append(": ");
-      sb.append(entry.getValue().toString());
+      sb.append(entry.getValue());
     }
     sb.append("]");
     return sb.toString();

@@ -17,6 +17,12 @@
 package com.google.template.soy.shared.internal;
 
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.soytree.SoyFileNode;
+
 import java.io.File;
 
 import javax.annotation.Nullable;
@@ -33,6 +39,36 @@ public class MainEntryPointUtils {
 
   private MainEntryPointUtils() {}
 
+  /**
+   * Maps output paths to indices of inputs that should be emitted to them.
+   *
+   * @param locale The locale for the file path, or null if not applicable.
+   * @param outputPathFormat The format string defining how to format output file paths.
+   * @param inputPathsPrefix The input path prefix, or empty string if none.
+   * @param fileNodes A list of the SoyFileNodes being written.
+   * @return A map of output file paths to their respective input indicies.
+   */
+  public static Multimap<String, Integer> mapOutputsToSrcs(
+      @Nullable String locale, String outputPathFormat, String inputPathsPrefix,
+      ImmutableList<SoyFileNode> fileNodes) {
+    Multimap<String, Integer> outputs = ArrayListMultimap.create();
+
+    // First, check that the parent directories for all output files exist, and group the output
+    // files by the inputs that go there.
+    // This means that the compiled source from multiple input files might be written to a single
+    // output file, as is the case when there are multiple inputs, and the output format string
+    // contains no wildcards.
+    for (int i = 0; i < fileNodes.size(); ++i) {
+      SoyFileNode inputFile = fileNodes.get(i);
+      String inputFilePath = inputFile.getFilePath();
+      String outputFilePath = MainEntryPointUtils.buildFilePath(
+          outputPathFormat, locale, inputFilePath, inputPathsPrefix);
+
+      BaseUtils.ensureDirsExistInPath(outputFilePath);
+      outputs.put(outputFilePath, i);
+    }
+    return outputs;
+  }
 
   /**
    * Builds a specific file path given a path format and the info needed for replacing placeholders.

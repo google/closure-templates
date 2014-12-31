@@ -25,7 +25,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
-
 /**
  * Visitor for setting the default value of CallDelegateNode.allowsEmptyDefault for all 'delcall's
  * where it is not specified by the user.
@@ -46,8 +45,7 @@ public class SetDefaultForDelcallAllowsEmptyDefaultVisitor extends AbstractSoyNo
   public SetDefaultForDelcallAllowsEmptyDefaultVisitor(SyntaxVersion declaredSyntaxVersion) {
     // Note: For readability, purposely not simplifying.
     //noinspection RedundantConditionalExpression IntelliJ
-    this.defaultValueForAllowsEmptyDefault =
-        (declaredSyntaxVersion.num >= SyntaxVersion.V2_2.num) ? false : true;
+    this.defaultValueForAllowsEmptyDefault = declaredSyntaxVersion.num < SyntaxVersion.V2_2.num;
   }
 
 

@@ -37,7 +37,7 @@ public class SoyMsgPluralCaseSpec {
   public enum Type { EXPLICIT, ZERO, ONE, TWO, FEW, MANY, OTHER }
 
   /** Internal mapping of Type to String, reduces memory usage */
-  private static final EnumMap<Type, String> TYPE_TO_STRING = new EnumMap<Type, String>(Type.class);
+  private static final EnumMap<Type, String> TYPE_TO_STRING = new EnumMap<>(Type.class);
   static {
     for (Type t : EnumSet.allOf(Type.class)) {
       TYPE_TO_STRING.put(t, t.name().toLowerCase(Locale.ENGLISH));
