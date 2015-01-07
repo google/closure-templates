@@ -121,11 +121,11 @@ public class ResolveNamesVisitorTest extends TestCase {
     assertEquals(3, ((LetValueNode) n.getChild(2)).getVar().localVariableIndex());
   }
 
-  public void testOverwriteLetBindingMultipleLocalsAndScopesNumbering() {
+  public void testMultipleLocals() {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
         "{let $la: 1 /}",
-        "{let $la: $la /}",
-        "{let $la: $la /}"));
+        "{let $lb: $la /}",
+        "{let $lc: $lb /}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
@@ -140,6 +140,34 @@ public class ResolveNamesVisitorTest extends TestCase {
         ((VarRefNode) secondLet.getValueExpr().getChild(0)).getDefnDecl());
     assertEquals(secondLet.getVar(),
         ((VarRefNode) thirdLet.getValueExpr().getChild(0)).getDefnDecl());
+  }
+
+  public void testVariableNameRedefinition() {
+    assertResolveNamesFails(
+        "variable $la was already defined",
+        constructTemplateSource(
+            "{let $la: 1 /}",
+            "{let $la: $la /}"));
+    assertResolveNamesFails(
+        "variable $pa was already defined",
+        constructTemplateSource(
+            "{@param pa: bool}",
+            "{let $pa: not $pa /}"));
+    assertResolveNamesFails(
+        "variable $la was already defined",
+        constructTemplateSource(
+            "{let $la: 1 /}",
+            "{foreach $item in ['a', 'b']}",
+            "  {let $la: $la /}",
+            "{/foreach}"));
+    // valid, $item and $la are defined in non-overlapping scopes
+    SharedTestUtils.parseSoyFiles(constructTemplateSource(
+        "{foreach $item in ['a', 'b']}",
+        "  {let $la: $la /}",
+        "{/foreach}",
+        "{foreach $item in ['a', 'b']}",
+        "  {let $la: $la /}",
+        "{/foreach}"));
   }
 
   public void testLetContentSlotLifetime() {
@@ -197,7 +225,9 @@ public class ResolveNamesVisitorTest extends TestCase {
       createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
       fail("Expected SoySyntaxException");
     } catch (SoySyntaxException e) {
-      assertTrue(e.getMessage().contains(expectedError));
+      String message = e.getMessage();
+      assertTrue("Expected :'" + message + "' to contain '" + expectedError + "'",
+          message.contains(expectedError));
     }
   }
 }

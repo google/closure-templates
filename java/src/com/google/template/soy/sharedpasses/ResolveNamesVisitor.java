@@ -19,9 +19,6 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -52,6 +49,7 @@ import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -69,9 +67,9 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
    * point of execution while that variable could be referenced there is only one variable with that
    * index.
    */
-  private static final class LocalVariables {
+  private final class LocalVariables {
     private final BitSet availableSlots = new BitSet();
-    private final Deque<ListMultimap<String, VarDefn>> currentScope = new ArrayDeque<>();
+    private final Deque<Map<String, VarDefn>> currentScope = new ArrayDeque<>();
     private final BitSet slotsToRelease = new BitSet();
 
     /** Tracks the next unused slot to claim. */
@@ -90,7 +88,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
      * until a matching call to {@link #exitScope()}.
      */
     void enterScope() {
-      currentScope.push(ArrayListMultimap.<String, VarDefn>create());
+      currentScope.push(new LinkedHashMap<String, VarDefn>());
     }
 
     /**
@@ -121,7 +119,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
      * frame so that they can be reused.
      */
     void exitScope() {
-      ListMultimap<String, VarDefn> variablesGoingOutOfScope = currentScope.pop();
+      Map<String, VarDefn> variablesGoingOutOfScope = currentScope.pop();
       for (VarDefn var : variablesGoingOutOfScope.values()) {
         if (var instanceof LoopVar) {
           LoopVar loopVar = (LoopVar) var;
@@ -141,10 +139,8 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
      * scope and all parent scopes.
      */
     VarDefn lookup(String name) {
-      for (ListMultimap<String, VarDefn> scope : currentScope) {
-        // Get last to handle the case where multiple variables with the same name are active.
-        // hopefully this will be a temporary situation.
-        VarDefn defn = Iterables.getLast(scope.get(name), null);
+      for (Map<String, VarDefn> scope : currentScope) {
+        VarDefn defn = scope.get(name);
         if (defn != null) {
           return defn;
         }
@@ -157,13 +153,23 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
      * extra implicit local variables for tracking the current index and whether or not we are at
      * the last index.
      */
-    void define(LoopVar defn) {
+    void define(LoopVar defn, SoyNode definingNode) {
       defn.setExtraLoopIndices(claimSlot(), claimSlot());
-      define((VarDefn) defn);
+      define((VarDefn) defn, definingNode);
     }
 
     /** Defines a variable. */
-    void define(VarDefn defn) {
+    void define(VarDefn defn, SoyNode definingNode) {
+      // Search for the name to see if it is being redefined.
+      VarDefn preexisting = lookup(defn.name());
+      if (preexisting != null) {
+        throw SoySyntaxException
+            .createWithMetaInfo(
+                "variable $" + defn.name() + " was already defined",
+                definingNode.getSourceLocation(),
+                null,  // file location
+                currentTemplateName);
+      }
       currentScope.peek().put(defn.name(), defn);
       defn.setLocalVariableIndex(claimSlot());
     }
@@ -203,12 +209,14 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
+  private String currentTemplateName;
 
   public ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion) {
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {
+    currentTemplateName = node.getTemplateNameForUserMsgs();
     // Create a scope for all parameters.
     localVariables = new LocalVariables();
     localVariables.enterScope();
@@ -216,7 +224,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Add both injected and regular params to the param scope.
     for (TemplateParam param : node.getAllParams()) {
-      localVariables.define(param);
+      localVariables.define(param, node);
     }
 
     visitSoyNode(node);
@@ -236,7 +244,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     visitExpressions(node);
     // Now after the let-block is complete, define the new variable
     // in the current scope.
-    localVariables.define(node.getVar());
+    localVariables.define(node.getVar(), node);
   }
 
   @Override protected void visitLetContentNode(LetContentNode node) {
@@ -246,7 +254,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     localVariables.enterLazyScope();
     visitChildren(node);
     localVariables.exitLazyScope();
-    localVariables.define(node.getVar());
+    localVariables.define(node.getVar(), node);
   }
 
   @Override protected void visitForNode(ForNode node) {
@@ -254,7 +262,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     visitExpressions(node);
 
     localVariables.enterScope();
-    localVariables.define(node.getVar());
+    localVariables.define(node.getVar(), node);
 
     // Visit the node body
     visitChildren(node);
@@ -267,7 +275,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Create a scope to hold the iteration variable
     localVariables.enterScope();
-    localVariables.define(node.getVar());
+    localVariables.define(node.getVar(), node);
 
     // Visit the node body
     visitChildren(node);
