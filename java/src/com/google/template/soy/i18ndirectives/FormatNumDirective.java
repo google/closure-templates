@@ -18,7 +18,6 @@ package com.google.template.soy.i18ndirectives;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Provider;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.NumberData;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 /**
  * A directive that formats an input number based on Locale of the current SoyMsgBundle.

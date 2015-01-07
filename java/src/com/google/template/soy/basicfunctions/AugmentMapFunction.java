@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyMap;
@@ -33,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Soy function that creates a new map equivalent to augmenting an existing map with additional

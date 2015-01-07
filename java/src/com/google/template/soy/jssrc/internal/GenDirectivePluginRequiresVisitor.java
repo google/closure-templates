@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
-import com.google.inject.Inject;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -26,6 +25,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import java.util.Map;
 import java.util.SortedSet;
+import javax.inject.Inject;
 
 /**
  * A visitor to generate a set of Closure JS library names required by the plugins used by this

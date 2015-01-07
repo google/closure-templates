@@ -17,8 +17,6 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -28,6 +26,8 @@ import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
 import java.util.List;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 
 /**

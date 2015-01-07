@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.inject.Inject;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.coredirectives.CoreDirectiveUtils;
@@ -36,6 +35,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import java.util.Map;
+import javax.inject.Inject;
 
 
 /**

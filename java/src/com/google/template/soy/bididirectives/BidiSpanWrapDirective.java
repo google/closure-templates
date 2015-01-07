@@ -17,8 +17,6 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -37,6 +35,8 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 
 /**
  * A directive that maybe wraps the output within a 'span' with dir=ltr or dir=rtl. This wrapping
