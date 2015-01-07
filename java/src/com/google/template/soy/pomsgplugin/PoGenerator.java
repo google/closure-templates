@@ -9,6 +9,9 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+
+import com.google.common.collect.ImmutableList;
+
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -160,13 +163,9 @@ public class PoGenerator {
    * Extracts the PO style plural message from the SoyMsgPluralPart.
    * @throws PoException
    */
-  static String generatePluralMessage(SoyMsgPluralPart msgPart)
-          throws PoException {
+  static String generatePluralMessage(SoyMsgPluralPart msgPart) throws PoException {
     StringBuilder msgBuilder = new StringBuilder();
-
-    for (Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>> pluralPart :
-            msgPart.getCases()) {
-
+    for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> pluralPart : msgPart.getCases()) {
       if (pluralPart.first.getType() == SoyMsgPluralCaseSpec.Type.EXPLICIT &&
           pluralPart.first.getExplicitValue() == 1) {
         msgBuilder.append("msgid \"");

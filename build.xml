@@ -79,8 +79,8 @@ Author: Neil Sanchala
     <!-- Java compilation. -->
     <javac srcdir="${java.src.dir}:${build.genfiles.dir}"
            destdir="${build.classes.dir}"
-           source="1.7"
-           target="1.7"
+           source="1.8"
+           target="1.8"
            includeAntRuntime="true"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />
@@ -652,8 +652,8 @@ Author: Neil Sanchala
     <mkdir dir="${build.testclasses.dir}" />
     <javac srcdir="${java.tests.dir}"
            destdir="${build.testclasses.dir}"
-           source="1.7"
-           target="1.7"
+           source="1.8"
+           target="1.8"
            includeAntRuntime="false"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />

@@ -15,6 +15,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -91,8 +92,8 @@ public class PoParser {
 
   private static SoyMsgPluralPart parsePluralTranslation(String translationLines) {
 
-    ArrayList<Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>>> cases;
-    cases = new ArrayList<Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>>>();
+    ArrayList<Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>> cases
+        = new ArrayList<Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>>();
 
     Scanner scanner = new Scanner(translationLines);
     scanner.useDelimiter("\n");
@@ -101,7 +102,7 @@ public class PoParser {
       cases.add(parsePluralTranslationLine(scanner.nextLine()));
     }
 
-    return new SoyMsgPluralPart("varName", 0, cases);
+    return new SoyMsgPluralPart("varName", 0, ImmutableList.copyOf(cases));
   }
 
   private static void parseTranslationLine(String translationLine, ArrayList<SoyMsgPart> parts) {
@@ -121,7 +122,7 @@ public class PoParser {
       if (inVariableToken) {
         parts.add(new SoyMsgPlaceholderPart(scanner.next()));
       } else {
-        parts.add(new SoyMsgRawTextPart(scanner.next()));
+        parts.add(SoyMsgRawTextPart.of(scanner.next()));
       }
       inVariableToken = !inVariableToken;
     }
@@ -129,12 +130,12 @@ public class PoParser {
     if (scanner.hasNextLine()) {
       String remainder = scanner.nextLine();
       if (remainder.length() > 0) {
-        parts.add(new SoyMsgRawTextPart(remainder));
+        parts.add(SoyMsgRawTextPart.of(remainder));
       }
     }
   }
 
-  private static Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>> parsePluralTranslationLine(String translationLine) {
+  private static Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> parsePluralTranslationLine(String translationLine) {
     int n;
     Scanner scanner = new Scanner(translationLine);
     scanner.useDelimiter("\\[|\\]");
@@ -149,10 +150,6 @@ public class PoParser {
 
     parseTranslationLine(scanner.nextLine(), parts);
 
-    return new Pair<SoyMsgPluralCaseSpec, List<SoyMsgPart>>(caseSpec, parts);
-
+    return new Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>(caseSpec, ImmutableList.copyOf(parts));
   }
-
-
-
 }
