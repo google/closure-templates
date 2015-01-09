@@ -17,7 +17,6 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Singleton;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -32,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Soy function that gets the bidi directionality of a text string (1 for LTR, -1 for RTL, or

@@ -17,8 +17,6 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
@@ -31,6 +29,8 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 
 /**
  * Soy function that returns the current global bidi directionality (1 for LTR or -1 for RTL).

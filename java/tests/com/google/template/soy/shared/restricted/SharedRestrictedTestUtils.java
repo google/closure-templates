@@ -16,10 +16,10 @@
 
 package com.google.template.soy.shared.restricted;
 
-import com.google.inject.Provider;
-
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+
+import javax.inject.Provider;
 
 
 /**

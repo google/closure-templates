@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
@@ -37,6 +36,7 @@ import com.google.template.soy.sharedpasses.SharedPassesModule;
 
 import java.util.Map;
 import java.util.Set;
+import javax.inject.Singleton;
 
 
 /**
