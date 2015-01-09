@@ -19656,7 +19656,7 @@ goog.string.StringBuffer.prototype.toString = function() {
   return this.buffer_;
 };
 
-//third_party/java_src/soy/javascript/soyutils_usegoog.js
+//javascript/template/soy/soyutils_usegoog.js
 /*
  * Copyright 2008 Google Inc.
  *
