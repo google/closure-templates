@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -363,6 +364,13 @@ public class BaseTofu implements SoyTofu {
       rv.exec(template);
 
     } catch (RenderException re) {
+      Throwable e = re;
+      while (e.getCause() != null) {
+        if (e instanceof SoyDataException) {
+          throw (SoyDataException) e;
+        }
+        e = e.getCause();
+      }
       throw new SoyTofuException(re);
     }
 
