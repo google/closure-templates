@@ -230,7 +230,7 @@ def type_safe_add(*args):
       if arg is None:
         result += False
       else:
-        result = _convert_to_js_string(result) + arg
+        result = _convert_to_js_string(result) + _convert_to_js_string(arg)
         is_string = True
 
   return result
