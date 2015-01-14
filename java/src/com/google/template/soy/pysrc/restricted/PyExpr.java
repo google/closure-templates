@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jssrc.restricted;
+package com.google.template.soy.pysrc.restricted;
 
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
 /**
- * Value class to represent a JS expression. Includes the text of the expression as well as the
+ * Value class to represent a Python expression. Includes the text of the expression as well as the
  * precedence of the top-most operator.
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * <p> Note that while all behavior of JsExpr matches TargetExpr, the class serves to differentiate
+ * <p> Note that while all behavior of PyExpr matches TargetExpr, the class serves to differentiate
  * between languages and retain plugin behavior.
  *
  */
-public final class JsExpr extends TargetExpr {
+public final class PyExpr extends TargetExpr {
 
   /**
-   * @param text The JS expression text.
+   * @param text The Python expression text.
    * @param precedence The precedence of the top-most operator. Or Integer.MAX_VALUE.
    */
-  public JsExpr(String text, int precedence) {
+  public PyExpr(String text, int precedence) {
     super(text, precedence);
   }
 }
