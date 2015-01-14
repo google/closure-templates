@@ -169,7 +169,12 @@ public class JsSrcUtils {
           if (JsSrcUtils.isDefaultOptional(memberType)) {
             hasNullableMember = true;
           }
-          typeNames.add(getJsTypeExpr(memberType, false, !isNullable));
+          String typeExpr = getJsTypeExpr(memberType, false, !isNullable);
+          if (typeExpr.equals("?")) {
+            // Add parens to avoid confusion w/ the leading ? of a nullable type
+            return "(?)";
+          }
+          typeNames.add(typeExpr);
         }
         if (isNullable && !hasNullableMember) {
           typeNames.add("null");
