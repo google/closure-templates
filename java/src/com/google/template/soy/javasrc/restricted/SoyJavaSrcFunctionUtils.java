@@ -16,11 +16,7 @@
 
 package com.google.template.soy.javasrc.restricted;
 
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 
 
@@ -38,24 +34,6 @@ public class SoyJavaSrcFunctionUtils {
 
 
   /**
-   * Creates a new JavaExpr with the given exprText and type BooleanData.
-   * @param exprText The Java expression text.
-   */
-  public static JavaExpr toBooleanJavaExpr(String exprText) {
-    return new JavaExpr(exprText, BooleanData.class, Integer.MAX_VALUE);
-  }
-
-
-  /**
-   * Creates a new JavaExpr with the given exprText and type IntegerData.
-   * @param exprText The Java expression text.
-   */
-  public static JavaExpr toIntegerJavaExpr(String exprText) {
-    return new JavaExpr(exprText, IntegerData.class, Integer.MAX_VALUE);
-  }
-
-
-  /**
    * Creates a new JavaExpr with the given exprText and type FloatData.
    * @param exprText The Java expression text.
    */
@@ -65,29 +43,11 @@ public class SoyJavaSrcFunctionUtils {
 
 
   /**
-   * Creates a new JavaExpr with the given exprText and type NumberData.
-   * @param exprText The Java expression text.
-   */
-  public static JavaExpr toNumberJavaExpr(String exprText) {
-    return new JavaExpr(exprText, NumberData.class, Integer.MAX_VALUE);
-  }
-
-
-  /**
    * Creates a new JavaExpr with the given exprText and type StringData.
    * @param exprText The Java expression text.
    */
   public static JavaExpr toStringJavaExpr(String exprText) {
     return new JavaExpr(exprText, StringData.class, Integer.MAX_VALUE);
-  }
-
-
-  /**
-   * Creates a new JavaExpr with the given exprText and type SoyData.
-   * @param exprText The Java expression text.
-   */
-  public static JavaExpr toUnknownJavaExpr(String exprText) {
-    return new JavaExpr(exprText, SoyData.class, Integer.MAX_VALUE);
   }
 
 }

@@ -167,14 +167,6 @@ public final class Sanitizers {
 
 
   /**
-   * Converts plain text to HTML by entity escaping.
-   */
-  public static String escapeHtmlRcdata(String value) {
-    return EscapingConventions.EscapeHtml.INSTANCE.escape(value);
-  }
-
-
-  /**
    * Normalizes HTML to HTML making sure quotes and other specials are entity encoded.
    */
   public static String normalizeHtml(SoyValue value) {

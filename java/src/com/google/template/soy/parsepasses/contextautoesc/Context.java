@@ -153,24 +153,6 @@ public final class Context {
         this : new Context(state, elType, attrType, delimType, slashType, uriPart);
   }
 
-  /** Returns a context that differs only in the element type. */
-  public Context derive(ElementType elType) {
-    return elType == this.elType ?
-        this : new Context(state, elType, attrType, delimType, slashType, uriPart);
-  }
-
-  /** Returns a context that differs only in the attribute type. */
-  public Context derive(AttributeType attrType) {
-    return attrType == this.attrType ?
-        this : new Context(state, elType, attrType, delimType, slashType, uriPart);
-  }
-
-  /** Returns a context that differs only in the attribute end delimiter. */
-  public Context derive(AttributeEndDelimiter delimType) {
-    return delimType == this.delimType ?
-        this : new Context(state, elType, attrType, delimType, slashType, uriPart);
-  }
-
   /** Returns a context that differs only in the following slash. */
   public Context derive(JsFollowingSlash slashType) {
     return slashType == this.slashType ?

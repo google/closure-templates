@@ -66,16 +66,6 @@ public class SoyBidiUtils {
 
 
   /**
-   * Decodes the bidi global directionality from an integer.
-   * @param bidiGlobalDir 1: ltr, -1: rtl, 0: unspecified. Checks that no other value is used.
-   * @return BidiGlobalDir object - or null if bidiGlobalDir is 0.
-   */
-  public static BidiGlobalDir decodeBidiGlobalDir(int bidiGlobalDir) {
-    return decodeBidiGlobalDirFromJsOptions(bidiGlobalDir, false);
-  }
-
-
-  /**
    * Decodes the bidi global directionality from the usual command line options used to specify
    * it. Checks that at most one of the options was specified.
    * @param bidiGlobalDir 1: ltr, -1: rtl, 0: unspecified.

@@ -88,13 +88,11 @@ public abstract class Environment {
   private static final class Impl extends Environment {
     final SoyValueProvider[] localVariableTable;
     final SoyRecord data;
-    final SoyRecord ijData;
     
     Impl(TemplateNode template, SoyRecord data, SoyRecord ijData) {
       // seed the lvt with the params
       this.localVariableTable = new SoyValueProvider[template.getMaxLocalVariableTableSize()];
       this.data = data;
-      this.ijData = ijData;
       for (TemplateParam param : template.getAllParams()) {
         SoyValueProvider provider = 
             (param.isInjected() ? ijData : data).getFieldProvider(param.name());

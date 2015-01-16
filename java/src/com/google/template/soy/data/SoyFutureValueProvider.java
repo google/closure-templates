@@ -72,11 +72,6 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
     this.future = future;
   }
 
-  /** Returns true if the wrapped future is done. */
-  public boolean isDone() {
-    return future.isDone();
-  }
-
 
   /**
    * Calls Future.get() and then converts the result to SoyValue. Note that

@@ -33,11 +33,6 @@ public final class ErrorType implements SoyType {
   }
 
 
-  public String getName() {
-    return name;
-  }
-
-
   @Override public Kind getKind() {
     return Kind.ERROR;
   }

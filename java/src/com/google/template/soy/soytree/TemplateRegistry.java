@@ -51,14 +51,11 @@ public class TemplateRegistry {
   @Immutable
   public static class DelegateTemplateDivision {
 
-    /** The priority value for the delegate templates in this division. */
-    public final int delPriority;
     /** Map of all delegate templates in this division, by delegate package name. */
     public final Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap;
 
     public DelegateTemplateDivision(
         int delPriority, Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap) {
-      this.delPriority = delPriority;
       this.delPackageNameToDelTemplateMap =
           Collections.unmodifiableMap(Maps.newLinkedHashMap(delPackageNameToDelTemplateMap));
     }
@@ -262,19 +259,6 @@ public class TemplateRegistry {
       divisionsForAllVariants.addAll(delTemplatesMap.get(delTemplateKey));
     }
     return divisionsForAllVariants;
-  }
-
-
-  /**
-   * Retrieves the list of {@code DelegateTemplateDivision}s (sorted in descending priority order)
-   * given a delegate template key (name and variant).
-   * @param delTemplateKey The delegate template key (name and variant) to retrieve.
-   * @return The corresponding list of {@code DelegateTemplateDivision}s (sorted in descencing
-   *     priority order), or null if the delegate template key is not implemented.
-   */
-  public List<DelegateTemplateDivision> getSortedDelTemplateDivisions(
-      DelTemplateKey delTemplateKey) {
-    return delTemplatesMap.get(delTemplateKey);
   }
 
 

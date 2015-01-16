@@ -40,11 +40,4 @@ public enum Dir {
   Dir(int ord) {
     this.ord = ord;
   }
-
-  /**
-   * Returns whether this directionality is opposite to the given directionality.
-   */
-  public boolean isOppositeTo(Dir dir) {
-    return this.ord * dir.ord < 0;
-  }
 }

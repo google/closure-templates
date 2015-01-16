@@ -135,12 +135,6 @@ public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNod
   }
 
 
-  /** The text of all the args. */
-  public String getArgsText() {
-    return argsText;
-  }
-
-
   /** The parsed args. */
   public List<ExprRootNode<?>> getArgs() {
     return args;

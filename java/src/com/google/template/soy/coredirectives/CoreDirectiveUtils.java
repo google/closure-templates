@@ -36,18 +36,4 @@ public class CoreDirectiveUtils {
            directiveName.equals(EscapeHtmlDirective.NAME);
   }
 
-
-  public static boolean isNoAutoescapeOrIdDirective(PrintDirectiveNode directiveNode) {
-
-    String directiveName = directiveNode.getName();
-    return directiveName.equals(IdDirective.NAME) ||
-           directiveName.equals(NoAutoescapeDirective.NAME);
-  }
-
-
-  public static boolean isEscapeHtmlDirective(PrintDirectiveNode directiveNode) {
-
-    return directiveNode.getName().equals(EscapeHtmlDirective.NAME);
-  }
-
 }

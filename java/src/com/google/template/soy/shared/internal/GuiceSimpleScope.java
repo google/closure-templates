@@ -165,16 +165,6 @@ public class GuiceSimpleScope implements Scope {
   }
 
 
-  /**
-   * Gets a value in the current occurrence of this scope.
-   * @param class0 The class to get.
-   * @return The scoped value for the given class.
-   */
-  public <T> T getForTesting(Class<T> class0) {
-    return getForTesting(Key.get(class0));
-  }
-
-
   @Override public <T> Provider<T> scope(final Key<T> key, final Provider<T> unscopedProvider) {
 
     return new Provider<T>() {

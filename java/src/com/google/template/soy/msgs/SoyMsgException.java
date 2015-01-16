@@ -62,14 +62,6 @@ public class SoyMsgException extends RuntimeException {
   }
 
 
-  /**
-   * Returns the name of the file or resource associated with this error.
-   */
-  public String getFileOrResourceName() {
-    return fileOrResourceName;
-  }
-
-
   @Override public String getMessage() {
     if (fileOrResourceName != null) {
       return "While processing \"" + fileOrResourceName + "\": " + super.getMessage();

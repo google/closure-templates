@@ -132,21 +132,6 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
 
-  /**
-   * Helper to visit all the children of a node, in order.
-   *
-   * This method differs from {@code visitChildren} in that we are iterating through a copy of the
-   * children. Thus, concurrent modification of the list of children is allowed.
-   *
-   * @param node The parent node whose children to visit.
-   * @return The list of return values from visiting the children.
-   * @see #visitChildren
-   */
-  protected List<R> visitChildrenAllowingConcurrentModification(ParentExprNode node) {
-    return visitChildrenAllowingConcurrentModification((ParentNode<ExprNode>) node);
-  }
-
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for misc nodes.
 

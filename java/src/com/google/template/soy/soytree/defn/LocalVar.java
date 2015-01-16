@@ -48,15 +48,6 @@ public class LocalVar extends AbstractVarDefn {
     return Kind.LOCAL_VAR;
   }
 
-
-  /**
-   * @return The node in which this variable was defined; This is used
-   *     during analysis to infer the variable type.
-   */
-  public SoyNode declaringNode() {
-    return declaringNode;
-  }
-
   /**
    * Setter for the type - this is necessary because sometimes we don't know
    * the variable type until after analysis.

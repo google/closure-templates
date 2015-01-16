@@ -576,7 +576,7 @@ public final class ContentSecurityPolicyPass {
      * distinguish between human readable strings, strings in various structured languages, and
      * opaque identifiers.
      */
-    public StringType type() {
+    @Override public StringType type() {
       return StringType.getInstance();
     }
 

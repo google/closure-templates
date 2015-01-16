@@ -19,7 +19,6 @@ package com.google.template.soy.exprparse;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
 
 import java.util.List;
 
@@ -132,27 +131,6 @@ public class ExprParseUtils {
 
     try {
       return (new ExpressionParser(exprText)).parseDataReference();
-    } catch (TokenMgrError tme) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, tme);
-    } catch (ParseException pe) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, pe);
-    }
-  }
-
-
-  /**
-   * Attempts to parse the given exprText as a Soy global. If successful, returns the
-   * global. If unsuccessful, throws a SoySyntaxException.
-   *
-   * @param exprText The text to parse.
-   * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
-   * @return The parsed global.
-   */
-  public static ExprRootNode<GlobalNode> parseGlobalElseThrowSoySyntaxException(
-      String exprText, String errorMsg) {
-
-    try {
-      return (new ExpressionParser(exprText)).parseGlobal();
     } catch (TokenMgrError tme) {
       throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, tme);
     } catch (ParseException pe) {

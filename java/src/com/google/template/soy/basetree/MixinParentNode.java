@@ -80,25 +80,6 @@ public final class MixinParentNode<N extends Node> {
 
 
   /**
-   * Sets whether this node needs an env frame when the template is being interpreted.
-   * @param needsEnvFrameDuringInterp Whether this node needs an env frame during interpretation,
-   *     or null if unknown.
-   */
-  public void setNeedsEnvFrameDuringInterp(Boolean needsEnvFrameDuringInterp) {
-    this.needsEnvFrameDuringInterp = needsEnvFrameDuringInterp;
-  }
-
-
-  /**
-   * Returns whether this node needs an env frame during interpretation, or null if unknown.
-   * @return Whether this node needs an env frame during interpretation, or null if unknown.
-   */
-  public Boolean needsEnvFrameDuringInterp() {
-    return needsEnvFrameDuringInterp;
-  }
-
-
-  /**
    * Gets the number of children.
    * @return The number of children.
    */

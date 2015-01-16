@@ -75,11 +75,6 @@ public final class SlicedRawTextNode {
       return startOffset;
     }
 
-    /** The end offset (exclusive) into the text node's text. */
-    public int getEndOffset() {
-      return endOffset;
-    }
-
     /** The length of the slice in {@code char}s. */
     public int getLength() {
       return endOffset - startOffset;
@@ -222,11 +217,6 @@ public final class SlicedRawTextNode {
 
   public List<RawTextSlice> getSlices() {
     return Collections.unmodifiableList(slices);
-  }
-
-  /** The context in which the text node starts. */
-  public Context getStartContext() {
-    return startContext;
   }
 
   /** The context in which the text node ends. */

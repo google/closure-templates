@@ -16,9 +16,6 @@
 
 package com.google.template.soy.internal.base;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.io.IOException;
 
 /**
  * Utility functions for dealing with {@code CharEscaper}s, and some commonly
@@ -28,57 +25,6 @@ import java.io.IOException;
 public final class CharEscapers {
 
   private CharEscapers() {}
-
-  /**
-   * Performs no escaping.
-   */
-  private static final CharEscaper NULL_ESCAPER = new CharEscaper() {
-      @Override
-      public String escape(String string) {
-        checkNotNull(string);
-        return string;
-      }
-
-      @Override
-      public Appendable escape(final Appendable out) {
-        checkNotNull(out);
-
-        // we can't simply return out because the CharEscaper contract says that
-        // the returned Appendable will throw a NullPointerException if asked to
-        // append null.
-        return new Appendable() {
-            @Override public Appendable append(CharSequence csq) throws IOException {
-              checkNotNull(csq);
-              out.append(csq);
-              return this;
-            }
-
-            @Override public Appendable append(CharSequence csq, int start, int end)
-                throws IOException {
-              checkNotNull(csq);
-              out.append(csq, start, end);
-              return this;
-            }
-
-            @Override public Appendable append(char c) throws IOException {
-              out.append(c);
-              return this;
-            }
-          };
-      }
-
-      @Override
-      protected char[] escape(char c) {
-        return null;
-      }
-    };
-
-  /**
-   * Returns a {@link CharEscaper} that does no escaping.
-   */
-  public static CharEscaper nullEscaper() {
-    return NULL_ESCAPER;
-  }
 
   /**
    * Returns a {@link CharEscaper} instance that escapes special characters in a
@@ -429,116 +375,6 @@ public final class CharEscapers {
       .toEscaper();
 
   /**
-   * Returns an {@link Escaper} instance that escapes Java chars so they can be
-   * safely included in URIs. For details on escaping URIs, see section 2.4 of
-   * <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>.
-   *
-   * <p>When encoding a String, the following rules apply:
-   * <ul>
-   * <li>The alphanumeric characters "a" through "z", "A" through "Z" and "0"
-   *     through "9" remain the same.
-   * <li>The special characters ".", "-", "*", and "_" remain the same.
-   * <li>The space character " " is converted into a plus sign "+".
-   * <li>All other characters are converted into one or more bytes using UTF-8
-   *     encoding and each byte is then represented by the 3-character string
-   *     "%XY", where "XY" is the two-digit, uppercase, hexadecimal
-   *     representation of the byte value.
-   * <ul>
-   *
-   * <p><b>Note</b>: Unlike other escapers, URI escapers produce uppercase
-   * hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
-   * RFC 3986</a>:<br>
-   * <i>"URI producers and normalizers should use uppercase hexadecimal digits
-   * for all percent-encodings."</i>
-   *
-   * <p>This escaper has identical behavior to (but is potentially much faster
-   * than):
-   * <ul>
-   * <li>{@link com.google.common.net.UriEncoder#encode(String)}
-   * <li>{@link com.google.common.net.UriEncoder#encode(String,java.nio.charset.Charset)}
-   *     with the UTF_8 Charset
-   * <li>{@link java.net.URLEncoder#encode(String, String)}
-   *     with the encoding name "UTF-8"
-   * </ul>
-   *
-   * <p>This method is equivalent to {@code uriEscaper(true)}.
-   */
-  public static Escaper uriEscaper() {
-    return uriEscaper(true);
-  }
-
-  /**
-   * Returns an {@link Escaper} instance that escapes Java chars so they can be
-   * safely included in URI path segments. For details on escaping URIs, see
-   * section 2.4 of <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
-   *
-   * <p>When encoding a String, the following rules apply:
-   * <ul>
-   * <li>The alphanumeric characters "a" through "z", "A" through "Z" and "0"
-   *     through "9" remain the same.
-   * <li>The unreserved characters ".", "-", "~", and "_" remain the same.
-   * <li>The general delimiters "@" and ":" remain the same.
-   * <li>The subdelimiters "!", "$", "&amp;", "'", "(", ")", "*", ",", ";",
-   *     and "=" remain the same.
-   * <li>The space character " " is converted into %20.
-   * <li>All other characters are converted into one or more bytes using UTF-8
-   *     encoding and each byte is then represented by the 3-character string
-   *     "%XY", where "XY" is the two-digit, uppercase, hexadecimal
-   *     representation of the byte value.
-   * </ul>
-   *
-   * <p><b>Note</b>: Unlike other escapers, URI escapers produce uppercase
-   * hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
-   * RFC 3986</a>:<br>
-   * <i>"URI producers and normalizers should use uppercase hexadecimal digits
-   * for all percent-encodings."</i>
-   */
-  public static Escaper uriPathEscaper() {
-    return URI_PATH_ESCAPER;
-  }
-
-  /**
-   * Returns an {@link Escaper} instance that escapes Java chars so they can be
-   * safely included in URI query string segments. When the query string
-   * consists of a sequence of name=value pairs separated by &amp;, the names
-   * and values should be individually encoded. If you escape an entire query
-   * string in one pass with this escaper, then the "=" and "&amp;" characters
-   * used as separators will also be escaped.
-   *
-   * <p>This escaper is also suitable for escaping fragment identifiers.
-   *
-   * <p>For details on escaping URIs, see
-   * section 2.4 of <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
-   *
-   * <p>When encoding a String, the following rules apply:
-   * <ul>
-   * <li>The alphanumeric characters "a" through "z", "A" through "Z" and "0"
-   *     through "9" remain the same.
-   * <li>The unreserved characters ".", "-", "~", and "_" remain the same.
-   * <li>The general delimiters "@" and ":" remain the same.
-   *  <li>The path delimiters "/" and "?" remain the same.
-   * <li>The subdelimiters "!", "$", "'", "(", ")", "*", ",", and ";",
-   *     remain the same.
-   * <li>The space character " " is converted into %20.
-   * <li>The equals sign "=" is converted into %3D.
-   * <li>The ampersand "&amp;" is converted into %26.
-   * <li>All other characters are converted into one or more bytes using UTF-8
-   *     encoding and each byte is then represented by the 3-character string
-   *     "%XY", where "XY" is the two-digit, uppercase, hexadecimal
-   *     representation of the byte value.
-   * </ul>
-   *
-   * <p><b>Note</b>: Unlike other escapers, URI escapers produce uppercase
-   * hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
-   * RFC 3986</a>:<br>
-   * <i>"URI producers and normalizers should use uppercase hexadecimal digits
-   * for all percent-encodings."</i>
-   */
-  public static Escaper uriQueryStringEscaper() {
-    return URI_QUERY_STRING_ESCAPER;
-  }
-
-  /**
    * Returns a {@link Escaper} instance that escapes Java characters so they can
    * be safely included in URIs. For details on escaping URIs, see section 2.4
    * of <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>.
@@ -581,55 +417,6 @@ public final class CharEscapers {
   private static final Escaper URI_ESCAPER_NO_PLUS =
       new PercentEscaper(PercentEscaper.SAFECHARS_URLENCODER, false);
 
-  private static final Escaper URI_PATH_ESCAPER =
-      new PercentEscaper(PercentEscaper.SAFEPATHCHARS_URLENCODER, false);
-
-  private static final Escaper URI_QUERY_STRING_ESCAPER =
-      new PercentEscaper(PercentEscaper.SAFEQUERYSTRINGCHARS_URLENCODER, false);
-
-  /**
-   * Returns a {@link Escaper} instance that escapes Java characters in a manner
-   * compatible with the C++ webutil/url URL class (the {@code kGoogle1Escape}
-   * set).
-   *
-   * <p>When encoding a String, the following rules apply:
-   * <ul>
-   * <li>The alphanumeric characters "a" through "z", "A" through "Z" and "0"
-   * through "9" remain the same.
-   * <li>The special characters "!", "(", ")", "*", "-", ".", "_", "~", ",", "/"
-   * and ":" remain the same.
-   * <li>The space character " " is converted into a plus sign "+".
-   * <li>All other characters are converted into one or more bytes using UTF-8
-   *     encoding and each byte is then represented by the 3-character string
-   *     "%XY", where "XY" is the two-digit, uppercase, hexadecimal
-   *     representation of the byte value.
-   * </ul>
-   *
-   * <p><b>Note</b>: Unlike other escapers, URI escapers produce uppercase
-   * hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
-   * RFC 3986</a>:<br>
-   * <i>"URI producers and normalizers should use uppercase hexadecimal digits
-   * for all percent-encodings."</i>
-   *
-   * <p><b>Note</b>: This escaper is a special case and is <em>not
-   * compliant</em> with <a href="http://www.ietf.org/rfc/rfc2396.txt">
-   * RFC 2396</a>. Specifically it will not escape "/", ":" and ",". This is
-   * only provided for certain limited use cases and you should favor using
-   * {@link #uriEscaper()} whenever possible.
-   */
-  public static Escaper cppUriEscaper() {
-    return CPP_URI_ESCAPER;
-  }
-
-  // Based on comments from FastURLEncoder:
-  // These octets mimic the ones escaped by the C++ webutil/url URL class --
-  // the kGoogle1Escape set.
-  // To produce the same escaping as C++, use this set with the plusForSpace
-  // option.
-  // WARNING: Contrary to RFC 2396 ",", "/" and ":" are listed as safe here.
-  private static final Escaper CPP_URI_ESCAPER =
-      new PercentEscaper("!()*-._~,/:", true);
-
   /**
    * Returns a {@link CharEscaper} instance that escapes special characters in a
    * string so it can safely be included in a Java string literal.
@@ -660,125 +447,6 @@ public final class CharEscapers {
           .addEscape('\\', "\\\\")
           .toArray());
 
-  /**
-   * Returns a {@link CharEscaper} instance that escapes special characters in a
-   * string so it can safely be included in a Java char or string literal. The
-   * behavior of this escaper is the same as that of the
-   * {@link #javaStringEscaper()}, except it also escapes single quotes.
-   */
-  public static CharEscaper javaCharEscaper() {
-    return JAVA_CHAR_ESCAPER;
-  }
-
-  /**
-   * Escapes special characters from a string so it can safely be included in a
-   * Java char literal or string literal.
-   *
-   * <p>Note that non-ASCII characters will be octal or Unicode escaped.
-   *
-   * <p>This is the same as {@link #JAVA_STRING_ESCAPER}, except that it escapes
-   * single quotes.
-   */
-  private static final CharEscaper JAVA_CHAR_ESCAPER
-      = new JavaCharEscaper(new CharEscaperBuilder()
-          .addEscape('\b', "\\b")
-          .addEscape('\f', "\\f")
-          .addEscape('\n', "\\n")
-          .addEscape('\r', "\\r")
-          .addEscape('\t', "\\t")
-          .addEscape('\'', "\\'")
-          .addEscape('\"', "\\\"")
-          .addEscape('\\', "\\\\")
-          .toArray());
-
-  /**
-   * Returns a {@link CharEscaper} instance that replaces non-ASCII characters
-   * in a string with their Unicode escape sequences ({@code \\uxxxx} where
-   * {@code xxxx} is a hex number). Existing escape sequences won't be affected.
-   */
-  public static CharEscaper javaStringUnicodeEscaper() {
-    return JAVA_STRING_UNICODE_ESCAPER;
-  }
-
-  /**
-   * Escapes each non-ASCII character in with its Unicode escape sequence
-   * {@code \\uxxxx} where {@code xxxx} is a hex number. Existing escape
-   * sequences won't be affected.
-   */
-  private static final CharEscaper JAVA_STRING_UNICODE_ESCAPER
-      = new CharEscaper() {
-          @Override protected char[] escape(char c) {
-            if (c <= 127) {
-              return null;
-            }
-
-            char[] r = new char[6];
-            r[5] = HEX_DIGITS[c & 15];
-            c = (char) (c >>> 4);
-            r[4] = HEX_DIGITS[c & 15];
-            c = (char) (c >>> 4);
-            r[3] = HEX_DIGITS[c & 15];
-            c = (char) (c >>> 4);
-            r[2] = HEX_DIGITS[c & 15];
-            r[1] = 'u';
-            r[0] = '\\';
-            return r;
-          }
-        };
-
-  /**
-   * Returns a {@link CharEscaper} instance that escapes special characters from
-   * a string so it can safely be included in a Python string literal. Does not
-   * have any special handling for non-ASCII characters.
-   */
-  public static CharEscaper pythonEscaper() {
-    return PYTHON_ESCAPER;
-  }
-
-  /**
-   * Escapes special characters in a string so it can safely be included in a
-   * Python string literal. Does not have any special handling for non-ASCII
-   * characters.
-   */
-  private static final CharEscaper PYTHON_ESCAPER = new CharEscaperBuilder()
-      // TODO: perhaps this should escape non-ASCII characters?
-      .addEscape('\n', "\\n")
-      .addEscape('\r', "\\r")
-      .addEscape('\t', "\\t")
-      .addEscape('\\', "\\\\")
-      .addEscape('\"', "\\\"")
-      .addEscape('\'', "\\\'")
-      .toEscaper();
-
-  /**
-   * Returns a {@link CharEscaper} instance that escapes non-ASCII characters in
-   * a string so it can safely be included in a Javascript string literal.
-   * Non-ASCII characters are replaced with their ASCII javascript escape
-   * sequences (e.g., \\uhhhh or \xhh).
-   */
-  public static CharEscaper javascriptEscaper() {
-    return JAVASCRIPT_ESCAPER;
-  }
-
-  /**
-   * {@code CharEscaper} to escape javascript strings. Turns all non-ASCII
-   * characters into ASCII javascript escape sequences (e.g., \\uhhhh or \xhh).
-   */
-  private static final CharEscaper JAVASCRIPT_ESCAPER
-      = new JavascriptCharEscaper(new CharEscaperBuilder()
-          .addEscape('\'', "\\x27")
-          .addEscape('"',  "\\x22")
-          .addEscape('<',  "\\x3c")
-          .addEscape('=',  "\\x3d")
-          .addEscape('>',  "\\x3e")
-          .addEscape('&',  "\\x26")
-          .addEscape('\b', "\\b")
-          .addEscape('\t', "\\t")
-          .addEscape('\n', "\\n")
-          .addEscape('\f', "\\f")
-          .addEscape('\r', "\\r")
-          .addEscape('\\', "\\\\")
-          .toArray());
 
   private static CharEscaperBuilder newBasicXmlEscapeBuilder() {
     return new CharEscaperBuilder()
@@ -792,33 +460,6 @@ public final class CharEscapers {
             '\022', '\023', '\024', '\025', '\026',
             '\027', '\030', '\031', '\032', '\033',
             '\034', '\035', '\036', '\037'}, "");
-  }
-
-  /**
-   * Returns a composite {@link CharEscaper} instance that tries to escape
-   * characters using a primary {@code CharEscaper} first and falls back to a
-   * secondary one if there is no escaping.
-   *
-   * <p>The returned escaper will attempt to escape each character using the
-   * primary escaper, and if the primary escaper has no escaping for that
-   * character, it will use the secondary escaper. If the secondary escaper has
-   * no escaping for a character either, the original character will be used.
-   * If the primary escaper has an escape for a character, the secondary escaper
-   * will not be used at all for that character; the escaped output of the
-   * primary is not run through the secondary. For a case where you would like
-   * to first escape with one escaper, and then with another, it is recommended
-   * that you call each escaper in order.
-   *
-   * @param primary The primary {@code CharEscaper} to use
-   * @param secondary The secondary {@code CharEscaper} to use if the first one
-   *     has no escaping rule for a character
-   * @throws NullPointerException if any of the arguments is null
-   */
-  public static CharEscaper fallThrough(CharEscaper primary,
-      CharEscaper secondary) {
-    checkNotNull(primary);
-    checkNotNull(secondary);
-    return new FallThroughCharEscaper(primary, secondary);
   }
 
   /**
@@ -911,57 +552,6 @@ public final class CharEscapers {
   }
 
   /**
-   * Escaper for javascript character escaping, contains both an array and a
-   * backup function. We're not overriding the array decorator because we
-   * want to keep this as fast as possible, so no calls to super.escape first.
-   */
-  private static class JavascriptCharEscaper extends FastCharEscaper {
-
-    public JavascriptCharEscaper(char[][] replacements) {
-      super(replacements, ' ', '~');
-    }
-
-    @Override protected char[] escape(char c) {
-      // First check if our array has a valid escaping.
-      if (c < replacementLength) {
-        char[] r = replacements[c];
-        if (r != null) {
-          return r;
-        }
-      }
-
-      // This range is unescaped.
-      if (safeMin <= c && c <= safeMax) {
-        return null;
-      }
-
-      // we can do a 2 digit hex escape for chars less that 0x100
-      if (c < 0x100) {
-        char[] r = new char[4];
-        r[3] = HEX_DIGITS[c & 0xf];
-        c = (char) (c >>> 4);
-        r[2] = HEX_DIGITS[c & 0xf];
-        r[1] = 'x';
-        r[0] = '\\';
-        return r;
-      }
-
-      // 4 digit hex escape everything else
-      char[] r = new char[6];
-      r[5] = HEX_DIGITS[c & 0xf];
-      c = (char) (c >>> 4);
-      r[4] = HEX_DIGITS[c & 0xf];
-      c = (char) (c >>> 4);
-      r[3] = HEX_DIGITS[c & 0xf];
-      c = (char) (c >>> 4);
-      r[2] = HEX_DIGITS[c & 0xf];
-      r[1] = 'u';
-      r[0] = '\\';
-      return r;
-    }
-  }
-
-  /**
    * Escaper for HTML character escaping, contains both an array and a
    * backup function.  We're not overriding the array decorator because we
    * want to keep this as fast as possible, so no calls to super.escape first.
@@ -1006,31 +596,6 @@ public final class CharEscapers {
       for (; index > 1; index--) {
         result[index] = HEX_DIGITS[intValue % 10];
         intValue /= 10;
-      }
-      return result;
-    }
-  }
-
-  /**
-   * A composite {@code CharEscaper} object that tries to escape characters
-   * using a primary {@code CharEscaper} first and falls back to a secondary
-   * one if there is no escaping.
-   */
-  private static class FallThroughCharEscaper extends CharEscaper {
-
-    private final CharEscaper primary;
-    private final CharEscaper secondary;
-
-    public FallThroughCharEscaper(CharEscaper primary, CharEscaper secondary) {
-      this.primary = primary;
-      this.secondary = secondary;
-    }
-
-    @Override
-    protected char[] escape(char c) {
-      char result[] = primary.escape(c);
-      if (result == null) {
-        result = secondary.escape(c);
       }
       return result;
     }

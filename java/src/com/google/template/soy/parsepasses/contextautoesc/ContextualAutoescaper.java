@@ -190,13 +190,6 @@ public final class ContextualAutoescaper {
   }
 
   /**
-   * For each print node, maps its node ID to the context in which it starts.
-   */
-  public Map<Integer, Context> getPrintNodeStartContexts() {
-    return inferences.getPrintNodeStartContexts();
-  }
-
-  /**
    * Maps ranges of text-nodes to contexts so that later parse passes can add attributes or
    * elements.
    */

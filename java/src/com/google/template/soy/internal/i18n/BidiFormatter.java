@@ -200,22 +200,6 @@ public class BidiFormatter {
   private final int flags;
 
   /**
-   * Factory for creating an instance of BidiFormatter given the context directionality and the
-   * desired span wrapping behavior (see below).
-   *
-   * @param contextDir The context directionality. Must not be NEUTRAL. It can be (Dir) null to
-   *     indicate that the context is unknown, but this is not recommended: the wrapping methods
-   *     then wrap text of either directionality, and cannot "reset" the directionality back to the
-   *     context.
-   * @param alwaysSpan Whether {@link #spanWrap} (and its variations) should always use a 'span'
-   *     element, even when the input directionality is neutral or matches the context, so that the
-   *     DOM structure of the output does not depend on the combination of directionalities
-   */
-  public static BidiFormatter getInstance(@Nullable Dir contextDir, boolean alwaysSpan) {
-    return new Builder(contextDir).alwaysSpan(alwaysSpan).build();
-  }
-
-  /**
    * Factory for creating an instance of BidiFormatter given the context directionality. The
    * default behavior of {@link #spanWrap} and its variations is set to avoid span wrapping unless
    * there's a reason ('dir' attribute should be appended).
@@ -230,19 +214,6 @@ public class BidiFormatter {
   }
 
   /**
-   * Factory for creating an instance of BidiFormatter given the context directionality and the
-   * desired span wrapping behavior (see below).
-   *
-   * @param rtlContext Whether the context directionality is RTL
-   * @param alwaysSpan Whether {@link #spanWrap} (and its variations) should always use a 'span'
-   *     element, even when the input directionality is neutral or matches the context, so that the
-   *     DOM structure of the output does not depend on the combination of directionalities
-   */
-  public static BidiFormatter getInstance(boolean rtlContext, boolean alwaysSpan) {
-    return new Builder(rtlContext).alwaysSpan(alwaysSpan).build();
-  }
-
-  /**
    * Factory for creating an instance of BidiFormatter given the context directionality. The
    * default behavior of {@link #spanWrap} and its variations is set to avoid span wrapping unless
    * there's a reason ('dir' attribute should be appended).
@@ -251,30 +222,6 @@ public class BidiFormatter {
    */
   public static BidiFormatter getInstance(boolean rtlContext) {
     return new Builder(rtlContext).build();
-  }
-
-  /**
-   * Factory for creating an instance of BidiFormatter given the context locale and the desired
-   * span wrapping behavior (see below).
-   *
-   * @param locale The context locale
-   * @param alwaysSpan Whether {@link #spanWrap} (and its variations) should always use a 'span'
-   *     element, even when the input directionality is neutral or matches the context, so that the
-   *     DOM structure of the output does not depend on the combination of directionalities
-   */
-  public static BidiFormatter getInstance(ULocale locale, boolean alwaysSpan) {
-    return new Builder(locale).alwaysSpan(alwaysSpan).build();
-  }
-
-  /**
-   * Factory for creating an instance of BidiFormatter given the context locale. The default
-   * behavior of {@link #spanWrap} and its variations is set to avoid span wrapping unless there's a
-   * reason ('dir' attribute should be appended).
-   *
-   * @param locale The context locale
-   */
-  public static BidiFormatter getInstance(ULocale locale) {
-    return new Builder(locale).build();
   }
 
   /**
@@ -340,16 +287,6 @@ public class BidiFormatter {
    */
   public String dirAttrValue(String str, boolean isHtml) {
     return knownDirAttrValue(estimateDirection(str, isHtml));
-  }
-
-  /**
-   * Operates like {@link #dirAttrValue(String, boolean)}, but assumes {@code isHtml} is false.
-   *
-   * @param str String whose directionality is to be estimated
-   * @return "rtl" if {@code str}'s estimated directionality is RTL, and "ltr" otherwise.
-   */
-  public String dirAttrValue(String str) {
-    return dirAttrValue(str, false);
   }
 
   /**
@@ -860,15 +797,5 @@ public class BidiFormatter {
    */
   public static Dir estimateDirection(String str, boolean isHtml) {
     return BidiUtils.estimateDirection(str, isHtml);
-  }
-
-  /**
-   * Like {@link #estimateDirection(String, boolean)}, but assumes {@code isHtml} is false.
-   *
-   * @param str String whose directionality is to be estimated
-   * @return {@code str}'s estimated overall directionality
-   */
-  public static Dir estimateDirection(String str) {
-    return BidiUtils.estimateDirection(str);
   }
 }

@@ -94,13 +94,6 @@ public final class DerivedTemplateUtils {
     return separatorIndex < 0 ? templateName : templateName.substring(0, separatorIndex);
   }
 
-  /**
-   * A derived name for a template derived from the given base template and the given start context.
-   */
-  public static String getQualifiedName(String baseName, Context startContext) {
-    return getBaseName(baseName) + getSuffix(startContext);
-  }
-
   private DerivedTemplateUtils() {
     // Not instantiable.
   }

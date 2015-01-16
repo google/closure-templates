@@ -276,18 +276,6 @@ public class BaseUtils {
 
 
   /**
-   * Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the result
-   * as a hex value in string form.
-   *
-   * @param strToHash The string to compute SHA-1 of.
-   * @return The SHA-1 hash value as a hex string.
-   */
-  public static String computeSha1AsHexString(String strToHash) {
-    return computePartialSha1AsHexString(strToHash, 160);
-  }
-
-
-  /**
    * Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the first
    * numBits bits of the result as a hex value in string form.
    *

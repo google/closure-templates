@@ -847,40 +847,6 @@ public final class SoyFileSet {
 
 
   /**
-   * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
-   * compiled templates.
-   *
-   * @param useCaching Whether the resulting SoyTofu instance should cache intermediate results
-   *     after substitutions from the SoyMsgBundle and the SoyCssRenamingMap. It is recommended to
-   *     set this param to true if you're planning to reuse the SoyTofu instance to render multiple
-   *     times.
-   *
-   *     <p> Specifically, if this param is set to true, then
-   *     (a) The first time the SoyTofu is used with a new combination of SoyMsgBundle and
-   *         SoyCssRenamingMap, the render will be slower. (Note that this first-render slowness can
-   *         be eliminated by calling the method {@link SoyTofu#addToCache} to prime the cache.)
-   *     (b) The subsequent times the SoyTofu is used with an already-seen combination of
-   *         SoyMsgBundle and SoyCssRenamingMap, the render will be faster.
-   *
-   *     <p> The cache will use memory proportional to the number of distinct combinations of
-   *     SoyMsgBundle and SoyCssRenamingMap your app uses (note most apps have at most one
-   *     SoyCssRenamingMap). If you find memory usage to be a problem, you can manually control the
-   *     contents of the cache. See {@link SoyTofu.Renderer#setDontAddToCache} for details.
-   *
-   * @see #compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)
-   *
-   * @return The result of compiling this Soy file set into a Java object.
-   * @throws SoySyntaxException If a syntax error is found.
-   * @deprecated Use {@link #compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)}.
-   */
-  @Deprecated public SoyTofu compileToJavaObj(boolean useCaching) throws SoySyntaxException {
-    SoyTofuOptions options = new SoyTofuOptions();
-    options.setUseCaching(useCaching);
-    return compileToTofu(options);
-  }
-
-
-  /**
    * Compiles this Soy file set into JS source code files and returns these JS files as a list of
    * strings, one per file.
    *

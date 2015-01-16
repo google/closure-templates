@@ -107,12 +107,6 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   }
 
 
-  /** Returns the expression text. */
-  public String getExprText() {
-    return selectExpr.toSourceString();
-  }
-
-
   /** Returns the expression for the value to select on. */
   public ExprRootNode<?> getExpr() {
     return selectExpr;

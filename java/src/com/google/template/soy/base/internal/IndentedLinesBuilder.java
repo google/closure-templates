@@ -136,17 +136,6 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
 
 
   /**
-   * Sets the indent length.
-   * @param indentLen The new indent length.
-   */
-  public void setIndentLen(int indentLen) {
-    this.indentLen = indentLen;
-    Preconditions.checkState(0 <= indentLen && indentLen <= MAX_INDENT_LEN);
-    indent = SPACES.substring(0, indentLen);
-  }
-
-
-  /**
    * Appends a line. The indent at the start is automatically added whenever the line is nonempty
    * (nonzero number of params). The newline char at the end is always added.
    * @param parts The parts that make up the line.

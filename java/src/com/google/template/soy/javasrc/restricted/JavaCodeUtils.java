@@ -17,7 +17,6 @@
 package com.google.template.soy.javasrc.restricted;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -40,9 +39,6 @@ public class JavaCodeUtils {
 
   public static final String UTILS_LIB = "com.google.template.soy.javasrc.codedeps.SoyUtils";
 
-  public static final String NULL_DATA_INSTANCE =
-      "com.google.template.soy.data.restricted.NullData.INSTANCE";
-
   // group(1) is the number literal.
   private static final Pattern NUMBER_IN_PARENS = Pattern.compile("^[(]([0-9]+(?:[.][0-9]+)?)[)]$");
 
@@ -50,11 +46,6 @@ public class JavaCodeUtils {
   public static String genMaybeProtect(JavaExpr expr, int minSafePrecedence) {
     return (expr.getPrecedence() >= minSafePrecedence) ?
            expr.getText() : "(" + expr.getText() + ")";
-  }
-
-
-  public static String genNewBooleanData(String innerExprText) {
-    return "com.google.template.soy.data.restricted.BooleanData.forValue(" + innerExprText + ")";
   }
 
 
@@ -73,39 +64,6 @@ public class JavaCodeUtils {
   }
 
 
-  public static String genNewListData(String innerExprText) {
-    return "new com.google.template.soy.data.SoyListData(" + innerExprText + ")";
-  }
-
-
-  public static String genNewMapData(String innerExprText) {
-    return "new com.google.template.soy.data.SoyMapData(" + innerExprText + ")";
-  }
-
-
-  public static String genNewSanitizedContent(
-      String innerExprText, SanitizedContent.ContentKind contentKind) {
-    return "new " + SanitizedContent.class.getCanonicalName() + "(" + innerExprText + ", " +
-        SanitizedContent.ContentKind.class.getCanonicalName() + "." + contentKind.name() + ")";
-  }
-
-
-  public static String genCoerceBoolean(JavaExpr expr) {
-
-    // Special case: If the expr is wrapped by "BooleanData.forValue()", remove the
-    // "BooleanData.forValue" instead of generating silly code. We leave the parentheses because we
-    // don't know whether the inner expression needs protection.
-    String exprText = expr.getText();
-    if (exprText.startsWith("com.google.template.soy.data.restricted.BooleanData.forValue(")) {
-      return exprText.substring(
-          "com.google.template.soy.data.restricted.BooleanData.forValue".length());
-    }
-
-    // Normal case.
-    return genMaybeProtect(expr, Integer.MAX_VALUE) + ".toBoolean()";
-  }
-
-
   public static String genCoerceString(JavaExpr expr) {
 
     // Special case: If the expr is wrapped by "StringData.forValue()", remove the
@@ -119,22 +77,6 @@ public class JavaCodeUtils {
 
     // Normal case.
     return genMaybeProtect(expr, Integer.MAX_VALUE) + ".toString()";
-  }
-
-
-  public static String genBooleanValue(JavaExpr expr) {
-
-    // Special case: If the expr is wrapped by "BooleanData.forValue()", remove the
-    // "BooleanData.forValue" instead of generating silly code. We leave the parentheses because we
-    // don't know whether the inner expression needs protection.
-    String exprText = expr.getText();
-    if (exprText.startsWith("com.google.template.soy.data.restricted.BooleanData.forValue(")) {
-      return exprText.substring(
-          "com.google.template.soy.data.restricted.BooleanData.forValue".length());
-    }
-
-    // Normal case.
-    return genMaybeProtect(expr, Integer.MAX_VALUE) + ".booleanValue()";
   }
 
 
@@ -261,24 +203,8 @@ public class JavaCodeUtils {
   }
 
 
-  public static boolean isAlwaysTwoFloatsOrOneFloatOneInteger(JavaExpr expr0, JavaExpr expr1) {
-    return (isAlwaysFloat(expr0) && isAlwaysNumber(expr1)) ||
-           (isAlwaysFloat(expr1) && isAlwaysNumber(expr0));
-  }
-
-
   public static boolean isAlwaysAtLeastOneFloat(JavaExpr expr0, JavaExpr expr1) {
     return isAlwaysFloat(expr0) || isAlwaysFloat(expr1);
-  }
-
-
-  public static boolean isAlwaysAtLeastOneString(JavaExpr expr0, JavaExpr expr1) {
-    return isAlwaysString(expr0) || isAlwaysString(expr1);
-  }
-
-
-  public static String genUnaryOp(String operatorExprText, String operandExprText) {
-    return operatorExprText + " " + operandExprText;
   }
 
 
@@ -291,29 +217,6 @@ public class JavaCodeUtils {
   public static String genFunctionCall(
       String functionNameExprText, String... functionArgsExprTexts) {
     return functionNameExprText + "(" + Joiner.on(", ").join(functionArgsExprTexts) + ")";
-  }
-
-
-  public static JavaExpr genJavaExprForNumberToNumberBinaryFunction(
-      String javaFunctionName, String utilsLibFunctionName, JavaExpr arg0, JavaExpr arg1) {
-
-    if (isAlwaysTwoIntegers(arg0, arg1)) {
-      String exprText = genNewIntegerData(genFunctionCall(
-          javaFunctionName, genIntegerValue(arg0), genIntegerValue(arg1)));
-      return new JavaExpr(exprText, IntegerData.class, Integer.MAX_VALUE);
-
-    } else if (isAlwaysAtLeastOneFloat(arg0, arg1)) {
-      String exprText = genNewFloatData(genFunctionCall(
-          javaFunctionName, genFloatValue(arg0), genFloatValue(arg1)));
-      return new JavaExpr(exprText, FloatData.class, Integer.MAX_VALUE);
-
-    } else {
-      String exprText = genFunctionCall(
-          UTILS_LIB + "." + utilsLibFunctionName,
-          genMaybeCast(arg0, NumberData.class),
-          genMaybeCast(arg1, NumberData.class));
-      return new JavaExpr(exprText, NumberData.class, Integer.MAX_VALUE);
-    }
   }
 
 }

@@ -130,22 +130,4 @@ public class SoyTemplateInfo {
     return ijParamSet;
   }
 
-  /**
-   * Returns whether this template may have injected params indirectly used in external basic calls
-   * (i.e. calls to templates not defined in the bundle of Soy files being compiled together with
-   * this template).
-   */
-  public boolean mayHaveIjParamsInExternalCalls() {
-    return mayHaveIjParamsInExternalCalls;
-  }
-
-  /**
-   * Returns whether this template may have injected params indirectly used in external delegate
-   * calls (i.e. delegate calls that resolve to delegate implementations not defined in the bundle
-   * of Soy files being compiled together with this template).
-   */
-  public boolean mayHaveIjParamsInExternalDelCalls() {
-    return mayHaveIjParamsInExternalDelCalls;
-  }
-
 }
