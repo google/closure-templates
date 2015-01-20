@@ -16,7 +16,7 @@
 
 package com.google.template.soy.tofu;
 
-import com.google.common.base.Throwables;
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
 
@@ -39,11 +39,23 @@ public class SoyTofuException extends RuntimeException {
    * @param re The RenderException to copy.
    */
   public SoyTofuException(RenderException re) {
-    super(re.getMessage(), Throwables.getRootCause(re));
+    super(re.getMessage(), getRootCause(re));
     // At this point, the stack trace aggregation logic in RenderException can be considered done.
     // Set the stack trace of both the current SoyTofuException class as well as the
     // RenderException class.
     re.finalizeStackTrace();
     re.finalizeStackTrace(this);
+  }
+
+  private static Throwable getRootCause(Throwable e) {
+    while (e.getCause() != null) {
+      if (e instanceof SoyDataException) {
+        // Don't unwrap SoyDataException as they are handled differently, which could change the
+        // server error status
+        return e;
+      }
+      e = e.getCause();
+    }
+    return e;
   }
 }
