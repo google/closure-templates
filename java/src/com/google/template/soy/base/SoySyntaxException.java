@@ -172,7 +172,7 @@ public class SoySyntaxException extends RuntimeException {
     if (filePath != null) {
       // If srcLoc not yet set, then set it (with line number 0), else assert existing file path
       // equals new file path.
-      if (this.srcLoc == SourceLocation.UNKNOWN) {
+      if (this.srcLoc == null || this.srcLoc == SourceLocation.UNKNOWN) {
         this.srcLoc = new SourceLocation(filePath, 0);
       } else {
         Preconditions.checkState(this.srcLoc.getFilePath().equals(filePath));
