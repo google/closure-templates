@@ -79,8 +79,8 @@ Author: Neil Sanchala
     <!-- Java compilation. -->
     <javac srcdir="${java.src.dir}:${build.genfiles.dir}"
            destdir="${build.classes.dir}"
-           source="1.7"
-           target="1.7"
+           source="1.8"
+           target="1.8"
            includeAntRuntime="true"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />
@@ -125,8 +125,6 @@ Author: Neil Sanchala
       <zipgroupfileset dir="${java.lib.dir}">
         <include name="aopalliance.jar" />
         <include name="args4j*.jar" />
-        <include name="guava*.jar" />
-        <include name="icu4j*.jar" />
         <include name="javax.inject.jar" />
         <include name="jsr305.jar" />
       </zipgroupfileset>
@@ -649,8 +647,8 @@ Author: Neil Sanchala
     <mkdir dir="${build.testclasses.dir}" />
     <javac srcdir="${java.tests.dir}"
            destdir="${build.testclasses.dir}"
-           source="1.7"
-           target="1.7"
+           source="1.8"
+           target="1.8"
            includeAntRuntime="false"
            debug="${includeDebugInfo}">
       <classpath refid="classpath.path" />

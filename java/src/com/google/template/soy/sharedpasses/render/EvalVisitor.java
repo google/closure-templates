@@ -344,9 +344,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         // Bail out if base expression failed a null-safety check.
         return value;
       } else {
-        // This behavior is not ideal, but needed for compatibility with existing code.
-        // TODO: If feasible, find and fix existing instances, then throw RenderException here.
-        return UndefinedData.INSTANCE;
+        // PATCH(robfig): Throw RenderException due to non-nullsafe access on null.
+        throw new RenderException(String.format(
+              "While evaluating \"%s\", encountered null just before accessing \"%s\".",
+              dataAccess.toSourceString(),
+              dataAccess.getSourceStringSuffix()));
       }
     } else if (dataAccess.getType() != null &&
         value != null &&
