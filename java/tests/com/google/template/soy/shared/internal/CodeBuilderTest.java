@@ -35,7 +35,7 @@ public final class CodeBuilderTest extends TestCase {
     @Override
     public void initOutputVarIfNecessary() { /* NOOP */ }
     @Override
-    public void addToOutputVar(List<TargetExpr> targetExprs) { /* NOOP */ }
+    public void addToOutputVar(List<? extends TargetExpr> targetExprs) { /* NOOP */ }
   }
 
   public void testAppend() {

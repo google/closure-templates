@@ -75,10 +75,7 @@ final class JsCodeBuilder extends CodeBuilder<JsExpr> {
     this.codeStyle = codeStyle;
   }
 
-  /**
-   * Appends a full line/statement for initializing the current output variable.
-   */
-  public void initOutputVarIfNecessary() {
+  @Override public void initOutputVarIfNecessary() {
 
     if (getOutputVarIsInited()) {
       // Nothing to do since it's already initialized.
@@ -95,12 +92,7 @@ final class JsCodeBuilder extends CodeBuilder<JsExpr> {
     setOutputVarInited();
   }
 
-  /**
-   * Appends a line/statement with the concatenation of the given JS expressions saved to the
-   * current output variable.
-   * @param jsExprs One or more JS expressions to compute output.
-   */
-  public void addToOutputVar(List<JsExpr> jsExprs) {
+  @Override public void addToOutputVar(List<? extends JsExpr> jsExprs) {
 
     if (codeStyle == CodeStyle.STRINGBUILDER) {
       StringBuilder commaSeparatedJsExprsSb = new StringBuilder();

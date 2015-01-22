@@ -16,15 +16,21 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
+import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.ArrayList;
@@ -49,22 +55,39 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The contents of the generated Python files. */
   private List<String> pyFilesContents;
 
-  /** The PyCodeBuilder to build the current Python file being generated (during a run). */
-  private PyCodeBuilder pyCodeBuilder;
+  private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
+
+  private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
+
+  @VisibleForTesting protected PyCodeBuilder pyCodeBuilder;
+
+  private GenPyExprsVisitor genPyExprsVisitor;
 
   /**
    * @param runtimePath The module path for the runtime libraries.
+   * @param isComputableAsPyExprVisitor The IsComputableAsPyExprVisitor to use.
+   * @param genPyExprsVisitorFactory Factory for creating an instance of GenPyExprsVisitor.
    */
   @Inject
-  GenPyCodeVisitor(@RuntimePath String runtimePath) {
+  GenPyCodeVisitor(@RuntimePath String runtimePath,
+      IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
+      GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
     this.runtimePath = runtimePath;
+    this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
+    this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
   }
 
   @Override public List<String> exec(SoyNode node) {
-    pyFilesContents = new ArrayList<String>();
+    pyFilesContents = new ArrayList<>();
     pyCodeBuilder = null;
+    genPyExprsVisitor = null;
     visit(node);
     return pyFilesContents;
+  }
+
+  @VisibleForTesting
+  @Override protected void visit(SoyNode node) {
+    super.visit(node);
   }
 
 
@@ -83,7 +106,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Visit a SoyFileNode and generate it's Python ouptut.
+   * Visit a SoyFileNode and generate it's Python output.
    *
    * <p>This visitor generates the necessary imports and configuration needed for all Python output
    * files. This includes imports of runtime libraries, external templates called from within this
@@ -91,7 +114,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * <p>Template generation is deferred to other visitors.
    *
-   * Example Output:
+   * <p>Example Output:
    * <pre>
    * # coding=utf-8
    * """ This file was automatically generated from my-templates.soy.
@@ -145,6 +168,80 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyFilesContents.add(pyCodeBuilder.getCode());
     pyCodeBuilder = null;
   }
+
+  /**
+   * Visit a TemplateNode and generate a corresponding function.
+   *
+   * <p>Example:
+   * <pre>
+   * def myfunc(opt_data=None, opt_ijData=None):
+   *   output = ''
+   *   ...
+   *   ...
+   *   return output
+   * </pre>
+   */
+  @Override protected void visitTemplateNode(TemplateNode node) {
+    genPyExprsVisitor = genPyExprsVisitorFactory.create();
+
+    // Generate function definition up to colon.
+    pyCodeBuilder.appendLine(
+        "def ",
+        node.getPartialTemplateName().substring(1),
+        "(opt_data=None, opt_ijData=None):");
+    pyCodeBuilder.increaseIndent();
+
+    generateFunctionBody(node);
+
+    // Dedent to end the function.
+    pyCodeBuilder.decreaseIndent();
+  }
+
+  /**
+   * Visit a TemplateDelegateNode and generate the corresponding function along with the delegate
+   * registration.
+   *
+   * <p>Example:
+   * <pre>
+   * def myfunc(opt_data=None, opt_ijData=None):
+   *   ...
+   * runtime.register_delegate_fn('delname', 'delvariant', 0, myfunc, 'myfunc')
+   * </pre>
+   */
+  @Override protected void visitTemplateDelegateNode(TemplateDelegateNode node) {
+    // Generate the template first, before registering the delegate function.
+    visitTemplateNode(node);
+
+    // Register the function as a delegate function.
+    String delTemplateIdExprText = "'" + node.getDelTemplateName() + "'";
+    String delTemplateVariantExprText = "'" + node.getDelTemplateVariant() + "'";
+    pyCodeBuilder.appendLine(
+        "runtime.register_delegate_fn(",
+        delTemplateIdExprText, ", ", delTemplateVariantExprText, ", ",
+        Integer.toString(node.getDelPriority()), ", ",
+        node.getPartialTemplateName().substring(1), ", '",
+        node.getPartialTemplateName().substring(1), "')");
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Fallback implementation.
+
+
+  @Override protected void visitSoyNode(SoyNode node) {
+    if (isComputableAsPyExprVisitor.exec(node)) {
+      // Generate Python expressions for this node and add them to the current output var.
+      pyCodeBuilder.addToOutputVar(genPyExprsVisitor.exec(node));
+    } else {
+      // Need to implement visit*Node() for the specific case.
+      throw new UnsupportedOperationException();
+    }
+  }
+
+
+  // -----------------------------------------------------------------------------------------------
+  // Utility methods.
+
 
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require general dependencies.
@@ -215,5 +312,31 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine("pass");
     pyCodeBuilder.decreaseIndent();
     pyCodeBuilder.appendLine();
+  }
+
+  /**
+   * Helper for visitTemplateNode which generates the function body.
+   */
+  private void generateFunctionBody(TemplateNode node) {
+    // Generate statement to ensure data exists as an object, if ever used.
+    if ((new ShouldEnsureDataIsDefinedVisitor()).exec(node)) {
+      pyCodeBuilder.appendLine("opt_data = opt_data or {}");
+    }
+
+    pyCodeBuilder.pushOutputVar("output");
+
+    visitChildren(node);
+
+    PyExpr resultPyExpr = pyCodeBuilder.getOutputAsString();
+    pyCodeBuilder.popOutputVar();
+
+    // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
+    // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
+    // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
+    // the result of one template and feed it to another, and also to confidently assign sanitized
+    // HTML content to innerHTML. This does not use the internal-blocks variant.
+    resultPyExpr = PyExprUtils.maybeWrapAsSanitizedContent(node.getContentKind(), resultPyExpr);
+
+    pyCodeBuilder.appendLine("return ", resultPyExpr.getText());
   }
 }

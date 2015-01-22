@@ -88,6 +88,17 @@ public class NodeContentKinds {
           .put(ContentKind.TEXT, "soydata.$$markUnsanitizedTextForInternalBlocks")
           .build();
 
+  /** The Python sanitized classes. */
+  private static final ImmutableMap<ContentKind, String> KIND_TO_PY_SANITIZED_NAME =
+      ImmutableMap.<ContentKind, String>builder()
+          .put(ContentKind.HTML, "sanitize.SanitizedHtml")
+          .put(ContentKind.ATTRIBUTES, "sanitize.SanitizedHtmlAttribute")
+          .put(ContentKind.JS, "sanitize.SanitizedJs")
+          .put(ContentKind.URI, "sanitize.SanitizedUri")
+          .put(ContentKind.CSS, "sanitize.SanitizedCss")
+          .put(ContentKind.TEXT, "sanitize.UnsanitizedText")
+          .build();
+
   static {
     if (!KIND_TO_JS_CTOR_NAME.keySet().containsAll(EnumSet.allOf(ContentKind.class))) {
       throw new AssertionError("Not all ContentKind enums have a JS constructor");
@@ -99,6 +110,9 @@ public class NodeContentKinds {
     }
     if (!KIND_TO_JS_ORDAINER_NAME_FOR_INTERNAL_BLOCKS.keySet().containsAll(soyContentKinds)) {
       throw new AssertionError("Not all Soy-accessible ContentKind enums have a JS ordainer");
+    }
+    if (!KIND_TO_PY_SANITIZED_NAME.keySet().containsAll(soyContentKinds)) {
+      throw new AssertionError("Not all Soy-accessible ContentKind enums have a Python sanitizer");
     }
   }
 
@@ -158,6 +172,15 @@ public class NodeContentKinds {
     // Functions are defined in soyutils{,_usegoog}.js.
     return Preconditions.checkNotNull(
         KIND_TO_JS_ORDAINER_NAME_FOR_INTERNAL_BLOCKS.get(contentKind));
+  }
+
+
+  /**
+   * Given a {@link ContentKind}, returns the corresponding Python sanitize class.
+   */
+  public static String toPySanitizedContentOrdainer(ContentKind contentKind) {
+    // Sanitization classes are defined in sanitize.py.
+    return Preconditions.checkNotNull(KIND_TO_PY_SANITIZED_NAME.get(contentKind));
   }
 
 

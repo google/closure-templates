@@ -17,7 +17,9 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
+import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -43,6 +45,10 @@ public final class PySrcModule extends AbstractModule {
     // Bindings for when explicit dependencies are required.
     bind(PySrcMain.class);
     bind(GenPyCodeVisitor.class);
+    bind(IsComputableAsPyExprVisitor.class);
+
+    // Bind providers of factories (created via assisted inject).
+    install(new FactoryModuleBuilder().build(GenPyExprsVisitorFactory.class));
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyPySrcOptions.class)

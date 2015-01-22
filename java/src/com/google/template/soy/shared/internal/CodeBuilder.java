@@ -232,7 +232,7 @@ public abstract class CodeBuilder<E extends TargetExpr> {
    * current output variable.
    * @param targetExprs One or more target expressions to compute output.
    */
-  public abstract void addToOutputVar(List<E> targetExprs);
+  public abstract void addToOutputVar(List<? extends E> targetExprs);
 
   /**
    * Gets the current output variable initialization status.

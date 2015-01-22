@@ -16,7 +16,12 @@
 
 package com.google.template.soy.pysrc.restricted;
 
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
+
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 /**
  * Common utilities for dealing with Python expressions.
@@ -27,7 +32,7 @@ import java.util.List;
 public final class PyExprUtils {
 
   /** Expression constant for empty string. */
-  private static final PyExpr EMPTY_STRING = new PyExpr("''", Integer.MAX_VALUE);
+  private static final PyExpr EMPTY_STRING = new PyStringExpr("''");
 
 
   private PyExprUtils() {}
@@ -42,20 +47,21 @@ public final class PyExprUtils {
    * @param pyExprs The Python expressions to concatenate.
    * @return One Python expression that computes the concatenation of the given Python expressions.
    */
-  public static PyExpr concatPyExprs(List<PyExpr> pyExprs) {
+  public static PyExpr concatPyExprs(List<? extends PyExpr> pyExprs) {
 
     if (pyExprs.isEmpty()) {
       return EMPTY_STRING;
     }
 
     if (pyExprs.size() == 1) {
-      return new PyExpr("str(" + pyExprs.get(0).getText() + ")", Integer.MAX_VALUE);
+      // If there's only one element, simply return the expression as a String.
+      return pyExprs.get(0).toPyString();
     }
 
     StringBuilder resultSb = new StringBuilder();
 
     // Use Python's list joining mechanism to speed up concatenation.
-    resultSb.append("''.join([");
+    resultSb.append("[");
 
     boolean isFirst = true;
     for (PyExpr pyExpr : pyExprs) {
@@ -66,11 +72,27 @@ public final class PyExprUtils {
         resultSb.append(',');
       }
 
-      // TODO(dcphillips): Consider simple tests for string literals to avoid pointless casting.
-      resultSb.append("str(").append(pyExpr.getText()).append(")");
+      resultSb.append(pyExpr.toPyString().getText());
     }
 
-    resultSb.append("])");
-    return new PyExpr(resultSb.toString(), Integer.MAX_VALUE);
+    resultSb.append("]");
+    return new PyListExpr(resultSb.toString(), Integer.MAX_VALUE);
+  }
+
+
+  /**
+   * Wraps an expression with the proper SanitizedContent constructor if contentKind is non-null.
+   *
+   * @param contentKind The kind of sanitized content.
+   * @param pyExpr The expression to wrap.
+   */
+  public static PyExpr maybeWrapAsSanitizedContent(
+      @Nullable ContentKind contentKind, PyExpr pyExpr) {
+    if (contentKind == null) {
+      return pyExpr;
+    } else {
+      String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
+      return new PyExpr(sanitizer + "(" + pyExpr.getText() + ")", Integer.MAX_VALUE);
+    }
   }
 }

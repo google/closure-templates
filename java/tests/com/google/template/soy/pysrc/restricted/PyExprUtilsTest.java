@@ -29,22 +29,27 @@ import java.util.List;
 public final class PyExprUtilsTest extends TestCase {
 
   public void testConcatPyExprs() {
-    List<PyExpr> exprs = new ArrayList<PyExpr>();
+    List<PyExpr> exprs = new ArrayList<>();
 
     // Empty Array.
     assertEquals("''", PyExprUtils.concatPyExprs(exprs).getText());
 
-    // Single Value.
-    PyExpr foo = new PyExpr("foo", Integer.MAX_VALUE);
+    // Single String value.
+    PyExpr foo = new PyStringExpr("foo");
+    exprs.add(foo);
+    assertEquals("foo", PyExprUtils.concatPyExprs(exprs).getText());
+
+    // Single unknown value.
+    exprs = new ArrayList<PyExpr>();
+    foo = new PyExpr("foo", Integer.MAX_VALUE);
     exprs.add(foo);
     assertEquals("str(foo)", PyExprUtils.concatPyExprs(exprs).getText());
 
-    // Multiple values use the runtime library.
-    PyExpr bar = new PyExpr("bar", Integer.MAX_VALUE);
-    PyExpr baz = new PyExpr("baz", Integer.MAX_VALUE);
+    // Multiple values are added to a list to be joined at a later time.
+    PyExpr bar = new PyStringExpr("bar");
+    PyExpr baz = new PyStringExpr("baz");
     exprs.add(bar);
     exprs.add(baz);
-    assertEquals("''.join([str(foo),str(bar),str(baz)])",
-        PyExprUtils.concatPyExprs(exprs).getText());
+    assertEquals("[str(foo),bar,baz]", PyExprUtils.concatPyExprs(exprs).getText());
   }
 }

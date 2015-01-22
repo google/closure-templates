@@ -15,8 +15,11 @@
  */
 package com.google.template.soy.pysrc.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.PyListExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.internal.CodeBuilder;
 
 import java.util.List;
@@ -66,18 +69,36 @@ final class PyCodeBuilder extends CodeBuilder<PyExpr> {
     }
 
     // output = ''
-    appendLine(getOutputVarName(), " = ''");
+    appendLine(getOutputVarName(), " = []");
 
     setOutputVarInited();
   }
 
-  @Override public void addToOutputVar(List<PyExpr> pyExprs) {
-    PyExpr concatenatedOutput = PyExprUtils.concatPyExprs(pyExprs);
-    if (getOutputVarIsInited()) {
-      appendLine(getOutputVarName(), " += ", concatenatedOutput.getText());
+  @Override public void addToOutputVar(List<? extends PyExpr> pyExprs) {
+    PyExpr output = PyExprUtils.concatPyExprs(pyExprs);
+
+    boolean isList = output instanceof PyListExpr;
+    if (isList && !getOutputVarIsInited()) {
+      appendLine(getOutputVarName(), " = ", output.getText());
     } else {
-      appendLine(getOutputVarName(), " = ", concatenatedOutput.getText());
+      initOutputVarIfNecessary();
+      String function = isList ? ".extend(" : ".append(";
+      appendLine(getOutputVarName(), function, output.getText(), ")");
       setOutputVarInited();
     }
+  }
+
+  /**
+   * Provide the output object as a string. Since we store all data in the output variables as a
+   * list for concatenation performance, this step does the joining to convert the output into a
+   * String.
+   *
+   * @return A PyExpr object of the output joined into a String.
+   */
+  public PyStringExpr getOutputAsString() {
+    Preconditions.checkState(getOutputVarName() != null);
+
+    initOutputVarIfNecessary();
+    return new PyListExpr(getOutputVarName(), Integer.MAX_VALUE).toPyString();
   }
 }

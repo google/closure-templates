@@ -24,11 +24,16 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  *
  * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * <p> Note that while all behavior of PyExpr matches TargetExpr, the class serves to differentiate
- * between languages and retain plugin behavior.
+ * <p> Since the type information is rather generic it could potentially be shared with the JsExpr,
+ * but as JS doesn't currently have any uses, and Python types do differ in some aspects (such as
+ * with numbers), it's kept separate.
+ *
+ * <p> NOTE: Some expressions could potentially return multiple types (such as a ternary if with a
+ * String or number as potential results). If possible to avoid, the results will be improved, but
+ * if not, this class can be used with no type assumed.
  *
  */
-public final class PyExpr extends TargetExpr {
+public class PyExpr extends TargetExpr {
 
   /**
    * @param text The Python expression text.
@@ -36,5 +41,14 @@ public final class PyExpr extends TargetExpr {
    */
   public PyExpr(String text, int precedence) {
     super(text, precedence);
+  }
+
+  /**
+   * Convert the given type to a Python String expression.
+   *
+   * @return A PyStringExpr representing this expression as a String.
+   */
+  public PyStringExpr toPyString() {
+    return new PyStringExpr("str(" + getText() + ")", Integer.MAX_VALUE);
   }
 }
