@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,14 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -52,6 +55,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The module path for the runtime libraries. */
   private final String runtimePath;
 
+  /** The module name for the translation module used at runtime. */
+  private final String translationPyModuleName;
+
   /** The contents of the generated Python files. */
   private List<String> pyFilesContents;
 
@@ -67,15 +73,20 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param runtimePath The module path for the runtime libraries.
    * @param isComputableAsPyExprVisitor The IsComputableAsPyExprVisitor to use.
    * @param genPyExprsVisitorFactory Factory for creating an instance of GenPyExprsVisitor.
+   * @param translationPyModuleName Python module name used in python runtime to instantiate
+   *        translation.
    */
   @Inject
   GenPyCodeVisitor(@RuntimePath String runtimePath,
+      @TranslationPyModuleName String translationPyModuleName,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
     this.runtimePath = runtimePath;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
+    this.translationPyModuleName = translationPyModuleName;
   }
+
 
   @Override public List<String> exec(SoyNode node) {
     pyFilesContents = new ArrayList<>();
@@ -258,6 +269,18 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine("from " + runtimePath + " import runtime");
     pyCodeBuilder.appendLine("from " + runtimePath + " import sanitize");
     pyCodeBuilder.appendLine();
+
+    // Add import and instantiate statements for translator module
+    // TODO(steveyang): remember the check when implementing MsgNode
+    if (!translationPyModuleName.isEmpty()) {
+      Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(translationPyModuleName);
+      String translationNamespace = nameSpaceAndName.first;
+      String translationName = nameSpaceAndName.second;
+      pyCodeBuilder.appendLine("from " + translationNamespace + " import " + translationName);
+      pyCodeBuilder.appendLine(
+          SoyPySrcOptions.TRANSLATOR_INTERFACE_NAME + " = "
+              + translationName + "()");
+    }
   }
 
   /**
@@ -273,14 +296,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             soyFile);
       }
       String calleeModule = calleeNotInFile.substring(0, lastDotIndex);
-      if (calleeModule.length() > 0) {
-        String calleeNamespace = calleeModule;
-        String calleeName = calleeModule;
-        lastDotIndex = calleeModule.lastIndexOf('.');
-        if (lastDotIndex != -1) {
-          calleeNamespace = calleeModule.substring(0, lastDotIndex);
-          calleeName = calleeModule.substring(lastDotIndex + 1);
-        }
+      if (!calleeModule.isEmpty()) {
+        Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
+        String calleeNamespace = nameSpaceAndName.first;
+        String calleeName = nameSpaceAndName.second;
         pyCodeBuilder.appendLine(calleeName, " = runtime.namespaced_import('", calleeName,
              "', namespace='", calleeNamespace, "')");
       }
@@ -296,6 +315,21 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private void addCodeToRegisterCurrentSoyNamespace(SoyFileNode soyFile) {
     String namespace = soyFile.getNamespace();
     pyCodeBuilder.appendLine("SOY_NAMESPACE = '" + namespace + "'");
+  }
+
+  /**
+   * Helper to retrieve the namespace and name from a module name.
+   * @param moduleName Python module name in dot notation format.
+   */
+  private static Pair<String, String> namespaceAndNameFromModule(String moduleName) {
+    String namespace = moduleName;
+    String name = moduleName;
+    int lastDotIndex = moduleName.lastIndexOf('.');
+    if (lastDotIndex != -1) {
+      namespace = moduleName.substring(0, lastDotIndex);
+      name = moduleName.substring(lastDotIndex + 1);
+    }
+    return new Pair<>(namespace, name);
   }
 
   /**

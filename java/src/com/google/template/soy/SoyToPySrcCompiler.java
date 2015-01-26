@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,13 @@ public final class SoyToPySrcCompiler {
           usage = "[Required] The list of source Soy files.",
           handler = MainClassUtils.StringListOptionHandler.class)
   private List<String> srcs = new ArrayList<String>();
+
+  @Option(name = "--translationPyModuleName",
+          usage = "Python class name used in python runtime to instantiate translation."
+              + " It should be given in absolute module path in dot notation format, "
+              + " for example: my.package.module.TranslatorClass."
+              + " It is required for {msg} command.")
+  private String translationPyModuleName = "";
 
   @Option(name = "--runtimePath",
           required = true,
@@ -187,7 +194,8 @@ public final class SoyToPySrcCompiler {
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyPySrcOptions.
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, bidiIsRtlFn);
+    SoyPySrcOptions pySrcOptions =
+        new SoyPySrcOptions(runtimePath, bidiIsRtlFn, translationPyModuleName);
 
     // Compile.
     sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);

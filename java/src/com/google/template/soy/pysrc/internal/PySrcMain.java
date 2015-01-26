@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -96,6 +97,9 @@ public final class PySrcMain {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
       apiCallScope.seed(Key.get(String.class, RuntimePath.class), pySrcOptions.getRuntimePath());
+      apiCallScope.seed(Key.get(String.class,
+          TranslationPyModuleName.class),
+          pySrcOptions.getTranslationPyModuleName());
 
       BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(
           pySrcOptions.getBidiIsRtlFn());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ package com.google.template.soy.pysrc;
  *
  */
 public final class SoyPySrcOptions implements Cloneable {
+  /** The interface name to be implemented by translator module. */
+  public static final String TRANSLATOR_INTERFACE_NAME = "translator_impl";
 
   /** The full module and fn path to a runtime library for determining global directionality. */
   private final String bidiIsRtlFn;
@@ -29,23 +31,25 @@ public final class SoyPySrcOptions implements Cloneable {
   /** The base module path for loading the runtime modules. */
   private final String runtimePath;
 
-  public SoyPySrcOptions(String runtimePath, String bidiIsRtlFn) {
+  /** The absolute translation module name used in Python runtime. */
+  private final String translationPyModuleName;
+
+  public SoyPySrcOptions(String runtimePath, String bidiIsRtlFn, String translationPyModuleName) {
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
+    this.translationPyModuleName = translationPyModuleName;
   }
 
-  /**
-   * @return the bidiIsRtlFn
-   */
   public String getBidiIsRtlFn() {
     return bidiIsRtlFn;
   }
 
-  /**
-   * @return the runtimePath
-   */
   public String getRuntimePath() {
     return runtimePath;
+  }
+
+  public String getTranslationPyModuleName() {
+    return translationPyModuleName;
   }
 
   @Override public final SoyPySrcOptions clone() {

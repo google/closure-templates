@@ -23,6 +23,7 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;
@@ -53,6 +54,9 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "from example.runtime import runtime\n"
       + "from example.runtime import sanitize\n"
       + "\n"
+      + "from foo.bar import SimpleTranslator\n"
+      + "translator_impl = SimpleTranslator()"
+      + "\n"
       + "\n"
       + "SOY_NAMESPACE = 'boo.foo'\n"
       + "try:\n"
@@ -66,10 +70,12 @@ public final class GenPyCodeVisitorTest extends TestCase {
   private GenPyCodeVisitor genPyCodeVisitor;
 
   @Override protected void setUp() {
-    pySrcOptions = new SoyPySrcOptions("", "");
+    pySrcOptions = new SoyPySrcOptions("", "", "");
     GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
     apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
     apiCallScope.seed(Key.get(String.class, RuntimePath.class), "example.runtime");
+    apiCallScope.seed(Key.get(String.class, TranslationPyModuleName.class),
+        "foo.bar.SimpleTranslator");
     genPyCodeVisitor = INJECTOR.getInstance(GenPyCodeVisitor.class);
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 
 
@@ -34,7 +35,6 @@ import com.google.template.soy.sharedpasses.SharedPassesModule;
  *
  */
 public final class PySrcModule extends AbstractModule {
-
 
   @Override protected void configure() {
 
@@ -52,11 +52,13 @@ public final class PySrcModule extends AbstractModule {
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyPySrcOptions.class)
-    .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
-    .in(ApiCallScope.class);
+      .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
+      .in(ApiCallScope.class);
     bind(String.class).annotatedWith(RuntimePath.class)
-    .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-    .in(ApiCallScope.class);
+      .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+      .in(ApiCallScope.class);
+    bind(String.class).annotatedWith(TranslationPyModuleName.class)
+      .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+      .in(ApiCallScope.class);
   }
-
 }
