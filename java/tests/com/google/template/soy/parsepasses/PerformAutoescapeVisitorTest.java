@@ -26,7 +26,7 @@ import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.IdDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.internal.base.Pair;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -39,7 +39,6 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Unit tests for PerformAutoescapeVisitor.

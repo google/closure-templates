@@ -24,7 +24,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -33,7 +33,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import junit.framework.TestCase;
 
 import java.util.List;
-
 
 /**
  * Unit tests for SoytreeUtils.

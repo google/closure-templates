@@ -21,8 +21,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
-
+import com.google.template.soy.shared.SharedRestrictedTestUtils;
 
 /**
  * Unit tests for BidiUnicodeWrapDirective.

@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import junit.framework.TestCase;
 
 import java.util.Map;
-
 
 /**
  * Unit tests for FindTransitiveDepTemplatesVisitor.

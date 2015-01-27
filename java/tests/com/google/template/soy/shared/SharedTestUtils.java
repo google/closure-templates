@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.internal;
+package com.google.template.soy.shared;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -26,6 +26,8 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.shared.internal.ApiCallScopeUtils;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.SoyFileSetNode;

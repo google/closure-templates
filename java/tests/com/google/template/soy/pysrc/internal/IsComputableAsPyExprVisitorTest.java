@@ -16,12 +16,11 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for IsComputableAsPyExprVisitor.

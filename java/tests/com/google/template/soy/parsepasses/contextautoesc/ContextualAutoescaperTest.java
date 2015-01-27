@@ -26,7 +26,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.CallNode;
@@ -44,7 +44,6 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 
 public final class ContextualAutoescaperTest extends TestCase {
 

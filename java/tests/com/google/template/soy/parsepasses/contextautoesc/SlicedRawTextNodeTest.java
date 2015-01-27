@@ -19,7 +19,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -30,7 +30,6 @@ import junit.framework.TestCase;
 
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Test for {@link SLicedRawTextNode}.

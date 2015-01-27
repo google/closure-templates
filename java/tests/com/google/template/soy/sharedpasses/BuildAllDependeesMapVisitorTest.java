@@ -17,7 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -38,7 +38,6 @@ import junit.framework.TestCase;
 
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Unit tests for BuildAllDependeesMapVisitor.

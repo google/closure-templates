@@ -18,7 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import junit.framework.TestCase;
 
 import java.util.List;
-
 
 /**
  * Test for {@link ContentSecurityPolicyPass}.

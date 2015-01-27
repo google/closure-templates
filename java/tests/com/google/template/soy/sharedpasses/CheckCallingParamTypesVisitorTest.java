@@ -18,13 +18,12 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for CheckCallingParamTypesVisitor.

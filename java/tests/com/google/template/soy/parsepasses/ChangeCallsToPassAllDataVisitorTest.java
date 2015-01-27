@@ -17,12 +17,11 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for ChangeCallsToPassAllDataVisitor,

@@ -18,12 +18,11 @@ package com.google.template.soy.parsepasses;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for RewriteGenderMsgsVisitor.

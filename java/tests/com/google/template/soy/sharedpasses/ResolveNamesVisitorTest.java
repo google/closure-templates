@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;

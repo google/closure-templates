@@ -24,10 +24,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.shared.restricted.SharedRestrictedTestUtils;
+import com.google.template.soy.shared.SharedRestrictedTestUtils;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for BidiDirAttrFunction.

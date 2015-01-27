@@ -16,13 +16,13 @@
 
 package com.google.template.soy.shared.internal;
 
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
 
 import java.util.Set;
-
 
 /**
  * Unit tests for FindCalleesNotInFileVisitor.

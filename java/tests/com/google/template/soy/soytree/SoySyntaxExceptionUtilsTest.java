@@ -17,10 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for SoySyntaxExceptionUtils.

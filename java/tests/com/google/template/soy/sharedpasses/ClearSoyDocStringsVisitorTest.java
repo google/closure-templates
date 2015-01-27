@@ -16,12 +16,11 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for ClearSoyDocStringsVisitor.

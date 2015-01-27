@@ -16,15 +16,14 @@
 
 package com.google.template.soy.parsepasses;
 
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
-import com.google.template.soy.shared.internal.SharedTestUtils;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for HandleCssCommandVisitor.

@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import com.google.template.soy.shared.internal.SharedTestUtils;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import junit.framework.TestCase;
 
 import java.util.Map;
-
 
 /**
  * Unit tests for FindIndirectParamsVisitor.

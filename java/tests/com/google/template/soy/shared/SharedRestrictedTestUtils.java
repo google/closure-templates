@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.shared;
 
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 
 import javax.inject.Provider;
-
 
 /**
  * Shared utilities for unit tests.
