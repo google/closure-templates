@@ -144,6 +144,9 @@ public class JsSrcUtils {
 
       case RECORD: {
         RecordType recordType = (RecordType) type;
+        if (recordType.getMembers().size() == 0) {
+          return "!Object";
+        }
         List<String> members = Lists.newArrayListWithExpectedSize(recordType.getMembers().size());
         for (Map.Entry<String, SoyType> member : recordType.getMembers().entrySet()) {
           members.add(member.getKey() + ": " + getJsTypeExpr(member.getValue(), true, true));

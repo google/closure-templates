@@ -107,6 +107,8 @@ public class JsSrcUtilsTest extends TestCase {
             ImmutableMap.<String, SoyType>of(
                 "foo", IntType.getInstance(),
                 "bar", NULLABLE_LIST_OF_HTML))));
+    assertEquals("!Object",
+        JsSrcUtils.getJsTypeExpr(RecordType.of(ImmutableMap.<String, SoyType>of())));
   }
 
 
