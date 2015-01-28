@@ -2618,7 +2618,7 @@ goog.addDependency('debug/console.js', ['goog.debug.Console'], ['goog.debug.LogM
 goog.addDependency('debug/console_test.js', ['goog.debug.ConsoleTest'], ['goog.debug.Console', 'goog.debug.LogRecord', 'goog.debug.Logger', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('debug/debug.js', ['goog.debug'], ['goog.array', 'goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.uncheckedconversions', 'goog.string.Const', 'goog.structs.Set', 'goog.userAgent'], false);
 goog.addDependency('debug/debug_test.js', ['goog.debugTest'], ['goog.debug', 'goog.html.SafeHtml', 'goog.structs.Set', 'goog.testing.jsunit'], false);
-goog.addDependency('debug/debugwindow.js', ['goog.debug.DebugWindow'], ['goog.debug.HtmlFormatter', 'goog.debug.LogManager', 'goog.debug.Logger', 'goog.structs.CircularBuffer', 'goog.userAgent'], false);
+goog.addDependency('debug/debugwindow.js', ['goog.debug.DebugWindow'], ['goog.debug.HtmlFormatter', 'goog.debug.LogManager', 'goog.debug.Logger', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.string.Const', 'goog.structs.CircularBuffer', 'goog.userAgent'], false);
 goog.addDependency('debug/debugwindow_test.js', ['goog.debug.DebugWindowTest'], ['goog.debug.DebugWindow', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/devcss/devcss.js', ['goog.debug.DevCss', 'goog.debug.DevCss.UserAgent'], ['goog.asserts', 'goog.cssom', 'goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('debug/devcss/devcss_test.js', ['goog.debug.DevCssTest'], ['goog.debug.DevCss', 'goog.style', 'goog.testing.jsunit'], false);
@@ -2635,7 +2635,7 @@ goog.addDependency('debug/errorhandler_test.js', ['goog.debug.ErrorHandlerTest']
 goog.addDependency('debug/errorhandlerweakdep.js', ['goog.debug.errorHandlerWeakDep'], [], false);
 goog.addDependency('debug/errorreporter.js', ['goog.debug.ErrorReporter', 'goog.debug.ErrorReporter.ExceptionEvent'], ['goog.asserts', 'goog.debug', 'goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.events', 'goog.events.Event', 'goog.events.EventTarget', 'goog.log', 'goog.net.XhrIo', 'goog.object', 'goog.string', 'goog.uri.utils', 'goog.userAgent'], false);
 goog.addDependency('debug/errorreporter_test.js', ['goog.debug.ErrorReporterTest'], ['goog.debug.ErrorReporter', 'goog.events', 'goog.functions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('debug/fancywindow.js', ['goog.debug.FancyWindow'], ['goog.array', 'goog.debug.DebugWindow', 'goog.debug.LogManager', 'goog.debug.Logger', 'goog.dom.DomHelper', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.object', 'goog.string', 'goog.userAgent'], false);
+goog.addDependency('debug/fancywindow.js', ['goog.debug.FancyWindow'], ['goog.array', 'goog.debug.DebugWindow', 'goog.debug.LogManager', 'goog.debug.Logger', 'goog.dom.DomHelper', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.userAgent'], false);
 goog.addDependency('debug/formatter.js', ['goog.debug.Formatter', 'goog.debug.HtmlFormatter', 'goog.debug.TextFormatter'], ['goog.debug', 'goog.debug.Logger', 'goog.debug.RelativeTimeProvider', 'goog.html.SafeHtml'], false);
 goog.addDependency('debug/formatter_test.js', ['goog.debug.FormatterTest'], ['goog.debug.HtmlFormatter', 'goog.debug.LogRecord', 'goog.debug.Logger', 'goog.html.SafeHtml', 'goog.testing.jsunit'], false);
 goog.addDependency('debug/fpsdisplay.js', ['goog.debug.FpsDisplay'], ['goog.asserts', 'goog.async.AnimationDelay', 'goog.dom', 'goog.ui.Component'], false);
@@ -14284,7 +14284,7 @@ goog.dom.getElementsByTagNameAndClass = function(opt_tag, opt_class, opt_el) {
  */
 goog.dom.getElementsByClass = function(className, opt_el) {
   var parent = opt_el || document;
-  if (goog.dom.canUseQuerySelector_(parent)) {
+  if (parent.querySelectorAll) {
     return parent.querySelectorAll('.' + className);
   }
   return goog.dom.getElementsByTagNameAndClass_(
@@ -14302,7 +14302,7 @@ goog.dom.getElementsByClass = function(className, opt_el) {
 goog.dom.getElementByClass = function(className, opt_el) {
   var parent = opt_el || document;
   var retVal = null;
-  if (goog.dom.canUseQuerySelector_(parent)) {
+  if (parent.querySelector) {
     retVal = parent.querySelector('.' + className);
   } else {
     retVal = goog.dom.getElementsByTagNameAndClass_(
@@ -14330,18 +14330,6 @@ goog.dom.getRequiredElementByClass = function(className, opt_root) {
 
 
 /**
- * Prefer the standardized (http://www.w3.org/TR/selectors-api/), native and
- * fast W3C Selectors API.
- * @param {!(Element|Document)} parent The parent document object.
- * @return {boolean} whether or not we can use parent.querySelector* APIs.
- * @private
- */
-goog.dom.canUseQuerySelector_ = function(parent) {
-  return !!(parent.querySelectorAll && parent.querySelector);
-};
-
-
-/**
  * Helper for {@code getElementsByTagNameAndClass}.
  * @param {!Document} doc The document to get the elements in.
  * @param {?string=} opt_tag Element tag name.
@@ -14356,8 +14344,7 @@ goog.dom.getElementsByTagNameAndClass_ = function(doc, opt_tag, opt_class,
   var parent = opt_el || doc;
   var tagName = (opt_tag && opt_tag != '*') ? opt_tag.toUpperCase() : '';
 
-  if (goog.dom.canUseQuerySelector_(parent) &&
-      (tagName || opt_class)) {
+  if (parent.querySelectorAll && (tagName || opt_class)) {
     var query = tagName + (opt_class ? '.' + opt_class : '');
     return parent.querySelectorAll(query);
   }

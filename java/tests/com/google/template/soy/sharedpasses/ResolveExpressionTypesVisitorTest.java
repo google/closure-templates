@@ -233,6 +233,32 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     assertEquals(FloatType.getInstance(), types.get(17));
   }
 
+  public void testStringConcatenation() {
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(typeRegistry, SyntaxVersion.V2_0, false,
+        constructTemplateSource(
+            "{@param ps: string}",
+            "{@param pi: int}",
+            "{@param pf: float}",
+            "{@param pb: bool}",
+            "{$ps + $ps}",
+            "{$ps + $pi}",
+            "{$ps + $pf}",
+            "{$ps + $pb}",
+            "{$pi + $ps}",
+            "{$pf + $ps}",
+            "{$pb + $ps}"));
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+    List<SoyType> types = getPrintStatementTypes(soyTree);
+    assertEquals(StringType.getInstance(), types.get(0));
+    assertEquals(StringType.getInstance(), types.get(1));
+    assertEquals(StringType.getInstance(), types.get(2));
+    assertEquals(StringType.getInstance(), types.get(3));
+    assertEquals(StringType.getInstance(), types.get(4));
+    assertEquals(StringType.getInstance(), types.get(5));
+    assertEquals(StringType.getInstance(), types.get(6));
+  }
+
   public void testLogicalOps() {
     String testTemplateContent = constructTemplateSource(
         "{@param pa: unknown}",

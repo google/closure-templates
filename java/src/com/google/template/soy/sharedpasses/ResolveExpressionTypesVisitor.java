@@ -472,8 +472,33 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitPlusOpNode(PlusOpNode node) {
-      // TODO: Plus is overloaded, so may need special handling here.
-      visitArithmeticOpNode(node);
+      visitChildren(node);
+      SoyType t0 = node.getChild(0).getType();
+      SoyType t1 = node.getChild(1).getType();
+
+      // String concatenation coerces non-string arguments to string.
+      // TODO(user): technically, *any* type concatenated with a string will
+      // be coerced to a string, but I'm not sure that all of those conversions
+      // are well-defined in both Java and JS. Feel free to add to this list.
+      if (t0.getKind() == SoyType.Kind.STRING &&
+          (t1.getKind() == SoyType.Kind.BOOL ||
+          t1.getKind() == SoyType.Kind.INT ||
+          t1.getKind() == SoyType.Kind.FLOAT)) {
+        node.setType(StringType.getInstance());
+        return;
+      }
+
+      if (t1.getKind() == SoyType.Kind.STRING &&
+          (t0.getKind() == SoyType.Kind.BOOL ||
+          t0.getKind() == SoyType.Kind.INT ||
+          t0.getKind() == SoyType.Kind.FLOAT)) {
+        node.setType(StringType.getInstance());
+        return;
+      }
+
+      node.setType(typeOps.computeLeastCommonTypeArithmetic(
+          node.getChild(0).getType(),
+          node.getChild(1).getType()));
     }
 
     @Override protected void visitMinusOpNode(MinusOpNode node) {
