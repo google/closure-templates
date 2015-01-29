@@ -31,6 +31,9 @@ import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
 
 import junit.framework.TestCase;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class SanitizersTest extends TestCase {
   private static final String ASCII_CHARS;
   static {
@@ -275,6 +278,9 @@ public class SanitizersTest extends TestCase {
   }
 
   public final void testNormalizeUriAndFilterNormalizeUri() {
+    // This test contains an ANSI escape sequence. (\u000e). If the logger is logging to a terminal,
+    // the terminal will be corrupted. As a workaround, silence logs below the WARNING level.
+    Logger.getLogger(Sanitizers.class.getName()).setLevel(Level.SEVERE);
     for (String hazard : EMBEDDING_HAZARDS) {
       assertFalse(hazard, Sanitizers.normalizeUri(hazard).contains(hazard));
       assertFalse(hazard, Sanitizers.filterNormalizeUri(hazard).contains(hazard));
@@ -378,6 +384,7 @@ public class SanitizersTest extends TestCase {
         Sanitizers.filterNormalizeUri("http://good.url.com../..s../.#.."));
     assertEquals("http://goodurl.com/normal/%2e/unsafe?",
         Sanitizers.filterNormalizeUri("http://goodurl.com/normal/%2e/unsafe?"));
+    Logger.getLogger(Sanitizers.class.getName()).setLevel(Level.INFO);
   }
 
   public final void testFilterImageDataUri() {
