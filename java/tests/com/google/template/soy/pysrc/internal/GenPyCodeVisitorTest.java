@@ -20,6 +20,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
+import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
@@ -113,24 +114,73 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertGeneratedPyFile(soyCode, expectedPyCode);
   }
 
+  public void testSimpleMsgFallbackGroupNodeWithOneNode() {
+    String soyCode =
+          "{msg meaning=\"verb\" desc=\"Used as a verb.\"}\n"
+        + "  Archive\n"
+        + "{/msg}\n";
+
+    String expectedPyCode = "output.append('Archive')\n";
+
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+  }
+
+  public void testMsgFallbackGroupNodeWithTwoNodes() {
+    String soyCode =
+          "{msg meaning=\"verb\" desc=\"Used as a verb.\"}\n"
+        + "  archive\n"
+        + "{fallbackmsg desc=\"\"}\n"
+        + "  ARCHIVE\n"
+        + "{/msg}\n";
+
+    String expectedPyCode = "output.append('archive' if is_msg_available(###) else 'ARCHIVE')\n";
+
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+  }
+
 
   // -----------------------------------------------------------------------------------------------
   // Test Utilities.
 
   private void assertGeneratedPyFile(String soyCode, String expectedPyCode) {
-    String generatedCode = getGeneratedPyFile(soyCode);
-    assertEquals(expectedPyCode, generatedCode);
+    assertEquals(expectedPyCode, getGeneratedPyFile(soyCode));
+  }
+
+  private void assertGeneratedPyCode(String soyNodeCode, String expectedPyCode) {
+    assertEquals(expectedPyCode, getGeneratedPyCode(soyNodeCode));
   }
 
   /**
-   * Generates Python code from the given soy 'file'.
+   * Generates Python code from the given soy code. Replaces ids with ### so that tests don't break
+   * when ids change.
    *
-   * @param soyCode The soy code.
+   * @param soyFileContent The string represents a Soy file.
    */
-  private String getGeneratedPyFile(String soyCode) {
-    SoyNode node = SharedTestUtils.parseSoyFiles(soyCode);
-
+  private String getGeneratedPyFile(String soyFileContent) {
+    SoyNode node = SharedTestUtils.parseSoyFiles(soyFileContent);
     List<String> fileContents = genPyCodeVisitor.exec(node);
-    return fileContents.get(0);
+    return fileContents.get(0).replaceAll("\\([0-9]+", "(###");
+  }
+
+  /**
+   * Generates Python code from the given soy code. The given piece of Soy code is wrapped in a
+   * full body of a template.
+   * Also replaces ids with ### so that tests don't break when ids change.
+   *
+   * @param soyCode The Soy code snippet.
+   */
+  private String getGeneratedPyCode(String soyCode) {
+    SoyNode node = SharedTestUtils.getNode(SharedTestUtils.parseSoyCode(soyCode), 0);
+
+    // Setup the GenPyCodeVisitor's state before the node is visited.
+    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
+    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
+    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
+    genPyCodeVisitor.genPyExprsVisitor =
+        INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create();
+
+    genPyCodeVisitor.visit(node); // note: we're calling visit(), not exec()
+
+    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("\\([0-9]+", "(###");
   }
 }

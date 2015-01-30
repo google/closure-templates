@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.internal.base.Pair;
-import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -51,6 +50,7 @@ import javax.inject.Inject;
  *
  */
 final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
+  private static final String TRANSLATOR_INTERFACE_NAME = "translator_impl";
 
   /** The module path for the runtime libraries. */
   private final String runtimePath;
@@ -67,7 +67,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @VisibleForTesting protected PyCodeBuilder pyCodeBuilder;
 
-  private GenPyExprsVisitor genPyExprsVisitor;
+  @VisibleForTesting protected GenPyExprsVisitor genPyExprsVisitor;
 
   /**
    * @param runtimePath The module path for the runtime libraries.
@@ -277,9 +277,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String translationNamespace = nameSpaceAndName.first;
       String translationName = nameSpaceAndName.second;
       pyCodeBuilder.appendLine("from " + translationNamespace + " import " + translationName);
-      pyCodeBuilder.appendLine(
-          SoyPySrcOptions.TRANSLATOR_INTERFACE_NAME + " = "
-              + translationName + "()");
+      pyCodeBuilder.appendLine(TRANSLATOR_INTERFACE_NAME + " = " + translationName + "()");
     }
   }
 

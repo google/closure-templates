@@ -22,9 +22,6 @@ package com.google.template.soy.pysrc;
  *
  */
 public final class SoyPySrcOptions implements Cloneable {
-  /** The interface name to be implemented by translator module. */
-  public static final String TRANSLATOR_INTERFACE_NAME = "translator_impl";
-
   /** The full module and fn path to a runtime library for determining global directionality. */
   private final String bidiIsRtlFn;
 

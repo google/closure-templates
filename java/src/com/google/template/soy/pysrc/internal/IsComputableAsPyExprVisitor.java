@@ -29,6 +29,8 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -92,6 +94,14 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
   }
 
   @Override protected Boolean visitPrintNode(PrintNode node) {
+    return true;
+  }
+
+  @Override protected Boolean visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    return true;
+  }
+
+  @Override protected Boolean visitMsgNode(MsgNode node) {
     return true;
   }
 
