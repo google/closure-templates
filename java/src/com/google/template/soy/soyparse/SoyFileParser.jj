@@ -723,7 +723,12 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       templateNodeBuilder.setHeaderDecls(templateHeaderDecls);
     }
     TemplateNode templateNode = templateNodeBuilder.build();
-    templateNode.setSourceLocation(new SourceLocation(filePath, templateTag.beginLine));
+    templateNode.setSourceLocation(new SourceLocation(
+        filePath,
+        templateTag.beginLine,
+        templateTag.beginColumn,
+        templateContent.endLine,
+        templateContent.endColumn));
     templateNode.addChildren(templateBodyNodes);
     return templateNode;
   }

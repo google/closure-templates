@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Test for {@link SLicedRawTextNode}.
+ * Test for {@link SlicedRawTextNode}.
  *
  */
 public final class SlicedRawTextNodeTest extends TestCase {
@@ -40,7 +40,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
   /** Custom print directives used in tests below. */
   private static final Map<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES = ImmutableMap.of();
 
-  public final void testTrivialTemplate() throws Exception {
+  public void testTrivialTemplate() throws Exception {
     assertInjected(
         join(
             "{template foo}\n",
@@ -52,7 +52,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
-  public final void testOneScriptWithBody() throws Exception {
+  public void testOneScriptWithBody() throws Exception {
     assertInjected(
         join(
             "{template foo}\n",
@@ -64,7 +64,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
-  public final void testOneSrcedScript() throws Exception {
+  public void testOneSrcedScript() throws Exception {
     assertInjected(
         join(
             "{template foo}\n",
@@ -76,7 +76,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
-  public final void testManyScripts() throws Exception {
+  public void testManyScripts() throws Exception {
     assertInjected(
         join(
             "{template foo}\n",
@@ -96,7 +96,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
-  public final void testFakeScripts() throws Exception {
+  public void testFakeScripts() throws Exception {
     assertInjected(
         join(
             "{template foo}\n",
@@ -120,7 +120,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
-  public final void testPrintDirectiveInScriptTag() throws Exception {
+  public void testPrintDirectiveInScriptTag() throws Exception {
     assertInjected(
         join(
             "{template foo}\n",
@@ -134,7 +134,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
-  public final void testContextAssumptionsUpheld() throws Exception {
+  public void testContextAssumptionsUpheld() throws Exception {
     try {
       parseAndInjectIntoScriptTags(
                                    join(
@@ -144,7 +144,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
                                    " title='unclosed");
     } catch (SoyAutoescapeException ex) {
       assertEquals(
-          "In file no-path:4, template foo:"
+          "In file no-path:4:1, template foo:"
           + " Inserting ` title='unclosed` would cause text node to end in context"
           + " (Context HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE) instead of"
           + " (Context HTML_PCDATA)",
@@ -154,8 +154,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
     fail("Expected SoyAutoescapeException");
   }
 
-  public final void testMergeAdjacentSlicesWithSameContext() throws Exception {
-    String rawText = "Hello, <World>!";
+  public void testMergeAdjacentSlicesWithSameContext() throws Exception {
     // Insert slices in a way that we end up with multiple adjacent slices with the
     // same context arranged thus:
     // Index   0 1 2 3 4 5 6 7 8 9 A B C D E F

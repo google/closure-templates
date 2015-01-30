@@ -28,7 +28,7 @@ import junit.framework.TestCase;
  * Unit tests for CheckDelegatesVisitor.
  *
  */
-public class CheckDelegatesVisitorTest extends TestCase {
+public final class CheckDelegatesVisitorTest extends TestCase {
 
 
   public void testRecognizeValidDelegatePackage() {
@@ -129,9 +129,9 @@ public class CheckDelegatesVisitorTest extends TestCase {
   public void testErrorParamsMismatch() {
 
     assertInvalidSoyFiles(
-        "In file no-path:9, template MagicButton: " +
+        "In file no-path:9:1, template MagicButton: " +
             "Found delegate template with same name 'MagicButton' " +
-            "but different param declarations compared to the definition at no-path-2:5.",
+            "but different param declarations compared to the definition at no-path-2:5:1.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -155,7 +155,7 @@ public class CheckDelegatesVisitorTest extends TestCase {
 
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' but different param declarations" +
-            " compared to the definition at no-path-2:5.",
+            " compared to the definition at no-path-2:5:1.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -182,9 +182,9 @@ public class CheckDelegatesVisitorTest extends TestCase {
   public void testErrorParamsMismatchAcrossVariants() {
 
     assertInvalidSoyFiles(
-        "In file no-path:8, template MagicButton:something: " +
+        "In file no-path:8:1, template MagicButton:something: " +
             "Found delegate template with same name 'MagicButton' " +
-            "but different param declarations compared to the definition at no-path:4.",
+            "but different param declarations compared to the definition at no-path:4:1.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -319,10 +319,10 @@ public class CheckDelegatesVisitorTest extends TestCase {
 
     // One is strict and the other is not.
     assertInvalidSoyFiles(
-        "In file no-path-3:5, template foo: " +
+        "In file no-path-3:5:1, template foo: " +
             "If one deltemplate has strict autoescaping, all its peers must also be strictly " +
             "autoescaped with the same content kind: null != HTML. " +
-            "Conflicting definition at no-path-2:5.",
+            "Conflicting definition at no-path-2:5:1.",
         "" +
             "{namespace ns}\n\n" +
             "/***/\n" +
@@ -348,10 +348,10 @@ public class CheckDelegatesVisitorTest extends TestCase {
 
     // Both are strict, but have non-matching kinds.
     assertInvalidSoyFiles(
-        "In file no-path-2:4, template foo: " +
+        "In file no-path-2:4:1, template foo: " +
             "If one deltemplate has strict autoescaping, all its peers must also be strictly " +
             "autoescaped with the same content kind: TEXT != HTML. " +
-            "Conflicting definition at no-path-3:5.",
+            "Conflicting definition at no-path-3:5:1.",
         "" +
             "{namespace ns}\n\n" +
             "/***/\n" +

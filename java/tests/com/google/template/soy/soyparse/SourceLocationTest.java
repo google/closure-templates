@@ -17,14 +17,18 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.Joiner;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.TestCase;
@@ -32,21 +36,20 @@ import junit.framework.TestCase;
 /**
  * Tests that the Soy file and template parsers properly embed source locations.
  */
-public class SourceLocationTest extends TestCase {
-  public final void testLocationsInParsedContent() throws Exception {
+public final class SourceLocationTest extends TestCase {
+  public void testLocationsInParsedContent() throws Exception {
     assertSourceLocations(
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1",
-            "      RawTextNode              @ /example/file.soy:2",
-            "      PrintNode                @ /example/file.soy:4",
-            "      RawTextNode              @ /example/file.soy:5",
-            "      CallBasicNode            @ /example/file.soy:7",
-            "    TemplateBasicNode          @ /example/file.soy:9",
-            "      RawTextNode              @ /example/file.soy:10",
+            "    TemplateBasicNode          @ /example/file.soy:1:1",
+            "      RawTextNode              @ /example/file.soy:2:3",
+            "      PrintNode                @ /example/file.soy:4:3",
+            "      RawTextNode              @ /example/file.soy:5:1",
+            "      CallBasicNode            @ /example/file.soy:7:3",
+            "    TemplateBasicNode          @ /example/file.soy:9:1",
+            "      RawTextNode              @ /example/file.soy:10:3",
             ""),
-        "/example/file.soy",
         Joiner.on('\n').join(
             "{template foo autoescape=\"deprecated-noncontextual\"}",     // 1
             "  Hello",            // 2
@@ -63,25 +66,24 @@ public class SourceLocationTest extends TestCase {
         );
   }
 
-  public final void testSwitches() throws Exception {
+  public void testSwitches() throws Exception {
     assertSourceLocations(
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1",
-            "      RawTextNode              @ /example/file.soy:2",
-            "      SwitchNode               @ /example/file.soy:3",
-            "        SwitchCaseNode         @ /example/file.soy:4",
-            "          RawTextNode          @ /example/file.soy:5",
-            "        SwitchCaseNode         @ /example/file.soy:6",
-            "          RawTextNode          @ /example/file.soy:7",
-            "        SwitchCaseNode         @ /example/file.soy:8",
-            "          RawTextNode          @ /example/file.soy:9",
-            "        SwitchDefaultNode      @ /example/file.soy:10",
-            "          RawTextNode          @ /example/file.soy:11",
-            "      RawTextNode              @ /example/file.soy:13",
+            "    TemplateBasicNode          @ /example/file.soy:1:1",
+            "      RawTextNode              @ /example/file.soy:2:3",
+            "      SwitchNode               @ /example/file.soy:3:3",
+            "        SwitchCaseNode         @ /example/file.soy:4:5",
+            "          RawTextNode          @ /example/file.soy:5:1",
+            "        SwitchCaseNode         @ /example/file.soy:6:5",
+            "          RawTextNode          @ /example/file.soy:7:1",
+            "        SwitchCaseNode         @ /example/file.soy:8:5",
+            "          RawTextNode          @ /example/file.soy:9:1",
+            "        SwitchDefaultNode      @ /example/file.soy:10:5",
+            "          RawTextNode          @ /example/file.soy:11:1",
+            "      RawTextNode              @ /example/file.soy:13:1",
             ""),
-        "/example/file.soy",
         Joiner.on('\n').join(
             "{template foo autoescape=\"deprecated-noncontextual\"}",  // 1
             "  Hello,",        // 2
@@ -101,19 +103,18 @@ public class SourceLocationTest extends TestCase {
         );
   }
 
-  public final void testForLoop() throws Exception {
+  public void testForLoop() throws Exception {
     assertSourceLocations(
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1",
-            "      RawTextNode              @ /example/file.soy:2",
-            "      ForNode                  @ /example/file.soy:3",
-            "        RawTextNode            @ /example/file.soy:4",
-            "        PrintNode              @ /example/file.soy:5",
-            "      RawTextNode              @ /example/file.soy:7",
+            "    TemplateBasicNode          @ /example/file.soy:1:1",
+            "      RawTextNode              @ /example/file.soy:2:3",
+            "      ForNode                  @ /example/file.soy:3:3",
+            "        RawTextNode            @ /example/file.soy:4:1",
+            "        PrintNode              @ /example/file.soy:5:5",
+            "      RawTextNode              @ /example/file.soy:7:1",
             ""),
-        "/example/file.soy",
         Joiner.on('\n').join(
             "{template foo autoescape=\"deprecated-noncontextual\"}",                   // 1
             "  Hello",                          // 2
@@ -127,22 +128,21 @@ public class SourceLocationTest extends TestCase {
         );
   }
 
-  public final void testForeachLoop() throws Exception {
+  public void testForeachLoop() throws Exception {
     assertSourceLocations(
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1",
-            "      RawTextNode              @ /example/file.soy:2",
-            "      ForeachNode              @ /example/file.soy:3",
-            "        ForeachNonemptyNode    @ /example/file.soy:3",
-            "          RawTextNode          @ /example/file.soy:4",
-            "          PrintNode            @ /example/file.soy:5",
-            "        ForeachIfemptyNode     @ /example/file.soy:6",
-            "          RawTextNode          @ /example/file.soy:7",
-            "      RawTextNode              @ /example/file.soy:9",
+            "    TemplateBasicNode          @ /example/file.soy:1:1",
+            "      RawTextNode              @ /example/file.soy:2:3",
+            "      ForeachNode              @ /example/file.soy:3:3",
+            "        ForeachNonemptyNode    @ /example/file.soy:3:3",
+            "          RawTextNode          @ /example/file.soy:4:1",
+            "          PrintNode            @ /example/file.soy:5:5",
+            "        ForeachIfemptyNode     @ /example/file.soy:6:3",
+            "          RawTextNode          @ /example/file.soy:7:1",
+            "      RawTextNode              @ /example/file.soy:9:1",
             ""),
-        "/example/file.soy",
         Joiner.on('\n').join(
             "{template foo autoescape=\"deprecated-noncontextual\"}",                   // 1
             "  Hello",                          // 2
@@ -158,23 +158,22 @@ public class SourceLocationTest extends TestCase {
         );
   }
 
-  public final void testConditional() throws Exception {
+  public void testConditional() throws Exception {
     assertSourceLocations(
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1",
-            "      RawTextNode              @ /example/file.soy:2",
-            "      IfNode                   @ /example/file.soy:3",
-            "        IfCondNode             @ /example/file.soy:3",
-            "          RawTextNode          @ /example/file.soy:4",
-            "        IfCondNode             @ /example/file.soy:5",
-            "          RawTextNode          @ /example/file.soy:6",
-            "        IfElseNode             @ /example/file.soy:7",
-            "          RawTextNode          @ /example/file.soy:8",
-            "      RawTextNode              @ /example/file.soy:10",
+            "    TemplateBasicNode          @ /example/file.soy:1:1",
+            "      RawTextNode              @ /example/file.soy:2:3",
+            "      IfNode                   @ /example/file.soy:3:3",
+            "        IfCondNode             @ /example/file.soy:3:3",
+            "          RawTextNode          @ /example/file.soy:4:1",
+            "        IfCondNode             @ /example/file.soy:5:3",
+            "          RawTextNode          @ /example/file.soy:6:1",
+            "        IfElseNode             @ /example/file.soy:7:3",
+            "          RawTextNode          @ /example/file.soy:8:1",
+            "      RawTextNode              @ /example/file.soy:10:1",
             ""),
-        "/example/file.soy",
         Joiner.on('\n').join(
             "{template foo autoescape=\"deprecated-noncontextual\"}",                 // 1
             "  Hello,",                       // 2
@@ -191,7 +190,7 @@ public class SourceLocationTest extends TestCase {
         );
   }
 
-  public final void testDoesntAccessPastEnd() {
+  public void testDoesntAccessPastEnd() {
     // Make sure that if we have a token stream that ends abruptly, we don't
     // look for a line number and break in a way that suppresses the real error
     // message.
@@ -209,15 +208,35 @@ public class SourceLocationTest extends TestCase {
     }
   }
 
+  public void testAdditionalSourceLocationInfo() throws Exception {
+    String template =
+        "{namespace ns}\n"
+            + "{template .t}\n"
+            + "  hello, world\n"
+            + "{/template}\n";
+    TemplateNode templateNode = new SoyFileParser(
+        new SoyTypeRegistry(),
+        new FixedIdGenerator(),
+        template,
+        SoyFileKind.SRC, "/example/file.soy")
+        .parseSoyFile()
+        .getChild(0);
+    SourceLocation location = templateNode.getSourceLocation();
+    assertEquals(2, location.getLineNumber());
+    assertEquals(1, location.getBeginColumn());
+    assertEquals(4, location.getEndLine());
+    assertEquals(11, location.getEndColumn());
+  }
 
-  void assertSourceLocations(
-      String asciiArtExpectedOutput, String soySourcePath, String soySourceCode)
+
+  private void assertSourceLocations(
+      String asciiArtExpectedOutput, String soySourceCode)
       throws Exception {
 
     SoyFileSetNode soyTree =
         (new SoyFileSetParser(
             new SoyTypeRegistry(), null, SyntaxVersion.V2_0,
-            SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, soySourcePath)))
+            SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy")))
             .setDoRunInitialParsingPasses(false)
             .parse();
 
@@ -229,7 +248,7 @@ public class SourceLocationTest extends TestCase {
   /**
    * Generates a concise readable summary of a soy tree and its source locations.
    */
-  static class AsciiArtVisitor extends AbstractSoyNodeVisitor<String> {
+  private static class AsciiArtVisitor extends AbstractSoyNodeVisitor<String> {
     final StringBuilder sb = new StringBuilder();
     int depth;
 

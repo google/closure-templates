@@ -32,10 +32,10 @@ import java.util.Set;
 
 /**
  */
-public class CheckFunctionCallsVisitorTest extends TestCase {
+public final class CheckFunctionCallsVisitorTest extends TestCase {
 
 
-  public final void testPureFunctionOk() throws Exception {
+  public void testPureFunctionOk() throws Exception {
     applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
@@ -48,9 +48,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testIncorrectArity() throws Exception {
+  public void testIncorrectArity() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:7, template ns.foo:" +
+        "In file no-path:7:3, template ns.foo:" +
             " Function 'min' called with the wrong number of arguments" +
             " (function call \"min($x)\").",
         Joiner.on('\n').join(
@@ -62,7 +62,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             "  {print min($x)}",
             "{/template}"));
     assertFunctionCallsInvalid(
-        "In file no-path:6, template ns.foo:" +
+        "In file no-path:6:3, template ns.foo:" +
             " Function 'index' called with the wrong number of arguments" +
             " (function call \"index()\").",
         Joiner.on('\n').join(
@@ -75,9 +75,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testNestedFunctionCall() throws Exception {
+  public void testNestedFunctionCall() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:8, template ns.foo:" +
+        "In file no-path:8:3, template ns.foo:" +
             " Function 'min' called with the wrong number of arguments (function call" +
             " \"min($x)\").",
         Joiner.on('\n').join(
@@ -92,9 +92,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testNotALoopVariable1() throws Exception {
+  public void testNotALoopVariable1() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:7, template ns.foo:" +
+        "In file no-path:7:3, template ns.foo:" +
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($x)\").",
         Joiner.on('\n').join(
@@ -108,9 +108,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testNotALoopVariable2() throws Exception {
+  public void testNotALoopVariable2() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:7, template ns.foo:" +
+        "In file no-path:7:3, template ns.foo:" +
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($x.y)\").",
         Joiner.on('\n').join(
@@ -124,9 +124,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testNotALoopVariable3() throws Exception {
+  public void testNotALoopVariable3() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:6, template ns.foo:" +
+        "In file no-path:6:3, template ns.foo:" +
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($ij.data)\").",
         Joiner.on('\n').join(
@@ -140,9 +140,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
 
 
 
-  public final void testNotAVariable() throws Exception {
+  public void testNotAVariable() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:7, template ns.foo:" +
+        "In file no-path:7:3, template ns.foo:" +
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($x + 1)\").",
         Joiner.on('\n').join(
@@ -156,7 +156,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testLoopVariableOk() throws Exception {
+  public void testLoopVariableOk() throws Exception {
     applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
@@ -170,9 +170,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testLoopVariableNotInScopeWhenEmpty() throws Exception {
+  public void testLoopVariableNotInScopeWhenEmpty() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:10, template ns.foo:" +
+        "In file no-path:10:5, template ns.foo:" +
             " Function 'index' must have a foreach loop variable as its argument" +
             " (encountered \"index($z)\").",
         Joiner.on('\n').join(
@@ -190,8 +190,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testQuoteKeysIfJsFunction() throws Exception {
-
+  public void testQuoteKeysIfJsFunction() throws Exception {
     applyCheckFunctionCallsVisitor(
         Joiner.on('\n').join(
             "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
@@ -201,7 +200,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
             "{/template}"));
 
     assertFunctionCallsInvalid(
-        "In file no-path:5, template ns.foo:" +
+        "In file no-path:5:3, template ns.foo:" +
             " Function quoteKeysIfJs() must have a map literal as its arg" +
             " (encountered \"quoteKeysIfJs('blah')\").",
         Joiner.on('\n').join(
@@ -213,9 +212,9 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testUnrecognizedFunction() throws Exception {
+  public void testUnrecognizedFunction() throws Exception {
     assertFunctionCallsInvalid(
-        "In file no-path:6, template ns.foo:" +
+        "In file no-path:6:3, template ns.foo:" +
             " Unrecognized function 'bogus' (encountered function call \"bogus()\").",
         Joiner.on('\n').join(
             "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
@@ -227,7 +226,7 @@ public class CheckFunctionCallsVisitorTest extends TestCase {
   }
 
 
-  public final void testUnrecognizedFunctionOkInV1() throws Exception {
+  public void testUnrecognizedFunctionOkInV1() throws Exception {
     applyCheckFunctionCallsVisitor(
         Joiner.on('\n').join(
             "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",

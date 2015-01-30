@@ -230,10 +230,45 @@ public class TemplateParser {
      */
     final int lineNum;
 
+    /**
+     * Ending line number as counted from the start of the template content (1-indexed).
+     * To convert this to a line number relative to the entire source file, add
+     * {@link TemplateParser#lineNumOffset}.
+     */
+    final int lineNumEnd;
 
-    SourceItemInfo(T parsedContent, int lineNum) {
+    /**
+     * Column number as counted from the start of the current line (1-indexed).
+     */
+    final int columnNum;
+
+    /**
+     * Ending column number as counted from the start of the current line (1-indexed).
+     */
+    final int columnNumEnd;
+
+    SourceItemInfo(T parsedContent, Token token) {
+      this.parsedContent = parsedContent;
+      this.lineNum = token.beginLine;
+      this.lineNumEnd = token.endLine;
+      this.columnNum = token.beginColumn;
+      this.columnNumEnd = token.endColumn;
+    }
+
+    SourceItemInfo(T parsedContent, int lineNum, int columnNum, int lineNumEnd, int columnNumEnd) {
       this.parsedContent = parsedContent;
       this.lineNum = lineNum;
+      this.columnNum = columnNum;
+      this.lineNumEnd = lineNumEnd;
+      this.columnNumEnd = columnNumEnd;
+    }
+
+    SourceItemInfo(T parsedContent, SourceItemInfo begin, SourceItemInfo end) {
+      this.parsedContent = parsedContent;
+      this.lineNum = begin.lineNum;
+      this.columnNum = begin.columnNum;
+      this.lineNumEnd = end.lineNumEnd;
+      this.columnNumEnd = end.columnNumEnd;
     }
   }
 
@@ -323,28 +358,33 @@ public class TemplateParser {
           .put("lb", "{").put("rb", "}")
           .build();
 
-
-  /**
-   * @param lineNum A 1-indexed line number into the input source text of this template (the input
-   *     passed to this parser's constructor).
-   */
-  private SourceLocation createSrcLoc(int lineNum) {
-    return new SourceLocation(filePath, lineNumOffset + lineNum);
+  private SourceLocation createSrcLoc(SourceItemInfo info) {
+    return new SourceLocation(
+        filePath,
+        lineNumOffset + info.lineNum,
+        info.columnNum,
+        lineNumOffset + info.lineNumEnd,
+        info.columnNumEnd);
   }
 
+  private SourceLocation createSrcLoc(Token token) {
+    return new SourceLocation(
+        filePath,
+        lineNumOffset + token.beginLine,
+        token.beginColumn,
+        lineNumOffset + token.endLine,
+        token.endColumn);
+  }
 
-  /**
-   * Sets the source location for the given Soy node.
-   * @param node The node to set source location on.
-   * @param lineNum A 1-indexed line number into the input source text of this template (the input
-   *     passed to this parser's constructor).
-   * @return The given node, for convenience.
-   */
-  private <T extends SoyNode> T setSrcLoc(T node, int lineNum) {
-    node.setSourceLocation(createSrcLoc(lineNum));
+  private <T extends SoyNode> T setSrcLoc(T node, SourceItemInfo info) {
+    node.setSourceLocation(createSrcLoc(info));
     return node;
   }
 
+  private <T extends SoyNode> T setSrcLoc(T node, Token token) {
+    node.setSourceLocation(createSrcLoc(token));
+    return node;
+  }
 }
 
 PARSER_END(TemplateParser)
@@ -991,7 +1031,7 @@ private SourceItemInfo<Void> SoyTagOpen() :
   | tagOpen = <SOY_TAG_OPEN_2>
   )
 
-  { return new SourceItemInfo<Void>(null, tagOpen.beginLine); }
+  { return new SourceItemInfo<Void>(null, tagOpen); }
 }
 
 
@@ -999,13 +1039,19 @@ private SourceItemInfo<Void> SoyTagOpen() :
  * RegSoyTagClose ->   RegSoyTagCloseAfterCmdName1 | RegSoyTagCloseAfterCmdName2
  *                   | RegSoyTagCloseAfterCmdText1 | RegSoyTagCloseAfterCmdText2
  */
-private void RegSoyTagClose() :
-{}
+private SourceItemInfo<Void> RegSoyTagClose() :
 {
-    <REG_SOY_TAG_CLOSE_AFTER_CMD_NAME_1>
-  | <REG_SOY_TAG_CLOSE_AFTER_CMD_NAME_2>
-  | <REG_SOY_TAG_CLOSE_AFTER_CMD_TEXT_1>
-  | <REG_SOY_TAG_CLOSE_AFTER_CMD_TEXT_2>
+  Token tagClose;
+}
+{
+  (
+    tagClose = <REG_SOY_TAG_CLOSE_AFTER_CMD_NAME_1>
+  | tagClose = <REG_SOY_TAG_CLOSE_AFTER_CMD_NAME_2>
+  | tagClose = <REG_SOY_TAG_CLOSE_AFTER_CMD_TEXT_1>
+  | tagClose = <REG_SOY_TAG_CLOSE_AFTER_CMD_TEXT_2>
+  )
+
+  { return new SourceItemInfo<Void>(null, tagClose); }
 }
 
 
@@ -1015,13 +1061,19 @@ private void RegSoyTagClose() :
  *                          | SelfEndingSoyTagCloseAfterCmdText1
  *                          | SelfEndingSoyTagCloseAfterCmdText2
  */
-private void SelfEndingSoyTagClose() :
-{}
+private SourceItemInfo<Void> SelfEndingSoyTagClose() :
 {
-    <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_NAME_1>
-  | <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_NAME_2>
-  | <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_TEXT_1>
-  | <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_TEXT_2>
+  Token tagClose;
+}
+{
+  (
+    tagClose = <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_NAME_1>
+  | tagClose = <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_NAME_2>
+  | tagClose = <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_TEXT_1>
+  | tagClose = <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_TEXT_2>
+  )
+
+  { return new SourceItemInfo<Void>(null, tagClose); }
 }
 
 
@@ -1183,10 +1235,12 @@ private String AnyCmdName() :
 private SourceItemInfo<String> ConsecWsNoNl() :
 {
   Token token;
+  Token first = null;
+  Token last = null;
 }
 {
-  { StringBuilder sb = new StringBuilder();
-    int lineNum = -1;
+  {
+    StringBuilder sb = new StringBuilder();
   }
 
   (
@@ -1197,10 +1251,18 @@ private SourceItemInfo<String> ConsecWsNoNl() :
       // Skip block nondoc comments (but not block doc comments).
       token = <BLOCK_NONDOC_COMMENT>
     )
-    { if (lineNum == -1) { lineNum = token.beginLine; } }
+    {
+      if (first == null) {
+        first = token;
+      }
+      last = token;
+    }
   )+
 
-  { return new SourceItemInfo<String>(sb.toString(), lineNum); }
+  {
+    return new SourceItemInfo<String>(
+      sb.toString(), first.beginLine, first.beginColumn, last.endLine, last.endColumn);
+  }
 }
 
 
@@ -1210,34 +1272,48 @@ private SourceItemInfo<String> ConsecWsNoNl() :
 private SourceItemInfo<String> ConsecWsWithNl() :
 {
   SourceItemInfo<String> consecWsNoNl;
+  SourceItemInfo<String> first = null;
+  SourceItemInfo<String> last = null;
   Token token;
 }
 {
   { StringBuilder sb = new StringBuilder();
-    int lineNum = -1;
   }
 
   [
     consecWsNoNl = ConsecWsNoNl()
-    { sb.append(consecWsNoNl.parsedContent);
-      lineNum = consecWsNoNl.lineNum;
+    {
+      sb.append(consecWsNoNl.parsedContent);
+      first = consecWsNoNl;
     }
   ]
 
   token = <TOKEN_NL>
-  { sb.append(token.image);
-    if (lineNum == -1) { lineNum = token.beginLine; }
+  {
+    sb.append(token.image);
+    if (first == null) {
+      first = new SourceItemInfo(token.image, token);
+    }
+    last = new SourceItemInfo(token.image, token);
   }
 
   (
     token = <TOKEN_NL>
-    { sb.append(token.image); }
+    {
+      sb.append(token.image);
+      last = new SourceItemInfo(token.image, token);
+    }
   |
     consecWsNoNl = ConsecWsNoNl()
-    { sb.append(consecWsNoNl.parsedContent); }
+    {
+      sb.append(consecWsNoNl.parsedContent);
+      last = consecWsNoNl;
+    }
   )*
 
-  { return new SourceItemInfo<String>(sb.toString(), lineNum); }
+  {
+    return new SourceItemInfo<String>(sb.toString(), first, last);
+  }
 }
 
 
@@ -1304,10 +1380,11 @@ private Token BlockCommentToken() :
 private SourceItemInfo<String> WsBasicRawTextNoNl() :
 {
   Token token;
+  Token first = null;
+  Token last = null;
 }
 {
   { StringBuilder sb = new StringBuilder();
-    int lineNum = -1;
   }
 
   (
@@ -1318,10 +1395,18 @@ private SourceItemInfo<String> WsBasicRawTextNoNl() :
       // Skip block comments (doc and nondoc).
       token = BlockCommentToken()
     )
-    { if (lineNum == -1) { lineNum = token.beginLine; } }
+    {
+      if (first == null) {
+        first = token;
+      }
+      last = token;
+    }
   )+
 
-  { return new SourceItemInfo<String>(sb.toString(), lineNum); }
+  {
+    return new SourceItemInfo<String>(
+      sb.toString(), first.beginLine, first.beginColumn, last.endLine, last.endColumn);
+  }
 }
 
 
@@ -1356,8 +1441,10 @@ private SourceItemInfo<String> BasicRawText() :
   Token token;
 }
 {
-  { StringBuilder basicRawTextSb = new StringBuilder();
+  {
+    StringBuilder basicRawTextSb = new StringBuilder();
     int lineNum = -1;
+    int columnNum = -1;
   }
 
   (
@@ -1368,7 +1455,12 @@ private SourceItemInfo<String> BasicRawText() :
       // Skip block comments (doc and nondoc).
       token = BlockCommentToken()
     )
-    { if (lineNum == -1) { lineNum = token.beginLine; } }
+    {
+      if (lineNum == -1) {
+        lineNum = token.beginLine;
+        columnNum = token.beginColumn;
+      }
+    }
   )+
 
   { String basicRawText = basicRawTextSb.toString();
@@ -1385,9 +1477,11 @@ private SourceItemInfo<String> BasicRawText() :
        if (ch == '\r') {
         if (i + 1 == numSpaceCharsRemovedFromFront || basicRawTextSb.charAt(i + 1) != '\n') {
           ++lineNum;  // Only count this CR if it is not part of a CRLF.
+          columnNum = 1;
         }
       } else if (ch == '\n') {
         ++lineNum;
+        columnNum = 1;
       }
     }
 
@@ -1407,7 +1501,13 @@ private SourceItemInfo<String> BasicRawText() :
     }
     matcher.appendTail(basicRawTextWithoutNewlinesSb);
 
-    return new SourceItemInfo<String>(basicRawTextWithoutNewlinesSb.toString(), lineNum);
+    return new SourceItemInfo<String>(
+      basicRawTextWithoutNewlinesSb.toString(),
+      lineNum,
+      columnNum,
+      lineNum, // TODO(brndn): compute lineNumEnd correctly
+      columnNum // TODO(brndn): compute columnNumEnd correctly
+    );
   }
 }
 
@@ -1441,16 +1541,16 @@ void MaybeWhitespace(String errorMessage) :
  */
 private SourceItemInfo<String> LiteralRawText() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   Token literalRawTextContent;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_LITERAL>
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
   literalRawTextContent = <LITERAL_RAW_TEXT_CONTENT>
-  { return new SourceItemInfo<String>(literalRawTextContent.image, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(literalRawTextContent.image, tagOpen, tagClose); }
 }
 
 
@@ -1463,9 +1563,10 @@ private SourceItemInfo<String> LiteralRawText() :
 private SourceItemInfo<String> SpecialCharRawText() :
 {
   Token specialCharCmdName;
+  SourceItemInfo<Void> tagOpen, tagClose;
 }
 {
-  SoyTagOpen()
+  tagOpen = SoyTagOpen()
 
   (
     specialCharCmdName = <CMD_NAME_SP>
@@ -1477,11 +1578,10 @@ private SourceItemInfo<String> SpecialCharRawText() :
   | specialCharCmdName = <CMD_NAME_RB>
   )
 
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
   { return new SourceItemInfo<String>(
-        SPECIAL_CHAR_CMD_NAME_TO_RAW_TEXT.get(specialCharCmdName.image),
-        specialCharCmdName.beginLine);
+        SPECIAL_CHAR_CMD_NAME_TO_RAW_TEXT.get(specialCharCmdName.image), tagOpen, tagClose);
   }
 }
 
@@ -1496,8 +1596,10 @@ private SourceItemInfo<String> ContiguousRawText() :
   SourceItemInfo<String> basicRawText, literalRawText, specialCharRawText;
 }
 {
-  { StringBuilder sb = new StringBuilder();
-    int lineNum = -1;
+  {
+    StringBuilder sb = new StringBuilder();
+    SourceItemInfo<String> first = null;
+    SourceItemInfo<String> last = null;
   }
 
   (
@@ -1505,26 +1607,38 @@ private SourceItemInfo<String> ContiguousRawText() :
 
     (
       basicRawText = BasicRawText()
-      { if (basicRawText.parsedContent.length() != 0) {
-          if (lineNum == -1) { lineNum = basicRawText.lineNum; }
-          sb.append(basicRawText.parsedContent);
+      {
+        if (first == null) {
+          first = basicRawText;
         }
+        last = basicRawText;
+        sb.append(basicRawText.parsedContent);
       }
     |
       LOOKAHEAD( SoyTagOpen() <CMD_NAME_LITERAL> RegSoyTagClose() )
       literalRawText = LiteralRawText()
-      { if (lineNum == -1) { lineNum = literalRawText.lineNum; }
+      {
+        if (first == null) {
+          first = literalRawText;
+        }
+        last = literalRawText;
         sb.append(literalRawText.parsedContent);
       }
     |
       specialCharRawText = SpecialCharRawText()
-      { if (lineNum == -1) { lineNum = specialCharRawText.lineNum; }
+      {
+        if (first == null) {
+          first = specialCharRawText;
+        }
+        last = specialCharRawText;
         sb.append(specialCharRawText.parsedContent);
       }
     )
   )+
 
-  { return new SourceItemInfo<String>(sb.toString(), lineNum); }
+  {
+    return new SourceItemInfo<String>(sb.toString(), first, last);
+  }
 }
 
 
@@ -1557,16 +1671,16 @@ private void ContiguousRawTextLookaheadHelper() :
  */
 private SourceItemInfo<String> MsgTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_MSG> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1575,16 +1689,16 @@ private SourceItemInfo<String> MsgTag() :
  */
 private SourceItemInfo<String> FallbackmsgTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_FALLBACKMSG> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1605,16 +1719,16 @@ private void EndMsgTag() :
  */
 private SourceItemInfo<String> PluralTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_PLURAL> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1635,16 +1749,16 @@ private void EndPluralTag() :
  */
 private SourceItemInfo<String> SelectTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_SELECT> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1665,7 +1779,7 @@ private void EndSelectTag() :
  */
 private SourceItemInfo<List<String>> PrintTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   List<String> cmdTextParts;
 }
 {
@@ -1679,9 +1793,9 @@ private SourceItemInfo<List<String>> PrintTag() :
   ]
   cmdTextParts = CmdTextParts()
   { printTagParts.addAll(cmdTextParts); }
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<List<String>>(printTagParts, tagOpen.lineNum); }
+  { return new SourceItemInfo<List<String>>(printTagParts, tagOpen, tagClose); }
 }
 
 
@@ -1690,16 +1804,16 @@ private SourceItemInfo<List<String>> PrintTag() :
  */
 private SourceItemInfo<String> XidTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_XID> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1708,16 +1822,16 @@ private SourceItemInfo<String> XidTag() :
  */
 private SourceItemInfo<String> CssTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_CSS> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1726,16 +1840,16 @@ private SourceItemInfo<String> CssTag() :
  */
 private SourceItemInfo<String> LetTagSelfEnding() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_LET> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  SelfEndingSoyTagClose()
+  tagClose = SelfEndingSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1744,16 +1858,16 @@ private SourceItemInfo<String> LetTagSelfEnding() :
  */
 private SourceItemInfo<String> LetTagNotSelfEnding() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_LET> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1774,16 +1888,16 @@ private void EndLetTag() :
  */
 private SourceItemInfo<String> IfTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_IF> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1792,16 +1906,16 @@ private SourceItemInfo<String> IfTag() :
  */
 private SourceItemInfo<String> ElseifTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_ELSEIF> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1838,16 +1952,16 @@ private void EndIfTag() :
  */
 private SourceItemInfo<String> SwitchTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_SWITCH> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1868,16 +1982,16 @@ private void EndSwitchTag() :
  */
 private SourceItemInfo<String> ForeachTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_FOREACH> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1914,16 +2028,16 @@ private void EndForeachTag() :
  */
 private SourceItemInfo<String> ForTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_FOR> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1945,7 +2059,7 @@ private void EndForTag() :
  */
 private SourceItemInfo<List<String>> AnyCallTagSelfEnding() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   Token cmdName;
   List<String> cmdTextParts;
 }
@@ -1958,9 +2072,9 @@ private SourceItemInfo<List<String>> AnyCallTagSelfEnding() :
   <WS_AFTER_CMD_NAME>
   cmdTextParts = CmdTextParts()
   { callTagParts.addAll(cmdTextParts); }
-  SelfEndingSoyTagClose()
+  tagClose = SelfEndingSoyTagClose()
 
-  { return new SourceItemInfo<List<String>>(callTagParts, tagOpen.lineNum); }
+  { return new SourceItemInfo<List<String>>(callTagParts, tagOpen, tagClose); }
 }
 
 
@@ -1969,7 +2083,7 @@ private SourceItemInfo<List<String>> AnyCallTagSelfEnding() :
  */
 private SourceItemInfo<List<String>> AnyCallTagNotSelfEnding() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   Token cmdName;
   List<String> cmdTextParts;
 }
@@ -1982,9 +2096,9 @@ private SourceItemInfo<List<String>> AnyCallTagNotSelfEnding() :
   <WS_AFTER_CMD_NAME>
   cmdTextParts = CmdTextParts()
   { callTagParts.addAll(cmdTextParts); }
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<List<String>>(callTagParts, tagOpen.lineNum); }
+  { return new SourceItemInfo<List<String>>(callTagParts, tagOpen, tagClose); }
 }
 
 
@@ -2011,16 +2125,16 @@ private boolean EndAnyCallTag() :
  */
 private SourceItemInfo<String> ParamTagSelfEnding() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_PARAM> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  SelfEndingSoyTagClose()
+  tagClose = SelfEndingSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2029,16 +2143,16 @@ private SourceItemInfo<String> ParamTagSelfEnding() :
  */
 private SourceItemInfo<String> ParamTagNotSelfEnding() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_PARAM> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2109,16 +2223,16 @@ private SourceItemInfo<Void> DebuggerTag() :
  */
 private SourceItemInfo<String> CaseTag() :
 {
-  SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagOpen, tagClose;
   String cmdText;
 }
 {
   tagOpen = SoyTagOpen()
   <CMD_NAME_CASE> <WS_AFTER_CMD_NAME>
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen.lineNum); }
+  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2379,10 +2493,12 @@ private RawTextNode ContiguousRawTextAsNode() :
 }
 {
   contiguousRawText = ContiguousRawText()
-  { return (contiguousRawText.parsedContent.length() > 0) ?
+  { return (contiguousRawText.parsedContent.length() > 0
+
+  ) ?
         setSrcLoc(
             new RawTextNode(nodeIdGen.genId(), contiguousRawText.parsedContent),
-            contiguousRawText.lineNum) :
+            contiguousRawText) :
         null;
   }
 }
@@ -2496,10 +2612,11 @@ private MsgFallbackGroupNode MsgStmt() :
   { MsgNode msgNode; }
 
   cmdText = MsgTag()
-  { MsgFallbackGroupNode msgFbGrpNode = setSrcLoc(
-        new MsgFallbackGroupNode(nodeIdGen.genId()), cmdText.lineNum);
+  {
+    MsgFallbackGroupNode msgFbGrpNode = setSrcLoc(
+        new MsgFallbackGroupNode(nodeIdGen.genId()), cmdText);
     msgNode = setSrcLoc(
-        new MsgNode(nodeIdGen.genId(), "msg", cmdText.parsedContent), cmdText.lineNum);
+        new MsgNode(nodeIdGen.genId(), "msg", cmdText.parsedContent), cmdText);
     msgFbGrpNode.addChild(msgNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2509,8 +2626,9 @@ private MsgFallbackGroupNode MsgStmt() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_FALLBACKMSG> <WS_AFTER_CMD_NAME> )
 
     cmdText = FallbackmsgTag()
-    { msgNode = setSrcLoc(
-          new MsgNode(nodeIdGen.genId(), "fallbackmsg", cmdText.parsedContent), cmdText.lineNum);
+    {
+      msgNode = setSrcLoc(
+          new MsgNode(nodeIdGen.genId(), "fallbackmsg", cmdText.parsedContent), cmdText);
       msgFbGrpNode.addChild(msgNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
@@ -2604,8 +2722,9 @@ private MsgPluralNode MsgPlural() :
 }
 {
   cmdText = PluralTag()
-  { MsgPluralNode msgPluralNode = setSrcLoc(
-        new MsgPluralNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+  {
+    MsgPluralNode msgPluralNode = setSrcLoc(
+        new MsgPluralNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
   }
   MaybeWhitespace("No content allowed between 'plural' and 'case'" +
       " (whitespace and comments are okay).")
@@ -2614,8 +2733,9 @@ private MsgPluralNode MsgPlural() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_CASE> <WS_AFTER_CMD_NAME> )
 
     cmdText = CaseTag()
-    { MsgPluralCaseNode msgPluralCaseNode = setSrcLoc(
-          new MsgPluralCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+    {
+      MsgPluralCaseNode msgPluralCaseNode = setSrcLoc(
+          new MsgPluralCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
       msgPluralNode.addChild(msgPluralCaseNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
@@ -2631,8 +2751,9 @@ private MsgPluralNode MsgPlural() :
   )*
 
   defaultTagInfo = DefaultTag()
-  { MsgPluralDefaultNode msgPluralDefaultNode = setSrcLoc(
-        new MsgPluralDefaultNode(nodeIdGen.genId()), defaultTagInfo.lineNum);
+  {
+    MsgPluralDefaultNode msgPluralDefaultNode = setSrcLoc(
+        new MsgPluralDefaultNode(nodeIdGen.genId()), defaultTagInfo);
     msgPluralNode.addChild(msgPluralDefaultNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2664,8 +2785,9 @@ private MsgSelectNode MsgSelect() :
 }
 {
   cmdText = SelectTag()
-  { MsgSelectNode msgSelectNode = setSrcLoc(
-        new MsgSelectNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+  {
+    MsgSelectNode msgSelectNode = setSrcLoc(
+        new MsgSelectNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
   }
   MaybeWhitespace("No content allowed between 'select' and 'case'" +
       " (whitespace and comments are okay).")
@@ -2674,8 +2796,9 @@ private MsgSelectNode MsgSelect() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_CASE> <WS_AFTER_CMD_NAME> )
 
     cmdText = CaseTag()
-    { MsgSelectCaseNode msgSelectCaseNode = setSrcLoc(
-          new MsgSelectCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+    {
+      MsgSelectCaseNode msgSelectCaseNode = setSrcLoc(
+          new MsgSelectCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
       msgSelectNode.addChild(msgSelectCaseNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
@@ -2683,8 +2806,9 @@ private MsgSelectNode MsgSelect() :
   )*
 
   defaultTagInfo = DefaultTag()
-  { MsgSelectDefaultNode msgSelectDefaultNode = setSrcLoc(
-        new MsgSelectDefaultNode(nodeIdGen.genId()), defaultTagInfo.lineNum);
+  {
+    MsgSelectDefaultNode msgSelectDefaultNode = setSrcLoc(
+        new MsgSelectDefaultNode(nodeIdGen.genId()), defaultTagInfo);
     msgSelectNode.addChild(msgSelectDefaultNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2709,26 +2833,26 @@ private MsgHtmlTagNode MsgHtmlTag() :
   templateBlock = TemplateBlock()
   <MSG_HTML_TAG_CLOSE>
 
-  { // First, we add back the HTML tag's opening and closing angle brackets.
+  {
+    // First, we add back the HTML tag's opening and closing angle brackets.
     // Minor note: If there's only one RawTextNode, we'll replace it twice. No big deal.
-    int lineNum = htmlTagOpen.beginLine;
     if (templateBlock.get(0) instanceof RawTextNode) {
       RawTextNode firstNode = (RawTextNode) templateBlock.get(0);
       RawTextNode newNode = new RawTextNode(nodeIdGen.genId(), "<" + firstNode.getRawText());
-      templateBlock.set(0, setSrcLoc(newNode, lineNum));
+      templateBlock.set(0, setSrcLoc(newNode, htmlTagOpen));
     } else {
-      templateBlock.add(0, setSrcLoc(new RawTextNode(nodeIdGen.genId(), "<"), lineNum));
+      templateBlock.add(0, setSrcLoc(new RawTextNode(nodeIdGen.genId(), "<"), htmlTagOpen));
     }
     int lastNodeIndex = templateBlock.size() - 1;
     if (templateBlock.get(lastNodeIndex) instanceof RawTextNode) {
       RawTextNode lastNode = (RawTextNode) templateBlock.get(lastNodeIndex);
       RawTextNode newNode = new RawTextNode(nodeIdGen.genId(), lastNode.getRawText() + ">");
-      templateBlock.set(lastNodeIndex, setSrcLoc(newNode, lineNum));
+      templateBlock.set(lastNodeIndex, setSrcLoc(newNode, htmlTagOpen));
     } else {
-      templateBlock.add(setSrcLoc(new RawTextNode(nodeIdGen.genId(), ">"), lineNum));
+      templateBlock.add(setSrcLoc(new RawTextNode(nodeIdGen.genId(), ">"), htmlTagOpen));
     }
 
-    return setSrcLoc(new MsgHtmlTagNode(nodeIdGen.genId(), templateBlock), lineNum);
+    return setSrcLoc(new MsgHtmlTagNode(nodeIdGen.genId(), templateBlock), htmlTagOpen);
   }
 }
 
@@ -2743,8 +2867,8 @@ private PrintNode PrintStmt() :
 {
   printTagInfo = PrintTag()
 
-  { List<String> printTagParts = printTagInfo.parsedContent;
-    int lineNum = printTagInfo.lineNum;
+  {
+    List<String> printTagParts = printTagInfo.parsedContent;
 
     // ------ Process command name (implicit or explicit). ------
     boolean isImplicit;
@@ -2765,7 +2889,7 @@ private PrintNode PrintStmt() :
         if (phnameAttr != null) {
           throw SoySyntaxException.createWithMetaInfo(
               "Found multiple 'phname' attributes in 'print' command text \"" + cmdText + "\".",
-              createSrcLoc(lineNum), null, null);
+              createSrcLoc(printTagInfo), null, null);
         }
         phnameAttr = cmdTextPart;
       }
@@ -2782,11 +2906,12 @@ private PrintNode PrintStmt() :
     // Note: First part is expression, rest of parts are directives or directive args.
     if (cmdTextParts.isEmpty()) {
       throw SoySyntaxException.createWithMetaInfo(
-          "Found 'print' command with empty command text.", createSrcLoc(lineNum), null, null);
+          "Found 'print' command with empty command text.",
+          createSrcLoc(printTagInfo), null, null);
     }
     String exprText = cmdTextParts.get(0).trim();
     PrintNode printNode = setSrcLoc(
-        new PrintNode(nodeIdGen.genId(), isImplicit, exprText, userSuppliedPhName), lineNum);
+        new PrintNode(nodeIdGen.genId(), isImplicit, exprText, userSuppliedPhName), printTagInfo);
 
     // ------ Process directives (if any). ------
     String directiveName = null;
@@ -2797,7 +2922,8 @@ private PrintNode PrintStmt() :
         // Create previous directive and save current directive name.
         if (directiveName != null) {
           printNode.addChild(setSrcLoc(
-              new PrintDirectiveNode(nodeIdGen.genId(), directiveName, ""), lineNum));
+              new PrintDirectiveNode(nodeIdGen.genId(), directiveName, ""),
+              printTagInfo));
         }
         directiveName = cmdTextPart;
 
@@ -2808,7 +2934,8 @@ private PrintNode PrintStmt() :
         }
         String argsText = cmdTextPart.substring(1);
         printNode.addChild(setSrcLoc(
-            new PrintDirectiveNode(nodeIdGen.genId(), directiveName, argsText), lineNum));
+            new PrintDirectiveNode(nodeIdGen.genId(), directiveName, argsText),
+            printTagInfo));
         directiveName = null;
 
       } else if (cmdTextPart.trim().length() == 0) {
@@ -2822,7 +2949,7 @@ private PrintNode PrintStmt() :
     // Add last directive.
     if (directiveName != null) {
       printNode.addChild(setSrcLoc(
-          new PrintDirectiveNode(nodeIdGen.genId(), directiveName, ""), lineNum));
+          new PrintDirectiveNode(nodeIdGen.genId(), directiveName, ""), printTagInfo));
     }
 
     return printNode;
@@ -2863,7 +2990,9 @@ private XidNode XidStmt() :
 }
 {
   cmdText = XidTag()
-  { return setSrcLoc(new XidNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum); }
+  {
+    return setSrcLoc(new XidNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+  }
 }
 
 
@@ -2876,7 +3005,9 @@ private CssNode CssStmt() :
 }
 {
   cmdText = CssTag()
-  { return setSrcLoc(new CssNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum); }
+  {
+    return setSrcLoc(new CssNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+  }
 }
 
 
@@ -2896,16 +3027,18 @@ private LetNode LetStmt() :
     LOOKAHEAD( LetTagSelfEnding() )
 
     cmdText = LetTagSelfEnding()
-    { letNode = setSrcLoc(
-          new LetValueNode(nodeIdGen.genId(), false, cmdText.parsedContent), cmdText.lineNum);
+    {
+      letNode = setSrcLoc(
+          new LetValueNode(nodeIdGen.genId(), false, cmdText.parsedContent), cmdText);
     }
 
   |
     LOOKAHEAD( LetTagNotSelfEnding() )
 
     cmdText = LetTagNotSelfEnding()
-    { LetContentNode letContentNode = setSrcLoc(
-          new LetContentNode(nodeIdGen.genId(), false, cmdText.parsedContent), cmdText.lineNum);
+    {
+      LetContentNode letContentNode = setSrcLoc(
+          new LetContentNode(nodeIdGen.genId(), false, cmdText.parsedContent), cmdText);
     }
     templateBlock = TemplateBlock()
     { letContentNode.addChildren(templateBlock);
@@ -2931,9 +3064,10 @@ private IfNode IfStmt() :
   { IfCondNode ifCondNode; }
 
   cmdText = IfTag()
-  { IfNode ifNode = setSrcLoc(new IfNode(nodeIdGen.genId()), cmdText.lineNum);
+  {
+    IfNode ifNode = setSrcLoc(new IfNode(nodeIdGen.genId()), cmdText);
     ifCondNode = setSrcLoc(
-        new IfCondNode(nodeIdGen.genId(), "if", cmdText.parsedContent), cmdText.lineNum);
+        new IfCondNode(nodeIdGen.genId(), "if", cmdText.parsedContent), cmdText);
     ifNode.addChild(ifCondNode);
   }
   templateBlock = TemplateBlock()
@@ -2943,8 +3077,9 @@ private IfNode IfStmt() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_ELSEIF> <WS_AFTER_CMD_NAME> )
 
     cmdText = ElseifTag()
-    { ifCondNode = setSrcLoc(
-          new IfCondNode(nodeIdGen.genId(), "elseif", cmdText.parsedContent), cmdText.lineNum);
+    {
+      ifCondNode = setSrcLoc(
+          new IfCondNode(nodeIdGen.genId(), "elseif", cmdText.parsedContent), cmdText);
       ifNode.addChild(ifCondNode);
     }
     templateBlock = TemplateBlock()
@@ -2955,7 +3090,8 @@ private IfNode IfStmt() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_ELSE> RegSoyTagClose() )
 
     elseTagInfo = ElseTag()
-    { IfElseNode ifElseNode = setSrcLoc(new IfElseNode(nodeIdGen.genId()), elseTagInfo.lineNum);
+    {
+      IfElseNode ifElseNode = setSrcLoc(new IfElseNode(nodeIdGen.genId()), elseTagInfo);
       ifNode.addChild(ifElseNode);
     }
     templateBlock = TemplateBlock()
@@ -2980,8 +3116,9 @@ private SwitchNode SwitchStmt() :
 }
 {
   cmdText = SwitchTag()
-  { SwitchNode switchNode = setSrcLoc(
-        new SwitchNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+  {
+    SwitchNode switchNode = setSrcLoc(
+        new SwitchNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
   }
 
   MaybeWhitespace("No content allowed between 'switch' and 'case'" +
@@ -2991,8 +3128,9 @@ private SwitchNode SwitchStmt() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_CASE> <WS_AFTER_CMD_NAME> )
 
     cmdText = CaseTag()
-    { SwitchCaseNode switchCaseNode = setSrcLoc(
-          new SwitchCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+    {
+      SwitchCaseNode switchCaseNode = setSrcLoc(
+          new SwitchCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
       switchNode.addChild(switchCaseNode);
     }
     templateBlock = TemplateBlock()
@@ -3003,8 +3141,9 @@ private SwitchNode SwitchStmt() :
     LOOKAHEAD( SoyTagOpen() <CMD_NAME_DEFAULT> RegSoyTagClose() )
 
     defaultTagInfo = DefaultTag()
-    { SwitchDefaultNode switchDefaultNode = setSrcLoc(
-          new SwitchDefaultNode(nodeIdGen.genId()), defaultTagInfo.lineNum);
+    {
+      SwitchDefaultNode switchDefaultNode = setSrcLoc(
+          new SwitchDefaultNode(nodeIdGen.genId()), defaultTagInfo);
       switchNode.addChild(switchDefaultNode);
     }
     templateBlock = TemplateBlock()
@@ -3028,14 +3167,15 @@ private ForeachNode ForeachStmt() :
 }
 {
   cmdText = ForeachTag()
-  { ForeachNode foreachNode = setSrcLoc(
-        new ForeachNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+  {
+    ForeachNode foreachNode = setSrcLoc(
+        new ForeachNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
   }
 
-  { int lineNum = getToken(0).beginLine; }
   templateBlock = TemplateBlock()
-  { ForeachNonemptyNode foreachNonemptyNode = setSrcLoc(
-        new ForeachNonemptyNode(nodeIdGen.genId()), lineNum);
+  {
+    ForeachNonemptyNode foreachNonemptyNode = setSrcLoc(
+        new ForeachNonemptyNode(nodeIdGen.genId()), cmdText);
     foreachNode.addChild(foreachNonemptyNode);
     foreachNonemptyNode.addChildren(templateBlock);
   }
@@ -3045,8 +3185,9 @@ private ForeachNode ForeachStmt() :
 
     ifemptyTagInfo = IfemptyTag()
     templateBlock = TemplateBlock()
-    { ForeachIfemptyNode foreachIfemptyNode = setSrcLoc(
-          new ForeachIfemptyNode(nodeIdGen.genId()), ifemptyTagInfo.lineNum);
+    {
+      ForeachIfemptyNode foreachIfemptyNode = setSrcLoc(
+          new ForeachIfemptyNode(nodeIdGen.genId()), ifemptyTagInfo);
       foreachNode.addChild(foreachIfemptyNode);
       foreachIfemptyNode.addChildren(templateBlock);
     }
@@ -3068,8 +3209,9 @@ private ForNode ForStmt() :
 }
 {
   cmdText = ForTag()
-  { ForNode forNode = setSrcLoc(
-        new ForNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+  {
+    ForNode forNode = setSrcLoc(
+        new ForNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
   }
 
   templateBlock = TemplateBlock()
@@ -3137,7 +3279,7 @@ private CallNode CallStmt() :
           throw SoySyntaxException.createWithMetaInfo(
               "Found multiple 'phname' attributes in '" + cmdName + "' command text \"" +
                   Joiner.on("").join(callTagParts.subList(1, callTagParts.size())) + "\".",
-              createSrcLoc(callTagInfo.lineNum), null, null);
+              createSrcLoc(callTagInfo), null, null);
         }
         phnameAttr = cmdTextPart;
       } else {
@@ -3167,7 +3309,7 @@ private CallNode CallStmt() :
     } else {
       callNode = new CallDelegateNode(nodeIdGen.genId(), cmdText, userSuppliedPhName);
     }
-    callNode = setSrcLoc(callNode, callTagInfo.lineNum);
+    callNode = setSrcLoc(callNode, callTagInfo);
     callNode.addChildren(callParams);
 
     return callNode;
@@ -3191,16 +3333,18 @@ private CallParamNode CallParam() :
     LOOKAHEAD( ParamTagSelfEnding() )
 
     cmdText = ParamTagSelfEnding()
-    { callParamNode = setSrcLoc(
-          new CallParamValueNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+    {
+      callParamNode = setSrcLoc(
+          new CallParamValueNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
     }
 
   |
     LOOKAHEAD( ParamTagNotSelfEnding() )
 
     cmdText = ParamTagNotSelfEnding()
-    { CallParamContentNode cpcn = setSrcLoc(
-          new CallParamContentNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText.lineNum);
+    {
+      CallParamContentNode cpcn = setSrcLoc(
+          new CallParamContentNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
     }
     templateBlock = TemplateBlock()
     { cpcn.addChildren(templateBlock);
@@ -3223,7 +3367,9 @@ private LogNode LogStmt() :
 }
 {
   logTagInfo = LogTag()
-  { LogNode logNode = setSrcLoc(new LogNode(nodeIdGen.genId()), logTagInfo.lineNum); }
+  {
+    LogNode logNode = setSrcLoc(new LogNode(nodeIdGen.genId()), logTagInfo);
+  }
 
   templateBlock = TemplateBlock()
   { logNode.addChildren(templateBlock); }
@@ -3243,5 +3389,7 @@ private DebuggerNode DebuggerStmt() :
 }
 {
   debuggerTagInfo = DebuggerTag()
-  { return setSrcLoc(new DebuggerNode(nodeIdGen.genId()), debuggerTagInfo.lineNum); }
+  {
+    return setSrcLoc(new DebuggerNode(nodeIdGen.genId()), debuggerTagInfo);
+  }
 }

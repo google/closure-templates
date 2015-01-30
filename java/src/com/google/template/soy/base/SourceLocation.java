@@ -17,38 +17,50 @@
 package com.google.template.soy.base;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Preconditions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * Describes a line in a Soy input file.
+ * Describes a source location in a Soy input file.
  *
+ * @author brndn@google.com (Brendan Linn)
  */
 @ParametersAreNonnullByDefault
-public final class SourceLocation {
-
+public class SourceLocation {
 
   /** A file path or URI useful for error messages. */
   @Nonnull private final String filePath;
 
   private final String fileName;
 
-  /** The line number in the source file (1-based), or 0 if associated with the entire file instead
-   *  of a line. */
-  private final int lineNumber;
+  private final int beginLine;
+  private final int beginColumn;
+  private final int endLine;
+  private final int endColumn;
 
   /** A nullish source location. */
-  public static final SourceLocation UNKNOWN = new SourceLocation("unknown", 0);
-
+  public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
 
   /**
    * @param filePath A file path or URI useful for error messages.
-   * @param lineNumber The line number in the source file (1-based), or 0 if associated with the
-   *     entire file instead of a line.
+   * @param beginLine The line number in the source file where this location begins (1-based),
+   *     or -1 if associated with the entire file instead of a line.
+   * @param beginColumn The column number in the source file where this location begins (1-based),
+   *     or -1 if associated with the entire file instead of a line.
+   * @param endLine The line number in the source file where this location ends (1-based),
+   *     or -1 if associated with the entire file instead of a line.
+   * @param endColumn The column number in the source file where this location ends (1-based),
+   *     or -1 if associated with the entire file instead of a line.
    */
-  public SourceLocation(String filePath, int lineNumber) {
+  public SourceLocation(
+      String filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
+    Preconditions.checkArgument(beginLine > 0 || beginLine == -1);
+    Preconditions.checkArgument(beginColumn > 0 || beginColumn == -1);
+    Preconditions.checkArgument(endLine > 0 || endLine == -1);
+    Preconditions.checkArgument(endColumn > 0 || endColumn == -1);
 
     int lastBangIndex = filePath.lastIndexOf('!');
     if (lastBangIndex != -1) {
@@ -56,6 +68,7 @@ public final class SourceLocation {
       filePath = filePath.substring(lastBangIndex + 1);
     }
 
+    // TODO(lukes): consider using Java 7 File APIs here.
     int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
     if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
       this.fileName = filePath.substring(lastSlashIndex + 1);
@@ -64,9 +77,15 @@ public final class SourceLocation {
     }
 
     this.filePath = filePath;
-    this.lineNumber = lineNumber;
+    this.beginLine = beginLine;
+    this.beginColumn = beginColumn;
+    this.endLine = endLine;
+    this.endColumn = endColumn;
   }
 
+  public SourceLocation(String filePath) {
+    this(filePath, -1, -1, -1, -1);
+  }
 
   /**
    * Returns a file path or URI useful for error messages. This should not be used to fetch content
@@ -75,7 +94,6 @@ public final class SourceLocation {
   @Nonnull public String getFilePath() {
     return filePath;
   }
-
 
   @Nullable public String getFileName() {
     if (UNKNOWN.equals(this)) {
@@ -86,23 +104,41 @@ public final class SourceLocation {
     return fileName;
   }
 
-
   /**
-   * Returns the line number in the source file (1-based), or 0 if associated with the entire file
-   * instead of a line.
+   * Returns the line number in the source file where this location begins (1-based).
+   * TODO(brndn): rename this to getBeginLine.
    */
   public int getLineNumber() {
-    return lineNumber;
+    return beginLine;
   }
 
+  /**
+   * Returns the column number in the source file where this location begins (1-based).
+   */
+  public int getBeginColumn() {
+    return beginColumn;
+  }
+
+  /**
+   * Returns the line number in the source file where this location ends (1-based).
+   */
+  public int getEndLine() {
+    return endLine;
+  }
+
+  /**
+   * Returns the column number in the source file where this location ends (1-based).
+   */
+  public int getEndColumn() {
+    return endColumn;
+  }
 
   /**
    * True iff this location is known, i.e. not the special value {@link #UNKNOWN}.
    */
-  public boolean isKnown() {
+  boolean isKnown() {
     return !this.equals(UNKNOWN);
   }
-
 
   @Override
   public boolean equals(@Nullable Object o) {
@@ -110,15 +146,17 @@ public final class SourceLocation {
       return false;
     }
     SourceLocation that = (SourceLocation) o;
-    return this.filePath.equals(that.filePath) && this.lineNumber == that.lineNumber;
+    return this.filePath.equals(that.filePath) && this.beginLine == that.beginLine;
   }
 
   @Override
   public int hashCode() {
-    return filePath.hashCode() + 31 * lineNumber;
+    return filePath.hashCode() + 31 * beginLine;
   }
 
   @Override public String toString() {
-    return lineNumber != 0 ? filePath + ":" + lineNumber : filePath;
+    return beginLine != -1
+        ? (filePath + ":" + beginLine + ":" + beginColumn)
+        : filePath;
   }
 }

@@ -278,7 +278,7 @@ public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** @param filePath The path to the source Soy file. */
   public void setFilePath(String filePath) {
-    setSourceLocation(new SourceLocation(filePath, 0));
+    setSourceLocation(new SourceLocation(filePath));
   }
 
 
