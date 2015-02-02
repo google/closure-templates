@@ -169,7 +169,6 @@ public final class TofuExceptionsTest extends TestCase {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      ste.printStackTrace();
       SoyFutureException sfe = (SoyFutureException) ste.getCause();
       assertEquals("Error dereferencing future", sfe.getMessage());
       assertEquals(futureFailureCause, sfe.getCause());
