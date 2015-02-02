@@ -65,14 +65,14 @@ class PreevalVisitor extends EvalVisitor {
 
     // Cannot preevaluate injected data.
     if (node.isInjected()) {
-      throw new RenderException("Cannot preevaluate reference to ijData.");
+      throw RenderException.create("Cannot preevaluate reference to ijData.");
     }
 
     // Otherwise, super method can handle it.
     SoyValue value = super.visitVarRefNode(node);
 
     if (value instanceof UndefinedData) {
-      throw new RenderException("Encountered undefined reference during preevaluation.");
+      throw RenderException.create("Encountered undefined reference during preevaluation.");
     }
 
     return value;
@@ -83,7 +83,7 @@ class PreevalVisitor extends EvalVisitor {
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
 
     if (! fn.getClass().isAnnotationPresent(SoyPureFunction.class)) {
-      throw new RenderException("Cannot preevaluate impure function.");
+      throw RenderException.create("Cannot preevaluate impure function.");
     }
 
     return super.computeFunctionHelper(fn, args, fnNode);

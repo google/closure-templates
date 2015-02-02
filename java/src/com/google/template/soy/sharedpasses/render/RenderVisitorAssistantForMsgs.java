@@ -174,11 +174,11 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     try {
       pluralValue = master.evalForUseByAssistants(pluralExpr, node).numberValue();
     } catch (SoyDataException e) {
-      throw new RenderException(
-          String.format("Plural expression \"%s\" doesn't evaluate to number.",
-              pluralExpr.toSourceString()),
-          e)
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          String.format(
+              "Plural expression \"%s\" doesn't evaluate to number.", pluralExpr.toSourceString()),
+          e,
+          node);
     }
 
     currPluralRemainderValue = pluralValue - node.getOffset();
@@ -215,11 +215,11 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     try {
       selectValue = master.evalForUseByAssistants(selectExpr, node).stringValue();
     } catch (SoyDataException e) {
-      throw new RenderException(
-          String.format("Select expression \"%s\" doesn't evaluate to string.",
-              selectExpr.toSourceString()),
-          e)
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          String.format(
+              "Select expression \"%s\" doesn't evaluate to string.", selectExpr.toSourceString()),
+          e,
+          node);
     }
 
     // Check each case.
@@ -304,11 +304,12 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       try {
         correctSelectValue = master.evalForUseByAssistants(selectExpr, repSelectNode).stringValue();
       } catch (SoyDataException e) {
-        throw new RenderException(
-            String.format("Select expression \"%s\" doesn't evaluate to string.",
+        throw RenderException.createWithSource(
+            String.format(
+                "Select expression \"%s\" doesn't evaluate to string.",
                 selectExpr.toSourceString()),
-            e)
-            .addPartialStackTraceElement(repSelectNode.getSourceLocation());
+            e,
+            repSelectNode);
       }
 
       List<SoyMsgPart> caseParts = null;
@@ -345,9 +346,9 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             appendRawTextPart((SoyMsgRawTextPart) casePart);
 
           } else {
-            throw new RenderException("Unsupported part of type " + casePart.getClass().getName() +
+            throw RenderException.create("Unsupported part of type " + casePart.getClass().getName() +
                 " under a select case.")
-                .addPartialStackTraceElement(repSelectNode.getSourceLocation());
+                .addStackTraceElement(repSelectNode);
 
           }
         }
@@ -372,11 +373,12 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         correctPluralValue =
             master.evalForUseByAssistants(pluralExpr, repPluralNode).numberValue();
       } catch (SoyDataException e) {
-        throw new RenderException(
-            String.format("Plural expression \"%s\" doesn't evaluate to number.",
+        throw RenderException.createWithSource(
+            String.format(
+                "Plural expression \"%s\" doesn't evaluate to number.",
                 pluralExpr.toSourceString()),
-            e)
-            .addPartialStackTraceElement(repPluralNode.getSourceLocation());
+            e,
+            repPluralNode);
       }
 
       currentPluralRemainderValue = correctPluralValue - repPluralNode.getOffset();
@@ -442,9 +444,9 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
         } else {
           // Plural parts will not have nested plural/select parts.  So, this is an error.
-          throw new RenderException("Unsupported part of type " + casePart.getClass().getName() +
+          throw RenderException.create("Unsupported part of type " + casePart.getClass().getName() +
               " under a plural case.")
-              .addPartialStackTraceElement(repPluralNode.getSourceLocation());
+              .addStackTraceElement(repPluralNode);
 
         }
       }

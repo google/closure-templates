@@ -90,7 +90,7 @@ class PrerenderVisitor extends RenderVisitor {
       throw e;
 
     } catch (RuntimeException e) {
-      throw new RenderException("Failed prerender due to exception: " + e.getMessage(), e);
+      throw RenderException.create("Failed prerender due to exception: " + e.getMessage(), e);
     }
   }
 
@@ -100,44 +100,44 @@ class PrerenderVisitor extends RenderVisitor {
 
 
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    throw new RenderException("Cannot prerender MsgFallbackGroupNode.");
+    throw RenderException.create("Cannot prerender MsgFallbackGroupNode.");
   }
 
 
   @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
-    throw new RenderException("Cannot prerender GoogMsgDefNode.");
+    throw RenderException.create("Cannot prerender GoogMsgDefNode.");
   }
 
 
   @Override protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
-    throw new RenderException("Cannot prerender GoogMsgRefNode.");
+    throw RenderException.create("Cannot prerender GoogMsgRefNode.");
   }
 
 
   @Override protected void visitCssNode(CssNode node) {
-    throw new RenderException("Cannot prerender CssNode.");
+    throw RenderException.create("Cannot prerender CssNode.");
   }
 
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
-    throw new RenderException("Cannot prerender CallDelegateNode.");
+    throw RenderException.create("Cannot prerender CallDelegateNode.");
   }
 
 
   @Override protected void visitLogNode(LogNode node) {
-    throw new RenderException("Cannot prerender LogNode.");
+    throw RenderException.create("Cannot prerender LogNode.");
   }
 
 
   @Override protected void visitDebuggerNode(DebuggerNode node) {
-    throw new RenderException("Cannot prerender DebuggerNode.");
+    throw RenderException.create("Cannot prerender DebuggerNode.");
   }
 
 
   @Override protected void visitPrintNode(PrintNode node) {
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
       if (!isSoyPurePrintDirective(directiveNode)) {
-        throw new RenderException("Cannot prerender a node with some impure print directive.");
+        throw RenderException.create("Cannot prerender a node with some impure print directive.");
       }
     }
     super.visitPrintNode(node);
@@ -146,7 +146,7 @@ class PrerenderVisitor extends RenderVisitor {
 
   @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
     if (!isSoyPurePrintDirective(node)) {
-      throw new RenderException("Cannot prerender impure print directive.");
+      throw RenderException.create("Cannot prerender impure print directive.");
     }
     super.visitPrintDirectiveNode(node);
   }

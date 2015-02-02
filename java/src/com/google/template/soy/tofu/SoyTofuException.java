@@ -16,12 +16,23 @@
 
 package com.google.template.soy.tofu;
 
-import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
 
 /**
  * Exception thrown when an error occurs during template rendering.
+ *
+ * <p>There are several kinds of errors that you might encounter:
+ * <ul>
+ *   <li>Type errors.  Thrown if the static type of a variable does not match the runtime type.
+ *   <li>Plugin errors.  Errors thrown from functions will be wrapped in SoyTofuException with the
+ *       original exception maintained in the {@link Throwable#getCause() cause} field.
+ *   <li>Future errors.  Errors thrown when dereferencing {@link Future} instances passed as
+ *       parameters.  In this case, the failure cause will be {@link SoyFutureException}, with the
+ *       failure cause attached to that.
+ *   <li>TODO(lukes): fill in more examples
+ * </ul>
  *
  */
 public class SoyTofuException extends RuntimeException {
@@ -39,23 +50,14 @@ public class SoyTofuException extends RuntimeException {
    * @param re The RenderException to copy.
    */
   public SoyTofuException(RenderException re) {
-    super(re.getMessage(), getRootCause(re));
+    super(re.getMessage(), re.getCause());
     // At this point, the stack trace aggregation logic in RenderException can be considered done.
     // Set the stack trace of both the current SoyTofuException class as well as the
     // RenderException class.
-    re.finalizeStackTrace();
     re.finalizeStackTrace(this);
-  }
-
-  private static Throwable getRootCause(Throwable e) {
-    while (e.getCause() != null) {
-      if (e instanceof SoyDataException) {
-        // Don't unwrap SoyDataException as they are handled differently, which could change the
-        // server error status
-        return e;
-      }
-      e = e.getCause();
+    // Maintain suppressed exceptions.
+    for (Throwable suppressed : re.getSuppressed()) {
+      addSuppressed(suppressed);
     }
-    return e;
   }
 }

@@ -249,14 +249,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** A private helper to render templates with optimized type checking. */
   private void renderTemplate(TemplateNode template, Collection<TemplateParam> paramsToTypeCheck) {
     env = Environment.create(template, data, ijData);
-    try {
-      checkStrictParamTypes(template, paramsToTypeCheck);
-      visitChildren(template);
-    } catch (RenderException re) {
-      // This will complete one single StackTraceElement, and rethrow.
-      throw re.completeStackTraceElement(template);
-    }
-    env = null;
+    checkStrictParamTypes(template, paramsToTypeCheck);
+    visitChildren(template);
+    env = null;  // unpin for gc
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -293,9 +288,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     SoyValue result = eval(node.getExprUnion().getExpr(), node);
     if (result instanceof UndefinedData) {
-      throw new RenderException(
-          "In 'print' tag, expression \"" + node.getExprText() + "\" evaluates to undefined.")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          "In 'print' tag, expression \"" + node.getExprText() + "\" evaluates to undefined.",
+          node);
     }
 
     // Process directives.
@@ -312,7 +307,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       result = applyDirective(directiveNode.getName(), result, argsSoyDatas, node);
     }
 
-    append(currOutputBuf, result);
+    append(currOutputBuf, result, node);
   }
 
 
@@ -325,7 +320,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitCssNode(CssNode node) {
     ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
-      append(currOutputBuf, eval(componentNameExpr, node));
+      append(currOutputBuf, eval(componentNameExpr, node), node);
       append(currOutputBuf, "-");
     }
 
@@ -413,10 +408,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     SoyValue dataRefValue = eval(node.getExpr(), node);
     if (!(dataRefValue instanceof SoyList)) {
-      throw new RenderException(
-          "In 'foreach' command " + node.toSourceString() +
-          ", the data reference does not resolve to a SoyList " +
-          "(encountered type " + dataRefValue.getClass().getName() + ").");
+      throw RenderException.createWithSource(
+          "In 'foreach' command " + node.toSourceString() + ", the data reference does not "
+              + "resolve to a SoyList " + "(encountered type "
+              + dataRefValue.getClass().getName() + ").",
+          node);
     }
     SoyList foreachList = (SoyList) dataRefValue;
     int listLength = foreachList.length();
@@ -447,9 +443,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     for (ExprNode rangeArg : node.getRangeArgs()) {
       SoyValue rangeArgValue = eval(rangeArg, node);
       if (!(rangeArgValue instanceof IntegerData)) {
-        throw new RenderException(
-            "In 'for' command " + node.toSourceString() + ", the expression \"" +
-            rangeArg.toSourceString() + "\" does not resolve to an integer.");
+        throw RenderException.createWithSource(
+            "In 'for' command " + node.toSourceString() + ", the expression \""
+                + rangeArg.toSourceString() + "\" does not resolve to an integer.",
+            node);
       }
       rangeArgValues.add(((IntegerData) rangeArgValue).integerValue());
     }
@@ -470,9 +467,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
     if (callee == null) {
-      throw new RenderException(
-          "Attempting to render undefined template '" + node.getCalleeName() + "'.")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          "Attempting to render undefined template '" + node.getCalleeName() + "'.", node);
     }
 
     visitCallNodeHelper(node, callee);
@@ -498,10 +494,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           variant = variantData.stringValue();
         }
       } catch (SoyDataException e) {
-        throw new RenderException(String.format("Variant expression \"%s\" doesn't" +
-            " evaluate to a valid type (Only string and integer are supported).",
-            variantExpr.toSourceString()), e)
-            .addPartialStackTraceElement(node.getSourceLocation());
+        throw RenderException.createWithSource(
+            String.format(
+                "Variant expression \"%s\" doesn't evaluate to a valid type "
+                    + "(Only string and integer are supported).",
+            variantExpr.toSourceString()),
+            e,
+            node);
       }
     }
     DelTemplateKey delegateKey = new DelTemplateKey(node.getDelCalleeName(), variant);
@@ -510,8 +509,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     try {
       callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageNames);
     } catch (DelegateTemplateConflictException e) {
-      throw new RenderException(e.getMessage(), e)
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(e.getMessage(), e, node);
     }
 
     if (callee != null) {
@@ -521,10 +519,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       return;  // no active delegate implementation, so the call output is empty string
 
     } else {
-      throw new RenderException(
-          "Found no active impl for delegate call to '" + node.getDelCalleeName() +
-          "' (and no attribute allowemptydefault=\"true\").")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          "Found no active impl for delegate call to '" + node.getDelCalleeName()
+              + "' (and no attribute allowemptydefault=\"true\").", node);
     }
   }
 
@@ -539,10 +536,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     } else if (node.isPassingData()) {
       SoyValue dataRefValue = eval(node.getDataExpr(), node);
       if (!(dataRefValue instanceof SoyRecord)) {
-        throw new RenderException(
-            "In 'call' command " + node.toSourceString() +
-            ", the data reference does not resolve to a SoyRecord.")
-            .addPartialStackTraceElement(node.getSourceLocation());
+        throw RenderException.create("In 'call' command " + node.toSourceString() +
+        ", the data reference does not resolve to a SoyRecord.")
+            .addStackTraceElement(node);
       }
       dataToPass = (SoyRecord) dataRefValue;
     } else {
@@ -603,7 +599,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
-        throw re.addPartialStackTraceElement(node.getSourceLocation());
+        throw re.addStackTraceElement(node);
       }
     } else {
       // Escaping the call site's result, such as at a strict template boundary.
@@ -618,7 +614,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
-        throw re.addPartialStackTraceElement(node.getSourceLocation());
+        throw re.addStackTraceElement(node);
       }
       SoyValue resultData = (callee.getContentKind() != null) ?
           UnsafeSanitizedContentOrdainer.ordainAsSafe(
@@ -627,7 +623,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       for (String directiveName : node.getEscapingDirectiveNames()) {
         resultData = applyDirective(directiveName, resultData, ImmutableList.<SoyValue>of(), node);
       }
-      append(currOutputBuf, resultData);
+      append(currOutputBuf, resultData, node);
     }
   }
 
@@ -726,8 +722,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private SoyValue eval(ExprNode expr, SoyNode node) {
 
     if (expr == null) {
-      throw new RenderException("Cannot evaluate expression in V1 syntax.")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.create("Cannot evaluate expression in V1 syntax.")
+          .addStackTraceElement(node);
     }
 
     // Lazily initialize evalVisitor.
@@ -737,10 +733,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     try {
       return evalVisitor.exec(expr);
+    } catch (RenderException e) {
+      // RenderExceptions can be thrown when evaluating lazy transclusions.
+      throw RenderException.createFromRenderException(
+          "When evaluating \"" + expr.toSourceString() + "\": " + e.getMessage(), e, node);
     } catch (Exception e) {
-      throw new RenderException(
-          "When evaluating \"" + expr.toSourceString() + "\": " + e.getMessage(), e)
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          "When evaluating \"" + expr.toSourceString() + "\": " + e.getMessage(), e, node);
     }
   }
 
@@ -781,11 +780,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Helper to append a SoyValue to the output, propagating any exceptions.
    */
-  static void append(Appendable outputBuf, SoyValue value) {
+  static void append(Appendable outputBuf, SoyValue value, SoyNode node) {
     try {
       value.render(outputBuf);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } catch (RenderException e) {
+      throw e.addStackTraceElement(node);
     }
   }
 
@@ -805,27 +806,29 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     // Get directive.
     SoyJavaPrintDirective directive = soyJavaDirectivesMap.get(directiveName);
     if (directive == null) {
-      throw new RenderException(
-          "Failed to find Soy print directive with name '" + directiveName + "'" +
-          " (tag " + node.toSourceString() + ")")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          "Failed to find Soy print directive with name '" + directiveName
+              + "'" + " (tag " + node.toSourceString() + ")",
+          node);
     }
 
     // TODO: Add a pass to check num args at compile time.
     if (! directive.getValidArgsSizes().contains(args.size())) {
-      throw new RenderException(
-          "Print directive '" + directiveName + "' used with the wrong number of" +
-          " arguments (tag " + node.toSourceString() + ").")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          "Print directive '" + directiveName + "' used with the wrong number of arguments (tag "
+              + node.toSourceString() + ").",
+          node);
     }
 
     try {
       return directive.applyForJava(value, args);
     } catch (RuntimeException e) {
-      throw new RenderException(String.format(
-          "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
-          directiveName, node.toSourceString(), e.getMessage()), e)
-          .addPartialStackTraceElement(node.getSourceLocation());
+      throw RenderException.createWithSource(
+          String.format(
+              "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
+              directiveName, node.toSourceString(), e.getMessage()),
+          e,
+          node);
     }
   }
 
@@ -867,11 +870,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Check that the value matches the given param type. */
   private void checkValueType(TemplateParam param, SoyValue value, TemplateNode node) {
     if (!param.type().isInstance(value)) {
-      throw new RenderException("Parameter type mismatch: attempt to bind value '"
-          + (value instanceof UndefinedData ? "(undefined)" : value)
-          + "' to parameter '" + param.name() + "' which has declared type '"
-          + param.type() + "'.")
-          .addPartialStackTraceElement(node.getSourceLocation());
+      // should this be a soydataexception?
+      throw RenderException.createWithSource(
+          "Parameter type mismatch: attempt to bind value '"
+              + (value instanceof UndefinedData ? "(undefined)" : value)
+              + "' to parameter '" + param.name() + "' which has declared type '"
+              + param.type() + "'.",
+          node);
     }
   }
 }

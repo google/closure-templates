@@ -16,88 +16,72 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import javax.annotation.Nullable;
+
 /**
  * Exception thrown when a rendering or evaluation attempt fails.
  *
  */
-public class RenderException extends RuntimeException {
+public final class RenderException extends RuntimeException {
 
+  public static RenderException create(String message) {
+    return create(message, (Throwable) null);
+  }
 
-  /** The location of the source file that triggered the exception. */
-  private SourceLocation partialStackTraceElement;
+  public static RenderException create(String message, Throwable cause) {
+    return new RenderException(message, cause);
+  }
+
+  public static RenderException createWithSource(String message, SoyNode source) {
+    return createWithSource(message, null, source);
+  }
+
+  public static RenderException createWithSource(
+      String message, @Nullable Throwable cause, SoyNode source) {
+    return new RenderException(message, cause).addStackTraceElement(source);
+  }
+
+  public static RenderException createFromRenderException(
+      String message, RenderException cause, SoyNode node) {
+    RenderException renderException = new RenderException(message, cause.getCause());
+    renderException.soyStackTrace.addAll(cause.soyStackTrace);
+    renderException.addStackTraceElement(node);
+    return renderException;
+  }
 
 
   /** The list of all stack traces from the soy rendering. */
-  private final Deque<StackTraceElement> soyStackTrace;
-
-
-  /**
-   * @param message A detailed description of the error.
-   */
-  public RenderException(String message) {
-    super(message);
-    this.partialStackTraceElement = null;
-    this.soyStackTrace = new ArrayDeque<>();
-  }
-
+  private final Deque<StackTraceElement> soyStackTrace = new ArrayDeque<>();
 
   /**
    * @param message A detailed description of the error.
    * @param cause The underlying error.
    */
-  public RenderException(String message, Throwable cause) {
+  private RenderException(String message, Throwable cause) {
     super(message, cause);
-    this.partialStackTraceElement = null;
-    this.soyStackTrace = new ArrayDeque<>();
   }
 
+  @Override public Throwable fillInStackTrace() {
+    // Remove java stack trace, we only care about the soy stack.
+    return this;
+  }
 
   /**
    * Add a partial stack trace element by specifying the source location of the soy file.
    */
-  RenderException addPartialStackTraceElement(SourceLocation srcLocation) {
-    if (partialStackTraceElement != null) {
-      // Somehow the previous partialStackTraceElement didn't get completely built.  Finish it.
-      soyStackTrace.add(new StackTraceElement("[Unknown]", "[Unknown]",
-          partialStackTraceElement.getFileName(), partialStackTraceElement.getLineNumber()));
-    }
-    partialStackTraceElement = srcLocation;
+  RenderException addStackTraceElement(SoyNode node) {
+    // Typically, this is fast since templates aren't that deep and we only do this in error
+    // situations so performance matters less.
+    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
+    soyStackTrace.add(template.createStackTraceElement(node.getSourceLocation()));
     return this;
   }
-
-
-  /**
-   * Adds a stack trace element to the current RenderException, to be used to generate a custom
-   * stack trace when rendering fails.
-   * @param node The TemplateNode that will provide all the information to construct a
-   *     StackTraceElement.
-   * @return The same instance.
-   */
-  RenderException completeStackTraceElement(TemplateNode node) {
-    if (partialStackTraceElement == null) {
-      // Somehow the render exception did not have a source location.  We have to fake it.
-      soyStackTrace.add(node.createStackTraceElement(SourceLocation.UNKNOWN));
-    } else {
-      soyStackTrace.add(node.createStackTraceElement(partialStackTraceElement));
-    }
-    partialStackTraceElement = null;
-    return this;
-  }
-
-
-  /**
-   * Finalize the current stack trace by prepending the soy stack trace.
-   */
-  public void finalizeStackTrace() {
-    finalizeStackTrace(this);
-  }
-
 
   /**
    * Finalize the stack trace by prepending the soy stack trace to the given Throwable.
@@ -105,7 +89,6 @@ public class RenderException extends RuntimeException {
   public void finalizeStackTrace(Throwable t) {
     t.setStackTrace(concatWithJavaStackTrace(t.getStackTrace()));
   }
-
 
   /**
    * Prepend the soy stack trace to the given standard java stack trace.
@@ -121,11 +104,7 @@ public class RenderException extends RuntimeException {
 
     StackTraceElement[] finalStackTrace =
         new StackTraceElement[soyStackTrace.size() + javaStackTrace.length];
-    int i = 0;
-    for (StackTraceElement soyStackTraceElement : soyStackTrace) {
-      finalStackTrace[i] = soyStackTraceElement;
-      i++;
-    }
+    soyStackTrace.toArray(finalStackTrace);
     System.arraycopy(
         javaStackTrace, 0, finalStackTrace, soyStackTrace.size(), javaStackTrace.length);
     return finalStackTrace;

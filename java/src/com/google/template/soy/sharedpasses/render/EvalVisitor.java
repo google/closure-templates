@@ -207,7 +207,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     } else {
       // TODO: Support map literals with nonstring keys.
-      throw new RenderException(String.format(
+      throw RenderException.create(String.format(
           "Currently, map literals must have string keys (key \"%s\" in map %s does not evaluate" +
               " to a string). Support for nonstring keys is a todo.",
           firstNonstringKeyNode.toSourceString(), node.toSourceString()));
@@ -294,7 +294,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         if (varRef.isNullSafeInjected()) {
           return NullSafetySentinel.INSTANCE;
         } else {
-          throw new RenderException(
+          throw RenderException.create(
               "Injected data not provided, yet referenced (" + varRef.toSourceString() + ").");
         }
       }
@@ -335,7 +335,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           // Return the sentinel value that indicates that a null-safety check failed.
           return NullSafetySentinel.INSTANCE;
         } else {
-          throw new RenderException(String.format(
+          throw RenderException.create(String.format(
               "While evaluating \"%s\", encountered non-%s just before accessing \"%s\".",
               dataAccess.toSourceString(), expectedTypeNameForErrorMsg,
               dataAccess.getSourceStringSuffix()));
@@ -351,7 +351,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     } else if (dataAccess.getType() != null &&
         value != null &&
         !dataAccess.getType().isInstance(value)) {
-      throw new RenderException(String.format("Expected value of type '" +
+      throw RenderException.create(String.format("Expected value of type '" +
           dataAccess.getType() + "', but actual types was '" +
           value.getClass().getSimpleName() + "'."));
     }
@@ -610,9 +610,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     List<SoyValue> args = this.visitChildren(node);
     SoyJavaFunction fn = soyJavaFunctionsMap.get(fnName);
     if (fn == null) {
-      throw new RenderException(
-          "Failed to find Soy function with name '" + fnName + "'" +
-          " (function call \"" + node.toSourceString() + "\").");
+      throw RenderException.create("Failed to find Soy function with name '" + fnName + "'" +
+      " (function call \"" + node.toSourceString() + "\").");
     }
     // Note: Arity has already been checked by CheckFunctionCallsVisitor.
     return computeFunctionHelper(fn, args, node);
@@ -634,7 +633,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     try {
       return fn.computeForJava(args);
     } catch (Exception e) {
-      throw new RenderException(
+      throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
   }
@@ -647,9 +646,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
       localVarIndex = env.getIndex((LoopVar) dataRef.getDefnDecl());
     } catch (Exception e) {
-      throw new RenderException(
-          "Failed to evaluate function call " + node.toSourceString() + ".",
-          e);
+      throw RenderException.create(
+          "Failed to evaluate function call " + node.toSourceString() + ".", e);
     }
     return convertResult(localVarIndex == 0);
   }
@@ -662,9 +660,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
       isLast = env.isLast((LoopVar) dataRef.getDefnDecl());
     } catch (Exception e) {
-      throw new RenderException(
-          "Failed to evaluate function call " + node.toSourceString() + ".",
-          e);
+      throw RenderException.create(
+          "Failed to evaluate function call " + node.toSourceString() + ".", e);
     }
     return convertResult(isLast);
   }
@@ -677,9 +674,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
       localVarIndex = env.getIndex((LoopVar) dataRef.getDefnDecl());
     } catch (Exception e) {
-      throw new RenderException(
-          "Failed to evaluate function call " + node.toSourceString() + ".",
-          e);
+      throw RenderException.create(
+          "Failed to evaluate function call " + node.toSourceString() + ".", e);
     }
     return convertResult(localVarIndex);
   }

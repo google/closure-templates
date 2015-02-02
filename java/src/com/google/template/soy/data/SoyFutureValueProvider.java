@@ -85,9 +85,9 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
       }
       return valueHelper.convert(future.get()).resolve();
     } catch (ExecutionException e) {
-      throw new SoyDataException("Error dereferencing future", e.getCause());
-    } catch (Exception e) {
-      throw new SoyDataException("Error dereferencing future", e);
+      throw new SoyFutureException(e.getCause());
+    } catch (Throwable e) {
+      throw new SoyFutureException(e);
     }
   }
 }

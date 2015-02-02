@@ -236,6 +236,8 @@ public interface SoyTofu {
      * <p>Checks the content kind of the template. Non-strict and kind="html" templates are
      * allowed, unless setContentKind was called. The goal is to prevent accidental rendering
      * of unescaped kind="text" in contexts where that could XSS.
+     *
+     * @throws SoyTofuException if an error occurs during rendering.
      */
     public String render();
 
@@ -249,6 +251,7 @@ public interface SoyTofu {
      *
      * @throws IllegalArgumentException If the template is non-strict, or the kind doesn't match
      *     the expected kind (from setContentKind, or the default of HTML).
+     * @throws SoyTofuException if an error occurs during rendering.
      */
     public SanitizedContent renderStrict();
 
@@ -259,6 +262,8 @@ public interface SoyTofu {
      * <p>Checks the content kind of the template. Non-strict and kind="html" templates are
      * allowed, unless setContentKind was called. The goal is to prevent accidental rendering
      * of unescaped kind="text" in contexts where that could XSS.
+     *
+     * @throws SoyTofuException if an error occurs during rendering.
      */
     public SanitizedContent.ContentKind render(Appendable out);
   }
