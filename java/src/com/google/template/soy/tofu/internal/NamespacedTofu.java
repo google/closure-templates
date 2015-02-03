@@ -126,15 +126,6 @@ class NamespacedTofu implements SoyTofu {
   @Deprecated
   @SuppressWarnings({"deprecation"})
   @Override public String render(
-      SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
-      @Nullable SoyMsgBundle msgBundle) {
-    return render(templateInfo.getPartialName(), data, msgBundle);
-  }
-
-
-  @Deprecated
-  @SuppressWarnings({"deprecation"})
-  @Override public String render(
       SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
   }

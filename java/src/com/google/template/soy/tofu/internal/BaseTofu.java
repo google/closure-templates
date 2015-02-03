@@ -518,16 +518,6 @@ public class BaseTofu implements SoyTofu {
   // -----------------------------------------------------------------------------------------------
   // Old render methods.
 
-
-  @Deprecated
-  @Override public String render(
-      SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
-      @Nullable SoyMsgBundle msgBundle) {
-    return (new RendererImpl(this, templateInfo.getName())).setData(data).setMsgBundle(msgBundle)
-        .render();
-  }
-
-
   @Deprecated
   @Override public String render(
       SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {

@@ -276,29 +276,6 @@ public interface SoyTofu {
   /**
    * Renders a template.
    *
-   * <p> Note: If you call this method instead of
-   * {@link #render(SoyTemplateInfo, SoyRecord, SoyMsgBundle)},
-   * your template data will be converted to a {@code SoyRecord} object on each call. This may not
-   * be a big deal if you only need to use the data object once. But if you need to reuse the same
-   * data object for multiple calls, it's more efficient to build your own {@code SoyRecord} object
-   * and reuse it with {@link #render(SoyTemplateInfo, SoyRecord, SoyMsgBundle)}.
-   *
-   * @param templateInfo Info for the template to render.
-   * @param data The data to call the template with. Can be null if the template has no parameters.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
-   * @return The rendered text.
-   * @deprecated Use {@link #newRenderer(SoyTemplateInfo)}.
-   */
-  @Deprecated
-  public String render(
-      SoyTemplateInfo templateInfo, @Nullable Map<String, ?> data,
-      @Nullable SoyMsgBundle msgBundle);
-
-
-  /**
-   * Renders a template.
-   *
    * @param templateInfo Info for the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
