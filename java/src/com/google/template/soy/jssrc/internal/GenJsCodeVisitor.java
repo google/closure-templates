@@ -1517,7 +1517,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           break;
 
         case BOOL:
-          typeTests.add("goog.isBoolean({0})");
+          typeTests.add("goog.isBoolean({0}) || {0} === 1 || {0} === 0");
           break;
 
         case STRING:
