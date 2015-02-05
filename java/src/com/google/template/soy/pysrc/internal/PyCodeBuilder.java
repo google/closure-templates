@@ -75,17 +75,23 @@ final class PyCodeBuilder extends CodeBuilder<PyExpr> {
   }
 
   @Override public void addToOutputVar(List<? extends PyExpr> pyExprs) {
-    PyExpr output = PyExprUtils.concatPyExprs(pyExprs);
+    addToOutputVar(PyExprUtils.concatPyExprs(pyExprs));
+  }
 
-    boolean isList = output instanceof PyListExpr;
+  /**
+   * Add a single PyExpr object to the output variable.
+   * @param pyExpr
+   */
+  public void addToOutputVar(PyExpr pyExpr) {
+    boolean isList = pyExpr instanceof PyListExpr;
     if (isList && !getOutputVarIsInited()) {
-      appendLine(getOutputVarName(), " = ", output.getText());
+      appendLine(getOutputVarName(), " = ", pyExpr.getText());
     } else {
       initOutputVarIfNecessary();
       String function = isList ? ".extend(" : ".append(";
-      appendLine(getOutputVarName(), function, output.getText(), ")");
-      setOutputVarInited();
+      appendLine(getOutputVarName(), function, pyExpr.getText(), ")");
     }
+    setOutputVarInited();
   }
 
   /**

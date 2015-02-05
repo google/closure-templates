@@ -28,6 +28,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -232,6 +233,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         Integer.toString(node.getDelPriority()), ", ",
         node.getPartialTemplateName().substring(1), ", '",
         node.getPartialTemplateName().substring(1), "')");
+  }
+
+  @Override protected void visitPrintNode(PrintNode node) {
+    pyCodeBuilder.addToOutputVar(genPyExprsVisitor.exec(node));
   }
 
 

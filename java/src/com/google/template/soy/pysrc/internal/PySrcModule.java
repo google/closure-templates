@@ -16,16 +16,26 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.ModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
+
+import java.util.Set;
+
+import javax.inject.Singleton;
 
 
 /**
@@ -49,6 +59,7 @@ public final class PySrcModule extends AbstractModule {
 
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(GenPyExprsVisitorFactory.class));
+    install(new FactoryModuleBuilder().build(TranslateToPyExprVisitorFactory.class));
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyPySrcOptions.class)
@@ -60,5 +71,19 @@ public final class PySrcModule extends AbstractModule {
     bind(String.class).annotatedWith(TranslationPyModuleName.class)
       .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
       .in(ApiCallScope.class);
+  }
+
+  /**
+   * Builds and provides the map of SoyPySrcDirectives (name to directive).
+   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
+   *     SoyDirective may or may not implement SoyPySrcPrintDirective.
+   */
+  @Provides
+  @Singleton
+  ImmutableMap<String, SoyPySrcPrintDirective> provideSoyPySrcDirectivesMap(
+      Set<SoyPrintDirective> soyDirectivesSet) {
+
+    return ModuleUtils.buildSpecificSoyDirectivesMap(soyDirectivesSet,
+        SoyPySrcPrintDirective.class);
   }
 }

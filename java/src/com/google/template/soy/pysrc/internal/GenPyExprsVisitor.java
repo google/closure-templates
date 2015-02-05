@@ -17,20 +17,28 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.PrintDirectiveNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -51,24 +59,34 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   }
 
 
-  /** The IsComputableAsPyExprVisitor used by this instance (when needed). */
+  /** Map of all SoyPySrcPrintDirectives (name to directive). */
+  Map<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap;
+
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
+
+  private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
 
   /** List to collect the results. */
   private List<PyExpr> pyExprs;
 
 
   /**
-   * @param isComputableAsPyExprVisitor The IsComputableAsPyExprVisitor used by this instance.
+   * @param soyPySrcDirectivesMap Map of all SoyPySrcPrintDirectives (name to directive).
    */
   @AssistedInject
-  GenPyExprsVisitor(IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
-      GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
+  GenPyExprsVisitor(
+      ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap,
+      IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
+      GenPyExprsVisitorFactory genPyExprsVisitorFactory,
+      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
+    this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
+    this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
   }
+
 
   @Override public List<PyExpr> exec(SoyNode node) {
     Preconditions.checkArgument(isComputableAsPyExprVisitor.exec(node));
@@ -98,6 +116,62 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     pyExprs.add(new PyStringExpr(exprText));
   }
 
+  /**
+   * Visiting a print node accomplishes 3 basic tasks. It loads data, it performs any operations
+   * needed, and it executes the appropriate print directives.
+   *
+   * <p>TODO(dcphillips): Add support for local variables once LetNode are supported.
+   *
+   * <p>Example:
+   * <pre>
+   *   {$boo |changeNewlineToBr}
+   *   {$goo + 5}
+   * </pre>
+   * might generate
+   * <pre>
+   *   sanitize.change_newline_to_br(opt_data.get('boo'))
+   *   opt_data.get('goo') + 5
+   * </pre>
+   */
+  @Override protected void visitPrintNode(PrintNode node) {
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create();
+
+    PyExpr pyExpr = translator.exec(node.getExprUnion().getExpr());
+
+    // Process directives.
+    for (PrintDirectiveNode directiveNode : node.getChildren()) {
+
+      // Get directive.
+      SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveNode.getName());
+      if (directive == null) {
+        throw SoySyntaxExceptionUtils.createWithNode(
+            "Failed to find SoyPySrcPrintDirective with name '" + directiveNode.getName() + "'" +
+                " (tag " + node.toSourceString() + ")",
+                directiveNode);
+      }
+
+      // Get directive args.
+      List<ExprRootNode<?>> args = directiveNode.getArgs();
+      if (!directive.getValidArgsSizes().contains(args.size())) {
+        throw SoySyntaxExceptionUtils.createWithNode(
+            "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
+                " arguments (tag " + node.toSourceString() + ").",
+                directiveNode);
+      }
+
+      // Translate directive args.
+      List<PyExpr> argsPyExprs = new ArrayList<>(args.size());
+      for (ExprRootNode<?> arg : args) {
+        argsPyExprs.add(translator.exec(arg));
+      }
+
+      // Apply directive.
+      pyExpr = directive.applyForPySrc(pyExpr, argsPyExprs);
+    }
+
+    pyExprs.add(pyExpr);
+  }
+
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create();
 
@@ -120,7 +194,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       pyExprTextSb.append(
           PyExprUtils.concatPyExprs(fallbackMsgPyExpr).toPyString().getText());
       pyExprs.add(new PyStringExpr(pyExprTextSb.toString(),
-          Operator.CONDITIONAL.getPrecedence()));
+          PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
     }
   }
 

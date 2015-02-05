@@ -16,8 +16,12 @@
 
 package com.google.template.soy.pysrc.restricted;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.internal.targetexpr.ExprUtils;
 
 import java.util.List;
 
@@ -33,6 +37,33 @@ public final class PyExprUtils {
 
   /** Expression constant for empty string. */
   private static final PyExpr EMPTY_STRING = new PyStringExpr("''");
+
+  /**
+   * Map used to provide operator precedences in Python.
+   *
+   * @see <a href="https://docs.python.org/2/reference/expressions.html#operator-precedence">
+   *    Python operator precedence.</a>
+   */
+  private static final ImmutableMap<Operator, Integer> PYTHON_PRECEDENCES =
+      new ImmutableMap.Builder<Operator, Integer>()
+          .put(Operator.NEGATIVE, 8)
+          .put(Operator.TIMES, 7)
+          .put(Operator.DIVIDE_BY, 7)
+          .put(Operator.MOD, 7)
+          .put(Operator.PLUS, 6)
+          .put(Operator.MINUS, 6)
+          .put(Operator.LESS_THAN, 5)
+          .put(Operator.GREATER_THAN, 5)
+          .put(Operator.LESS_THAN_OR_EQUAL, 5)
+          .put(Operator.GREATER_THAN_OR_EQUAL, 5)
+          .put(Operator.EQUAL, 5)
+          .put(Operator.NOT_EQUAL, 5)
+          .put(Operator.NOT, 4)
+          .put(Operator.AND, 3)
+          .put(Operator.OR, 2)
+          .put(Operator.NULL_COALESCING, 1)
+          .put(Operator.CONDITIONAL, 1)
+          .build();
 
 
   private PyExprUtils() {}
@@ -79,6 +110,18 @@ public final class PyExprUtils {
     return new PyListExpr(resultSb.toString(), Integer.MAX_VALUE);
   }
 
+  /**
+   * Generate a Python not null (None) check expression for a given PyExpr.
+   * @param pyExpr The input expression to test.
+   * @return A PyExpr containing the null check.
+   */
+  public static PyExpr genPyNotNullCheck(PyExpr pyExpr) {
+    List<PyExpr> exprs = ImmutableList.of(pyExpr, new PyExpr("None", Integer.MAX_VALUE));
+
+    // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
+    String conditionalExpr = ExprUtils.genExprWithNewToken(Operator.NOT_EQUAL, exprs, "is not");
+    return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
+  }
 
   /**
    * Wraps an expression with the proper SanitizedContent constructor if contentKind is non-null.
@@ -94,5 +137,15 @@ public final class PyExprUtils {
       String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
       return new PyExpr(sanitizer + "(" + pyExpr.getText() + ")", Integer.MAX_VALUE);
     }
+  }
+
+  /**
+   * Provide the Python operator precedence for a given operator.
+   *
+   * @param op The operator.
+   * @return THe python precedence as an integer.
+   */
+  public static int pyPrecedenceForOperator(Operator op) {
+    return PYTHON_PRECEDENCES.get(op);
   }
 }

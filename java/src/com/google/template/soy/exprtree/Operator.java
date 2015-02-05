@@ -184,7 +184,7 @@ public enum Operator {
   /** A short description of this operator (usually just the token string). */
   private final String description;
 
-  /** The coresponding node class representing this operator. */
+  /** The corresponding node class representing this operator. */
   private final Class<? extends OperatorNode> nodeClass;
 
 
@@ -193,7 +193,7 @@ public enum Operator {
    * @param syntax The canonical syntax for this operator, including spacing.
    * @param precedence This operator's precedence level.
    * @param associativity This operator's associativity.
-   * @param nodeClass The coresponding node class representing this operator.
+   * @param nodeClass The corresponding node class representing this operator.
    */
   private Operator(List<SyntaxElement> syntax, int precedence, Associativity associativity,
                    Class<? extends OperatorNode> nodeClass) {
@@ -207,7 +207,7 @@ public enum Operator {
    * @param precedence This operator's precedence level.
    * @param associativity This operator's associativity.
    * @param description A short description of this operator.
-   * @param nodeClass The coresponding node class representing this operator.
+   * @param nodeClass The corresponding node class representing this operator.
    */
   private Operator(List<SyntaxElement> syntax, int precedence, Associativity associativity,
                    String description, Class<? extends OperatorNode> nodeClass) {
@@ -269,7 +269,7 @@ public enum Operator {
     return description;
   }
 
-  /** Returns the coresponding node class representing this operator. */
+  /** Returns the corresponding node class representing this operator. */
   public Class<? extends OperatorNode> getNodeClass() {
     return nodeClass;
   }

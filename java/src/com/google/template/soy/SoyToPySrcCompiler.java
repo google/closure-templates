@@ -36,6 +36,10 @@ import java.util.List;
 /**
  * Executable for compiling a set of Soy files into corresponding Python source files.
  *
+ * <p>Note: The Python output and runtime libraries are targeted at Python v2.7. Support for Python
+ * v3.1+ is also intended through the use of __future__ and version agnostic syntax, HOWEVER at the
+ * moment testing support is only guaranteed for v2.7.
+ *
  */
 public final class SoyToPySrcCompiler {
 
@@ -48,8 +52,8 @@ public final class SoyToPySrcCompiler {
       + "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
   @Option(name = "--srcs",
-          required = true,
-          usage = "[Required] The list of source Soy files.",
+          usage = "The list of source Soy files. Extra arguments are treated as srcs. Sources"
+              + " are required from either this flag or as extra arguments.",
           handler = MainClassUtils.StringListOptionHandler.class)
   private List<String> srcs = new ArrayList<String>();
 

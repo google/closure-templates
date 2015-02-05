@@ -135,7 +135,7 @@ public class ModuleUtils {
    * @param specificSoyDirectiveType The class of the specific Soy directive type to look for.
    * @return A map of the relevant specific Soy directives (name to directive).
    */
-  public static <T extends SoyPrintDirective> Map<String, T> buildSpecificSoyDirectivesMap(
+  public static <T extends SoyPrintDirective> ImmutableMap<String, T> buildSpecificSoyDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet, Class<T> specificSoyDirectiveType) {
 
     ImmutableMap.Builder<String, T> mapBuilder = ImmutableMap.builder();

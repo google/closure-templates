@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.collect.Lists;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 
 import junit.framework.TestCase;
@@ -56,9 +57,9 @@ public final class PyCodeBuilderTest extends TestCase {
     pcb.pushOutputVar("param5");
     pcb.setOutputVarInited();
     pcb.addToOutputVar(Lists.newArrayList(
-        new PyExpr("a - b", Operator.MINUS.getPrecedence()),
-        new PyExpr("c - d", Operator.MINUS.getPrecedence()),
-        new PyExpr("e * f", Operator.TIMES.getPrecedence())));
+        new PyExpr("a - b", PyExprUtils.pyPrecedenceForOperator(Operator.MINUS)),
+        new PyExpr("c - d", PyExprUtils.pyPrecedenceForOperator(Operator.MINUS)),
+        new PyExpr("e * f", PyExprUtils.pyPrecedenceForOperator(Operator.TIMES))));
     assertEquals(
         "output = []\noutput.append(boo)\nparam5.extend([str(a - b),str(c - d),str(e * f)])\n",
         pcb.getCode());
