@@ -50,8 +50,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
 
   private static final Map<String, SoyJsSrcFunction> SOY_JS_SRC_FUNCTIONS_MAP = ImmutableMap.of();
 
-  private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
-      new ArrayDeque<Map<String, JsExpr>>();
+  private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS = new ArrayDeque<>();
   static {
     Map<String, JsExpr> frame = Maps.newHashMap();
     // Let 'goo' simulate a local variable from a 'foreach' loop.
@@ -166,9 +165,9 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
     assertTranslation(
         "$goo.boo", new JsExpr("gooData8.boo", Integer.MAX_VALUE));
     assertTranslation(
-        "$boo.0.1.foo.2", new JsExpr("opt_data.boo[0][1].foo[2]", Integer.MAX_VALUE));
+        "$boo[0][1].foo[2]", new JsExpr("opt_data.boo[0][1].foo[2]", Integer.MAX_VALUE));
     assertTranslation(
-        "$boo[0].1", new JsExpr("opt_data.boo[0][1]", Integer.MAX_VALUE));
+        "$boo[0][1]", new JsExpr("opt_data.boo[0][1]", Integer.MAX_VALUE));
     assertTranslation(
         "$boo[$foo][$goo+1]",
         new JsExpr("opt_data.boo[opt_data.foo][gooData8 + 1]", Integer.MAX_VALUE));
@@ -188,7 +187,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
             "(gooData8 == null) ? null : gooData8.boo",
             Operator.CONDITIONAL.getPrecedence()));
     assertTranslation(
-        "$boo?[0]?.1",
+        "$boo?[0]?[1]",
         new JsExpr(
             "(opt_data.boo == null) ? null : (opt_data.boo[0] == null) ? null : opt_data.boo[0][1]",
             Operator.CONDITIONAL.getPrecedence()));

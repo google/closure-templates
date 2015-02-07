@@ -364,12 +364,6 @@ TOKEN:
 |
   < QUESTION_DOT_IDENT: "?." (<WS>)* <IDENT> >
   { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
-|
-  < DOT_INDEX: "." (<WS>)* <DEC_DIGITS> >
-  { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
-|
-  < QUESTION_DOT_INDEX: "?." (<WS>)* <DEC_DIGITS> >
-  { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
 }
 
 
@@ -766,35 +760,15 @@ private ExprNode DataRef() :
     questionDotIdent = <QUESTION_DOT_IDENT>
     { dataRef = new FieldAccessNode(dataRef, questionDotIdent.image.substring(2), true); }
   |
-    dotIndex = <DOT_INDEX>
-    { dataRef = new ItemAccessNode(
-          dataRef,
-          new IntegerNode(
-              Integer.parseInt(dotIndex.image.substring(1)),
-              createSrcLoc(dotIndex)),
-          false,
-          true);
-    }
-  |
-    questionDotIndex = <QUESTION_DOT_INDEX>
-    { dataRef = new ItemAccessNode(
-          dataRef,
-          new IntegerNode(
-              Integer.parseInt(questionDotIndex.image.substring(2)),
-              createSrcLoc(questionDotIndex)),
-          true,
-          true);
-    }
-  |
     "["
     expr = Expr()
     "]"
-    { dataRef = new ItemAccessNode(dataRef, expr, false, false); }
+    { dataRef = new ItemAccessNode(dataRef, expr, false); }
   |
     "?["
     expr = Expr()
     "]"
-    { dataRef = new ItemAccessNode(dataRef, expr, true, false); }
+    { dataRef = new ItemAccessNode(dataRef, expr, true); }
   )*
 
   { return dataRef; }

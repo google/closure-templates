@@ -42,6 +42,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.TestCase;
 
+import java.io.StringReader;
 import java.util.List;
 
 /**
@@ -231,9 +232,10 @@ public final class SoytreeUtilsTest extends TestCase {
     SoyFileNode soyFile = new SoyFileParser(
         new SoyTypeRegistry(),
         nodeIdGen,
-        SOY_SOURCE_FOR_TESTING_CLONING,
+        new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
         SoyFileKind.SRC,
-        "test.soy")
+        "test.soy",
+        ExplodingErrorReporter.get())
         .parseSoyFile();
     soyTree.addChild(soyFile);
 
@@ -253,9 +255,10 @@ public final class SoytreeUtilsTest extends TestCase {
     SoyFileNode soyFile = new SoyFileParser(
         new SoyTypeRegistry(),
         nodeIdGen,
-        SOY_SOURCE_FOR_TESTING_CLONING,
+         new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
         SoyFileKind.SRC,
-        "test.soy")
+        "test.soy",
+        ExplodingErrorReporter.get())
         .parseSoyFile();
     soyTree.addChild(soyFile);
 
@@ -295,7 +298,7 @@ public final class SoytreeUtilsTest extends TestCase {
     SoyFileNode soyFile = new SoyFileParser(
         new SoyTypeRegistry(),
         nodeIdGen,
-        SOY_SOURCE_FOR_TESTING_CLONING,
+        new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
         SoyFileKind.SRC,
         "test.soy",
         boom)

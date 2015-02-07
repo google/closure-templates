@@ -32,6 +32,8 @@ import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.TestCase;
 
+import java.io.StringReader;
+
 /**
  * Tests that the Soy file and template parsers properly embed source locations.
  */
@@ -216,9 +218,10 @@ public final class SourceLocationTest extends TestCase {
     TemplateNode templateNode = new SoyFileParser(
         new SoyTypeRegistry(),
         new FixedIdGenerator(),
-        template,
+        new StringReader(template),
         SoyFileKind.SRC,
-        "/example/file.soy")
+        "/example/file.soy",
+        ExplodingErrorReporter.get())
         .parseSoyFile()
         .getChild(0);
     SourceLocation location = templateNode.getSourceLocation();

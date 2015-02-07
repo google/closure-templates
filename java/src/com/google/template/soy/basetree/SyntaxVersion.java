@@ -52,7 +52,6 @@ public enum SyntaxVersion {
       //   + Default value of 'delcall' tag attribute 'allowemptydefault' changes to false.
       // Checks:
       //   + Disallows function hasData().
-      //   + Disallows dot access of list items.
 
   V2_3,
       // Syntax that causes V2.3+ to be inferred:

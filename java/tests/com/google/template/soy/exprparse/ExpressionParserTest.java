@@ -67,9 +67,9 @@ public class ExpressionParserTest extends TestCase {
 
   public void testRecognizeDataReference() {
     String[] dataRefs =
-        {"$aaa", "$ij.aaa", "$a0a0.b1b1", "$aaa.0.bbb.12", "$aaa[0].bbb['ccc'][$eee]",
+        {"$aaa", "$ij.aaa", "$a0a0.b1b1", "$aaa[0].bbb[12]", "$aaa[0].bbb['ccc'][$eee]",
          "$aaa?.bbb", "$aaa.bbb?[0]?.ccc?['ddd']", "$ij?.aaa",
-         "$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]"};
+         "$aaa [1] [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]"};
     for (String dataRef : dataRefs) {
       assertThatExpression(dataRef).isValidExpression();
     }
@@ -160,9 +160,9 @@ public class ExpressionParserTest extends TestCase {
   public void testRecognizeDataRefAsExpression() {
     assertThatExpression("$aaa").isValidExpression();
     assertThatExpression("$a0a0.b1b1").isValidExpression();
-    assertThatExpression("$aaa.0.bbb.12").isValidExpression();
+    assertThatExpression("$aaa[0].bbb[12]").isValidExpression();
     assertThatExpression("$aaa[0].bbb['ccc'][$eee]").isValidExpression();
-    assertThatExpression("$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]").isValidExpression();
+    assertThatExpression("$aaa [1] [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]").isValidExpression();
 
     assertThatExpression("$").isNotValidExpression();
     assertThatExpression("$ aaa").isNotValidExpression();
@@ -285,39 +285,36 @@ public class ExpressionParserTest extends TestCase {
             false),
         dataRef);
 
-    dataRef = assertThatExpression("$boo.0[$foo]").isValidExpression();
+    dataRef = assertThatExpression("$boo[0][$foo]").isValidExpression();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
                 new VarRefNode("boo", loc, false, false, null),
                 new IntegerNode(0, loc),
-                false, true),
+                false),
             new VarRefNode("foo", loc, false, false, null),
-            false,
             false),
         dataRef);
 
-    dataRef = assertThatExpression("$boo?.0?[$foo]").isValidExpression();
+    dataRef = assertThatExpression("$boo?[0]?[$foo]").isValidExpression();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
                 new VarRefNode("boo", loc, false, false, null),
                 new IntegerNode(0, loc),
-                true, true),
+                true),
             new VarRefNode("foo", loc, false, false, null),
-            true,
-            false),
+            true),
         dataRef);
 
-    dataRef = assertThatExpression("$ij?.boo?.0[$ij.foo]").isValidExpression();
+    dataRef = assertThatExpression("$ij?.boo?[0][$ij.foo]").isValidExpression();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
                 new VarRefNode("boo", loc, true, true, null),
                 new IntegerNode(0, loc),
-                true, true),
+                true),
             new VarRefNode("foo", loc, true, false, null),
-            false,
             false),
         dataRef);
   }
@@ -335,7 +332,7 @@ public class ExpressionParserTest extends TestCase {
     assertThat(expr).isInstanceOf(NullNode.class);
 
     expr = assertThatExpression("true").isValidExpression();
-    assertThat(((BooleanNode) expr).getValue()).isEqualTo(true);
+    assertThat(((BooleanNode) expr).getValue()).isTrue();
 
     expr = assertThatExpression("false").isValidExpression();
     assertThat(((BooleanNode) expr).getValue()).isFalse();
@@ -423,7 +420,7 @@ public class ExpressionParserTest extends TestCase {
 
     expr = assertThatExpression("not false").isValidExpression();
     NotOpNode notOp = (NotOpNode) expr;
-    assertThat(((BooleanNode) notOp.getChild(0)).getValue()).isEqualTo(false);
+    assertThat(((BooleanNode) notOp.getChild(0)).getValue()).isFalse();
 
     expr = assertThatExpression("90 -14.75").isValidExpression();
     MinusOpNode minusOp = (MinusOpNode) expr;
@@ -433,7 +430,7 @@ public class ExpressionParserTest extends TestCase {
     expr = assertThatExpression("$a or true").isValidExpression();
     OrOpNode orOp = (OrOpNode) expr;
     assertThat(orOp.getChild(0).toSourceString()).isEqualTo("$a");
-    assertThat(((BooleanNode) orOp.getChild(1)).getValue()).isEqualTo(true);
+    assertThat(((BooleanNode) orOp.getChild(1)).getValue()).isTrue();
 
     expr = assertThatExpression("$a ?: $b ?: $c").isValidExpression();
     NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) expr;
@@ -455,7 +452,7 @@ public class ExpressionParserTest extends TestCase {
   public void testParseExpressionList() throws Exception {
     List<ExprNode> exprList
         = assertThatExpression("$aaa, $bbb.ccc + 1, index($ddd)").isValidExpressionList();
-    assertTrue(exprList.get(0) instanceof VarRefNode);
+    assertThat(exprList.get(0)).isInstanceOf(VarRefNode.class);
     assertThat(exprList.get(1)).isInstanceOf(PlusOpNode.class);
     assertThat(exprList.get(2)).isInstanceOf(FunctionNode.class);
   }

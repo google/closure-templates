@@ -109,7 +109,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
         new PyExpr("opt_data.get('boo').get('goo')", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo['goo']").translatesTo(
         new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 'goo')", Integer.MAX_VALUE));
-    assertThatSoyExpr("$boo.0").translatesTo(
+    assertThatSoyExpr("$boo[0]").translatesTo(
         new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 0)", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo[0]").translatesTo(
         new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 0)", Integer.MAX_VALUE));
@@ -123,7 +123,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
         new PyExpr(
             "None if opt_data.get('boo') is None else opt_data.get('boo').get('goo')",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
-    assertThatSoyExpr("$boo?[0]?.1").translatesTo(
+    assertThatSoyExpr("$boo?[0]?[1]").translatesTo(
         new PyExpr(
             "None if opt_data.get('boo') is None else "
             + "None if runtime.key_safe_data_access(opt_data.get('boo'), 0) is None else "

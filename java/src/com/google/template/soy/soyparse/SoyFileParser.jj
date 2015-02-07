@@ -48,7 +48,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.ErrorReporterImpl;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -183,48 +183,12 @@ public class SoyFileParser {
   }
 
   /**
-   * Constructor that takes a string input.
-   * @param typeRegistry The type registry for resolving type names.
-   * @param nodeIdGen The node id generator for the tree being built.
-   * @param input The input to parse.
-   * @param soyFileKind The kind of this Soy file.
-   * @param filePath The path of the source being parsed. Used for reporting.
-   * @param errorReporter For reporting parse errors.
-   */
-  public SoyFileParser(
-      SoyTypeRegistry typeRegistry,
-      IdGenerator nodeIdGen,
-      String input,
-      SoyFileKind soyFileKind,
-      String filePath,
-      ErrorReporter errorReporter) {
-    this(typeRegistry, nodeIdGen, new StringReader(input), soyFileKind, filePath, errorReporter);
-  }
-
-  /**
-   * Constructor that takes a string input.
-   * @param typeRegistry The type registry for resolving type names.
-   * @param nodeIdGen The node id generator for the tree being built.
-   * @param input The input to parse.
-   * @param soyFileKind The kind of this Soy file.
-   * @param filePath The path of the source being parsed. Used for reporting.
-   */
-  public SoyFileParser(
-      SoyTypeRegistry typeRegistry,
-      IdGenerator nodeIdGen,
-      String input,
-      SoyFileKind soyFileKind,
-      String filePath) {
-    this(typeRegistry, nodeIdGen, input, soyFileKind, filePath, new ErrorReporterImpl());
-  }
-
-  /**
-   * Attempts to parse the given input as a Soy file.
+   * Attempts to parse the given input as a Soy file, returns null if parsing fails.
    */
   public SoyFileNode parseSoyFile() {
     Preconditions.checkNotNull(typeRegistry);
     Preconditions.checkNotNull(nodeIdGen);
-
+    Checkpoint checkpoint = errorReporter.checkpoint();
     SoyFileNode soyFileNode = null;
     try {
         soyFileNode = SoyFile();
@@ -237,7 +201,10 @@ public class SoyFileParser {
     } catch (NullPointerException e) {
         errorReporter.report(SourceLocation.UNKNOWN, UNCATEGORIZED, filePath, "", e.getMessage());
     }
-
+    // our callers expect us to return null when encountering parsing errors.
+    if (errorReporter.errorsSince(checkpoint)) {
+      return null;
+    }
     return soyFileNode;
   }
 

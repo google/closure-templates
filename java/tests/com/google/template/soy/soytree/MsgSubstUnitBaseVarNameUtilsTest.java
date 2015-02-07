@@ -77,11 +77,6 @@ public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
     assertShortestBaseNameForExpr("FALLBACK", exprText);
     assertCandidateBaseNamesForExpr(ImmutableList.<String>of(), exprText);
 
-    exprText = "$aaBb0.1.2.ccDd.5";
-    assertNaiveBaseNameForExpr("FALLBACK", exprText);
-    assertShortestBaseNameForExpr("CC_DD_5", exprText);
-    assertCandidateBaseNamesForExpr(ImmutableList.of("CC_DD_5", "AA_BB_0_1_2_CC_DD_5"), exprText);
-
     exprText = "$aa0_0bb[1][2]?.cc_dd.ee?[5]";
     assertNaiveBaseNameForExpr("FALLBACK", exprText);
     assertShortestBaseNameForExpr("EE_5", exprText);
@@ -138,9 +133,6 @@ public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
         ImmutableList.of("USER_GENDER", "TARGET_GENDER"), "$userGender, $target.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USER_GENDER", "TARGET_GENDER"), "$user.gender, $target.gender");
-    assertNoncollidingBaseNamesForExprs(
-        ImmutableList.of("USER_GENDER", "TARGET_0_GENDER", "TARGET_1_GENDER"),
-        "$ij.userGender, $target.0?.gender, $target.1?.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USER_GENDER", "TARGET_0_GENDER", "TARGET_1_GENDER"),
         "$ij.user.gender, $target[0]?.gender, $target[1]?.gender");
