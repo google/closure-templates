@@ -17,6 +17,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.easymock.EasyMock.createMock;
 
 import com.google.common.collect.ImmutableMap;
@@ -71,12 +72,12 @@ public class OptimizeBidiCodeGenVisitorTest extends TestCase {
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
-    assertEquals(5, template.numChildren());
-    assertEquals("\\u200Eleftright", ((RawTextNode) template.getChild(0)).getRawText());
-    assertEquals("$goo", ((PrintNode) template.getChild(1)).getExprText());
-    assertEquals("bidiDirAttr($moo)", ((PrintNode) template.getChild(2)).getExprText());
-    assertEquals("bidiMark()", ((PrintNode) template.getChild(3)).getExprText());
-    assertEquals("bidiStartEdge()", ((PrintNode) template.getChild(4)).getExprText());
+    assertThat(template.numChildren()).isEqualTo(5);
+    assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("\\u200Eleftright");
+    assertThat(((PrintNode) template.getChild(1)).getExprText()).isEqualTo("$goo");
+    assertThat(((PrintNode) template.getChild(2)).getExprText()).isEqualTo("bidiDirAttr($moo)");
+    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("bidiMark()");
+    assertThat(((PrintNode) template.getChild(4)).getExprText()).isEqualTo("bidiStartEdge()");
   }
 
 
@@ -93,14 +94,14 @@ public class OptimizeBidiCodeGenVisitorTest extends TestCase {
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
-    assertEquals(7, template.numChildren());
-    assertEquals("bidiMark()", ((PrintNode) template.getChild(0)).getExprText());
-    assertEquals("bidiStartEdge()", ((PrintNode) template.getChild(1)).getExprText());
-    assertEquals("bidiEndEdge()", ((PrintNode) template.getChild(2)).getExprText());
-    assertEquals("$goo", ((PrintNode) template.getChild(3)).getExprText());
-    assertEquals("bidiDirAttr($moo)", ((PrintNode) template.getChild(4)).getExprText());
-    assertEquals("bidiMark()", ((PrintNode) template.getChild(5)).getExprText());
-    assertEquals("bidiStartEdge()", ((PrintNode) template.getChild(6)).getExprText());
+    assertThat(template.numChildren()).isEqualTo(7);
+    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("bidiMark()");
+    assertThat(((PrintNode) template.getChild(1)).getExprText()).isEqualTo("bidiStartEdge()");
+    assertThat(((PrintNode) template.getChild(2)).getExprText()).isEqualTo("bidiEndEdge()");
+    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$goo");
+    assertThat(((PrintNode) template.getChild(4)).getExprText()).isEqualTo("bidiDirAttr($moo)");
+    assertThat(((PrintNode) template.getChild(5)).getExprText()).isEqualTo("bidiMark()");
+    assertThat(((PrintNode) template.getChild(6)).getExprText()).isEqualTo("bidiStartEdge()");
   }
 
 }

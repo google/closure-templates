@@ -16,6 +16,9 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
@@ -71,8 +74,8 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{$pa}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    assertEquals(1, n.getMaxLocalVariableTableSize());
-    assertEquals(0, n.getParams().get(0).localVariableIndex());
+    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
+    assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
   }
 
   public void testInjectedParamNameLookupSuccess() {
@@ -81,8 +84,8 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{$pa}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    assertEquals(1, n.getMaxLocalVariableTableSize());
-    assertEquals(0, n.getInjectedParams().get(0).localVariableIndex());
+    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
+    assertThat(n.getInjectedParams().get(0).localVariableIndex()).isEqualTo(0);
   }
 
   public void testLetNameLookupSuccess() {
@@ -91,8 +94,8 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{$pa}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    assertEquals(1, n.getMaxLocalVariableTableSize());
-    assertEquals(0, ((LetValueNode) n.getChild(0)).getVar().localVariableIndex());
+    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
+    assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(0);
   }
 
   public void testMultiplLocalsAndScopesNumbering() {
@@ -109,16 +112,16 @@ public class ResolveNamesVisitorTest extends TestCase {
     // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
     // index, lastIndex) active within the foreach loop.  the $lb can reuse a slot for the foreach
     // loop variable
-    assertEquals(6, n.getMaxLocalVariableTableSize());
-    assertEquals(0, n.getParams().get(0).localVariableIndex());
-    assertEquals(1, n.getParams().get(1).localVariableIndex());
-    assertEquals(2, ((LetValueNode) n.getChild(0)).getVar().localVariableIndex());
+    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(6);
+    assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
+    assertThat(n.getParams().get(1).localVariableIndex()).isEqualTo(1);
+    assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(2);
     ForeachNode foreachNode = (ForeachNode) n.getChild(1);
-    assertEquals(3, foreachNode.getVar().currentLoopIndexIndex());
-    assertEquals(4, foreachNode.getVar().isLastIteratorIndex());
-    assertEquals(5, foreachNode.getVar().localVariableIndex());
+    assertThat(foreachNode.getVar().currentLoopIndexIndex()).isEqualTo(3);
+    assertThat(foreachNode.getVar().isLastIteratorIndex()).isEqualTo(4);
+    assertThat(foreachNode.getVar().localVariableIndex()).isEqualTo(5);
     // The loop variables are out of scope so we can reuse the 3rd slot
-    assertEquals(3, ((LetValueNode) n.getChild(2)).getVar().localVariableIndex());
+    assertThat(((LetValueNode) n.getChild(2)).getVar().localVariableIndex()).isEqualTo(3);
   }
 
   public void testMultipleLocals() {
@@ -129,17 +132,17 @@ public class ResolveNamesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
-    assertEquals(3, n.getMaxLocalVariableTableSize());
+    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(3);
     LetValueNode firstLet = (LetValueNode) n.getChild(0);
     LetValueNode secondLet = (LetValueNode) n.getChild(1);
     LetValueNode thirdLet = (LetValueNode) n.getChild(2);
-    assertEquals(0, firstLet.getVar().localVariableIndex());
-    assertEquals(1, secondLet.getVar().localVariableIndex());
-    assertEquals(2, thirdLet.getVar().localVariableIndex());
-    assertEquals(firstLet.getVar(),
-        ((VarRefNode) secondLet.getValueExpr().getChild(0)).getDefnDecl());
-    assertEquals(secondLet.getVar(),
-        ((VarRefNode) thirdLet.getValueExpr().getChild(0)).getDefnDecl());
+    assertThat(firstLet.getVar().localVariableIndex()).isEqualTo(0);
+    assertThat(secondLet.getVar().localVariableIndex()).isEqualTo(1);
+    assertThat(thirdLet.getVar().localVariableIndex()).isEqualTo(2);
+    assertThat(((VarRefNode) secondLet.getValueExpr().getChild(0)).getDefnDecl())
+        .isEqualTo(firstLet.getVar());
+    assertThat(((VarRefNode) thirdLet.getValueExpr().getChild(0)).getDefnDecl())
+        .isEqualTo(secondLet.getVar());
   }
 
   public void testVariableNameRedefinition() {
@@ -182,12 +185,12 @@ public class ResolveNamesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 1 because each new $la binding overwrites the prior one
-    assertEquals(2, n.getMaxLocalVariableTableSize());
+    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(2);
     LetContentNode aLetNode = (LetContentNode) n.getChild(0);
-    assertEquals(1, aLetNode.getVar().localVariableIndex());
+    assertThat(aLetNode.getVar().localVariableIndex()).isEqualTo(1);
     LetValueNode bLetNode =
         (LetValueNode) ((IfCondNode) ((IfNode) aLetNode.getChild(0)).getChild(0)).getChild(0);
-    assertEquals(0, bLetNode.getVar().localVariableIndex());
+    assertThat(bLetNode.getVar().localVariableIndex()).isEqualTo(0);
   }
 
   public void testNameLookupFailure() {
@@ -226,8 +229,9 @@ public class ResolveNamesVisitorTest extends TestCase {
       fail("Expected SoySyntaxException");
     } catch (SoySyntaxException e) {
       String message = e.getMessage();
-      assertTrue("Expected :'" + message + "' to contain '" + expectedError + "'",
-          message.contains(expectedError));
+      assertWithMessage("Expected :'" + message + "' to contain '" + expectedError + "'")
+          .that(message.contains(expectedError))
+          .isTrue();
     }
   }
 }

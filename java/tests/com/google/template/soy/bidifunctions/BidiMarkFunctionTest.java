@@ -16,6 +16,8 @@
 
 package com.google.template.soy.bidifunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
@@ -44,26 +46,22 @@ public class BidiMarkFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()));
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.<SoyValue>of()));
+    assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()))
+        .isEqualTo(StringData.forValue("\u200E"));
+    assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.<SoyValue>of()))
+        .isEqualTo(StringData.forValue("\u200F"));
   }
 
 
   public void testComputeForJsSrc() {
-
-    assertEquals(
-        new JsExpr("'\\u200E'", Integer.MAX_VALUE),
-        BIDI_MARK_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()));
-    assertEquals(
-        new JsExpr("'\\u200F'", Integer.MAX_VALUE),
-        BIDI_MARK_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()));
-    assertEquals(
-        new JsExpr("(IS_RTL?-1:1) < 0 ? '\\u200F' : '\\u200E'",
-                   Operator.CONDITIONAL.getPrecedence()),
-        BIDI_MARK_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.<JsExpr>of()));
+    assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(new JsExpr("'\\u200E'", Integer.MAX_VALUE));
+    assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(new JsExpr("'\\u200F'", Integer.MAX_VALUE));
+    assertThat(
+        BIDI_MARK_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(new JsExpr(
+            "(IS_RTL?-1:1) < 0 ? '\\u200F' : '\\u200E'", Operator.CONDITIONAL.getPrecedence()));
   }
 
 }

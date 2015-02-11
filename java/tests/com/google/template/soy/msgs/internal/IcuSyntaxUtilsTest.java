@@ -16,6 +16,8 @@
 
 package com.google.template.soy.msgs.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 
 import junit.framework.TestCase;
@@ -29,19 +31,19 @@ public class IcuSyntaxUtilsTest extends TestCase {
 
 
   public void testIcuEscape() {
-
-    assertEquals("", IcuSyntaxUtils.icuEscape(""));
-    assertEquals("Hello world!", IcuSyntaxUtils.icuEscape("Hello world!"));
-    assertEquals("Don't", IcuSyntaxUtils.icuEscape("Don't"));
-    assertEquals("#5", IcuSyntaxUtils.icuEscape("#5"));  // no escape because we disable ICU '#'
-    assertEquals("Don'''t", IcuSyntaxUtils.icuEscape("Don''t"));
-    assertEquals("Don'''''t", IcuSyntaxUtils.icuEscape("Don'''t"));
-    assertEquals("the ''", IcuSyntaxUtils.icuEscape("the '"));
-    assertEquals("the ''''", IcuSyntaxUtils.icuEscape("the ''"));
-    assertEquals("''#5", IcuSyntaxUtils.icuEscape("'#5"));
-    assertEquals("Set '{'0, 1, ...'}'", IcuSyntaxUtils.icuEscape("Set {0, 1, ...}"));
-    assertEquals("Set '{'don't'}'", IcuSyntaxUtils.icuEscape("Set {don't}"));
-    assertEquals("Set '''{'0, 1, ...'}'''", IcuSyntaxUtils.icuEscape("Set '{0, 1, ...}'"));
+    assertThat(IcuSyntaxUtils.icuEscape("")).isEmpty();
+    assertThat(IcuSyntaxUtils.icuEscape("Hello world!")).isEqualTo("Hello world!");
+    assertThat(IcuSyntaxUtils.icuEscape("Don't")).isEqualTo("Don't");
+    assertThat(IcuSyntaxUtils.icuEscape("#5")).isEqualTo("#5");
+        // no escape because we disable ICU '#'
+    assertThat(IcuSyntaxUtils.icuEscape("Don''t")).isEqualTo("Don'''t");
+    assertThat(IcuSyntaxUtils.icuEscape("Don'''t")).isEqualTo("Don'''''t");
+    assertThat(IcuSyntaxUtils.icuEscape("the '")).isEqualTo("the ''");
+    assertThat(IcuSyntaxUtils.icuEscape("the ''")).isEqualTo("the ''''");
+    assertThat(IcuSyntaxUtils.icuEscape("'#5")).isEqualTo("''#5");
+    assertThat(IcuSyntaxUtils.icuEscape("Set {0, 1, ...}")).isEqualTo("Set '{'0, 1, ...'}'");
+    assertThat(IcuSyntaxUtils.icuEscape("Set {don't}")).isEqualTo("Set '{'don't'}'");
+    assertThat(IcuSyntaxUtils.icuEscape("Set '{0, 1, ...}'")).isEqualTo("Set '''{'0, 1, ...'}'''");
   }
 
 
@@ -86,7 +88,7 @@ public class IcuSyntaxUtilsTest extends TestCase {
       IcuSyntaxUtils.checkIcuEscapingIsNotNeeded(rawText);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(expectedErrorMsgSubstr));
+      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
     }
   }
 

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -40,16 +42,16 @@ public class SoyTypeRegistryTest extends TestCase {
   }
 
   public void testPrimitiveTypes() {
-    assertEquals(SoyType.Kind.ANY, typeRegistry.getType("any").getKind());
-    assertEquals(SoyType.Kind.NULL, typeRegistry.getType("null").getKind());
-    assertEquals(SoyType.Kind.BOOL, typeRegistry.getType("bool").getKind());
-    assertEquals(SoyType.Kind.INT, typeRegistry.getType("int").getKind());
-    assertEquals(SoyType.Kind.FLOAT, typeRegistry.getType("float").getKind());
-    assertEquals(SoyType.Kind.STRING, typeRegistry.getType("string").getKind());
+    assertThat(typeRegistry.getType("any").getKind()).isEqualTo(SoyType.Kind.ANY);
+    assertThat(typeRegistry.getType("null").getKind()).isEqualTo(SoyType.Kind.NULL);
+    assertThat(typeRegistry.getType("bool").getKind()).isEqualTo(SoyType.Kind.BOOL);
+    assertThat(typeRegistry.getType("int").getKind()).isEqualTo(SoyType.Kind.INT);
+    assertThat(typeRegistry.getType("float").getKind()).isEqualTo(SoyType.Kind.FLOAT);
+    assertThat(typeRegistry.getType("string").getKind()).isEqualTo(SoyType.Kind.STRING);
 
     // Check that 'number' type is assignable from both float and int.
-    assertTrue(typeRegistry.getType("number").isAssignableFrom(IntType.getInstance()));
-    assertTrue(typeRegistry.getType("number").isAssignableFrom(FloatType.getInstance()));
+    assertThat(typeRegistry.getType("number").isAssignableFrom(IntType.getInstance())).isTrue();
+    assertThat(typeRegistry.getType("number").isAssignableFrom(FloatType.getInstance())).isTrue();
   }
 
   public void testCreateListType() {
@@ -57,8 +59,8 @@ public class SoyTypeRegistryTest extends TestCase {
     ListType listOfInt2 = typeRegistry.getOrCreateListType(IntType.getInstance());
     ListType listOfFloat = typeRegistry.getOrCreateListType(FloatType.getInstance());
 
-    assertSame(listOfInt, listOfInt2);
-    assertNotSame(listOfInt, listOfFloat);
+    assertThat(listOfInt2).isSameAs(listOfInt);
+    assertThat(listOfFloat).isNotSameAs(listOfInt);
   }
 
   public void testCreateMapType() {
@@ -71,9 +73,9 @@ public class SoyTypeRegistryTest extends TestCase {
     MapType mapOfStringToString = typeRegistry.getOrCreateMapType(
         StringType.getInstance(), StringType.getInstance());
 
-    assertSame(mapOfIntToString, mapOfIntToString2);
-    assertNotSame(mapOfIntToString, mapOfIntToInt);
-    assertNotSame(mapOfIntToString, mapOfStringToString);
+    assertThat(mapOfIntToString2).isSameAs(mapOfIntToString);
+    assertThat(mapOfIntToInt).isNotSameAs(mapOfIntToString);
+    assertThat(mapOfStringToString).isNotSameAs(mapOfIntToString);
   }
 
   public void testCreateUnionType() {
@@ -87,8 +89,8 @@ public class SoyTypeRegistryTest extends TestCase {
         IntType.getInstance(),
         StringType.getInstance());
 
-    assertSame(u1, u2);
-    assertNotSame(u1, u3);
+    assertThat(u2).isSameAs(u1);
+    assertThat(u3).isNotSameAs(u1);
   }
 
   public void testCreateRecordType() {
@@ -105,8 +107,8 @@ public class SoyTypeRegistryTest extends TestCase {
         ImmutableMap.<String, SoyType>of(
             "a", IntType.getInstance(), "c", FloatType.getInstance()));
 
-    assertSame(r1, r2);
-    assertNotSame(r1, r3);
-    assertNotSame(r1, r4);
+    assertThat(r2).isSameAs(r1);
+    assertThat(r3).isNotSameAs(r1);
+    assertThat(r4).isNotSameAs(r1);
   }
 }

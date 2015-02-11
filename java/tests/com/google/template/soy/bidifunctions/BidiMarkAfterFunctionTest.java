@@ -16,6 +16,8 @@
 
 package com.google.template.soy.bidifunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
@@ -47,96 +49,97 @@ public class BidiMarkAfterFunctionTest extends TestCase {
   public void testComputeForJava() {
 
     SoyValue text = StringData.EMPTY_STRING;
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = StringData.forValue("a");
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = StringData.forValue("\u05E0");
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200E"));
 
     text = SanitizedContents.unsanitizedText("a");
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = SanitizedContents.unsanitizedText("a", Dir.LTR);
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = SanitizedContents.unsanitizedText("a", Dir.NEUTRAL);
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = SanitizedContents.unsanitizedText("a", Dir.RTL);
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200E"));
     text = SanitizedContents.unsanitizedText("\u05E0");
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200E"));
     text = SanitizedContents.unsanitizedText("\u05E0", Dir.RTL);
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200E"));
     text = SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL);
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200E"));
     text = SanitizedContents.unsanitizedText("\u05E0", Dir.LTR);
-    assertEquals(StringData.forValue("\u200E"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200E"));
 
     text = StringData.EMPTY_STRING;
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = StringData.forValue("\u05E0");
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = StringData.forValue("a");
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200F"));
 
     text = SanitizedContents.unsanitizedText("\u05E0");
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = SanitizedContents.unsanitizedText("\u05E0", Dir.RTL);
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL);
-    assertEquals(StringData.EMPTY_STRING,
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.EMPTY_STRING);
     text = SanitizedContents.unsanitizedText("\u05E0", Dir.LTR);
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200F"));
     text = SanitizedContents.unsanitizedText("a");
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200F"));
     text = SanitizedContents.unsanitizedText("a", Dir.LTR);
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200F"));
     text = SanitizedContents.unsanitizedText("a", Dir.NEUTRAL);
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200F"));
     text = SanitizedContents.unsanitizedText("a", Dir.RTL);
-    assertEquals(StringData.forValue("\u200F"),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
+        .isEqualTo(StringData.forValue("\u200F"));
   }
 
 
   public void testComputeForJsSrc() {
 
     JsExpr textExpr = new JsExpr("TEXT_JS_CODE", Integer.MAX_VALUE);
-    assertEquals(new JsExpr("soy.$$bidiMarkAfter(1, TEXT_JS_CODE)", Integer.MAX_VALUE),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(
-                     ImmutableList.of(textExpr)));
-    assertEquals(new JsExpr("soy.$$bidiMarkAfter(IS_RTL?-1:1, TEXT_JS_CODE)", Integer.MAX_VALUE),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
-                     ImmutableList.of(textExpr)));
+    assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.of(textExpr)))
+        .isEqualTo(new JsExpr("soy.$$bidiMarkAfter(1, TEXT_JS_CODE)", Integer.MAX_VALUE));
+    assertThat(
+        BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.of(textExpr)))
+        .isEqualTo(new JsExpr("soy.$$bidiMarkAfter(IS_RTL?-1:1, TEXT_JS_CODE)", Integer.MAX_VALUE));
 
     JsExpr isHtmlExpr = new JsExpr("IS_HTML_JS_CODE", Integer.MAX_VALUE);
-    assertEquals(new JsExpr("soy.$$bidiMarkAfter(-1, TEXT_JS_CODE, IS_HTML_JS_CODE)",
-                            Integer.MAX_VALUE),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(
-                     ImmutableList.of(textExpr, isHtmlExpr)));
-    assertEquals(new JsExpr("soy.$$bidiMarkAfter(IS_RTL?-1:1, TEXT_JS_CODE, IS_HTML_JS_CODE)",
-                            Integer.MAX_VALUE),
-                 BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
-                     ImmutableList.of(textExpr, isHtmlExpr)));
+    assertThat(
+        BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(
+            ImmutableList.of(textExpr, isHtmlExpr)))
+        .isEqualTo(new JsExpr(
+            "soy.$$bidiMarkAfter(-1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
+    assertThat(
+        BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
+            ImmutableList.of(textExpr, isHtmlExpr)))
+        .isEqualTo(new JsExpr(
+            "soy.$$bidiMarkAfter(IS_RTL?-1:1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
   }
 
 }

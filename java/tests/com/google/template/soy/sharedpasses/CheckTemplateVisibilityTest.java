@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.SharedTestUtils;
 
@@ -71,14 +73,11 @@ public class CheckTemplateVisibilityTest extends TestCase {
   }
 
   private void assertVisibilityError(String... sources) {
-    SoySyntaxException sse = null;
     try {
       SharedTestUtils.parseSoyFiles(
         true /* doRunInitialParsingPasses */, true /* doRunCheckingPasses */, sources);
-    } catch (SoySyntaxException e) {
-      sse = e;
-    }
-    assertNotNull("expect a SoySyntaxException", sse);
+      fail("expected a SoySyntaxException");
+    } catch (SoySyntaxException expected) {}
   }
 
   private void assertNoVisibilityError(String... sources) {

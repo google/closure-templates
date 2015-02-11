@@ -16,6 +16,7 @@
 
 package com.google.template.soy.tofu.internal;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
 import com.google.common.base.Joiner;
@@ -80,12 +81,10 @@ public final class TofuExceptionsTest extends TestCase {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertEquals(null, ste.getCause());
-      assertEquals(
-          "In 'print' tag, expression \"$foo.bad\" evaluates to undefined.",
-          ste.getMessage());
-      assertEquals("ns.calleeTemplate(no-path:11)", ste.getStackTrace()[0].toString());
-      assertEquals("ns.callerTemplate(no-path:5)", ste.getStackTrace()[1].toString());
+      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasMessage("In 'print' tag, expression \"$foo.bad\" evaluates to undefined.");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:11)");
+      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
   }
 
@@ -96,13 +95,12 @@ public final class TofuExceptionsTest extends TestCase {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertEquals(null, ste.getCause());
-      assertEquals(
+      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasMessage(
           "Parameter type mismatch: attempt to bind value 'not a record' to parameter "
-              + "'foo' which has declared type '[bad: string, boo: int]'.", 
-          ste.getMessage());
-      assertEquals("ns.calleeTemplate(no-path:8)", ste.getStackTrace()[0].toString());
-      assertEquals("ns.callerTemplate(no-path:5)", ste.getStackTrace()[1].toString());
+          + "'foo' which has declared type '[bad: string, boo: int]'.");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:8)");
+      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
   }
 
@@ -114,14 +112,12 @@ public final class TofuExceptionsTest extends TestCase {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertEquals(
-          "When evaluating \"$foo.boo\": Error dereferencing future",
-          ste.getMessage());
+      assertThat(ste).hasMessage("When evaluating \"$foo.boo\": Error dereferencing future");
       SoyFutureException sfe = (SoyFutureException) ste.getCause();
-      assertEquals("Error dereferencing future", sfe.getMessage());
-      assertEquals(futureFailureCause, sfe.getCause());
-      assertEquals("ns.calleeTemplate(no-path:10)", ste.getStackTrace()[0].toString());
-      assertEquals("ns.callerTemplate(no-path:5)", ste.getStackTrace()[1].toString());
+      assertThat(sfe).hasMessage("Error dereferencing future");
+      assertThat(sfe.getCause()).isEqualTo(futureFailureCause);
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:10)");
+      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
   }
 
@@ -132,15 +128,14 @@ public final class TofuExceptionsTest extends TestCase {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertEquals(null, ste.getCause());
-      assertEquals(
+      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasMessage(
           "When evaluating \"$foo.boo\": Parameter type mismatch: attempt to bind value "
-              + "'not a record' to parameter 'foo' which has declared type "
-              + "'[bad: string, boo: int]'.",
-          ste.getMessage());
-      assertEquals("ns.calleeTemplate(no-path:8)", ste.getStackTrace()[0].toString());
-      assertEquals("ns.calleeTemplate(no-path:10)", ste.getStackTrace()[1].toString());
-      assertEquals("ns.callerTemplate(no-path:5)", ste.getStackTrace()[2].toString());
+          + "'not a record' to parameter 'foo' which has declared type "
+          + "'[bad: string, boo: int]'.");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:8)");
+      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.calleeTemplate(no-path:10)");
+      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
   }
 
@@ -150,15 +145,14 @@ public final class TofuExceptionsTest extends TestCase {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertEquals(null, ste.getCause());
-      assertEquals(
+      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasMessage(
           "When evaluating \"$foo\": Parameter type mismatch: attempt to bind value "
-              + "'not an int' to parameter 'foo' which has declared type 'int'.",
-          ste.getMessage());
-      assertEquals("ns.transclusionCaller(no-path:14)", ste.getStackTrace()[0].toString());
-      assertEquals("ns.transclusionCaller(no-path:17)", ste.getStackTrace()[1].toString());
-      assertEquals("ns.transclusionCallee(no-path:23)", ste.getStackTrace()[2].toString());
-      assertEquals("ns.transclusionCaller(no-path:16)", ste.getStackTrace()[3].toString());
+          + "'not an int' to parameter 'foo' which has declared type 'int'.");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:14)");
+      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
+      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
+      assertThat(ste.getStackTrace()[3].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
     }
   }
 
@@ -170,14 +164,12 @@ public final class TofuExceptionsTest extends TestCase {
       fail();
     } catch (SoyTofuException ste) {
       SoyFutureException sfe = (SoyFutureException) ste.getCause();
-      assertEquals("Error dereferencing future", sfe.getMessage());
-      assertEquals(futureFailureCause, sfe.getCause());
-      assertEquals(
-          "When evaluating \"$foo\": Error dereferencing future",
-          ste.getMessage());
-      assertEquals("ns.transclusionCaller(no-path:17)", ste.getStackTrace()[0].toString());
-      assertEquals("ns.transclusionCallee(no-path:23)", ste.getStackTrace()[1].toString());
-      assertEquals("ns.transclusionCaller(no-path:16)", ste.getStackTrace()[2].toString());
+      assertThat(sfe).hasMessage("Error dereferencing future");
+      assertThat(sfe.getCause()).isEqualTo(futureFailureCause);
+      assertThat(ste).hasMessage("When evaluating \"$foo\": Error dereferencing future");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
+      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
+      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
     }
   }
 }

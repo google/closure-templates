@@ -16,6 +16,9 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
@@ -39,9 +42,8 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "{/call}\n";
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(callCode);
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
-    assertEquals(
-        "{call .foo data=\"all\" /}",
-        SharedTestUtils.getNode(soyTree, 0).toSourceString());
+    assertThat(SharedTestUtils.getNode(soyTree, 0).toSourceString())
+        .isEqualTo("{call .foo data=\"all\" /}");
 
     callCode =
         "{call .foo data=\"all\"}\n" +
@@ -49,9 +51,8 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "{/call}\n";
     soyTree = SharedTestUtils.parseSoyCode(callCode);
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
-    assertEquals(
-        "{call .foo data=\"all\" /}",
-        SharedTestUtils.getNode(soyTree, 0).toSourceString());
+    assertThat(SharedTestUtils.getNode(soyTree, 0).toSourceString())
+        .isEqualTo("{call .foo data=\"all\" /}");
   }
 
 
@@ -130,10 +131,10 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
     callNodeBeforePass.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
     CallNode callNodeAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
-    assertEquals(callNodeBeforePass, callNodeAfterPass);
-    assertEquals("Escaping directives should be preserved",
-        ImmutableList.of("|escapeHtml"),
-        callNodeAfterPass.getEscapingDirectiveNames());
+    assertThat(callNodeAfterPass).isEqualTo(callNodeBeforePass);
+    assertWithMessage("Escaping directives should be preserved")
+        .that(callNodeAfterPass.getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of("|escapeHtml"));
   }
 
 
@@ -156,8 +157,8 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
     CallNode callNodeOutsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     CallNode callNodeInsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 1, 0, 0);
 
-    assertNotSame(callNodeOutsideLoopBeforePass, callNodeOutsideLoopAfterPass);
-    assertSame(callNodeInsideLoopBeforePass, callNodeInsideLoopAfterPass);
+    assertThat(callNodeOutsideLoopAfterPass).isNotSameAs(callNodeOutsideLoopBeforePass);
+    assertThat(callNodeInsideLoopAfterPass).isSameAs(callNodeInsideLoopBeforePass);
   }
 
 }

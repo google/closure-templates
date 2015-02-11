@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
@@ -71,13 +72,13 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(0, printNodes.get(0).getChildren().size());
+    assertThat(printNodes.get(0).getChildren()).isEmpty();
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
   }
 
 
@@ -90,15 +91,15 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals("|boo", printNodes.get(0).getChild(0).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After.
-    assertEquals(2, printNodes.get(0).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals("|boo", printNodes.get(0).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(2);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(0).getChild(1).getName()).isEqualTo("|boo");
   }
 
 
@@ -111,20 +112,20 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(2, printNodes.get(1).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(2);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(2, printNodes.get(1).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(2);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
   }
 
 
@@ -138,26 +139,26 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(2, printNodes.get(1).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(1).getChild(1).getName());
-    assertEquals(2, printNodes.get(2).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(2).getChild(0).getName());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(2).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(2);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChildren()).hasSize(2);
+    assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(2, printNodes.get(1).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(1).getChild(1).getName());
-    assertEquals(2, printNodes.get(2).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(2).getChild(0).getName());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(2).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(2);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChildren()).hasSize(2);
+    assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
   }
 
 
@@ -170,12 +171,12 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(0, printNodes.get(0).getChildren().size());
+    assertThat(printNodes.get(0).getChildren()).isEmpty();
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After.
-    assertEquals(0, printNodes.get(0).getChildren().size());
+    assertThat(printNodes.get(0).getChildren()).isEmpty();
   }
 
 
@@ -188,14 +189,14 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals("|boo", printNodes.get(0).getChild(0).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals("|boo", printNodes.get(0).getChild(0).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
   }
 
 
@@ -208,17 +209,17 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(2, printNodes.get(1).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(2);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After: The redundant noAutoescape calls are omitted.
-    assertEquals(0, printNodes.get(0).getChildren().size());
-    assertEquals(0, printNodes.get(1).getChildren().size());
+    assertThat(printNodes.get(0).getChildren()).isEmpty();
+    assertThat(printNodes.get(1).getChildren()).isEmpty();
   }
 
 
@@ -232,24 +233,24 @@ public class PerformAutoescapeVisitorTest extends TestCase {
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(2, printNodes.get(1).getChildren().size());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(1).getChild(1).getName());
-    assertEquals(2, printNodes.get(2).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(2).getChild(0).getName());
-    assertEquals(NoAutoescapeDirective.NAME, printNodes.get(2).getChild(1).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(2);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
+    assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChildren()).hasSize(2);
+    assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
     (new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP)).exec(soyTree);
 
     // After.
-    assertEquals(1, printNodes.get(0).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(0).getChild(0).getName());
-    assertEquals(1, printNodes.get(1).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(1).getChild(0).getName());
-    assertEquals(1, printNodes.get(2).getChildren().size());
-    assertEquals(EscapeHtmlDirective.NAME, printNodes.get(2).getChild(0).getName());
+    assertThat(printNodes.get(0).getChildren()).hasSize(1);
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(1).getChildren()).hasSize(1);
+    assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
+    assertThat(printNodes.get(2).getChildren()).hasSize(1);
+    assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
   }
 
 

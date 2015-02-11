@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -174,8 +176,8 @@ public class CheckSoyDocVisitorTest extends TestCase {
       runTemplateTestHelper(soyDoc, templateBody);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Found references to data keys that are not declared in SoyDoc: [boo]"));
+      assertThat(sse.getMessage())
+          .contains("Found references to data keys that are not declared in SoyDoc: [boo]");
     }
   }
 
@@ -186,8 +188,8 @@ public class CheckSoyDocVisitorTest extends TestCase {
       runTemplateTestHelper(soyDoc, templateBody);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Found params declared in SoyDoc but not used in template: [foo]"));
+      assertThat(sse.getMessage())
+          .contains("Found params declared in SoyDoc but not used in template: [foo]");
     }
   }
 
@@ -212,8 +214,8 @@ public class CheckSoyDocVisitorTest extends TestCase {
       runSoyFilesTestHelper(fileContent);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Found params declared in SoyDoc but not used in template: [zoo]"));
+      assertThat(sse.getMessage())
+          .contains("Found params declared in SoyDoc but not used in template: [zoo]");
     }
   }
 
@@ -238,8 +240,8 @@ public class CheckSoyDocVisitorTest extends TestCase {
       runTemplateTestHelper(soyDoc, templateBody);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Found params declared in SoyDoc but not used in template: [boo, foo]"));
+      assertThat(sse.getMessage())
+          .contains("Found params declared in SoyDoc but not used in template: [boo, foo]");
     }
   }
 
@@ -300,8 +302,8 @@ public class CheckSoyDocVisitorTest extends TestCase {
       runSoyFilesTestHelper(fileContent0, fileContent1, fileContent2);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Found references to data keys that are not declared in SoyDoc: [goo2]"));
+      assertThat(sse.getMessage())
+          .contains("Found references to data keys that are not declared in SoyDoc: [goo2]");
     }
   }
 
@@ -332,8 +334,8 @@ public class CheckSoyDocVisitorTest extends TestCase {
       runSoyFilesTestHelper(fileContent);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Found params declared in SoyDoc but not used in template: [goo, zoo]"));
+      assertThat(sse.getMessage())
+          .contains("Found params declared in SoyDoc but not used in template: [goo, zoo]");
     }
   }
 

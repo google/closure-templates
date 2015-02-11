@@ -16,8 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import java.util.Arrays;
-import java.util.Queue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -25,6 +24,8 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.soytree.RawTextNode;
 
 import junit.framework.TestCase;
+import java.util.Arrays;
+import java.util.Queue;
 
 public class RawTextContextUpdaterTest extends TestCase {
   // The letter 'M' repeated 1500 times.
@@ -522,7 +523,7 @@ public class RawTextContextUpdaterTest extends TestCase {
         new RawTextNode(0, rawText), parseContext(from)).getEndContext();
     // Assert against the toString() for simpler test authoring -- if a developer misspells the
     // "to" context, they'll see a useful string-based diff.
-    assertEquals(rawText, "(Context " + to + ")", after.toString());
+    assertWithMessage(rawText).that(after.toString()).isEqualTo("(Context " + to + ")");
   }
 
   private static Context parseContext(String text) {
@@ -573,8 +574,7 @@ public class RawTextContextUpdaterTest extends TestCase {
         }
       }
     }
-    assertTrue(
-        "Got [" + text + "] but didn't use [" + Joiner.on(' ').join(parts) + "]", parts.isEmpty());
+    assertWithMessage("Got [" + text + "]").that(parts).isEmpty();
     return new Context(state, el, attr, delim, slash, uriPart);
   }
 }

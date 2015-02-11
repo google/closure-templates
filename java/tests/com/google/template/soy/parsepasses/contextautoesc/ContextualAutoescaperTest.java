@@ -16,6 +16,9 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1903,12 +1906,9 @@ public final class ContextualAutoescaperTest extends TestCase {
           "<b>{$foo |customOtherDirective}</b>\n",
         "{/template}"));
     String rewrittenTemplate = rewrittenSource(soyTree);
-    assertEquals(
-        join(
-            "{template main autoescape=\"strict\"}\n",
-              "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
-            "{/template}"),
-        rewrittenTemplate.trim());
+    assertThat(rewrittenTemplate.trim())
+        .isEqualTo(join("{template main autoescape=\"strict\"}\n",
+            "<b>{$foo |customOtherDirective |escapeHtml}</b>\n", "{/template}"));
   }
 
 
@@ -2147,18 +2147,22 @@ public final class ContextualAutoescaperTest extends TestCase {
     new CheckEscapingSanityVisitor().exec(soyTree);
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
-    assertEquals("Sanity check", "ns.main", mainTemplate.getTemplateName());
+    assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
         mainTemplate, CallNode.class);
-    assertEquals(4, callNodes.size());
-    assertEquals("HTML->HTML escaping should be pruned",
-        ImmutableList.of(), callNodes.get(0).getEscapingDirectiveNames());
-    assertEquals("JS -> HTML call should be escaped",
-        ImmutableList.of("|escapeJsValue"), callNodes.get(1).getEscapingDirectiveNames());
-    assertEquals("JS -> JS pruned",
-        ImmutableList.of(), callNodes.get(2).getEscapingDirectiveNames());
-    assertEquals("HTML -> extern call should be escaped",
-        ImmutableList.of("|escapeHtml"), callNodes.get(3).getEscapingDirectiveNames());
+    assertThat(callNodes).hasSize(4);
+    assertWithMessage("HTML->HTML escaping should be pruned")
+        .that(callNodes.get(0).getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of());
+    assertWithMessage("JS -> HTML call should be escaped")
+        .that(callNodes.get(1).getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of("|escapeJsValue"));
+    assertWithMessage("JS -> JS pruned")
+        .that(callNodes.get(2).getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of());
+    assertWithMessage("HTML -> extern call should be escaped")
+        .that(callNodes.get(3).getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of("|escapeHtml"));
   }
 
 
@@ -2182,14 +2186,16 @@ public final class ContextualAutoescaperTest extends TestCase {
     new CheckEscapingSanityVisitor().exec(soyTree);
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
-    assertEquals("Sanity check", "ns.main", mainTemplate.getTemplateName());
+    assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
         mainTemplate, CallNode.class);
-    assertEquals(2, callNodes.size());
-    assertEquals("We're compiling a complete set; we can optimize based on usages.",
-        ImmutableList.of(), callNodes.get(0).getEscapingDirectiveNames());
-    assertEquals("HTML -> TEXT requires escaping",
-        ImmutableList.of("|escapeHtml"), callNodes.get(1).getEscapingDirectiveNames());
+    assertThat(callNodes).hasSize(2);
+    assertWithMessage("We're compiling a complete set; we can optimize based on usages.")
+        .that(callNodes.get(0).getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of());
+    assertWithMessage("HTML -> TEXT requires escaping")
+        .that(callNodes.get(1).getEscapingDirectiveNames())
+        .isEqualTo(ImmutableList.of("|escapeHtml"));
   }
 
 
@@ -2225,11 +2231,11 @@ public final class ContextualAutoescaperTest extends TestCase {
     new CheckEscapingSanityVisitor().exec(soyTree);
 
     String source = rewrittenSource(soyTree);
-    assertEquals(expectedOutput, source.trim());
+    assertThat(source.trim()).isEqualTo(expectedOutput);
 
     // Make sure that the transformation is idempotent.
     if (!source.contains("__C")) {  // Skip if there are extern extra templates.
-      assertEquals(expectedOutput, rewrittenSource(soyTree).trim());
+      assertThat(rewrittenSource(soyTree).trim()).isEqualTo(expectedOutput);
     }
 
     // And idempotent from a normalized input if the templates are not
@@ -2241,7 +2247,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         .replaceAll("\\s+kind\\s*=\\s*\"([a-z]*)\"", "");
     SoyFileSetNode soyTree2 = SharedTestUtils.parseSoyFiles(inputWithoutAutoescape);
     String original = soyTree2.getChild(0).toSourceString();
-    assertEquals(original, rewrittenSource(soyTree2));
+    assertThat(rewrittenSource(soyTree2)).isEqualTo(original);
   }
 
   private void assertContextualRewritingNoop(String expectedOutput) throws SoyAutoescapeException {

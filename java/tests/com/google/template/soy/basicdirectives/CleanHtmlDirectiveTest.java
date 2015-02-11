@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -92,9 +94,8 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   public void testApplyForJsSrc() {
     CleanHtmlDirective cleanHtml = new CleanHtmlDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertEquals(
-        "soy.$$cleanHtml(opt_data.myKey)",
-        cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText());
+    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+        .isEqualTo("soy.$$cleanHtml(opt_data.myKey)");
   }
 
   public void testApplyForJsSrc_optionalSafeTags() {
@@ -112,15 +113,13 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
               }
             }).toList();
 
-    assertEquals(
-        "soy.$$cleanHtml(opt_data.myKey, ['li', 'ol', 'span', 'ul'])",
-        cleanHtml.applyForJsSrc(dataRef, optionalSafeTagsAsJsExprs).getText());
+    assertThat(cleanHtml.applyForJsSrc(dataRef, optionalSafeTagsAsJsExprs).getText())
+        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['li', 'ol', 'span', 'ul'])");
 
     // Only the specified optional safe tags are passed to $$cleanHtml.
-    assertEquals(
-        "soy.$$cleanHtml(opt_data.myKey, ['span'])",
-        cleanHtml.applyForJsSrc(
-            dataRef, ImmutableList.of(new JsExpr("'span'", Integer.MAX_VALUE))).getText());
+    assertThat(
+        cleanHtml.applyForJsSrc(dataRef, ImmutableList.of(new JsExpr("'span'", Integer.MAX_VALUE)))
+            .getText()).isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['span'])");
 
     // Invalid optional safe tags.
     try {
@@ -144,8 +143,8 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
           dataRef, ImmutableList.of(new JsExpr("$myExtraSafeTags", Integer.MAX_VALUE)));
       fail();
     } catch (IllegalArgumentException e) {
-      assertEquals("The cleanHtml directive expects arguments to be tag name string "
-          + "literals, such as 'span'. Encountered: $myExtraSafeTags", e.getMessage());
+      assertThat(e).hasMessage("The cleanHtml directive expects arguments to be tag name string "
+          + "literals, such as 'span'. Encountered: $myExtraSafeTags");
     }
   }
 }

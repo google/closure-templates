@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -51,58 +53,58 @@ public class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     GoogMsgDefNode gmd0 = (GoogMsgDefNode) template.getChild(0);
-    assertTrue(gmd0.getRenderedGoogMsgVarName().matches("msg_s[0-9]+"));
-    assertEquals(gmd0.getRenderedGoogMsgVarName(), gmd0.getVarName());
+    assertThat(gmd0.getRenderedGoogMsgVarName()).matches("msg_s[0-9]+");
+    assertThat(gmd0.getVarName()).isEqualTo(gmd0.getRenderedGoogMsgVarName());
     MsgNode m0 = gmd0.getChild(0);
-    assertEquals(null, m0.getMeaning());
-    assertEquals("Tells the user to click a link.", m0.getDesc());
-    assertEquals(false, m0.isHidden());
+    assertThat(m0.getMeaning()).isNull();
+    assertThat(m0.getDesc()).isEqualTo("Tells the user to click a link.");
+    assertThat(m0.isHidden()).isFalse();
 
-    assertEquals(7, m0.numChildren());
-    assertEquals("Hello ", ((RawTextNode) m0.getChild(0)).getRawText());
+    assertThat(m0.numChildren()).isEqualTo(7);
+    assertThat(((RawTextNode) m0.getChild(0)).getRawText()).isEqualTo("Hello ");
     MsgPlaceholderNode gm0p1 = (MsgPlaceholderNode) m0.getChild(1);
-    assertEquals(gm0p1, m0.getRepPlaceholderNode("USER_NAME"));
-    assertEquals("USER_NAME", m0.getPlaceholderName(gm0p1));
+    assertThat(m0.getRepPlaceholderNode("USER_NAME")).isEqualTo(gm0p1);
+    assertThat(m0.getPlaceholderName(gm0p1)).isEqualTo("USER_NAME");
     PrintNode gm0pc1 = (PrintNode) gm0p1.getChild(0);
-    assertEquals("$userName", gm0pc1.getExprText());
-    assertEquals(", please click ", ((RawTextNode) m0.getChild(2)).getRawText());
+    assertThat(gm0pc1.getExprText()).isEqualTo("$userName");
+    assertThat(((RawTextNode) m0.getChild(2)).getRawText()).isEqualTo(", please click ");
     MsgPlaceholderNode gm0p3 = (MsgPlaceholderNode) m0.getChild(3);
-    assertEquals(gm0p3, m0.getRepPlaceholderNode("START_LINK"));
-    assertEquals("START_LINK", m0.getPlaceholderName(gm0p3));
+    assertThat(m0.getRepPlaceholderNode("START_LINK")).isEqualTo(gm0p3);
+    assertThat(m0.getPlaceholderName(gm0p3)).isEqualTo("START_LINK");
     MsgHtmlTagNode gm0pc3 = (MsgHtmlTagNode) gm0p3.getChild(0);
-    assertEquals(3, gm0pc3.numChildren());
-    assertEquals("$url", ((PrintNode) gm0pc3.getChild(1)).getExprText());
-    assertEquals("here", ((RawTextNode) m0.getChild(4)).getRawText());
+    assertThat(gm0pc3.numChildren()).isEqualTo(3);
+    assertThat(((PrintNode) gm0pc3.getChild(1)).getExprText()).isEqualTo("$url");
+    assertThat(((RawTextNode) m0.getChild(4)).getRawText()).isEqualTo("here");
     MsgPlaceholderNode gm0p5 = (MsgPlaceholderNode) m0.getChild(5);
-    assertEquals(gm0p5, m0.getRepPlaceholderNode("END_LINK"));
-    assertEquals("END_LINK", m0.getPlaceholderName(gm0p5));
+    assertThat(m0.getRepPlaceholderNode("END_LINK")).isEqualTo(gm0p5);
+    assertThat(m0.getPlaceholderName(gm0p5)).isEqualTo("END_LINK");
     MsgHtmlTagNode gm0pc5 = (MsgHtmlTagNode) gm0p5.getChild(0);
-    assertEquals(1, gm0pc5.numChildren());
-    assertEquals("</a>", ((RawTextNode) gm0pc5.getChild(0)).getRawText());
-    assertEquals(".", ((RawTextNode) m0.getChild(6)).getRawText());
+    assertThat(gm0pc5.numChildren()).isEqualTo(1);
+    assertThat(((RawTextNode) gm0pc5.getChild(0)).getRawText()).isEqualTo("</a>");
+    assertThat(((RawTextNode) m0.getChild(6)).getRawText()).isEqualTo(".");
 
     GoogMsgRefNode gmr1 = (GoogMsgRefNode) template.getChild(1);
-    assertEquals(gmd0.getRenderedGoogMsgVarName(), gmr1.getRenderedGoogMsgVarName());
+    assertThat(gmr1.getRenderedGoogMsgVarName()).isEqualTo(gmd0.getRenderedGoogMsgVarName());
 
     GoogMsgDefNode gmd2 = (GoogMsgDefNode) template.getChild(2);
-    assertTrue(gmd2.getRenderedGoogMsgVarName().matches("msg_s[0-9]+"));
-    assertFalse(gmd0.getRenderedGoogMsgVarName().equals(gmd2.getRenderedGoogMsgVarName()));
-    assertEquals(gmd2.getRenderedGoogMsgVarName(), gmd2.getVarName());
+    assertThat(gmd2.getRenderedGoogMsgVarName()).matches("msg_s[0-9]+");
+    assertThat(gmd0.getRenderedGoogMsgVarName().equals(gmd2.getRenderedGoogMsgVarName())).isFalse();
+    assertThat(gmd2.getVarName()).isEqualTo(gmd2.getRenderedGoogMsgVarName());
     MsgNode m2 = gmd2.getChild(0);
-    assertEquals("blah", m2.getMeaning());
-    assertEquals("A span with generated id.", m2.getDesc());
-    assertEquals(true, m2.isHidden());
+    assertThat(m2.getMeaning()).isEqualTo("blah");
+    assertThat(m2.getDesc()).isEqualTo("A span with generated id.");
+    assertThat(m2.isHidden()).isTrue();
 
-    assertEquals(1, m2.numChildren());
+    assertThat(m2.numChildren()).isEqualTo(1);
     MsgPlaceholderNode gm2p0 = (MsgPlaceholderNode) m2.getChild(0);
-    assertEquals(gm2p0, m2.getRepPlaceholderNode("START_SPAN"));
-    assertEquals("START_SPAN", m2.getPlaceholderName(gm2p0));
+    assertThat(m2.getRepPlaceholderNode("START_SPAN")).isEqualTo(gm2p0);
+    assertThat(m2.getPlaceholderName(gm2p0)).isEqualTo("START_SPAN");
     MsgHtmlTagNode gm2pc0 = (MsgHtmlTagNode) gm2p0.getChild(0);
-    assertEquals(3, gm2pc0.numChildren());
-    assertTrue(gm2pc0.getChild(1) instanceof ForNode);
+    assertThat(gm2pc0.numChildren()).isEqualTo(3);
+    assertThat(gm2pc0.getChild(1)).isInstanceOf(ForNode.class);
 
     GoogMsgRefNode gmr3 = (GoogMsgRefNode) template.getChild(3);
-    assertEquals(gmd2.getRenderedGoogMsgVarName(), gmr3.getRenderedGoogMsgVarName());
+    assertThat(gmr3.getRenderedGoogMsgVarName()).isEqualTo(gmd2.getRenderedGoogMsgVarName());
   }
 
 
@@ -116,10 +118,11 @@ public class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
     try {
       JsSrcTestUtils.parseSoyCode(soyCode);
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Apologies, Soy currently does not support a single quote character at the end of a" +
-              " text part in plural/gender source msgs (including immediately preceding an HTML" +
-              " tag or Soy tag)."));
+      assertThat(sse.getMessage())
+          .contains(
+              "Apologies, Soy currently does not support a single quote character at the end of a"
+              + " text part in plural/gender source msgs (including immediately preceding an HTML"
+              + " tag or Soy tag).");
     }
   }
 

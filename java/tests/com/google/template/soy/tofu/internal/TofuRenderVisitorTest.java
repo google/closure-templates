@@ -17,6 +17,8 @@
 
 package com.google.template.soy.tofu.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
@@ -80,7 +82,7 @@ public class TofuRenderVisitorTest extends TestCase {
         Collections.<String>emptySet(), null, null, null);
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
-    assertEquals("blah", outputSb.toString());
+    assertThat(outputSb.toString()).isEqualTo("blah");
   }
 
 }

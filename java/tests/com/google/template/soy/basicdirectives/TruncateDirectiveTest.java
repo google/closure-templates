@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
@@ -58,17 +60,15 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     JsExpr maxLenJsExpr = new JsExpr("8", Integer.MAX_VALUE);
     JsExpr trueJsExpr = new JsExpr("true", Integer.MAX_VALUE);
     JsExpr falseJsExpr = new JsExpr("false", Integer.MAX_VALUE);
-    assertEquals(
-        "soy.$$truncate(opt_data.myKey, 8, true)",
-        truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr)).getText());
-    assertEquals(
-        "soy.$$truncate(opt_data.myKey, 8, true)",
+    assertThat(
+        truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr)).getText())
+        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
+    assertThat(
         truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, trueJsExpr))
-            .getText());
-    assertEquals(
-        "soy.$$truncate(opt_data.myKey, 8, false)",
+            .getText()).isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
+    assertThat(
         truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, falseJsExpr))
-            .getText());
+            .getText()).isEqualTo("soy.$$truncate(opt_data.myKey, 8, false)");
   }
 
 }

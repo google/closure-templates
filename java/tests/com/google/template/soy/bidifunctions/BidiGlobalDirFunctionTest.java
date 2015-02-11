@@ -16,6 +16,8 @@
 
 package com.google.template.soy.bidifunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -44,27 +46,21 @@ public class BidiGlobalDirFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-
-    assertEquals(IntegerData.ONE,
-                 BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJava(
-                     ImmutableList.<SoyValue>of()));
-    assertEquals(IntegerData.MINUS_ONE,
-                 BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJava(
-                     ImmutableList.<SoyValue>of()));
+    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()))
+        .isEqualTo(IntegerData.ONE);
+    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.<SoyValue>of()))
+        .isEqualTo(IntegerData.MINUS_ONE);
   }
 
 
   public void testComputeForJsSrc() {
-
-    assertEquals(new JsExpr("1", Integer.MAX_VALUE),
-                 BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(
-                     ImmutableList.<JsExpr>of()));
-    assertEquals(new JsExpr("-1", Integer.MAX_VALUE),
-                 BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(
-                     ImmutableList.<JsExpr>of()));
-    assertEquals(new JsExpr("IS_RTL?-1:1", Operator.CONDITIONAL.getPrecedence()),
-                 BIDI_GLOBAL_DIR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
-                     ImmutableList.<JsExpr>of()));
+    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(new JsExpr("1", Integer.MAX_VALUE));
+    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(new JsExpr("-1", Integer.MAX_VALUE));
+    assertThat(
+        BIDI_GLOBAL_DIR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(new JsExpr("IS_RTL?-1:1", Operator.CONDITIONAL.getPrecedence()));
   }
 
 }

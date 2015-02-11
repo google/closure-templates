@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -45,8 +47,7 @@ public class FilterImageDataUriDirectiveTest extends AbstractSoyPrintDirectiveTe
   public void testApplyForJsSrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertEquals(
-        "soy.$$filterImageDataUri(opt_data.myKey)",
-        cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText());
+    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+        .isEqualTo("soy.$$filterImageDataUri(opt_data.myKey)");
   }
 }

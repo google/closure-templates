@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
@@ -75,7 +77,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParseTypeNames() {
+  public void testParseTypeNames() throws ParseException {
     assertTypeEquals(AnyType.getInstance(), "any");
     assertTypeEquals(AnyType.getInstance(), " any ");
     assertTypeEquals(IntType.getInstance(), "int");
@@ -87,7 +89,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParseUnionTypes() {
+  public void testParseUnionTypes() throws ParseException {
     assertTypeEquals(
         UnionType.of(IntType.getInstance(), BoolType.getInstance()),
         "int|bool");
@@ -100,7 +102,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParseRecordTypes() {
+  public void testParseRecordTypes() throws ParseException {
     assertTypeEquals(
         RecordType.of(ImmutableMap.<String, SoyType>builder()
             .put("a", IntType.getInstance())
@@ -121,7 +123,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParameterizedTypes() {
+  public void testParameterizedTypes() throws ParseException {
     assertTypeEquals(ListType.of(StringType.getInstance()), "list<string>");
     assertTypeEquals(ListType.of(StringType.getInstance()), "list < string > ");
     assertTypeEquals(MapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
@@ -146,13 +148,8 @@ public class TypeParserTest extends TestCase {
   // Helpers.
 
 
-  private void assertTypeEquals(SoyType expected, String typeInput) {
-    try {
-      assertEquals(expected, parseType(typeInput));
-    } catch (Exception e) {
-      fail("Error parsing '" + typeInput + "': " + e.getMessage());
-      e.printStackTrace();
-    }
+  private void assertTypeEquals(SoyType expected, String typeInput) throws ParseException {
+    assertThat(parseType(typeInput)).isEqualTo(expected);
   }
 
 
@@ -171,7 +168,7 @@ public class TypeParserTest extends TestCase {
       parseType(typeInput);
       fail("Input string '" + typeInput + "' should have failed to parse.");
     } catch (ParseException e) {
-      assertTrue(e.getMessage().contains(msg));
+      assertThat(e.getMessage()).contains(msg);
     }
   }
 

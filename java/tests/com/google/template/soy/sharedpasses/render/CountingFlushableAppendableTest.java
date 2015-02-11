@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import junit.framework.TestCase;
 
 import java.io.Flushable;
@@ -34,16 +36,16 @@ public class CountingFlushableAppendableTest extends TestCase {
     };
 
     CountingFlushableAppendable c = new CountingFlushableAppendable(progress, flushable);
-    assertEquals(0, c.getAppendedCountSinceLastFlush());
+    assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(0);
     c.append("12");
-    assertEquals(2, c.getAppendedCountSinceLastFlush());
+    assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(2);
     c.append("3");
-    assertEquals(3, c.getAppendedCountSinceLastFlush());
+    assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(3);
     c.flush();
-    assertEquals(0, c.getAppendedCountSinceLastFlush());
+    assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(0);
     c.append('c');
-    assertEquals(1, c.getAppendedCountSinceLastFlush());
+    assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(1);
     c.append("123", 1, 2);
-    assertEquals("123Fc2", progress.toString());
+    assertThat(progress.toString()).isEqualTo("123Fc2");
   }
 }

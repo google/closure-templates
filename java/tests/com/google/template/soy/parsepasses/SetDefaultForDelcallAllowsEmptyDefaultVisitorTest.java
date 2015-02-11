@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -40,12 +42,12 @@ public class SetDefaultForDelcallAllowsEmptyDefaultVisitorTest extends TestCase 
     SoyFileSetNode soyTree =
         SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_1, true, testFileContent);
     CallDelegateNode delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
-    assertEquals(true, delcall.allowsEmptyDefault());
+    assertThat(delcall.allowsEmptyDefault()).isTrue();
 
     // Test with declared syntax version 2.2.
     soyTree = SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_2, true, testFileContent);
     delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
-    assertEquals(false, delcall.allowsEmptyDefault());
+    assertThat(delcall.allowsEmptyDefault()).isFalse();
   }
 
 }

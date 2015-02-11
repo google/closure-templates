@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor.RewriteNullCoalescingOpInExprVisitor;
@@ -53,7 +55,7 @@ public class RewriteNullCoalescingOpVisitorTest extends TestCase {
     ExprNode expr = (new ExpressionParser(origSrc)).parseExpression();
     (new RewriteNullCoalescingOpInExprVisitor()).exec(expr);
     String rewrittenSrc = expr.toSourceString();
-    assertEquals(expectedRewrittenSrc, rewrittenSrc);
+    assertThat(rewrittenSrc).isEqualTo(expectedRewrittenSrc);
   }
 
 }

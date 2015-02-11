@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -245,6 +247,6 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
       output = output.substring(output.indexOf('}') + 1).trim();
     }
 
-    assertEquals(expectedOutput, output);
+    assertThat(output).isEqualTo(expectedOutput);
   }
 }

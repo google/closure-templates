@@ -16,7 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.common.collect.ImmutableList;
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -96,47 +97,47 @@ public class BuildAllDependeesMapVisitorTest extends TestCase {
     // Build the nearest-dependee map.
     Map<SoyNode, List<SoyNode>> allDependeesMap = (new BuildAllDependeesMapVisitor()).exec(soyTree);
 
-    assertEquals(ImmutableList.of(template), allDependeesMap.get(a));
-    assertEquals(ImmutableList.of(template), allDependeesMap.get(bc));
-    assertEquals(ImmutableList.of(template), allDependeesMap.get(ifNode));
-    assertEquals(ImmutableList.of(ifNode, template), allDependeesMap.get(ifCondNode));
-    assertEquals(ImmutableList.of(ifCondNode, template), allDependeesMap.get(e));
-    assertEquals(ImmutableList.of(ifCondNode, template), allDependeesMap.get(foreachNode));
-    assertEquals(
-        ImmutableList.of(foreachNode, ifCondNode, template),
-        allDependeesMap.get(foreachNonemptyNode));
-    assertEquals(
-        ImmutableList.of(foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(f));
+    assertThat(allDependeesMap.get(a)).containsExactly(template);
+    assertThat(allDependeesMap.get(bc)).containsExactly(template);
+    assertThat(allDependeesMap.get(ifNode)).containsExactly(template);
+    assertThat(allDependeesMap.get(ifCondNode)).containsExactly(ifNode, template).inOrder();
+    assertThat(allDependeesMap.get(e)).containsExactly(ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(foreachNode)).containsExactly(ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(foreachNonemptyNode))
+        .containsExactly(foreachNode, ifCondNode, template)
+        .inOrder();
+    assertThat(allDependeesMap.get(f))
+        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
     // Note special case: foreachNonemptyNode does not count as conditional block.
-    assertEquals(ImmutableList.of(ifCondNode, template), allDependeesMap.get(gh));
-    assertEquals(ImmutableList.of(gh, ifCondNode, template), allDependeesMap.get(ghPdn));
-    assertEquals(
-        ImmutableList.of(foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(msgFbGrpNode));
-    assertEquals(
-        ImmutableList.of(msgFbGrpNode, foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(msgNode));
+    assertThat(allDependeesMap.get(gh)).containsExactly(ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(ghPdn)).containsExactly(gh, ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(msgFbGrpNode))
+        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
+    assertThat(allDependeesMap.get(msgNode))
+        .containsExactly(msgFbGrpNode, foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
     // Note special case: foreachNonemptyNode does not count as conditional block.
-    assertEquals(ImmutableList.of(msgNode, ifCondNode, template), allDependeesMap.get(iPh));
+    assertThat(allDependeesMap.get(iPh)).containsExactly(msgNode, ifCondNode, template).inOrder();
     // Note special case: foreachNonemptyNode does not count as conditional block.
-    assertEquals(ImmutableList.of(ifCondNode, template), allDependeesMap.get(i));
-    assertEquals(
-        ImmutableList.of(msgNode, foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(callPh));
-    assertEquals(
-        ImmutableList.of(foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(callNode));
+    assertThat(allDependeesMap.get(i)).containsExactly(ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(callPh))
+        .containsExactly(msgNode, foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
+    assertThat(allDependeesMap.get(callNode))
+        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
     // Note special case: foreachNonemptyNode does not count as conditional block.
-    assertEquals(ImmutableList.of(callNode, ifCondNode, template), allDependeesMap.get(cpvn));
-    assertEquals(
-        ImmutableList.of(callNode, foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(cpcn));
+    assertThat(allDependeesMap.get(cpvn)).containsExactly(callNode, ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(cpcn))
+        .containsExactly(callNode, foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
     // Note special case: foreachNonemptyNode does not count as conditional block.
-    assertEquals(ImmutableList.of(ifCondNode, template), allDependeesMap.get(n));
-    assertEquals(
-        ImmutableList.of(foreachNonemptyNode, ifCondNode, template),
-        allDependeesMap.get(fo));
+    assertThat(allDependeesMap.get(n)).containsExactly(ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(fo))
+        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .inOrder();
   }
 
 }

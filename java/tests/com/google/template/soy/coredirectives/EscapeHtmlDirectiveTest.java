@@ -16,6 +16,8 @@
 
 package com.google.template.soy.coredirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -62,8 +64,8 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertEquals("soy.$$escapeHtml(opt_data.myKey)",
-                 escapeHtmlDirective.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText());
+    assertThat(escapeHtmlDirective.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+        .isEqualTo("soy.$$escapeHtml(opt_data.myKey)");
   }
 
 }

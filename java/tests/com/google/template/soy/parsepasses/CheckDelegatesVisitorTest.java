@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -390,9 +392,7 @@ public final class CheckDelegatesVisitorTest extends TestCase {
     try {
       (new CheckDelegatesVisitor()).exec(soyTree);
     } catch (SoySyntaxException sse) {
-      assertTrue(
-          "Message [" + sse.getMessage() + "] should contain [" + expectedErrorMsgSubstr + "]",
-          sse.getMessage().contains(expectedErrorMsgSubstr));
+      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
       return;  // test passes
     }
     fail();

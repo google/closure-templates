@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -49,7 +51,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
         "  <div class=\"{css %AAA}\">\n" +
         "{/template}\n");
 
-    assertEquals("someTestPackageAAA", cssNodes.get(0).getSelectorText());
+    assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("someTestPackageAAA");
   }
 
   public void testBaseCssOnTemplate() {
@@ -60,7 +62,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
         "  <div class=\"{css %AAA}\">\n" +
         "{/template}\n");
 
-    assertEquals("someTestPackageAAA", cssNodes.get(0).getSelectorText());
+    assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("someTestPackageAAA");
   }
 
   public void testRequireCssOnNamespace() {
@@ -71,7 +73,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
         "  <div class=\"{css %AAA}\">\n" +
         "{/template}\n");
 
-    assertEquals("someTestPackageAAA", cssNodes.get(0).getSelectorText());
+    assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("someTestPackageAAA");
   }
 
   public void testUnprefixedNode() {
@@ -82,7 +84,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
         "  <div class=\"{css AAA}\">\n" +
         "{/template}\n");
 
-    assertEquals("AAA", cssNodes.get(0).getSelectorText());
+    assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("AAA");
   }
 
   public void testMissingCssBase() {
@@ -95,7 +97,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
           "{/template}\n");
       fail("Exception expected");
     } catch (SoySyntaxException e) {
-      assertTrue(e.getMessage().contains("No CSS package"));
+      assertThat(e.getMessage()).contains("No CSS package");
     }
   }
 
@@ -109,7 +111,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
           "{/template}\n");
       fail("Exception expected");
     } catch (SoySyntaxException e) {
-      assertTrue(e.getMessage().contains("component expression"));
+      assertThat(e.getMessage()).contains("component expression");
     }
   }
 

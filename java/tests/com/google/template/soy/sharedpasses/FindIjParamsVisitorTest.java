@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
@@ -70,27 +72,27 @@ public class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 1 (aaa -> bbb).
     FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
-    assertEquals(3, visitor.exec(ddd).ijParamToCalleesMultimap.size());
-    assertEquals(3, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(5, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(10, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(6, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(ddd).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(5);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(10);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(6);
 
     // Test with exec(bbb) then exec(aaa).
     // Exercises: processCalleeHelper case 1 (aaa -> bbb).
     visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(bbb);
-    assertEquals(3, visitor.exec(ddd).ijParamToCalleesMultimap.size());
-    assertEquals(5, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(ddd).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(5);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(4);
     visitor.exec(aaa);
-    assertEquals(3, visitor.exec(ddd).ijParamToCalleesMultimap.size());
-    assertEquals(3, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(5, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(10, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(6, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(ddd).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(5);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(10);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(6);
   }
 
 
@@ -126,11 +128,11 @@ public class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 1 (ccc -> bbb).
     FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
-    assertEquals(2, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(5, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(ccc).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(7, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(5, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(2);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(5);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(7);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(5);
   }
 
 
@@ -170,12 +172,12 @@ public class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 2 (bbb -> ccc).
     FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
-    assertEquals(4, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(3, visitor.exec(ccc).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(3, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(6, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(4);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(3);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(4);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(3);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(4);
   }
 
 
@@ -215,12 +217,12 @@ public class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 2 (aaa -> bbb).
     FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
-    assertEquals(6, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(ccc).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(6, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(6, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(4);
   }
 
 
@@ -262,14 +264,14 @@ public class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 4 (ccc -> ddd).
     FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(3, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(4, visitor.exec(ddd).ijParamToCalleesMultimap.size());
-    assertEquals(3, visitor.exec(ddd).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(6, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(ccc).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(8, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(5, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(4);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(3);
+    assertThat(visitor.exec(ddd).ijParamToCalleesMultimap).hasSize(4);
+    assertThat(visitor.exec(ddd).ijParamToCalleesMultimap.keySet()).hasSize(3);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(8);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(5);
   }
 
 
@@ -305,12 +307,12 @@ public class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 3 (ccc -> bbb).
     FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
-    assertEquals(6, visitor.exec(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(ccc).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(6, visitor.exec(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(6, visitor.exec(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(4, visitor.exec(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap).hasSize(6);
+    assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(4);
   }
 
 
@@ -349,13 +351,13 @@ public class FindIjParamsVisitorTest extends TestCase {
 
     ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap =
         (new FindIjParamsVisitor(null)).execOnAllTemplates(soyTree);
-    assertEquals(4, templateToIjParamsInfoMap.size());
-    assertEquals(3, templateToIjParamsInfoMap.get(ddd).ijParamToCalleesMultimap.size());
-    assertEquals(3, templateToIjParamsInfoMap.get(ccc).ijParamToCalleesMultimap.size());
-    assertEquals(5, templateToIjParamsInfoMap.get(bbb).ijParamToCalleesMultimap.size());
-    assertEquals(4, templateToIjParamsInfoMap.get(bbb).ijParamToCalleesMultimap.keySet().size());
-    assertEquals(10, templateToIjParamsInfoMap.get(aaa).ijParamToCalleesMultimap.size());
-    assertEquals(6, templateToIjParamsInfoMap.get(aaa).ijParamToCalleesMultimap.keySet().size());
+    assertThat(templateToIjParamsInfoMap).hasSize(4);
+    assertThat(templateToIjParamsInfoMap.get(ddd).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(templateToIjParamsInfoMap.get(ccc).ijParamToCalleesMultimap).hasSize(3);
+    assertThat(templateToIjParamsInfoMap.get(bbb).ijParamToCalleesMultimap).hasSize(5);
+    assertThat(templateToIjParamsInfoMap.get(bbb).ijParamToCalleesMultimap.keySet()).hasSize(4);
+    assertThat(templateToIjParamsInfoMap.get(aaa).ijParamToCalleesMultimap).hasSize(10);
+    assertThat(templateToIjParamsInfoMap.get(aaa).ijParamToCalleesMultimap.keySet()).hasSize(6);
   }
 
 }

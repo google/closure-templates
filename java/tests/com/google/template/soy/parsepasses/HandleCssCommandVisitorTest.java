@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.soytree.PrintNode;
@@ -37,7 +39,7 @@ public class HandleCssCommandVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode("{css selected-option}");
     (new HandleCssCommandVisitor(CssHandlingScheme.LITERAL)).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
-    assertEquals("selected-option", ((RawTextNode) soyNode).getRawText());
+    assertThat(((RawTextNode) soyNode).getRawText()).isEqualTo("selected-option");
   }
 
 
@@ -46,12 +48,12 @@ public class HandleCssCommandVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode("{css $cssSelectedOption}");
     (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
-    assertEquals("$cssSelectedOption", ((PrintNode) soyNode).getExprText());
+    assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("$cssSelectedOption");
 
     soyTree = SharedTestUtils.parseSoyCode("{css CSS_SELECTED_OPTION}");
     (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
     soyNode = SharedTestUtils.getNode(soyTree, 0);
-    assertEquals("CSS_SELECTED_OPTION", ((PrintNode) soyNode).getExprText());
+    assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("CSS_SELECTED_OPTION");
   }
 
 }

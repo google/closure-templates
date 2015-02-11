@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
@@ -143,12 +145,10 @@ public final class SlicedRawTextNodeTest extends TestCase {
                                         "{/template}"),
                                    " title='unclosed");
     } catch (SoyAutoescapeException ex) {
-      assertEquals(
-          "In file no-path:4:1, template foo:"
+      assertThat(ex).hasMessage("In file no-path:4:1, template foo:"
           + " Inserting ` title='unclosed` would cause text node to end in context"
           + " (Context HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE) instead of"
-          + " (Context HTML_PCDATA)",
-          ex.getMessage());
+          + " (Context HTML_PCDATA)");
       return;
     }
     fail("Expected SoyAutoescapeException");
@@ -174,25 +174,23 @@ public final class SlicedRawTextNodeTest extends TestCase {
     slicedNode.insertSlice(6, a, 1);  // "!"
     slicedNode.setEndContext(a);
 
-    assertEquals(7, slicedNode.getSlices().size());
-    assertEquals(
-        "\"Hell\"#0:HTML_PCDATA, "
-        + "\"o, \"#0:HTML_PCDATA, "
-        + "\"<Wor\"#0:HTML_TAG_NAME, "
-        + "\"l\"#0:HTML_TAG_NAME, "
-        + "\"\"#0:HTML_TAG_NAME, "
-        + "\"d>\"#0:HTML_TAG_NAME, "
-        + "\"!\"#0:HTML_PCDATA",
-        slicesToString(slicedNode.getSlices()));
+    assertThat(slicedNode.getSlices()).hasSize(7);
+    assertThat(slicesToString(slicedNode.getSlices()))
+        .isEqualTo("\"Hell\"#0:HTML_PCDATA, "
+            + "\"o, \"#0:HTML_PCDATA, "
+            + "\"<Wor\"#0:HTML_TAG_NAME, "
+            + "\"l\"#0:HTML_TAG_NAME, "
+            + "\"\"#0:HTML_TAG_NAME, "
+            + "\"d>\"#0:HTML_TAG_NAME, "
+            + "\"!\"#0:HTML_PCDATA");
 
     slicedNode.mergeAdjacentSlicesWithSameContext();
 
-    assertEquals(3, slicedNode.getSlices().size());
-    assertEquals(
-        "\"Hello, \"#0:HTML_PCDATA, "
-        + "\"<World>\"#0:HTML_TAG_NAME, "
-        + "\"!\"#0:HTML_PCDATA",
-        slicesToString(slicedNode.getSlices()));
+    assertThat(slicedNode.getSlices()).hasSize(3);
+    assertThat(slicesToString(slicedNode.getSlices()))
+        .isEqualTo("\"Hello, \"#0:HTML_PCDATA, "
+            + "\"<World>\"#0:HTML_TAG_NAME, "
+            + "\"!\"#0:HTML_PCDATA");
   }
 
   /**
@@ -247,7 +245,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
       output = output.substring(output.indexOf('}') + 1).trim();
     }
 
-    assertEquals(expectedOutput, output);
+    assertThat(output).isEqualTo(expectedOutput);
   }
 
   private static void insertTextAtEndOfScriptOpenTag(
@@ -278,7 +276,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
            SlicedRawTextNode.find(slicedRawTextNodes, null, inScriptTag, inScriptBody)) {
       String rawText = slice.getRawText();
       int rawTextLen = rawText.length();
-      assertEquals('>', rawText.charAt(rawTextLen - 1));
+      assertThat(rawText.charAt(rawTextLen - 1)).isEqualTo('>');
       int insertionPoint = rawTextLen - 1;
       // Do not insert in the middle of a "/>" tag terminator.
       if (insertionPoint - 1 >= 0 && rawText.charAt(insertionPoint - 1) == '/') {

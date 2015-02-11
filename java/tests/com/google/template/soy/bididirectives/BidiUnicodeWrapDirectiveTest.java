@@ -16,6 +16,8 @@
 
 package com.google.template.soy.bididirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
@@ -90,18 +92,18 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
   public void testApplyForJsSrc() {
 
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertEquals(
-        "soy.$$bidiUnicodeWrap(1, opt_data.myKey)",
-        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR.applyForJsSrc(
-            dataRef, ImmutableList.<JsExpr>of()).getText());
-    assertEquals(
-        "soy.$$bidiUnicodeWrap(-1, opt_data.myKey)",
-        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL.applyForJsSrc(
-            dataRef, ImmutableList.<JsExpr>of()).getText());
-    assertEquals(
-        "soy.$$bidiUnicodeWrap(IS_RTL?-1:1, opt_data.myKey)",
-        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_ISRTL_CODE_SNIPPET.applyForJsSrc(
-            dataRef, ImmutableList.<JsExpr>of()).getText());
+    assertThat(
+        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR
+            .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+            .getText()).isEqualTo("soy.$$bidiUnicodeWrap(1, opt_data.myKey)");
+    assertThat(
+        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL
+            .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+            .getText()).isEqualTo("soy.$$bidiUnicodeWrap(-1, opt_data.myKey)");
+    assertThat(
+        BIDI_UNICODE_WRAP_DIRECTIVE_FOR_ISRTL_CODE_SNIPPET
+            .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+            .getText()).isEqualTo("soy.$$bidiUnicodeWrap(IS_RTL?-1:1, opt_data.myKey)");
   }
 
 }

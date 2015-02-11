@@ -17,6 +17,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -64,10 +66,10 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     //   |--[PrintNode]  $goo
     //   +--[GoogMsgRefNode]
 
-    assertEquals(8, template.numChildren());
-    assertEquals("msg1", ((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg2", ((GoogMsgDefNode) template.getChild(1)).getChild(0).getDesc());
-    assertEquals("msg3", ((GoogMsgDefNode) template.getChild(2)).getChild(0).getDesc());
+    assertThat(template.numChildren()).isEqualTo(8);
+    assertThat(((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc()).isEqualTo("msg1");
+    assertThat(((GoogMsgDefNode) template.getChild(1)).getChild(0).getDesc()).isEqualTo("msg2");
+    assertThat(((GoogMsgDefNode) template.getChild(2)).getChild(0).getDesc()).isEqualTo("msg3");
   }
 
 
@@ -108,21 +110,21 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     //             |--[GoogMsgRefNode]
     //             +--[GoogMsgRefNode]
 
-    assertEquals(1, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(1);
     IfNode ifNode = (IfNode) template.getChild(0);
-    assertEquals(3, ifNode.numChildren());
+    assertThat(ifNode.numChildren()).isEqualTo(3);
     IfCondNode icn0 = (IfCondNode) ifNode.getChild(0);
-    assertEquals(4, icn0.numChildren());
-    assertEquals("msg1", ((GoogMsgDefNode) icn0.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg2", ((GoogMsgDefNode) icn0.getChild(1)).getChild(0).getDesc());
+    assertThat(icn0.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) icn0.getChild(0)).getChild(0).getDesc()).isEqualTo("msg1");
+    assertThat(((GoogMsgDefNode) icn0.getChild(1)).getChild(0).getDesc()).isEqualTo("msg2");
     IfCondNode icn1 = (IfCondNode) ifNode.getChild(1);
-    assertEquals(4, icn1.numChildren());
-    assertEquals("msg3", ((GoogMsgDefNode) icn1.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg4", ((GoogMsgDefNode) icn1.getChild(1)).getChild(0).getDesc());
+    assertThat(icn1.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) icn1.getChild(0)).getChild(0).getDesc()).isEqualTo("msg3");
+    assertThat(((GoogMsgDefNode) icn1.getChild(1)).getChild(0).getDesc()).isEqualTo("msg4");
     IfElseNode ien2 = (IfElseNode) ifNode.getChild(2);
-    assertEquals(4, ien2.numChildren());
-    assertEquals("msg5", ((GoogMsgDefNode) ien2.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg6", ((GoogMsgDefNode) ien2.getChild(1)).getChild(0).getDesc());
+    assertThat(ien2.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) ien2.getChild(0)).getChild(0).getDesc()).isEqualTo("msg5");
+    assertThat(((GoogMsgDefNode) ien2.getChild(1)).getChild(0).getDesc()).isEqualTo("msg6");
   }
 
 
@@ -164,21 +166,21 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     //             |--[GoogMsgRefNode]
     //             +--[GoogMsgRefNode]
 
-    assertEquals(1, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(1);
     SwitchNode switchNode = (SwitchNode) template.getChild(0);
-    assertEquals(3, switchNode.numChildren());
+    assertThat(switchNode.numChildren()).isEqualTo(3);
     SwitchCaseNode scn0 = (SwitchCaseNode) switchNode.getChild(0);
-    assertEquals(4, scn0.numChildren());
-    assertEquals("msg1", ((GoogMsgDefNode) scn0.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg2", ((GoogMsgDefNode) scn0.getChild(1)).getChild(0).getDesc());
+    assertThat(scn0.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) scn0.getChild(0)).getChild(0).getDesc()).isEqualTo("msg1");
+    assertThat(((GoogMsgDefNode) scn0.getChild(1)).getChild(0).getDesc()).isEqualTo("msg2");
     SwitchCaseNode scn1 = (SwitchCaseNode) switchNode.getChild(1);
-    assertEquals(4, scn1.numChildren());
-    assertEquals("msg3", ((GoogMsgDefNode) scn1.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg4", ((GoogMsgDefNode) scn1.getChild(1)).getChild(0).getDesc());
+    assertThat(scn1.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) scn1.getChild(0)).getChild(0).getDesc()).isEqualTo("msg3");
+    assertThat(((GoogMsgDefNode) scn1.getChild(1)).getChild(0).getDesc()).isEqualTo("msg4");
     SwitchDefaultNode sdn2 = (SwitchDefaultNode) switchNode.getChild(2);
-    assertEquals(4, sdn2.numChildren());
-    assertEquals("msg5", ((GoogMsgDefNode) sdn2.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg6", ((GoogMsgDefNode) sdn2.getChild(1)).getChild(0).getDesc());
+    assertThat(sdn2.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) sdn2.getChild(0)).getChild(0).getDesc()).isEqualTo("msg5");
+    assertThat(((GoogMsgDefNode) sdn2.getChild(1)).getChild(0).getDesc()).isEqualTo("msg6");
   }
 
 
@@ -217,19 +219,19 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     //             |--[GoogMsgRefNode]
     //             +--[GoogMsgRefNode]
 
-    assertEquals(3, template.numChildren());
-    assertEquals("msg1", ((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg3", ((GoogMsgDefNode) template.getChild(1)).getChild(0).getDesc());
+    assertThat(template.numChildren()).isEqualTo(3);
+    assertThat(((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc()).isEqualTo("msg1");
+    assertThat(((GoogMsgDefNode) template.getChild(1)).getChild(0).getDesc()).isEqualTo("msg3");
 
     ForeachNode foreachNode = (ForeachNode) template.getChild(2);
     ForeachNonemptyNode fnn0 = (ForeachNonemptyNode) foreachNode.getChild(0);
-    assertEquals(6, fnn0.numChildren());
-    assertEquals("msg2", ((GoogMsgDefNode) fnn0.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg4", ((GoogMsgDefNode) fnn0.getChild(1)).getChild(0).getDesc());
+    assertThat(fnn0.numChildren()).isEqualTo(6);
+    assertThat(((GoogMsgDefNode) fnn0.getChild(0)).getChild(0).getDesc()).isEqualTo("msg2");
+    assertThat(((GoogMsgDefNode) fnn0.getChild(1)).getChild(0).getDesc()).isEqualTo("msg4");
     ForeachIfemptyNode fin1 = (ForeachIfemptyNode) foreachNode.getChild(1);
-    assertEquals(4, fin1.numChildren());
-    assertEquals("msg5", ((GoogMsgDefNode) fin1.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg6", ((GoogMsgDefNode) fin1.getChild(1)).getChild(0).getDesc());
+    assertThat(fin1.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) fin1.getChild(0)).getChild(0).getDesc()).isEqualTo("msg5");
+    assertThat(((GoogMsgDefNode) fin1.getChild(1)).getChild(0).getDesc()).isEqualTo("msg6");
   }
 
 
@@ -259,14 +261,14 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     //        |--[GoogMsgRefNode]
     //        +--[GoogMsgRefNode]
 
-    assertEquals(3, template.numChildren());
-    assertEquals("msg1", ((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg3", ((GoogMsgDefNode) template.getChild(1)).getChild(0).getDesc());
+    assertThat(template.numChildren()).isEqualTo(3);
+    assertThat(((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc()).isEqualTo("msg1");
+    assertThat(((GoogMsgDefNode) template.getChild(1)).getChild(0).getDesc()).isEqualTo("msg3");
 
     ForNode forNode = (ForNode) template.getChild(2);
-    assertEquals(6, forNode.numChildren());
-    assertEquals("msg2", ((GoogMsgDefNode) forNode.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg4", ((GoogMsgDefNode) forNode.getChild(1)).getChild(0).getDesc());
+    assertThat(forNode.numChildren()).isEqualTo(6);
+    assertThat(((GoogMsgDefNode) forNode.getChild(0)).getChild(0).getDesc()).isEqualTo("msg2");
+    assertThat(((GoogMsgDefNode) forNode.getChild(1)).getChild(0).getDesc()).isEqualTo("msg4");
   }
 
 
@@ -319,28 +321,28 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     //   |                        +--[GoogMsgRefNode]
     //   +--[GoogMsgRefNode]
 
-    assertEquals(3, template.numChildren());
-    assertEquals("msg9", ((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc());
+    assertThat(template.numChildren()).isEqualTo(3);
+    assertThat(((GoogMsgDefNode) template.getChild(0)).getChild(0).getDesc()).isEqualTo("msg9");
 
     IfCondNode ifCondNode = (IfCondNode) ((IfNode) template.getChild(1)).getChild(0);
-    assertEquals(4, ifCondNode.numChildren());
-    assertEquals("msg1", ((GoogMsgDefNode) ifCondNode.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg2", ((GoogMsgDefNode) ifCondNode.getChild(1)).getChild(0).getDesc());
-    assertEquals("msg5", ((GoogMsgDefNode) ifCondNode.getChild(2)).getChild(0).getDesc());
+    assertThat(ifCondNode.numChildren()).isEqualTo(4);
+    assertThat(((GoogMsgDefNode) ifCondNode.getChild(0)).getChild(0).getDesc()).isEqualTo("msg1");
+    assertThat(((GoogMsgDefNode) ifCondNode.getChild(1)).getChild(0).getDesc()).isEqualTo("msg2");
+    assertThat(((GoogMsgDefNode) ifCondNode.getChild(2)).getChild(0).getDesc()).isEqualTo("msg5");
 
     ForeachNonemptyNode foreachNonemptyNode =
         (ForeachNonemptyNode) ((ForeachNode) ifCondNode.getChild(3)).getChild(0);
-    assertEquals(3, foreachNonemptyNode.numChildren());
-    assertEquals(
-        "msg3", ((GoogMsgDefNode) foreachNonemptyNode.getChild(0)).getChild(0).getDesc());
-    assertEquals(
-        "msg6", ((GoogMsgDefNode) foreachNonemptyNode.getChild(1)).getChild(0).getDesc());
+    assertThat(foreachNonemptyNode.numChildren()).isEqualTo(3);
+    assertThat(((GoogMsgDefNode) foreachNonemptyNode.getChild(0)).getChild(0).getDesc())
+        .isEqualTo("msg3");
+    assertThat(((GoogMsgDefNode) foreachNonemptyNode.getChild(1)).getChild(0).getDesc())
+        .isEqualTo("msg6");
 
     ForNode forNode = (ForNode) foreachNonemptyNode.getChild(2);
-    assertEquals(11, forNode.numChildren());
-    assertEquals("msg4", ((GoogMsgDefNode) forNode.getChild(0)).getChild(0).getDesc());
-    assertEquals("msg7", ((GoogMsgDefNode) forNode.getChild(1)).getChild(0).getDesc());
-    assertEquals("msg8", ((GoogMsgDefNode) forNode.getChild(2)).getChild(0).getDesc());
+    assertThat(forNode.numChildren()).isEqualTo(11);
+    assertThat(((GoogMsgDefNode) forNode.getChild(0)).getChild(0).getDesc()).isEqualTo("msg4");
+    assertThat(((GoogMsgDefNode) forNode.getChild(1)).getChild(0).getDesc()).isEqualTo("msg7");
+    assertThat(((GoogMsgDefNode) forNode.getChild(2)).getChild(0).getDesc()).isEqualTo("msg8");
   }
 
 }

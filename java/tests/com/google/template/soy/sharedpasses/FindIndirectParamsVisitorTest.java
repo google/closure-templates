@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -126,31 +128,32 @@ public class FindIndirectParamsVisitorTest extends TestCase {
     TemplateNode b4 = b.getChild(4);
 
     IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(null)).exec(a0);
-    assertEquals(false, ipi.mayHaveIndirectParamsInExternalCalls);
-    assertEquals(false, ipi.mayHaveIndirectParamsInExternalDelCalls);
+    assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
+    assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 
     Map<String, TemplateParam> ipMap = ipi.indirectParams;
-    assertEquals(6, ipMap.size());
-    assertFalse(ipMap.containsKey("a0"));
-    assertTrue(ipMap.containsKey("a1"));
-    assertFalse(ipMap.containsKey("a2"));
-    assertTrue(ipMap.containsKey("a3"));
-    assertFalse(ipMap.containsKey("a4"));
-    assertFalse(ipMap.containsKey("a5"));
-    assertTrue(ipMap.containsKey("a6"));
-    assertFalse(ipMap.containsKey("b0"));
-    assertTrue(ipMap.containsKey("b1"));
-    assertFalse(ipMap.containsKey("b2"));
-    assertTrue(ipMap.containsKey("b3"));
-    assertTrue(ipMap.containsKey("b4"));
+    assertThat(ipMap).hasSize(6);
+    assertThat(ipMap).doesNotContainKey("a0");
+    assertThat(ipMap).containsKey("a1");
+    assertThat(ipMap).doesNotContainKey("a2");
+    assertThat(ipMap).containsKey("a3");
+    assertThat(ipMap).doesNotContainKey("a4");
+    assertThat(ipMap).doesNotContainKey("a5");
+    assertThat(ipMap).containsKey("a6");
+    assertThat(ipMap).doesNotContainKey("b0");
+    assertThat(ipMap).containsKey("b1");
+    assertThat(ipMap).doesNotContainKey("b2");
+    assertThat(ipMap).containsKey("b3");
+    assertThat(ipMap).containsKey("b4");
 
     Multimap<String, TemplateNode> pktcm = ipi.paramKeyToCalleesMultimap;
-    assertEquals(ImmutableSet.of(a1), pktcm.get("a1"));
-    assertEquals(ImmutableSet.of(a3), pktcm.get("a3"));
-    assertEquals(ImmutableSet.of(a6), pktcm.get("a6"));
-    assertEquals(ImmutableSet.of(b1), pktcm.get("b1"));
-    assertEquals(ImmutableSet.of(b3), pktcm.get("b3"));
-    assertEquals(ImmutableSet.of(a5, b4), pktcm.get("b4"));  // 'b4' listed by alpha.five
+    assertThat(pktcm).valuesForKey("a1").isEqualTo(ImmutableSet.of(a1));
+    assertThat(pktcm).valuesForKey("a3").isEqualTo(ImmutableSet.of(a3));
+    assertThat(pktcm).valuesForKey("a6").isEqualTo(ImmutableSet.of(a6));
+    assertThat(pktcm).valuesForKey("b1").isEqualTo(ImmutableSet.of(b1));
+    assertThat(pktcm).valuesForKey("b3").isEqualTo(ImmutableSet.of(b3));
+    // 'b4' listed by alpha.five
+    assertThat(pktcm).valuesForKey("b4").isEqualTo(ImmutableSet.of(a5, b4));
   }
 
 }

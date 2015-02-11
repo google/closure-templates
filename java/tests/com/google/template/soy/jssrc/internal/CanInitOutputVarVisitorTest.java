@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.soytree.SoyNode;
@@ -110,9 +112,8 @@ public class CanInitOutputVarVisitorTest extends TestCase {
 
     IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(jsSrcOptions);
     CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(jsSrcOptions, icajev);
-    assertEquals(
-        isSameValueAsIsComputableAsJsExprsVisitor,
-        ciovv.exec(node) == icajev.exec(node));
+    assertThat(ciovv.exec(node) == icajev.exec(node))
+        .isEqualTo(isSameValueAsIsComputableAsJsExprsVisitor);
   }
 
 }

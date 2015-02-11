@@ -16,6 +16,8 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -67,12 +69,12 @@ public class FindCalleesNotInFileVisitorTest extends TestCase {
     SoyFileNode soyFile = soyTree.getChild(0);
 
     Set<String> calleesNotInFile = (new FindCalleesNotInFileVisitor()).exec(soyFile);
-    assertFalse(calleesNotInFile.contains("boo.foo.goo"));
-    assertFalse(calleesNotInFile.contains("boo.foo.moo"));
-    assertTrue(calleesNotInFile.contains("boo.woo.hoo"));
-    assertTrue(calleesNotInFile.contains("boo.foo.too"));
-    assertTrue(calleesNotInFile.contains("boo.foo.zoo"));
-    assertTrue(calleesNotInFile.contains("boo.hoo.roo"));
+    assertThat(calleesNotInFile).doesNotContain("boo.foo.goo");
+    assertThat(calleesNotInFile).doesNotContain("boo.foo.moo");
+    assertThat(calleesNotInFile).contains("boo.woo.hoo");
+    assertThat(calleesNotInFile).contains("boo.foo.too");
+    assertThat(calleesNotInFile).contains("boo.foo.zoo");
+    assertThat(calleesNotInFile).contains("boo.hoo.roo");
   }
 
 }

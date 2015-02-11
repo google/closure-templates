@@ -16,6 +16,8 @@
 
 package com.google.template.soy.pysrc.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import junit.framework.TestCase;
 
 import java.util.ArrayList;
@@ -32,24 +34,24 @@ public final class PyExprUtilsTest extends TestCase {
     List<PyExpr> exprs = new ArrayList<>();
 
     // Empty Array.
-    assertEquals("''", PyExprUtils.concatPyExprs(exprs).getText());
+    assertThat(PyExprUtils.concatPyExprs(exprs).getText()).isEqualTo("''");
 
     // Single String value.
     PyExpr foo = new PyStringExpr("foo");
     exprs.add(foo);
-    assertEquals("foo", PyExprUtils.concatPyExprs(exprs).getText());
+    assertThat(PyExprUtils.concatPyExprs(exprs).getText()).isEqualTo("foo");
 
     // Single unknown value.
     exprs = new ArrayList<PyExpr>();
     foo = new PyExpr("foo", Integer.MAX_VALUE);
     exprs.add(foo);
-    assertEquals("str(foo)", PyExprUtils.concatPyExprs(exprs).getText());
+    assertThat(PyExprUtils.concatPyExprs(exprs).getText()).isEqualTo("str(foo)");
 
     // Multiple values are added to a list to be joined at a later time.
     PyExpr bar = new PyStringExpr("bar");
     PyExpr baz = new PyStringExpr("baz");
     exprs.add(bar);
     exprs.add(baz);
-    assertEquals("[str(foo),bar,baz]", PyExprUtils.concatPyExprs(exprs).getText());
+    assertThat(PyExprUtils.concatPyExprs(exprs).getText()).isEqualTo("[str(foo),bar,baz]");
   }
 }

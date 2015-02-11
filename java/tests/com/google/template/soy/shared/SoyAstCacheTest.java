@@ -16,6 +16,8 @@
 
 package com.google.template.soy.shared;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.internal.base.Pair;
@@ -61,19 +63,19 @@ public class SoyAstCacheTest extends TestCase {
 
     // Matching version.
     cache.put(supplier1, version2, fileNode1);
-    assertEquals(Pair.of(fileNode1Clone, version2), cache.get(supplier1));
-    assertNull(cache.get(supplier2));
-    assertEquals(Pair.of(fileNode1Clone, version2), cache.get(supplier1));
+    assertThat(cache.get(supplier1)).isEqualTo(Pair.of(fileNode1Clone, version2));
+    assertThat(cache.get(supplier2)).isNull();
+    assertThat(cache.get(supplier1)).isEqualTo(Pair.of(fileNode1Clone, version2));
 
     // Non matching version.
     cache.put(supplier1, version1, fileNode1);
-    assertNull(cache.get(supplier1));
-    assertNull(cache.get(supplier2));
+    assertThat(cache.get(supplier1)).isNull();
+    assertThat(cache.get(supplier2)).isNull();
   }
 
   public void testIdGenerator() {
 
     // Make sure it always returns the same generator.
-    assertTrue(cache.getNodeIdGenerator() == cache.getNodeIdGenerator());
+    assertThat(cache.getNodeIdGenerator()).isSameAs(cache.getNodeIdGenerator());
   }
 }

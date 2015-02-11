@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -136,7 +138,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     TemplateNode fooTemplate = tree.getChild(0).getChild(1);
     CallBasicNode callFooTemplate = (CallBasicNode) booTemplate.getChild(0);
     // should be empty because all params were statically verified
-    assertTrue(callFooTemplate.getParamsToRuntimeCheck(fooTemplate).isEmpty());
+    assertThat(callFooTemplate.getParamsToRuntimeCheck(fooTemplate)).isEmpty();
   }
 
   public void testNoArgumentTypeMismatch_indirectPass() {
@@ -164,7 +166,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     TemplateNode fooTemplate = tree.getChild(0).getChild(1);
     CallBasicNode callFooTemplate = (CallBasicNode) booTemplate.getChild(0);
     // should be empty because all params were statically verified
-    assertTrue(callFooTemplate.getParamsToRuntimeCheck(fooTemplate).isEmpty());
+    assertThat(callFooTemplate.getParamsToRuntimeCheck(fooTemplate)).isEmpty();
   }
 
   public void testNoArgumentTypeMismatch_multipleFiles() {
@@ -190,7 +192,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     TemplateNode fooTemplate = tree.getChild(1).getChild(0);
     CallBasicNode callFooTemplate = (CallBasicNode) booTemplate.getChild(0);
     // should be empty because all params were statically verified
-    assertTrue(callFooTemplate.getParamsToRuntimeCheck(fooTemplate).isEmpty());
+    assertThat(callFooTemplate.getParamsToRuntimeCheck(fooTemplate)).isEmpty();
   }
 
   public void testIndirectParams() {
@@ -295,10 +297,9 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckCallingParamTypesVisitor()).exec(soyTree);
+      fail("Exception expected");
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(expectedErrorMsgSubstr));
-      return;  // test passes
+      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
     }
-    fail("Exception expected");
   }
 }

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SoySyntaxException;
@@ -251,8 +253,8 @@ public class TranslateToJsExprVisitorTest extends TestCase {
         (new TranslateToJsExprVisitor(
             SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS))
             .exec(exprNode);
-    assertEquals(expectedJsExpr.getText(), actualJsExpr.getText());
-    assertEquals(expectedJsExpr.getPrecedence(), actualJsExpr.getPrecedence());
+    assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
+    assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
   }
 
 
@@ -289,7 +291,7 @@ public class TranslateToJsExprVisitorTest extends TestCase {
               .exec(exprNode);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(expectedErrorMsgSubstring));
+      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstring);
     }
   }
 

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -269,7 +271,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
       applyCheckFunctionCallsVisitor(soyContent);
       fail("Spurious success.");
     } catch (SoySyntaxException ex) {
-      assertEquals(errorMessage, ex.getMessage());
+      assertThat(ex).hasMessage(errorMessage);
     }
   }
 

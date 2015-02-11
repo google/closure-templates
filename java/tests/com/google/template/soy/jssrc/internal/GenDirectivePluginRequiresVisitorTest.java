@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -116,7 +118,7 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
         new GenDirectivePluginRequiresVisitor(testDirectivesMap);
     Set<String> actualLibs = gdprv.exec(node);
 
-    assertEquals(actualLibs, expectedLibs);
+    assertThat(expectedLibs).isEqualTo(actualLibs);
   }
 
 }

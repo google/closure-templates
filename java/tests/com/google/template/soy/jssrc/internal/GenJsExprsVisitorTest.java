@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
@@ -232,12 +234,12 @@ public class GenJsExprsVisitorTest extends TestCase {
         INJECTOR.getInstance(GenJsExprsVisitorFactory.class).create(LOCAL_VAR_TRANSLATIONS);
     List<JsExpr> actualJsExprs = gjev.exec(node);
 
-    assertEquals(expectedJsExprs.size(), actualJsExprs.size());
+    assertThat(actualJsExprs).hasSize(expectedJsExprs.size());
     for (int i = 0; i < expectedJsExprs.size(); i++) {
       JsExpr expectedJsExpr = expectedJsExprs.get(i);
       JsExpr actualJsExpr = actualJsExprs.get(i);
-      assertEquals(expectedJsExpr.getText(), actualJsExpr.getText());
-      assertEquals(expectedJsExpr.getPrecedence(), actualJsExpr.getPrecedence());
+      assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
+      assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
     }
   }
 

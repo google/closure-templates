@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.soytree.SoyNode;
@@ -116,8 +118,8 @@ public class IsComputableAsJsExprsVisitorTest extends TestCase {
 
     SoyNode node = JsSrcTestUtils.parseSoyCodeAndGetNode(soyCode, indicesToNode);
 
-    assertEquals(expectedResult,
-                 (boolean) (new IsComputableAsJsExprsVisitor(jsSrcOptions)).exec(node));
+    assertThat((boolean) (new IsComputableAsJsExprsVisitor(jsSrcOptions)).exec(node))
+        .isEqualTo(expectedResult);
   }
 
 }

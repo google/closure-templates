@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -45,13 +47,13 @@ public class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
     template.addChild(new RawTextNode(0, "bleh"));
     template.addChild(new RawTextNode(0, "bluh"));
 
-    assertEquals(5, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(5);
 
     (new CombineConsecutiveRawTextNodesVisitor()).exec(soyTree);
 
-    assertEquals(3, template.numChildren());
-    assertEquals("Blah", ((RawTextNode) template.getChild(0)).getRawText());
-    assertEquals("blahblehbluh", ((RawTextNode) template.getChild(2)).getRawText());
+    assertThat(template.numChildren()).isEqualTo(3);
+    assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("Blah");
+    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("blahblehbluh");
   }
 
 }

@@ -16,6 +16,9 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
@@ -76,75 +79,76 @@ public class SoyTypesTest extends TestCase {
 
 
   public void testAnyType() {
-    assertTrue(AnyType.getInstance().isAssignableFrom(NullType.getInstance()));
-    assertTrue(AnyType.getInstance().isAssignableFrom(AnyType.getInstance()));
-    assertTrue(AnyType.getInstance().isAssignableFrom(UnknownType.getInstance()));
-    assertTrue(AnyType.getInstance().isAssignableFrom(StringType.getInstance()));
-    assertTrue(AnyType.getInstance().isAssignableFrom(IntType.getInstance()));
+    assertThat(AnyType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
+    assertThat(AnyType.getInstance().isAssignableFrom(AnyType.getInstance())).isTrue();
+    assertThat(AnyType.getInstance().isAssignableFrom(UnknownType.getInstance())).isTrue();
+    assertThat(AnyType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
+    assertThat(AnyType.getInstance().isAssignableFrom(IntType.getInstance())).isTrue();
   }
 
 
   public void testUnknownType() {
-    assertTrue(UnknownType.getInstance().isAssignableFrom(NullType.getInstance()));
-    assertTrue(UnknownType.getInstance().isAssignableFrom(AnyType.getInstance()));
-    assertTrue(UnknownType.getInstance().isAssignableFrom(UnknownType.getInstance()));
-    assertTrue(UnknownType.getInstance().isAssignableFrom(StringType.getInstance()));
-    assertTrue(UnknownType.getInstance().isAssignableFrom(IntType.getInstance()));
+    assertThat(UnknownType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
+    assertThat(UnknownType.getInstance().isAssignableFrom(AnyType.getInstance())).isTrue();
+    assertThat(UnknownType.getInstance().isAssignableFrom(UnknownType.getInstance())).isTrue();
+    assertThat(UnknownType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
+    assertThat(UnknownType.getInstance().isAssignableFrom(IntType.getInstance())).isTrue();
   }
 
 
   public void testNullType() {
-    assertTrue(NullType.getInstance().isAssignableFrom(NullType.getInstance()));
-    assertFalse(NullType.getInstance().isAssignableFrom(StringType.getInstance()));
-    assertFalse(NullType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(NullType.getInstance().isAssignableFrom(AnyType.getInstance()));
-    assertFalse(NullType.getInstance().isAssignableFrom(UnknownType.getInstance()));
+    assertThat(NullType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
+    assertThat(NullType.getInstance().isAssignableFrom(StringType.getInstance())).isFalse();
+    assertThat(NullType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(NullType.getInstance().isAssignableFrom(AnyType.getInstance())).isFalse();
+    assertThat(NullType.getInstance().isAssignableFrom(UnknownType.getInstance())).isFalse();
   }
 
 
   public void testStringType() {
-    assertTrue(StringType.getInstance().isAssignableFrom(StringType.getInstance()));
-    assertFalse(StringType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(StringType.getInstance().isAssignableFrom(NullType.getInstance()));
-    assertFalse(StringType.getInstance().isAssignableFrom(AnyType.getInstance()));
-    assertFalse(StringType.getInstance().isAssignableFrom(UnknownType.getInstance()));
+    assertThat(StringType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
+    assertThat(StringType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(StringType.getInstance().isAssignableFrom(NullType.getInstance())).isFalse();
+    assertThat(StringType.getInstance().isAssignableFrom(AnyType.getInstance())).isFalse();
+    assertThat(StringType.getInstance().isAssignableFrom(UnknownType.getInstance())).isFalse();
   }
 
 
   public void testPrimitiveTypeEquality() {
-    assertTrue(AnyType.getInstance().equals(AnyType.getInstance()));
-    assertFalse(AnyType.getInstance().equals(IntType.getInstance()));
-    assertFalse(IntType.getInstance().equals(AnyType.getInstance()));
-    assertTrue(UnknownType.getInstance().equals(UnknownType.getInstance()));
+    assertThat(AnyType.getInstance().equals(AnyType.getInstance())).isTrue();
+    assertThat(AnyType.getInstance().equals(IntType.getInstance())).isFalse();
+    assertThat(IntType.getInstance().equals(AnyType.getInstance())).isFalse();
+    assertThat(UnknownType.getInstance().equals(UnknownType.getInstance())).isTrue();
   }
 
 
   public void testSanitizedType() {
-    assertTrue(StringType.getInstance().isAssignableFrom(HtmlType.getInstance()));
-    assertTrue(StringType.getInstance().isAssignableFrom(CssType.getInstance()));
-    assertTrue(StringType.getInstance().isAssignableFrom(UriType.getInstance()));
-    assertTrue(StringType.getInstance().isAssignableFrom(AttributesType.getInstance()));
-    assertTrue(StringType.getInstance().isAssignableFrom(JsType.getInstance()));
+    assertThat(StringType.getInstance().isAssignableFrom(HtmlType.getInstance())).isTrue();
+    assertThat(StringType.getInstance().isAssignableFrom(CssType.getInstance())).isTrue();
+    assertThat(StringType.getInstance().isAssignableFrom(UriType.getInstance())).isTrue();
+    assertThat(StringType.getInstance().isAssignableFrom(AttributesType.getInstance())).isTrue();
+    assertThat(StringType.getInstance().isAssignableFrom(JsType.getInstance())).isTrue();
 
-    assertTrue(HtmlType.getInstance().isAssignableFrom(HtmlType.getInstance()));
-    assertFalse(HtmlType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(HtmlType.getInstance().isAssignableFrom(CssType.getInstance()));
+    assertThat(HtmlType.getInstance().isAssignableFrom(HtmlType.getInstance())).isTrue();
+    assertThat(HtmlType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(HtmlType.getInstance().isAssignableFrom(CssType.getInstance())).isFalse();
 
-    assertTrue(CssType.getInstance().isAssignableFrom(CssType.getInstance()));
-    assertFalse(CssType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(CssType.getInstance().isAssignableFrom(HtmlType.getInstance()));
+    assertThat(CssType.getInstance().isAssignableFrom(CssType.getInstance())).isTrue();
+    assertThat(CssType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(CssType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
 
-    assertTrue(UriType.getInstance().isAssignableFrom(UriType.getInstance()));
-    assertFalse(UriType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(UriType.getInstance().isAssignableFrom(HtmlType.getInstance()));
+    assertThat(UriType.getInstance().isAssignableFrom(UriType.getInstance())).isTrue();
+    assertThat(UriType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(UriType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
 
-    assertTrue(AttributesType.getInstance().isAssignableFrom(AttributesType.getInstance()));
-    assertFalse(AttributesType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(AttributesType.getInstance().isAssignableFrom(HtmlType.getInstance()));
+    assertThat(AttributesType.getInstance().isAssignableFrom(AttributesType.getInstance()))
+        .isTrue();
+    assertThat(AttributesType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(AttributesType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
 
-    assertTrue(JsType.getInstance().isAssignableFrom(JsType.getInstance()));
-    assertFalse(JsType.getInstance().isAssignableFrom(IntType.getInstance()));
-    assertFalse(JsType.getInstance().isAssignableFrom(HtmlType.getInstance()));
+    assertThat(JsType.getInstance().isAssignableFrom(JsType.getInstance())).isTrue();
+    assertThat(JsType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
+    assertThat(JsType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
   }
 
 
@@ -153,23 +157,23 @@ public class SoyTypesTest extends TestCase {
     UnionType utype = UnionType.of(
         IntType.getInstance(),
         UnionType.of(IntType.getInstance(), NullType.getInstance()));
-    assertEquals("int|null", utype.toString());
-    assertTrue(utype.isAssignableFrom(IntType.getInstance()));
-    assertTrue(utype.isAssignableFrom(NullType.getInstance()));
-    assertFalse(utype.isAssignableFrom(FloatType.getInstance()));
-    assertFalse(utype.isAssignableFrom(StringType.getInstance()));
-    assertFalse(utype.isAssignableFrom(AnyType.getInstance()));
-    assertFalse(utype.isAssignableFrom(UnknownType.getInstance()));
+    assertThat(utype.toString()).isEqualTo("int|null");
+    assertThat(utype.isAssignableFrom(IntType.getInstance())).isTrue();
+    assertThat(utype.isAssignableFrom(NullType.getInstance())).isTrue();
+    assertThat(utype.isAssignableFrom(FloatType.getInstance())).isFalse();
+    assertThat(utype.isAssignableFrom(StringType.getInstance())).isFalse();
+    assertThat(utype.isAssignableFrom(AnyType.getInstance())).isFalse();
+    assertThat(utype.isAssignableFrom(UnknownType.getInstance())).isFalse();
   }
 
 
   public void testUnionTypeEquality() {
-    assertTrue(
-        UnionType.of(IntType.getInstance(), BoolType.getInstance()).equals(
-            UnionType.of(BoolType.getInstance(), IntType.getInstance())));
-    assertFalse(
-        UnionType.of(IntType.getInstance(), BoolType.getInstance()).equals(
-            UnionType.of(IntType.getInstance(), StringType.getInstance())));
+    assertThat(
+        UnionType.of(IntType.getInstance(), BoolType.getInstance())
+            .equals(UnionType.of(BoolType.getInstance(), IntType.getInstance()))).isTrue();
+    assertThat(
+        UnionType.of(IntType.getInstance(), BoolType.getInstance())
+            .equals(UnionType.of(IntType.getInstance(), StringType.getInstance()))).isFalse();
   }
 
 
@@ -180,19 +184,19 @@ public class SoyTypesTest extends TestCase {
     ListType listOfInt = ListType.of(IntType.getInstance());
 
     // Legal to assign List<X> to List<X>
-    assertTrue(listOfAny.isAssignableFrom(listOfAny));
-    assertTrue(listOfString.isAssignableFrom(listOfString));
-    assertTrue(listOfInt.isAssignableFrom(listOfInt));
+    assertThat(listOfAny.isAssignableFrom(listOfAny)).isTrue();
+    assertThat(listOfString.isAssignableFrom(listOfString)).isTrue();
+    assertThat(listOfInt.isAssignableFrom(listOfInt)).isTrue();
 
     // Legal to assign List<X> to List<Y> where Y <: X
-    assertTrue(listOfAny.isAssignableFrom(listOfString));
-    assertTrue(listOfAny.isAssignableFrom(listOfInt));
+    assertThat(listOfAny.isAssignableFrom(listOfString)).isTrue();
+    assertThat(listOfAny.isAssignableFrom(listOfInt)).isTrue();
 
     // Not legal to assign List<X> to List<Y> where !(Y <: X)
-    assertFalse(listOfInt.isAssignableFrom(listOfString));
-    assertFalse(listOfString.isAssignableFrom(listOfInt));
-    assertFalse(listOfInt.isAssignableFrom(listOfAny));
-    assertFalse(listOfString.isAssignableFrom(listOfAny));
+    assertThat(listOfInt.isAssignableFrom(listOfString)).isFalse();
+    assertThat(listOfString.isAssignableFrom(listOfInt)).isFalse();
+    assertThat(listOfInt.isAssignableFrom(listOfAny)).isFalse();
+    assertThat(listOfString.isAssignableFrom(listOfAny)).isFalse();
   }
 
 
@@ -201,8 +205,8 @@ public class SoyTypesTest extends TestCase {
     ListType listOfAny2 = ListType.of(AnyType.getInstance());
     ListType listOfString = ListType.of(StringType.getInstance());
 
-    assertTrue(listOfAny.equals(listOfAny2));
-    assertFalse(listOfAny.equals(listOfString));
+    assertThat(listOfAny.equals(listOfAny2)).isTrue();
+    assertThat(listOfAny.equals(listOfString)).isFalse();
   }
 
 
@@ -213,19 +217,19 @@ public class SoyTypesTest extends TestCase {
     MapType mapOfIntToAny = MapType.of(IntType.getInstance(), AnyType.getInstance());
 
     // Legal to assign Map<X, Y> to Map<X, Y>
-    assertTrue(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny));
-    assertTrue(mapOfStringToAny.isAssignableFrom(mapOfStringToAny));
-    assertTrue(mapOfIntToAny.isAssignableFrom(mapOfIntToAny));
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
+    assertThat(mapOfStringToAny.isAssignableFrom(mapOfStringToAny)).isTrue();
+    assertThat(mapOfIntToAny.isAssignableFrom(mapOfIntToAny)).isTrue();
 
     // Legal to assign Map<X, Z> to Map<Y, Z> where Y <: X
-    assertTrue(mapOfAnyToAny.isAssignableFrom(mapOfStringToAny));
-    assertTrue(mapOfAnyToAny.isAssignableFrom(mapOfIntToAny));
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfStringToAny)).isTrue();
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfIntToAny)).isTrue();
 
     // Not legal to assign Map<X, Z> to Map<Y, Z> where !(Y <: X)
-    assertFalse(mapOfIntToAny.isAssignableFrom(mapOfStringToAny));
-    assertFalse(mapOfStringToAny.isAssignableFrom(mapOfIntToAny));
-    assertFalse(mapOfIntToAny.isAssignableFrom(mapOfAnyToAny));
-    assertFalse(mapOfStringToAny.isAssignableFrom(mapOfAnyToAny));
+    assertThat(mapOfIntToAny.isAssignableFrom(mapOfStringToAny)).isFalse();
+    assertThat(mapOfStringToAny.isAssignableFrom(mapOfIntToAny)).isFalse();
+    assertThat(mapOfIntToAny.isAssignableFrom(mapOfAnyToAny)).isFalse();
+    assertThat(mapOfStringToAny.isAssignableFrom(mapOfAnyToAny)).isFalse();
   }
 
 
@@ -236,19 +240,19 @@ public class SoyTypesTest extends TestCase {
     MapType mapOfAnyToInt = MapType.of(AnyType.getInstance(), IntType.getInstance());
 
     // Legal to assign Map<X, Y> to Map<X, Y>
-    assertTrue(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny));
-    assertTrue(mapOfAnyToString.isAssignableFrom(mapOfAnyToString));
-    assertTrue(mapOfAnyToInt.isAssignableFrom(mapOfAnyToInt));
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
+    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToString)).isTrue();
+    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToInt)).isTrue();
 
     // Legal to assign Map<X, Y> to Map<X, Z> where Z <: Y
-    assertTrue(mapOfAnyToAny.isAssignableFrom(mapOfAnyToString));
-    assertTrue(mapOfAnyToAny.isAssignableFrom(mapOfAnyToInt));
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToString)).isTrue();
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToInt)).isTrue();
 
     // Not legal to assign Map<X, Y> to Map<X, Z> where !(Z <: Y)
-    assertFalse(mapOfAnyToInt.isAssignableFrom(mapOfAnyToString));
-    assertFalse(mapOfAnyToString.isAssignableFrom(mapOfAnyToInt));
-    assertFalse(mapOfAnyToInt.isAssignableFrom(mapOfAnyToAny));
-    assertFalse(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny));
+    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToString)).isFalse();
+    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToInt)).isFalse();
+    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToAny)).isFalse();
+    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny)).isFalse();
   }
 
 
@@ -258,9 +262,9 @@ public class SoyTypesTest extends TestCase {
     MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
     MapType mapOfAnyToString = MapType.of(AnyType.getInstance(), StringType.getInstance());
 
-    assertTrue(mapOfAnyToAny.equals(mapOfAnyToAny2));
-    assertFalse(mapOfAnyToAny.equals(mapOfStringToAny));
-    assertFalse(mapOfAnyToAny.equals(mapOfAnyToString));
+    assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
+    assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();
+    assertThat(mapOfAnyToAny.equals(mapOfAnyToString)).isFalse();
   }
 
 
@@ -268,18 +272,15 @@ public class SoyTypesTest extends TestCase {
     RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of(
         "a", IntType.getInstance(), "b", AnyType.getInstance()));
 
-    assertTrue(r1.equals(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "b", AnyType.getInstance()))));
-    assertFalse(r1.equals(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "c", AnyType.getInstance()))));
-    assertFalse(r1.equals(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "b", StringType.getInstance()))));
+    assertThat(
+        r1.equals(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "b", AnyType.getInstance())))).isTrue();
+    assertThat(
+        r1.equals(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "c", AnyType.getInstance())))).isFalse();
+    assertThat(
+        r1.equals(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "b", StringType.getInstance())))).isFalse();
   }
 
 
@@ -288,36 +289,30 @@ public class SoyTypesTest extends TestCase {
         "a", IntType.getInstance(), "b", AnyType.getInstance()));
 
     // Same
-    assertTrue(r1.isAssignableFrom(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "b", AnyType.getInstance()))));
+    assertThat(
+        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "b", AnyType.getInstance())))).isTrue();
 
     // "b" is subtype
-    assertTrue(r1.isAssignableFrom(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "b", StringType.getInstance()))));
+    assertThat(
+        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "b", StringType.getInstance())))).isTrue();
 
     // Additional field
-    assertTrue(r1.isAssignableFrom(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "b", StringType.getInstance(),
-            "c", StringType.getInstance()))));
+    assertThat(
+        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of("a",
+            IntType.getInstance(), "b", StringType.getInstance(), "c", StringType.getInstance()))))
+        .isTrue();
 
     // Missing "b"
-    assertFalse(r1.isAssignableFrom(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "c", AnyType.getInstance()))));
+    assertThat(
+        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "c", AnyType.getInstance())))).isFalse();
 
     // Field type mismatch
-    assertFalse(r1.isAssignableFrom(
-        RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", StringType.getInstance(),
-            "b", AnyType.getInstance()))));
-
+    assertThat(
+        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", StringType.getInstance(), "b", AnyType.getInstance())))).isFalse();
   }
 
 
@@ -455,18 +450,20 @@ public class SoyTypesTest extends TestCase {
 
   private void assertIsInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
-      assertTrue("Expected value of type " + value.getClass().getName() +
-          " to be an instance of Soy type " + type,
-          type.isInstance(value));
+      assertWithMessage("Expected value of type " + value.getClass().getName()
+          + " to be an instance of Soy type " + type)
+          .that(type.isInstance(value))
+          .isTrue();
     }
   }
 
 
   private void assertIsNotInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
-      assertFalse("Expected value of type " + value.getClass().getName() +
-          " to NOT be an instance of Soy type " + type,
-          type.isInstance(value));
+      assertWithMessage("Expected value of type " + value.getClass().getName()
+          + " to NOT be an instance of Soy type " + type)
+          .that(type.isInstance(value))
+          .isFalse();
     }
   }
 }

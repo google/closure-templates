@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.Lists;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
@@ -34,30 +36,31 @@ public final class JsCodeBuilderTest extends TestCase {
     JsCodeBuilder jcb = new JsCodeBuilder(CodeStyle.CONCAT);
     jcb.pushOutputVar("output");
     jcb.appendOutputVarName().appendLineEnd();
-    assertEquals("output\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("output\n");
     jcb.initOutputVarIfNecessary();
-    assertEquals("output\nvar output = '';\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("output\nvar output = '';\n");
     jcb.pushOutputVar("param5");
     jcb.appendOutputVarName().appendLineEnd();
     jcb.setOutputVarInited();
     jcb.initOutputVarIfNecessary();  // nothing added
-    assertEquals("output\nvar output = '';\nparam5\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("output\nvar output = '';\nparam5\n");
 
     jcb = new JsCodeBuilder(CodeStyle.CONCAT);
     jcb.pushOutputVar("output");
     jcb.addToOutputVar(Lists.newArrayList(new JsExpr("boo", Integer.MAX_VALUE)));
-    assertEquals("var output = '' + boo;\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("var output = '' + boo;\n");
     jcb.pushOutputVar("param5");
     jcb.setOutputVarInited();
     jcb.addToOutputVar(Lists.newArrayList(
         new JsExpr("a - b", Operator.MINUS.getPrecedence()),
         new JsExpr("c - d", Operator.MINUS.getPrecedence()),
         new JsExpr("e * f", Operator.TIMES.getPrecedence())));
-    assertEquals("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\n", jcb.getCode());
+    assertThat(jcb.getCode())
+        .isEqualTo("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\n");
     jcb.popOutputVar();
     jcb.appendOutputVarName().appendLineEnd();
-    assertEquals("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\noutput\n",
-        jcb.getCode());
+    assertThat(jcb.getCode())
+        .isEqualTo("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\noutput\n");
   }
 
   public void testOutputVarWithStringbuilder() {
@@ -65,35 +68,33 @@ public final class JsCodeBuilderTest extends TestCase {
     JsCodeBuilder jcb = new JsCodeBuilder(CodeStyle.STRINGBUILDER);
     jcb.pushOutputVar("output");
     jcb.appendOutputVarName().appendLineEnd();
-    assertEquals("output\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("output\n");
     jcb.initOutputVarIfNecessary();
-    assertEquals("output\nvar output = new soy.StringBuilder();\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("output\nvar output = new soy.StringBuilder();\n");
     jcb.pushOutputVar("param5");
     jcb.appendOutputVarName().appendLineEnd();
     jcb.setOutputVarInited();
     jcb.initOutputVarIfNecessary();  // nothing added
-    assertEquals("output\nvar output = new soy.StringBuilder();\nparam5\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("output\nvar output = new soy.StringBuilder();\nparam5\n");
 
     jcb = new JsCodeBuilder(CodeStyle.STRINGBUILDER);
     jcb.pushOutputVar("output");
     jcb.addToOutputVar(Lists.newArrayList(new JsExpr("boo", Integer.MAX_VALUE)));
-    assertEquals("var output = new soy.StringBuilder(boo);\n", jcb.getCode());
+    assertThat(jcb.getCode()).isEqualTo("var output = new soy.StringBuilder(boo);\n");
     jcb.pushOutputVar("param5");
     jcb.setOutputVarInited();
     jcb.addToOutputVar(Lists.newArrayList(
         new JsExpr("a - b", Operator.MINUS.getPrecedence()),
         new JsExpr("c - d", Operator.MINUS.getPrecedence()),
         new JsExpr("e * f", Operator.TIMES.getPrecedence())));
-    assertEquals(
-        "var output = new soy.StringBuilder(boo);\n" +
-        "param5.append(a - b, c - d, e * f);\n",
-        jcb.getCode());
+    assertThat(jcb.getCode())
+        .isEqualTo("var output = new soy.StringBuilder(boo);\n"
+            + "param5.append(a - b, c - d, e * f);\n");
     jcb.popOutputVar();
     jcb.appendOutputVarName().appendLineEnd();
-    assertEquals(
-        "var output = new soy.StringBuilder(boo);\n" +
-        "param5.append(a - b, c - d, e * f);\n" +
-        "output\n",
-        jcb.getCode());
+    assertThat(jcb.getCode())
+        .isEqualTo("var output = new soy.StringBuilder(boo);\n"
+            + "param5.append(a - b, c - d, e * f);\n"
+            + "output\n");
   }
 }

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared;
 
+import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
@@ -79,10 +80,11 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
     for (Object arg : args) {
       argsData.add(SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(arg).resolve());
     }
-    assertEquals(
-        expectedOutput,
+    assertThat(
         directive.applyForJava(
-            SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(value).resolve(), argsData.build()));
+            SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(value).resolve(),
+            argsData.build()).toString())
+        .isEqualTo(expectedOutput.toString());
   }
 
 
@@ -179,9 +181,8 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
         actualOutputListBuilder.add((String) outputAsJsList.get(i, globalScope));
       }
 
-      assertEquals(
-          Joiner.on('\n').join(expectedOutputsListBuilder.build()),
-          Joiner.on('\n').join(actualOutputListBuilder.build()));
+      assertThat(Joiner.on('\n').join(actualOutputListBuilder.build()))
+          .isEqualTo(Joiner.on('\n').join(expectedOutputsListBuilder.build()));
     }
   }
 

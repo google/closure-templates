@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import junit.framework.TestCase;
 
 public class JsUtilTest extends TestCase {
@@ -58,9 +60,9 @@ public class JsUtilTest extends TestCase {
   }
 
   private static void assertIsRegexPreceder(String jsTokens) {
-    assertTrue(jsTokens, JsUtil.isRegexPreceder(jsTokens));
+    assertWithMessage(jsTokens).that(JsUtil.isRegexPreceder(jsTokens)).isTrue();
   }
   private static void assertIsDivOpPreceder(String jsTokens) {
-    assertFalse(jsTokens, JsUtil.isRegexPreceder(jsTokens));
+    assertWithMessage(jsTokens).that(JsUtil.isRegexPreceder(jsTokens)).isFalse();
   }
 }

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -46,15 +48,15 @@ public class ClearSoyDocStringsVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
-    assertTrue(template.getSoyDoc().contains("blah"));
-    assertTrue(template.getSoyDocDesc().contains("blah"));
-    assertTrue(template.getParams().get(0).desc().contains("blah"));
+    assertThat(template.getSoyDoc()).contains("blah");
+    assertThat(template.getSoyDocDesc()).contains("blah");
+    assertThat(template.getParams().get(0).desc()).contains("blah");
 
     (new ClearSoyDocStringsVisitor()).exec(soyTree);
 
-    assertNull(template.getSoyDoc());
-    assertNull(template.getSoyDocDesc());
-    assertNull(template.getParams().get(0).desc());
+    assertThat(template.getSoyDoc()).isNull();
+    assertThat(template.getSoyDocDesc()).isNull();
+    assertThat(template.getParams().get(0).desc()).isNull();
   }
 
 }

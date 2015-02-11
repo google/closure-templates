@@ -16,6 +16,8 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -143,11 +145,11 @@ public final class GenPyCodeVisitorTest extends TestCase {
   // Test Utilities.
 
   private void assertGeneratedPyFile(String soyCode, String expectedPyCode) {
-    assertEquals(expectedPyCode, getGeneratedPyFile(soyCode));
+    assertThat(getGeneratedPyFile(soyCode)).isEqualTo(expectedPyCode);
   }
 
   private void assertGeneratedPyCode(String soyNodeCode, String expectedPyCode) {
-    assertEquals(expectedPyCode, getGeneratedPyCode(soyNodeCode));
+    assertThat(getGeneratedPyCode(soyNodeCode)).isEqualTo(expectedPyCode);
   }
 
   /**

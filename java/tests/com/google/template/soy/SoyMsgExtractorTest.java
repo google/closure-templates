@@ -16,6 +16,7 @@
 
 package com.google.template.soy;
 
+import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.Lists;
@@ -67,7 +68,7 @@ public class SoyMsgExtractorTest extends TestCase {
         soyFile.toString());
 
     String xmlContent = Files.toString(xmlFile, UTF_8);
-    assertTrue(xmlContent, xmlContent.contains("<source>H\uff49</source>"));
+    assertThat(xmlContent).contains("<source>H\uff49</source>");
   }
 
 
@@ -89,7 +90,7 @@ public class SoyMsgExtractorTest extends TestCase {
         "--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString());
 
     String xmlContent = Files.toString(xmlFile, UTF_8);
-    assertTrue(xmlContent, xmlContent.contains("<source>H\uff49</source>"));
-    assertTrue(xmlContent, xmlContent.contains("<source>World</source>"));
+    assertThat(xmlContent).contains("<source>H\uff49</source>");
+    assertThat(xmlContent).contains("<source>World</source>");
   }
 }

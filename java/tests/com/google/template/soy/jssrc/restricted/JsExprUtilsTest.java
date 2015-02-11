@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.Operator;
@@ -35,8 +37,8 @@ public class JsExprUtilsTest extends TestCase {
         new JsExpr("'blah' + 'blah'", Operator.MINUS.getPrecedence()),
         new JsExpr("'bleh' + 'bleh'", Operator.MINUS.getPrecedence()),
         new JsExpr("2 * 8", Operator.TIMES.getPrecedence())));
-    assertEquals("'blah' + 'blah' + ('bleh' + 'bleh') + 2 * 8", concatResult.getText());
-    assertEquals(Operator.PLUS.getPrecedence(), concatResult.getPrecedence());
+    assertThat(concatResult.getText()).isEqualTo("'blah' + 'blah' + ('bleh' + 'bleh') + 2 * 8");
+    assertThat(concatResult.getPrecedence()).isEqualTo(Operator.PLUS.getPrecedence());
   }
 
   public void testConcatJsExprsForceString() {
@@ -44,36 +46,39 @@ public class JsExprUtilsTest extends TestCase {
     JsExpr concatResult = JsExprUtils.concatJsExprsForceString(Lists.newArrayList(
         new JsExpr("2", Integer.MAX_VALUE),
         new JsExpr("2", Integer.MAX_VALUE)));
-    assertEquals("'' + 2 + 2", concatResult.getText());
-    assertEquals(Operator.PLUS.getPrecedence(), concatResult.getPrecedence());
+    assertThat(concatResult.getText()).isEqualTo("'' + 2 + 2");
+    assertThat(concatResult.getPrecedence()).isEqualTo(Operator.PLUS.getPrecedence());
   }
 
   public void testIsStringLiteral() {
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("''", Integer.MAX_VALUE)));
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("'a'", Integer.MAX_VALUE)));
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("'abc'", Integer.MAX_VALUE)));
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("'ab\\nc'", Integer.MAX_VALUE)));
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("'ab\\'c'", Integer.MAX_VALUE)));
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("'\\'abc\\''", Integer.MAX_VALUE)));
-    assertTrue(JsExprUtils.isStringLiteral(new JsExpr("'\\u1234'", Integer.MAX_VALUE)));
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("''", Integer.MAX_VALUE))).isTrue();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'a'", Integer.MAX_VALUE))).isTrue();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'abc'", Integer.MAX_VALUE))).isTrue();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'ab\\nc'", Integer.MAX_VALUE))).isTrue();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'ab\\'c'", Integer.MAX_VALUE))).isTrue();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'\\'abc\\''", Integer.MAX_VALUE))).isTrue();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'\\u1234'", Integer.MAX_VALUE))).isTrue();
 
-    assertFalse(JsExprUtils.isStringLiteral(new JsExpr("abc", Integer.MAX_VALUE)));
-    assertFalse(JsExprUtils.isStringLiteral(new JsExpr("123", Integer.MAX_VALUE)));
-    assertFalse(JsExprUtils.isStringLiteral(new JsExpr("foo()", Integer.MAX_VALUE)));
-    assertFalse(JsExprUtils.isStringLiteral(new JsExpr("'a' + 1", Operator.MINUS.getPrecedence())));
-    assertFalse(JsExprUtils.isStringLiteral(new JsExpr("1 + 'a'", Operator.MINUS.getPrecedence())));
-    assertFalse(JsExprUtils.isStringLiteral(new JsExpr("foo('a')", Integer.MAX_VALUE)));
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("abc", Integer.MAX_VALUE))).isFalse();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("123", Integer.MAX_VALUE))).isFalse();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("foo()", Integer.MAX_VALUE))).isFalse();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'a' + 1", Operator.MINUS.getPrecedence())))
+        .isFalse();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("1 + 'a'", Operator.MINUS.getPrecedence())))
+        .isFalse();
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("foo('a')", Integer.MAX_VALUE))).isFalse();
   }
 
   public void testWrapWithFunction() {
     JsExpr expr = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
 
-    assertEquals(
-        "new Frob('foo' + 'bar')", JsExprUtils.wrapWithFunction("new Frob", expr).getText());
+    assertThat(JsExprUtils.wrapWithFunction("new Frob", expr).getText())
+        .isEqualTo("new Frob('foo' + 'bar')");
 
-    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedHtml('foo' + 'bar')",
-        JsExprUtils.maybeWrapAsSanitizedContent(ContentKind.HTML, expr).getText());
-    assertEquals("'foo' + 'bar'", JsExprUtils.maybeWrapAsSanitizedContent(null, expr).getText());
+    assertThat(JsExprUtils.maybeWrapAsSanitizedContent(ContentKind.HTML, expr).getText())
+        .isEqualTo("soydata.VERY_UNSAFE.ordainSanitizedHtml('foo' + 'bar')");
+    assertThat(JsExprUtils.maybeWrapAsSanitizedContent(null, expr).getText())
+        .isEqualTo("'foo' + 'bar'");
   }
 
 }

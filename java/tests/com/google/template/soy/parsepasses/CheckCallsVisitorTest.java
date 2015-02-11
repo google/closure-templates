@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -176,7 +178,7 @@ public class CheckCallsVisitorTest extends TestCase {
     try {
       (new CheckCallsVisitor()).exec(soyTree);
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(expectedErrorMsgSubstr));
+      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
       return;  // test passes
     }
     fail();

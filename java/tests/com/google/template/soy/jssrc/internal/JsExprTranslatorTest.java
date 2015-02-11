@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SoySyntaxException;
@@ -63,16 +65,14 @@ public class JsExprTranslatorTest extends TestCase {
     // Test unsupported function (Soy V1 syntax).
     expr.replaceChild(1, userFnNode);
     String exprText = "3   *   userFn(5)";
-    assertEquals(
-        "3 * userFn(5)",
-        jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText());
+    assertThat(jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText())
+        .isEqualTo("3 * userFn(5)");
 
     // Test supported function.
     expr.replaceChild(1, randomIntFnNode);
     exprText = "3   *   randomInt(4)";
-    assertEquals(
-        "3 * Math.floor(Math.random() * 4)",
-        jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText());
+    assertThat(jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText())
+        .isEqualTo("3 * Math.floor(Math.random() * 4)");
 
     // Test supported function with wrong number of args.
     randomIntFnNode.removeChild(0);

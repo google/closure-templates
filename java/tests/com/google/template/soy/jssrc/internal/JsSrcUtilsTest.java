@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
@@ -44,71 +46,70 @@ public class JsSrcUtilsTest extends TestCase {
   private static final UnionType NULLABLE_STRING = nullable(StringType.getInstance());
 
   public void testEscapeUnicodeFormatChars() {
-    assertEquals(
-        "'Cf:\\u202A\\u202B\\u202C\\u202D\\u202E\\u200E\\u200F; Not Cf:\u2222\uEEEE\u9EC4\u607A'",
+    assertThat(
         JsSrcUtils.escapeUnicodeFormatChars(
-            "'Cf:\u202A\u202B\u202C\u202D\u202E\u200E\u200F; Not Cf:\u2222\uEEEE\u9EC4\u607A'"));
+            "'Cf:\u202A\u202B\u202C\u202D\u202E\u200E\u200F; Not Cf:\u2222\uEEEE\u9EC4\u607A'"))
+        .isEqualTo(
+            "'Cf:\\u202A\\u202B\\u202C\\u202D\\u202E\\u200E\\u200F; Not Cf:\u2222\uEEEE\u9EC4\u607A'");
   }
 
 
   public void testGetJsTypeName() {
     // Primitives
-    assertEquals("*", JsSrcUtils.getJsTypeExpr(AnyType.getInstance()));
-    assertEquals("?", JsSrcUtils.getJsTypeExpr(UnknownType.getInstance()));
-    assertEquals("number", JsSrcUtils.getJsTypeExpr(IntType.getInstance()));
+    assertThat(JsSrcUtils.getJsTypeExpr(AnyType.getInstance())).isEqualTo("*");
+    assertThat(JsSrcUtils.getJsTypeExpr(UnknownType.getInstance())).isEqualTo("?");
+    assertThat(JsSrcUtils.getJsTypeExpr(IntType.getInstance())).isEqualTo("number");
 
     // Basic unions
-    assertEquals("number|string",
-        JsSrcUtils.getJsTypeExpr(UNION_OF_STRING_OR_INT));
-    assertEquals("(number|string)",
-        JsSrcUtils.getJsTypeExpr(UNION_OF_STRING_OR_INT, true, false));
-    assertEquals("(?)", JsSrcUtils.getJsTypeExpr(
-        UnionType.of(StringType.getInstance(), UnknownType.getInstance())));
+    assertThat(JsSrcUtils.getJsTypeExpr(UNION_OF_STRING_OR_INT)).isEqualTo("number|string");
+    assertThat(JsSrcUtils.getJsTypeExpr(UNION_OF_STRING_OR_INT, true, false))
+        .isEqualTo("(number|string)");
+    assertThat(
+        JsSrcUtils.getJsTypeExpr(UnionType.of(StringType.getInstance(), UnknownType.getInstance())))
+        .isEqualTo("(?)");
 
     // Sanitized types
-    assertEquals("soydata.SanitizedHtml|string",
-        JsSrcUtils.getJsTypeExpr(HtmlType.getInstance()));
-    assertEquals("soydata.SanitizedHtml|soydata.SanitizedUri|string",
-        JsSrcUtils.getJsTypeExpr(UnionType.of(HtmlType.getInstance(), UriType.getInstance())));
+    assertThat(JsSrcUtils.getJsTypeExpr(HtmlType.getInstance()))
+        .isEqualTo("soydata.SanitizedHtml|string");
+    assertThat(
+        JsSrcUtils.getJsTypeExpr(UnionType.of(HtmlType.getInstance(), UriType.getInstance())))
+        .isEqualTo("soydata.SanitizedHtml|soydata.SanitizedUri|string");
 
     // Arrays
-    assertEquals("Array.<soydata.SanitizedHtml|string>",
-        JsSrcUtils.getJsTypeExpr(LIST_OF_HTML, false, false));
-    assertEquals("!Array.<soydata.SanitizedHtml|string>",
-        JsSrcUtils.getJsTypeExpr(LIST_OF_HTML, false, true));
+    assertThat(JsSrcUtils.getJsTypeExpr(LIST_OF_HTML, false, false))
+        .isEqualTo("Array.<soydata.SanitizedHtml|string>");
+    assertThat(JsSrcUtils.getJsTypeExpr(LIST_OF_HTML, false, true))
+        .isEqualTo("!Array.<soydata.SanitizedHtml|string>");
 
     // Nullable types
-    assertEquals("null|string|undefined",
-        JsSrcUtils.getJsTypeExpr(NULLABLE_STRING));
-    assertEquals("(null|string|undefined)",
-        JsSrcUtils.getJsTypeExpr(NULLABLE_STRING, true, false));
-    assertEquals("null|string|undefined",
-        JsSrcUtils.getJsTypeExpr(NULLABLE_STRING, false, true));
-    assertEquals("Array.<soydata.SanitizedHtml|string>|undefined",
-        JsSrcUtils.getJsTypeExpr(NULLABLE_LIST_OF_HTML));
-    assertEquals("(Array.<soydata.SanitizedHtml|string>|undefined)",
-        JsSrcUtils.getJsTypeExpr(NULLABLE_LIST_OF_HTML, true, false));
-    assertEquals("Array.<soydata.SanitizedHtml|string>|undefined",
-        JsSrcUtils.getJsTypeExpr(NULLABLE_LIST_OF_HTML, false, true));
+    assertThat(JsSrcUtils.getJsTypeExpr(NULLABLE_STRING)).isEqualTo("null|string|undefined");
+    assertThat(JsSrcUtils.getJsTypeExpr(NULLABLE_STRING, true, false))
+        .isEqualTo("(null|string|undefined)");
+    assertThat(JsSrcUtils.getJsTypeExpr(NULLABLE_STRING, false, true))
+        .isEqualTo("null|string|undefined");
+    assertThat(JsSrcUtils.getJsTypeExpr(NULLABLE_LIST_OF_HTML))
+        .isEqualTo("Array.<soydata.SanitizedHtml|string>|undefined");
+    assertThat(JsSrcUtils.getJsTypeExpr(NULLABLE_LIST_OF_HTML, true, false))
+        .isEqualTo("(Array.<soydata.SanitizedHtml|string>|undefined)");
+    assertThat(JsSrcUtils.getJsTypeExpr(NULLABLE_LIST_OF_HTML, false, true))
+        .isEqualTo("Array.<soydata.SanitizedHtml|string>|undefined");
 
     // Records
-    assertEquals("{bar: !Array.<soydata.SanitizedHtml|string>, foo: number}",
+    assertThat(
         JsSrcUtils.getJsTypeExpr(RecordType.of(
-            ImmutableMap.<String, SoyType>of(
-                "foo", IntType.getInstance(),
-                "bar", LIST_OF_HTML))));
-    assertEquals("{bar: !Array.<soydata.SanitizedHtml|string>, foo: number}",
-        JsSrcUtils.getJsTypeExpr(RecordType.of(
-            ImmutableMap.<String, SoyType>of(
-                "foo", IntType.getInstance(),
-                "bar", LIST_OF_HTML)), false, false));
-    assertEquals("{bar: (Array.<soydata.SanitizedHtml|string>|undefined), foo: number}",
-        JsSrcUtils.getJsTypeExpr(RecordType.of(
-            ImmutableMap.<String, SoyType>of(
-                "foo", IntType.getInstance(),
-                "bar", NULLABLE_LIST_OF_HTML))));
-    assertEquals("!Object",
-        JsSrcUtils.getJsTypeExpr(RecordType.of(ImmutableMap.<String, SoyType>of())));
+            ImmutableMap.<String, SoyType>of("foo", IntType.getInstance(), "bar", LIST_OF_HTML))))
+        .isEqualTo("{bar: !Array.<soydata.SanitizedHtml|string>, foo: number}");
+    assertThat(
+        JsSrcUtils.getJsTypeExpr(
+            RecordType.of(ImmutableMap.<String, SoyType>of(
+                "foo", IntType.getInstance(), "bar", LIST_OF_HTML)),
+            false, false)).isEqualTo("{bar: !Array.<soydata.SanitizedHtml|string>, foo: number}");
+    assertThat(
+        JsSrcUtils.getJsTypeExpr(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "foo", IntType.getInstance(), "bar", NULLABLE_LIST_OF_HTML))))
+        .isEqualTo("{bar: (Array.<soydata.SanitizedHtml|string>|undefined), foo: number}");
+    assertThat(JsSrcUtils.getJsTypeExpr(RecordType.of(ImmutableMap.<String, SoyType>of())))
+        .isEqualTo("!Object");
   }
 
 

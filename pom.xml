@@ -100,8 +100,15 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>14.0</version>
+      <version>17.0</version>
       <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.truth</groupId>
+      <artifactId>truth</artifactId>
+      <version>0.25</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -144,7 +151,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <version>4.10</version>
       <scope>test</scope>
     </dependency>
 

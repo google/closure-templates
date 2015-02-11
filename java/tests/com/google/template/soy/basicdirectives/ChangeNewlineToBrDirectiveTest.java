@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
@@ -43,8 +45,8 @@ public class ChangeNewlineToBrDirectiveTest extends AbstractSoyPrintDirectiveTes
 
     ChangeNewlineToBrDirective directive = new ChangeNewlineToBrDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertEquals("soy.$$changeNewlineToBr(opt_data.myKey)",
-                 directive.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText());
+    assertThat(directive.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+        .isEqualTo("soy.$$changeNewlineToBr(opt_data.myKey)");
   }
 
 }

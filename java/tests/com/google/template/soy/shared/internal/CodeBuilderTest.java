@@ -16,6 +16,8 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
@@ -41,28 +43,28 @@ public final class CodeBuilderTest extends TestCase {
   public void testAppend() {
     SimpleCodeBuilder cb = new SimpleCodeBuilder();
     cb.append("boo");
-    assertEquals("boo", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("boo");
     cb.appendLineEnd("foo", "goo");
-    assertEquals("boofoogoo\n", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("boofoogoo\n");
     cb.appendLine("moo", "too");
-    assertEquals("boofoogoo\nmootoo\n", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("boofoogoo\nmootoo\n");
   }
 
   public void testIndent() {
     SimpleCodeBuilder cb = new SimpleCodeBuilder();
     cb.increaseIndent();
     cb.appendLine("boo");
-    assertEquals("  boo\n", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("  boo\n");
     cb.increaseIndentTwice();
     cb.appendLine("foo");
-    assertEquals("  boo\n      foo\n", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("  boo\n      foo\n");
     cb.decreaseIndent();
     cb.appendLineEnd("goo");  // not affected by indent
     cb.appendLine("moo");
-    assertEquals("  boo\n      foo\ngoo\n    moo\n", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("  boo\n      foo\ngoo\n    moo\n");
     cb.decreaseIndentTwice();
     cb.appendLine("too");
-    assertEquals("  boo\n      foo\ngoo\n    moo\ntoo\n", cb.getCode());
+    assertThat(cb.getCode()).isEqualTo("  boo\n      foo\ngoo\n    moo\ntoo\n");
 
     try {
       cb.decreaseIndent();

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
@@ -47,9 +49,8 @@ public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTest
     InsertWordBreaksDirective insertWordBreaksDirective = new InsertWordBreaksDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     JsExpr arg = new JsExpr("8", Integer.MAX_VALUE);
-    assertEquals(
-        "soy.$$insertWordBreaks(opt_data.myKey, 8)",
-        insertWordBreaksDirective.applyForJsSrc(dataRef, ImmutableList.of(arg)).getText());
+    assertThat(insertWordBreaksDirective.applyForJsSrc(dataRef, ImmutableList.of(arg)).getText())
+        .isEqualTo("soy.$$insertWordBreaks(opt_data.myKey, 8)");
   }
 
 }

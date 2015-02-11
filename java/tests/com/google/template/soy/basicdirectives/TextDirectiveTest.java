@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -49,9 +51,8 @@ public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
     TextDirective textDirective = new TextDirective();
     JsExpr jsExpr = new JsExpr("whatever", Integer.MAX_VALUE);
-    assertEquals(
-        "'' + whatever",
-        textDirective.applyForJsSrc(jsExpr, ImmutableList.<JsExpr>of()).getText());
+    assertThat(textDirective.applyForJsSrc(jsExpr, ImmutableList.<JsExpr>of()).getText())
+        .isEqualTo("'' + whatever");
   }
 
 }

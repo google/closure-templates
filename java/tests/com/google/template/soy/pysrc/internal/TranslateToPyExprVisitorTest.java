@@ -16,6 +16,8 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -176,11 +178,11 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
 
     PyExpr actualPyExpr = new TranslateToPyExprVisitor().exec(exprNode);
-    assertEquals(expectedPyExpr.getText(), actualPyExpr.getText());
-    assertEquals(expectedPyExpr.getPrecedence(), actualPyExpr.getPrecedence());
+    assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
+    assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
 
     if (expectedClass != null) {
-      assertEquals(expectedClass, actualPyExpr.getClass());
+      assertThat(actualPyExpr.getClass()).isEqualTo(expectedClass);
     }
   }
 }

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -94,10 +96,10 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(UnionType.of(BoolType.getInstance(), NullType.getInstance()), types.get(0));
-    assertEquals(
-        UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()),
-        types.get(1));
+    assertThat(types.get(0))
+        .isEqualTo(UnionType.of(BoolType.getInstance(), NullType.getInstance()));
+    assertThat(types.get(1))
+        .isEqualTo(UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()));
   }
 
   public void testDataRefTypes() {
@@ -114,16 +116,14 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(BoolType.getInstance(), types.get(0));
-    assertEquals(ListType.of(IntType.getInstance()), types.get(1));
-    assertEquals(IntType.getInstance(), types.get(2));
-    assertEquals(
-        MapType.of(
-            IntType.getInstance(),
-            MapType.of(IntType.getInstance(), StringType.getInstance())),
-        types.get(3));
-    assertEquals(MapType.of(IntType.getInstance(), StringType.getInstance()), types.get(4));
-    assertEquals(StringType.getInstance(), types.get(5));
+    assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(1)).isEqualTo(ListType.of(IntType.getInstance()));
+    assertThat(types.get(2)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(3))
+        .isEqualTo(MapType.of(
+            IntType.getInstance(), MapType.of(IntType.getInstance(), StringType.getInstance())));
+    assertThat(types.get(4)).isEqualTo(MapType.of(IntType.getInstance(), StringType.getInstance()));
+    assertThat(types.get(5)).isEqualTo(StringType.getInstance());
   }
 
   public void testRecordTypes() {
@@ -134,8 +134,8 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(IntType.getInstance(), types.get(0));
-    assertEquals(StringType.getInstance(), types.get(1));
+    assertThat(types.get(0)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(1)).isEqualTo(StringType.getInstance());
   }
 
   public void testDataRefTypesWithUnknown() {
@@ -153,11 +153,11 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(UnknownType.getInstance(), types.get(0));
-    assertEquals(UnknownType.getInstance(), types.get(1));
-    assertEquals(UnknownType.getInstance(), types.get(2));
-    assertEquals(FloatType.getInstance(), types.get(3));
-    assertEquals(StringType.getInstance(), types.get(4));
+    assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(1)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(2)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(3)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(4)).isEqualTo(StringType.getInstance());
   }
 
   public void testDataRefTypesError() {
@@ -213,24 +213,24 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(UnknownType.getInstance(), types.get(0));
-    assertEquals(IntType.getInstance(), types.get(1));
-    assertEquals(FloatType.getInstance(), types.get(2));
-    assertEquals(UnknownType.getInstance(), types.get(3));
-    assertEquals(IntType.getInstance(), types.get(4));
-    assertEquals(FloatType.getInstance(), types.get(5));
-    assertEquals(UnknownType.getInstance(), types.get(6));
-    assertEquals(IntType.getInstance(), types.get(7));
-    assertEquals(FloatType.getInstance(), types.get(8));
-    assertEquals(UnknownType.getInstance(), types.get(9));
-    assertEquals(IntType.getInstance(), types.get(10));
-    assertEquals(FloatType.getInstance(), types.get(11));
-    assertEquals(UnknownType.getInstance(), types.get(12));
-    assertEquals(IntType.getInstance(), types.get(13));
-    assertEquals(FloatType.getInstance(), types.get(14));
-    assertEquals(UnknownType.getInstance(), types.get(15));
-    assertEquals(IntType.getInstance(), types.get(16));
-    assertEquals(FloatType.getInstance(), types.get(17));
+    assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(1)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(2)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(3)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(4)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(5)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(6)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(7)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(8)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(9)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(10)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(11)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(12)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(13)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(14)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(15)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(16)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(17)).isEqualTo(FloatType.getInstance());
   }
 
   public void testStringConcatenation() {
@@ -250,13 +250,13 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(StringType.getInstance(), types.get(0));
-    assertEquals(StringType.getInstance(), types.get(1));
-    assertEquals(StringType.getInstance(), types.get(2));
-    assertEquals(StringType.getInstance(), types.get(3));
-    assertEquals(StringType.getInstance(), types.get(4));
-    assertEquals(StringType.getInstance(), types.get(5));
-    assertEquals(StringType.getInstance(), types.get(6));
+    assertThat(types.get(0)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(1)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(2)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(3)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(4)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(5)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(6)).isEqualTo(StringType.getInstance());
   }
 
   public void testLogicalOps() {
@@ -279,30 +279,30 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(UnknownType.getInstance(), types.get(0));
-    assertEquals(UnknownType.getInstance(), types.get(1));
-    assertEquals(UnknownType.getInstance(), types.get(2));
-    assertEquals(UnknownType.getInstance(), types.get(3));
-    assertEquals(UnknownType.getInstance(), types.get(4));
-    assertEquals(UnknownType.getInstance(), types.get(5));
-    assertEquals(BoolType.getInstance(), types.get(6));
-    assertEquals(BoolType.getInstance(), types.get(7));
-    assertEquals(BoolType.getInstance(), types.get(8));
+    assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(1)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(2)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(3)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(4)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(5)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(6)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(7)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(8)).isEqualTo(BoolType.getInstance());
 
     soyTree = SharedTestUtils.parseSoyFiles(
         typeRegistry, SyntaxVersion.V2_3, false, testTemplateContent);
     createResolveNamesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     types = getPrintStatementTypes(soyTree);
-    assertEquals(BoolType.getInstance(), types.get(0));
-    assertEquals(BoolType.getInstance(), types.get(1));
-    assertEquals(BoolType.getInstance(), types.get(2));
-    assertEquals(BoolType.getInstance(), types.get(3));
-    assertEquals(BoolType.getInstance(), types.get(4));
-    assertEquals(BoolType.getInstance(), types.get(5));
-    assertEquals(BoolType.getInstance(), types.get(6));
-    assertEquals(BoolType.getInstance(), types.get(7));
-    assertEquals(BoolType.getInstance(), types.get(8));
+    assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(3)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(4)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(5)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(6)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(7)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(8)).isEqualTo(BoolType.getInstance());
   }
 
   public void testComparisonOps() {
@@ -331,10 +331,8 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
             "{$pf != $pf}"));
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
-    List<SoyType> types = getPrintStatementTypes(soyTree);
-    for (SoyType type : types) {
-      assertEquals(BoolType.getInstance(), type);
-    }
+    ImmutableSet<SoyType> types = ImmutableSet.copyOf(getPrintStatementTypes(soyTree));
+    assertThat(types).containsExactly(BoolType.getInstance());
   }
 
   public void testNullCoalescingAndConditionalOps() {
@@ -349,9 +347,11 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(UnknownType.getInstance(), types.get(0));
-    assertEquals(UnionType.of(IntType.getInstance(), FloatType.getInstance()), types.get(1));
-    assertEquals(UnionType.of(IntType.getInstance(), FloatType.getInstance()), types.get(2));
+    assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(1))
+        .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
+    assertThat(types.get(2))
+        .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
   }
 
   public void testListLiteral() {
@@ -365,9 +365,9 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(ListType.of(
-        UnionType.of(IntType.getInstance(), FloatType.getInstance())), types.get(0));
-    assertEquals(IntType.getInstance(), types.get(1));
+    assertThat(types.get(0))
+        .isEqualTo(ListType.of(UnionType.of(IntType.getInstance(), FloatType.getInstance())));
+    assertThat(types.get(1)).isEqualTo(IntType.getInstance());
   }
 
   public void testMapLiteral() {
@@ -380,9 +380,9 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(MapType.of(
-        IntType.getInstance(),
-        UnionType.of(IntType.getInstance(), FloatType.getInstance())), types.get(0));
+    assertThat(types.get(0))
+        .isEqualTo(MapType.of(
+            IntType.getInstance(), UnionType.of(IntType.getInstance(), FloatType.getInstance())));
   }
 
   public void testMapLiteralAsRecord() {
@@ -395,11 +395,9 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(RecordType.of(
-        ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(),
-            "b", FloatType.getInstance())),
-        types.get(0));
+    assertThat(types.get(0))
+        .isEqualTo(RecordType.of(ImmutableMap.<String, SoyType>of(
+            "a", IntType.getInstance(), "b", FloatType.getInstance())));
   }
 
   public void testDataFlowTypeNarrowing() {
@@ -456,22 +454,22 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(BoolType.getInstance(), types.get(0));
-    assertEquals(NullType.getInstance(), types.get(1));
-    assertEquals(BoolType.getInstance(), types.get(2));
-    assertEquals(boolOrNullType, types.get(3));
-    assertEquals(BoolType.getInstance(), types.get(4));
-    assertEquals(NullType.getInstance(), types.get(5));
-    assertEquals(boolOrNullType, types.get(6));
-    assertEquals(BoolType.getInstance(), types.get(7));
-    assertEquals(BoolType.getInstance(), types.get(8));
-    assertEquals(BoolType.getInstance(), types.get(9));
-    assertEquals(BoolType.getInstance(), types.get(10));
-    assertEquals(NullType.getInstance(), types.get(11));
-    assertEquals(NullType.getInstance(), types.get(12));
-    assertEquals(BoolType.getInstance(), types.get(13));
-    assertEquals(BoolType.getInstance(), types.get(14));
-    assertEquals(NullType.getInstance(), types.get(15));
+    assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(1)).isEqualTo(NullType.getInstance());
+    assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(3)).isEqualTo(boolOrNullType);
+    assertThat(types.get(4)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(5)).isEqualTo(NullType.getInstance());
+    assertThat(types.get(6)).isEqualTo(boolOrNullType);
+    assertThat(types.get(7)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(8)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(9)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(10)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(11)).isEqualTo(NullType.getInstance());
+    assertThat(types.get(12)).isEqualTo(NullType.getInstance());
+    assertThat(types.get(13)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(14)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(15)).isEqualTo(NullType.getInstance());
   }
 
   public void testDataFlowTypeNarrowingFailure() {
@@ -494,10 +492,10 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(boolOrNullType, types.get(0));
-    assertEquals(boolOrNullType, types.get(1));
-    assertEquals(boolOrNullType, types.get(2));
-    assertEquals(boolOrNullType, types.get(3));
+    assertThat(types.get(0)).isEqualTo(boolOrNullType);
+    assertThat(types.get(1)).isEqualTo(boolOrNullType);
+    assertThat(types.get(2)).isEqualTo(boolOrNullType);
+    assertThat(types.get(3)).isEqualTo(boolOrNullType);
   }
 
   public void testConditionalOperatorDataFlowTypeNarrowing() {
@@ -510,9 +508,9 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(BoolType.getInstance(), types.get(0));
-    assertEquals(BoolType.getInstance(), types.get(1));
-    assertEquals(BoolType.getInstance(), types.get(2));
+    assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
   }
 
   public void testInjectedParamTypes() {
@@ -524,10 +522,9 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertEquals(BoolType.getInstance(), types.get(0));
-    assertEquals(
-        UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()),
-        types.get(1));
+    assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(1))
+        .isEqualTo(UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()));
   }
 
   /**
@@ -560,7 +557,7 @@ public class ResolveExpressionTypesVisitorTest extends TestCase {
       createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
       fail("Expected SoySyntaxException");
     } catch (SoySyntaxException e) {
-      assertTrue(e.getMessage().contains(expectedError));
+      assertThat(e.getMessage()).contains(expectedError);
     }
   }
 

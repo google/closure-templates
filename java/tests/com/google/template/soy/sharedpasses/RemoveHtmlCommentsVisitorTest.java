@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -52,16 +54,16 @@ public class RemoveHtmlCommentsVisitorTest extends TestCase {
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
-    assertEquals(7, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(7);
 
     (new RemoveHtmlCommentsVisitor()).exec(soyTree);
 
     // After.
-    assertEquals(4, template.numChildren());
-    assertEquals("$boo", ((PrintNode) template.getChild(0)).getExprText());
-    assertEquals("Blah blah.", ((RawTextNode) template.getChild(1)).getRawText());
-    assertEquals("$boo", ((PrintNode) template.getChild(2)).getExprText());
-    assertEquals("$boo", ((PrintNode) template.getChild(3)).getExprText());
+    assertThat(template.numChildren()).isEqualTo(4);
+    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("$boo");
+    assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("Blah blah.");
+    assertThat(((PrintNode) template.getChild(2)).getExprText()).isEqualTo("$boo");
+    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$boo");
   }
 
 }

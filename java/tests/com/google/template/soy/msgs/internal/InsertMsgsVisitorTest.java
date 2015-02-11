@@ -16,6 +16,8 @@
 
 package com.google.template.soy.msgs.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.internal.base.Pair;
@@ -73,34 +75,34 @@ public class InsertMsgsVisitorTest extends TestCase {
             SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT));
 
     // Before.
-    assertEquals(5, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(5);
     MsgNode msg = ((MsgFallbackGroupNode) template.getChild(2)).getChild(0);
-    assertEquals(5, msg.numChildren());
+    assertThat(msg.numChildren()).isEqualTo(5);
     MsgHtmlTagNode msgHtmlTag2 =
         (MsgHtmlTagNode) ((MsgPlaceholderNode) msg.getChild(2)).getChild(0);
-    assertEquals(3, msgHtmlTag2.numChildren());
+    assertThat(msgHtmlTag2.numChildren()).isEqualTo(3);
     MsgHtmlTagNode msgHtmlTag4 =
         (MsgHtmlTagNode) ((MsgPlaceholderNode) msg.getChild(4)).getChild(0);
-    assertEquals(1, msgHtmlTag4.numChildren());
-    assertEquals("</a>", ((RawTextNode) msgHtmlTag4.getChild(0)).getRawText());
+    assertThat(msgHtmlTag4.numChildren()).isEqualTo(1);
+    assertThat(((RawTextNode) msgHtmlTag4.getChild(0)).getRawText()).isEqualTo("</a>");
 
     // Execute the visitor.
     (new InsertMsgsVisitor(null, true)).exec(template);
 
     // After.
-    assertEquals(12, template.numChildren());
-    assertEquals("$boo", ((PrintNode) template.getChild(0)).getExprText());
-    assertEquals("scary ", ((RawTextNode) template.getChild(1)).getRawText());
-    assertEquals("random", ((RawTextNode) template.getChild(2)).getRawText());
-    assertEquals("$foo", ((PrintNode) template.getChild(3)).getExprText());
-    assertEquals("<a href=\"", ((RawTextNode) template.getChild(4)).getRawText());
-    assertEquals("$goo", ((PrintNode) template.getChild(5)).getExprText());
-    assertEquals("\">", ((RawTextNode) template.getChild(6)).getRawText());
-    assertEquals("slimy", ((RawTextNode) template.getChild(7)).getRawText());
-    assertEquals("</a>", ((RawTextNode) template.getChild(8)).getRawText());
-    assertEquals(" ", ((RawTextNode) template.getChild(9)).getRawText());
-    assertEquals("dairy", ((RawTextNode) template.getChild(10)).getRawText());
-    assertEquals("$moo", ((PrintNode) template.getChild(11)).getExprText());
+    assertThat(template.numChildren()).isEqualTo(12);
+    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("$boo");
+    assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("scary ");
+    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("random");
+    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$foo");
+    assertThat(((RawTextNode) template.getChild(4)).getRawText()).isEqualTo("<a href=\"");
+    assertThat(((PrintNode) template.getChild(5)).getExprText()).isEqualTo("$goo");
+    assertThat(((RawTextNode) template.getChild(6)).getRawText()).isEqualTo("\">");
+    assertThat(((RawTextNode) template.getChild(7)).getRawText()).isEqualTo("slimy");
+    assertThat(((RawTextNode) template.getChild(8)).getRawText()).isEqualTo("</a>");
+    assertThat(((RawTextNode) template.getChild(9)).getRawText()).isEqualTo(" ");
+    assertThat(((RawTextNode) template.getChild(10)).getRawText()).isEqualTo("dairy");
+    assertThat(((PrintNode) template.getChild(11)).getExprText()).isEqualTo("$moo");
   }
 
 
@@ -111,16 +113,16 @@ public class InsertMsgsVisitorTest extends TestCase {
             SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT));
 
     // Before.
-    assertEquals(5, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(5);
     MsgNode msg = ((MsgFallbackGroupNode) template.getChild(2)).getChild(0);
-    assertEquals(5, msg.numChildren());
+    assertThat(msg.numChildren()).isEqualTo(5);
     MsgHtmlTagNode msgHtmlTag2 =
         (MsgHtmlTagNode) ((MsgPlaceholderNode) msg.getChild(2)).getChild(0);
-    assertEquals(3, msgHtmlTag2.numChildren());
+    assertThat(msgHtmlTag2.numChildren()).isEqualTo(3);
     MsgHtmlTagNode msgHtmlTag4 =
         (MsgHtmlTagNode) ((MsgPlaceholderNode) msg.getChild(4)).getChild(0);
-    assertEquals(1, msgHtmlTag4.numChildren());
-    assertEquals("</a>", ((RawTextNode) msgHtmlTag4.getChild(0)).getRawText());
+    assertThat(msgHtmlTag4.numChildren()).isEqualTo(1);
+    assertThat(((RawTextNode) msgHtmlTag4.getChild(0)).getRawText()).isEqualTo("</a>");
 
     // Build the translated message bundle.
     List<SoyMsg> translatedMsgs = Lists.newArrayList();
@@ -141,19 +143,19 @@ public class InsertMsgsVisitorTest extends TestCase {
     (new InsertMsgsVisitor(msgBundle, true)).exec(template);
 
     // After.
-    assertEquals(12, template.numChildren());
-    assertEquals("$boo", ((PrintNode) template.getChild(0)).getExprText());
-    assertEquals("scary ", ((RawTextNode) template.getChild(1)).getRawText());
-    assertEquals("<a href=\"", ((RawTextNode) template.getChild(2)).getRawText());
-    assertEquals("$goo", ((PrintNode) template.getChild(3)).getExprText());
-    assertEquals("\">", ((RawTextNode) template.getChild(4)).getRawText());
-    assertEquals("zslimy", ((RawTextNode) template.getChild(5)).getRawText());
-    assertEquals("</a>", ((RawTextNode) template.getChild(6)).getRawText());
-    assertEquals("$foo", ((PrintNode) template.getChild(7)).getExprText());
-    assertEquals("zrandom", ((RawTextNode) template.getChild(8)).getRawText());
-    assertEquals(" ", ((RawTextNode) template.getChild(9)).getRawText());
-    assertEquals("dairy", ((RawTextNode) template.getChild(10)).getRawText());
-    assertEquals("$moo", ((PrintNode) template.getChild(11)).getExprText());
+    assertThat(template.numChildren()).isEqualTo(12);
+    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("$boo");
+    assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("scary ");
+    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("<a href=\"");
+    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$goo");
+    assertThat(((RawTextNode) template.getChild(4)).getRawText()).isEqualTo("\">");
+    assertThat(((RawTextNode) template.getChild(5)).getRawText()).isEqualTo("zslimy");
+    assertThat(((RawTextNode) template.getChild(6)).getRawText()).isEqualTo("</a>");
+    assertThat(((PrintNode) template.getChild(7)).getExprText()).isEqualTo("$foo");
+    assertThat(((RawTextNode) template.getChild(8)).getRawText()).isEqualTo("zrandom");
+    assertThat(((RawTextNode) template.getChild(9)).getRawText()).isEqualTo(" ");
+    assertThat(((RawTextNode) template.getChild(10)).getRawText()).isEqualTo("dairy");
+    assertThat(((PrintNode) template.getChild(11)).getExprText()).isEqualTo("$moo");
   }
 
 
@@ -188,7 +190,7 @@ public class InsertMsgsVisitorTest extends TestCase {
             SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT));
 
     // Before.
-    assertEquals(2, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(2);
     MsgNode pluralMsg = ((MsgFallbackGroupNode) template.getChild(0)).getChild(0);
     MsgNode selectMsg = ((MsgFallbackGroupNode) template.getChild(1)).getChild(0);
     String beforePluralMsgSourceStr = pluralMsg.toSourceString();
@@ -198,11 +200,11 @@ public class InsertMsgsVisitorTest extends TestCase {
     (new InsertMsgsVisitor(null, true)).exec(template);
 
     // After. (Current implementation does not modify/replace plural/select messages.)
-    assertEquals(2, template.numChildren());
-    assertSame(pluralMsg, ((MsgFallbackGroupNode) template.getChild(0)).getChild(0));
-    assertSame(selectMsg, ((MsgFallbackGroupNode) template.getChild(1)).getChild(0));
-    assertEquals(beforePluralMsgSourceStr, pluralMsg.toSourceString());
-    assertEquals(beforeSelectMsgSourceStr, selectMsg.toSourceString());
+    assertThat(template.numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(0)).getChild(0)).isSameAs(pluralMsg);
+    assertThat(((MsgFallbackGroupNode) template.getChild(1)).getChild(0)).isSameAs(selectMsg);
+    assertThat(pluralMsg.toSourceString()).isEqualTo(beforePluralMsgSourceStr);
+    assertThat(selectMsg.toSourceString()).isEqualTo(beforeSelectMsgSourceStr);
   }
 
 
@@ -213,7 +215,7 @@ public class InsertMsgsVisitorTest extends TestCase {
             SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT));
 
     // Before.
-    assertEquals(2, template.numChildren());
+    assertThat(template.numChildren()).isEqualTo(2);
     MsgNode pluralMsg = ((MsgFallbackGroupNode) template.getChild(0)).getChild(0);
     MsgNode selectMsg = ((MsgFallbackGroupNode) template.getChild(1)).getChild(0);
     String beforePluralMsgSourceStr = pluralMsg.toSourceString();
@@ -270,11 +272,11 @@ public class InsertMsgsVisitorTest extends TestCase {
     (new InsertMsgsVisitor(msgBundle, true)).exec(template);
 
     // After. (Current implementation does not modify/replace plural/select messages.)
-    assertEquals(2, template.numChildren());
-    assertSame(pluralMsg, ((MsgFallbackGroupNode) template.getChild(0)).getChild(0));
-    assertSame(selectMsg, ((MsgFallbackGroupNode) template.getChild(1)).getChild(0));
-    assertEquals(beforePluralMsgSourceStr, pluralMsg.toSourceString());
-    assertEquals(beforeSelectMsgSourceStr, selectMsg.toSourceString());
+    assertThat(template.numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(0)).getChild(0)).isSameAs(pluralMsg);
+    assertThat(((MsgFallbackGroupNode) template.getChild(1)).getChild(0)).isSameAs(selectMsg);
+    assertThat(pluralMsg.toSourceString()).isEqualTo(beforePluralMsgSourceStr);
+    assertThat(selectMsg.toSourceString()).isEqualTo(beforeSelectMsgSourceStr);
   }
 
 
@@ -333,25 +335,25 @@ public class InsertMsgsVisitorTest extends TestCase {
             SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT));
 
     // Before.
-    assertEquals(6, template.numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(0)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(1)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(2)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(3)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(4)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(5)).numChildren());
+    assertThat(template.numChildren()).isEqualTo(6);
+    assertThat(((MsgFallbackGroupNode) template.getChild(0)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(1)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(2)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(3)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(4)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(5)).numChildren()).isEqualTo(2);
 
     // Execute the visitor.
     (new InsertMsgsVisitor(null, true)).exec(template);
 
     // After.
-    assertEquals(6, template.numChildren());
-    assertEquals("noTrans1", ((RawTextNode) template.getChild(0)).getRawText());
-    assertEquals("trans1", ((RawTextNode) template.getChild(1)).getRawText());
-    assertEquals("noTrans1", ((RawTextNode) template.getChild(2)).getRawText());
-    assertEquals("trans1", ((RawTextNode) template.getChild(3)).getRawText());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(4)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(5)).numChildren());
+    assertThat(template.numChildren()).isEqualTo(6);
+    assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("noTrans1");
+    assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("trans1");
+    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("noTrans1");
+    assertThat(((RawTextNode) template.getChild(3)).getRawText()).isEqualTo("trans1");
+    assertThat(((MsgFallbackGroupNode) template.getChild(4)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(5)).numChildren()).isEqualTo(2);
   }
 
 
@@ -363,13 +365,13 @@ public class InsertMsgsVisitorTest extends TestCase {
             SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT));
 
     // Before.
-    assertEquals(6, template.numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(0)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(1)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(2)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(3)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(4)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(5)).numChildren());
+    assertThat(template.numChildren()).isEqualTo(6);
+    assertThat(((MsgFallbackGroupNode) template.getChild(0)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(1)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(2)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(3)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(4)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(5)).numChildren()).isEqualTo(2);
 
     // Build the translated message bundle.
     List<SoyMsg> translatedMsgs = Lists.newArrayList();
@@ -389,13 +391,13 @@ public class InsertMsgsVisitorTest extends TestCase {
     (new InsertMsgsVisitor(msgBundle, true)).exec(template);
 
     // After.
-    assertEquals(6, template.numChildren());
-    assertEquals("noTrans1", ((RawTextNode) template.getChild(0)).getRawText());
-    assertEquals("ztrans1", ((RawTextNode) template.getChild(1)).getRawText());
-    assertEquals("ztrans2", ((RawTextNode) template.getChild(2)).getRawText());
-    assertEquals("ztrans1", ((RawTextNode) template.getChild(3)).getRawText());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(4)).numChildren());
-    assertEquals(2, ((MsgFallbackGroupNode) template.getChild(5)).numChildren());
+    assertThat(template.numChildren()).isEqualTo(6);
+    assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("noTrans1");
+    assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("ztrans1");
+    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("ztrans2");
+    assertThat(((RawTextNode) template.getChild(3)).getRawText()).isEqualTo("ztrans1");
+    assertThat(((MsgFallbackGroupNode) template.getChild(4)).numChildren()).isEqualTo(2);
+    assertThat(((MsgFallbackGroupNode) template.getChild(5)).numChildren()).isEqualTo(2);
   }
 
 }

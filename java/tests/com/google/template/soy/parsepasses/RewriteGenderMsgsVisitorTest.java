@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -45,9 +47,10 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
       SharedTestUtils.parseSoyCode(soyCode);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Cannot mix 'genders' attribute with 'select' command in the same message. Please use" +
-              " one or the other only."));
+      assertThat(sse.getMessage())
+          .contains(
+              "Cannot mix 'genders' attribute with 'select' command in the same message. Please use"
+              + " one or the other only.");
     }
   }
 
@@ -62,9 +65,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
       SharedTestUtils.parseSoyCode(soyCode);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Cannot generate noncolliding base names for msg placeholders and/or vars:" +
-              " found colliding expressions \"$gender\" and \"$userGender\"."));
+      assertThat(sse.getMessage())
+          .contains("Cannot generate noncolliding base names for msg placeholders and/or vars:"
+              + " found colliding expressions \"$gender\" and \"$userGender\".");
     }
   }
 
@@ -80,8 +83,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
       SharedTestUtils.parseSoyCode(soyCode);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Attribute 'genders' does not contain exactly 1-3 expressions"));
+      assertThat(sse.getMessage())
+          .contains("Attribute 'genders' does not contain exactly 1-3 expressions");
     }
   }
 
@@ -99,9 +102,10 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
       SharedTestUtils.parseSoyCode(soyCode);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions" +
-              " (otherwise, combinatorial explosion would cause a gigantic generated message)."));
+      assertThat(sse.getMessage())
+          .contains(
+              "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions"
+              + " (otherwise, combinatorial explosion would cause a gigantic generated message).");
     }
   }
 
@@ -118,9 +122,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
 
     // Before.
     MsgNode msgBeforeRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
-    assertEquals(
-        "{msg genders=\"$userGender\" desc=\"Button text.\"}Save",
-        msgBeforeRewrite.toSourceString());
+    assertThat(msgBeforeRewrite.toSourceString())
+        .isEqualTo("{msg genders=\"$userGender\" desc=\"Button text.\"}Save");
 
     // Rewrite.
     (new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator())).exec(soyTree);
@@ -145,9 +148,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "{/msg}\n";
     SoyFileSetNode soyTreeUsingSelect = SharedTestUtils.parseSoyCode(soyCodeUsingSelect);
     MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
-    assertEquals(
-        MsgUtils.computeMsgIdForDualFormat(msgUsingSelect),
-        MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite));
+    assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
+        .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
   }
 
 
@@ -163,10 +165,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
 
     // Before.
     MsgNode msgBeforeRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
-    assertEquals(
-        "{msg genders=\"$userGender\" desc=\"...\"}" +
-            "{plural $num}{case 1}Send it{default}Send {$num}{/plural}",
-        msgBeforeRewrite.toSourceString());
+    assertThat(msgBeforeRewrite.toSourceString())
+        .isEqualTo("{msg genders=\"$userGender\" desc=\"...\"}"
+            + "{plural $num}{case 1}Send it{default}Send {$num}{/plural}");
 
     // Rewrite.
     (new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator())).exec(soyTree);
@@ -195,9 +196,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "{/msg}\n";
     SoyFileSetNode soyTreeUsingSelect = SharedTestUtils.parseSoyCode(soyCodeUsingSelect);
     MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
-    assertEquals(
-        MsgUtils.computeMsgIdForDualFormat(msgUsingSelect),
-        MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite));
+    assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
+        .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
   }
 
 
@@ -213,10 +213,10 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
 
     // Before.
     MsgNode msgBeforeRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
-    assertEquals(
-        "{msg genders=\"$ij.userGender, $target[0].gender, $target[1].gender\" desc=\"...\"}" +
-            "You starred {$target[0].name}'s photo in {$target[1].name}'s album.",
-        msgBeforeRewrite.toSourceString());
+    assertThat(msgBeforeRewrite.toSourceString())
+        .isEqualTo(
+            "{msg genders=\"$ij.userGender, $target[0].gender, $target[1].gender\" desc=\"...\"}"
+            + "You starred {$target[0].name}'s photo in {$target[1].name}'s album.");
 
     // Rewrite.
     (new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator())).exec(soyTree);
@@ -253,7 +253,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
                 "{default}" + expectedInnerSelectSrc +
               "{/select}" +
           "{/select}";
-    assertEquals(expectedMsgSrc, msgAfterRewrite.toSourceString());
+    assertThat(msgAfterRewrite.toSourceString()).isEqualTo(expectedMsgSrc);
   }
 
 }

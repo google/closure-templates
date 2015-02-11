@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.internal;
 
+import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_16;
 
 import com.google.common.collect.ImmutableList;
@@ -72,34 +73,27 @@ public class SoyMsgIdComputerTest extends TestCase {
       RANDOM_GEN.nextBytes(bytes);
       String randomString = new String(bytes, 0, 10 + RANDOM_GEN.nextInt(10), UTF_16);
       long fp = SoyMsgIdComputer.fingerprint(randomString);
-      assertFalse(seenFps.contains(fp));
+      assertThat(seenFps).doesNotContain(fp);
       seenFps.add(fp);
     }
   }
 
 
   public void testBuildMsgContentStrForMsgIdComputation() {
+    assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_WORLD_MSG_PARTS, false))
+        .isEqualTo("Hello world!");
+    assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_WORLD_MSG_PARTS, true))
+        .isEqualTo("Hello world!");
 
-    assertEquals(
-        "Hello world!",
-        SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_WORLD_MSG_PARTS, false));
-    assertEquals(
-        "Hello world!",
-        SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_WORLD_MSG_PARTS, true));
+    assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_NAME_MSG_PARTS, false))
+        .isEqualTo("Hello NAME!");
+    assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_NAME_MSG_PARTS, true))
+        .isEqualTo("Hello {NAME}!");
 
-    assertEquals(
-        "Hello NAME!",
-        SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_NAME_MSG_PARTS, false));
-    assertEquals(
-        "Hello {NAME}!",
-        SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_NAME_MSG_PARTS, true));
-
-    assertEquals(
-        "{NUM_0,plural,=1{Once}few{NUM_1 times}other{Lots}}",
-        SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(PLURAL_MSG_PARTS, false));
-    assertEquals(
-        "{NUM_0,plural,=1{Once}few{{NUM_1} times}other{Lots}}",
-        SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(PLURAL_MSG_PARTS, true));
+    assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(PLURAL_MSG_PARTS, false))
+        .isEqualTo("{NUM_0,plural,=1{Once}few{NUM_1 times}other{Lots}}");
+    assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(PLURAL_MSG_PARTS, true))
+        .isEqualTo("{NUM_0,plural,=1{Once}few{{NUM_1} times}other{Lots}}");
   }
 
 
@@ -108,38 +102,34 @@ public class SoyMsgIdComputerTest extends TestCase {
     // Important: Do not change these hard-coded values. Changes to the algorithm will break
     // backwards compatibility.
 
-    assertEquals(
-        3022994926184248873L, SoyMsgIdComputer.computeMsgId(HELLO_WORLD_MSG_PARTS, null, null));
-    assertEquals(
-        3022994926184248873L,
-        SoyMsgIdComputer.computeMsgId(HELLO_WORLD_MSG_PARTS, null, "text/html"));
+    assertThat(SoyMsgIdComputer.computeMsgId(HELLO_WORLD_MSG_PARTS, null, null))
+        .isEqualTo(3022994926184248873L);
+    assertThat(SoyMsgIdComputer.computeMsgId(HELLO_WORLD_MSG_PARTS, null, "text/html"))
+        .isEqualTo(3022994926184248873L);
 
-    assertEquals(
-        6936162475751860807L, SoyMsgIdComputer.computeMsgId(HELLO_NAME_MSG_PARTS, null, null));
-    assertEquals(
-        6936162475751860807L,
-        SoyMsgIdComputer.computeMsgId(HELLO_NAME_MSG_PARTS, null, "text/html"));
+    assertThat(SoyMsgIdComputer.computeMsgId(HELLO_NAME_MSG_PARTS, null, null))
+        .isEqualTo(6936162475751860807L);
+    assertThat(SoyMsgIdComputer.computeMsgId(HELLO_NAME_MSG_PARTS, null, "text/html"))
+        .isEqualTo(6936162475751860807L);
 
-    assertEquals(
-        947930983556630648L, SoyMsgIdComputer.computeMsgId(PLURAL_MSG_PARTS, null, null));
-    assertEquals(
-        1429579464553183506L,
-        SoyMsgIdComputer.computeMsgIdUsingBracedPhs(PLURAL_MSG_PARTS, null, null));
+    assertThat(SoyMsgIdComputer.computeMsgId(PLURAL_MSG_PARTS, null, null))
+        .isEqualTo(947930983556630648L);
+    assertThat(SoyMsgIdComputer.computeMsgIdUsingBracedPhs(PLURAL_MSG_PARTS, null, null))
+        .isEqualTo(1429579464553183506L);
 
     ImmutableList<SoyMsgPart> archiveMsgParts =
         ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Archive"));
-    assertEquals(
-        7224011416745566687L, SoyMsgIdComputer.computeMsgId(archiveMsgParts, "noun", null));
-    assertEquals(
-        4826315192146469447L, SoyMsgIdComputer.computeMsgId(archiveMsgParts, "verb", null));
+    assertThat(SoyMsgIdComputer.computeMsgId(archiveMsgParts, "noun", null))
+        .isEqualTo(7224011416745566687L);
+    assertThat(SoyMsgIdComputer.computeMsgId(archiveMsgParts, "verb", null))
+        .isEqualTo(4826315192146469447L);
 
     ImmutableList<SoyMsgPart> unicodeMsgParts = ImmutableList.of(
         new SoyMsgPlaceholderPart("\u2222\uEEEE"), SoyMsgRawTextPart.of("\u9EC4\u607A"));
-    assertEquals(
-        7971596007260280311L, SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, null));
-    assertEquals(
-        5109146044343713753L,
-        SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, "application/javascript"));
+    assertThat(SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, null))
+        .isEqualTo(7971596007260280311L);
+    assertThat(SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, "application/javascript"))
+        .isEqualTo(5109146044343713753L);
   }
 
 }

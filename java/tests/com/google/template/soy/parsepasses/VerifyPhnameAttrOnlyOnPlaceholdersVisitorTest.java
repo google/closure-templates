@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -50,7 +52,7 @@ public class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
       (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains("Found 'phname' attribute not on a msg placeholder"));
+      assertThat(sse.getMessage()).contains("Found 'phname' attribute not on a msg placeholder");
     }
   }
 

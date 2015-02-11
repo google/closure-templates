@@ -17,6 +17,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.Maps;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -98,11 +100,11 @@ public class V1JsExprTranslatorTest extends TestCase {
       throws Exception {
 
     JsExpr actualJsExpr = V1JsExprTranslator.translateToJsExpr(soyExpr, LOCAL_VAR_TRANSLATIONS);
-    assertEquals(expectedJsExpr.getText(), actualJsExpr.getText());
+    assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
     if (shouldBeLenient) {
-      assertTrue(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence());
+      assertThat(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence()).isTrue();
     } else {
-      assertEquals(expectedJsExpr.getPrecedence(), actualJsExpr.getPrecedence());
+      assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
     }
   }
 

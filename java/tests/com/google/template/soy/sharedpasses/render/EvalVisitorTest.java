@@ -17,8 +17,9 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -113,7 +114,7 @@ public class EvalVisitorTest extends TestCase {
    * @throws Exception If the assertion is not true or if there's an error.
    */
   private void assertEval(String expression, boolean result) throws Exception {
-    assertEquals(result, eval(expression).booleanValue());
+    assertThat(eval(expression).booleanValue()).isEqualTo(result);
   }
 
 
@@ -124,7 +125,7 @@ public class EvalVisitorTest extends TestCase {
    * @throws Exception If the assertion is not true or if there's an error.
    */
   private void assertEval(String expression, long result) throws Exception {
-    assertEquals(result, eval(expression).longValue());
+    assertThat(eval(expression).longValue()).isEqualTo(result);
   }
 
 
@@ -135,7 +136,7 @@ public class EvalVisitorTest extends TestCase {
    * @throws Exception If the assertion is not true or if there's an error.
    */
   private void assertEval(String expression, double result) throws Exception {
-    assertEquals(result, eval(expression).floatValue());
+    assertThat(eval(expression).floatValue()).isEqualTo(result);
   }
 
 
@@ -146,7 +147,7 @@ public class EvalVisitorTest extends TestCase {
    * @throws Exception If the assertion is not true or if there's an error.
    */
   private void assertEval(String expression, String result) throws Exception {
-    assertEquals(result, eval(expression).stringValue());
+    assertThat(eval(expression).stringValue()).isEqualTo(result);
   }
 
 
@@ -164,7 +165,7 @@ public class EvalVisitorTest extends TestCase {
 
     } catch (ParseException pe) {
       if (errorMsgSubstring != null) {
-        assertTrue(pe.getMessage().contains(errorMsgSubstring));
+        assertThat(pe.getMessage()).contains(errorMsgSubstring);
       }
       // Test passes.
     }
@@ -185,7 +186,7 @@ public class EvalVisitorTest extends TestCase {
 
     } catch (RenderException re) {
       if (errorMsgSubstring != null) {
-        assertTrue(re.getMessage().contains(errorMsgSubstring));
+        assertThat(re.getMessage()).contains(errorMsgSubstring);
       }
       // Test passes.
     }
@@ -206,7 +207,7 @@ public class EvalVisitorTest extends TestCase {
 
     } catch (SoyDataException e) {
       if (errorMsgSubstring != null) {
-        assertTrue(e.getMessage().contains(errorMsgSubstring));
+        assertThat(e.getMessage()).contains(errorMsgSubstring);
       }
       // Test passes.
     }
@@ -218,8 +219,7 @@ public class EvalVisitorTest extends TestCase {
 
 
   public void testEvalPrimitives() throws Exception {
-
-    assertTrue(eval("null") instanceof NullData);
+    assertThat(eval("null")).isInstanceOf(NullData.class);
     assertEval("true", true);
     assertEval("false", false);
     assertEval("26", 26);
@@ -231,19 +231,19 @@ public class EvalVisitorTest extends TestCase {
   public void testEvalListLiteral() throws Exception {
 
     SoyList result = (SoyList) eval("['blah', 123, $boo]");
-    assertEquals(3, result.length());
-    assertEquals("blah", result.get(0).stringValue());
-    assertEquals(123, result.get(1).integerValue());
-    assertEquals(8, result.get(2).integerValue());
+    assertThat(result.length()).isEqualTo(3);
+    assertThat(result.get(0).stringValue()).isEqualTo("blah");
+    assertThat(result.get(1).integerValue()).isEqualTo(123);
+    assertThat(result.get(2).integerValue()).isEqualTo(8);
 
     result = (SoyList) eval("['blah', 123, $boo,]");  // trailing comma
-    assertEquals(3, result.length());
-    assertEquals("blah", result.get(0).stringValue());
-    assertEquals(123, result.get(1).integerValue());
-    assertEquals(8, result.get(2).integerValue());
+    assertThat(result.length()).isEqualTo(3);
+    assertThat(result.get(0).stringValue()).isEqualTo("blah");
+    assertThat(result.get(1).integerValue()).isEqualTo(123);
+    assertThat(result.get(2).integerValue()).isEqualTo(8);
 
     result = (SoyList) eval("[]");
-    assertEquals(0, result.length());
+    assertThat(result.length()).isEqualTo(0);
 
     assertParseException("[,]", null);
   }
@@ -252,28 +252,28 @@ public class EvalVisitorTest extends TestCase {
   public void testEvalMapLiteral() throws Exception {
 
     SoyDict result = (SoyDict) eval("[:]");
-    assertEquals(0, Iterables.size(result.getItemKeys()));
+    assertThat(result.getItemKeys()).isEmpty();
 
     result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]");
-    assertEquals(3, Iterables.size(result.getItemKeys()));
-    assertEquals("blah", result.getField("aaa").stringValue());
-    assertEquals(123, result.getField("bbb").integerValue());
-    assertEquals(8, result.getField("baz").integerValue());
+    assertThat(result.getItemKeys()).hasSize(3);
+    assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
+    assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
+    assertThat(result.getField("baz").integerValue()).isEqualTo(8);
 
     result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]");  // trailing comma
-    assertEquals(3, Iterables.size(result.getItemKeys()));
-    assertEquals("blah", result.getField("aaa").stringValue());
-    assertEquals(123, result.getField("bbb").integerValue());
-    assertEquals(8, result.getField("baz").integerValue());
+    assertThat(result.getItemKeys()).hasSize(3);
+    assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
+    assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
+    assertThat(result.getField("baz").integerValue()).isEqualTo(8);
 
     result = (SoyDict) eval("quoteKeysIfJs([:])");
-    assertEquals(0, Iterables.size(result.getItemKeys()));
+    assertThat(result.getItemKeys()).isEmpty();
 
     result = (SoyDict) eval("quoteKeysIfJs( ['aaa': 'blah', 'bbb': 123, $foo.bar: $boo] )");
-    assertEquals(3, Iterables.size(result.getItemKeys()));
-    assertEquals("blah", result.getField("aaa").stringValue());
-    assertEquals(123, result.getField("bbb").integerValue());
-    assertEquals(8, result.getField("baz").integerValue());
+    assertThat(result.getItemKeys()).hasSize(3);
+    assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
+    assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
+    assertThat(result.getField("baz").integerValue()).isEqualTo(8);
 
     assertParseException("[:,]", null);
     assertParseException("[,:]", null);
@@ -288,7 +288,7 @@ public class EvalVisitorTest extends TestCase {
 
     // Test last value overwrites earlier value for the same key.
     result = (SoyDict) eval("['baz': 'blah', $foo.bar: 'bluh']");
-    assertEquals("bluh", result.getField("baz").stringValue());
+    assertThat(result.getField("baz").stringValue()).isEqualTo("bluh");
   }
 
 
@@ -305,18 +305,18 @@ public class EvalVisitorTest extends TestCase {
     assertEval("$ij.ijInt", 26);
     assertEval("$ij.ijStr", "injected");
 
-    assertTrue(eval("$too") instanceof UndefinedData);
-    assertTrue(eval("$foo.too") instanceof UndefinedData);
-    assertTrue(eval("$foo.goo2.22") instanceof UndefinedData);
-    assertTrue(eval("$ij.boo") instanceof UndefinedData);
+    assertThat(eval("$too")).isInstanceOf(UndefinedData.class);
+    assertThat(eval("$foo.too")).isInstanceOf(UndefinedData.class);
+    assertThat(eval("$foo.goo2.22")).isInstanceOf(UndefinedData.class);
+    assertThat(eval("$ij.boo")).isInstanceOf(UndefinedData.class);
 
     // TODO: If enabling exception for undefined LHS (see EvalVisitor), uncomment tests below.
     //assertRenderException(
     //    "$foo.bar.moo.tar", "encountered undefined LHS just before accessing \".tar\"");
-    assertTrue(eval("$foo.bar.moo.tar") instanceof UndefinedData);
+    assertThat(eval("$foo.bar.moo.tar")).isInstanceOf(UndefinedData.class);
     //assertRenderException(
     //    "$foo.baz.moo.tar", "encountered undefined LHS just before accessing \".moo\"");
-    assertTrue(eval("$foo.baz.moo.tar") instanceof UndefinedData);
+    assertThat(eval("$foo.baz.moo.tar")).isInstanceOf(UndefinedData.class);
     assertRenderException("$boo?.2", "encountered non-map/list just before accessing \"?.2\"");
     assertRenderException(
         "$boo?['xyz']", "encountered non-map/list just before accessing \"?['xyz']\"");
@@ -328,16 +328,16 @@ public class EvalVisitorTest extends TestCase {
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type" +
             " com.google.template.soy.data.restricted.IntegerData).");
-    assertTrue(eval("$moo.too") instanceof UndefinedData);
+    assertThat(eval("$moo.too")).isInstanceOf(UndefinedData.class);
     //assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
-    assertTrue(eval("$roo.too") instanceof UndefinedData);
+    assertThat(eval("$roo.too")).isInstanceOf(UndefinedData.class);
     //assertRenderException("$roo[2]", "encountered undefined LHS just before accessing \"[2]\"");
-    assertTrue(eval("$roo[2]") instanceof UndefinedData);
-    assertTrue(eval("$ij.ijInt.boo") instanceof UndefinedData);
+    assertThat(eval("$roo[2]")).isInstanceOf(UndefinedData.class);
+    assertThat(eval("$ij.ijInt.boo")).isInstanceOf(UndefinedData.class);
     //assertRenderException(
     //    "$ij.ijZoo.boo", "encountered undefined LHS just before accessing \".boo\"");
-    assertTrue(eval("$ij.ijZoo.boo") instanceof UndefinedData);
+    assertThat(eval("$ij.ijZoo.boo")).isInstanceOf(UndefinedData.class);
   }
 
 
@@ -347,7 +347,7 @@ public class EvalVisitorTest extends TestCase {
     // wrong type.
     assertRenderException(
         "$foo?.bar?.moo.tar", "encountered non-record just before accessing \"?.moo\"");
-    assertTrue(eval("$foo?.baz?.moo.tar") instanceof NullData);
+    assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(NullData.class);
     assertDataException(
         "$foo.2",
         "SoyDict accessed with non-string key (got key type" +
@@ -358,11 +358,11 @@ public class EvalVisitorTest extends TestCase {
             " com.google.template.soy.data.restricted.IntegerData).");
     assertRenderException(
         "$moo?.too", "encountered non-record just before accessing \"?.too\"");
-    assertTrue(eval("$roo?.too") instanceof NullData);
-    assertTrue(eval("$roo?[2]") instanceof NullData);
+    assertThat(eval("$roo?.too")).isInstanceOf(NullData.class);
+    assertThat(eval("$roo?[2]")).isInstanceOf(NullData.class);
     assertRenderException(
         "$ij.ijInt?.boo", "encountered non-record just before accessing \"?.boo\"");
-    assertTrue(eval("$ij.ijZoo?.boo") instanceof NullData);
+    assertThat(eval("$ij.ijZoo?.boo")).isInstanceOf(NullData.class);
   }
 
 
