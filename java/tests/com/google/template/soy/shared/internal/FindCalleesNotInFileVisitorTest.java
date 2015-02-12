@@ -65,7 +65,7 @@ public class FindCalleesNotInFileVisitorTest extends TestCase {
         "{/deltemplate}\n";
 
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
     SoyFileNode soyFile = soyTree.getChild(0);
 
     Set<String> calleesNotInFile = (new FindCalleesNotInFileVisitor()).exec(soyFile);

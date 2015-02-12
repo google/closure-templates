@@ -17,7 +17,6 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -63,8 +62,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SoyFileSetParser {
-
+public final class SoyFileSetParser {
 
   /** The type registry to resolve type names. */
   private final SoyTypeRegistry typeRegistry;
@@ -87,6 +85,8 @@ public class SoyFileSetParser {
   /** Whether to check overrides. */
   private boolean doCheckOverrides;
 
+  /** For reporting parse errors. */
+  private final ErrorManager errorManager = new ErrorManagerImpl();
 
   /**
    * @param typeRegistry The type registry to resolve type names.
@@ -164,13 +164,10 @@ public class SoyFileSetParser {
 
 
   /**
-   * Parses a set of Soy files and returns the parse tree.
-   *
-   * @return The resulting parse tree.
-   * @throws SoySyntaxException If there is an error reading the file or a syntax error is found.
+   * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
-  public SoyFileSetNode parse() throws SoySyntaxException {
-    return parseWithVersions().first;
+  public ParseResult<SoyFileSetNode> parse() {
+    return parseWithVersions();
   }
 
 
@@ -188,21 +185,15 @@ public class SoyFileSetParser {
 
 
   /**
-   * Parses a set of Soy files and returns the parse tree and versions of the files.
-   *
-   * @return The resulting parse tree and the versions of the files read.
-   * @throws SoySyntaxException If there is an error reading the file or a syntax error is found.
+   * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
-  public Pair<SoyFileSetNode, List<SoyFileSupplier.Version>> parseWithVersions()
-      throws SoySyntaxException {
-
+  private ParseResult<SoyFileSetNode> parseWithVersions() {
     Preconditions.checkState((cache == null) || (doRunInitialParsingPasses && doRunCheckingPasses),
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
             "caching inconsistent versions");
     IdGenerator nodeIdGen =
         (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    ImmutableList.Builder<SoyFileSupplier.Version> versions = ImmutableList.builder();
 
     for (SoyFileSupplier soyFileSupplier : soyFileSuppliers) {
       Pair<SoyFileNode, SoyFileSupplier.Version> fileAndVersion =
@@ -210,10 +201,22 @@ public class SoyFileSetParser {
       if (fileAndVersion == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
         synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
-          fileAndVersion = parseSoyFileHelper(soyFileSupplier, nodeIdGen, typeRegistry);
+          Pair<ParseResult<SoyFileNode>, SoyFileSupplier.Version> result = parseSoyFileHelper(
+              soyFileSupplier, nodeIdGen, typeRegistry, errorManager);
+          ParseResult<SoyFileNode> parseResult = result.getFirst();
+
+          // TODO(user): implement error recovery and keep on trucking in order to display
+          // as many errors as possible. Currently, the later passes just spew NPEs if run on
+          // a malformed parse tree.
+          if (!parseResult.isSuccess()) {
+            return new ParseResult<>(soyTree, parseResult.getParseErrors());
+          }
+
+          SoyFileSupplier.Version version = result.getSecond();
+          fileAndVersion = new Pair<>(parseResult.getParseTree(), version);
           if (doRunInitialParsingPasses) {
             // Run passes that are considered part of initial parsing.
-            runSingleFileParsingPasses(fileAndVersion.first, nodeIdGen);
+            runSingleFileParsingPasses(parseResult.getParseTree(), nodeIdGen);
           }
         }
         if (doRunCheckingPasses) {
@@ -224,8 +227,9 @@ public class SoyFileSetParser {
           cache.put(soyFileSupplier, fileAndVersion.second, fileAndVersion.first);
         }
       }
-      soyTree.addChild(fileAndVersion.first);
-      versions.add(fileAndVersion.second);
+      if (fileAndVersion.first != null) {
+        soyTree.addChild(fileAndVersion.first);
+      }
     }
 
     // Run passes that check the tree.
@@ -233,7 +237,7 @@ public class SoyFileSetParser {
       runWholeFileSetCheckingPasses(soyTree);
     }
 
-    return Pair.of(soyTree, (List<SoyFileSupplier.Version>) versions.build());
+    return new ParseResult<>(soyTree, errorManager.getErrors());
   }
 
 
@@ -243,45 +247,42 @@ public class SoyFileSetParser {
    * @param soyFileSupplier Supplier of the Soy file content and path.
    * @param nodeIdGen The generator of node ids.
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
-   * @throws SoySyntaxException If there is an error reading the file or a syntax error is found.
+   * TODO(brndn): This method should just return a {@link ParseResult} that includes the version.
    */
-  private static Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
-      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
-      throws SoySyntaxException {
+  private static Pair<ParseResult<SoyFileNode>, SoyFileSupplier.Version> parseSoyFileHelper(
+      SoyFileSupplier soyFileSupplier,
+      IdGenerator nodeIdGen,
+      SoyTypeRegistry typeRegistry,
+      ErrorManager errorManager) {
 
     String filePath = soyFileSupplier.getFilePath();
 
-    Reader soyFileReader;
-    SoyFileSupplier.Version version;
+    Reader soyFileReader = null;
+    SoyFileSupplier.Version version = null;
     try {
       Pair<Reader, SoyFileSupplier.Version> readerAndVersion = soyFileSupplier.open();
       soyFileReader = readerAndVersion.first;
       version = readerAndVersion.second;
     } catch (IOException ioe) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Error opening Soy file " + filePath + ": " + ioe);
+      errorManager.report(SoySyntaxException.createWithoutMetaInfo(
+          "Error opening Soy file " + filePath + ": " + ioe));
     }
 
-    try {
-      SoyFileNode soyFile = (new SoyFileParser(
-          typeRegistry, nodeIdGen, soyFileReader, soyFileSupplier.getSoyFileKind(), filePath))
-          .parseSoyFile();
-      if (soyFileSupplier.hasChangedSince(version)) {
-        throw SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath);
-      }
-      return Pair.of(soyFile, version);
+    ParseResult<SoyFileNode> result = new SoyFileParser(
+        typeRegistry,
+        nodeIdGen,
+        soyFileReader,
+        soyFileSupplier.getSoyFileKind(),
+        filePath,
+        errorManager)
+        .parseSoyFile();
+    if (soyFileSupplier.hasChangedSince(version)) {
+      errorManager.report(
+          SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath));
+    }
 
-    } catch (TokenMgrError tme) {
-      throw SoySyntaxException.createCausedWithMetaInfo(
-          null, tme, null, soyFileSupplier.getFilePath(), null);
-    } catch (ParseException pe) {
-      throw SoySyntaxException.createCausedWithMetaInfo(
-          null, pe, null, soyFileSupplier.getFilePath(), null);
-    } catch (SoySyntaxException sse) {
-      throw sse.associateMetaInfo(null, soyFileSupplier.getFilePath(), null);
-
-    } finally {
-      // Close the Reader.
+    // Close the Reader.
+    if (soyFileReader != null) {
       try {
         soyFileReader.close();
       } catch (IOException ioe) {
@@ -290,6 +291,8 @@ public class SoyFileSetParser {
             "Error closing Soy file " + soyFileSupplier.getFilePath() + ": " + ioe);
       }
     }
+
+    return Pair.of(result, version);
   }
 
 

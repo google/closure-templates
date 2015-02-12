@@ -114,8 +114,11 @@ public class PreevalVisitorTest extends TestCase {
    */
   private static SoyValue preeval(String expression) throws Exception {
     PrintNode code =
-        (PrintNode) SharedTestUtils.parseSoyCode("{" + expression + "}").getChild(0).getChild(0)
-        .getChild(0);
+        (PrintNode) SharedTestUtils.parseSoyCode("{" + expression + "}")
+            .getParseTree()
+            .getChild(0)
+            .getChild(0)
+            .getChild(0);
     ExprRootNode<?> expr = code.getExprUnion().getExpr();
     PreevalVisitor preevalVisitor =
         INJECTOR.getInstance(PreevalVisitorFactory.class).create(

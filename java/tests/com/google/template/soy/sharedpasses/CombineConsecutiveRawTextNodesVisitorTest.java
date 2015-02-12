@@ -29,7 +29,7 @@ import junit.framework.TestCase;
  * Unit tests for CombineConsecutiveRawTextNodesVisitor.
  *
  */
-public class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
+public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
 
 
   public void testCombineConsecutiveRawTextNodes() {
@@ -42,7 +42,7 @@ public class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
         "  Blah{$goo}blah\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
     template.addChild(new RawTextNode(0, "bleh"));
     template.addChild(new RawTextNode(0, "bluh"));

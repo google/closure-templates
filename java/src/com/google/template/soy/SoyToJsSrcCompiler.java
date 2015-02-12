@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SoySyntaxException;
@@ -297,15 +298,20 @@ public final class SoyToJsSrcCompiler {
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
 
     // Compile.
-    if (locales.isEmpty()) {
-      // Not generating localized JS.
-      sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
+    boolean generateLocalizedJs = !locales.isEmpty();
+    CompilationResult result = generateLocalizedJs
+        ? sfs.compileToJsSrcFiles(
+            outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat)
+        : sfs.compileToJsSrcFiles(
+            outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
 
-    } else {
-      // Generating localized JS.
-      sfs.compileToJsSrcFiles(
-          outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat);
+    if (!result.isSuccess()) {
+      ImmutableCollection<? extends SoySyntaxException> errors = result.getErrors();
+      System.err.printf("%d errors:%n", errors.size());
+      for (SoySyntaxException e : errors) {
+        System.err.println(e.getMessage());
+      }
+      System.exit(1);
     }
   }
-
 }

@@ -39,7 +39,7 @@ import junit.framework.TestCase;
  * Unit tests for MoveGoogMsgDefNodesEarlierVisitor.
  *
  */
-public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
+public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
 
 
   public void testBasic() {
@@ -51,7 +51,7 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
         "{$goo}\n" +
         "{msg desc=\"msg3\"}blah{/msg}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
@@ -87,7 +87,7 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
         "  {msg desc=\"msg6\"}blah{/msg}\n" +
         "{/if}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
@@ -143,7 +143,7 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
         "    {msg desc=\"msg6\"}blah{/msg}\n" +
         "{/switch}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
@@ -197,7 +197,7 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
         "  {msg desc=\"msg6\"}blah{/msg}\n" +
         "{/foreach}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
@@ -245,7 +245,7 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
         "  {msg desc=\"msg4\"}{$i}{/msg}\n" +  // dep on $i
         "{/for}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
@@ -291,7 +291,7 @@ public class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
         "{/if}\n" +
         "{msg desc=\"msg9\"}{$goo}{/msg}\n";  // dep on $goo (irrelevant)
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 

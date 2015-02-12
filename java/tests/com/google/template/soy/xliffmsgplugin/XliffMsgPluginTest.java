@@ -50,11 +50,13 @@ public class XliffMsgPluginTest extends TestCase {
   public void testGenerateExtractedMsgsFile() throws Exception {
 
     URL testSoyFile = Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2.soy");
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(
-            new SoyTypeRegistry(), null, SyntaxVersion.V2_0,
-            SoyFileSupplier.Factory.create(testSoyFile, SoyFileKind.SRC)))
-            .parse();
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        new SoyTypeRegistry(),
+        null,
+        SyntaxVersion.V2_0,
+        SoyFileSupplier.Factory.create(testSoyFile, SoyFileKind.SRC))
+        .parse()
+        .getParseTree();
     SoyMsgBundle msgBundle = (new ExtractMsgsVisitor()).exec(soyTree);
 
     XliffMsgPlugin msgPlugin = new XliffMsgPlugin();

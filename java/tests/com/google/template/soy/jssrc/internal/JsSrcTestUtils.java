@@ -23,6 +23,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
+import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -90,11 +91,10 @@ class JsSrcTestUtils {
    * @param soyCode The code to parse as the full body of a template.
    * @return The resulting parse tree.
    */
-  public static SoyFileSetNode parseSoyCode(String soyCode) {
-
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode);
-    (new ReplaceMsgsWithGoogMsgsVisitor()).exec(soyTree);
-    return soyTree;
+  static ParseResult<SoyFileSetNode> parseSoyCode(String soyCode) {
+    ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(soyCode);
+    (new ReplaceMsgsWithGoogMsgsVisitor()).exec(result.getParseTree());
+    return result;
   }
 
 
@@ -110,9 +110,13 @@ class JsSrcTestUtils {
    *     first child of the template, simply pass a single 0.
    * @return The desired node in the resulting template parse tree.
    */
-  public static SoyNode parseSoyCodeAndGetNode(String soyCode, int... indicesToNode) {
-
-    return SharedTestUtils.getNode(parseSoyCode(soyCode), indicesToNode);
+  static ParseResult<SoyNode> parseSoyCodeAndGetNode(String soyCode, int... indicesToNode) {
+    ParseResult<SoyFileSetNode> result = parseSoyCode(soyCode);
+    if (!result.isSuccess()) {
+      return new ParseResult<>(null, result.getParseErrors());
+    }
+    SoyNode node = SharedTestUtils.getNode(result.getParseTree(), indicesToNode);
+    return new ParseResult<>(node, result.getParseErrors());
   }
 
 }

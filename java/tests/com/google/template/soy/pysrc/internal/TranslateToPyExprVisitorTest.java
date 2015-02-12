@@ -25,6 +25,7 @@ import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -168,12 +169,14 @@ public class TranslateToPyExprVisitorTest extends TestCase {
    */
   private void assertTranslation(String soyExpr, PyExpr expectedPyExpr,
       Class<? extends PyExpr> expectedClass) throws Exception {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
+    ParseResult<SoyFileSetNode> parseResult = SharedTestUtils.parseSoyFiles(
         "{namespace ns autoescape=\"strict\"}\n" +
         "/***/\n" +
         "{template .aaa}\n" +
         "{print \n" + soyExpr + "}\n" +
         "{/template}\n");
+    assertTrue(parseResult.isSuccess());
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
 

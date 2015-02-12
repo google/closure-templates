@@ -17,10 +17,14 @@
 package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
@@ -65,6 +69,7 @@ import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.Tr
 import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
+import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -671,19 +676,24 @@ public final class SoyFileSet {
    * @return A map from generated file name (of the form "<*>SoyInfo.java") to generated file
    *     content.
    * @throws SoySyntaxException If a syntax error is found.
+   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
+   * can inspect.
    */
   ImmutableMap<String, String> generateParseInfo(
       String javaPackage, String javaClassNameSource) throws SoySyntaxException {
 
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-            .parse();
+    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+        .parse();
+    if (!parseResult.isSuccess()) {
+      throw compositeException(parseResult.getParseErrors());
+    }
 
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     // Do renaming of package-relative class names.
     new ResolvePackageRelativeCssNamesVisitor().exec(soyTree);
-
     return (new GenerateParseInfoVisitor(javaPackage, javaClassNameSource)).exec(soyTree);
   }
 
@@ -702,11 +712,15 @@ public final class SoyFileSet {
     // Override the type registry with a version that simply returns unknown
     // for any named type.
     SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-            .setDoCheckOverrides(false)
-            .parse();
+    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+        .setDoCheckOverrides(false)
+        .parse();
+    if (!parseResult.isSuccess()) {
+      throw compositeException(parseResult.getParseErrors());
+    }
 
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     return (new ExtractMsgsVisitor()).exec(soyTree);
   }
 
@@ -722,6 +736,8 @@ public final class SoyFileSet {
    *
    * @param origTransMsgBundle The message bundle to prune.
    * @return The pruned message bundle.
+   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
+   * can inspect.
    */
   public SoyMsgBundle pruneTranslatedMsgs(SoyMsgBundle origTransMsgBundle)
       throws SoySyntaxException {
@@ -735,11 +751,15 @@ public final class SoyFileSet {
       SyntaxVersion declaredSyntaxVersion =
           generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V1_0);
       SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
-      SoyFileSetNode soyTree =
-          (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-              .setDoCheckOverrides(false)
-              .parse();
+      ParseResult<SoyFileSetNode> parseResult= new SoyFileSetParser(
+          typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+          .setDoCheckOverrides(false)
+          .parse();
+      if (!parseResult.isSuccess()) {
+        throw compositeException(parseResult.getParseErrors());
+      }
 
+      SoyFileSetNode soyTree = parseResult.getParseTree();
       List<TemplateNode> allPublicTemplates = Lists.newArrayList();
       for (SoyFileNode soyFile : soyTree.getChildren()) {
         for (TemplateNode template : soyFile.getChildren()) {
@@ -799,6 +819,8 @@ public final class SoyFileSet {
    * @param tofuOptions The compilation options for the Tofu backend.
    * @return The resulting {@code SoyTofu} object.
    * @throws SoySyntaxException If a syntax error is found.
+   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
+   * can inspect.
    */
   public SoyTofu compileToTofu(SoyTofuOptions tofuOptions) throws SoySyntaxException {
 
@@ -808,9 +830,14 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-            .parse();
+    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+        .parse();
+    if (!parseResult.isSuccess()) {
+      throw compositeException(parseResult.getParseErrors());
+    }
+
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     // If allowExternalCalls is not explicitly set, then disallow by default for Tofu backend.
@@ -856,6 +883,8 @@ public final class SoyFileSet {
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoySyntaxException If a syntax error is found.
+   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
+   * can inspect.
    */
   @SuppressWarnings("deprecation")
   public List<String> compileToJsSrc(SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle)
@@ -868,9 +897,14 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-            .parse();
+    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+        .parse();
+    if (!parseResult.isSuccess()) {
+      throw compositeException(parseResult.getParseErrors());
+    }
+
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     return jsSrcMainProvider.get().genJsSrc(soyTree, jsSrcOptions, msgBundle);
@@ -891,7 +925,7 @@ public final class SoyFileSet {
    *     an output JS file.
    */
   @SuppressWarnings("deprecation")
-  void compileToJsSrcFiles(
+  CompilationResult compileToJsSrcFiles(
       String outputPathFormat, String inputFilePathPrefix, SoyJsSrcOptions jsSrcOptions,
       List<String> locales, @Nullable String messageFilePathFormat)
       throws SoySyntaxException, IOException {
@@ -903,9 +937,15 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-            .parse();
+    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+        .parse();
+
+    if (!parseResult.isSuccess()) {
+      return new CompilationResult(parseResult.getParseErrors());
+    }
+
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     if (locales.isEmpty()) {
@@ -937,6 +977,7 @@ public final class SoyFileSet {
             soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
       }
     }
+    return new CompilationResult(ImmutableList.<SoySyntaxException>of());
   }
 
 
@@ -952,20 +993,27 @@ public final class SoyFileSet {
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  void compileToPySrcFiles(
+  CompilationResult compileToPySrcFiles(
       String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
       throws SoySyntaxException, IOException {
 
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
 
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers))
-            .parse();
+    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+        .parse();
+    if (!parseResult.isSuccess()) {
+      return new CompilationResult(parseResult.getParseErrors());
+    }
+
+    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     pySrcMainProvider.get().genPyFiles(
         soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
+
+    return new CompilationResult(ImmutableList.<SoySyntaxException>of());
   }
 
 
@@ -1063,5 +1111,17 @@ public final class SoyFileSet {
           return UnknownType.getInstance();
         }
       }));
+  }
+
+  private static SoySyntaxException compositeException(
+      ImmutableCollection<? extends SoySyntaxException> exceptions) {
+    String compositeMessage = Joiner.on('\n').join(Iterables.transform(exceptions,
+        new Function<SoySyntaxException, String>() {
+          @Override
+          public String apply(SoySyntaxException e) {
+            return e.getMessage() != null ? e.getMessage() : "";
+          }
+        }));
+    return SoySyntaxException.createWithoutMetaInfo(compositeMessage);
   }
 }

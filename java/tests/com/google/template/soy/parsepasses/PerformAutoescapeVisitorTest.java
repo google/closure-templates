@@ -276,7 +276,7 @@ public class PerformAutoescapeVisitorTest extends TestCase {
         testPrintTags + "\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
     SoyFileNode soyFile = soyTree.getChild(0);
 
     List<PrintNode> printNodes = Lists.newArrayList();

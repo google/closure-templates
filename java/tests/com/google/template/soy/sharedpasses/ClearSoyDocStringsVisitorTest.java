@@ -28,7 +28,7 @@ import junit.framework.TestCase;
  * Unit tests for ClearSoyDocStringsVisitor.
  *
  */
-public class ClearSoyDocStringsVisitorTest extends TestCase {
+public final class ClearSoyDocStringsVisitorTest extends TestCase {
 
 
   public void testClearSoyDocStrings() {
@@ -45,7 +45,7 @@ public class ClearSoyDocStringsVisitorTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.getSoyDoc()).contains("blah");

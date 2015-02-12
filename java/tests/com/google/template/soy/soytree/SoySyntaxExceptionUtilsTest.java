@@ -25,7 +25,7 @@ import junit.framework.TestCase;
  * Unit tests for SoySyntaxExceptionUtils.
  *
  */
-public class SoySyntaxExceptionUtilsTest extends TestCase {
+public final class SoySyntaxExceptionUtilsTest extends TestCase {
 
 
   public void testCreateWithNode() {
@@ -38,7 +38,7 @@ public class SoySyntaxExceptionUtilsTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
 
     String message = "Some error happened.";
     Throwable cause = new Throwable();
@@ -64,7 +64,7 @@ public class SoySyntaxExceptionUtilsTest extends TestCase {
         "{template name=\".foo\"}\n" +
         "  {$goo}\n" +
         "{/template}\n";
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
     PrintNode pn = (PrintNode) soyTree.getChild(0).getChild(0).getChild(0);
 
     // Before.

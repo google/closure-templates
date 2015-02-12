@@ -31,26 +31,24 @@ import junit.framework.TestCase;
  * Unit tests for HandleCssCommandVisitor.
  *
  */
-public class HandleCssCommandVisitorTest extends TestCase {
-
+public final class HandleCssCommandVisitorTest extends TestCase {
 
   public void testHandleLiteral() {
-
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode("{css selected-option}");
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode("{css selected-option}")
+        .getParseTree();
     (new HandleCssCommandVisitor(CssHandlingScheme.LITERAL)).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((RawTextNode) soyNode).getRawText()).isEqualTo("selected-option");
   }
 
-
   public void testHandleReference() {
-
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode("{css $cssSelectedOption}");
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode("{css $cssSelectedOption}")
+        .getParseTree();
     (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("$cssSelectedOption");
 
-    soyTree = SharedTestUtils.parseSoyCode("{css CSS_SELECTED_OPTION}");
+    soyTree = SharedTestUtils.parseSoyCode("{css CSS_SELECTED_OPTION}").getParseTree();
     (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
     soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("CSS_SELECTED_OPTION");

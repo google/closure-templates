@@ -31,7 +31,7 @@ import junit.framework.TestCase;
  * Unit tests for RenameCssVisitor.
  *
  */
-public class RenameCssVisitorTest extends TestCase {
+public final class RenameCssVisitorTest extends TestCase {
 
 
   private static final String TEST_FILE_CONTENT =
@@ -45,8 +45,8 @@ public class RenameCssVisitorTest extends TestCase {
 
   public void testWithoutCssRenamingMap() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(SharedTestUtils.parseSoyFiles(TEST_FILE_CONTENT));
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SharedTestUtils.parseSoyFiles(TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);
@@ -76,8 +76,8 @@ public class RenameCssVisitorTest extends TestCase {
 
   public void testWithCssRenamingMap() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(SharedTestUtils.parseSoyFiles(TEST_FILE_CONTENT));
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SharedTestUtils.parseSoyFiles(TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);

@@ -16,8 +16,8 @@
 
 package com.google.template.soy.soyparse;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -30,7 +30,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -78,8 +77,7 @@ import java.util.List;
  * Unit tests for the template parser.
  *
  */
-public class TemplateParserTest extends TestCase {
-
+public final class TemplateParserTest extends TestCase {
 
   public void testMaybeWhitespaceEmitsLineNumberOnError() {
 
@@ -103,8 +101,12 @@ public class TemplateParserTest extends TestCase {
 
     // The line number is correct even when the template doesn't start on line 1.
     try {
-      IdGenerator nodeIdGen = new IncrementingIdGenerator();
-      (new TemplateParser(nodeIdGen, "foo", "test.soy", /* start line number */ 2))
+      new TemplateParser(
+          new IncrementingIdGenerator(),
+          "foo",
+          "test.soy",
+          /* start line number */ 2,
+          new ErrorManagerImpl())
           .MaybeWhitespace("ErrorMessage");
       fail("Should have failed with a ParseException");
     } catch (ParseException pe) {
@@ -667,7 +669,7 @@ public class TemplateParserTest extends TestCase {
         "hhh }{  {/literal}  \n" +
         "  \u2222\uEEEE\u9EC4\u607A\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
     RawTextNode rtn = (RawTextNode) nodes.get(0);
     assertEquals(
@@ -699,7 +701,7 @@ public class TemplateParserTest extends TestCase {
         "  // {sp} /** {sp} */\n" +
         "  http://www.google.com\n";  // not a comment if "//" preceded by a non-space such as ":"
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
     assertEquals("       http://www.google.com", ((RawTextNode) nodes.get(0)).getRawText());
   }
@@ -718,12 +720,11 @@ public class TemplateParserTest extends TestCase {
         "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n" +
         "  BODY\n";
 
-    Pair<List<DeclInfo>, List<StandaloneNode>> declInfosAndNodes =
-        parseTemplateContent(templateHeaderAndBody);
-    assertEquals(7, declInfosAndNodes.first.size());
-    assertEquals("BODY", declInfosAndNodes.second.get(0).toSourceString());
+    TemplateParseResult result = parseTemplateContent(templateHeaderAndBody);
+    assertEquals(7, result.getHeaderDecls().size());
+    assertEquals("BODY", result.getBodyNodes().get(0).toSourceString());
 
-    List<DeclInfo> declInfos = declInfosAndNodes.first;
+    List<DeclInfo> declInfos = result.getHeaderDecls();
     assertEquals("@param", declInfos.get(0).cmdName);
     assertEquals("boo: string", declInfos.get(0).cmdText);
     assertEquals(null, declInfos.get(0).soyDoc);
@@ -744,7 +745,7 @@ public class TemplateParserTest extends TestCase {
         "  {$goo + 1 |noescape}\n" +  // note '|noescape' is allowed in V2_0 but not V2_1
         "  {print 'blah    blahblahblah' |escapeHtml|insertWordBreaks:8}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(4, nodes.size());
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
@@ -797,7 +798,7 @@ public class TemplateParserTest extends TestCase {
         "  {$boo.foo    phname=\"booFoo\"    }\n" +
         "  {$boo.foo phname=\"boo_foo\"}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(4, nodes.size());
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
@@ -837,7 +838,7 @@ public class TemplateParserTest extends TestCase {
         "{css $cssSelectedOption}\n" +
         "{css %SelectedOption}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(4, nodes.size());
     assertEquals("selected-option", ((CssNode) nodes.get(0)).getCommandText());
     assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getCommandText());
@@ -853,7 +854,7 @@ public class TemplateParserTest extends TestCase {
         "{xid selected.option}\n" +
         "{xid XID_SELECTED_OPTION}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(3, nodes.size());
     assertEquals("selected-option", ((XidNode) nodes.get(0)).getText());
     assertEquals("selected.option", ((XidNode) nodes.get(1)).getText());
@@ -874,7 +875,7 @@ public class TemplateParserTest extends TestCase {
         "  {msg meaning=\"verb\" desc=\"\"}Archive{/msg}\n" +
         "  {msg desc=\"\"}Archive{/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(5, nodes.size());
 
     MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -936,7 +937,7 @@ public class TemplateParserTest extends TestCase {
         "    <br phname=\"breakTag\" /><br phname=\"breakTag\" /><br phname=\"break_tag\" />\n" +
         "  {/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -988,7 +989,7 @@ public class TemplateParserTest extends TestCase {
         "    blah.\n" +
         "  {/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1015,12 +1016,7 @@ public class TemplateParserTest extends TestCase {
         "    .\n" +
         "  {/msg}\n";
 
-    try {
-      parseTemplateBody(templateBody);
-      fail();
-    } catch (SoySyntaxException sse) {
-      // Test passes.
-    }
+    assertFalse(parseTemplateBody(templateBody).isSuccess());
   }
 
 
@@ -1033,7 +1029,7 @@ public class TemplateParserTest extends TestCase {
         "  Archive\n" +
         "{/msg}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     MsgFallbackGroupNode mfgn = (MsgFallbackGroupNode) nodes.get(0);
@@ -1065,7 +1061,7 @@ public class TemplateParserTest extends TestCase {
         "  {/let}\n" +
         "  {let $delta kind=\"html\"}Boo!{/let}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(4, nodes.size());
 
     LetValueNode alphaNode = (LetValueNode) nodes.get(0);
@@ -1085,24 +1081,20 @@ public class TemplateParserTest extends TestCase {
     assertEquals(ContentKind.HTML, deltaNode.getContentKind());
 
     // Test error case.
-    try {
-      parseTemplateBody("{let $alpha /}");
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
-          " contains a value"));
-    }
+    TemplateParseResult result = parseTemplateBody("{let $alpha /}");
+    assertFalse(result.isSuccess());
+    SoySyntaxException e = result.getParseErrors().iterator().next();
+    assertTrue(e.getMessage().contains(
+        "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
+            " contains a value"));
 
     // Test error case.
-    try {
-      parseTemplateBody("{let $alpha: $boo.foo}");
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "A 'let' tag should contain a value if and only if it is also self-ending (with a" +
-          " trailing '/')"));
-    }
+    result = parseTemplateBody("{let $alpha: $boo.foo}");
+    assertFalse(result.isSuccess());
+    e = result.getParseErrors().iterator().next();
+    assertTrue(e.getMessage().contains(
+        "A 'let' tag should contain a value if and only if it is also self-ending (with a" +
+            " trailing '/')"));
   }
 
 
@@ -1118,7 +1110,7 @@ public class TemplateParserTest extends TestCase {
         "    Blah {$moo}\n" +
         "  {/if}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(2, nodes.size());
 
     IfNode in0 = (IfNode) nodes.get(0);
@@ -1155,7 +1147,7 @@ public class TemplateParserTest extends TestCase {
         "      Bloh\n" +
         "  {/switch}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     SwitchNode sn = (SwitchNode) nodes.get(0);
@@ -1203,7 +1195,7 @@ public class TemplateParserTest extends TestCase {
         "    Sorry, no booze.\n" +
         "  {/foreach}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(2, nodes.size());
 
     ForeachNode fn0 = (ForeachNode) nodes.get(0);
@@ -1247,7 +1239,7 @@ public class TemplateParserTest extends TestCase {
         "    {/msg}\n" +
         "  {/for}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     ForNode fn = (ForNode) nodes.get(0);
@@ -1292,7 +1284,7 @@ public class TemplateParserTest extends TestCase {
         "    {param doo kind=\"html\"}doopoo{/param}\n" +
         "  {/call}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(5, nodes.size());
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
@@ -1408,7 +1400,7 @@ public class TemplateParserTest extends TestCase {
         "    {param woo}poo{/param}\n" +
         "  {/delcall}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(3, nodes.size());
 
     CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
@@ -1459,7 +1451,7 @@ public class TemplateParserTest extends TestCase {
         "    {param zoo: 0 /}\n" +
         "  {/delcall}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(3, nodes.size());
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
@@ -1493,7 +1485,7 @@ public class TemplateParserTest extends TestCase {
 
     String templateBody = "{log}Blah {$foo}.{/log}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     LogNode logNode = (LogNode) nodes.get(0);
@@ -1507,7 +1499,7 @@ public class TemplateParserTest extends TestCase {
 
     String templateBody = "{debugger}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     assertTrue(nodes.get(0) instanceof DebuggerNode);
@@ -1530,7 +1522,7 @@ public class TemplateParserTest extends TestCase {
       "  {/msg}\n";
 
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1632,7 +1624,7 @@ public class TemplateParserTest extends TestCase {
         "  {/select}\n" +
         "{/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1683,7 +1675,7 @@ public class TemplateParserTest extends TestCase {
         "  {/select}\n" +
         "{/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody);
+    List<StandaloneNode> nodes = parseTemplateBody(templateBody).getBodyNodes();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1797,6 +1789,25 @@ public class TemplateParserTest extends TestCase {
     assertEquals(" and his friends to his circle.", rtn6.getRawText());
   }
 
+  public void testMultipleErrors() throws ParseException {
+    TemplateParseResult result = parseTemplateBody(
+        "{call 123 /}\n" // Invalid callee name "123" for 'call' command.
+        + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
+        + "{foreach foo in bar}\n" // Invalid 'foreach' command text "foo in bar".
+        + "{let /}\n"); // Invalid 'let' command text "".
+    assertFalse(result.isSuccess());
+    assertEquals(4, result.getParseErrors().size());
+    ImmutableList<? extends SoySyntaxException> errors = result.getParseErrors().asList();
+    assertTrue(errors.get(0).getMessage().contains(
+        "Invalid callee name \"123\" for 'call' command."));
+    assertTrue(errors.get(1).getMessage().contains(
+        "Invalid delegate name \"123\" for 'delcall' command."));
+    assertTrue(errors.get(2).getMessage().contains(
+        "Invalid 'foreach' command text \"foo in bar\"."));
+    assertTrue(errors.get(3).getMessage().contains(
+        "Invalid 'let' command text \"\"."));
+  }
+
 
   // -----------------------------------------------------------------------------------------------
   // Helpers.
@@ -1805,31 +1816,33 @@ public class TemplateParserTest extends TestCase {
   /**
    * Parses the given input as a template body.
    * @param input The input string to parse.
-   * @throws SoySyntaxException When the given input has a syntax error.
    * @throws TokenMgrError When the given input has a token error.
    * @throws ParseException When the given input has a parse error.
    * @return The parse tree nodes created.
    */
-  private static List<StandaloneNode> parseTemplateBody(String input)
-      throws SoySyntaxException, TokenMgrError, ParseException {
-    Pair<List<DeclInfo>, List<StandaloneNode>> declInfosAndNodes = parseTemplateContent(input);
-    assertNull(declInfosAndNodes.first);
-    return declInfosAndNodes.second;
+  private static TemplateParseResult parseTemplateBody(String input)
+      throws TokenMgrError, ParseException {
+    TemplateParseResult result = parseTemplateContent(input);
+    assertNull(result.getHeaderDecls());
+    return result;
   }
 
 
   /**
    * Parses the given input as a template content (header and body).
    * @param input The input string to parse.
-   * @throws SoySyntaxException When the given input has a syntax error.
    * @throws TokenMgrError When the given input has a token error.
    * @throws ParseException When the given input has a parse error.
    * @return The decl infos and parse tree nodes created.
    */
-  private static Pair<List<DeclInfo>, List<StandaloneNode>> parseTemplateContent(String input)
-      throws SoySyntaxException, TokenMgrError, ParseException {
-    IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    return (new TemplateParser(nodeIdGen, input, "test.soy", 1 /* start line number */))
+  private static TemplateParseResult parseTemplateContent(String input)
+      throws TokenMgrError, ParseException {
+    return new TemplateParser(
+        new IncrementingIdGenerator(),
+        input,
+        "test.soy",
+        1 /* start line number */,
+        new ErrorManagerImpl())
         .parseTemplateContent();
   }
 
@@ -1838,14 +1851,17 @@ public class TemplateParserTest extends TestCase {
    * Parses the given input using the MaybeWhitespace rule.
    * @param errorMessage The error message MaybeWhitespace should emit when it fails.
    * @param input The input string to parse.
-   * @throws SoySyntaxException When the given input has a syntax error.
    * @throws TokenMgrError When the given input has a token error.
    * @throws ParseException When the given input has a parse error.
    */
   private static void parseMaybeWhitespace(String errorMessage, String input)
-      throws SoySyntaxException, TokenMgrError, ParseException {
-    IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    (new TemplateParser(nodeIdGen, input, "test.soy", /* start line number */ 1))
+      throws TokenMgrError, ParseException {
+    new TemplateParser(
+        new IncrementingIdGenerator(),
+        input,
+        "test.soy",
+        /* start line number */ 1,
+        new ErrorManagerImpl())
         .MaybeWhitespace(errorMessage);
   }
 
@@ -1853,26 +1869,26 @@ public class TemplateParserTest extends TestCase {
   /**
    * Asserts that the given input is a valid template.
    * @param input The input string to parse.
-   * @throws SoySyntaxException When the given input has a syntax error.
    * @throws TokenMgrError When the given input has a token error.
    * @throws ParseException When the given input has a parse error.
    */
-  private static void assertIsTemplateBody(String input)
-      throws SoySyntaxException, TokenMgrError, ParseException {
-    parseTemplateBody(input);
+  private static void assertIsTemplateBody(String input) throws TokenMgrError, ParseException {
+    TemplateParseResult result = parseTemplateBody(input);
+    assertTrue(result.isSuccess());
+    assertFalse(ErrorNodeUtils.containsErrors(result.getBodyNodes()));
   }
 
 
   /**
    * Asserts that the given input is a valid template content (header and body).
    * @param input The input string to parse.
-   * @throws SoySyntaxException When the given input has a syntax error.
    * @throws TokenMgrError When the given input has a token error.
    * @throws ParseException When the given input has a parse error.
    */
-  private static void assertIsTemplateContent(String input)
-      throws SoySyntaxException, TokenMgrError, ParseException {
-    parseTemplateContent(input);
+  private static void assertIsTemplateContent(String input) throws TokenMgrError, ParseException {
+    TemplateParseResult result = parseTemplateContent(input);
+    assertTrue(result.isSuccess());
+    assertFalse(ErrorNodeUtils.containsErrors(result.getBodyNodes()));
   }
 
 
@@ -1882,16 +1898,13 @@ public class TemplateParserTest extends TestCase {
    * @throws AssertionFailedError When the given input is actually a valid template.
    */
   private static void assertIsNotTemplateBody(String input) throws AssertionFailedError {
+    TemplateParseResult result;
     try {
-      parseTemplateBody(input);
-      fail();
-    } catch (SoySyntaxException sse) {
-      // Test passes.
-    } catch (TokenMgrError tme) {
-      // Test passes.
-    } catch (ParseException pe) {
-      // Test passes.
+      result = parseTemplateBody(input);
+    } catch (TokenMgrError | ParseException e) {
+      return;
     }
+    assertFalse(result.isSuccess());
   }
 
 
@@ -1902,8 +1915,8 @@ public class TemplateParserTest extends TestCase {
    */
   private static void assertIsNotTemplateContent(String input) throws AssertionFailedError {
     try {
-      parseTemplateContent(input);
-      fail();
+      TemplateParseResult result = parseTemplateContent(input);
+      assertFalse(result.isSuccess());
     } catch (SoySyntaxException sse) {
       // Test passes.
     } catch (TokenMgrError tme) {

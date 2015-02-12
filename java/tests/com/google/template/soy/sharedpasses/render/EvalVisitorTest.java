@@ -96,8 +96,11 @@ public class EvalVisitorTest extends TestCase {
    */
   private SoyValue eval(String expression) throws Exception {
     PrintNode code =
-        (PrintNode) SharedTestUtils.parseSoyCode("{" + expression + "}").getChild(0).getChild(0)
-        .getChild(0);
+        (PrintNode) SharedTestUtils.parseSoyCode("{" + expression + "}")
+            .getParseTree()
+            .getChild(0)
+            .getChild(0)
+            .getChild(0);
     ExprRootNode<?> expr = code.getExprUnion().getExpr();
 
     EvalVisitor evalVisitor =

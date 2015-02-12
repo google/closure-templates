@@ -31,7 +31,7 @@ import junit.framework.TestCase;
  * Unit tests for FindIjParamsVisitor.
  *
  */
-public class FindIjParamsVisitorTest extends TestCase {
+public final class FindIjParamsVisitorTest extends TestCase {
 
 
   public void testSimple() {
@@ -60,7 +60,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -117,7 +117,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.moo + $ij.woo} {call .bbb /}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -159,7 +159,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {call .bbb /} {$ij.moo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -204,7 +204,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {call .aaa /} {$ij.moo} {$ij.boo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -252,7 +252,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.too} {call .bbb /}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -296,7 +296,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.moo} {$ij.boo} {call .bbb /}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -342,7 +342,7 @@ public class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent).getParseTree();
 
     TemplateNode bbb = soyTree.getChild(0).getChild(0);
     TemplateNode aaa = soyTree.getChild(0).getChild(1);

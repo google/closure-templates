@@ -159,7 +159,7 @@ public class PrerenderVisitorTest extends TestCase {
    * @throws Exception If there's an error.
    */
   private static String prerender(String input) throws Exception {
-    SoyFileSetNode fileSet = SharedTestUtils.parseSoyCode(input);
+    SoyFileSetNode fileSet = SharedTestUtils.parseSoyCode(input).getParseTree();
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =

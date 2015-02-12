@@ -35,7 +35,7 @@ import java.util.Map;
  * Unit tests for FindIndirectParamsVisitor.
  *
  */
-public class FindIndirectParamsVisitorTest extends TestCase {
+public final class FindIndirectParamsVisitorTest extends TestCase {
 
 
   public void testFindIndirectParams() {
@@ -110,7 +110,8 @@ public class FindIndirectParamsVisitorTest extends TestCase {
         "{template .four}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent1, fileContent2);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent1, fileContent2)
+        .getParseTree();
 
     SoyFileNode a = soyTree.getChild(0);
     TemplateNode a0 = a.getChild(0);

@@ -30,7 +30,7 @@ import junit.framework.TestCase;
  * Unit tests for RemoveHtmlCommentsVisitor.
  *
  */
-public class RemoveHtmlCommentsVisitorTest extends TestCase {
+public final class RemoveHtmlCommentsVisitorTest extends TestCase {
 
 
   public void testRemoveHtmlComments() {
@@ -50,7 +50,8 @@ public class RemoveHtmlCommentsVisitorTest extends TestCase {
         "{/template}\n";
 
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
-        false /* doRunInitialParsingPasses */, testFileContent);
+        false /* doRunInitialParsingPasses */, testFileContent)
+        .getParseTree();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.

@@ -38,7 +38,7 @@ import java.util.Map;
  * Unit tests for OptimizeBidiCodeGenVisitor.
  *
  */
-public class OptimizeBidiCodeGenVisitorTest extends TestCase {
+public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
 
 
   private static final SoyJsSrcFunction MOCK_FUNCTION = createMock(SoyJsSrcFunction.class);
@@ -66,7 +66,7 @@ public class OptimizeBidiCodeGenVisitorTest extends TestCase {
         // These 4 nodes don't get replaced.
         "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
         SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_STATIC_LTR);
     optimizer.exec(soyTree);
@@ -88,7 +88,7 @@ public class OptimizeBidiCodeGenVisitorTest extends TestCase {
         "{bidiMark()}{bidiStartEdge() |noAutoescape}{bidiEndEdge() |escapeHtml}\n" +
         "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
         SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET);
     optimizer.exec(soyTree);

@@ -175,7 +175,8 @@ public class GenCallCodeUtilsTest extends TestCase {
   private String getCallExprTextHelper(
       String callSource, ImmutableList<String> escapingDirectives) {
 
-    CallNode callNode = (CallNode) JsSrcTestUtils.parseSoyCodeAndGetNode(callSource, 0);
+    CallNode callNode = (CallNode) JsSrcTestUtils.parseSoyCodeAndGetNode(callSource, 0)
+        .getParseTree();
     // Manually setting the escaping directives.
     callNode.setEscapingDirectiveNames(escapingDirectives);
 

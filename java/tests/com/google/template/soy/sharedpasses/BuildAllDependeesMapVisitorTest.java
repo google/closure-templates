@@ -44,7 +44,7 @@ import java.util.Map;
  * Unit tests for BuildAllDependeesMapVisitor.
  *
  */
-public class BuildAllDependeesMapVisitorTest extends TestCase {
+public final class BuildAllDependeesMapVisitorTest extends TestCase {
 
 
   public void testGetTopLevelRefsVisitor() {
@@ -70,7 +70,7 @@ public class BuildAllDependeesMapVisitorTest extends TestCase {
         "  {/if}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     PrintNode a = (PrintNode) template.getChild(0);

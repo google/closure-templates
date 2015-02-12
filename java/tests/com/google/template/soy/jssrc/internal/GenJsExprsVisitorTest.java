@@ -40,7 +40,7 @@ import java.util.Map;
  * Unit tests for GenJsExprsVisitor.
  *
  */
-public class GenJsExprsVisitorTest extends TestCase {
+public final class GenJsExprsVisitorTest extends TestCase {
 
 
   private static final Injector INJECTOR = Guice.createInjector(new JsSrcModule());
@@ -228,7 +228,7 @@ public class GenJsExprsVisitorTest extends TestCase {
   private static void assertGeneratedJsExprs(
       String soyCode, List<JsExpr> expectedJsExprs, int... indicesToNode) {
 
-    SoyNode node = JsSrcTestUtils.parseSoyCodeAndGetNode(soyCode, indicesToNode);
+    SoyNode node = JsSrcTestUtils.parseSoyCodeAndGetNode(soyCode, indicesToNode).getParseTree();
 
     GenJsExprsVisitor gjev =
         INJECTOR.getInstance(GenJsExprsVisitorFactory.class).create(LOCAL_VAR_TRANSLATIONS);

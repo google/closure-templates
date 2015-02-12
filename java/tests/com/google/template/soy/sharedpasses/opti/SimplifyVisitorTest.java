@@ -46,7 +46,7 @@ public class SimplifyVisitorTest extends TestCase {
         "{for $i in range(5)}" +
         "  blah{$boo}blah" +
         "{/for}";
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     ForNode forNode = (ForNode) template.getChild(3);
@@ -253,7 +253,7 @@ public class SimplifyVisitorTest extends TestCase {
 
   private static List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
     simplifyVisitor.exec(soyTree);
     return soyTree.getChild(0).getChild(0).getChildren();
@@ -262,7 +262,7 @@ public class SimplifyVisitorTest extends TestCase {
 
   private static SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
     simplifyVisitor.exec(soyTree);
     return soyTree;

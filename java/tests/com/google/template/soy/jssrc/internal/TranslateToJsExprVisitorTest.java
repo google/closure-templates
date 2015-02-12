@@ -43,7 +43,7 @@ import java.util.Map;
  * Unit tests for TranslateToJsExprVisitor.
  *
  */
-public class TranslateToJsExprVisitorTest extends TestCase {
+public final class TranslateToJsExprVisitorTest extends TestCase {
 
 
   private static final Map<String, SoyJsSrcFunction> SOY_JS_SRC_FUNCTIONS_MAP = ImmutableMap.of();
@@ -246,7 +246,8 @@ public class TranslateToJsExprVisitorTest extends TestCase {
         "/***/\n" +
         "{template .aaa}\n" +
         "{print \n" + soyExpr + "}\n" +
-        "{/template}\n");
+        "{/template}\n")
+        .getParseTree();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
     JsExpr actualJsExpr =
@@ -285,10 +286,8 @@ public class TranslateToJsExprVisitorTest extends TestCase {
 
     ExprNode exprNode = (new ExpressionParser(soyExpr)).parseExpression();
     try {
-      JsExpr actualJsExpr =
-          (new TranslateToJsExprVisitor(
-              SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS))
-              .exec(exprNode);
+      new TranslateToJsExprVisitor(SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS)
+          .exec(exprNode);
       fail();
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage()).contains(expectedErrorMsgSubstring);

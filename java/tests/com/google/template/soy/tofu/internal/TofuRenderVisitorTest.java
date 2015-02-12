@@ -69,7 +69,7 @@ public class TofuRenderVisitorTest extends TestCase {
         "  {$boo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContent).getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     // Important: This test will be doing its intended job only if we run

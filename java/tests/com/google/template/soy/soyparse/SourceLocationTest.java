@@ -218,8 +218,10 @@ public final class SourceLocationTest extends TestCase {
         new SoyTypeRegistry(),
         new FixedIdGenerator(),
         template,
-        SoyFileKind.SRC, "/example/file.soy")
+        SoyFileKind.SRC,
+        "/example/file.soy")
         .parseSoyFile()
+        .getParseTree()
         .getChild(0);
     SourceLocation location = templateNode.getSourceLocation();
     assertEquals(2, location.getLineNumber());
@@ -233,12 +235,14 @@ public final class SourceLocationTest extends TestCase {
       String asciiArtExpectedOutput, String soySourceCode)
       throws Exception {
 
-    SoyFileSetNode soyTree =
-        (new SoyFileSetParser(
-            new SoyTypeRegistry(), null, SyntaxVersion.V2_0,
-            SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy")))
-            .setDoRunInitialParsingPasses(false)
-            .parse();
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        new SoyTypeRegistry(),
+        null,
+        SyntaxVersion.V2_0,
+        SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy"))
+        .setDoRunInitialParsingPasses(false)
+        .parse()
+        .getParseTree();
 
     String actual = new AsciiArtVisitor().exec(soyTree);
     assertEquals(asciiArtExpectedOutput, actual);

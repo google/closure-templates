@@ -36,7 +36,7 @@ import junit.framework.TestCase;
  * Unit tests for ReplaceMsgsWithGoogMsgsVisitor.
  *
  */
-public class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
+public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
 
 
   public void testReplaceMsgsWithGoogMsgsVisitor() {
@@ -49,7 +49,7 @@ public class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
         "  <span id=\"{for $i in range(3)}{$i}{/for}\">\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     GoogMsgDefNode gmd0 = (GoogMsgDefNode) template.getChild(0);

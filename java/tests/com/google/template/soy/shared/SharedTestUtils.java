@@ -29,6 +29,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -46,7 +47,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SharedTestUtils {
+public final class SharedTestUtils {
 
   private SharedTestUtils() {}
 
@@ -107,7 +108,7 @@ public class SharedTestUtils {
    * @param soyCode The code to parse as the full body of a template.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyCode(String soyCode) {
+  public static ParseResult<SoyFileSetNode> parseSoyCode(String soyCode) {
     return parseSoyCode(true, soyCode);
   }
 
@@ -119,7 +120,8 @@ public class SharedTestUtils {
    * @param soyCode The code to parse as the full body of a template.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyCode(boolean doRunInitialParsingPasses, String soyCode) {
+  public static ParseResult<SoyFileSetNode> parseSoyCode(
+      boolean doRunInitialParsingPasses, String soyCode) {
     return parseSoyCode(SyntaxVersion.V2_0, doRunInitialParsingPasses, soyCode);
   }
 
@@ -132,7 +134,7 @@ public class SharedTestUtils {
    * @param soyCode The code to parse as the full body of a template.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyCode(
+  public static ParseResult<SoyFileSetNode> parseSoyCode(
       SyntaxVersion declaredSyntaxVersion, boolean doRunInitialParsingPasses, String soyCode) {
     return parseSoyCode(
         new SoyTypeRegistry(), declaredSyntaxVersion, doRunInitialParsingPasses, soyCode);
@@ -148,7 +150,7 @@ public class SharedTestUtils {
    * @param soyCode The code to parse as the full body of a template.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyCode(
+  public static ParseResult<SoyFileSetNode> parseSoyCode(
       SoyTypeRegistry typeRegistry, SyntaxVersion declaredSyntaxVersion,
       boolean doRunInitialParsingPasses, String soyCode) {
 
@@ -227,7 +229,7 @@ public class SharedTestUtils {
    * @param soyFileContents The contents of the Soy files to parse.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyFiles(String... soyFileContents) {
+  public static ParseResult<SoyFileSetNode> parseSoyFiles(String... soyFileContents) {
     return parseSoyFiles(true, soyFileContents);
   }
 
@@ -239,7 +241,7 @@ public class SharedTestUtils {
    * @param soyFileContents The contents of the Soy files to parse.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyFiles(
+  public static ParseResult<SoyFileSetNode> parseSoyFiles(
       boolean doRunInitialParsingPasses, String... soyFileContents) {
     return parseSoyFiles(SyntaxVersion.V2_0, doRunInitialParsingPasses, soyFileContents);
   }
@@ -251,7 +253,7 @@ public class SharedTestUtils {
    * @param soyFileSuppliers The contents of the Soy files to parse.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyFiles(
+  public static ParseResult<SoyFileSetNode> parseSoyFiles(
       boolean doRunInitialParsingPasses, SoyFileSupplier... soyFileSuppliers) {
     return new SoyFileSetParser(
         new SoyTypeRegistry(), null /* astCache */, SyntaxVersion.V2_0, soyFileSuppliers)
@@ -275,7 +277,8 @@ public class SharedTestUtils {
         new SoyTypeRegistry(), null /* astCache */, SyntaxVersion.V2_0, soyFileSuppliers)
         .setDoRunInitialParsingPasses(doRunInitialParsingPasses)
         .setDoRunCheckingPasses(doRunCheckingPasses)
-        .parse();
+        .parse()
+        .getParseTree();
   }
 
 
@@ -287,7 +290,7 @@ public class SharedTestUtils {
    * @param soyFileContents The contents of the Soy files to parse.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyFiles(
+  public static ParseResult<SoyFileSetNode> parseSoyFiles(
       SyntaxVersion declaredSyntaxVersion, boolean doRunInitialParsingPasses,
       String... soyFileContents) {
     return parseSoyFiles(
@@ -304,16 +307,15 @@ public class SharedTestUtils {
    * @param soyFileContents The contents of the Soy files to parse.
    * @return The resulting Soy tree.
    */
-  public static SoyFileSetNode parseSoyFiles(
+  public static ParseResult<SoyFileSetNode> parseSoyFiles(
       SoyTypeRegistry typeRegistry, SyntaxVersion declaredSyntaxVersion,
       boolean doRunInitialParsingPasses, String... soyFileContents) {
 
     List<SoyFileSupplier> soyFileSuppliers = buildTestSoyFileSuppliers(soyFileContents);
-    return
-        (new SoyFileSetParser(typeRegistry, null, declaredSyntaxVersion, soyFileSuppliers))
-            .setDoRunInitialParsingPasses(doRunInitialParsingPasses)
-            .setDoRunCheckingPasses(false)
-            .parse();
+    return new SoyFileSetParser(typeRegistry, null, declaredSyntaxVersion, soyFileSuppliers)
+        .setDoRunInitialParsingPasses(doRunInitialParsingPasses)
+        .setDoRunCheckingPasses(false)
+        .parse();
   }
 
 
@@ -368,7 +370,6 @@ public class SharedTestUtils {
    */
   public static SoyNode parseSoyCodeAndGetNode(String soyCode, int... indicesToNode) {
 
-    return getNode(parseSoyCode(soyCode), indicesToNode);
+    return getNode(parseSoyCode(soyCode).getParseTree(), indicesToNode);
   }
-
 }

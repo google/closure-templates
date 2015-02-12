@@ -28,7 +28,7 @@ import junit.framework.TestCase;
  * Unit tests for IsComputableAsJsExprsVisitor.
  *
  */
-public class IsComputableAsJsExprsVisitorTest extends TestCase {
+public final class IsComputableAsJsExprsVisitorTest extends TestCase {
 
 
   private static SoyJsSrcOptions jsSrcOptions;
@@ -116,7 +116,7 @@ public class IsComputableAsJsExprsVisitorTest extends TestCase {
   private static void runTestHelper(
       String soyCode, boolean expectedResult, int... indicesToNode) {
 
-    SoyNode node = JsSrcTestUtils.parseSoyCodeAndGetNode(soyCode, indicesToNode);
+    SoyNode node = JsSrcTestUtils.parseSoyCodeAndGetNode(soyCode, indicesToNode).getParseTree();
 
     assertThat((boolean) (new IsComputableAsJsExprsVisitor(jsSrcOptions)).exec(node))
         .isEqualTo(expectedResult);

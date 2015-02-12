@@ -43,7 +43,7 @@ import junit.framework.TestCase;
  * Unit tests for ResolveNamesVisitor.
  *
  */
-public class ResolveNamesVisitorTest extends TestCase {
+public final class ResolveNamesVisitorTest extends TestCase {
 
   private static final SoyTypeProvider typeProvider =
       new SoyTypeProvider() {
@@ -71,7 +71,8 @@ public class ResolveNamesVisitorTest extends TestCase {
   public void testParamNameLookupSuccess() {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
         "{@param pa: bool}",
-        "{$pa}"));
+        "{$pa}"))
+        .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
@@ -81,7 +82,8 @@ public class ResolveNamesVisitorTest extends TestCase {
   public void testInjectedParamNameLookupSuccess() {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
         "{@inject pa: bool}",
-        "{$pa}"));
+        "{$pa}"))
+        .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
@@ -91,7 +93,8 @@ public class ResolveNamesVisitorTest extends TestCase {
   public void testLetNameLookupSuccess() {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
         "{let $pa: 1 /}",
-        "{$pa}"));
+        "{$pa}"))
+        .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
@@ -106,7 +109,8 @@ public class ResolveNamesVisitorTest extends TestCase {
         "{foreach $item in ['a', 'b']}",
         "  {$pa}{$pb}{$la + $item}",
         "{/foreach}",
-        "{let $lb: 1 /}"));
+        "{let $lb: 1 /}"))
+        .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
@@ -128,7 +132,8 @@ public class ResolveNamesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
         "{let $la: 1 /}",
         "{let $lb: $la /}",
-        "{let $lc: $lb /}"));
+        "{let $lc: $lb /}"))
+        .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
@@ -181,7 +186,8 @@ public class ResolveNamesVisitorTest extends TestCase {
         "    {$b}",
         "  {/if}",
         "{/let}",
-        "{$a}"));
+        "{$a}"))
+        .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 1 because each new $la binding overwrites the prior one
@@ -222,8 +228,9 @@ public class ResolveNamesVisitorTest extends TestCase {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveNamesFails(String expectedError, String fileContent) {
-    SoyFileSetNode soyTree =
-        SharedTestUtils.parseSoyFiles(typeRegistry, SyntaxVersion.V2_0, false, fileContent);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
+        typeRegistry, SyntaxVersion.V2_0, false, fileContent)
+        .getParseTree();
     try {
       createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
       fail("Expected SoySyntaxException");

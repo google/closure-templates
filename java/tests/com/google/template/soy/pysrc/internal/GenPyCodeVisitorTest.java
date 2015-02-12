@@ -176,7 +176,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
    * @param soyFileContent The string represents a Soy file.
    */
   private String getGeneratedPyFile(String soyFileContent) {
-    SoyNode node = SharedTestUtils.parseSoyFiles(soyFileContent);
+    SoyNode node = SharedTestUtils.parseSoyFiles(soyFileContent).getParseTree();
     List<String> fileContents = genPyCodeVisitor.exec(node);
     return fileContents.get(0).replaceAll("\\([0-9]+", "(###");
   }
@@ -189,7 +189,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
    * @param soyCode The Soy code snippet.
    */
   private String getGeneratedPyCode(String soyCode) {
-    SoyNode node = SharedTestUtils.getNode(SharedTestUtils.parseSoyCode(soyCode), 0);
+    SoyNode node = SharedTestUtils.getNode(SharedTestUtils.parseSoyCode(soyCode).getParseTree(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();

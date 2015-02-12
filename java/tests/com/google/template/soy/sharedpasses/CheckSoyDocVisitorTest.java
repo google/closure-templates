@@ -29,7 +29,7 @@ import junit.framework.TestCase;
  * Unit tests for CheckSoyDocVisitor.
  *
  */
-public class CheckSoyDocVisitorTest extends TestCase {
+public final class CheckSoyDocVisitorTest extends TestCase {
 
   public void testMatchingSimple() throws SoySyntaxException {
     // ------ No params ------
@@ -354,7 +354,7 @@ public class CheckSoyDocVisitorTest extends TestCase {
 
   private static void runSoyFilesTestHelper(String... soyFileContents)
       throws SoySyntaxException {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
 
     (new CheckSoyDocVisitor(SyntaxVersion.V1_0)).exec(soyTree);
   }

@@ -30,7 +30,7 @@ import junit.framework.TestCase;
  * Unit tests for CheckCallsVisitor.
  *
  */
-public class CheckCallsVisitorTest extends TestCase {
+public final class CheckCallsVisitorTest extends TestCase {
 
 
   public void testMissingParam() {
@@ -165,7 +165,7 @@ public class CheckCallsVisitorTest extends TestCase {
 
 
   private void assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     (new CheckCallsVisitor()).exec(soyTree);
   }
@@ -173,7 +173,7 @@ public class CheckCallsVisitorTest extends TestCase {
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckCallsVisitor()).exec(soyTree);

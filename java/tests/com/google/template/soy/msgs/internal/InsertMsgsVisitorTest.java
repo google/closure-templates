@@ -72,7 +72,7 @@ public class InsertMsgsVisitorTest extends TestCase {
 
     TemplateNode template =
         (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT));
+            SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -110,7 +110,7 @@ public class InsertMsgsVisitorTest extends TestCase {
 
     TemplateNode template =
         (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT));
+            SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -187,7 +187,7 @@ public class InsertMsgsVisitorTest extends TestCase {
 
     TemplateNode template =
         (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT));
+            SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(2);
@@ -212,7 +212,7 @@ public class InsertMsgsVisitorTest extends TestCase {
 
     TemplateNode template =
         (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT));
+            SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(2);
@@ -332,7 +332,7 @@ public class InsertMsgsVisitorTest extends TestCase {
 
     TemplateNode template =
         (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT));
+            SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(6);
@@ -362,7 +362,7 @@ public class InsertMsgsVisitorTest extends TestCase {
 
     TemplateNode template =
         (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT));
+            SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT).getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(6);

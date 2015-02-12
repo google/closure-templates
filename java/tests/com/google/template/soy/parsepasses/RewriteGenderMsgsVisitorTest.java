@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -73,19 +74,20 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
 
 
   public void testMaxThreeGenders() {
-
     String soyCode = "" +
         "{msg genders=\"$userGender, $targetGender1, $targetGender2, $groupOwnerGender\"" +
         "    desc=\"...\"}\n" +
         "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n" +
         "{/msg}\n";
-    try {
-      SharedTestUtils.parseSoyCode(soyCode);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Attribute 'genders' does not contain exactly 1-3 expressions");
-    }
+      ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(soyCode);
+      if (result.isSuccess()) {
+        fail();
+      }
+      assertThat(result.getParseErrors()).hasSize(1);
+      Throwable t = result.getParseErrors().asList().get(0);
+      assertThat(t).isInstanceOf(SoySyntaxException.class);
+      assertThat(t.getMessage()).contains(
+          "Attribute 'genders' does not contain exactly 1-3 expressions");
   }
 
 
@@ -117,8 +119,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  Save\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree =
-        SharedTestUtils.parseSoyCode(false /*don't run initial parsing passes*/, soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(
+        false /*don't run initial parsing passes*/, soyCode)
+        .getParseTree();
 
     // Before.
     MsgNode msgBeforeRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
@@ -146,7 +149,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    {default}Save\n" +
         "  {/select}\n" +
         "{/msg}\n";
-    SoyFileSetNode soyTreeUsingSelect = SharedTestUtils.parseSoyCode(soyCodeUsingSelect);
+    SoyFileSetNode soyTreeUsingSelect = SharedTestUtils.parseSoyCode(soyCodeUsingSelect)
+        .getParseTree();
     MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
     assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
         .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
@@ -160,8 +164,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  {plural $num}{case 1}Send it{default}Send {$num}{/plural}\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree =
-        SharedTestUtils.parseSoyCode(false /*don't run initial parsing passes*/, soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(
+        false /*don't run initial parsing passes*/, soyCode)
+        .getParseTree();
 
     // Before.
     MsgNode msgBeforeRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
@@ -194,7 +199,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    {default}{plural $num}{case 1}Send it{default}Send {$num}{/plural}\n" +
         "  {/select}\n" +
         "{/msg}\n";
-    SoyFileSetNode soyTreeUsingSelect = SharedTestUtils.parseSoyCode(soyCodeUsingSelect);
+    SoyFileSetNode soyTreeUsingSelect =
+        SharedTestUtils.parseSoyCode(soyCodeUsingSelect).getParseTree();
     MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
     assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
         .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
@@ -208,8 +214,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  You starred {$target[0].name}'s photo in {$target[1].name}'s album.\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree =
-        SharedTestUtils.parseSoyCode(false /*don't run initial parsing passes*/, soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(
+        false /*don't run initial parsing passes*/, soyCode)
+        .getParseTree();
 
     // Before.
     MsgNode msgBeforeRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);

@@ -40,12 +40,13 @@ public class SetDefaultForDelcallAllowsEmptyDefaultVisitorTest extends TestCase 
 
     // Test with declared syntax version 2.1.
     SoyFileSetNode soyTree =
-        SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_1, true, testFileContent);
+        SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_1, true, testFileContent).getParseTree();
     CallDelegateNode delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
     assertThat(delcall.allowsEmptyDefault()).isTrue();
 
     // Test with declared syntax version 2.2.
-    soyTree = SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_2, true, testFileContent);
+    soyTree =
+        SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_2, true, testFileContent).getParseTree();
     delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
     assertThat(delcall.allowsEmptyDefault()).isFalse();
   }

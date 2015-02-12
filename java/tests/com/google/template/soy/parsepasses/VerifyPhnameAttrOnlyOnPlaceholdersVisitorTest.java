@@ -28,7 +28,7 @@ import junit.framework.TestCase;
  * Unit tests for VerifyPhnameAttrOnlyOnPlaceholdersVisitor.
  *
  */
-public class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
+public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
 
 
   public void testVerifyPhnameAttrOnlyOnPlaceholders() {
@@ -40,14 +40,13 @@ public class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
 
 
   private void assertValidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
     (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
   }
 
 
   private void assertInvalidSoyCode(String soyCode) {
-
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode);
+    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
     try {
       (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
       fail();
