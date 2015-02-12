@@ -72,7 +72,7 @@ public final class PyExprUtils {
    * Builds one Python expression that computes the concatenation of the given Python expressions.
    *
    * <p>Python doesn't allow arbitrary concatentation between types, so to ensure type safety and
-   * consistent behavior, coerce all expressions to Strings before joinging them. Python's array
+   * consistent behavior, coerce all expressions to Strings before joining them. Python's array
    * joining mechanism is used in place of traditional concatenation to improve performance.
    *
    * @param pyExprs The Python expressions to concatenate.
@@ -147,5 +147,55 @@ public final class PyExprUtils {
    */
   public static int pyPrecedenceForOperator(Operator op) {
     return PYTHON_PRECEDENCES.get(op);
+  }
+
+  /**
+   * Convert a java List to valid PyExpr as array.
+   *
+   * @param list List of Objects to be converted to PyExpr, it must be Number, PyExpr or String.
+   */
+  public static PyExpr convertListToPyListExpr(List<Object> list) {
+    return convertListToPyExpr(list, true);
+  }
+
+  /**
+   * Convert a java List to valid PyExpr as tuple.
+   *
+   * @param list List of Objects to be converted to PyExpr, it must be Number, PyExpr or String.
+   */
+  public static PyExpr convertListToPyTupleExpr(List<Object> list) {
+    return convertListToPyExpr(list, false);
+  }
+
+  private static PyExpr convertListToPyExpr(List<Object> list, boolean asArray) {
+    StringBuilder sb = new StringBuilder();
+    String leftDelimiter = "[";
+    String rightDelimiter = "]";
+
+    if (!asArray) {
+      leftDelimiter = "(";
+      rightDelimiter = ")";
+    }
+
+    sb.append(leftDelimiter);
+    for (Object elem : list) {
+      if (!(elem instanceof Number || elem instanceof String || elem instanceof PyExpr)) {
+        throw new UnsupportedOperationException("Only Number, String and PyExpr is allowed");
+      }
+      if (elem instanceof Number) {
+        sb.append(elem);
+      }
+      if (elem instanceof PyExpr) {
+        sb.append(((PyExpr) elem).getText());
+      }
+      if (elem instanceof String) {
+        sb.append("'" + elem + "'");
+      }
+      sb.append(", ");
+    }
+
+    sb.append(rightDelimiter);
+
+    return new PyListExpr(sb.toString(), Integer.MAX_VALUE);
   }
 }

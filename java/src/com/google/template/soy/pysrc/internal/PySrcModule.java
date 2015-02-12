@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
@@ -60,6 +61,7 @@ public final class PySrcModule extends AbstractModule {
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(GenPyExprsVisitorFactory.class));
     install(new FactoryModuleBuilder().build(TranslateToPyExprVisitorFactory.class));
+    install(new FactoryModuleBuilder().build(MsgFuncGeneratorFactory.class));
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyPySrcOptions.class)

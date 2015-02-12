@@ -22,6 +22,7 @@ import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -68,6 +69,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
 
+  private final MsgFuncGeneratorFactory msgFuncGeneratorFactory;
+
   /** List to collect the results. */
   private List<PyExpr> pyExprs;
 
@@ -80,11 +83,13 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
+      MsgFuncGeneratorFactory msgFuncGeneratorFactory,
       TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
     this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
+    this.msgFuncGeneratorFactory = msgFuncGeneratorFactory;
   }
 
 
@@ -198,8 +203,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     }
   }
 
-
   @Override protected void visitMsgNode(MsgNode node) {
-    visitChildren(node);
+    MsgFuncGenerator msgFuncGenerator = msgFuncGeneratorFactory.create(node);
+    pyExprs.add(msgFuncGenerator.getPyExpr());
   }
 }

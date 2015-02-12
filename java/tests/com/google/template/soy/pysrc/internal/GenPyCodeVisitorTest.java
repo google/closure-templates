@@ -122,7 +122,8 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "  Archive\n"
         + "{/msg}\n";
 
-    String expectedPyCode = "output.append('Archive')\n";
+    String expectedPyCode =
+        "output.append(render_literal(prepare_literal(###, 'Archive', desc='Used as a verb.', meaning='verb')))\n";
 
     assertGeneratedPyCode(soyCode, expectedPyCode);
   }
@@ -135,7 +136,23 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "  ARCHIVE\n"
         + "{/msg}\n";
 
-    String expectedPyCode = "output.append('archive' if is_msg_available(###) else 'ARCHIVE')\n";
+    String expectedPyCode =
+        "output.append(render_literal(prepare_literal(###, 'archive', desc='Used as a verb.', meaning='verb')) if is_msg_available(###) else render_literal(prepare_literal(###, 'ARCHIVE', desc='')))\n";
+
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+  }
+
+  public void testMsg() {
+    String soyCode;
+    String expectedPyCode;
+
+    // msg with only literal texts
+    soyCode = "{msg meaning=\"verb\" desc=\"The word 'Archive' used as a verb, i.e. to store information.\"}"
+              + "Archive"
+              + "{/msg}\n";
+
+    expectedPyCode =
+        "output.append(render_literal(prepare_literal(###, 'Archive', desc='The word 'Archive' used as a verb, i.e. to store information.', meaning='verb')))\n";
 
     assertGeneratedPyCode(soyCode, expectedPyCode);
   }

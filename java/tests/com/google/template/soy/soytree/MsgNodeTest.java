@@ -166,7 +166,7 @@ public class MsgNodeTest extends TestCase {
    * This contains a normal select variable and three fall back plural variables
    * with conflict.
    */
-  public static void testGenPlrselVarNames1() {
+  public void testGenPlrselVarNames1() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender}    // Normal select variable.  GENDER.
@@ -304,7 +304,7 @@ public class MsgNodeTest extends TestCase {
   /**
    * Tests whether the names for plural and select nodes are assigned correctly.
    */
-  public static void testGenPlrselVarNames2() {
+  public void testGenPlrselVarNames2() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender[5]}    // Select variable, fall back to STATUS.
@@ -436,7 +436,7 @@ public class MsgNodeTest extends TestCase {
   }
 
 
-  public static void testGenPlrselVarNames3() {
+  public void testGenPlrselVarNames3() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender.person}    // Select variable, fall back to PERSON_1.
@@ -550,7 +550,7 @@ public class MsgNodeTest extends TestCase {
   /**
    * Tests arbitrary expression as plural variable.
    */
-  public static void testGenPlrselVarNames4() {
+  public void testGenPlrselVarNames4() {
     /* Tests the soy message in the following code:
     {msg desc=""}
       {select $gender}    // Select variable, fall back to GENDER.
@@ -681,12 +681,101 @@ public class MsgNodeTest extends TestCase {
     assertSame(repPluralNode3, nodePlural3);
   }
 
+  public void testIsSelectMsg() {
+    /* Tests the soy message in the following code:
+    {msg desc=""}
+      {select $gender.person}    // Select variable, fall back to PERSON_1.
+        {case 'female'}
+          'female'
+        {case default}
+          'default'
+      {/select}
+    {/msg}
+    */
+
+    // Build the message.
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
+
+    // case 'female'
+    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, "'female'");
+    RawTextNode femaleTextNode = new RawTextNode(0, "female");
+    femaleNode.addChild(femaleTextNode);
+    selectNode.addChild(femaleNode);
+
+    // case 'other'
+    MsgSelectDefaultNode selectDefaultNode = new MsgSelectDefaultNode(0);
+    RawTextNode defaultTextNode = new RawTextNode(0, "default");
+    selectDefaultNode.addChild(defaultTextNode);
+    selectNode.addChild(selectDefaultNode);
+
+    msg.addChild(selectNode);
+
+    // Test.
+    assertTrue(msg.isSelectMsg());
+    assertTrue(msg.isPlrselMsg());
+ }
+
+  public void testIsPluralMsg() {
+    /* Tests the soy message in the following code:
+    {msg desc=""}
+      {plural $woman.num}  // Plural variable, NUM_1
+        {case 1}{$person} added one person to her circle.
+        {default}{$person} added many people to her circle.
+      {/plural}
+    {/msg}
+    */
+
+    // Build the message.
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+
+    MsgPluralNode pluralNode1 = new MsgPluralNode(0, "$woman.num");
+
+    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, "1");
+    MsgPlaceholderNode placeholderNode111 =
+        new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
+    pluralCaseNode11.addChild(placeholderNode111);
+    RawTextNode rawTextNode111 = new RawTextNode(0, " added one person to her circle.");
+    pluralCaseNode11.addChild(rawTextNode111);
+
+    pluralNode1.addChild(pluralCaseNode11);
+
+    MsgPluralDefaultNode pluralDefaultNode12 = new MsgPluralDefaultNode(0);
+    MsgPlaceholderNode placeholderNode121 =
+        new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
+    pluralDefaultNode12.addChild(placeholderNode121);
+    RawTextNode rawTextNode121 = new RawTextNode(0, " added many people to her circle.");
+    pluralDefaultNode12.addChild(rawTextNode121);
+
+    msg.addChild(pluralNode1);
+
+    // Test.
+    assertTrue(msg.isPluralMsg());
+    assertTrue(msg.isPlrselMsg());
+  }
+
+  public void testIsRawTextMsg() {
+    /* Tests the soy message in the following code:
+    {msg desc=""}
+      "raw text"
+    {/msg}
+    */
+
+    // Build the message.
+    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    RawTextNode rawTextNode = new RawTextNode(0, "raw text");
+    msg.addChild(rawTextNode);
+
+    // Test.
+    assertTrue(msg.isRawTextMsg());
+    assertTrue(!msg.isPlrselMsg());
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
 
-  private static MsgHtmlTagNode createSimpleHtmlTag(String content) throws Exception {
+  private MsgHtmlTagNode createSimpleHtmlTag(String content) throws Exception {
     return new MsgHtmlTagNode(0, Lists.<StandaloneNode>newArrayList(new RawTextNode(0, content)));
   }
 

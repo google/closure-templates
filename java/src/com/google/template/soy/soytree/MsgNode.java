@@ -212,10 +212,23 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
 
   /** Returns whether this is a plural or select message. */
   public boolean isPlrselMsg() {
-    return getChildren().size() == 1 &&
-        (getChild(0) instanceof MsgPluralNode || getChild(0) instanceof MsgSelectNode);
+    return isSelectMsg() || isPluralMsg();
   }
 
+  /** Returns whether this is a select message. */
+  public boolean isSelectMsg() {
+    return getChildren().size() == 1 && (getChild(0) instanceof MsgSelectNode);
+  }
+
+  /** Returns whether this is a plural message. */
+  public boolean isPluralMsg() {
+    return getChildren().size() == 1 && (getChild(0) instanceof MsgPluralNode);
+  }
+
+  /** Returns whether this is a raw text message. */
+  public boolean isRawTextMsg() {
+    return getChildren().size() == 1 && (getChild(0) instanceof RawTextNode);
+  }
 
   /**
    * Gets the representative placeholder node for a given placeholder name.
