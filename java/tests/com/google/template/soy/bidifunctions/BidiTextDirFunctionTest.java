@@ -25,6 +25,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 
 import junit.framework.TestCase;
 
@@ -37,7 +39,6 @@ public class BidiTextDirFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-
     BidiTextDirFunction bidiTextDirFunction = new BidiTextDirFunction();
 
     SoyValue text = StringData.EMPTY_STRING;
@@ -64,9 +65,7 @@ public class BidiTextDirFunctionTest extends TestCase {
         .isEqualTo(IntegerData.ZERO);
   }
 
-
   public void testComputeForJsSrc() {
-
     BidiTextDirFunction bidiTextDirFunction = new BidiTextDirFunction();
 
     JsExpr textExpr = new JsExpr("TEXT_JS_CODE", Integer.MAX_VALUE);
@@ -79,4 +78,15 @@ public class BidiTextDirFunctionTest extends TestCase {
             new JsExpr("soy.$$bidiTextDir(TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
   }
 
+  public void testComputeForPySrc() {
+    BidiTextDirFunction bidiTextDirFunction = new BidiTextDirFunction();
+
+    PyExpr data = new PyStringExpr("'data'");
+    assertThat(bidiTextDirFunction.computeForPySrc(ImmutableList.of(data)).getText())
+        .isEqualTo("bidi.text_dir('data')");
+
+    PyExpr isHtml = new PyExpr("is_html", Integer.MAX_VALUE);
+    assertThat(bidiTextDirFunction.computeForPySrc(ImmutableList.of(data, isHtml)).getText())
+        .isEqualTo("bidi.text_dir('data', is_html)");
+  }
 }

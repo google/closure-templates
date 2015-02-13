@@ -16,11 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 
 import junit.framework.TestCase;
 
@@ -33,7 +36,6 @@ public class CeilingFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-
     CeilingFunction ceilingFunction = new CeilingFunction();
 
     SoyValue float0 = FloatData.forValue(7.5);
@@ -45,13 +47,17 @@ public class CeilingFunctionTest extends TestCase {
                  ceilingFunction.computeForJava(ImmutableList.of(integer)));
   }
 
-
   public void testComputeForJsSrc() {
-
     CeilingFunction ceilingFunction = new CeilingFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
     assertEquals(new JsExpr("Math.ceil(JS_CODE)", Integer.MAX_VALUE),
                  ceilingFunction.computeForJsSrc(ImmutableList.of(expr)));
   }
 
+  public void testComputeForPySrc() {
+    CeilingFunction ceilingFunction = new CeilingFunction();
+    PyExpr expr = new PyExpr("number", Integer.MAX_VALUE);
+    assertThat(ceilingFunction.computeForPySrc(ImmutableList.of(expr)))
+        .isEqualTo(new PyExpr("math.ceil(number)", Integer.MAX_VALUE));
+  }
 }

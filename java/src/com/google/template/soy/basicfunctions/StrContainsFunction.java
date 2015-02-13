@@ -26,6 +26,9 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -46,7 +49,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -57,11 +60,9 @@ class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "strContains";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(2);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
@@ -80,7 +81,6 @@ class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return BooleanData.forValue(strArg0.contains(strArg1));
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     // Coerce SanitizedContent args to strings.
     String arg0 = JsExprUtils.toString(args.get(0)).getText();
@@ -91,4 +91,12 @@ class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return new JsExpr(exprText, Operator.NOT_EQUAL.getPrecedence());
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    // Coerce SanitizedContent args to strings.
+    String arg0 = args.get(0).toPyString().getText();
+    String arg1 = args.get(1).toPyString().getText();
+
+    String exprText = "(" + arg0 + ").find(" + arg1 + ") != -1";
+    return new PyExpr(exprText, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
+  }
 }

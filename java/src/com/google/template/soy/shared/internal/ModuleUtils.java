@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-import java.util.Map;
 import java.util.Set;
 
 
@@ -48,7 +47,7 @@ public class ModuleUtils {
    * @param specificSoyFunctionType The class of the specific Soy function type to look for.
    * @return A map of the relevant specific Soy functions (name to function).
    */
-  public static <T extends SoyFunction> Map<String, T> buildSpecificSoyFunctionsMap(
+  public static <T extends SoyFunction> ImmutableMap<String, T> buildSpecificSoyFunctionsMap(
       Set<SoyFunction> soyFunctionsSet, Class<T> specificSoyFunctionType) {
 
     ImmutableMap.Builder<String, T> mapBuilder = ImmutableMap.builder();
@@ -92,13 +91,13 @@ public class ModuleUtils {
    * @return A map of the relevant specific Soy functions (name to function).
    */
   public static <T extends SoyFunction, D extends SoyFunction>
-      Map<String, T> buildSpecificSoyFunctionsMapWithAdaptation(
+      ImmutableMap<String, T> buildSpecificSoyFunctionsMapWithAdaptation(
       Set<SoyFunction> soyFunctionsSet, Class<T> specificSoyFunctionType,
       Class<D> equivDeprecatedSoyFunctionType, Function<D, T> adaptFn) {
 
-    Map<String, T> tMap =
+    ImmutableMap<String, T> tMap =
         buildSpecificSoyFunctionsMap(soyFunctionsSet, specificSoyFunctionType);
-    Map<String, D> dMap =
+    ImmutableMap<String, D> dMap =
         buildSpecificSoyFunctionsMap(soyFunctionsSet, equivDeprecatedSoyFunctionType);
 
     ImmutableMap.Builder<String, T> resultMapBuilder = ImmutableMap.builder();
@@ -179,13 +178,13 @@ public class ModuleUtils {
    * @return A map of the relevant specific Soy directives (name to directive).
    */
   public static <T extends SoyPrintDirective, D extends SoyPrintDirective>
-      Map<String, T> buildSpecificSoyDirectivesMapWithAdaptation(
+      ImmutableMap<String, T> buildSpecificSoyDirectivesMapWithAdaptation(
       Set<SoyPrintDirective> soyDirectivesSet, Class<T> specificSoyDirectiveType,
       Class<D> equivDeprecatedSoyDirectiveType, Function<D, T> adaptFn) {
 
-    Map<String, T> tMap =
+    ImmutableMap<String, T> tMap =
         buildSpecificSoyDirectivesMap(soyDirectivesSet, specificSoyDirectiveType);
-    Map<String, D> dMap =
+    ImmutableMap<String, D> dMap =
         buildSpecificSoyDirectivesMap(soyDirectivesSet, equivDeprecatedSoyDirectiveType);
 
     ImmutableMap.Builder<String, T> resultMapBuilder = ImmutableMap.builder();

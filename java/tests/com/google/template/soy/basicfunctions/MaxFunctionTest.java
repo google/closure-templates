@@ -16,11 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 
 import junit.framework.TestCase;
 
@@ -31,9 +34,7 @@ import junit.framework.TestCase;
  */
 public class MaxFunctionTest extends TestCase {
 
-
   public void testComputeForJava() {
-
     MaxFunction maxFunction = new MaxFunction();
 
     SoyValue float0 = FloatData.forValue(7.5);
@@ -47,9 +48,7 @@ public class MaxFunctionTest extends TestCase {
                  maxFunction.computeForJava(ImmutableList.of(integer0, integer1)));
   }
 
-
   public void testComputeForJsSrc() {
-
     MaxFunction maxFunction = new MaxFunction();
     JsExpr expr0 = new JsExpr("JS_CODE_0", Integer.MAX_VALUE);
     JsExpr expr1 = new JsExpr("JS_CODE_1", Integer.MAX_VALUE);
@@ -57,4 +56,11 @@ public class MaxFunctionTest extends TestCase {
                  maxFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)));
   }
 
+  public void testComputeForPySrc() {
+    MaxFunction maxFunction = new MaxFunction();
+    PyExpr expr0 = new PyExpr("number0", Integer.MAX_VALUE);
+    PyExpr expr1 = new PyExpr("number1", Integer.MAX_VALUE);
+    assertThat(maxFunction.computeForPySrc(ImmutableList.of(expr0, expr1)))
+        .isEqualTo(new PyExpr("max(number0, number1)", Integer.MAX_VALUE));
+  }
 }

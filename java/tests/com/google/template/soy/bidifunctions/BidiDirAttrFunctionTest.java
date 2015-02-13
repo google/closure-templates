@@ -26,6 +26,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
 
 import junit.framework.TestCase;
@@ -43,14 +45,10 @@ public class BidiDirAttrFunctionTest extends TestCase {
   private static final BidiDirAttrFunction BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL =
       new BidiDirAttrFunction(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER);
 
-  private static final BidiDirAttrFunction BIDI_DIR_ATTR_FUNCTION_FOR_ISRTL_CODE_SNIPPET =
-      new BidiDirAttrFunction(
-          SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET_PROVIDER);
-
 
   public void testComputeForJava() {
-
     SoyValue text = StringData.EMPTY_STRING;
+
     assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
         .isEqualTo(UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "", SanitizedContent.ContentKind.ATTRIBUTES));
@@ -111,14 +109,15 @@ public class BidiDirAttrFunctionTest extends TestCase {
             "", SanitizedContent.ContentKind.ATTRIBUTES));
   }
 
-
   public void testComputeForJsSrc() {
+    BidiDirAttrFunction codeSnippet = new BidiDirAttrFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
 
     JsExpr textExpr = new JsExpr("TEXT_JS_CODE", Integer.MAX_VALUE);
     assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.of(textExpr)))
         .isEqualTo(new JsExpr("soy.$$bidiDirAttr(1, TEXT_JS_CODE)", Integer.MAX_VALUE));
     assertThat(
-        BIDI_DIR_ATTR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.of(textExpr)))
+        codeSnippet.computeForJsSrc(ImmutableList.of(textExpr)))
         .isEqualTo(new JsExpr("soy.$$bidiDirAttr(IS_RTL?-1:1, TEXT_JS_CODE)", Integer.MAX_VALUE));
 
     JsExpr isHtmlExpr = new JsExpr("IS_HTML_JS_CODE", Integer.MAX_VALUE);
@@ -128,10 +127,21 @@ public class BidiDirAttrFunctionTest extends TestCase {
         .isEqualTo(
             new JsExpr("soy.$$bidiDirAttr(-1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
     assertThat(
-        BIDI_DIR_ATTR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
-            ImmutableList.of(textExpr, isHtmlExpr)))
+        codeSnippet.computeForJsSrc(ImmutableList.of(textExpr, isHtmlExpr)))
         .isEqualTo(new JsExpr(
             "soy.$$bidiDirAttr(IS_RTL?-1:1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
   }
 
+  public void testComputeForPySrc() {
+    BidiDirAttrFunction codeSnippet = new BidiDirAttrFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+
+    PyExpr textExpr = new PyStringExpr("'data'", Integer.MAX_VALUE);
+    assertThat(codeSnippet.computeForPySrc(ImmutableList.of(textExpr)).getText())
+        .isEqualTo("bidi.dir_attr(-1 if IS_RTL else 1, 'data')");
+
+    PyExpr isHtmlExpr = new PyExpr("is_html", Integer.MAX_VALUE);
+    assertThat(codeSnippet.computeForPySrc(ImmutableList.of(textExpr, isHtmlExpr)).getText())
+        .isEqualTo("bidi.dir_attr(-1 if IS_RTL else 1, 'data', is_html)");
+  }
 }

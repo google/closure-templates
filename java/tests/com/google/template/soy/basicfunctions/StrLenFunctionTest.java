@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
 import com.google.common.collect.ImmutableList;
@@ -25,6 +26,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 
 import junit.framework.TestCase;
 
@@ -37,27 +40,34 @@ public class StrLenFunctionTest extends TestCase {
 
 
   public void testComputeForJava_containsString() {
+    StrLenFunction strLen = new StrLenFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
-
-    StrLenFunction f = new StrLenFunction();
-    assertEquals(IntegerData.forValue(9), f.computeForJava(ImmutableList.of(arg0)));
+    assertEquals(IntegerData.forValue(9), strLen.computeForJava(ImmutableList.of(arg0)));
   }
-
 
   public void testComputeForJava_containsSanitizedContent() {
+    StrLenFunction strLen = new StrLenFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-
-    StrLenFunction f = new StrLenFunction();
-    assertEquals(IntegerData.forValue(9), f.computeForJava(ImmutableList.of(arg0)));
+    assertEquals(IntegerData.forValue(9), strLen.computeForJava(ImmutableList.of(arg0)));
   }
 
-
   public void testComputeForJsSrc() {
-    StrLenFunction f = new StrLenFunction();
+    StrLenFunction strLen = new StrLenFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     assertEquals(
         new JsExpr("('' + ('foo' + 'bar')).length", Integer.MAX_VALUE),
-        f.computeForJsSrc(ImmutableList.of(arg0)));
+        strLen.computeForJsSrc(ImmutableList.of(arg0)));
   }
 
+  public void testComputeForPySrc() {
+    StrLenFunction strLen = new StrLenFunction();
+
+    PyExpr string = new PyStringExpr("'data'");
+    assertThat(strLen.computeForPySrc(ImmutableList.of(string)))
+        .isEqualTo(new PyExpr("len('data')", Integer.MAX_VALUE));
+
+    PyExpr data = new PyExpr("data", Integer.MAX_VALUE);
+    assertThat(strLen.computeForPySrc(ImmutableList.of(data)))
+        .isEqualTo(new PyExpr("len(str(data))", Integer.MAX_VALUE));
+  }
 }

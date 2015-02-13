@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.pysrc.internal;
+package com.google.template.soy.pysrc.restricted;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyStringExpr;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  *
@@ -38,7 +36,7 @@ import java.util.Map.Entry;
  *
  *
  */
-final class PyFunctionExprBuilder {
+public final class PyFunctionExprBuilder {
   private static final Function<Map.Entry<String, PyExpr>, String> KEYWORD_ARG_MAPPER =
       new Function<Map.Entry<String, PyExpr>, String>() {
     @Override
@@ -60,17 +58,18 @@ final class PyFunctionExprBuilder {
   private final String funcName;
   private final List<PyExpr> argList;
   private final Map<String, PyExpr> kwargMap;
+  private String unpackedKwargs = null;
 
   /**
    * @param funcName The name of the function.
    */
-  PyFunctionExprBuilder(String funcName) {
+  public PyFunctionExprBuilder(String funcName) {
     this.funcName = funcName;
     this.argList = new LinkedList<>();
     this.kwargMap = new HashMap<>();
   }
 
-  PyFunctionExprBuilder addArg(PyExpr arg) {
+  public PyFunctionExprBuilder addArg(PyExpr arg) {
     this.argList.add(arg);
     return this;
   }
@@ -99,7 +98,7 @@ final class PyFunctionExprBuilder {
     return this.funcName;
   }
 
-  PyFunctionExprBuilder addKwarg(String key, PyExpr argValue) {
+  public PyFunctionExprBuilder addKwarg(String key, PyExpr argValue) {
     kwargMap.put(key, argValue);
     return this;
   }
@@ -125,23 +124,46 @@ final class PyFunctionExprBuilder {
   }
 
   /**
+   * Unpacking keyword arguments will expand a dictionary into a series of keyword arguments.
+   *
+   * <p>NOTE: Keyword unpacking behavior is only guaranteed for mapping expressions. Non-mapping
+   * expressions which attempt to unpack will result in Python runtime errors.
+   *
+   * @param mapping The mapping expression to unpack.
+   * @return This PyFunctionExprBuilder instance.
+   */
+  public PyFunctionExprBuilder setUnpackedKwargs(PyExpr mapping) {
+    if (unpackedKwargs != null) {
+      throw new UnsupportedOperationException("Only one kwarg unpacking allowed per expression.");
+    }
+    StringBuilder expr = new StringBuilder("**");
+    if (mapping.getPrecedence() < Integer.MAX_VALUE) {
+      expr.append("(").append(mapping.getText()).append(")");
+    } else {
+      expr.append(mapping.getText());
+    }
+    unpackedKwargs = expr.toString();
+    return this;
+  }
+
+  /**
    *  Returns a valid Python function call as a String.
    */
-  String build() {
+  public String build() {
     StringBuilder sb = new StringBuilder(funcName + "(");
 
-    Iterable<String> args = Iterables.transform(argList, LIST_ARG_MAPPER);
+    Joiner joiner = Joiner.on(", ").skipNulls();
 
-    Joiner.on(", ").appendTo(sb, args);
+    // Join args and kwargs into simple strings.
+    String args = joiner.join(Iterables.transform(argList, LIST_ARG_MAPPER));
+    String kwargs = joiner.join(Iterables.transform(kwargMap.entrySet(), KEYWORD_ARG_MAPPER));
 
-    Iterable<String> keywordArgs = Iterables.transform(kwargMap.entrySet(), KEYWORD_ARG_MAPPER);
+    // Strip empty strings.
+    args = Strings.emptyToNull(args);
+    kwargs = Strings.emptyToNull(kwargs);
 
-    // append ',' between list and keyed arguments only when necessary
-    if (!argList.isEmpty() && !kwargMap.isEmpty()) {
-      sb.append(", ");
-    }
-
-    Joiner.on(", ").appendTo(sb, keywordArgs);
+    // Join all pieces together.
+    joiner.appendTo(sb, args, kwargs, unpackedKwargs);
 
     sb.append(")");
     return sb.toString();
@@ -153,7 +175,7 @@ final class PyFunctionExprBuilder {
   *
   * @return A PyExpr represents the function code.
   */
-  PyExpr asPyExpr() {
+  public PyExpr asPyExpr() {
     return new PyExpr(build(), Integer.MAX_VALUE);
   }
 
@@ -162,7 +184,7 @@ final class PyFunctionExprBuilder {
   *
   * @return A PyStringExpr represents the function code.
   */
-  PyStringExpr asPyStringExpr() {
+  public PyStringExpr asPyStringExpr() {
     return new PyStringExpr(build());
   }
 }

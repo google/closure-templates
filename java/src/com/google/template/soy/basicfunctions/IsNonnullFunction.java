@@ -26,6 +26,9 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -41,7 +44,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -52,17 +55,14 @@ class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "isNonnull";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
     return BooleanData.forValue(! (arg instanceof UndefinedData || arg instanceof NullData));
   }
-
 
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
@@ -72,4 +72,9 @@ class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction {
         Operator.NOT_EQUAL, Lists.<JsExpr>newArrayList(arg, nullJsExpr));
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    // Note: This check could blow up if the variable was never created at all. However, this should
+    // not be possible as a variable not found in the function is assumed to be part of opt_data.
+    return PyExprUtils.genPyNotNullCheck(args.get(0));
+  }
 }

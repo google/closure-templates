@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyList;
@@ -23,6 +25,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyListExpr;
 
 import junit.framework.TestCase;
 
@@ -40,8 +44,8 @@ public class KeysFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-
     KeysFunction keysFunction = new KeysFunction(VALUE_HELPER);
+
     SoyValue map = VALUE_HELPER.newEasyDict(
         "boo", "bar", "foo", 2, "goo", VALUE_HELPER.newEasyDict("moo", 4));
     SoyValue result = keysFunction.computeForJava(ImmutableList.of(map));
@@ -57,9 +61,7 @@ public class KeysFunctionTest extends TestCase {
     assertEquals(Sets.newHashSet("boo", "foo", "goo"), resultItems);
   }
 
-
   public void testComputeForJsSrc() {
-
     KeysFunction keysFunction = new KeysFunction(VALUE_HELPER);
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
     assertEquals(
@@ -67,4 +69,10 @@ public class KeysFunctionTest extends TestCase {
         keysFunction.computeForJsSrc(ImmutableList.of(expr)));
   }
 
+  public void testComputeForPySrc() {
+    KeysFunction keysFunction = new KeysFunction(VALUE_HELPER);
+    PyExpr dict = new PyExpr("dictionary", Integer.MAX_VALUE);
+    assertThat(keysFunction.computeForPySrc(ImmutableList.of(dict)))
+        .isEqualTo(new PyListExpr("(dictionary).keys()", Integer.MAX_VALUE));
+  }
 }

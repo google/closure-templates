@@ -20,10 +20,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
@@ -56,6 +58,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The module path for the runtime libraries. */
   private final String runtimePath;
 
+  /** The module and function name for the bidi isRtl function. */
+  private final String bidiIsRtlFn;
+
   /** The module name for the translation module used at runtime. */
   private final String translationPyModuleName;
 
@@ -79,13 +84,15 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Inject
   GenPyCodeVisitor(@RuntimePath String runtimePath,
+      @BidiIsRtlFn String bidiIsRtlFn,
       @TranslationPyModuleName String translationPyModuleName,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
     this.runtimePath = runtimePath;
+    this.bidiIsRtlFn = bidiIsRtlFn;
+    this.translationPyModuleName = translationPyModuleName;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
-    this.translationPyModuleName = translationPyModuleName;
   }
 
 
@@ -269,11 +276,22 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine("import random");
 
     // TODO(dcphillips): limit this based on usage?
-    pyCodeBuilder.appendLine("from " + runtimePath + " import bidi");
-    pyCodeBuilder.appendLine("from " + runtimePath + " import directives");
-    pyCodeBuilder.appendLine("from " + runtimePath + " import runtime");
-    pyCodeBuilder.appendLine("from " + runtimePath + " import sanitize");
+    pyCodeBuilder.appendLine("from ", runtimePath, " import bidi");
+    pyCodeBuilder.appendLine("from ", runtimePath, " import directives");
+    pyCodeBuilder.appendLine("from ", runtimePath, " import runtime");
+    pyCodeBuilder.appendLine("from ", runtimePath, " import sanitize");
     pyCodeBuilder.appendLine();
+
+    if (!bidiIsRtlFn.isEmpty()) {
+      int dotIndex = bidiIsRtlFn.lastIndexOf('.');
+      // When importing the module, we'll use the constant name to avoid potential conflicts.
+      String bidiModulePath = bidiIsRtlFn.substring(0, dotIndex);
+      Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(bidiModulePath);
+      String bidiNamespace = nameSpaceAndName.first;
+      String bidiModuleName = nameSpaceAndName.second;
+      pyCodeBuilder.appendLine("from ", bidiNamespace, " import ", bidiModuleName, " as ",
+          SoyBidiUtils.IS_RTL_MODULE_ALIAS);
+    }
 
     // Add import and instantiate statements for translator module
     // TODO(steveyang): remember the check when implementing MsgNode
@@ -281,8 +299,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(translationPyModuleName);
       String translationNamespace = nameSpaceAndName.first;
       String translationName = nameSpaceAndName.second;
-      pyCodeBuilder.appendLine("from " + translationNamespace + " import " + translationName);
-      pyCodeBuilder.appendLine(TRANSLATOR_INTERFACE_NAME + " = " + translationName + "()");
+      pyCodeBuilder.appendLine("from ", translationNamespace, " import ", translationName);
+      pyCodeBuilder.appendLine(TRANSLATOR_INTERFACE_NAME, " = ", translationName, "()");
     }
   }
 

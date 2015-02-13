@@ -22,9 +22,12 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -41,7 +44,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -52,11 +55,9 @@ class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "round";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1, 2);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
@@ -79,19 +80,11 @@ class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction {
     }
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr value = args.get(0);
     JsExpr numDigitsAfterPt = (args.size() == 2) ? args.get(1) : null;
 
-    int numDigitsAfterPtAsInt = 0;
-    if (numDigitsAfterPt != null) {
-      try {
-        numDigitsAfterPtAsInt = Integer.parseInt(numDigitsAfterPt.getText());
-      } catch (NumberFormatException nfe) {
-        numDigitsAfterPtAsInt = Integer.MIN_VALUE;  // indicates it's not a simple integer literal
-      }
-    }
+    int numDigitsAfterPtAsInt = convertNumDigits(numDigitsAfterPt);
 
     if (numDigitsAfterPtAsInt == 0) {
       // Case 1: round() has only one argument or the second argument is 0.
@@ -128,4 +121,46 @@ class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction {
     }
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    PyExpr value = args.get(0);
+    PyExpr precision = (args.size() == 2) ? args.get(1) : null;
+
+    int precisionAsInt = convertNumDigits(precision);
+    boolean isLiteral = precisionAsInt != Integer.MIN_VALUE;
+
+    if (precisionAsInt >= -12 && precisionAsInt <= 12 || !isLiteral) {
+      StringBuilder roundedValue = new StringBuilder("round(")
+          .append(value.getText())
+          .append(", ")
+          .append(isLiteral ? precisionAsInt : precision.getText())
+          .append(")");
+      // The precision is less than 1. Convert to an int to prevent extraneous decimals in display.
+      if (isLiteral && precisionAsInt <= 0) {
+        return new PyExpr("int(" + roundedValue + ")", Integer.MAX_VALUE);
+      } else {
+        return new PyExpr(roundedValue.toString(), Integer.MAX_VALUE);
+      }
+    } else {
+      throw new IllegalArgumentException(
+          "Second argument to round() function is " + precisionAsInt +
+          ", which is too large in magnitude.");
+    }
+  }
+
+  /**
+   * Convert the number of digits after the point from an expression to an int.
+   * @param numDigitsAfterPt The number of digits after the point as an expression
+   * @return The number of digits after the point and an int.
+   */
+  private static int convertNumDigits(TargetExpr numDigitsAfterPt) {
+    int numDigitsAfterPtAsInt = 0;
+    if (numDigitsAfterPt != null) {
+      try {
+        numDigitsAfterPtAsInt = Integer.parseInt(numDigitsAfterPt.getText());
+      } catch (NumberFormatException nfe) {
+        numDigitsAfterPtAsInt = Integer.MIN_VALUE;  // indicates it's not a simple integer literal
+      }
+    }
+    return numDigitsAfterPtAsInt;
+  }
 }

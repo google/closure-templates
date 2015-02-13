@@ -23,6 +23,7 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 
 
@@ -30,11 +31,6 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
  * Unit tests for {@link FilterImageDataUriDirective}.
  */
 public class FilterImageDataUriDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
-
-
-  private SanitizedContent sanitizedUri(String s) {
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(s, ContentKind.URI);
-  }
 
   public void testApplyForTofu() {
     FilterImageDataUriDirective directive = new FilterImageDataUriDirective();
@@ -49,5 +45,16 @@ public class FilterImageDataUriDirectiveTest extends AbstractSoyPrintDirectiveTe
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
         .isEqualTo("soy.$$filterImageDataUri(opt_data.myKey)");
+  }
+
+  public void testApplyForPySrc() {
+    FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
+    PyExpr data = new PyExpr("'data'", Integer.MAX_VALUE);
+    assertThat(cleanHtml.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())
+        .isEqualTo("sanitize.filter_image_data_uri('data')");
+  }
+
+  private SanitizedContent sanitizedUri(String s) {
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(s, ContentKind.URI);
   }
 }

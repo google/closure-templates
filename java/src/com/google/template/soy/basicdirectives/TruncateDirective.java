@@ -22,6 +22,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
@@ -39,7 +42,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class TruncateDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
+final class TruncateDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective,
+    SoyPySrcPrintDirective {
 
 
   @Inject
@@ -50,19 +54,15 @@ public class TruncateDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDi
     return "|truncate";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1, 2);
   }
-
 
   @Override public boolean shouldCancelAutoescape() {
     return false;
   }
 
-
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-
     int maxLen;
     try {
       maxLen = args.get(0).integerValue();
@@ -116,9 +116,7 @@ public class TruncateDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDi
     return StringData.forValue(str);
   }
 
-
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-
     String maxLenExprText = args.get(0).getText();
     String doAddEllipsisExprText = (args.size() == 2) ? args.get(1).getText() : "true" /*default*/;
 
@@ -128,4 +126,15 @@ public class TruncateDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDi
         Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    // Truncation always wants a string, so to potentially save an unnecessary conversion, we do
+    // optional coercing at compile time.
+    PyExpr input = value.toPyString();
+    PyExpr maxLen = args.get(0);
+    PyExpr doAddEllipsis = (args.size() == 2) ? args.get(1) : new PyExpr("True", Integer.MAX_VALUE);
+
+    PyFunctionExprBuilder fnBuilder = new PyFunctionExprBuilder("directives.truncate");
+    fnBuilder.addArg(input).addArg(maxLen).addArg(doAddEllipsis);
+    return fnBuilder.asPyStringExpr();
+  }
 }

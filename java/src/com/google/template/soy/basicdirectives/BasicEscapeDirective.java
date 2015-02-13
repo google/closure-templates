@@ -16,11 +16,14 @@
 
 package com.google.template.soy.basicdirectives;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
@@ -32,15 +35,19 @@ import javax.inject.Singleton;
 
 
 /**
- * An escaping directive that is backed by {@link Sanitizers} in java, and {@code soyutils.js} or
- * the closure equivalent in JavaScript.
+ * An escaping directive that is backed by {@link Sanitizers} in java, {@code soyutils.js} or
+ * the closure equivalent in JavaScript, and {@code sanitize.py} in Python.
  * See {@link com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode} which
- * creates the JS code that backs escaping directives.
+ * creates the JS code that backs escaping directives, and
+ * {@link com.google.template.soy.pysrc.internal.GeneratePySanitizeEscapingDirectiveCode} which
+ * creates the Python backing code.
  *
  */
 public abstract class BasicEscapeDirective
-    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
+    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
 
+
+  private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   /** The directive name, including the leading vertical bar ("|"). */
   private final String name;
@@ -59,7 +66,6 @@ public abstract class BasicEscapeDirective
    */
   protected abstract String escape(SoyValue value);
 
-
   /**
    * The name of the Soy directive that this instance implements.
    */
@@ -67,26 +73,26 @@ public abstract class BasicEscapeDirective
     return name;
   }
 
-
   @Override public final Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
-  private static final Set<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
-
 
   @Override public final boolean shouldCancelAutoescape() {
     return true;
   }
 
-
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return StringData.forValue(escape(value));
   }
 
-
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr(
         "soy.$$" + name.substring(1) + "(" + value.getText() + ")", Integer.MAX_VALUE);
+  }
+
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    String pyFnName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name.substring(1));
+    return new PyExpr("sanitize." + pyFnName + "(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
 
@@ -313,5 +319,4 @@ public abstract class BasicEscapeDirective
       return Sanitizers.escapeUri(value);
     }
   }
-
 }

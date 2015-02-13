@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
@@ -24,6 +25,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 
 import junit.framework.TestCase;
 
@@ -39,7 +41,6 @@ public class AugmentMapFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
     SoyMap origMap = VALUE_HELPER.newEasyDict(
         "aaa", "blah", "bbb", "bleh", "ccc", VALUE_HELPER.newEasyDict("xxx", 2));
@@ -54,9 +55,7 @@ public class AugmentMapFunctionTest extends TestCase {
     assertEquals(null, ((SoyDict) augmentedDict.getField("ccc")).getField("xxx"));
   }
 
-
   public void testComputeForJsSrc() {
-
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
     JsExpr baseMapExpr = new JsExpr("BASE_MAP_JS_CODE", Integer.MAX_VALUE);
     JsExpr additionalMapExpr = new JsExpr("ADDITIONAL_MAP_JS_CODE", Integer.MAX_VALUE);
@@ -65,4 +64,11 @@ public class AugmentMapFunctionTest extends TestCase {
         augmentMapFunction.computeForJsSrc(ImmutableList.of(baseMapExpr, additionalMapExpr)));
   }
 
+  public void testComputeForPySrc() {
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
+    PyExpr baseMapExpr = new PyExpr("base", Integer.MAX_VALUE);
+    PyExpr additionalMapExpr = new PyExpr("additional", Integer.MAX_VALUE);
+    assertThat(augmentMapFunction.computeForPySrc(ImmutableList.of(baseMapExpr, additionalMapExpr)))
+        .isEqualTo(new PyExpr("dict(base, **additional)", Integer.MAX_VALUE));
+  }
 }

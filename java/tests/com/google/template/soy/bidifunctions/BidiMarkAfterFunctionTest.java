@@ -24,6 +24,8 @@ import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
 
 import junit.framework.TestCase;
@@ -41,13 +43,8 @@ public class BidiMarkAfterFunctionTest extends TestCase {
   private static final BidiMarkAfterFunction BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_RTL =
       new BidiMarkAfterFunction(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER);
 
-  private static final BidiMarkAfterFunction BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET =
-      new BidiMarkAfterFunction(
-          SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET_PROVIDER);
-
 
   public void testComputeForJava() {
-
     SoyValue text = StringData.EMPTY_STRING;
     assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
         .isEqualTo(StringData.EMPTY_STRING);
@@ -119,14 +116,15 @@ public class BidiMarkAfterFunctionTest extends TestCase {
         .isEqualTo(StringData.forValue("\u200F"));
   }
 
-
   public void testComputeForJsSrc() {
+    BidiMarkAfterFunction codeSnippet = new BidiMarkAfterFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
 
     JsExpr textExpr = new JsExpr("TEXT_JS_CODE", Integer.MAX_VALUE);
     assertThat(BIDI_MARK_AFTER_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.of(textExpr)))
         .isEqualTo(new JsExpr("soy.$$bidiMarkAfter(1, TEXT_JS_CODE)", Integer.MAX_VALUE));
     assertThat(
-        BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.of(textExpr)))
+        codeSnippet.computeForJsSrc(ImmutableList.of(textExpr)))
         .isEqualTo(new JsExpr("soy.$$bidiMarkAfter(IS_RTL?-1:1, TEXT_JS_CODE)", Integer.MAX_VALUE));
 
     JsExpr isHtmlExpr = new JsExpr("IS_HTML_JS_CODE", Integer.MAX_VALUE);
@@ -136,10 +134,22 @@ public class BidiMarkAfterFunctionTest extends TestCase {
         .isEqualTo(new JsExpr(
             "soy.$$bidiMarkAfter(-1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
     assertThat(
-        BIDI_MARK_AFTER_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(
+        codeSnippet.computeForJsSrc(
             ImmutableList.of(textExpr, isHtmlExpr)))
         .isEqualTo(new JsExpr(
             "soy.$$bidiMarkAfter(IS_RTL?-1:1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
   }
 
+  public void testComputeForPySrc() {
+    BidiMarkAfterFunction codeSnippet = new BidiMarkAfterFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+
+    PyExpr textExpr = new PyStringExpr("'data'");
+    assertThat(codeSnippet.computeForPySrc(ImmutableList.of(textExpr)).getText())
+        .isEqualTo("bidi.mark_after(-1 if IS_RTL else 1, 'data')");
+
+    PyExpr isHtmlExpr = new PyExpr("is_html", Integer.MAX_VALUE);
+    assertThat(codeSnippet.computeForPySrc(ImmutableList.of(textExpr, isHtmlExpr)).getText())
+        .isEqualTo("bidi.mark_after(-1 if IS_RTL else 1, 'data', is_html)");
+  }
 }

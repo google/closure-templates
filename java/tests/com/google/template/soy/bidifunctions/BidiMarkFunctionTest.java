@@ -23,6 +23,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
 
 import junit.framework.TestCase;
@@ -40,10 +42,6 @@ public class BidiMarkFunctionTest extends TestCase {
   private static final BidiMarkFunction BIDI_MARK_FUNCTION_FOR_STATIC_RTL =
       new BidiMarkFunction(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER);
 
-  private static final BidiMarkFunction BIDI_MARK_FUNCTION_FOR_ISRTL_CODE_SNIPPET =
-      new BidiMarkFunction(
-          SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET_PROVIDER);
-
 
   public void testComputeForJava() {
     assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()))
@@ -52,16 +50,26 @@ public class BidiMarkFunctionTest extends TestCase {
         .isEqualTo(StringData.forValue("\u200F"));
   }
 
-
   public void testComputeForJsSrc() {
     assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("'\\u200E'", Integer.MAX_VALUE));
     assertThat(BIDI_MARK_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("'\\u200F'", Integer.MAX_VALUE));
+
+    BidiMarkFunction codeSnippet = new BidiMarkFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
     assertThat(
-        BIDI_MARK_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr(
             "(IS_RTL?-1:1) < 0 ? '\\u200F' : '\\u200E'", Operator.CONDITIONAL.getPrecedence()));
   }
 
+  public void testComputeForPySrc() {
+    BidiMarkFunction codeSnippet = new BidiMarkFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+
+    assertThat(codeSnippet.computeForPySrc(ImmutableList.<PyExpr>of()))
+        .isEqualTo(new PyExpr("'\\u200F' if (-1 if IS_RTL else 1) < 0 else '\\u200E'",
+            PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
 }

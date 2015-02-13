@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.pysrc.internal;
+package com.google.template.soy.pysrc.restricted;
 
-import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import static com.google.common.truth.Truth.assertThat;
+
+import com.google.template.soy.exprtree.Operator;
 
 import junit.framework.TestCase;
 
@@ -101,5 +103,26 @@ public final class PyFunctionExprBuilderTest extends TestCase {
     func.addKwarg("foo1", 10);
     func.addKwarg("foo", "bar");
     assertEquals(func.build(), "some_func(42, 'foobar', foo1=10, foo='bar')");
+  }
+
+  public void testUnpackedKwargs() {
+    PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
+    func.setUnpackedKwargs(new PyExpr("map", Integer.MAX_VALUE));
+    assertThat(func.build()).isEqualTo("some_func(**map)");
+  }
+
+  public void testUnpackedKwargs_lowPrecedence() {
+    PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
+    func.setUnpackedKwargs(new PyExpr("map",
+        PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+    assertThat(func.build()).isEqualTo("some_func(**(map))");
+  }
+
+  public void testUnpackedKwargs_multipleArguments() {
+    PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
+    func.setUnpackedKwargs(new PyExpr("map", Integer.MAX_VALUE));
+    func.addArg("foobar");
+    func.addKwarg("foo", "bar");
+    assertThat(func.build()).isEqualTo("some_func('foobar', foo='bar', **map)");
   }
 }

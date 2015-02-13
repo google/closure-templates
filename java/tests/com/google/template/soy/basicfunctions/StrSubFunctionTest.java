@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
 import com.google.common.collect.ImmutableList;
@@ -25,6 +26,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 
 import junit.framework.TestCase;
 
@@ -37,63 +40,84 @@ public class StrSubFunctionTest extends TestCase {
 
 
   public void testComputeForJava_noEndIndex() {
+    StrSubFunction strSub = new StrSubFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = IntegerData.forValue(2);
-
-    StrSubFunction f = new StrSubFunction();
-    assertEquals(StringData.forValue("obarfoo"), f.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertEquals(
+        StringData.forValue("obarfoo"),
+        strSub.computeForJava(ImmutableList.of(arg0, arg1)));
   }
-
 
   public void testComputeForJava_noEndIndex_SanitizedContent() {
+    StrSubFunction strSub = new StrSubFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = IntegerData.forValue(2);
-
-    StrSubFunction f = new StrSubFunction();
-    assertEquals(StringData.forValue("obarfoo"), f.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertEquals(
+        StringData.forValue("obarfoo"),
+        strSub.computeForJava(ImmutableList.of(arg0, arg1)));
   }
 
-
   public void testComputeForJava_endIndex() {
+    StrSubFunction strSub = new StrSubFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = IntegerData.forValue(2);
     SoyValue arg2 = IntegerData.forValue(7);
-
-    StrSubFunction f = new StrSubFunction();
-    assertEquals(StringData.forValue("obarf"),
-        f.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+    assertEquals(
+        StringData.forValue("obarf"),
+        strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
   }
 
-
   public void testComputeForJava_endIndex_SanitizedContent() {
+    StrSubFunction strSub = new StrSubFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = IntegerData.forValue(2);
     SoyValue arg2 = IntegerData.forValue(7);
-
-    StrSubFunction f = new StrSubFunction();
-    assertEquals(StringData.forValue("obarf"),
-        f.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+    assertEquals(
+        StringData.forValue("obarf"),
+        strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
   }
 
-
   public void testComputeForJsSrc_noEndIndex() {
-    StrSubFunction f = new StrSubFunction();
+    StrSubFunction strSub = new StrSubFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("3", Integer.MAX_VALUE);
     assertEquals(
         new JsExpr("('' + ('foo' + 'bar')).substring(3)", Integer.MAX_VALUE),
-        f.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+        strSub.computeForJsSrc(ImmutableList.of(arg0, arg1)));
   }
 
-
   public void testComputeForJsSrc_endIndex() {
-    StrSubFunction f = new StrSubFunction();
+    StrSubFunction strSub = new StrSubFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("3", Integer.MAX_VALUE);
     JsExpr arg2 = new JsExpr("5", Integer.MAX_VALUE);
     assertEquals(
         new JsExpr("('' + ('foo' + 'bar')).substring(3,5)", Integer.MAX_VALUE),
-        f.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
+        strSub.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
   }
 
+  public void testComputeForPySrc_noEndIndex() {
+    StrSubFunction strSub = new StrSubFunction();
+    PyExpr base = new PyStringExpr("'foobar'", Integer.MAX_VALUE);
+    PyExpr start = new PyExpr("3", Integer.MAX_VALUE);
+    assertThat(strSub.computeForPySrc(ImmutableList.of(base, start)))
+        .isEqualTo(new PyStringExpr("('foobar')[3:]", Integer.MAX_VALUE));
+  }
+
+  public void testComputeForPySrc_endIndex() {
+    StrSubFunction strSub = new StrSubFunction();
+    PyExpr base = new PyStringExpr("'foobar'", Integer.MAX_VALUE);
+    PyExpr start = new PyExpr("3", Integer.MAX_VALUE);
+    PyExpr end = new PyExpr("5", Integer.MAX_VALUE);
+    assertThat(strSub.computeForPySrc(ImmutableList.of(base, start, end)))
+        .isEqualTo(new PyStringExpr("('foobar')[3:5]", Integer.MAX_VALUE));
+  }
+
+  public void testComputeForPySrc_nonStringInput() {
+    StrSubFunction strSub = new StrSubFunction();
+    PyExpr base = new PyExpr("foobar", Integer.MAX_VALUE);
+    PyExpr start = new PyExpr("3", Integer.MAX_VALUE);
+    assertThat(strSub.computeForPySrc(ImmutableList.of(base, start)))
+        .isEqualTo(new PyStringExpr("(str(foobar))[3:]", Integer.MAX_VALUE));
+  }
 }

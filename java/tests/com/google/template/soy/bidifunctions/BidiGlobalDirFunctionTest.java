@@ -23,6 +23,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
 
 import junit.framework.TestCase;
@@ -40,10 +42,6 @@ public class BidiGlobalDirFunctionTest extends TestCase {
   private static final BidiGlobalDirFunction BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL =
       new BidiGlobalDirFunction(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER);
 
-  private static final BidiGlobalDirFunction BIDI_GLOBAL_DIR_FUNCTION_FOR_ISRTL_CODE_SNIPPET =
-      new BidiGlobalDirFunction(
-          SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET_PROVIDER);
-
 
   public void testComputeForJava() {
     assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()))
@@ -52,15 +50,25 @@ public class BidiGlobalDirFunctionTest extends TestCase {
         .isEqualTo(IntegerData.MINUS_ONE);
   }
 
-
   public void testComputeForJsSrc() {
     assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("1", Integer.MAX_VALUE));
     assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("-1", Integer.MAX_VALUE));
+
+    BidiGlobalDirFunction codeSnippet = new BidiGlobalDirFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
     assertThat(
-        BIDI_GLOBAL_DIR_FUNCTION_FOR_ISRTL_CODE_SNIPPET.computeForJsSrc(ImmutableList.<JsExpr>of()))
+       codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("IS_RTL?-1:1", Operator.CONDITIONAL.getPrecedence()));
   }
 
+  public void testComputeForPySrc() {
+    BidiGlobalDirFunction codeSnippet = new BidiGlobalDirFunction(
+        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+
+    assertThat(codeSnippet.computeForPySrc(ImmutableList.<PyExpr>of()))
+        .isEqualTo(new PyExpr("-1 if IS_RTL else 1",
+            PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
 }

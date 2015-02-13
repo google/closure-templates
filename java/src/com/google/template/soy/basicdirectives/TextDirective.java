@@ -22,6 +22,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
@@ -42,7 +44,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class TextDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
+final class TextDirective
+    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
 
 
   @Inject
@@ -53,11 +56,9 @@ public class TextDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirect
     return "|text";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
-
 
   @Override public boolean shouldCancelAutoescape() {
     // TODO: This simply indicates simply that the "blanket html-escape everything and its cousin"
@@ -66,12 +67,10 @@ public class TextDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirect
     return true;
   }
 
-
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     // TODO: If this directive is opened up to users, this needs to coerce the value to a string.
     return value;
   }
-
 
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     // Coerce to string, since sometimes this will be the root of an expression and will be used as
@@ -79,4 +78,7 @@ public class TextDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirect
     return JsExprUtils.concatJsExprs(ImmutableList.of(new JsExpr("''", Integer.MAX_VALUE), value));
   }
 
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    return value.toPyString();
+  }
 }

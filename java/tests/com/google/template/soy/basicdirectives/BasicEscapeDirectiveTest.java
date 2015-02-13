@@ -16,9 +16,14 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 
 /**
@@ -53,7 +58,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
-
   public final void testApplyEscapeJsValue() {
     BasicEscapeDirective escapeJsValue = new BasicEscapeDirective.EscapeJsValue();
     assertTofuOutput("''", "", escapeJsValue);
@@ -81,7 +85,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
-
   public final void testApplyEscapeHtml() {
     EscapeHtmlDirective escapeHtml = new EscapeHtmlDirective();
     assertTofuOutput("", "", escapeHtml);
@@ -94,7 +97,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("42", " 42 ", escapeHtml)
         .runTests();
   }
-
 
   public final void testApplyFilterNormalizeUri() {
     BasicEscapeDirective filterNormalizeUri = new BasicEscapeDirective.FilterNormalizeUri();
@@ -112,7 +114,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("42", " 42 ", filterNormalizeUri)
         .runTests();
   }
-
 
   public final void testEscapeHtmlAttributeNospace() {
     BasicEscapeDirective htmlNospaceDirective =
@@ -151,7 +152,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
-
   public final void testEscapeUri() {
     BasicEscapeDirective escapeUri = new BasicEscapeDirective.EscapeUri();
     assertTofuOutput("", "", escapeUri);
@@ -173,7 +173,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("a%bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedUri('a%bc > d')", escapeUri)
         .runTests();
   }
-
 
   public final void testFilterCssValue() {
     BasicEscapeDirective filterCssValue = new BasicEscapeDirective.FilterCssValue();
@@ -201,4 +200,21 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
+  public final void testPySrc() {
+    PyExpr data = new PyStringExpr("'data'");
+
+    // TODO(dcphillips): Add support for executing the sanitization call in Jython to verify it's
+    // actual output. Currently the sanitization relies on integration tests for full verification.
+    BasicEscapeDirective escapeJsString = new BasicEscapeDirective.EscapeJsString();
+    assertThat(escapeJsString.applyForPySrc(data, ImmutableList.<PyExpr>of()))
+        .isEqualTo(new PyExpr("sanitize.escape_js_string('data')", Integer.MAX_VALUE));
+
+    BasicEscapeDirective escapeHtmlAttribute = new BasicEscapeDirective.EscapeHtmlAttribute();
+    assertThat(escapeHtmlAttribute.applyForPySrc(data, ImmutableList.<PyExpr>of()))
+        .isEqualTo(new PyExpr("sanitize.escape_html_attribute('data')", Integer.MAX_VALUE));
+
+    BasicEscapeDirective filterCssValue = new BasicEscapeDirective.FilterCssValue();
+    assertThat(filterCssValue.applyForPySrc(data, ImmutableList.<PyExpr>of()))
+        .isEqualTo(new PyExpr("sanitize.filter_css_value('data')", Integer.MAX_VALUE));
+  }
 }

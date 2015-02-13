@@ -21,6 +21,8 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -36,7 +38,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -47,11 +49,9 @@ class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "floor";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
@@ -63,11 +63,15 @@ class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction {
     }
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
     return new JsExpr("Math.floor(" + arg.getText() + ")", Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    PyExpr arg = args.get(0);
+
+    return new PyExpr("math.floor(" + arg.getText() + ")", Integer.MAX_VALUE);
+  }
 }

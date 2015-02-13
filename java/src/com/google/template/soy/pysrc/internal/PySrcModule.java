@@ -24,13 +24,16 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.ModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 
@@ -48,7 +51,6 @@ import javax.inject.Singleton;
 public final class PySrcModule extends AbstractModule {
 
   @Override protected void configure() {
-
     // Install requisite modules.
     install(new SharedModule());
     install(new SharedPassesModule());
@@ -65,14 +67,29 @@ public final class PySrcModule extends AbstractModule {
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyPySrcOptions.class)
-      .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
-      .in(ApiCallScope.class);
+        .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
+        .in(ApiCallScope.class);
     bind(String.class).annotatedWith(RuntimePath.class)
-      .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-      .in(ApiCallScope.class);
+        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+        .in(ApiCallScope.class);
+    bind(String.class).annotatedWith(BidiIsRtlFn.class)
+        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+        .in(ApiCallScope.class);
     bind(String.class).annotatedWith(TranslationPyModuleName.class)
-      .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-      .in(ApiCallScope.class);
+        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+        .in(ApiCallScope.class);
+  }
+
+  /**
+   * Builds and provides the map of SoyPySrcFunctions (name to function).
+   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
+   *     SoyFunction may or may not implement SoyPySrcFunction.
+   */
+  @Provides
+  @Singleton
+  ImmutableMap<String, SoyPySrcFunction> provideSoyPySrcFunctionsMap(
+      Set<SoyFunction> soyFunctionsSet) {
+    return ModuleUtils.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyPySrcFunction.class);
   }
 
   /**
@@ -84,7 +101,6 @@ public final class PySrcModule extends AbstractModule {
   @Singleton
   ImmutableMap<String, SoyPySrcPrintDirective> provideSoyPySrcDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
-
     return ModuleUtils.buildSpecificSoyDirectivesMap(soyDirectivesSet,
         SoyPySrcPrintDirective.class);
   }

@@ -25,8 +25,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
@@ -46,17 +49,20 @@ import javax.inject.Singleton;
  *
  * <p>
  * It may take a variable number of arguments which are additional tags to be
- * considered safe, from {@link TagWhitelist#OptionalSafeTag}.
+ * considered safe, from {@link OptionalSafeTag}.
  *
  * <p>
- * Note that this directive is not autoescape cancelling, and can thus be
+ * Note that this directive is not autoescape canceling, and can thus be
  * used in strict templates.  The directive returns its result as an object
  * of type SanitizedContent of kind HTML.
  */
 @Singleton
 @SoyPurePrintDirective
-public class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
+final class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective,
+    SoyPySrcPrintDirective {
 
+
+  private static final Joiner ARG_JOINER = Joiner.on(", ");
 
   // The directive may be called with a variable number of arguments indicating additional tags to
   // be considered safe, so we need to support each args size up to the number of possible
@@ -73,17 +79,13 @@ public class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintD
     return "|cleanHtml";
   }
 
-
-  @Override
-  public final Set<Integer> getValidArgsSizes() {
+  @Override public final Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
-
 
   @Override public boolean shouldCancelAutoescape() {
     return false;
   }
-
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     ImmutableSet<OptionalSafeTag> optionalSafeTags = FluentIterable.from(args)
@@ -95,14 +97,36 @@ public class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintD
     return Sanitizers.cleanHtml(value, optionalSafeTags);
   }
 
-
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    String optionalSafeTagsArg = generateOptionalSafeTagsArg(args);
+    return new JsExpr(
+        "soy.$$cleanHtml(" + value.getText() + optionalSafeTagsArg + ")", Integer.MAX_VALUE);
+  }
+
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    String optionalSafeTagsArg = generateOptionalSafeTagsArg(args);
+    return new PyExpr(
+        "sanitize.clean_html(" + value.getText() + optionalSafeTagsArg + ")", Integer.MAX_VALUE);
+  }
+
+  /**
+   * Converts a list of TargetExpr's into a list of safe tags as an argument for the supported
+   * backends. This will iterate over the expressions, ensure they're valid safe tags, and convert
+   * them into an array of Strings.
+   *
+   * <p>The generated output is valid for JS and Python. Any other languages should reevaluate if
+   * they require changes.
+   *
+   * @param args A list of possible safe tags.
+   * @return A string containing the safe tags argument.
+   */
+  private String generateOptionalSafeTagsArg(List<? extends TargetExpr> args) {
     String optionalSafeTagsArg = "";
     if (!args.isEmpty()) {
       // TODO(user): Instead of parsing generated JS, we should have a CheckArgumentsPass that
       // allows directives and functions to examine their input expressions prior to compilation and
       // relay the input file and line number to the template author along with an error message.
-      Iterable<String> optionalSafeTagExprs = Iterables.transform(args, JS_EXPR_TO_STRING);
+      Iterable<String> optionalSafeTagExprs = Iterables.transform(args, TARGET_EXPR_TO_STRING);
 
       // Verify that all exprs are single-quoted valid OptionalSafeTags.
       FluentIterable.from(optionalSafeTagExprs)
@@ -110,13 +134,10 @@ public class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintD
           .transform(OptionalSafeTag.FROM_TAG_NAME)
           .toSet();
 
-      optionalSafeTagsArg = ", [" + JS_ARG_JOINER.join(optionalSafeTagExprs) + "]";
+      optionalSafeTagsArg = ", [" + ARG_JOINER.join(optionalSafeTagExprs) + "]";
     }
-
-    return new JsExpr(
-        "soy.$$cleanHtml(" + value.getText() + optionalSafeTagsArg + ")", Integer.MAX_VALUE);
+    return optionalSafeTagsArg;
   }
-
 
   private static final Function<SoyValue, String> SOY_VALUE_TO_STRING =
       new Function<SoyValue, String>() {
@@ -125,14 +146,12 @@ public class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintD
     }
   };
 
-
-  private static final Function<JsExpr, String> JS_EXPR_TO_STRING =
-      new Function<JsExpr, String>() {
-    @Override public String apply(JsExpr expr) {
+  private static final Function<TargetExpr, String> TARGET_EXPR_TO_STRING =
+      new Function<TargetExpr, String>() {
+    @Override public String apply(TargetExpr expr) {
       return expr.getText();
     }
   };
-
 
   private static final Function<String, String> SINGLE_QUOTED_TO_UNQUOTED =
       new Function<String, String>() {
@@ -147,7 +166,4 @@ public class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintD
       return singleQuoted.substring(1, singleQuoted.length() - 1);
     }
   };
-
-
-  private static final Joiner JS_ARG_JOINER = Joiner.on(", ");
 }

@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 
 
@@ -29,10 +31,9 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
  */
 public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
-
   public void testApplyForTofu() {
-
     TruncateDirective truncateDirective = new TruncateDirective();
+
     assertTofuOutput("", "", truncateDirective, 8);
     assertTofuOutput("", "", truncateDirective, 8, true);
     assertTofuOutput("", "", truncateDirective, 8, false);
@@ -52,10 +53,9 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput("1234567", "1234567\uD800\uDC00", truncateDirective, 8, false);
   }
 
-
   public void testApplyForJsSrc() {
-
     TruncateDirective truncateDirective = new TruncateDirective();
+
     JsExpr dataRefJsExpr = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     JsExpr maxLenJsExpr = new JsExpr("8", Integer.MAX_VALUE);
     JsExpr trueJsExpr = new JsExpr("true", Integer.MAX_VALUE);
@@ -71,4 +71,25 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
             .getText()).isEqualTo("soy.$$truncate(opt_data.myKey, 8, false)");
   }
 
+  public void testApplyForPySrc() {
+    TruncateDirective truncateDirective = new TruncateDirective();
+
+    PyExpr data = new PyStringExpr("'data'", Integer.MAX_VALUE);
+    PyExpr dataRef = new PyExpr("opt_data[myKey]", Integer.MAX_VALUE);
+    PyExpr maxLenExpr = new PyExpr("8", Integer.MAX_VALUE);
+    PyExpr trueExpr = new PyExpr("True", Integer.MAX_VALUE);
+    PyExpr falseExpr = new PyExpr("False", Integer.MAX_VALUE);
+    assertThat(
+        truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr)).getText())
+        .isEqualTo("directives.truncate('data', 8, True)");
+    assertThat(
+        truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr, trueExpr)).getText())
+        .isEqualTo("directives.truncate('data', 8, True)");
+    assertThat(
+        truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr, falseExpr)).getText())
+        .isEqualTo("directives.truncate('data', 8, False)");
+    assertThat(
+        truncateDirective.applyForPySrc(dataRef, ImmutableList.of(maxLenExpr)).getText())
+        .isEqualTo("directives.truncate(str(opt_data[myKey]), 8, True)");
+  }
 }

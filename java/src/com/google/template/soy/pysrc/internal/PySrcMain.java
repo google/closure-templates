@@ -32,6 +32,7 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -97,6 +98,7 @@ public final class PySrcMain {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
       apiCallScope.seed(Key.get(String.class, RuntimePath.class), pySrcOptions.getRuntimePath());
+      apiCallScope.seed(Key.get(String.class, BidiIsRtlFn.class), pySrcOptions.getBidiIsRtlFn());
       apiCallScope.seed(Key.get(String.class,
           TranslationPyModuleName.class),
           pySrcOptions.getTranslationPyModuleName());

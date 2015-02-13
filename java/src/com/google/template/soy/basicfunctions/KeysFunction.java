@@ -22,6 +22,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyListExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -43,7 +46,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   /** The SoyValueHelper instance to use internally. */
@@ -60,11 +63,9 @@ class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "keys";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
@@ -75,11 +76,15 @@ class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return valueHelper.newEasyListFromJavaIterable(((SoyMap) arg).getItemKeys());
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
     return new JsExpr("soy.$$getMapKeys(" + arg.getText() + ")", Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    PyExpr arg = args.get(0);
+
+    return new PyListExpr("(" + arg.getText() + ").keys()", Integer.MAX_VALUE);
+  }
 }

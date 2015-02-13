@@ -25,6 +25,8 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -43,7 +45,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class StrLenFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class StrLenFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -54,11 +56,9 @@ class StrLenFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "strLen";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
@@ -69,7 +69,6 @@ class StrLenFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return IntegerData.forValue(arg0.coerceToString().length());
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     // Coerce SanitizedContent args to strings.
     String arg0 = JsExprUtils.toString(args.get(0)).getText();
@@ -77,4 +76,7 @@ class StrLenFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return new JsExpr("(" + arg0 + ").length", Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    return new PyExpr("len(" + args.get(0).toPyString().getText() + ")", Integer.MAX_VALUE);
+  }
 }

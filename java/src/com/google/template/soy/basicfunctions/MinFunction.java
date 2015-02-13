@@ -22,6 +22,9 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
@@ -37,7 +40,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class MinFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -48,11 +51,9 @@ class MinFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "min";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(2);
   }
-
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
@@ -65,7 +66,6 @@ class MinFunction implements SoyJavaFunction, SoyJsSrcFunction {
     }
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg0 = args.get(0);
     JsExpr arg1 = args.get(1);
@@ -74,4 +74,11 @@ class MinFunction implements SoyJavaFunction, SoyJsSrcFunction {
         "Math.min(" + arg0.getText() + ", " + arg1.getText() + ")", Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    PyExpr arg0 = args.get(0);
+    PyExpr arg1 = args.get(1);
+
+    PyFunctionExprBuilder fnBuilder = new PyFunctionExprBuilder("min");
+    return fnBuilder.addArg(arg0).addArg(arg1).asPyExpr();
+  }
 }

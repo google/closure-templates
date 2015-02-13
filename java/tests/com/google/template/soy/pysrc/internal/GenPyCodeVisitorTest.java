@@ -25,6 +25,7 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.soytree.SoyNode;
@@ -57,9 +58,6 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "from example.runtime import runtime\n"
       + "from example.runtime import sanitize\n"
       + "\n"
-      + "from foo.bar import SimpleTranslator\n"
-      + "translator_impl = SimpleTranslator()"
-      + "\n"
       + "\n"
       + "SOY_NAMESPACE = 'boo.foo'\n"
       + "try:\n"
@@ -68,18 +66,11 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "  pass\n"
       + "\n";
 
-  private SoyPySrcOptions pySrcOptions;
-
   private GenPyCodeVisitor genPyCodeVisitor;
 
   @Override protected void setUp() {
-    pySrcOptions = new SoyPySrcOptions("", "", "");
-    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
-    apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(Key.get(String.class, RuntimePath.class), "example.runtime");
-    apiCallScope.seed(Key.get(String.class, TranslationPyModuleName.class),
-        "foo.bar.SimpleTranslator");
-    genPyCodeVisitor = INJECTOR.getInstance(GenPyCodeVisitor.class);
+    // Default to empty values for the bidi and translation configs.
+    setupGenPyCodeVisitor("", "");
   }
 
   public void testSoyFile() {
@@ -88,6 +79,27 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertGeneratedPyFile(soyCode, EXPECTED_PYFILE_START);
 
     // TODO(dcphillips): Add external template dependency import test once templates are supported.
+  }
+
+  public void testBidiConfiguration() {
+    setupGenPyCodeVisitor("example.bidi.fn", "");
+
+    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n";
+
+    String exptectedBidiConfig = "from example import bidi as external_bidi\n";
+
+    assertInGeneratedPyFile(soyCode, exptectedBidiConfig);
+  }
+
+  public void testTranslationConfiguration() {
+    setupGenPyCodeVisitor("", "example.translate.SimpleTranslator");
+
+    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n";
+
+    String exptectedTranslationConfig = "from example.translate import SimpleTranslator\n"
+        + "translator_impl = SimpleTranslator()\n";
+
+    assertInGeneratedPyFile(soyCode, exptectedTranslationConfig);
   }
 
   public void testBlankTemplate() {
@@ -165,8 +177,28 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertThat(getGeneratedPyFile(soyCode)).isEqualTo(expectedPyCode);
   }
 
+  private void assertInGeneratedPyFile(String soyCode, String expectedPyCode) {
+    String generatedCode = getGeneratedPyFile(soyCode);
+    assertTrue(generatedCode.contains(expectedPyCode));
+  }
+
   private void assertGeneratedPyCode(String soyNodeCode, String expectedPyCode) {
     assertThat(getGeneratedPyCode(soyNodeCode)).isEqualTo(expectedPyCode);
+  }
+
+  private void setupGenPyCodeVisitor(String bidiIsRtlFn, String translationPyModuleName) {
+    String runtimePath = "example.runtime";
+    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, bidiIsRtlFn,
+        translationPyModuleName);
+    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
+    apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
+    apiCallScope.seed(Key.get(String.class, RuntimePath.class), runtimePath);
+
+    // Default to empty configuration for optional flags.
+    apiCallScope.seed(Key.get(String.class, BidiIsRtlFn.class), bidiIsRtlFn);
+    apiCallScope.seed(Key.get(String.class, TranslationPyModuleName.class),
+        translationPyModuleName);
+    genPyCodeVisitor = INJECTOR.getInstance(GenPyCodeVisitor.class);
   }
 
   /**

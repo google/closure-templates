@@ -16,12 +16,15 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 
 import junit.framework.TestCase;
 
@@ -32,9 +35,7 @@ import junit.framework.TestCase;
  */
 public class RoundFunctionTest extends TestCase {
 
-
   public void testComputeForJava() {
-
     RoundFunction roundFunction = new RoundFunction();
 
     SoyValue float0 = FloatData.forValue(9753.141592653590);
@@ -54,9 +55,7 @@ public class RoundFunctionTest extends TestCase {
                  roundFunction.computeForJava(ImmutableList.of(float0, numDigitsAfterPt)));
   }
 
-
   public void testComputeForJsSrc() {
-
     RoundFunction roundFunction = new RoundFunction();
 
     JsExpr floatExpr = new JsExpr("FLOAT_JS_CODE", Integer.MAX_VALUE);
@@ -88,4 +87,27 @@ public class RoundFunctionTest extends TestCase {
                      ImmutableList.of(floatExpr, numDigitsAfterPtExpr)));
   }
 
+  public void testComputeForPySrc() {
+    RoundFunction roundFunction = new RoundFunction();
+
+    PyExpr floatExpr = new PyExpr("number", Integer.MAX_VALUE);
+    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr)))
+         .isEqualTo(new PyExpr("int(round(number, 0))", Integer.MAX_VALUE));
+
+    PyExpr numDigitsAfterPtExpr = new PyExpr("0", Integer.MAX_VALUE);
+    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
+         .isEqualTo(new PyExpr("int(round(number, 0))", Integer.MAX_VALUE));
+
+    numDigitsAfterPtExpr = new PyExpr("4", Integer.MAX_VALUE);
+    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
+         .isEqualTo(new PyExpr("round(number, 4)", Integer.MAX_VALUE));
+
+    numDigitsAfterPtExpr = new PyExpr("-2", Operator.NEGATIVE.getPrecedence());
+    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
+        .isEqualTo(new PyExpr("int(round(number, -2))", Integer.MAX_VALUE));
+
+    numDigitsAfterPtExpr = new PyExpr("digits", Integer.MAX_VALUE);
+    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
+        .isEqualTo(new PyExpr("round(number, digits)", Integer.MAX_VALUE));
+  }
 }

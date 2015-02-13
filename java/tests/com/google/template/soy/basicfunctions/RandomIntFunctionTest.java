@@ -16,11 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 
 import junit.framework.TestCase;
 
@@ -33,9 +36,7 @@ import java.util.Set;
  */
 public class RandomIntFunctionTest extends TestCase {
 
-
   public void testComputeForJava() {
-
     RandomIntFunction randomIntFunction = new RandomIntFunction();
 
     SoyValue arg = IntegerData.ONE;
@@ -55,13 +56,17 @@ public class RandomIntFunctionTest extends TestCase {
     assertEquals(3, seenResults.size());
   }
 
-
   public void testComputeForJsSrc() {
-
     RandomIntFunction randomIntFunction = new RandomIntFunction();
     JsExpr argExpr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
     assertEquals(new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE),
                  randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)));
   }
 
+  public void testComputeForPySrc() {
+    RandomIntFunction randomIntFunction = new RandomIntFunction();
+    PyExpr argExpr = new PyExpr("upper", Integer.MAX_VALUE);
+    assertThat(randomIntFunction.computeForPySrc(ImmutableList.of(argExpr)))
+        .isEqualTo(new PyExpr("random.randint(0, upper - 1)", Integer.MAX_VALUE));
+  }
 }

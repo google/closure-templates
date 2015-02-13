@@ -35,8 +35,11 @@ public class SharedRestrictedTestUtils {
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_STATIC_RTL =
       BidiGlobalDir.forStaticIsRtl(true);
 
-  private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET =
+  private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET =
       BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
+
+  private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET =
+      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.PYTHON_SRC);
 
 
   private SharedRestrictedTestUtils() {}
@@ -49,7 +52,6 @@ public class SharedRestrictedTestUtils {
         }
       };
 
-
   public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER =
       new Provider<BidiGlobalDir>() {
         @Override public BidiGlobalDir get() {
@@ -57,12 +59,17 @@ public class SharedRestrictedTestUtils {
         }
       };
 
-
-  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET_PROVIDER =
+  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER =
       new Provider<BidiGlobalDir>() {
         @Override public BidiGlobalDir get() {
-          return BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET;
+          return BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET;
         }
       };
 
+  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER =
+      new Provider<BidiGlobalDir>() {
+        @Override public BidiGlobalDir get() {
+          return BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET;
+        }
+      };
 }

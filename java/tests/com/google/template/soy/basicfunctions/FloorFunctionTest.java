@@ -16,11 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
 
 import junit.framework.TestCase;
 
@@ -31,27 +34,32 @@ import junit.framework.TestCase;
  */
 public class FloorFunctionTest extends TestCase {
 
-
   public void testComputeForJava() {
-
     FloorFunction floorFunction = new FloorFunction();
 
     SoyValue float0 = FloatData.forValue(7.5);
-    assertEquals(IntegerData.forValue(7),
-                 floorFunction.computeForJava(ImmutableList.of(float0)));
+    assertEquals(
+        IntegerData.forValue(7),
+        floorFunction.computeForJava(ImmutableList.of(float0)));
 
     SoyValue integer = IntegerData.forValue(14);
-    assertEquals(IntegerData.forValue(14),
-                 floorFunction.computeForJava(ImmutableList.of(integer)));
+    assertEquals(
+        IntegerData.forValue(14),
+        floorFunction.computeForJava(ImmutableList.of(integer)));
   }
-
 
   public void testComputeForJsSrc() {
-
     FloorFunction floorFunction = new FloorFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(new JsExpr("Math.floor(JS_CODE)", Integer.MAX_VALUE),
-                 floorFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertEquals(
+        new JsExpr("Math.floor(JS_CODE)", Integer.MAX_VALUE),
+        floorFunction.computeForJsSrc(ImmutableList.of(expr)));
   }
 
+  public void testComputeForPySrc() {
+    FloorFunction floorFunction = new FloorFunction();
+    PyExpr expr = new PyExpr("number", Integer.MAX_VALUE);
+    assertThat(floorFunction.computeForPySrc(ImmutableList.of(expr)))
+        .isEqualTo(new PyExpr("math.floor(number)", Integer.MAX_VALUE));
+  }
 }

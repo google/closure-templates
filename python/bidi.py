@@ -223,7 +223,7 @@ def text_dir(text, is_html=False):
   return _estimate_direction(text, is_html)
 
 
-def bidi_unicode_wrap(global_dir, text):
+def unicode_wrap(global_dir, text):
   """Returns text wrapped with Unicode bidi formatting characters.
 
   Returns text wrapped in Unicode BiDi formatting characters according to its
@@ -250,7 +250,7 @@ def bidi_unicode_wrap(global_dir, text):
   if content_dir is None:
     content_dir = _estimate_direction(text, is_html)
 
-  wrapped_text = formatter.bidi_unicode_wrap(
+  wrapped_text = formatter.unicode_wrap(
       content_dir, text, is_html)
 
   # Bidi-wrapping a value converts it to the context directionality. Since it
@@ -360,7 +360,7 @@ class BidiFormatter(object):
 
     return result + self.mark_after(content_dir, text, True)
 
-  def bidi_unicode_wrap(self, content_dir, text, is_html):
+  def unicode_wrap(self, content_dir, text, is_html):
     """Wrap the text with unicode direction characters if an opposing direction.
 
     Args:

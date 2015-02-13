@@ -23,6 +23,8 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.util.List;
@@ -38,7 +40,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   /** Provider for the current bidi global directionality. */
@@ -58,21 +60,16 @@ class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "bidiMark";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-
   @Override public SoyValue computeForJava(List<SoyValue> args) {
-
     return StringData.forValue(
         (bidiGlobalDirProvider.get().getStaticValue() < 0) ? "\u200F" /*RLM*/ : "\u200E" /*LRM*/);
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
-
     BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
     if (bidiGlobalDir.isStaticValue()) {
       return new JsExpr(
@@ -84,4 +81,10 @@ class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction {
         Operator.CONDITIONAL.getPrecedence());
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
+    return new PyExpr(
+        "'\\u200F' if (" + bidiGlobalDir.getCodeSnippet() + ") < 0 else '\\u200E'",
+        Operator.CONDITIONAL.getPrecedence());
+  }
 }

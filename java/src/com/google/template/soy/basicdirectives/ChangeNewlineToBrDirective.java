@@ -25,6 +25,8 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 
@@ -42,8 +44,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class ChangeNewlineToBrDirective
-    implements SanitizedContentOperator, SoyJavaPrintDirective, SoyJsSrcPrintDirective {
+final class ChangeNewlineToBrDirective implements SanitizedContentOperator, SoyJavaPrintDirective,
+    SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
 
 
   private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\r\\n|\\r|\\n");
@@ -57,22 +59,18 @@ public class ChangeNewlineToBrDirective
     return "|changeNewlineToBr";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
-
 
   @Override public boolean shouldCancelAutoescape() {
     return false;
   }
 
-
   @Override @Nonnull public SanitizedContent.ContentKind getContentKind() {
     // This directive expects HTML as input and produces HTML as output.
     return SanitizedContent.ContentKind.HTML;
   }
-
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     String result = NEWLINE_PATTERN.matcher(value.coerceToString()).replaceAll("<br>");
@@ -93,9 +91,11 @@ public class ChangeNewlineToBrDirective
     return StringData.forValue(result);
   }
 
-
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$changeNewlineToBr(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    return new PyExpr("sanitize.change_newline_to_br(" + value.getText() + ")", Integer.MAX_VALUE);
+  }
 }

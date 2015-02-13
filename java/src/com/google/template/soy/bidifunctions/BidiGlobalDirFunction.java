@@ -23,6 +23,9 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.util.List;
@@ -37,7 +40,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-class BidiGlobalDirFunction implements SoyJavaFunction, SoyJsSrcFunction {
+class BidiGlobalDirFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   /** Provider for the current bidi global directionality. */
@@ -57,24 +60,24 @@ class BidiGlobalDirFunction implements SoyJavaFunction, SoyJsSrcFunction {
     return "bidiGlobalDir";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-
   @Override public SoyValue computeForJava(List<SoyValue> args) {
-
     return IntegerData.forValue(bidiGlobalDirProvider.get().getStaticValue());
   }
 
-
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
-
     BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
     return new JsExpr(
-        bidiGlobalDirProvider.get().getCodeSnippet(),
+        bidiGlobalDir.getCodeSnippet(),
         bidiGlobalDir.isStaticValue() ? Integer.MAX_VALUE : Operator.CONDITIONAL.getPrecedence());
   }
 
+  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+    return new PyExpr(
+        bidiGlobalDirProvider.get().getCodeSnippet(),
+        PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+  }
 }

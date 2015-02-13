@@ -43,7 +43,6 @@ def truncate(value, max_len, add_ellipsis):
   Returns:
     A truncated string.
   """
-  value = str(value)
   if len(value) <= max_len:
     return value
 

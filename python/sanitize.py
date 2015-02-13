@@ -84,13 +84,15 @@ def change_newline_to_br(value):
   return result
 
 
-def clean_html(value):
+def clean_html(value, safe_tags=None):
+  if not safe_tags:
+    safe_tags = generated_sanitize._SAFE_TAG_WHITELIST
+
   if is_content_kind(value, CONTENT_KIND.HTML):
     return value
 
-  return SanitizedHtml(
-      _strip_html_tags(value, generated_sanitize._SAFE_TAG_WHITELIST),
-      get_content_dir(value))
+  return SanitizedHtml(_strip_html_tags(value, safe_tags),
+                       get_content_dir(value))
 
 
 def escape_css_string(value):

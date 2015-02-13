@@ -23,6 +23,8 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 
 /**
@@ -31,10 +33,9 @@ import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
  */
 public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
-
   public void testApplyForTofu() {
-
     TextDirective textDirective = new TextDirective();
+
     assertTofuOutput("", "", textDirective);
     assertTofuOutput("abcd", "abcd", textDirective);
     assertTofuOutput(
@@ -46,13 +47,22 @@ public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput(IntegerData.forValue(123), IntegerData.forValue(123), textDirective);
   }
 
-
   public void testApplyForJsSrc() {
-
     TextDirective textDirective = new TextDirective();
     JsExpr jsExpr = new JsExpr("whatever", Integer.MAX_VALUE);
     assertThat(textDirective.applyForJsSrc(jsExpr, ImmutableList.<JsExpr>of()).getText())
         .isEqualTo("'' + whatever");
   }
 
+  public void testApplyForPySrc() {
+    TextDirective textDirective = new TextDirective();
+
+    PyExpr pyExpr = new PyExpr("whatever", Integer.MAX_VALUE);
+    assertThat(textDirective.applyForPySrc(pyExpr, ImmutableList.<PyExpr>of()).getText())
+        .isEqualTo("str(whatever)");
+
+    PyExpr stringExpr = new PyStringExpr("'string'", Integer.MAX_VALUE);
+    assertThat(textDirective.applyForPySrc(stringExpr, ImmutableList.<PyExpr>of()).getText())
+        .isEqualTo("'string'");
+  }
 }

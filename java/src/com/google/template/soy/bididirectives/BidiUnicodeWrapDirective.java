@@ -28,6 +28,8 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import java.util.List;
@@ -45,7 +47,8 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-public class BidiUnicodeWrapDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
+final class BidiUnicodeWrapDirective
+    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
 
 
   /** Provider for the current bidi global directionality. */
@@ -65,16 +68,13 @@ public class BidiUnicodeWrapDirective implements SoyJavaPrintDirective, SoyJsSrc
     return "|bidiUnicodeWrap";
   }
 
-
   @Override public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-
   @Override public boolean shouldCancelAutoescape() {
     return false;
   }
-
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     ContentKind valueKind = null;
@@ -119,11 +119,15 @@ public class BidiUnicodeWrapDirective implements SoyJavaPrintDirective, SoyJsSrc
     return StringData.forValue(wrappedValue);
   }
 
-
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new JsExpr(
         "soy.$$bidiUnicodeWrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
+    return new PyExpr(
+        "bidi.unicode_wrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
+  }
 }
