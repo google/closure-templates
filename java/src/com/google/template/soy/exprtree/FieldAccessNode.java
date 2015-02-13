@@ -65,9 +65,7 @@ public final class FieldAccessNode extends DataAccessNode {
 
   @Override
   public ExprNode clone() {
-    FieldAccessNode clone = new FieldAccessNode(getChild(0).clone(), fieldName, isNullSafe);
-    clone.copyInferredDataFromOriginal(this);
-    return clone;
+    return new FieldAccessNode(getChild(0).clone(), fieldName, isNullSafe);
   }
 
 
