@@ -86,7 +86,6 @@ import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.SoyProtoType;
@@ -1380,12 +1379,11 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         continue;
       }
       String paramName = ((HeaderParam) param).name();
-      SoyType paramType = param.type();
       String paramVal = (param.isInjected() ? "opt_ijData" : "opt_data") +
-          TranslateToJsExprVisitor.genCodeForKeyAccess(AnyType.getInstance(), paramType, paramName);
+          TranslateToJsExprVisitor.genCodeForKeyAccess(paramName);
       String paramAlias = genParamAlias(paramName);
       boolean isAliasedLocalVar = false;
-      switch (paramType.getKind()) {
+      switch (param.type().getKind()) {
         case ANY:
         case UNKNOWN:
           // Do nothing
@@ -1393,7 +1391,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
         case STRING:
           genParamTypeChecksUsingGeneralAssert(
-              paramName, paramAlias, paramVal, param.isInjected(), paramType,
+              paramName, paramAlias, paramVal, param.isInjected(),
               "goog.isString({0}) || ({0} instanceof goog.soy.data.SanitizedContent)",
               "string|goog.soy.data.SanitizedContent");
           isAliasedLocalVar = true;
@@ -1401,7 +1399,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
         case BOOL:
           genParamTypeChecksUsingGeneralAssert(
-              paramName, paramAlias, "!!" + paramVal, param.isInjected(), paramType,
+              paramName, paramAlias, "!!" + paramVal, param.isInjected(),
               "goog.isBoolean({0}) || {0} === 1 || {0} === 0",
               "boolean");
           isAliasedLocalVar = true;
@@ -1467,7 +1465,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             paramVal = extractProtoFromMap(paramVal);
           }
           genParamTypeChecksUsingGeneralAssert(
-              paramName, paramAlias, paramVal, param.isInjected(), paramType,
+              paramName, paramAlias, paramVal, param.isInjected(),
               genUnionTypeTests(unionType),
               JsSrcUtils.getJsTypeExpr(param.type(), false, false));
           isAliasedLocalVar = true;
@@ -1480,7 +1478,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             // sanitized type is specified - it just means that the text will
             // be escaped.
             genParamTypeChecksUsingGeneralAssert(
-                paramName, paramAlias, paramVal, param.isInjected(), paramType,
+                paramName, paramAlias, paramVal, param.isInjected(),
                 "({0} instanceof " + typeName +
                 ") || ({0} instanceof soydata.UnsanitizedText) || goog.isString({0})",
                 typeName);
@@ -1590,9 +1588,8 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * function instead of type-specific asserts.
    * @param paramName The Soy name of the parameter.
    * @param paramAlias The name of the local variable which stores the value of the param.
-   * @param paramVal The value expression of the parameter, which might be
+   * @param paramValue The value expression of the parameter, which might be
    *     an expression in some cases but will usually be opt_params.somename.
-   * @param paramType The type of the parameter.
    * @param typePredicate JS which tests whether the parameter is the correct type.
    *     This is a format string - the {0} format field will be replaced with the
    *     parameter value.
@@ -1600,11 +1597,10 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *     succeeds.
    */
   private void genParamTypeChecksUsingGeneralAssert(
-      String paramName, String paramAlias, String paramVal, boolean isInjected, SoyType paramType,
+      String paramName, String paramAlias, String paramVal, boolean isInjected,
       String typePredicate, String jsDocTypeExpr) {
     // The opt_param.name value that will be type-tested.
-    String paramAccessVal = TranslateToJsExprVisitor.genCodeForParamAccess(
-        paramName, isInjected, paramType);
+    String paramAccessVal = TranslateToJsExprVisitor.genCodeForParamAccess(paramName, isInjected);
     jsCodeBuilder.appendLine(
         "goog.asserts.assert(" + MessageFormat.format(typePredicate, paramAccessVal) +
         ", \"expected param '" + paramName + "' of type " + jsDocTypeExpr + ".\");");
