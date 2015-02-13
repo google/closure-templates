@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
@@ -51,6 +52,8 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.UnionType;
+import com.google.template.soy.types.primitive.AnyType;
+
 
 import java.util.Deque;
 import java.util.List;
@@ -61,6 +64,44 @@ import java.util.Map;
  * equivalent JS expression.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <hr>
+ *
+ * <h3>Types and Dependencies</h3>
+ *
+ * Types are used to allow reflective access to non-JS native values even after JSCompiler has
+ * rewritten field names.
+ *
+ * <p>
+ * For example, one might normally access field foo on a protocol buffer by callign
+ *    <pre>my_pb.getFoo()</pre>
+ * A Soy author can access the same by writing
+ *    <pre>{$my_pb.foo}</pre>
+ * But the relationship between "foo" and "getFoo" is not preserved by JSCompiler's renamer.
+ *
+ * <p>
+ * To avoid adding many spurious dependencies on all protocol buffers compiled with a Soy
+ * template, we make type-unsound (see CAVEAT below) assumptions:
+ * <ul>
+ *   <li>That the top-level inputs, opt_data and opt_ijData, do not need conversion.
+ *   <li>That field accesses of protocol buffers have enough type annotation to allow the
+ *     container of the field so that the type specifies the exact protobuf descriptor.
+ *   <li>That the template contains enough information to determine types that need to be
+ *     converted.
+ *     Pluggable TypeRegistries allow recognizing input coercion, for example between
+ *     {@code goog.html.type.SafeHtml} and Soy's {@code html} string sub-type.
+ *     When the converted type is a protocol-buffer type, we assume that the expression to be
+ *     converted can be fully-typed by expressionTypesVisitor.
+ * </ul>
+ *
+ * <p>
+ * CAVEAT: These assumptions are unsound, but necessary to be able to deploy JavaScript
+ * binaries of acceptable size.
+ * <p>
+ * Type-failures are correctness issues but do not lead to increased exposure to XSS or
+ * otherwise compromise security or privacy since a failure to unpack a type leads to a
+ * value that coerces to a trivial value like {@code undefined} or {@code "[Object]"}.
+ * </p>
  *
  */
 public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<JsExpr> {
@@ -105,10 +146,12 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * Method that returns code to access a named parameter.
    * @param paramName the name of the parameter.
    * @param isInjected true if this is an injected parameter.
+   * @param type the type of the parameter being accessed.
    * @return The code to access the value of that parameter.
    */
-  static String genCodeForParamAccess(String paramName, boolean isInjected) {
-    return (isInjected ? "opt_ijData" : "opt_data") + genCodeForKeyAccess(paramName);
+  static String genCodeForParamAccess(String paramName, boolean isInjected, SoyType type) {
+    return (isInjected ? "opt_ijData" : "opt_data")
+        + genCodeForKeyAccess(AnyType.getInstance(), type, paramName);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -277,7 +320,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
           if (varRef.isNullSafeInjected()) {
             nullSafetyPrefix.append("(opt_ijData == null) ? null : ");
           }
-          return "opt_ijData" + genCodeForKeyAccess(varRef.getName());
+          SoyType type = node.getType();
+          return "opt_ijData" + genCodeForKeyAccess(AnyType.getInstance(), type, varRef.getName());
         } else {
           JsExpr translation = getLocalVarTranslation(varRef.getName());
           if (translation != null) {
@@ -290,7 +334,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
               scope = "opt_ijData";
             }
             // Case 3: Data reference.
-            return scope + genCodeForKeyAccess(varRef.getName());
+            SoyType type = node.getType();
+            return scope + genCodeForKeyAccess(AnyType.getInstance(), type, varRef.getName());
           }
         }
       }
@@ -311,7 +356,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
           FieldAccessNode fieldAccess = (FieldAccessNode) node;
           return refText + genCodeForFieldAccess(
-              fieldAccess.getBaseExprChild().getType(), fieldAccess.getFieldName());
+              fieldAccess.getBaseExprChild().getType(), node.getType(), fieldAccess.getFieldName());
         } else {
           // Generate access to item.
           ItemAccessNode itemAccess = (ItemAccessNode) node;
@@ -335,9 +380,13 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   /**
    * Private helper for {@code visitDataAccessNode()} to generate the code for a key access, e.g.
    * ".foo" or "['class']". Handles JS reserved words.
+   * @param containerType the type of the container whose key is being accessed.
+   * @param memberType the type of the value of the property being mentioned.
    * @param key The key.
    */
-  static String genCodeForKeyAccess(String key) {
+  static String genCodeForKeyAccess(SoyType containerType, SoyType memberType, String key) {
+    Preconditions.checkNotNull(containerType);
+    Preconditions.checkNotNull(memberType);
     return JsSrcUtils.isReservedWord(key) ? "['" + key + "']" : "." + key;
   }
 
@@ -347,39 +396,43 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * is an object type, then it delegates the generation of the JS code to the type
    * object.
    * @param baseType The type of the object that contains the field.
+   * @param fieldType The type of the field.
    * @param fieldName The field name.
    */
-  private static String genCodeForFieldAccess(SoyType baseType, String fieldName) {
-    if (baseType != null) {
-      // For unions, attempt to generate the field access code for each member
-      // type, and then see if they all agree.
-      if (baseType.getKind() == SoyType.Kind.UNION) {
-        UnionType unionType = (UnionType) baseType;
-        String fieldAccessCode = null;
-        for (SoyType memberType : unionType.getMembers()) {
-          if (memberType.getKind() != SoyType.Kind.NULL) {
-            String fieldAccessForType = genCodeForFieldAccess(memberType, fieldName);
-            if (fieldAccessCode == null) {
-              fieldAccessCode = fieldAccessForType;
-            } else if (!fieldAccessCode.equals(fieldAccessForType)) {
-              throw SoySyntaxException.createWithoutMetaInfo("Cannot access field '" + fieldName
-                  + "' of type'" + baseType
-                  + ", because the different union member types have different access methods.");
-            }
+  private static String genCodeForFieldAccess(
+      SoyType baseType, SoyType fieldType, String fieldName) {
+    Preconditions.checkNotNull(baseType);
+    Preconditions.checkNotNull(fieldType);
+    // For unions, attempt to generate the field access code for each member
+    // type, and then see if they all agree.
+    if (baseType.getKind() == SoyType.Kind.UNION) {
+      // TODO(user): We will need to generate fallback code for each variant.
+      UnionType unionType = (UnionType) baseType;
+      String fieldAccessCode = null;
+      for (SoyType memberType : unionType.getMembers()) {
+        if (memberType.getKind() != SoyType.Kind.NULL) {
+          String fieldAccessForType = genCodeForFieldAccess(memberType, fieldType, fieldName);
+          if (fieldAccessCode == null) {
+            fieldAccessCode = fieldAccessForType;
+          } else if (!fieldAccessCode.equals(fieldAccessForType)) {
+            throw SoySyntaxException.createWithoutMetaInfo("Cannot access field '" + fieldName
+                + "' of type'" + baseType
+                + ", because the different union member types have different access methods.");
           }
         }
-        return fieldAccessCode;
       }
+      return fieldAccessCode;
+    }
 
-      if (baseType.getKind() == SoyType.Kind.OBJECT) {
-        SoyObjectType objType = (SoyObjectType) baseType;
-        String accessExpr = objType.getFieldAccessor(fieldName, SoyBackendKind.JS_SRC);
-        if (accessExpr != null) {
-          return accessExpr;
-        }
+    if (baseType.getKind() == SoyType.Kind.OBJECT) {
+      SoyObjectType objType = (SoyObjectType) baseType;
+      String accessExpr = objType.getFieldAccessor(fieldName, SoyBackendKind.JS_SRC);
+      if (accessExpr != null) {
+        return accessExpr;
       }
     }
-    return genCodeForKeyAccess(fieldName);
+
+    return genCodeForKeyAccess(baseType, fieldType, fieldName);
   }
 
   @Override protected JsExpr visitGlobalNode(GlobalNode node) {
