@@ -60,9 +60,22 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   protected AbstractParentExprNode(AbstractParentExprNode orig) {
     super(orig);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
-    this.type = orig.type;
+    copyInferredDataFromOriginal(orig);
   }
 
+  /**
+   * Used by {@link ExprNode#clone} to copy inferred data like the {@link #getType type}
+   * into a clone.
+   * <p>
+   * {@code clone()} should use the
+   * {@link AbstractParentExprNode(AbstractParentExprNode copy constructor} where possible, but
+   * when not, a subclass's clone method should call this method explicitly.
+   *
+   * @param orig The node to copy.
+   */
+  protected final void copyInferredDataFromOriginal(AbstractParentExprNode orig) {
+    this.type = orig.type;
+  }
 
   @Override public SoyType getType() {
     return type;

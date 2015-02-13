@@ -45,7 +45,7 @@ public final class VarRefNode extends AbstractExprNode {
    * For cases where we are able to infer a stronger type than the variable, this
    * will contain the stronger type which overrides the variable's type.
    */
-  private SoyType subtituteType;
+  private SoyType substituteType;
 
   /**
    * @param name The name of the variable.
@@ -69,7 +69,7 @@ public final class VarRefNode extends AbstractExprNode {
   @Override public SoyType getType() {
     // We won't know the type until we know the variable declaration.
     Preconditions.checkState(defn != null);
-    return subtituteType != null ? subtituteType : defn.type();
+    return substituteType != null ? substituteType : defn.type();
   }
 
   /** Returns the name of the variable. */
@@ -123,7 +123,7 @@ public final class VarRefNode extends AbstractExprNode {
    * @param type The overridden type value.
    */
   public void setSubstituteType(SoyType type) {
-    subtituteType = type;
+    substituteType = type;
   }
 
   @Override public String toSourceString() {
@@ -131,7 +131,9 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   @Override public ExprNode clone() {
-    return new VarRefNode(name, isInjected, isNullSafeInjected, defn);
+    VarRefNode clone = new VarRefNode(name, isInjected, isNullSafeInjected, defn);
+    clone.setSubstituteType(substituteType);
+    return clone;
   }
 
   @Override public boolean equals(Object other) {

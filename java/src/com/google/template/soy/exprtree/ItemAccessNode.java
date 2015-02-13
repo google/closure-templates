@@ -86,7 +86,10 @@ public final class ItemAccessNode extends DataAccessNode {
 
 
   @Override public ExprNode clone() {
-    return new ItemAccessNode(getChild(0).clone(), getChild(1).clone(), isNullSafe, isDotSyntax);
+    ItemAccessNode clone = new ItemAccessNode(
+        getChild(0).clone(), getChild(1).clone(), isNullSafe, isDotSyntax);
+    clone.copyInferredDataFromOriginal(this);
+    return clone;
   }
 
 
