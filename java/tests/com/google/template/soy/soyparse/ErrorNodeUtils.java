@@ -34,7 +34,6 @@ import java.util.List;
 final class ErrorNodeUtils {
   // Keep in sync with ErrorNodes.
   private static final ImmutableSet<? extends SoyNode> ERROR_NODES = ImmutableSet.of(
-      ErrorNodes.CALL_BASIC_NODE,
       ErrorNodes.CALL_DELEGATE_NODE,
       ErrorNodes.CALL_PARAM_VALUE_NODE,
       ErrorNodes.FOREACH_NODE,

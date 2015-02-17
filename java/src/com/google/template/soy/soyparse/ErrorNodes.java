@@ -48,7 +48,6 @@ import com.google.template.soy.soytree.XidNode;
 final class ErrorNodes {
   private ErrorNodes() {}
 
-  static final CallBasicNode CALL_BASIC_NODE = new CallBasicNode(-1, ".error", null);
   static final CallDelegateNode CALL_DELEGATE_NODE = new CallDelegateNode(-1, "foo.bar", null);
   static final CallParamValueNode CALL_PARAM_VALUE_NODE
       = new CallParamValueNode(-1, "error: error");

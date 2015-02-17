@@ -100,8 +100,14 @@ public class MsgNodeTest extends TestCase {
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$zoo", null)));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$foo.zoo", "zoo")));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$foo.zoo", "zoo")));
-    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode(3, ".helper", "zoo")));
-    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode(4, ".helper", "zoo")));
+    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(3)
+        .commandText(".helper")
+        .userSuppliedPlaceholderName("zoo")
+        .buildAndThrowIfInvalid()));
+    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(4)
+        .commandText(".helper")
+        .userSuppliedPlaceholderName("zoo")
+        .buildAndThrowIfInvalid()));
 
     assertEquals("START_LINK_1", msg.getPlaceholderName((MsgPlaceholderNode) msg.getChild(0)));
     assertEquals("BOO", msg.getPlaceholderName((MsgPlaceholderNode) msg.getChild(1)));

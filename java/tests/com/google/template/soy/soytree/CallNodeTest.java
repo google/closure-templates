@@ -50,7 +50,9 @@ public class CallNodeTest extends TestCase {
 
 
   public void testSetEscapingDirectiveNames() throws SoySyntaxException {
-    CallBasicNode callNode = new CallBasicNode(0, ".foo", null);
+    CallBasicNode callNode = new CallBasicNode.Builder(0)
+        .commandText(".foo")
+        .buildAndThrowIfInvalid();
     assertEquals(ImmutableList.<String>of(), callNode.getEscapingDirectiveNames());
     callNode.setEscapingDirectiveNames(ImmutableList.of("hello", "world"));
     assertEquals(ImmutableList.of("hello", "world"), callNode.getEscapingDirectiveNames());
@@ -66,16 +68,27 @@ public class CallNodeTest extends TestCase {
 
   private void checkCommandText(String commandText, String expectedCommandText) {
 
-    CallBasicNode callNode = new CallBasicNode(0, commandText, null);
+    CallBasicNode callNode = new CallBasicNode.Builder(0)
+        .commandText(commandText)
+        .buildAndThrowIfInvalid();
     if (callNode.getCalleeName() == null) {
       callNode.setCalleeName("testNamespace" + callNode.getSrcCalleeName());
     }
 
-    CallBasicNode normCallNode = new CallBasicNode(
-        0, callNode.getCalleeName(), callNode.getSrcCalleeName(), false,
-        ! callNode.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0),
-        callNode.isPassingData(), callNode.isPassingAllData(), callNode.getDataExpr(),
-        callNode.getUserSuppliedPhName(), callNode.getSyntaxVersionBound(), NO_ESCAPERS);
+    boolean useV1FunctionAttrForCalleeName
+        = !callNode.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0);
+
+    CallBasicNode normCallNode = new CallBasicNode.Builder(0)
+        .calleeName(callNode.getCalleeName())
+        .sourceCalleeName(callNode.getSrcCalleeName())
+        .useV1FunctionAttrForCalleeName(useV1FunctionAttrForCalleeName)
+        .isPassingData(callNode.isPassingData())
+        .isPassingAllData(callNode.isPassingAllData())
+        .dataExpr(callNode.getDataExpr())
+        .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
+        .syntaxVersionBound(callNode.getSyntaxVersionBound())
+        .escapingDirectiveNames(NO_ESCAPERS)
+        .buildAndThrowIfInvalid();
 
     assertEquals(expectedCommandText, normCallNode.getCommandText());
 

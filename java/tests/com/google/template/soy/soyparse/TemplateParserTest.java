@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.ErrorManagerImpl;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -1842,7 +1843,7 @@ public final class TemplateParserTest extends TestCase {
         input,
         "test.soy",
         1 /* start line number */,
-        new ErrorManagerImpl())
+        new com.google.template.soy.base.ErrorManagerImpl())
         .parseTemplateContent();
   }
 
@@ -1861,7 +1862,7 @@ public final class TemplateParserTest extends TestCase {
         input,
         "test.soy",
         /* start line number */ 1,
-        new ErrorManagerImpl())
+        new com.google.template.soy.base.ErrorManagerImpl())
         .MaybeWhitespace(errorMessage);
   }
 

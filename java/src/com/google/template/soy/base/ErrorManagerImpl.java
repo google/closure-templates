@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.base;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
 
 import java.util.ArrayList;
 import java.util.List;

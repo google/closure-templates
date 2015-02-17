@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.base;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.template.soy.base.SoySyntaxException;
@@ -24,7 +24,7 @@ import com.google.template.soy.base.SoySyntaxException;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-interface ErrorManager {
+public interface ErrorManager {
 
   /**
    * Reports the given throwable.

@@ -18,6 +18,8 @@ package com.google.template.soy.soyparse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.ErrorManager;
+import com.google.template.soy.base.ErrorManagerImpl;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
