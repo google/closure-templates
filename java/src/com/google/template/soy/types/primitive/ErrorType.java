@@ -44,9 +44,14 @@ public final class ErrorType implements SoyType {
 
 
   @Override public boolean isInstance(SoyValue value) {
+    // TODO(lukes): have this throw an exception? while it is true that nothing is equal to the
+    // error type... this comparison should probably never happen in the first place.
     return false;
   }
 
+  @Override public Class<? extends SoyValue> javaType() {
+    throw new UnsupportedOperationException("ErrorType doesn't have a runtime representation");
+  }
 
   @Override public String toString() {
     return name;

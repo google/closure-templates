@@ -88,6 +88,10 @@ public class MapType implements SoyType {
     return value instanceof SoyMap;
   }
 
+  @Override public Class<? extends SoyValue> javaType() {
+    return SoyMap.class;
+  }
+
 
   @Override public String toString() {
     return "map<" + keyType + "," + valueType + ">";

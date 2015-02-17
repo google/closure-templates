@@ -107,6 +107,10 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
       @Override @Nullable public Integer getValue(String memberName) {
         return values.get(memberName);
       }
+
+      @Override public Class<? extends SoyValue> javaType() {
+        throw new UnsupportedOperationException();
+      }
     };
 
     // Fake type provider

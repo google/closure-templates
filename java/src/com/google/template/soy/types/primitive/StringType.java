@@ -61,4 +61,8 @@ public final class StringType extends PrimitiveType {
   @Override public boolean isInstance(SoyValue value) {
     return value instanceof StringData || value instanceof SanitizedContent;
   }
+
+  @Override public Class<? extends SoyValue> javaType() {
+    return StringData.class;
+  }
 }

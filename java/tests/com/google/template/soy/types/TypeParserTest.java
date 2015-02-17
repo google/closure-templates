@@ -54,6 +54,10 @@ public class TypeParserTest extends TestCase {
     @Override public boolean isInstance(SoyValue value) {
       return false;
     }
+
+    @Override public Class<? extends SoyValue> javaType() {
+      throw new UnsupportedOperationException();
+    }
   };
 
 

@@ -74,6 +74,9 @@ public final class RecordType implements SoyObjectType {
     return value instanceof SoyRecord;
   }
 
+  @Override public Class<? extends SoyValue> javaType() {
+    return SoyRecord.class;
+  }
 
   @Override public String getName() {
     return "Record";

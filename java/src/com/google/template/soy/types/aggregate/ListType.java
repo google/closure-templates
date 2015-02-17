@@ -71,6 +71,9 @@ public class ListType implements SoyType {
     return value instanceof SoyList;
   }
 
+  @Override public Class<? extends SoyValue> javaType() {
+    return SoyList.class;
+  }
 
   @Override public String toString() {
     return "list<" + elementType + ">";
