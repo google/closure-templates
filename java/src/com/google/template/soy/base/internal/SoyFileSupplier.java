@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.google.template.soy.internal.base.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,11 +62,11 @@ public interface SoyFileSupplier {
 
 
   /**
-   * Returns a {@link Reader} for the Soy file content and the version of the file read.
+   * Returns a {@link Reader} for the Soy file content.
    *
    * @throws IOException If there is an error opening the input.
    */
-  public Pair<Reader, Version> open() throws IOException;
+  public Reader open() throws IOException;
 
 
   /**
@@ -83,10 +82,14 @@ public interface SoyFileSupplier {
 
 
   /**
-   * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
+   * Returns the path to the Soy file, used for as a unique map/set key and for messages.
    */
   public String getFilePath();
 
+  /**
+   * Returns the version of the Soy file read.
+   */
+  public Version getVersion();
 
   /**
    * Container for factory methods for {@link SoyFileSupplier}s.

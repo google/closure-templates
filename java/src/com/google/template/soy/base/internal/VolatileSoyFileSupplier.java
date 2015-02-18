@@ -18,7 +18,6 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.template.soy.internal.base.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,7 +34,7 @@ import java.io.Reader;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
+public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
   /** The file to read. */
@@ -65,13 +64,14 @@ public class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
   @Override
-  public Pair<Reader, Version> open() throws IOException {
-    long lastModified = file.lastModified();
-    return Pair.<Reader, Version>of(
-        new BufferedReader(new InputStreamReader(new FileInputStream(file), UTF_8)),
-        new VolatileFileVersion(lastModified));
+  public Reader open() throws IOException {
+    return new BufferedReader(new InputStreamReader(new FileInputStream(file), UTF_8));
   }
 
+  @Override
+  public Version getVersion() {
+    return new VolatileFileVersion(file.lastModified());
+  }
 
   /**
    * A file version based on {@link File#lastModified}.

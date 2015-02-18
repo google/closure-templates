@@ -259,42 +259,25 @@ public final class SoyFileSetParser {
 
     String filePath = soyFileSupplier.getFilePath();
 
-    Reader soyFileReader = null;
-    SoyFileSupplier.Version version = null;
-    try {
-      Pair<Reader, SoyFileSupplier.Version> readerAndVersion = soyFileSupplier.open();
-      soyFileReader = readerAndVersion.first;
-      version = readerAndVersion.second;
-    } catch (IOException ioe) {
-      errorManager.report(SoySyntaxException.createWithoutMetaInfo(
-          "Error opening Soy file " + filePath + ": " + ioe));
-    }
-
-    ParseResult<SoyFileNode> result = new SoyFileParser(
-        typeRegistry,
-        nodeIdGen,
-        soyFileReader,
-        soyFileSupplier.getSoyFileKind(),
-        filePath,
-        errorManager)
-        .parseSoyFile();
-    if (soyFileSupplier.hasChangedSince(version)) {
-      errorManager.report(
-          SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath));
-    }
-
-    // Close the Reader.
-    if (soyFileReader != null) {
-      try {
-        soyFileReader.close();
-      } catch (IOException ioe) {
-        //noinspection ThrowFromFinallyBlock IntelliJ
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Error closing Soy file " + soyFileSupplier.getFilePath() + ": " + ioe);
+    SoyFileSupplier.Version version = soyFileSupplier.getVersion();
+    try (Reader soyFileReader = soyFileSupplier.open()) {
+      ParseResult<SoyFileNode> result = new SoyFileParser(
+          typeRegistry,
+          nodeIdGen,
+          soyFileReader,
+          soyFileSupplier.getSoyFileKind(),
+          filePath,
+          errorManager)
+          .parseSoyFile();
+      if (soyFileSupplier.hasChangedSince(version)) {
+        errorManager.report(
+            SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath));
       }
+      return Pair.of(result, version);
+    } catch (IOException e) {
+      throw SoySyntaxException.createCausedWithoutMetaInfo(
+          "Error opening/closing Soy file " + soyFileSupplier.getFilePath(), e);
     }
-
-    return Pair.of(result, version);
   }
 
 

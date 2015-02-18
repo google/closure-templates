@@ -17,7 +17,6 @@
 package com.google.template.soy.base.internal;
 
 import com.google.common.io.CharSource;
-import com.google.template.soy.internal.base.Pair;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -30,7 +29,7 @@ import java.io.Reader;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
+public final class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
   /** Source for the Soy file content. */
@@ -59,8 +58,12 @@ public class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 
 
   @Override
-  public Pair<Reader, Version> open() throws IOException {
-    return Pair.of(contentSource.openStream(), Version.STABLE_VERSION);
+  public Reader open() throws IOException {
+    return contentSource.openStream();
   }
 
+  @Override
+  public Version getVersion() {
+    return Version.STABLE_VERSION;
+  }
 }
