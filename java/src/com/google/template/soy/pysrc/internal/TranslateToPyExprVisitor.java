@@ -216,7 +216,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
       default: {
         PyExpr value = visit(node);
-        return genMaybeProtect(value, Integer.MAX_VALUE);
+        return PyExprUtils.maybeProtect(value, Integer.MAX_VALUE).getText();
       }
     }
   }
@@ -260,6 +260,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
   @Override protected PyExpr visitConditionalOpNode(ConditionalOpNode node) {
     // Retrieve the operands.
     Operator op = Operator.CONDITIONAL;
+    int conditionalPrecedence = PyExprUtils.pyPrecedenceForOperator(op);
     List<SyntaxElement> syntax = op.getSyntax();
     List<PyExpr> operandExprs = visitChildren(node);
 
@@ -273,13 +274,13 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
     // Python's ternary operator switches the order from <conditional> ? <true> : <false> to
     // <true> if <conditional> else <false>.
     StringBuilder exprSb = new StringBuilder();
-    exprSb.append(genMaybeProtect(trueExpr, PyExprUtils.pyPrecedenceForOperator(op)));
+    exprSb.append(PyExprUtils.maybeProtect(trueExpr, conditionalPrecedence).getText());
     exprSb.append(" if ");
-    exprSb.append(genMaybeProtect(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(op)));
+    exprSb.append(PyExprUtils.maybeProtect(conditionalExpr, conditionalPrecedence).getText());
     exprSb.append(" else ");
-    exprSb.append(genMaybeProtect(falseExpr, PyExprUtils.pyPrecedenceForOperator(op)));
+    exprSb.append(PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText());
 
-    return new PyExpr(exprSb.toString(), PyExprUtils.pyPrecedenceForOperator(op));
+    return new PyExpr(exprSb.toString(), conditionalPrecedence);
   }
 
   @Override protected PyExpr visitFunctionNode(FunctionNode node) {
@@ -366,9 +367,5 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
     String newExpr = ExprUtils.genExprWithNewToken(opNode.getOperator(), operandPyExprs, null);
 
     return new PyExpr(newExpr, PyExprUtils.pyPrecedenceForOperator(opNode.getOperator()));
-  }
-
-  private static String genMaybeProtect(PyExpr expr, int minSafePrecedence) {
-    return (expr.getPrecedence() > minSafePrecedence) ? expr.getText() : "(" + expr.getText() + ")";
   }
 }

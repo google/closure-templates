@@ -22,6 +22,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
@@ -30,6 +31,9 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfElseNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -75,10 +79,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @VisibleForTesting protected GenPyExprsVisitor genPyExprsVisitor;
 
+  private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
+
   /**
    * @param runtimePath The module path for the runtime libraries.
-   * @param isComputableAsPyExprVisitor The IsComputableAsPyExprVisitor to use.
-   * @param genPyExprsVisitorFactory Factory for creating an instance of GenPyExprsVisitor.
    * @param translationPyModuleName Python module name used in python runtime to instantiate
    *        translation.
    */
@@ -87,12 +91,14 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       @BidiIsRtlFn String bidiIsRtlFn,
       @TranslationPyModuleName String translationPyModuleName,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
-      GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
+      GenPyExprsVisitorFactory genPyExprsVisitorFactory,
+      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationPyModuleName = translationPyModuleName;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
+    this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
   }
 
 
@@ -244,6 +250,56 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override protected void visitPrintNode(PrintNode node) {
     pyCodeBuilder.addToOutputVar(genPyExprsVisitor.exec(node));
+  }
+
+  /**
+   * Visit an IfNode and generate a full conditional statement, or an inline ternary conditional
+   * expression if all the children are computable as expressions.
+   *
+   * <p>Example:
+   * <pre>
+   *   {if $boo > 0}
+   *     ...
+   *   {/if}
+   * </pre>
+   * might generate
+   * <pre>
+   *   if opt_data.get('boo') > 0:
+   *     ...
+   * </pre>
+   */
+  @Override protected void visitIfNode(IfNode node) {
+    if (isComputableAsPyExprVisitor.exec(node)) {
+      pyCodeBuilder.addToOutputVar(genPyExprsVisitor.exec(node));
+      return;
+    }
+
+    // Not computable as Python expressions, so generate full code.
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create();
+    for (SoyNode child : node.getChildren()) {
+      if (child instanceof IfCondNode) {
+        IfCondNode icn = (IfCondNode) child;
+        PyExpr condPyExpr = translator.exec(icn.getExprUnion().getExpr());
+
+        if (icn.getCommandName().equals("if")) {
+          pyCodeBuilder.appendLine("if ", condPyExpr.getText(), ":");
+        } else {
+          pyCodeBuilder.appendLine("elif ", condPyExpr.getText(), ":");
+        }
+
+        pyCodeBuilder.increaseIndent();
+        visit(icn);
+        pyCodeBuilder.decreaseIndent();
+
+      } else if (child instanceof IfElseNode) {
+        pyCodeBuilder.appendLine("else:");
+        pyCodeBuilder.increaseIndent();
+        visit(child);
+        pyCodeBuilder.decreaseIndent();
+      } else {
+        throw new AssertionError("Unexpected if child node type. Child: " + child);
+      }
+    }
   }
 
 

@@ -37,6 +37,8 @@ import java.util.List;
 /**
  * Unit tests for GenPyCodeVisitor.
  *
+ * <p>TODO(dcphillips): Add non-inlined 'if' test after adding LetNode support.
+ *
  */
 public final class GenPyCodeVisitorTest extends TestCase {
 
@@ -67,6 +69,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "\n";
 
   private GenPyCodeVisitor genPyCodeVisitor;
+
 
   @Override protected void setUp() {
     // Default to empty values for the bidi and translation configs.
@@ -172,6 +175,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   // -----------------------------------------------------------------------------------------------
   // Test Utilities.
+
 
   private void assertGeneratedPyFile(String soyCode, String expectedPyCode) {
     assertThat(getGeneratedPyFile(soyCode)).isEqualTo(expectedPyCode);

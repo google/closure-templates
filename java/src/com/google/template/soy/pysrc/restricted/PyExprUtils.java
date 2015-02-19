@@ -124,6 +124,24 @@ public final class PyExprUtils {
   }
 
   /**
+   * Wraps an expression with parenthesis if it's not above the minimum safe precedence.
+   *
+   * <p>NOTE: For the sake of brevity, this implementation loses typing information in the
+   * expressions.
+   *
+   * @param expr The expression to wrap.
+   * @param minSafePrecedence The minimum safe precedence (not inclusive).
+   * @return The PyExpr potentially wrapped in parenthesis.
+   */
+  public static PyExpr maybeProtect(PyExpr expr, int minSafePrecedence) {
+    if (expr.getPrecedence() > minSafePrecedence) {
+      return expr;
+    } else {
+      return new PyExpr("(" + expr.getText() + ")", Integer.MAX_VALUE);
+    }
+  }
+
+  /**
    * Wraps an expression with the proper SanitizedContent constructor if contentKind is non-null.
    *
    * @param contentKind The kind of sanitized content.

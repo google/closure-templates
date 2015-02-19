@@ -29,6 +29,9 @@ import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfElseNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -206,5 +209,63 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   @Override protected void visitMsgNode(MsgNode node) {
     MsgFuncGenerator msgFuncGenerator = msgFuncGeneratorFactory.create(node);
     pyExprs.add(msgFuncGenerator.getPyExpr());
+  }
+
+  /**
+   * If all the children are computable as expressions, the IfNode can be written as a ternary
+   * conditional expression.
+   */
+  @Override protected void visitIfNode(IfNode node) {
+    // Create another instance of this visitor for generating Python expressions from children.
+    GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create();
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create();
+
+    StringBuilder pyExprTextSb = new StringBuilder();
+
+    boolean hasElse = false;
+    for (SoyNode child : node.getChildren()) {
+
+      if (child instanceof IfCondNode) {
+        IfCondNode icn = (IfCondNode) child;
+
+        // Python ternary conditional expressions modify the order of the conditional from
+        // <conditional> ? <true> : <false> to
+        // <true> if <conditional> else <false>
+        PyExpr condBlock = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(icn)).toPyString();
+        condBlock = PyExprUtils.maybeProtect(condBlock,
+            PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+        pyExprTextSb.append(condBlock.getText());
+
+        // Append the conditional and if/else syntax.
+        PyExpr condPyExpr = translator.exec(icn.getExprUnion().getExpr());
+        pyExprTextSb.append(" if ").append(condPyExpr.getText()).append(" else ");
+
+      } else if (child instanceof IfElseNode) {
+        hasElse = true;
+        IfElseNode ien = (IfElseNode) child;
+
+        PyExpr elseBlock = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(ien)).toPyString();
+        pyExprTextSb.append(elseBlock.getText());
+      } else {
+        throw new AssertionError("Unexpected if child node type. Child: " + child);
+      }
+    }
+
+    if (!hasElse) {
+      pyExprTextSb.append("''");
+    }
+
+    // By their nature, inline'd conditionals can only contain output strings, so they can be
+    // treated as a string type with a conditional precedence.
+    pyExprs.add(new PyStringExpr(pyExprTextSb.toString(),
+        PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Override protected void visitIfCondNode(IfCondNode node) {
+    visitChildren(node);
+  }
+
+  @Override protected void visitIfElseNode(IfElseNode node) {
+    visitChildren(node);
   }
 }
