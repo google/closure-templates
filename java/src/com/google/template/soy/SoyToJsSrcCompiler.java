@@ -17,9 +17,9 @@
 package com.google.template.soy;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
+import com.google.template.soy.base.internal.ErrorPrettyPrinter;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
@@ -258,7 +258,7 @@ public final class SoyToJsSrcCompiler {
       }
     };
 
-    if (outputPathFormat.length() == 0) {
+    if (outputPathFormat.isEmpty()) {
       exitWithErrorFn.apply("Must provide the output path format.");
     }
 
@@ -268,7 +268,7 @@ public final class SoyToJsSrcCompiler {
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
     MainClassUtils.addSoyFilesToBuilder(
         sfsBuilder, inputPrefix, srcs, arguments, deps, indirectDeps, exitWithErrorFn);
-    if (syntaxVersion.length() > 0) {
+    if (!syntaxVersion.isEmpty()) {
       if (syntaxVersion.equals("1.0")) {
         exitWithErrorFn.apply("Declared syntax version must be 2.0 or greater.");
       }
@@ -306,10 +306,9 @@ public final class SoyToJsSrcCompiler {
             outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
 
     if (!result.isSuccess()) {
-      ImmutableCollection<? extends SoySyntaxException> errors = result.getErrors();
-      System.err.printf("%d errors:%n", errors.size());
-      for (SoySyntaxException e : errors) {
-        System.err.println(e.getMessage());
+      ErrorPrettyPrinter prettyPrinter = sfs.getErrorPrettyPrinter(System.err);
+      for (SoySyntaxException e : result.getErrors()) {
+        prettyPrinter.print(e);
       }
       System.exit(1);
     }

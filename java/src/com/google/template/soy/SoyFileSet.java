@@ -34,6 +34,7 @@ import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.ErrorPrettyPrinter;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
@@ -87,6 +88,7 @@ import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -665,6 +667,9 @@ public final class SoyFileSet {
     return generalOptions;
   }
 
+  ErrorPrettyPrinter getErrorPrettyPrinter(PrintStream err) {
+    return new ErrorPrettyPrinter(soyFileSuppliers, err);
+  }
 
   /**
    * Generates Java classes containing parse info (param names, template names, meta info). There

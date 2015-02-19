@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 
@@ -50,7 +51,7 @@ public class CallNodeTest extends TestCase {
 
 
   public void testSetEscapingDirectiveNames() throws SoySyntaxException {
-    CallBasicNode callNode = new CallBasicNode.Builder(0)
+    CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(".foo")
         .buildAndThrowIfInvalid();
     assertEquals(ImmutableList.<String>of(), callNode.getEscapingDirectiveNames());
@@ -68,7 +69,7 @@ public class CallNodeTest extends TestCase {
 
   private void checkCommandText(String commandText, String expectedCommandText) {
 
-    CallBasicNode callNode = new CallBasicNode.Builder(0)
+    CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(commandText)
         .buildAndThrowIfInvalid();
     if (callNode.getCalleeName() == null) {
@@ -78,7 +79,7 @@ public class CallNodeTest extends TestCase {
     boolean useV1FunctionAttrForCalleeName
         = !callNode.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0);
 
-    CallBasicNode normCallNode = new CallBasicNode.Builder(0)
+    CallBasicNode normCallNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .calleeName(callNode.getCalleeName())
         .sourceCalleeName(callNode.getSrcCalleeName())
         .useV1FunctionAttrForCalleeName(useV1FunctionAttrForCalleeName)

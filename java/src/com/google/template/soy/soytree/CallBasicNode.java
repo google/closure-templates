@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.ErrorManager;
 import com.google.template.soy.base.ErrorManagerImpl;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -162,11 +163,13 @@ public final class CallBasicNode extends CallNode {
 
   public static final class Builder {
 
-    private static final CallBasicNode ERROR = new Builder(-1)
+    private static final CallBasicNode ERROR = new Builder(-1, SourceLocation.UNKNOWN)
         .commandText(".error")
         .buildAndThrowIfInvalid(); // guaranteed to be valid
 
     private final int id;
+    private final SourceLocation sourceLocation;
+
     private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
     private boolean isPassingData;
     private boolean isPassingAllData;
@@ -179,8 +182,9 @@ public final class CallBasicNode extends CallNode {
     @Nullable private String sourceCalleeName;
     @Nullable private SyntaxVersionBound syntaxVersionBound;
 
-    public Builder(int id) {
+    public Builder(int id, SourceLocation sourceLocation) {
       this.id = id;
+      this.sourceLocation = sourceLocation;
     }
 
     public Builder calleeName(String calleeName) {
@@ -255,9 +259,14 @@ public final class CallBasicNode extends CallNode {
           : buildCommandText();
       int newNumErrors = errorManager.getErrors().size();
       boolean ok = newNumErrors == prevNumErrors;
-      return ok
-          ? new CallBasicNode(id, commandTextInfo, escapingDirectiveNames, calleeName)
-          : ERROR;
+      if (ok) {
+        CallBasicNode callBasicNode = new CallBasicNode(
+            id, commandTextInfo, escapingDirectiveNames, calleeName);
+        callBasicNode.setSourceLocation(sourceLocation);
+        return callBasicNode;
+      } else {
+        return ERROR;
+      }
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
@@ -303,19 +312,25 @@ public final class CallBasicNode extends CallNode {
       }
 
       if (srcCalleeNames.isEmpty()) {
-        errorManager.report(SoySyntaxException.createWithoutMetaInfo(
-            "Invalid 'call' command missing callee name: {call " + cmdText + "}."));
+        errorManager.report(SoySyntaxException.createWithMetaInfo(
+            "Invalid 'call' command missing callee name: {call " + cmdText + "}.",
+            sourceLocation, null /* filePath */, null /* templateName */));
       } else if (srcCalleeNames.size() == 1) {
         sourceCalleeName = srcCalleeNames.get(0);
         if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
             BaseUtils.isDottedIdentifier(sourceCalleeName))) {
-          errorManager.report(SoySyntaxException.createWithoutMetaInfo(
-              "Invalid callee name \"" + sourceCalleeName + "\" for 'call' command."));
+          errorManager.report(SoySyntaxException.createWithMetaInfo(
+              "Invalid callee name \"" + sourceCalleeName + "\" for 'call' command.",
+              sourceLocation, null /* filePath */, null /* templateName */));
         }
       } else {
-        errorManager.report(SoySyntaxException.createWithoutMetaInfo(String.format(
-            "Invalid 'call' command with callee name declared multiple times (%s, %s)",
-            srcCalleeNames.get(0), srcCalleeNames.get(1))));
+        errorManager.report(SoySyntaxException.createWithMetaInfo(
+            String.format(
+                "Invalid 'call' command with callee name declared multiple times (%s, %s)",
+                srcCalleeNames.get(0), srcCalleeNames.get(1)),
+            sourceLocation,
+            null /* filePath */,
+            null /* filePath */));
       }
 
       Pair<Boolean, ExprRootNode<?>> dataAttrInfo =

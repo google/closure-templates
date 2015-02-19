@@ -3378,7 +3378,7 @@ private CallNode CallStmt() :
     // ------ Create the CallNode. ------
     CallNode callNode = null;
     if (isBasicCallTag) {
-      callNode = new CallBasicNode.Builder(nodeIdGen.genId())
+      callNode = new CallBasicNode.Builder(nodeIdGen.genId(), createSrcLoc(callTagInfo))
           .commandText(cmdText)
           .userSuppliedPlaceholderName(userSuppliedPhName)
           .build(errorManager);

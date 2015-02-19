@@ -154,7 +154,7 @@ final class Rewriter {
         CallNode newCallNode;
         if (callNode instanceof CallBasicNode) {
           // For simplicity, use the full callee name as the source callee name.
-          newCallNode = new CallBasicNode.Builder(callNode.getId())
+          newCallNode = new CallBasicNode.Builder(callNode.getId(), callNode.getSourceLocation())
               .calleeName(derivedCalleeName)
               .sourceCalleeName(derivedCalleeName)
               .isPassingData(callNode.isPassingData())

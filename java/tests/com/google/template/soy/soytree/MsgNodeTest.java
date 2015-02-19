@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -100,11 +101,11 @@ public class MsgNodeTest extends TestCase {
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$zoo", null)));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$foo.zoo", "zoo")));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$foo.zoo", "zoo")));
-    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(3)
+    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(3, SourceLocation.UNKNOWN)
         .commandText(".helper")
         .userSuppliedPlaceholderName("zoo")
         .buildAndThrowIfInvalid()));
-    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(4)
+    msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(4, SourceLocation.UNKNOWN)
         .commandText(".helper")
         .userSuppliedPlaceholderName("zoo")
         .buildAndThrowIfInvalid()));

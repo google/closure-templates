@@ -98,7 +98,7 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
     CallNode newCallNode;
     if (node instanceof CallBasicNode) {
       CallBasicNode nodeCast = (CallBasicNode) node;
-      newCallNode = new CallBasicNode.Builder(node.getId())
+      newCallNode = new CallBasicNode.Builder(node.getId(), node.getSourceLocation())
           .calleeName(nodeCast.getCalleeName())
           .sourceCalleeName(nodeCast.getSrcCalleeName())
           .isPassingData(true)

@@ -67,7 +67,7 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   }
 
 
-  /** The first line of the node in the file from which it was parsed or derived. */
+  /** The location in the file from which it was parsed or derived. */
   @Override public SourceLocation getSourceLocation() {
     return srcLoc;
   }
