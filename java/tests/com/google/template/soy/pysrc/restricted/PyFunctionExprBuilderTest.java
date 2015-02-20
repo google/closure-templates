@@ -49,7 +49,7 @@ public final class PyFunctionExprBuilderTest extends TestCase {
     list.add("bar");
     list.add(42);
 
-    func.addArg(PyExprUtils.convertListToPyListExpr(list));
+    func.addArg(PyExprUtils.convertIterableToPyListExpr(list));
     assertEquals("some_func(['foo', 'bar', 42, ])", func.build());
   }
 
@@ -60,7 +60,7 @@ public final class PyFunctionExprBuilderTest extends TestCase {
     list.add("bar");
     list.add(42);
 
-    func.addArg(PyExprUtils.convertListToPyTupleExpr(list));
+    func.addArg(PyExprUtils.convertIterableToPyTupleExpr(list));
     assertEquals("some_func(('foo', 'bar', 42, ))", func.build());
   }
 

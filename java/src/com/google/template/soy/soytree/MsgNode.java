@@ -307,6 +307,15 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
     return substUnitInfo.nodeToVarNameMap.get(selectNode);
   }
 
+  /**
+   * Getter for the generated map from substitution unit var name to representative node.
+   */
+  public ImmutableMap<String, MsgSubstUnitNode> getVarNameToRepNodeMap() {
+    if (substUnitInfo == null) {
+      substUnitInfo = genSubstUnitInfo(this);
+    }
+    return substUnitInfo.varNameToRepNodeMap;
+  }
 
   @Override public String toSourceString() {
     StringBuilder sb = new StringBuilder();

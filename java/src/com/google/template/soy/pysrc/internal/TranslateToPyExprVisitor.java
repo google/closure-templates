@@ -16,7 +16,9 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -45,14 +47,14 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.targetexpr.ExprUtils;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
-import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an
@@ -70,6 +72,15 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
     public TranslateToPyExprVisitor create();
   }
 
+  /**
+   * Helper mapper to apply {@link #visit} to an iterable of ExprNode.
+   */
+  private final Function<ExprNode, PyExpr> VISIT_MAPPER = new Function<ExprNode, PyExpr>() {
+    @Override
+    public PyExpr apply(ExprNode node) {
+      return visit(node);
+    }
+  };
 
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
@@ -110,36 +121,21 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
 
   @Override protected PyExpr visitListLiteralNode(ListLiteralNode node) {
-    StringBuilder listContents = new StringBuilder();
-
-    for (ExprNode child: node.getChildren()) {
-      if (listContents.length() > 0) {
-        listContents.append(", ");
-      }
-      listContents.append(visit(child).getText());
-    }
-
-    return new PyListExpr("[" + listContents + "]", Integer.MAX_VALUE);
+    return PyExprUtils.convertIterableToPyListExpr(
+        Iterables.transform(node.getChildren(), VISIT_MAPPER));
   }
 
   @Override protected PyExpr visitMapLiteralNode(MapLiteralNode node) {
-    StringBuilder mapContents = new StringBuilder();
-
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
+    Map<PyExpr, PyExpr> dict = new HashMap<>();
+
     for (int i = 0, n = node.numChildren(); i < n; i += 2) {
       ExprNode keyNode = node.getChild(i);
       ExprNode valueNode = node.getChild(i + 1);
-
-      if (i > 0) {
-        mapContents.append(", ");
-      }
-
-      mapContents.append(visit(keyNode).getText())
-          .append(": ")
-          .append(visit(valueNode).getText());
+      dict.put(visit(keyNode), visit(valueNode));
     }
 
-    return new PyExpr("{" + mapContents + "}", Integer.MAX_VALUE);
+    return PyExprUtils.convertMapToPyExpr(dict);
   }
 
 

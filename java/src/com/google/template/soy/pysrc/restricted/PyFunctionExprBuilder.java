@@ -74,27 +74,27 @@ public final class PyFunctionExprBuilder {
     return this;
   }
 
-  PyFunctionExprBuilder addArg(String str) {
+  public PyFunctionExprBuilder addArg(String str) {
     this.argList.add(new PyStringExpr("'" + str + "'"));
     return this;
   }
 
-  PyFunctionExprBuilder addArg(int i) {
+  public PyFunctionExprBuilder addArg(int i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
-  PyFunctionExprBuilder addArg(double i) {
+  public PyFunctionExprBuilder addArg(double i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
-  PyFunctionExprBuilder addArg(long i) {
+  public PyFunctionExprBuilder addArg(long i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
-  String getFuncName() {
+  public String getFuncName() {
     return this.funcName;
   }
 
@@ -103,22 +103,22 @@ public final class PyFunctionExprBuilder {
     return this;
   }
 
-  PyFunctionExprBuilder addKwarg(String key, String str) {
+  public PyFunctionExprBuilder addKwarg(String key, String str) {
     kwargMap.put(key, new PyStringExpr("'" + str + "'"));
     return this;
   }
 
-  PyFunctionExprBuilder addKwarg(String key, int i) {
+  public PyFunctionExprBuilder addKwarg(String key, int i) {
     kwargMap.put(key, new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
-  PyFunctionExprBuilder addKwarg(String key, double i) {
+  public PyFunctionExprBuilder addKwarg(String key, double i) {
     kwargMap.put(key, new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
-  PyFunctionExprBuilder addKwarg(String key, long i) {
+  public PyFunctionExprBuilder addKwarg(String key, long i) {
     kwargMap.put(key, new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }

@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -38,20 +39,24 @@ import java.util.List;
  * the expected expressions.
  *
  */
-public final class PyCodeSubject extends Subject<PyCodeSubject, String> {
+public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, String> {
 
   private static final Injector INJECTOR = Guice.createInjector(new PySrcModule());
 
   private GenPyExprsVisitor genPyExprsVisitor;
 
-
-  PyCodeSubject(FailureStrategy failureStrategy, String code) {
+  SoyCodeForPySubject(FailureStrategy failureStrategy, String code) {
     super(failureStrategy, code);
 
     SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
     genPyExprsVisitor = INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create();
   }
 
+  /**
+   * Assert soy code compiled to the correct list of PyExprs.
+   * The given piece of Soy code is wrapped in a full body of a template.
+   * The actual result is replaced with ids for ### so that tests don't break when ids change.
+   */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
     ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(getSubject());
     SoyNode node = SharedTestUtils.getNode(result.getParseTree(), 0);
@@ -62,19 +67,28 @@ public final class PyCodeSubject extends Subject<PyCodeSubject, String> {
     for (int i = 0; i < expectedPyExprs.size(); i++) {
       PyExpr expectedPyExpr = expectedPyExprs.get(i);
       PyExpr actualPyExpr = actualPyExprs.get(i);
-      assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
+      assertThat(actualPyExpr.getText().replaceAll("\\([0-9]+", "(###"))
+        .isEqualTo(expectedPyExpr.getText());
       assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
     }
   }
 
-  private static final SubjectFactory<PyCodeSubject, String> PYCODE =
-      new SubjectFactory<PyCodeSubject, String>() {
-        @Override public PyCodeSubject getSubject(FailureStrategy failureStrategy, String code) {
-          return new PyCodeSubject(failureStrategy, code);
+  /**
+   * Assert soy code compiled to the correct PyExpr.
+   */
+  public void compilesTo(PyExpr expectedPyExpr) {
+    compilesTo(ImmutableList.of(expectedPyExpr));
+  }
+
+  private static final SubjectFactory<SoyCodeForPySubject, String> SOYCODE =
+      new SubjectFactory<SoyCodeForPySubject, String>() {
+        @Override
+        public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String code) {
+          return new SoyCodeForPySubject(failureStrategy, code);
         }
       };
 
-  public static PyCodeSubject assertThatSoyCode(String code) {
-    return assertAbout(PYCODE).that(code);
+  public static SoyCodeForPySubject assertThatSoyCode(String code) {
+    return assertAbout(SOYCODE).that(code);
   }
 }

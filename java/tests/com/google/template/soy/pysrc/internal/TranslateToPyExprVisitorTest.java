@@ -57,7 +57,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   public void testListLiteral() throws Exception {
     assertTranslation(
         "['blah', 123, $foo]",
-        new PyExpr("['blah', 123, opt_data.get('foo')]", Integer.MAX_VALUE), PyListExpr.class);
+        new PyExpr("['blah', 123, opt_data.get('foo'), ]", Integer.MAX_VALUE), PyListExpr.class);
     assertTranslation("[]", new PyExpr("[]", Integer.MAX_VALUE), PyListExpr.class);
   }
 
@@ -66,21 +66,21 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertTranslation("[:]", new PyExpr("{}", Integer.MAX_VALUE));
     assertTranslation(
         "['aaa': 123, 'bbb': 'blah']",
-        new PyExpr("{'aaa': 123, 'bbb': 'blah'}", Integer.MAX_VALUE));
+        new PyExpr("{'aaa': 123, 'bbb': 'blah', }", Integer.MAX_VALUE));
     assertTranslation(
         "['aaa': $foo, 'bbb': 'blah']",
-        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
+        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah', }", Integer.MAX_VALUE));
 
     // QuotedKeysIfJs should change nothing.
     assertTranslation("quoteKeysIfJs([:])", new PyExpr("{}", Integer.MAX_VALUE));
     assertTranslation(
         "quoteKeysIfJs( ['aaa': $foo, 'bbb': 'blah'] )",
-        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
+        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah', }", Integer.MAX_VALUE));
 
     // Non-string keys are allowed in Python.
     assertTranslation(
-        "[0: 123, 1: 'blah']",
-        new PyExpr("{0: 123, 1: 'blah'}", Integer.MAX_VALUE));
+        "[1: 'blah', 0: 123]",
+        new PyExpr("{1: 'blah', 0: 123, }", Integer.MAX_VALUE));
   }
 
   public void testDataRef() throws Exception {

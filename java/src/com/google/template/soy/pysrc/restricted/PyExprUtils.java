@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.targetexpr.ExprUtils;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -41,8 +42,8 @@ public final class PyExprUtils {
   /**
    * Map used to provide operator precedences in Python.
    *
-   * @see <a href="https://docs.python.org/2/reference/expressions.html#operator-precedence">
-   *    Python operator precedence.</a>
+   * @see <a href="https://docs.python.org/2/reference/expressions.html#operator-precedence"> Python
+   *      operator precedence.</a>
    */
   private static final ImmutableMap<Operator, Integer> PYTHON_PRECEDENCES =
       new ImmutableMap.Builder<Operator, Integer>()
@@ -112,6 +113,7 @@ public final class PyExprUtils {
 
   /**
    * Generate a Python not null (None) check expression for a given PyExpr.
+   *
    * @param pyExpr The input expression to test.
    * @return A PyExpr containing the null check.
    */
@@ -168,24 +170,47 @@ public final class PyExprUtils {
   }
 
   /**
-   * Convert a java List to valid PyExpr as array.
+   * Convert a java Iterable object to valid PyExpr as array.
    *
-   * @param list List of Objects to be converted to PyExpr, it must be Number, PyExpr or String.
+   * @param iterable Iterable of Objects to be converted to PyExpr, it must be Number, PyExpr or
+   *        String.
    */
-  public static PyExpr convertListToPyListExpr(List<Object> list) {
-    return convertListToPyExpr(list, true);
+  public static PyExpr convertIterableToPyListExpr(Iterable<?> iterable) {
+    return convertIterableToPyExpr(iterable, true);
   }
 
   /**
-   * Convert a java List to valid PyExpr as tuple.
+   * Convert a java Iterable object to valid PyExpr as tuple.
    *
-   * @param list List of Objects to be converted to PyExpr, it must be Number, PyExpr or String.
+   * @param iterable Iterable of Objects to be converted to PyExpr, it must be Number, PyExpr or
+   *        String.
    */
-  public static PyExpr convertListToPyTupleExpr(List<Object> list) {
-    return convertListToPyExpr(list, false);
+  public static PyExpr convertIterableToPyTupleExpr(Iterable<?> iterable) {
+    return convertIterableToPyExpr(iterable, false);
   }
 
-  private static PyExpr convertListToPyExpr(List<Object> list, boolean asArray) {
+  /**
+   * Convert a java Map to valid PyExpr as dict.
+   *
+   * @param dict A Map to be converted to PyExpr as a dictionary, both key and value should be
+   *        PyExpr.
+   */
+  public static PyExpr convertMapToPyExpr(Map<PyExpr, PyExpr> dict) {
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("{");
+    for (Map.Entry<PyExpr, PyExpr> entry : dict.entrySet()) {
+      sb.append(entry.getKey().getText());
+      sb.append(": ");
+      sb.append(entry.getValue().getText());
+      sb.append(", ");
+    }
+    sb.append("}");
+
+    return new PyExpr(sb.toString(), Integer.MAX_VALUE);
+  }
+
+  private static PyExpr convertIterableToPyExpr(Iterable<?> iterable, boolean asArray) {
     StringBuilder sb = new StringBuilder();
     String leftDelimiter = "[";
     String rightDelimiter = "]";
@@ -195,8 +220,7 @@ public final class PyExprUtils {
       rightDelimiter = ")";
     }
 
-    sb.append(leftDelimiter);
-    for (Object elem : list) {
+    for (Object elem : iterable) {
       if (!(elem instanceof Number || elem instanceof String || elem instanceof PyExpr)) {
         throw new UnsupportedOperationException("Only Number, String and PyExpr is allowed");
       }
@@ -212,8 +236,6 @@ public final class PyExprUtils {
       sb.append(", ");
     }
 
-    sb.append(rightDelimiter);
-
-    return new PyListExpr(sb.toString(), Integer.MAX_VALUE);
+    return new PyListExpr(leftDelimiter + sb + rightDelimiter, Integer.MAX_VALUE);
   }
 }
