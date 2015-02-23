@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
  */
 public final class SharedTestUtils {
 
+
   private SharedTestUtils() {}
 
 
@@ -183,7 +184,24 @@ public final class SharedTestUtils {
   public static String buildTestSoyFileContent(
       @Nullable List<String> soyDocParamNames, String soyCode) {
     return buildTestSoyFileContent(
-        "brittle.test.ns", ".brittleTestTemplate", soyDocParamNames, soyCode);
+        "brittle.test.ns", ".brittleTestTemplate", AutoEscapingType.DEPRECATED_NONCONTEXTUAL,
+        soyDocParamNames, soyCode);
+  }
+
+
+  /**
+   * Builds a test Soy file's content with strict autoescaping from the given Soy code, which will
+   * be the body of the only template in the test Soy file.
+   *
+   * @param soyDocParamNames Param names to declare in SoyDoc of the single template.
+   * @param soyCode The code to parse as the full body of a template.
+   * @return The test Soy file's content.
+   */
+  public static String buildStrictTestSoyFileContent(
+      @Nullable List<String> soyDocParamNames, String soyCode) {
+    return buildTestSoyFileContent(
+        "brittle.test.ns", ".brittleTestTemplate", AutoEscapingType.STRICT,
+        soyDocParamNames, soyCode);
   }
 
 
@@ -193,20 +211,22 @@ public final class SharedTestUtils {
    *
    * @param namespace The namespace for the test Soy file.
    * @param templateName The template name for the single template.
+   * @param autoEscaping The form of autescaping to use for this namespace.
    * @param soyDocParamNames Param names to declare in SoyDoc of the single template.
    * @param soyCode The code to parse as the full body of a template.
    * @return The test Soy file's content.
    */
   public static String buildTestSoyFileContent(
-      String namespace, String templateName, @Nullable List<String> soyDocParamNames,
-      String soyCode) {
+      String namespace, String templateName, AutoEscapingType autoEscaping,
+      @Nullable List<String> soyDocParamNames, String soyCode) {
 
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(namespace));
     Preconditions.checkArgument(BaseUtils.isIdentifierWithLeadingDot(templateName));
 
     StringBuilder soyFileContentBuilder = new StringBuilder();
     soyFileContentBuilder
-        .append("{namespace " + namespace + " autoescape=\"deprecated-noncontextual\"}\n")
+        .append("{namespace " + namespace)
+        .append(" autoescape=\"" + autoEscaping.getKey() + "\"}\n")
         .append("\n")
         .append("/** Test template.");
     if (soyDocParamNames != null) {

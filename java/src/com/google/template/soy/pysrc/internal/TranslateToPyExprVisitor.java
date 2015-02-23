@@ -19,6 +19,8 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -68,8 +70,16 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
    * Injectable factory for creating an instance of this class.
    */
   static interface TranslateToPyExprVisitorFactory {
+    TranslateToPyExprVisitor create(LocalVariableStack localVarExprs);
+  }
 
-    public TranslateToPyExprVisitor create();
+
+  private final LocalVariableStack localVarExprs;
+
+
+  @AssistedInject
+  TranslateToPyExprVisitor(@Assisted LocalVariableStack localVarExprs) {
+    this.localVarExprs = localVarExprs;
   }
 
   /**
@@ -176,9 +186,14 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
           }
           return "opt_ijData" + genCodeForLiteralKeyAccess(varRef.getName());
         } else {
-          // TODO(dcphillips): Add support for local variables.
-          // Case 2: Data reference.
-          return "opt_data" + genCodeForLiteralKeyAccess(varRef.getName());
+          PyExpr translation = localVarExprs.getVariableExpression(varRef.getName());
+          if (translation != null) {
+            // Case 2: In-scope local var.
+            return translation.getText();
+          } else {
+            // Case 3: Data reference.
+            return "opt_data" + genCodeForLiteralKeyAccess(varRef.getName());
+          }
         }
       }
 
@@ -292,7 +307,12 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
                 " (function call \"" + node.toSourceString() + "\").");
       }
       switch (nonpluginFn) {
-        // TODO(dcphillips): Add loop function support.
+        case IS_FIRST:
+          return visitForEachFunction(node, "__isFirst");
+        case IS_LAST:
+          return visitForEachFunction(node, "__isLast");
+        case INDEX:
+          return visitForEachFunction(node, "__index");
         case QUOTE_KEYS_IF_JS:
           // 'quoteKeysIfJs' is ignored in Python.
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
@@ -303,6 +323,11 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
     // TODO(dcphillips): Handle plugin functions.
     throw new UnsupportedOperationException("Plugin functions are not yet supported.");
+  }
+
+  private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
+    String varName = ((VarRefNode) node.getChild(0)).getName();
+    return localVarExprs.getVariableExpression(varName + suffix);
   }
 
 

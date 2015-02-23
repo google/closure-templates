@@ -22,6 +22,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
+import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
@@ -42,6 +43,8 @@ import java.util.List;
 public final class GenPyCodeVisitorTest extends TestCase {
 
   private static final Injector INJECTOR = Guice.createInjector(new PySrcModule());
+
+  private static final LocalVariableStack LOCAL_VAR_EXPRS = new LocalVariableStack();
 
   private static final String EXPECTED_PYFILE_START =
       "# coding=utf-8\n"
@@ -130,6 +133,58 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertGeneratedPyFile(soyCode, expectedPyCode);
   }
 
+  public void testForeach() {
+    String soyCode =
+        "{foreach $operand in $operands}\n"
+        + "  {$operand}\n"
+        + "{/foreach}\n";
+
+    // There's no simple way to account for all instances of the id in these variables, so for now
+    // we just hardcode '3'.
+    String expectedPyCode =
+        "operandList3 = opt_data.get('operands')\n"
+        + "for operandIndex3, operandData3 in enumerate(operandList3):\n"
+        + "  output.append(str(operandData3))\n";
+
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+
+    soyCode =
+        "{foreach $operand in $operands}\n"
+        + "  {isFirst($operand)}\n"
+        + "  {isLast($operand)}\n"
+        + "  {index($operand)}\n"
+        + "{/foreach}\n";
+
+    expectedPyCode =
+        "operandList3 = opt_data.get('operands')\n"
+        + "for operandIndex3, operandData3 in enumerate(operandList3):\n"
+        + "  output.extend([str(operandIndex3 == 0),"
+                         + "str(operandIndex3 == len(operandList3) - 1),"
+                         + "str(operandIndex3)])\n";
+
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+  }
+
+  public void testForeach_ifempty() {
+    String soyCode =
+        "{foreach $operand in $operands}\n"
+        + "  {$operand}\n"
+        + "{ifempty}\n"
+        + "  {$foo}"
+        + "{/foreach}\n";
+
+    String expectedPyCode =
+        "operandList3 = opt_data.get('operands')\n"
+        + "if operandList3:\n"
+        + "  for operandIndex3, operandData3 in enumerate(operandList3):\n"
+        + "    output.append(str(operandData3))\n"
+        + "else:\n"
+        + "  output.append(str(opt_data.get('foo')))\n";
+
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+  }
+
+
   // -----------------------------------------------------------------------------------------------
   // Test Utilities.
 
@@ -141,6 +196,10 @@ public final class GenPyCodeVisitorTest extends TestCase {
   private void assertInGeneratedPyFile(String soyCode, String expectedPyCode) {
     String generatedCode = getGeneratedPyFile(soyCode);
     assertTrue(generatedCode.contains(expectedPyCode));
+  }
+
+  private void assertGeneratedPyCode(String soyNodeCode, String expectedPyCode) {
+    assertThat(getGeneratedPyCode(soyNodeCode)).isEqualTo(expectedPyCode);
   }
 
   private void setupGenPyCodeVisitor(String bidiIsRtlFn, String translationPyModuleName) {
@@ -168,5 +227,28 @@ public final class GenPyCodeVisitorTest extends TestCase {
     SoyNode node = SharedTestUtils.parseSoyFiles(soyFileContent).getParseTree();
     List<String> fileContents = genPyCodeVisitor.exec(node);
     return fileContents.get(0).replaceAll("\\([0-9]+", "(###");
+  }
+
+  /**
+   * Generates Python code from the given soy code. The given piece of Soy code is wrapped in a
+   * full body of a template.
+   * Also replaces ids with ### so that tests don't break when ids change.
+   *
+   * @param soyCode The Soy code snippet.
+   */
+  private String getGeneratedPyCode(String soyCode) {
+    SoyNode node = SharedTestUtils.getNode(SharedTestUtils.parseSoyCode(soyCode).getParseTree(), 0);
+
+    // Setup the GenPyCodeVisitor's state before the node is visited.
+    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
+    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
+    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
+    genPyCodeVisitor.localVarExprs = LOCAL_VAR_EXPRS;
+    genPyCodeVisitor.genPyExprsVisitor =
+        INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create(LOCAL_VAR_EXPRS);
+
+    genPyCodeVisitor.visit(node); // note: we're calling visit(), not exec()
+
+    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("\\([0-9]+", "(###");
   }
 }

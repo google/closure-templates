@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -31,6 +32,9 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ForeachIfemptyNode;
+import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -38,6 +42,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -71,15 +76,20 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The contents of the generated Python files. */
   private List<String> pyFilesContents;
 
+  @VisibleForTesting protected PyCodeBuilder pyCodeBuilder;
+
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
 
-  @VisibleForTesting protected PyCodeBuilder pyCodeBuilder;
-
   @VisibleForTesting protected GenPyExprsVisitor genPyExprsVisitor;
 
   private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
+
+  /**
+   * @see LocalVariableStack
+   */
+  @VisibleForTesting protected LocalVariableStack localVarExprs;
 
   /**
    * @param runtimePath The module path for the runtime libraries.
@@ -106,6 +116,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyFilesContents = new ArrayList<>();
     pyCodeBuilder = null;
     genPyExprsVisitor = null;
+    localVarExprs = null;
     visit(node);
     return pyFilesContents;
   }
@@ -113,6 +124,36 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @VisibleForTesting
   @Override protected void visit(SoyNode node) {
     super.visit(node);
+  }
+
+  /**
+   * Visit all the children of a provided node and combine the results into one expression where
+   * possible. This will let us avoid some {@code output.append} calls and save a bit of time.
+   */
+  @Override protected void visitChildren(ParentSoyNode<?> node) {
+    List<PyExpr> childPyExprs = new ArrayList<>();
+
+    for (SoyNode child : node.getChildren()) {
+      if (isComputableAsPyExprVisitor.exec(child)) {
+        childPyExprs.addAll(genPyExprsVisitor.exec(child));
+      } else {
+        // We've reached a child that is not computable as a Python expression.
+        // First add the PyExprs from preceding consecutive siblings that are computable as Python
+        // expressions (if any).
+        if (!childPyExprs.isEmpty()) {
+          pyCodeBuilder.addToOutputVar(childPyExprs);
+          childPyExprs.clear();
+        }
+        // Now append the code for this child.
+        visit(child);
+      }
+    }
+
+    // Add the PyExprs from the last few children (if any).
+    if (!childPyExprs.isEmpty()) {
+      pyCodeBuilder.addToOutputVar(childPyExprs);
+      childPyExprs.clear();
+    }
   }
 
 
@@ -207,7 +248,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
-    genPyExprsVisitor = genPyExprsVisitorFactory.create();
+    localVarExprs = new LocalVariableStack();
+    genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
 
     // Generate function definition up to colon.
     pyCodeBuilder.appendLine(
@@ -275,7 +317,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Not computable as Python expressions, so generate full code.
-    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create();
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
@@ -300,6 +342,116 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         throw new AssertionError("Unexpected if child node type. Child: " + child);
       }
     }
+  }
+
+  /**
+   * The top level ForeachNode primarily serves to test for the ifempty case. If present, the loop
+   * is wrapped in an if statement which checks for data in the list before iterating.
+   *
+   * <p>Example:
+   * <pre>
+   *   {foreach $foo in $boo}
+   *     ...
+   *   {ifempty}
+   *     ...
+   *   {/foreach}
+   * </pre>
+   * might generate
+   * <pre>
+   *   fooList2 = opt_data.get('boo')
+   *   if fooList2:
+   *     ...loop...
+   *   else:
+   *     ...
+   * </pre>
+   */
+  @Override protected void visitForeachNode(ForeachNode node) {
+    // Build the local variable names.
+    String baseVarName = node.getVarName();
+    String listVarName = String.format("%sList%d", baseVarName, node.getId());
+
+    // Define list variable
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
+    PyExpr dataRefPyExpr = translator.exec(node.getExpr());
+    pyCodeBuilder.appendLine(listVarName, " = ", dataRefPyExpr.getText());
+
+    // If has 'ifempty' node, add the wrapper 'if' statement.
+    boolean hasIfemptyNode = node.numChildren() == 2;
+    if (hasIfemptyNode) {
+      // Empty lists are falsy in Python.
+      pyCodeBuilder.appendLine("if ", listVarName, ":");
+      pyCodeBuilder.increaseIndent();
+    }
+
+    // Generate code for nonempty case.
+    visit(node.getChild(0));
+
+    // If has 'ifempty' node, add the 'else' block of the wrapper 'if' statement.
+    if (hasIfemptyNode) {
+      pyCodeBuilder.decreaseIndent();
+      pyCodeBuilder.appendLine("else:");
+      pyCodeBuilder.increaseIndent();
+
+      // Generate code for empty case.
+      visit(node.getChild(1));
+
+      pyCodeBuilder.decreaseIndent();
+    }
+  }
+
+
+  /**
+   * The ForeachNonemptyNode performs the actual looping. We use a standard {@code for} loop, except
+   * that instead of looping directly over the list, we loop over an enumeration to have easy access
+   * to the index along with the data.
+   *
+   * <p>Example:
+   * <pre>
+   *   {foreach $foo in $boo}
+   *     ...
+   *   {/foreach}
+   * </pre>
+   * might generate
+   * <pre>
+   *   fooList2 = opt_data.get('boo')
+   *   for fooIndex2, fooData2 in enumerate(fooList2):
+   *     ...
+   * </pre>
+   */
+  @Override protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+    // Build the local variable names.
+    String baseVarName = node.getVarName();
+    String foreachNodeId = Integer.toString(node.getForeachNodeId());
+    String listVarName = baseVarName + "List" + foreachNodeId;
+    String indexVarName = baseVarName + "Index" + foreachNodeId;
+    String dataVarName = baseVarName + "Data" + foreachNodeId;
+
+    // Create the loop with an enumeration.
+    pyCodeBuilder.appendLine("for ", indexVarName, ", ", dataVarName,
+        " in enumerate(", listVarName, "):");
+    pyCodeBuilder.increaseIndent();
+
+    // Add a new localVarExprs frame and populate it with the translations from this loop.
+    int eqPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL);
+    localVarExprs.pushFrame();
+    localVarExprs.addVariable(baseVarName, new PyExpr(dataVarName, Integer.MAX_VALUE))
+        .addVariable(baseVarName + "__isFirst", new PyExpr(indexVarName + " == 0", eqPrecedence))
+        .addVariable(baseVarName + "__isLast",
+            new PyExpr(indexVarName + " == len(" + listVarName + ") - 1", eqPrecedence))
+        .addVariable(baseVarName + "__index", new PyExpr(indexVarName, Integer.MAX_VALUE));
+
+    // Generate the code for the loop body.
+    visitChildren(node);
+
+    // Remove the localVarExprs frame that we added above.
+    localVarExprs.popFrame();
+
+    // The end of the Python 'for' loop.
+    pyCodeBuilder.decreaseIndent();
+  }
+
+  @Override protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
+    visitChildren(node);
   }
 
 
@@ -429,6 +581,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Helper for visitTemplateNode which generates the function body.
    */
   private void generateFunctionBody(TemplateNode node) {
+    // Add a new frame for local variable translations.
+    localVarExprs.pushFrame();
+
     // Generate statement to ensure data exists as an object, if ever used.
     if ((new ShouldEnsureDataIsDefinedVisitor()).exec(node)) {
       pyCodeBuilder.appendLine("opt_data = opt_data or {}");
@@ -449,5 +604,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     resultPyExpr = PyExprUtils.maybeWrapAsSanitizedContent(node.getContentKind(), resultPyExpr);
 
     pyCodeBuilder.appendLine("return ", resultPyExpr.getText());
+
+    localVarExprs.popFrame();
   }
 }

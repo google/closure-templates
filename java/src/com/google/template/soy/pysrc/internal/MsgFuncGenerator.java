@@ -48,8 +48,7 @@ import java.util.Map;
 final class MsgFuncGenerator {
 
   static interface MsgFuncGeneratorFactory {
-    // TODO(steveyang@): add local translation var map once it is implemented.
-    public MsgFuncGenerator create(MsgNode node);
+    public MsgFuncGenerator create(MsgNode node, LocalVariableStack localVarExprs);
   }
 
   /** The msg node to generate the function calls from. */
@@ -70,9 +69,10 @@ final class MsgFuncGenerator {
 
 
   @AssistedInject
-  MsgFuncGenerator(GenPyExprsVisitorFactory genPyExprsVisitorFactory, @Assisted MsgNode msgNode) {
+  MsgFuncGenerator(GenPyExprsVisitorFactory genPyExprsVisitorFactory, @Assisted MsgNode msgNode,
+      @Assisted LocalVariableStack localVarExprs) {
     this.msgNode = msgNode;
-    this.genPyExprsVisitor = genPyExprsVisitorFactory.create();
+    this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
 
     if (this.msgNode.isRawTextMsg()) {
       this.prepareFunc = new PyFunctionExprBuilder("prepare_literal");

@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -58,8 +59,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
    * Injectable factory for creating an instance of this class.
    */
   public static interface GenPyExprsVisitorFactory {
-
-    public GenPyExprsVisitor create();
+    public GenPyExprsVisitor create(LocalVariableStack localVarExprs);
   }
 
 
@@ -74,6 +74,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   private final MsgFuncGeneratorFactory msgFuncGeneratorFactory;
 
+  private final LocalVariableStack localVarExprs;
+
   /** List to collect the results. */
   private List<PyExpr> pyExprs;
 
@@ -87,12 +89,14 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       MsgFuncGeneratorFactory msgFuncGeneratorFactory,
-      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
+      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
+      @Assisted LocalVariableStack localVarExprs) {
     this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
     this.msgFuncGeneratorFactory = msgFuncGeneratorFactory;
+    this.localVarExprs = localVarExprs;
   }
 
 
@@ -142,7 +146,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
    * </pre>
    */
   @Override protected void visitPrintNode(PrintNode node) {
-    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create();
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
 
     PyExpr pyExpr = translator.exec(node.getExprUnion().getExpr());
 
@@ -181,7 +185,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   }
 
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create();
+    GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
 
     // MsgFallbackGroupNode could only have 1 or 2 child, see TemplateParseTest.java
     if (node.numChildren() == 1) {
@@ -207,7 +211,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   }
 
   @Override protected void visitMsgNode(MsgNode node) {
-    MsgFuncGenerator msgFuncGenerator = msgFuncGeneratorFactory.create(node);
+    MsgFuncGenerator msgFuncGenerator = msgFuncGeneratorFactory.create(node, localVarExprs);
     pyExprs.add(msgFuncGenerator.getPyExpr());
   }
 
@@ -217,8 +221,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
    */
   @Override protected void visitIfNode(IfNode node) {
     // Create another instance of this visitor for generating Python expressions from children.
-    GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create();
-    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create();
+    GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
 
     StringBuilder pyExprTextSb = new StringBuilder();
 
