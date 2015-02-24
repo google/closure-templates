@@ -19,6 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.ErrorManager;
+import com.google.template.soy.base.ErrorManagerImpl;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 
 import java.util.Collection;
@@ -32,7 +35,7 @@ import java.util.regex.Pattern;
  * A class for parsing attributes out of command text.
  *
  */
-class CommandTextAttributesParser {
+final class CommandTextAttributesParser {
 
 
   /** Regex pattern for an attribute in command text.
@@ -56,7 +59,7 @@ class CommandTextAttributesParser {
    *     generating error messages when an exception is thrown.
    * @param supportedAttributes This parser's supported attributes.
    */
-  public CommandTextAttributesParser(String commandName, Attribute... supportedAttributes) {
+  CommandTextAttributesParser(String commandName, Attribute... supportedAttributes) {
 
     this.commandName = commandName;
     this.supportedAttributes = ImmutableSet.copyOf(supportedAttributes);
@@ -85,7 +88,27 @@ class CommandTextAttributesParser {
    * @return A map from attribute names to values.
    * @throws SoySyntaxException If a syntax error is encountered.
    */
-  public Map<String, String> parse(String commandText) throws SoySyntaxException {
+  Map<String, String> parse(String commandText) throws SoySyntaxException {
+    ErrorManager errorManager = new ErrorManagerImpl();
+    Map<String, String> result = parse(commandText, errorManager, SourceLocation.UNKNOWN);
+    if (!errorManager.getErrors().isEmpty()) {
+      throw errorManager.getErrors().iterator().next();
+    }
+    return result;
+  }
+
+  /**
+   * Parses a command text string into a map of attributes names to values. The command text is
+   * assumed to be for the Soy command that this parser handles.
+   *
+   * @param commandText The command text to parse.
+   * @param errorManager For reporting syntax errors.
+   * @param sourceLocation A source location near the command text,
+   *     for producing useful error reports.
+   * @return A map from attribute names to values.
+   */
+  Map<String, String> parse(
+      String commandText, ErrorManager errorManager, SourceLocation sourceLocation) {
 
     Map<String, String> attributes = Maps.newHashMap();
 
@@ -95,9 +118,9 @@ class CommandTextAttributesParser {
     while (matcher.find(i)) {
 
       if (matcher.start() != i) {
-        throw SoySyntaxException.createWithoutMetaInfo(
+        errorManager.report(SoySyntaxException.createWithMetaInfo(
             String.format("Malformed attributes in '%s' command text (%s).",
-                commandName, commandText));
+                commandName, commandText), sourceLocation));
       }
       i = matcher.end();
 
@@ -105,22 +128,22 @@ class CommandTextAttributesParser {
       String value = matcher.group(2);
 
       if (!supportedAttributeNames.contains(name)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
+        errorManager.report(SoySyntaxException.createWithMetaInfo(
             String.format("Unsupported attribute '%s' in '%s' command text (%s).",
-                name, commandName, commandText));
+                name, commandName, commandText), sourceLocation));
       }
       if (attributes.containsKey(name)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
+        errorManager.report(SoySyntaxException.createWithMetaInfo(
             String.format("Duplicate attribute '%s' in '%s' command text (%s).",
-                name, commandName, commandText));
+                name, commandName, commandText), sourceLocation));
       }
       attributes.put(name, value);
     }
 
     if (i != commandText.length()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
+      errorManager.report(SoySyntaxException.createWithMetaInfo(
           String.format("Malformed attributes in '%s' command text (%s).",
-              commandName, commandText));
+              commandName, commandText), sourceLocation));
     }
 
     // --- Apply default values or check correctness of supplied values ---
@@ -132,17 +155,17 @@ class CommandTextAttributesParser {
           continue;  // nothing to check
         }
         if (!supportedAttribute.allowedValues.contains(attributes.get(supportedAttribute.name))) {
-          throw SoySyntaxException.createWithoutMetaInfo(
+          errorManager.report(SoySyntaxException.createWithMetaInfo(
               String.format("Invalid value for attribute '%s' in '%s' command text (%s).",
-                  supportedAttribute.name, commandName, commandText));
+                  supportedAttribute.name, commandName, commandText), sourceLocation));
         }
 
       } else {
         // Check that the attribute is not required.
         if (Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED.equals(supportedAttribute.defaultValue)) {
-          throw SoySyntaxException.createWithoutMetaInfo(
+          errorManager.report(SoySyntaxException.createWithMetaInfo(
               String.format("Missing required attribute '%s' in '%s' command text (%s).",
-                  supportedAttribute.name, commandName, commandText));
+                  supportedAttribute.name, commandName, commandText), sourceLocation));
         }
         // Apply default value.
         attributes.put(supportedAttribute.name, supportedAttribute.defaultValue);

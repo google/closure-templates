@@ -108,10 +108,15 @@ public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void
           .buildAndThrowIfInvalid();
     } else {
       CallDelegateNode nodeCast = (CallDelegateNode) node;
-      newCallNode = new CallDelegateNode(
-          node.getId(), nodeCast.getDelCalleeName(), nodeCast.getDelCalleeVariantExpr(), false,
-          nodeCast.allowsEmptyDefault(), true, true, null, node.getUserSuppliedPhName(),
-          node.getEscapingDirectiveNames());
+      newCallNode = new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
+          .delCalleeName(nodeCast.getDelCalleeName())
+          .delCalleeVariantExpr(nodeCast.getDelCalleeVariantExpr())
+          .allowEmptyDefault(nodeCast.allowsEmptyDefault())
+          .isPassingData(true)
+          .isPassingAllData(true)
+          .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
+          .escapingDirectiveNames(node.getEscapingDirectiveNames())
+          .buildAndThrowIfInvalid();
     }
     node.getParent().replaceChild(node, newCallNode);
   }

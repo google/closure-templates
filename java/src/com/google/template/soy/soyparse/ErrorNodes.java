@@ -17,8 +17,6 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -48,7 +46,6 @@ import com.google.template.soy.soytree.XidNode;
 final class ErrorNodes {
   private ErrorNodes() {}
 
-  static final CallDelegateNode CALL_DELEGATE_NODE = new CallDelegateNode(-1, "foo.bar", null);
   static final CallParamValueNode CALL_PARAM_VALUE_NODE
       = new CallParamValueNode(-1, "error: error");
   static final ForeachNode FOREACH_NODE = new ForeachNode(-1, "$error in $errors");

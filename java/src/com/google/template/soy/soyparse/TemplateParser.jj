@@ -3383,14 +3383,10 @@ private CallNode CallStmt() :
           .userSuppliedPlaceholderName(userSuppliedPhName)
           .build(errorManager);
     } else {
-      try {
-        callNode = new CallDelegateNode(nodeIdGen.genId(), cmdText, userSuppliedPhName);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(callTagInfo), null, null));
-        return ErrorNodes.CALL_DELEGATE_NODE;
-      }
+      callNode = new CallDelegateNode.Builder(nodeIdGen.genId(), createSrcLoc(callTagInfo))
+          .commandText(cmdText)
+          .userSuppliedPlaceholderName(userSuppliedPhName)
+          .build(errorManager);
     }
     callNode = setSrcLoc(callNode, callTagInfo);
     callNode.addChildren(callParams);

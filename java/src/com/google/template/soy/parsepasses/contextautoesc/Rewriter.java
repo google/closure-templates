@@ -166,12 +166,16 @@ final class Rewriter {
               .buildAndThrowIfInvalid();
         } else {
           CallDelegateNode callNodeCast = (CallDelegateNode) callNode;
-          newCallNode = new CallDelegateNode(
-              callNode.getId(), derivedCalleeName, callNodeCast.getDelCalleeVariantExpr(), false,
-              callNodeCast.allowsEmptyDefault(), callNode.isPassingData(),
-              callNode.isPassingAllData(), callNode.getDataExpr(),
-              callNode.getUserSuppliedPhName(),
-              callNode.getEscapingDirectiveNames());
+          newCallNode = new CallDelegateNode.Builder(callNode.getId(), callNode.getSourceLocation())
+              .delCalleeName(derivedCalleeName)
+              .delCalleeVariantExpr(callNodeCast.getDelCalleeVariantExpr())
+              .allowEmptyDefault(callNodeCast.allowsEmptyDefault())
+              .isPassingData(callNode.isPassingData())
+              .isPassingAllData(callNode.isPassingAllData())
+              .dataExpr(callNode.getDataExpr())
+              .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
+              .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
+              .buildAndThrowIfInvalid();
         }
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
           newCallNode.setSourceLocation(callNode.getSourceLocation());

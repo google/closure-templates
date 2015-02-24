@@ -47,6 +47,7 @@ public final class ErrorPrettyPrinterTest extends TestCase {
             + " {delcall 123 /}\n"
             + "  {foreach foo in bar}\n"
             + "   {let /}\n"
+            + "    {delcall foo.bar variant=1 foo=\"bar\" /}\n"
             + "{/template}";
 
     final SoyFileSet soyFileSet = SoyFileSet.builder()
@@ -75,7 +76,7 @@ public final class ErrorPrettyPrinterTest extends TestCase {
               }
             }));
 
-    assertThat(errorReports).hasSize(4);
+    assertThat(errorReports).hasSize(6);
     assertThat(errorReports.get(0)).isEqualTo(
         "In file input.soy:4:1: Invalid 'call' command missing callee name: {call }.\n"
             + "{call /}\n"
@@ -92,5 +93,15 @@ public final class ErrorPrettyPrinterTest extends TestCase {
         "In file input.soy:7:4: Invalid 'let' command text \"\".\n"
             + "   {let /}\n"
             + "   ^\n");
+    assertThat(errorReports.get(4)).isEqualTo(
+        "In file input.soy:8:5: Malformed attributes in 'delcall' command text "
+            + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n"
+            + "    {delcall foo.bar variant=1 foo=\"bar\" /}\n"
+            + "    ^\n");
+    assertThat(errorReports.get(5)).isEqualTo(
+        "In file input.soy:8:5: Unsupported attribute 'foo' in 'delcall' command text "
+            + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n"
+            + "    {delcall foo.bar variant=1 foo=\"bar\" /}\n"
+            + "    ^\n");
   }
 }

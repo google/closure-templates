@@ -73,7 +73,10 @@ public final class ErrorPrettyPrinter {
 
     err.println(snippet);
     // Print a caret below the error.
-    String caretLine = Strings.repeat(" ", e.getSourceLocation().getBeginColumn()-1) + "^";
+    // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
+    // instantiations and ensure the SourceLocation is well-formed.
+    int beginColumn = Math.max(e.getSourceLocation().getBeginColumn(), 1);
+    String caretLine = Strings.repeat(" ", beginColumn-1) + "^";
     err.println(caretLine);
   }
 

@@ -163,7 +163,7 @@ public final class CallBasicNode extends CallNode {
 
   public static final class Builder {
 
-    private static final CallBasicNode ERROR = new Builder(-1, SourceLocation.UNKNOWN)
+    public static final CallBasicNode ERROR = new Builder(-1, SourceLocation.UNKNOWN)
         .commandText(".error")
         .buildAndThrowIfInvalid(); // guaranteed to be valid
 
@@ -287,7 +287,8 @@ public final class CallBasicNode extends CallNode {
         cmdTextForParsing = cmdTextForParsing.substring(ncnMatcher.end()).trim();
       }
 
-      Map<String, String> attributes = ATTRIBUTES_PARSER.parse(cmdTextForParsing);
+      Map<String, String> attributes
+          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, errorManager, sourceLocation);
 
       String nameAttr = attributes.get("name");
       if (nameAttr != null) {
@@ -313,24 +314,20 @@ public final class CallBasicNode extends CallNode {
 
       if (srcCalleeNames.isEmpty()) {
         errorManager.report(SoySyntaxException.createWithMetaInfo(
-            "Invalid 'call' command missing callee name: {call " + cmdText + "}.",
-            sourceLocation, null /* filePath */, null /* templateName */));
+            "Invalid 'call' command missing callee name: {call " + cmdText + "}.", sourceLocation));
       } else if (srcCalleeNames.size() == 1) {
         sourceCalleeName = srcCalleeNames.get(0);
         if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
             BaseUtils.isDottedIdentifier(sourceCalleeName))) {
           errorManager.report(SoySyntaxException.createWithMetaInfo(
               "Invalid callee name \"" + sourceCalleeName + "\" for 'call' command.",
-              sourceLocation, null /* filePath */, null /* templateName */));
+              sourceLocation));
         }
       } else {
         errorManager.report(SoySyntaxException.createWithMetaInfo(
             String.format(
                 "Invalid 'call' command with callee name declared multiple times (%s, %s)",
-                srcCalleeNames.get(0), srcCalleeNames.get(1)),
-            sourceLocation,
-            null /* filePath */,
-            null /* filePath */));
+                srcCalleeNames.get(0), srcCalleeNames.get(1)), sourceLocation));
       }
 
       Pair<Boolean, ExprRootNode<?>> dataAttrInfo =

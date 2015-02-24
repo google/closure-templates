@@ -71,6 +71,18 @@ public class SoySyntaxException extends RuntimeException {
     }
   }
 
+  /**
+   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param message The error message.
+   * @param srcLoc The source location of the error, or null if unknown.
+   * @return The new SoySyntaxException object.
+   */
+  public static SoySyntaxException createWithMetaInfo(String message, SourceLocation srcLoc) {
+    return createWithoutMetaInfo(message)
+        .associateMetaInfo(srcLoc, null /* filePath */, null /* templateName */);
+  }
+
 
   /**
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
