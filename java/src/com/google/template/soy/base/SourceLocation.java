@@ -146,7 +146,11 @@ public class SourceLocation {
       return false;
     }
     SourceLocation that = (SourceLocation) o;
-    return this.filePath.equals(that.filePath) && this.beginLine == that.beginLine;
+    return this.filePath.equals(that.filePath)
+        && this.beginLine == that.beginLine
+        && this.beginColumn == that.beginColumn
+        && this.endLine == that.endLine
+        && this.endColumn == that.endColumn;
   }
 
   @Override

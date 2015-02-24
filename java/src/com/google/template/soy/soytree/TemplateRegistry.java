@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.concurrent.Immutable;
-
 
 /**
  * A registry or index of all templates in a Soy tree.
@@ -38,7 +36,7 @@ import javax.annotation.concurrent.Immutable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class TemplateRegistry {
+public final class TemplateRegistry {
 
 
   /**
@@ -48,8 +46,7 @@ public class TemplateRegistry {
    *
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  @Immutable
-  public static class DelegateTemplateDivision {
+  public static final class DelegateTemplateDivision {
 
     /** Map of all delegate templates in this division, by delegate package name. */
     public final Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap;
@@ -68,7 +65,7 @@ public class TemplateRegistry {
    *
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public static class DelegateTemplateConflictException extends Exception {
+  public static final class DelegateTemplateConflictException extends Exception {
 
     public DelegateTemplateConflictException(String errorMsg) {
       super(errorMsg);

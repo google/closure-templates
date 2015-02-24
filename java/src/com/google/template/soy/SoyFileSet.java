@@ -76,6 +76,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuOptions;
@@ -702,6 +703,21 @@ public final class SoyFileSet {
     return (new GenerateParseInfoVisitor(javaPackage, javaClassNameSource)).exec(soyTree);
   }
 
+  /**
+   * Parses the templates in this file set and generates a template registry. Useful for tools
+   * that want to index Soy files without performing further compilation.
+   *
+   * @throws SoySyntaxException if the templates in this file set cannot be parsed according to
+   *     {@link SyntaxVersion#V2_0}.
+   */
+  public TemplateRegistry generateTemplateRegistry() {
+    // If you want your Soy templates to be indexed, you have to use modern syntax.
+    SyntaxVersion version = generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
+    ParseResult<SoyFileSetNode> result = new SoyFileSetParser(
+        typeRegistry, cache, version, soyFileSuppliers)
+        .parse();
+    return new TemplateRegistry(result.getParseTree());
+  }
 
   /**
    * Extracts all messages from this Soy file set into a SoyMsgBundle (which can then be turned
