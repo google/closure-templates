@@ -37,13 +37,13 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testIf() {
     String soyNodeCode =
-        "{if $boo}\n" +
-        "  Blah\n" +
-        "{elseif not $goo}\n" +
-        "  Bleh\n" +
-        "{else}\n" +
-        "  Bluh\n" +
-        "{/if}\n";
+        "{if $boo}\n"
+      + "  Blah\n"
+      + "{elseif not $goo}\n"
+      + "  Bleh\n"
+      + "{else}\n"
+      + "  Bluh\n"
+      + "{/if}\n";
     String expectedPyExprText =
         "'Blah' if opt_data.get('boo') else 'Bleh' if not opt_data.get('goo') else 'Bluh'";
 
@@ -54,13 +54,13 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testIf_nested() {
     String soyNodeCode =
-        "{if $boo}\n" +
-        "  {if $goo}\n" +
-        "    Blah\n" +
-        "  {/if}\n" +
-        "{else}\n" +
-        "  Bleh\n" +
-        "{/if}\n";
+        "{if $boo}\n"
+      + "  {if $goo}\n"
+      + "    Blah\n"
+      + "  {/if}\n"
+      + "{else}\n"
+      + "  Bleh\n"
+      + "{/if}\n";
     String expectedPyExprText =
         "('Blah' if opt_data.get('goo') else '') if opt_data.get('boo') else 'Bleh'";
 
@@ -198,5 +198,25 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
     assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
+  public void testMsgWithHtmlNode() {
+    // msg with HTML tags and raw texts
+    String soyCode =
+        "{msg desc=\"with link\"}" +
+          "Please click <a href='{$url}'>here</a>." +
+        "{/msg}";
 
+    String expectedPyCode =
+        "render("
+        + "prepare("
+          + "###, "
+          + "'Please click {START_LINK}here{END_LINK}.', "
+          + "('END_LINK', 'START_LINK', ), "
+          + "desc='with link'), "
+          + "{"
+            + "'END_LINK': '</a>', "
+            + "'START_LINK': ''.join(['<a href=\\'',str(opt_data.get('url')),'\\'>']), "
+          + "})";
+
+    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
 }

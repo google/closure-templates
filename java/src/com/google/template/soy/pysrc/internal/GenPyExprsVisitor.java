@@ -39,6 +39,7 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.ArrayList;
@@ -104,6 +105,17 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     Preconditions.checkArgument(isComputableAsPyExprVisitor.exec(node));
     pyExprs = new ArrayList<>();
     visit(node);
+    return pyExprs;
+  }
+
+  /**
+   * Executes this visitor on the children of the given node, without visiting the given node
+   * itself.
+   */
+  List<PyExpr> execOnChildren(ParentSoyNode<?> node) {
+    Preconditions.checkArgument(isComputableAsPyExprVisitor.execOnChildren(node));
+    pyExprs = new ArrayList<>();
+    visitChildren(node);
     return pyExprs;
   }
 
