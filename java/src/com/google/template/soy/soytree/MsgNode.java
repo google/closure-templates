@@ -17,10 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -31,6 +31,8 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -124,8 +126,8 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
       assert genderExprs != null;  // suppress warnings
       if (genderExprs.size() < 1 || genderExprs.size() > 3) {
         throw SoySyntaxException.createWithoutMetaInfo(
-            "Attribute 'genders' does not contain exactly 1-3 expressions (in tag {msg " +
-                commandText + "}).");
+            "Attribute 'genders' does not contain exactly 1-3 expressions (in tag {msg "
+                + commandText + "}).");
       }
     }
 
@@ -372,11 +374,11 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
    */
   @SuppressWarnings("unchecked")
   private static
-  Pair<ArrayListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
+  Pair<ListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
   genPrelimSubstUnitInfoMapsHelper(MsgNode msgNode) {
 
-    ArrayListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = ArrayListMultimap.create();
-    Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = Maps.newHashMap();
+    ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
+    Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
 
     Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<>();
 
@@ -401,7 +403,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
       }
 
       String baseName = node.getBaseVarName();
-      if (! baseNameToRepNodesMap.containsKey(baseName)) {
+      if (!baseNameToRepNodesMap.containsKey(baseName)) {
         // Case 1: First occurrence of this base name.
         baseNameToRepNodesMap.put(baseName, node);
       } else {
@@ -436,10 +438,10 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
    * @return The generated SubstUnitInfo.
    */
   private static SubstUnitInfo genFinalSubstUnitInfoMapsHelper(
-      Pair<ArrayListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
+      Pair<ListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
           prelimMaps) {
 
-    ArrayListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = prelimMaps.first;
+    ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = prelimMaps.first;
     Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = prelimMaps.second;
 
     // ------ Step 1: Build final map of var name to representative node. ------
@@ -452,7 +454,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
     // Note: We must be careful that, while appending number suffixes, we don't generate a new name
     // that is the same as an existing base name.
 
-    Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = Maps.newHashMap();
+    Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = new LinkedHashMap<>();
 
     for (String baseName : baseNameToRepNodesMap.keys()) {
       List<MsgSubstUnitNode> nodesWithSameBaseName = baseNameToRepNodesMap.get(baseName);
@@ -474,7 +476,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
 
     // ------ Step 2: Create map of every node to its var name. ------
 
-    Map<MsgSubstUnitNode, String> substUnitNodeToVarNameMap = Maps.newHashMap();
+    Map<MsgSubstUnitNode, String> substUnitNodeToVarNameMap = new LinkedHashMap<>();
 
     // Reverse the map of names to representative nodes.
     for (Map.Entry<String, MsgSubstUnitNode> entry : substUnitVarNameToRepNodeMap.entrySet()) {
@@ -492,5 +494,4 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
         ImmutableMap.copyOf(substUnitVarNameToRepNodeMap),
         ImmutableMap.copyOf(substUnitNodeToVarNameMap));
   }
-
 }

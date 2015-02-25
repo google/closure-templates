@@ -210,11 +210,11 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "prepare("
           + "###, "
           + "'Please click {START_LINK}here{END_LINK}.', "
-          + "('END_LINK', 'START_LINK', ), "
+          + "('START_LINK', 'END_LINK', ), "
           + "desc='with link'), "
           + "{"
-            + "'END_LINK': '</a>', "
             + "'START_LINK': ''.join(['<a href=\\'',str(opt_data.get('url')),'\\'>']), "
+            + "'END_LINK': '</a>', "
           + "})";
 
     assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));

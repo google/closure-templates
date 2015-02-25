@@ -21,9 +21,9 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -56,7 +56,7 @@ public final class PyFunctionExprBuilder {
   };
 
   private final String funcName;
-  private final List<PyExpr> argList;
+  private final Deque<PyExpr> argList;
   private final Map<String, PyExpr> kwargMap;
   private String unpackedKwargs = null;
 
@@ -65,8 +65,8 @@ public final class PyFunctionExprBuilder {
    */
   public PyFunctionExprBuilder(String funcName) {
     this.funcName = funcName;
-    this.argList = new LinkedList<>();
-    this.kwargMap = new HashMap<>();
+    this.argList = new ArrayDeque<>();
+    this.kwargMap = new LinkedHashMap<>();
   }
 
   public PyFunctionExprBuilder addArg(PyExpr arg) {

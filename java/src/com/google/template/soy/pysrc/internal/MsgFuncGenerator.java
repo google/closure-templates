@@ -40,7 +40,7 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -130,12 +130,12 @@ final class MsgFuncGenerator {
   }
 
   private void addMsgAttributesToPrepare() {
-    if (this.msgNode.getMeaning() != null) {
-      prepareFunc.addKwarg("meaning", this.msgNode.getMeaning());
-    }
-
     if (this.msgNode.getDesc() != null) {
       prepareFunc.addKwarg("desc", this.msgNode.getDesc());
+    }
+
+    if (this.msgNode.getMeaning() != null) {
+      prepareFunc.addKwarg("meaning", this.msgNode.getMeaning());
     }
   }
 
@@ -147,7 +147,7 @@ final class MsgFuncGenerator {
    *         {@link MsgPlaceholderInitialNode#genBasePhName}.
    */
   private Map<PyExpr, PyExpr> collectVarNameListAndToPyExprMap() {
-    Map<PyExpr, PyExpr> nodePyVarToPyExprMap = new HashMap<>();
+    Map<PyExpr, PyExpr> nodePyVarToPyExprMap = new LinkedHashMap<>();
     for (Map.Entry<String, MsgSubstUnitNode> entry : msgNode.getVarNameToRepNodeMap().entrySet()) {
       String phName = entry.getKey();
       MsgSubstUnitNode substUnitNode = entry.getValue();

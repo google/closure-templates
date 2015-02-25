@@ -54,7 +54,7 @@ import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -137,7 +137,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
   @Override protected PyExpr visitMapLiteralNode(MapLiteralNode node) {
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
-    Map<PyExpr, PyExpr> dict = new HashMap<>();
+    Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
 
     for (int i = 0, n = node.numChildren(); i < n; i += 2) {
       ExprNode keyNode = node.getChild(i);
