@@ -367,7 +367,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override protected void visitForeachNode(ForeachNode node) {
     // Build the local variable names.
-    String baseVarName = node.getVarName();
+    ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
+    String baseVarName = nonEmptyNode.getVarName();
     String listVarName = String.format("%sList%d", baseVarName, node.getId());
 
     // Define list variable
@@ -384,7 +385,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Generate code for nonempty case.
-    visit(node.getChild(0));
+    visit(nonEmptyNode);
 
     // If has 'ifempty' node, add the 'else' block of the wrapper 'if' statement.
     if (hasIfemptyNode) {

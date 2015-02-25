@@ -31,12 +31,15 @@ import com.google.template.soy.soytree.defn.LoopVar;
 public class ForeachNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LoopNode, LocalVarBlockNode {
 
+  private final LoopVar var;
 
   /**
    * @param id The id for this node.
+   * @param varName The variable name of the loop index variable
    */
-  public ForeachNonemptyNode(int id) {
+  public ForeachNonemptyNode(int id, String varName) {
     super(id);
+    this.var = new LoopVar(varName, this, null);
   }
 
 
@@ -46,6 +49,7 @@ public class ForeachNonemptyNode extends AbstractBlockNode
    */
   protected ForeachNonemptyNode(ForeachNonemptyNode orig) {
     super(orig);
+    this.var = orig.var.clone();
   }
 
 
@@ -60,12 +64,12 @@ public class ForeachNonemptyNode extends AbstractBlockNode
 
 
   public final LoopVar getVar() {
-    return getParent().getVar();
+    return var;
   }
 
 
   @Override public final String getVarName() {
-    return getParent().getVarName();
+    return var.name();
   }
 
 

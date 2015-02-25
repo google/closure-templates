@@ -30,12 +30,12 @@ if (goog.DEBUG) {
 
 soy.examples.simple.helloNames = function(opt_data, opt_ignored) {
   var output = '';
-  var nameList18 = opt_data.names;
-  var nameListLen18 = nameList18.length;
-  if (nameListLen18 > 0) {
-    for (var nameIndex18 = 0; nameIndex18 < nameListLen18; nameIndex18++) {
-      var nameData18 = nameList18[nameIndex18];
-      output += soy.examples.simple.helloName({name: nameData18}) + ((! (nameIndex18 == nameListLen18 - 1)) ? '<br>' : '');
+  var nameList24 = opt_data.names;
+  var nameListLen24 = nameList24.length;
+  if (nameListLen24 > 0) {
+    for (var nameIndex24 = 0; nameIndex24 < nameListLen24; nameIndex24++) {
+      var nameData24 = nameList24[nameIndex24];
+      output += soy.examples.simple.helloName({name: nameData24}) + ((! (nameIndex24 == nameListLen24 - 1)) ? '<br>' : '');
     }
   } else {
     output += soy.examples.simple.helloWorld(null);

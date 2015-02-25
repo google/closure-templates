@@ -419,7 +419,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (listLength > 0) {
       // Case 1: Nonempty list.
       ForeachNonemptyNode child = (ForeachNonemptyNode) node.getChild(0);
-      LoopVar var = node.getVar();
+      LoopVar var = child.getVar();
       for (int i = 0; i < listLength; ++i) {
         SoyValueProvider value = foreachList.getProvider(i);
         env.bind(var, value);

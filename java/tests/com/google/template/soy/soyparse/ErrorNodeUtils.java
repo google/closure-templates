@@ -39,7 +39,6 @@ final class ErrorNodeUtils {
       CallBasicNode.Builder.ERROR,
       CallDelegateNode.Builder.ERROR,
       ErrorNodes.CALL_PARAM_VALUE_NODE,
-      ErrorNodes.FOREACH_NODE,
       ErrorNodes.LET_CONTENT_NODE,
       ErrorNodes.LET_VALUE_NODE,
       ErrorNodes.MSG_HTML_TAG_NODE,

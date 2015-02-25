@@ -26,6 +26,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -120,10 +121,11 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
     assertThat(n.getParams().get(1).localVariableIndex()).isEqualTo(1);
     assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(2);
-    ForeachNode foreachNode = (ForeachNode) n.getChild(1);
-    assertThat(foreachNode.getVar().currentLoopIndexIndex()).isEqualTo(3);
-    assertThat(foreachNode.getVar().isLastIteratorIndex()).isEqualTo(4);
-    assertThat(foreachNode.getVar().localVariableIndex()).isEqualTo(5);
+    ForeachNonemptyNode foreachNonEmptyNode =
+        (ForeachNonemptyNode) ((ForeachNode) n.getChild(1)).getChild(0);
+    assertThat(foreachNonEmptyNode.getVar().currentLoopIndexIndex()).isEqualTo(3);
+    assertThat(foreachNonEmptyNode.getVar().isLastIteratorIndex()).isEqualTo(4);
+    assertThat(foreachNonEmptyNode.getVar().localVariableIndex()).isEqualTo(5);
     // The loop variables are out of scope so we can reuse the 3rd slot
     assertThat(((LetValueNode) n.getChild(2)).getVar().localVariableIndex()).isEqualTo(3);
   }

@@ -19,6 +19,7 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SoySyntaxException;
@@ -40,16 +41,62 @@ import java.io.PrintStream;
 public final class ErrorPrettyPrinterTest extends TestCase {
 
   public void testMultipleErrorReports() throws IOException {
-    String input = "{namespace ns}\n"
-            + "/** Template. */\n"
-            + "{template .foo}\n"
-            + "{call /}\n"
-            + " {delcall 123 /}\n"
-            + "  {foreach foo in bar}\n"
-            + "   {let /}\n"
-            + "    {delcall foo.bar variant=1 foo=\"bar\" /}\n"
-            + "{/template}";
+    String input = Joiner.on('\n').join(
+        "{namespace ns}",
+            "/** Template. */",
+            "{template .foo}",
+            "{call /}",
+            " {delcall 123 /}",
+            " {let /}",
+            "   {delcall foo.bar variant=1 foo=\"bar\" /}",
+            "{/template}");
 
+    ImmutableList<String> errorReports = getErrorReports(input);
+
+    assertThat(errorReports).hasSize(5);
+    assertThat(errorReports.get(0)).isEqualTo(
+        "In file input.soy:4:1: Invalid 'call' command missing callee name: {call }.\n"
+            + "{call /}\n"
+            + "^\n");
+    assertThat(errorReports.get(1)).isEqualTo(
+        "In file input.soy:5:2: Invalid delegate name \"123\" for 'delcall' command.\n"
+            + " {delcall 123 /}\n"
+            + " ^\n");
+    assertThat(errorReports.get(2)).isEqualTo(
+        "In file input.soy:6:2: Invalid 'let' command text \"\".\n"
+            + " {let /}\n"
+            + " ^\n");
+    assertThat(errorReports.get(3)).isEqualTo(
+        "In file input.soy:7:4: Malformed attributes in 'delcall' command text "
+            + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n"
+            + "   {delcall foo.bar variant=1 foo=\"bar\" /}\n"
+            + "   ^\n");
+    assertThat(errorReports.get(4)).isEqualTo(
+        "In file input.soy:7:4: Unsupported attribute 'foo' in 'delcall' command text "
+            + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n" +
+        "   {delcall foo.bar variant=1 foo=\"bar\" /}\n" +
+        "   ^\n");
+  }
+
+  public void testUnmatchedCommandNode() throws IOException {
+    String input = Joiner.on('\n').join(
+        "{namespace ns}",
+            "/** Template. */",
+            "{template .foo}",
+            "  {foreach $foo in [1,2,3]}",
+            "{/template}");
+
+    ImmutableList<String> errorReports = getErrorReports(input);
+    assertThat(errorReports).hasSize(1);
+
+    // TODO(user): there is not a lot to love about this error message.  e.g. wtf is that column
+    // number?
+    assertThat(errorReports.get(0))
+        .startsWith("In file input.soy, template ns.foo: Encountered \"<EOF>\" at line 4, "
+            + "column 28.");
+  }
+
+  private ImmutableList<String> getErrorReports(String input) throws IOException {
     final SoyFileSet soyFileSet = SoyFileSet.builder()
         .add(input, "input.soy")
         .build();
@@ -75,33 +122,6 @@ public final class ErrorPrettyPrinterTest extends TestCase {
                 return outputStream.toString();
               }
             }));
-
-    assertThat(errorReports).hasSize(6);
-    assertThat(errorReports.get(0)).isEqualTo(
-        "In file input.soy:4:1: Invalid 'call' command missing callee name: {call }.\n"
-            + "{call /}\n"
-            + "^\n");
-    assertThat(errorReports.get(1)).isEqualTo(
-        "In file input.soy:5:2: Invalid delegate name \"123\" for 'delcall' command.\n"
-            + " {delcall 123 /}\n"
-            + " ^\n");
-    assertThat(errorReports.get(2)).isEqualTo(
-        "In file input.soy:6:3: Invalid 'foreach' command text \"foo in bar\".\n"
-            + "  {foreach foo in bar}\n"
-            + "  ^\n");
-    assertThat(errorReports.get(3)).isEqualTo(
-        "In file input.soy:7:4: Invalid 'let' command text \"\".\n"
-            + "   {let /}\n"
-            + "   ^\n");
-    assertThat(errorReports.get(4)).isEqualTo(
-        "In file input.soy:8:5: Malformed attributes in 'delcall' command text "
-            + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n"
-            + "    {delcall foo.bar variant=1 foo=\"bar\" /}\n"
-            + "    ^\n");
-    assertThat(errorReports.get(5)).isEqualTo(
-        "In file input.soy:8:5: Unsupported attribute 'foo' in 'delcall' command text "
-            + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n"
-            + "    {delcall foo.bar variant=1 foo=\"bar\" /}\n"
-            + "    ^\n");
+    return errorReports;
   }
 }

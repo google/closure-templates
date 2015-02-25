@@ -57,9 +57,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -214,65 +212,6 @@ import java.util.regex.*;
  */
 public class TemplateParser {
 
-
-  /**
-   * Parsed content and information about the source from which it is derived.
-   */
-  static final class SourceItemInfo<T> {
-
-    /** Content derived from tokens. */
-    final T parsedContent;
-
-    /**
-     * Line number as counted from the start of the template content (1-indexed).
-     * To convert this to a line number relative to the entire source file, add
-     * {@link TemplateParser#lineNumOffset}.
-     */
-    final int lineNum;
-
-    /**
-     * Ending line number as counted from the start of the template content (1-indexed).
-     * To convert this to a line number relative to the entire source file, add
-     * {@link TemplateParser#lineNumOffset}.
-     */
-    final int lineNumEnd;
-
-    /**
-     * Column number as counted from the start of the current line (1-indexed).
-     */
-    final int columnNum;
-
-    /**
-     * Ending column number as counted from the start of the current line (1-indexed).
-     */
-    final int columnNumEnd;
-
-    SourceItemInfo(T parsedContent, Token token) {
-      this.parsedContent = parsedContent;
-      this.lineNum = token.beginLine;
-      this.lineNumEnd = token.endLine;
-      this.columnNum = token.beginColumn;
-      this.columnNumEnd = token.endColumn;
-    }
-
-    SourceItemInfo(T parsedContent, int lineNum, int columnNum, int lineNumEnd, int columnNumEnd) {
-      this.parsedContent = parsedContent;
-      this.lineNum = lineNum;
-      this.columnNum = columnNum;
-      this.lineNumEnd = lineNumEnd;
-      this.columnNumEnd = columnNumEnd;
-    }
-
-    SourceItemInfo(T parsedContent, SourceItemInfo begin, SourceItemInfo end) {
-      this.parsedContent = parsedContent;
-      this.lineNum = begin.lineNum;
-      this.columnNum = begin.columnNum;
-      this.lineNumEnd = end.lineNumEnd;
-      this.columnNumEnd = end.columnNumEnd;
-    }
-  }
-
-
   /** Regex string used in patterns below. Note the first set of spaces is reluctant. */
   private static final String LINE_BOUNDARY_REGEX = "\\s*?(\\n|\\r)\\s*";
 
@@ -370,26 +309,27 @@ public class TemplateParser {
           .put("lb", "{").put("rb", "}")
           .build();
 
-  private SourceLocation createSrcLoc(SourceItemInfo info) {
-    return new SourceLocation(
-        filePath,
-        lineNumOffset + info.lineNum,
-        info.columnNum,
-        lineNumOffset + info.lineNumEnd,
-        info.columnNumEnd);
+  private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, Token token) {
+    return new SourceItemInfo<T>(filePath, lineNumOffset, parsed, token);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, SourceItemInfo<?> begin,
+      SourceItemInfo<?> end) {
+    return new SourceItemInfo<T>(parsed, begin, end);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(
+      T parsed, int lineNum, int columnNum, int lineNumEnd, int columnNumEnd) {
+    return new SourceItemInfo<T>(filePath, parsed, lineNumOffset + lineNum, columnNum,
+        lineNumOffset + lineNumEnd, columnNumEnd);
   }
 
   private SourceLocation createSrcLoc(Token token) {
-    return new SourceLocation(
-        filePath,
-        lineNumOffset + token.beginLine,
-        token.beginColumn,
-        lineNumOffset + token.endLine,
-        token.endColumn);
+    return newSourceItemInfo(null, token).srcLocation();
   }
 
   private <T extends SoyNode> T setSrcLoc(T node, SourceItemInfo info) {
-    node.setSourceLocation(createSrcLoc(info));
+    node.setSourceLocation(info.srcLocation());
     return node;
   }
 
@@ -1043,7 +983,7 @@ private SourceItemInfo<Void> SoyTagOpen() :
   | tagOpen = <SOY_TAG_OPEN_2>
   )
 
-  { return new SourceItemInfo<Void>(null, tagOpen); }
+  { return newSourceItemInfo(null, tagOpen); }
 }
 
 
@@ -1063,7 +1003,7 @@ private SourceItemInfo<Void> RegSoyTagClose() :
   | tagClose = <REG_SOY_TAG_CLOSE_AFTER_CMD_TEXT_2>
   )
 
-  { return new SourceItemInfo<Void>(null, tagClose); }
+  { return newSourceItemInfo(null, tagClose); }
 }
 
 
@@ -1085,7 +1025,7 @@ private SourceItemInfo<Void> SelfEndingSoyTagClose() :
   | tagClose = <SELF_ENDING_SOY_TAG_CLOSE_AFTER_CMD_TEXT_2>
   )
 
-  { return new SourceItemInfo<Void>(null, tagClose); }
+  { return newSourceItemInfo(null, tagClose); }
 }
 
 
@@ -1272,7 +1212,7 @@ private SourceItemInfo<String> ConsecWsNoNl() :
   )+
 
   {
-    return new SourceItemInfo<String>(
+    return newSourceItemInfo(
       sb.toString(), first.beginLine, first.beginColumn, last.endLine, last.endColumn);
   }
 }
@@ -1295,7 +1235,7 @@ private SourceItemInfo<String> ConsecWsWithNl() :
   [
     consecWsNoNl = ConsecWsNoNl()
     {
-      sb.append(consecWsNoNl.parsedContent);
+      sb.append(consecWsNoNl.parsedContent());
       first = consecWsNoNl;
     }
   ]
@@ -1304,27 +1244,27 @@ private SourceItemInfo<String> ConsecWsWithNl() :
   {
     sb.append(token.image);
     if (first == null) {
-      first = new SourceItemInfo(token.image, token);
+      first = newSourceItemInfo(token.image, token);
     }
-    last = new SourceItemInfo(token.image, token);
+    last = newSourceItemInfo(token.image, token);
   }
 
   (
     token = <TOKEN_NL>
     {
       sb.append(token.image);
-      last = new SourceItemInfo(token.image, token);
+      last = newSourceItemInfo(token.image, token);
     }
   |
     consecWsNoNl = ConsecWsNoNl()
     {
-      sb.append(consecWsNoNl.parsedContent);
+      sb.append(consecWsNoNl.parsedContent());
       last = consecWsNoNl;
     }
   )*
 
   {
-    return new SourceItemInfo<String>(sb.toString(), first, last);
+    return newSourceItemInfo(sb.toString(), first, last);
   }
 }
 
@@ -1416,7 +1356,7 @@ private SourceItemInfo<String> WsBasicRawTextNoNl() :
   )+
 
   {
-    return new SourceItemInfo<String>(
+    return newSourceItemInfo(
       sb.toString(), first.beginLine, first.beginColumn, last.endLine, last.endColumn);
   }
 }
@@ -1513,7 +1453,7 @@ private SourceItemInfo<String> BasicRawText() :
     }
     matcher.appendTail(basicRawTextWithoutNewlinesSb);
 
-    return new SourceItemInfo<String>(
+    return newSourceItemInfo(
       basicRawTextWithoutNewlinesSb.toString(),
       lineNum,
       columnNum,
@@ -1539,9 +1479,9 @@ void MaybeWhitespace(String errorMessage) :
 {
   [
     basicRawText = BasicRawText()
-    { if (basicRawText.parsedContent.trim().length() != 0) {
+    { if (basicRawText.parsedContent().trim().length() != 0) {
         throw new ParseException(
-            errorMessage + " Found on line " + (lineNumOffset + basicRawText.lineNum) );
+            errorMessage + " Found at: " + basicRawText.srcLocation());
       }
     }
   ]
@@ -1562,7 +1502,7 @@ private SourceItemInfo<String> LiteralRawText() :
   tagClose = RegSoyTagClose()
 
   literalRawTextContent = <LITERAL_RAW_TEXT_CONTENT>
-  { return new SourceItemInfo<String>(literalRawTextContent.image, tagOpen, tagClose); }
+  { return newSourceItemInfo(literalRawTextContent.image, tagOpen, tagClose); }
 }
 
 
@@ -1592,7 +1532,7 @@ private SourceItemInfo<String> SpecialCharRawText() :
 
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(
+  { return newSourceItemInfo(
         SPECIAL_CHAR_CMD_NAME_TO_RAW_TEXT.get(specialCharCmdName.image), tagOpen, tagClose);
   }
 }
@@ -1624,7 +1564,7 @@ private SourceItemInfo<String> ContiguousRawText() :
           first = basicRawText;
         }
         last = basicRawText;
-        sb.append(basicRawText.parsedContent);
+        sb.append(basicRawText.parsedContent());
       }
     |
       LOOKAHEAD( SoyTagOpen() <CMD_NAME_LITERAL> RegSoyTagClose() )
@@ -1634,7 +1574,7 @@ private SourceItemInfo<String> ContiguousRawText() :
           first = literalRawText;
         }
         last = literalRawText;
-        sb.append(literalRawText.parsedContent);
+        sb.append(literalRawText.parsedContent());
       }
     |
       specialCharRawText = SpecialCharRawText()
@@ -1643,13 +1583,13 @@ private SourceItemInfo<String> ContiguousRawText() :
           first = specialCharRawText;
         }
         last = specialCharRawText;
-        sb.append(specialCharRawText.parsedContent);
+        sb.append(specialCharRawText.parsedContent());
       }
     )
   )+
 
   {
-    return new SourceItemInfo<String>(sb.toString(), first, last);
+    return newSourceItemInfo(sb.toString(), first, last);
   }
 }
 
@@ -1692,7 +1632,7 @@ private SourceItemInfo<String> MsgTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1710,7 +1650,7 @@ private SourceItemInfo<String> FallbackmsgTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1740,7 +1680,7 @@ private SourceItemInfo<String> PluralTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1770,7 +1710,7 @@ private SourceItemInfo<String> SelectTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1807,7 +1747,7 @@ private SourceItemInfo<List<String>> PrintTag() :
   { printTagParts.addAll(cmdTextParts); }
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<List<String>>(printTagParts, tagOpen, tagClose); }
+  { return newSourceItemInfo(printTagParts, tagOpen, tagClose); }
 }
 
 
@@ -1825,7 +1765,7 @@ private SourceItemInfo<String> XidTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1843,7 +1783,7 @@ private SourceItemInfo<String> CssTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1861,7 +1801,7 @@ private SourceItemInfo<String> LetTagSelfEnding() :
   cmdText = CmdText()
   tagClose = SelfEndingSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1879,7 +1819,7 @@ private SourceItemInfo<String> LetTagNotSelfEnding() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1909,7 +1849,7 @@ private SourceItemInfo<String> IfTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1927,7 +1867,7 @@ private SourceItemInfo<String> ElseifTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -1973,7 +1913,7 @@ private SourceItemInfo<String> SwitchTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2003,7 +1943,7 @@ private SourceItemInfo<String> ForeachTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2049,7 +1989,7 @@ private SourceItemInfo<String> ForTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2086,7 +2026,7 @@ private SourceItemInfo<List<String>> AnyCallTagSelfEnding() :
   { callTagParts.addAll(cmdTextParts); }
   tagClose = SelfEndingSoyTagClose()
 
-  { return new SourceItemInfo<List<String>>(callTagParts, tagOpen, tagClose); }
+  { return newSourceItemInfo(callTagParts, tagOpen, tagClose); }
 }
 
 
@@ -2110,7 +2050,7 @@ private SourceItemInfo<List<String>> AnyCallTagNotSelfEnding() :
   { callTagParts.addAll(cmdTextParts); }
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<List<String>>(callTagParts, tagOpen, tagClose); }
+  { return newSourceItemInfo(callTagParts, tagOpen, tagClose); }
 }
 
 
@@ -2146,7 +2086,7 @@ private SourceItemInfo<String> ParamTagSelfEnding() :
   cmdText = CmdText()
   tagClose = SelfEndingSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2164,7 +2104,7 @@ private SourceItemInfo<String> ParamTagNotSelfEnding() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2244,7 +2184,7 @@ private SourceItemInfo<String> CaseTag() :
   cmdText = CmdText()
   tagClose = RegSoyTagClose()
 
-  { return new SourceItemInfo<String>(cmdText, tagOpen, tagClose); }
+  { return newSourceItemInfo(cmdText, tagOpen, tagClose); }
 }
 
 
@@ -2505,11 +2445,11 @@ private RawTextNode ContiguousRawTextAsNode() :
 }
 {
   contiguousRawText = ContiguousRawText()
-  { return (contiguousRawText.parsedContent.length() > 0
+  { return (contiguousRawText.parsedContent().length() > 0
 
   ) ?
         setSrcLoc(
-            new RawTextNode(nodeIdGen.genId(), contiguousRawText.parsedContent),
+            new RawTextNode(nodeIdGen.genId(), contiguousRawText.parsedContent()),
             contiguousRawText) :
         null;
   }
@@ -2628,7 +2568,7 @@ private MsgFallbackGroupNode MsgStmt() :
     MsgFallbackGroupNode msgFbGrpNode = setSrcLoc(
         new MsgFallbackGroupNode(nodeIdGen.genId()), cmdText);
     msgNode = setSrcLoc(
-        new MsgNode(nodeIdGen.genId(), "msg", cmdText.parsedContent), cmdText);
+        new MsgNode(nodeIdGen.genId(), "msg", cmdText.parsedContent()), cmdText);
     msgFbGrpNode.addChild(msgNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2640,7 +2580,7 @@ private MsgFallbackGroupNode MsgStmt() :
     cmdText = FallbackmsgTag()
     {
       msgNode = setSrcLoc(
-          new MsgNode(nodeIdGen.genId(), "fallbackmsg", cmdText.parsedContent), cmdText);
+          new MsgNode(nodeIdGen.genId(), "fallbackmsg", cmdText.parsedContent()), cmdText);
       msgFbGrpNode.addChild(msgNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
@@ -2739,11 +2679,11 @@ private MsgPluralNode MsgPlural() :
     MsgPluralNode msgPluralNode = null;
     try {
       msgPluralNode = setSrcLoc(
-          new MsgPluralNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+          new MsgPluralNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
     } catch (SoySyntaxException e) {
       // TODO(user): consider changing ctor to not throw
       errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-          null, e, createSrcLoc(cmdText), null, null));
+          null, e, cmdText.srcLocation(), null, null));
       return ErrorNodes.MSG_PLURAL_NODE;
     }
   }
@@ -2758,12 +2698,12 @@ private MsgPluralNode MsgPlural() :
       MsgPluralCaseNode msgPluralCaseNode = null;
       try {
         msgPluralCaseNode = setSrcLoc(
-            new MsgPluralCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+            new MsgPluralCaseNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
         msgPluralNode.addChild(msgPluralCaseNode);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
         errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(cmdText), null, null));
+            null, e, cmdText.srcLocation(), null, null));
         return msgPluralNode;
       }
 
@@ -2817,7 +2757,7 @@ private MsgSelectNode MsgSelect() :
   cmdText = SelectTag()
   {
     MsgSelectNode msgSelectNode = setSrcLoc(
-        new MsgSelectNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+        new MsgSelectNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
   }
   MaybeWhitespace("No content allowed between 'select' and 'case'" +
       " (whitespace and comments are okay).")
@@ -2830,12 +2770,12 @@ private MsgSelectNode MsgSelect() :
       MsgSelectCaseNode msgSelectCaseNode = null;
       try {
         msgSelectCaseNode = setSrcLoc(
-            new MsgSelectCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+            new MsgSelectCaseNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
         msgSelectNode.addChild(msgSelectCaseNode);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
         errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(cmdText), null, null));
+            null, e, cmdText.srcLocation(), null, null));
         return msgSelectNode;
       }
     }
@@ -2912,7 +2852,7 @@ private PrintNode PrintStmt() :
   printTagInfo = PrintTag()
 
   {
-    List<String> printTagParts = printTagInfo.parsedContent;
+    List<String> printTagParts = printTagInfo.parsedContent();
 
     // ------ Process command name (implicit or explicit). ------
     boolean isImplicit;
@@ -2933,7 +2873,7 @@ private PrintNode PrintStmt() :
         if (phnameAttr != null) {
           errorManager.report(SoySyntaxException.createWithMetaInfo(
               "Found multiple 'phname' attributes in 'print' command text \"" + cmdText + "\".",
-              createSrcLoc(printTagInfo), null, null));
+              printTagInfo.srcLocation(), null, null));
         }
         phnameAttr = cmdTextPart;
       }
@@ -2951,7 +2891,7 @@ private PrintNode PrintStmt() :
     if (cmdTextParts.isEmpty()) {
       errorManager.report(SoySyntaxException.createWithMetaInfo(
           "Found 'print' command with empty command text.",
-          createSrcLoc(printTagInfo), null, null));
+          printTagInfo.srcLocation(), null, null));
           return null;
     }
     String exprText = cmdTextParts.get(0).trim();
@@ -3037,7 +2977,7 @@ private XidNode XidStmt() :
   cmdText = XidTag()
   {
     try {
-      return setSrcLoc(new XidNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+      return setSrcLoc(new XidNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
     } catch (SoySyntaxException e) {
       // TODO(user): consider changing ctor to not throw
       errorManager.report(e);
@@ -3057,7 +2997,7 @@ private CssNode CssStmt() :
 {
   cmdText = CssTag()
   {
-    return setSrcLoc(new CssNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+    return setSrcLoc(new CssNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
   }
 }
 
@@ -3081,11 +3021,11 @@ private LetNode LetStmt() :
     {
       try {
         letNode = setSrcLoc(
-            new LetValueNode(nodeIdGen.genId(), false, cmdText.parsedContent), cmdText);
+            new LetValueNode(nodeIdGen.genId(), false, cmdText.parsedContent()), cmdText);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
         errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(cmdText), null, null));
+            null, e, cmdText.srcLocation(), null, null));
         return ErrorNodes.LET_VALUE_NODE;
       }
     }
@@ -3098,11 +3038,11 @@ private LetNode LetStmt() :
       LetContentNode letContentNode = null;
       try {
         letContentNode = setSrcLoc(
-            new LetContentNode(nodeIdGen.genId(), false, cmdText.parsedContent), cmdText);
+            new LetContentNode(nodeIdGen.genId(), false, cmdText.parsedContent()), cmdText);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
         errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(cmdText), null, null));
+            null, e, cmdText.srcLocation(), null, null));
         return ErrorNodes.LET_CONTENT_NODE;
       }
     }
@@ -3133,7 +3073,7 @@ private IfNode IfStmt() :
   {
     IfNode ifNode = setSrcLoc(new IfNode(nodeIdGen.genId()), cmdText);
     ifCondNode = setSrcLoc(
-        new IfCondNode(nodeIdGen.genId(), "if", cmdText.parsedContent), cmdText);
+        new IfCondNode(nodeIdGen.genId(), "if", cmdText.parsedContent()), cmdText);
     ifNode.addChild(ifCondNode);
   }
   templateBlock = TemplateBlock()
@@ -3145,7 +3085,7 @@ private IfNode IfStmt() :
     cmdText = ElseifTag()
     {
       ifCondNode = setSrcLoc(
-          new IfCondNode(nodeIdGen.genId(), "elseif", cmdText.parsedContent), cmdText);
+          new IfCondNode(nodeIdGen.genId(), "elseif", cmdText.parsedContent()), cmdText);
       ifNode.addChild(ifCondNode);
     }
     templateBlock = TemplateBlock()
@@ -3184,7 +3124,7 @@ private SwitchNode SwitchStmt() :
   cmdText = SwitchTag()
   {
     SwitchNode switchNode = setSrcLoc(
-        new SwitchNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+        new SwitchNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
   }
 
   MaybeWhitespace("No content allowed between 'switch' and 'case'" +
@@ -3196,7 +3136,7 @@ private SwitchNode SwitchStmt() :
     cmdText = CaseTag()
     {
       SwitchCaseNode switchCaseNode = setSrcLoc(
-          new SwitchCaseNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+          new SwitchCaseNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
       switchNode.addChild(switchCaseNode);
     }
     templateBlock = TemplateBlock()
@@ -3234,23 +3174,14 @@ private ForeachNode ForeachStmt() :
 {
   cmdText = ForeachTag()
   {
-    ForeachNode foreachNode = null;
-    try {
-      foreachNode = setSrcLoc(new ForeachNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
-    } catch (SoySyntaxException e) {
-      // TODO(user): consider changing ctor to not throw
-      errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-          null, e, createSrcLoc(cmdText), null, null));
-      return ErrorNodes.FOREACH_NODE;
-    }
+    ForeachBuilder builder = ForeachBuilder.create(nodeIdGen, errorManager)
+        .setCommandLocation(cmdText.srcLocation())
+        .setCommandText(cmdText.parsedContent());
   }
 
   templateBlock = TemplateBlock()
   {
-    ForeachNonemptyNode foreachNonemptyNode = setSrcLoc(
-        new ForeachNonemptyNode(nodeIdGen.genId()), cmdText);
-    foreachNode.addChild(foreachNonemptyNode);
-    foreachNonemptyNode.addChildren(templateBlock);
+    builder.setLoopBody(templateBlock);
   }
 
   [
@@ -3259,16 +3190,13 @@ private ForeachNode ForeachStmt() :
     ifemptyTagInfo = IfemptyTag()
     templateBlock = TemplateBlock()
     {
-      ForeachIfemptyNode foreachIfemptyNode = setSrcLoc(
-          new ForeachIfemptyNode(nodeIdGen.genId()), ifemptyTagInfo);
-      foreachNode.addChild(foreachIfemptyNode);
-      foreachIfemptyNode.addChildren(templateBlock);
+      builder.setIfEmptyBody(ifemptyTagInfo.srcLocation(), templateBlock);
     }
   ]
 
   EndForeachTag()
 
-  { return foreachNode; }
+  { return builder.build(); }
 }
 
 
@@ -3284,7 +3212,7 @@ private ForNode ForStmt() :
   cmdText = ForTag()
   {
     ForNode forNode = setSrcLoc(
-        new ForNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+        new ForNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
   }
 
   templateBlock = TemplateBlock()
@@ -3337,7 +3265,7 @@ private CallNode CallStmt() :
     isBasicEndCallTag = EndAnyCallTag()
   )
 
-  { List<String> callTagParts = callTagInfo.parsedContent;
+  { List<String> callTagParts = callTagInfo.parsedContent();
 
     // ------ Divide callTagParts into cmdName, cmdText, and phnameAttr (if any). ------
     String cmdName = callTagParts.get(0);
@@ -3352,7 +3280,7 @@ private CallNode CallStmt() :
           errorManager.report(SoySyntaxException.createWithMetaInfo(
               "Found multiple 'phname' attributes in '" + cmdName + "' command text \"" +
                   Joiner.on("").join(callTagParts.subList(1, callTagParts.size())) + "\".",
-              createSrcLoc(callTagInfo), null, null));
+              callTagInfo.srcLocation(), null, null));
         }
         phnameAttr = cmdTextPart;
       } else {
@@ -3378,12 +3306,12 @@ private CallNode CallStmt() :
     // ------ Create the CallNode. ------
     CallNode callNode = null;
     if (isBasicCallTag) {
-      callNode = new CallBasicNode.Builder(nodeIdGen.genId(), createSrcLoc(callTagInfo))
+      callNode = new CallBasicNode.Builder(nodeIdGen.genId(), callTagInfo.srcLocation())
           .commandText(cmdText)
           .userSuppliedPlaceholderName(userSuppliedPhName)
           .build(errorManager);
     } else {
-      callNode = new CallDelegateNode.Builder(nodeIdGen.genId(), createSrcLoc(callTagInfo))
+      callNode = new CallDelegateNode.Builder(nodeIdGen.genId(), callTagInfo.srcLocation())
           .commandText(cmdText)
           .userSuppliedPlaceholderName(userSuppliedPhName)
           .build(errorManager);
@@ -3415,11 +3343,11 @@ private CallParamNode CallParam() :
     {
       try {
         callParamNode = setSrcLoc(
-          new CallParamValueNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+          new CallParamValueNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
         errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(cmdText), null, null));
+            null, e, cmdText.srcLocation(), null, null));
         return ErrorNodes.CALL_PARAM_VALUE_NODE;
       }
     }
@@ -3432,11 +3360,11 @@ private CallParamNode CallParam() :
       CallParamContentNode cpcn = null;
       try {
         cpcn = setSrcLoc(
-            new CallParamContentNode(nodeIdGen.genId(), cmdText.parsedContent), cmdText);
+            new CallParamContentNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
         errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, createSrcLoc(cmdText), null, null));
+            null, e, cmdText.srcLocation(), null, null));
         return callParamNode;
       }
     }

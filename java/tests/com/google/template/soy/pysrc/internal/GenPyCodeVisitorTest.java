@@ -142,9 +142,9 @@ public final class GenPyCodeVisitorTest extends TestCase {
     // There's no simple way to account for all instances of the id in these variables, so for now
     // we just hardcode '3'.
     String expectedPyCode =
-        "operandList3 = opt_data.get('operands')\n"
-        + "for operandIndex3, operandData3 in enumerate(operandList3):\n"
-        + "  output.append(str(operandData3))\n";
+        "operandList4 = opt_data.get('operands')\n"
+        + "for operandIndex4, operandData4 in enumerate(operandList4):\n"
+        + "  output.append(str(operandData4))\n";
 
     assertGeneratedPyCode(soyCode, expectedPyCode);
 
@@ -156,11 +156,11 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/foreach}\n";
 
     expectedPyCode =
-        "operandList3 = opt_data.get('operands')\n"
-        + "for operandIndex3, operandData3 in enumerate(operandList3):\n"
-        + "  output.extend([str(operandIndex3 == 0),"
-                         + "str(operandIndex3 == len(operandList3) - 1),"
-                         + "str(operandIndex3)])\n";
+        "operandList6 = opt_data.get('operands')\n"
+        + "for operandIndex6, operandData6 in enumerate(operandList6):\n"
+        + "  output.extend([str(operandIndex6 == 0),"
+                         + "str(operandIndex6 == len(operandList6) - 1),"
+                         + "str(operandIndex6)])\n";
 
     assertGeneratedPyCode(soyCode, expectedPyCode);
   }
@@ -174,10 +174,10 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/foreach}\n";
 
     String expectedPyCode =
-        "operandList3 = opt_data.get('operands')\n"
-        + "if operandList3:\n"
-        + "  for operandIndex3, operandData3 in enumerate(operandList3):\n"
-        + "    output.append(str(operandData3))\n"
+        "operandList5 = opt_data.get('operands')\n"
+        + "if operandList5:\n"
+        + "  for operandIndex5, operandData5 in enumerate(operandList5):\n"
+        + "    output.append(str(operandData5))\n"
         + "else:\n"
         + "  output.append(str(opt_data.get('foo')))\n";
 

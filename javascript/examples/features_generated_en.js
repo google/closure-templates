@@ -106,12 +106,12 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoForeach = function(opt_data, opt_ignored) {
   var output = '';
-  var personList144 = opt_data.persons;
-  var personListLen144 = personList144.length;
-  if (personListLen144 > 0) {
-    for (var personIndex144 = 0; personIndex144 < personListLen144; personIndex144++) {
-      var personData144 = personList144[personIndex144];
-      output += ((personIndex144 == 0) ? 'First,' : (personIndex144 == personListLen144 - 1) ? 'Finally,' : 'Then') + ' ' + ((personData144.numWaffles == 1) ? soy.$$escapeHtml(personData144.name) + ' ate 1 waffle.' : soy.$$escapeHtml(personData144.name) + ' ate ' + soy.$$escapeHtml(personData144.numWaffles) + ' waffles.') + '<br>';
+  var personList163 = opt_data.persons;
+  var personListLen163 = personList163.length;
+  if (personListLen163 > 0) {
+    for (var personIndex163 = 0; personIndex163 < personListLen163; personIndex163++) {
+      var personData163 = personList163[personIndex163];
+      output += ((personIndex163 == 0) ? 'First,' : (personIndex163 == personListLen163 - 1) ? 'Finally,' : 'Then') + ' ' + ((personData163.numWaffles == 1) ? soy.$$escapeHtml(personData163.name) + ' ate 1 waffle.' : soy.$$escapeHtml(personData163.name) + ' ate ' + soy.$$escapeHtml(personData163.numWaffles) + ' waffles.') + '<br>';
     }
   } else {
     output += 'Nobody here ate any waffles.<br>';
@@ -150,11 +150,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoCallWithParam = function(opt_data, opt_ignored) {
   var output = '';
-  var destinationList187 = opt_data.destinations;
-  var destinationListLen187 = destinationList187.length;
-  for (var destinationIndex187 = 0; destinationIndex187 < destinationListLen187; destinationIndex187++) {
-    var destinationData187 = destinationList187[destinationIndex187];
-    output += soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData187})) + '<br>' + ((destinationIndex187 % 2 == 0) ? soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData187}) + '<br>' : '');
+  var destinationList196 = opt_data.destinations;
+  var destinationListLen196 = destinationList196.length;
+  for (var destinationIndex196 = 0; destinationIndex196 < destinationListLen196; destinationIndex196++) {
+    var destinationData196 = destinationList196[destinationIndex196];
+    output += soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData196})) + '<br>' + ((destinationIndex196 % 2 == 0) ? soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData196}) + '<br>' : '');
   }
   return output;
 };
@@ -197,11 +197,11 @@ if (goog.DEBUG) {
 soy.examples.features.demoParamWithKindAttribute = function(opt_data, opt_ignored) {
   var output = '<div>';
   var param237 = '';
-  var iList238 = opt_data.list;
-  var iListLen238 = iList238.length;
-  for (var iIndex238 = 0; iIndex238 < iListLen238; iIndex238++) {
-    var iData238 = iList238[iIndex238];
-    param237 += '<li>' + soy.$$escapeHtml(iData238) + '</li>';
+  var iList241 = opt_data.list;
+  var iListLen241 = iList241.length;
+  for (var iIndex241 = 0; iIndex241 < iListLen241; iIndex241++) {
+    var iData241 = iList241[iIndex241];
+    param237 += '<li>' + soy.$$escapeHtml(iData241) + '</li>';
   }
   output += soy.examples.features.demoParamWithKindAttributeCallee_({message: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('<b>' + soy.$$escapeHtml(opt_data.message) + '</b>'), listItems: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param237)});
   output += '</div>';
@@ -222,11 +222,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoExpressions = function(opt_data, opt_ignored) {
   var output = 'First student\'s major: ' + soy.$$escapeHtml(opt_data.students[0].major) + '<br>Last student\'s year: ' + soy.$$escapeHtml(opt_data.students[opt_data.students.length - 1].year) + '<br>Random student\'s major: ' + soy.$$escapeHtml(opt_data.students[Math.floor(Math.random() * opt_data.students.length)].major) + '<br>';
-  var studentList259 = opt_data.students;
-  var studentListLen259 = studentList259.length;
-  for (var studentIndex259 = 0; studentIndex259 < studentListLen259; studentIndex259++) {
-    var studentData259 = studentList259[studentIndex259];
-    output += soy.$$escapeHtml(studentData259.name) + ':' + ((studentIndex259 == 0) ? ' First.' : (studentIndex259 == studentListLen259 - 1) ? ' Last.' : (studentIndex259 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex259 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData259.major) + '.' + ((studentData259.major == 'Physics' || studentData259.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData259.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData259.year < 2000 ? Math.round((studentData259.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData259.year < 2000) ? soy.$$escapeHtml(Math.round((studentData259.year - 1905) / 10) * 10) : '00') + 's.<br>';
+  var studentList289 = opt_data.students;
+  var studentListLen289 = studentList289.length;
+  for (var studentIndex289 = 0; studentIndex289 < studentListLen289; studentIndex289++) {
+    var studentData289 = studentList289[studentIndex289];
+    output += soy.$$escapeHtml(studentData289.name) + ':' + ((studentIndex289 == 0) ? ' First.' : (studentIndex289 == studentListLen289 - 1) ? ' Last.' : (studentIndex289 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex289 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData289.major) + '.' + ((studentData289.major == 'Physics' || studentData289.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData289.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData289.year < 2000 ? Math.round((studentData289.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData289.year < 2000) ? soy.$$escapeHtml(Math.round((studentData289.year - 1905) / 10) * 10) : '00') + 's.<br>';
   }
   return output;
 };
@@ -245,11 +245,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.buildCommaSeparatedList_ = function(opt_data, opt_ignored) {
   var output = '';
-  var itemList303 = opt_data.items;
-  var itemListLen303 = itemList303.length;
-  for (var itemIndex303 = 0; itemIndex303 < itemListLen303; itemIndex303++) {
-    var itemData303 = itemList303[itemIndex303];
-    output += ((! (itemIndex303 == 0)) ? ', ' : '') + soy.$$escapeHtml(itemData303);
+  var itemList307 = opt_data.items;
+  var itemListLen307 = itemList307.length;
+  for (var itemIndex307 = 0; itemIndex307 < itemListLen307; itemIndex307++) {
+    var itemData307 = itemList307[itemIndex307];
+    output += ((! (itemIndex307 == 0)) ? ', ' : '') + soy.$$escapeHtml(itemData307);
   }
   return output;
 };
@@ -260,11 +260,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoBidiSupport = function(opt_data, opt_ignored) {
   var output = '<div id="title1" style="font-variant:small-caps" ' + soy.$$escapeHtml(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>by ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Your favorite keyword: <select>';
-  var keywordList333 = opt_data.keywords;
-  var keywordListLen333 = keywordList333.length;
-  for (var keywordIndex333 = 0; keywordIndex333 < keywordListLen333; keywordIndex333++) {
-    var keywordData333 = keywordList333[keywordIndex333];
-    output += '<option value="' + soy.$$escapeHtml(keywordData333) + '">' + soy.$$bidiUnicodeWrap(1, soy.$$escapeHtml(keywordData333)) + '</option>';
+  var keywordList339 = opt_data.keywords;
+  var keywordListLen339 = keywordList339.length;
+  for (var keywordIndex339 = 0; keywordIndex339 < keywordListLen339; keywordIndex339++) {
+    var keywordData339 = keywordList339[keywordIndex339];
+    output += '<option value="' + soy.$$escapeHtml(keywordData339) + '">' + soy.$$bidiUnicodeWrap(1, soy.$$escapeHtml(keywordData339)) + '</option>';
   }
   output += '</select></div><a href="#" style="float:right">Help</a><br>';
   return output;

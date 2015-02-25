@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.ErrorManagerImpl;
 import com.google.template.soy.base.SoySyntaxException;
@@ -87,8 +89,7 @@ public final class TemplateParserTest extends TestCase {
       parseMaybeWhitespace("ErrorMessage", "foo");
       fail("Should have failed with a ParseException");
     } catch (ParseException pe) {
-      assertTrue("Expected [Found on line 1], received: " + pe.getMessage(),
-          pe.getMessage().contains("Found on line 1"));
+      assertThat(pe.getMessage()).contains("Found at: test.soy:1:1");
     }
 
     // The line number is correct following a newline.
@@ -96,8 +97,7 @@ public final class TemplateParserTest extends TestCase {
       parseMaybeWhitespace("ErrorMessage", "\nfoo");
       fail("Should have failed with a ParseException");
     } catch (ParseException pe) {
-      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
-          pe.getMessage().contains("Found on line 2"));
+      assertThat(pe.getMessage()).contains("Found at: test.soy:2:1");
     }
 
     // The line number is correct even when the template doesn't start on line 1.
@@ -111,8 +111,7 @@ public final class TemplateParserTest extends TestCase {
           .MaybeWhitespace("ErrorMessage");
       fail("Should have failed with a ParseException");
     } catch (ParseException pe) {
-      assertTrue("Expected [Found on line 2], received: " + pe.getMessage(),
-          pe.getMessage().contains("Found on line 2"));
+      assertThat(pe.getMessage()).contains("Found at: test.soy:2:1");
     }
   }
 
@@ -1200,18 +1199,17 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(2, nodes.size());
 
     ForeachNode fn0 = (ForeachNode) nodes.get(0);
-    assertEquals("goo", fn0.getVarName());
     assertEquals("$goose", fn0.getExprText());
     assertTrue(fn0.getExpr().getChild(0) instanceof VarRefNode);
     assertEquals(1, fn0.numChildren());
 
     ForeachNonemptyNode fn0fnn0 = (ForeachNonemptyNode) fn0.getChild(0);
+    assertEquals("goo", fn0fnn0.getVarName());
     assertEquals(2, fn0fnn0.numChildren());
     assertEquals("$goose.numKids", ((PrintNode) fn0fnn0.getChild(0)).getExprText());
     assertEquals(" goslings.\n", ((RawTextNode) fn0fnn0.getChild(1)).getRawText());
 
     ForeachNode fn1 = (ForeachNode) nodes.get(1);
-    assertEquals("boo", fn1.getVarName());
     assertEquals("$foo.booze", fn1.getExprText());
     assertTrue(fn1.getExpr().getChild(0) instanceof FieldAccessNode);
     assertEquals(2, fn1.numChildren());
@@ -1794,7 +1792,7 @@ public final class TemplateParserTest extends TestCase {
     TemplateParseResult result = parseTemplateBody(
         "{call 123 /}\n" // Invalid callee name "123" for 'call' command.
         + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
-        + "{foreach foo in bar}\n" // Invalid 'foreach' command text "foo in bar".
+        + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
         + "{let /}\n"); // Invalid 'let' command text "".
     assertFalse(result.isSuccess());
     assertEquals(4, result.getParseErrors().size());
