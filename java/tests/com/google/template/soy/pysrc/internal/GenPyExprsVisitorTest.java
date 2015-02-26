@@ -219,4 +219,64 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
     assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
+
+  public void testMsgWithPlural() {
+    String soyCode =
+        "{msg desc=\"simple plural\"}" +
+          "{plural $numDrafts}" +
+            "{case 0}No drafts" +
+            "{case 1}1 draft" +
+            "{default}{$numDrafts} drafts" +
+          "{/plural}" +
+        "{/msg}";
+
+    String expectedPyCode =
+        "render_plural(" +
+          "prepare_plural(" +
+            "###, " +
+            "{" +
+              "'=0': 'No drafts', " +
+              "'=1': '1 draft', " +
+              "'other': '{NUM_DRAFTS_2} drafts', " +
+            "}, " +
+            "('NUM_DRAFTS_1', 'NUM_DRAFTS_2', ), " +
+            "desc='simple plural'), " +
+          "opt_data.get('numDrafts'), " +
+          "{" +
+            "'NUM_DRAFTS_1': opt_data.get('numDrafts'), " +
+            "'NUM_DRAFTS_2': str(opt_data.get('numDrafts')), " +
+          "})";
+
+    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
+
+  public void testMsgWithPluralAndOffset() {
+    String soyCode =
+        "{msg desc=\"offset plural\"}" +
+          "{plural $numDrafts offset=\"2\"}" +
+            "{case 0}No drafts" +
+            "{case 1}1 draft" +
+            "{default}{remainder($numDrafts)} drafts" +
+          "{/plural}" +
+        "{/msg}";
+
+    String expectedPyCode =
+        "render_plural(" +
+          "prepare_plural(" +
+            "###, " +
+            "{" +
+              "'=0': 'No drafts', " +
+              "'=1': '1 draft', " +
+              "'other': '{XXX} drafts', " +
+            "}, " +
+            "('NUM_DRAFTS', 'XXX', ), " +
+            "desc='offset plural'), " +
+          "opt_data.get('numDrafts'), " +
+          "{" +
+            "'NUM_DRAFTS': opt_data.get('numDrafts'), " +
+            "'XXX': str(opt_data.get('numDrafts') - 2), " +
+          "})";
+
+    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
 }

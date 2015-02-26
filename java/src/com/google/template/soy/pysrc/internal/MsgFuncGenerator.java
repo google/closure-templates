@@ -20,12 +20,16 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
+import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -35,6 +39,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
@@ -69,14 +74,27 @@ final class MsgFuncGenerator {
   /** The function builder for the render_*() method **/
   private final PyFunctionExprBuilder renderFunc;
 
+  private final TranslateToPyExprVisitor translateToPyExprVisitor;
+
 
   @AssistedInject
-  MsgFuncGenerator(GenPyExprsVisitorFactory genPyExprsVisitorFactory, @Assisted MsgNode msgNode,
+  MsgFuncGenerator(GenPyExprsVisitorFactory genPyExprsVisitorFactory,
+      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
+      @Assisted MsgNode msgNode,
       @Assisted LocalVariableStack localVarExprs) {
     this.msgNode = msgNode;
     this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
+    this.translateToPyExprVisitor = translateToPyExprVisitorFactory.create(localVarExprs);
 
-    if (this.msgNode.isRawTextMsg()) {
+    if (this.msgNode.isPlrselMsg()) {
+      if (this.msgNode.isPluralMsg()) {
+        this.prepareFunc = new PyFunctionExprBuilder("prepare_plural");
+        this.renderFunc = new PyFunctionExprBuilder("render_plural");
+      } else {
+        this.prepareFunc = new PyFunctionExprBuilder("prepare_icu");
+        this.renderFunc = new PyFunctionExprBuilder("render_icu");
+      }
+    } else if (this.msgNode.isRawTextMsg()) {
       this.prepareFunc = new PyFunctionExprBuilder("prepare_literal");
       this.renderFunc = new PyFunctionExprBuilder("render_literal");
     } else {
@@ -100,10 +118,11 @@ final class MsgFuncGenerator {
 
   PyStringExpr getPyExpr() {
     addMsgAttributesToPrepare();
-    if (this.msgNode.isRawTextMsg()) {
-      return pyFuncForRawTextMsg();
+
+    if (this.msgNode.isPlrselMsg()) {
+      return this.msgNode.isPluralMsg() ? pyFuncForPluralMsg() : null; // for SelectMsg
     } else {
-      return pyFuncForGeneralMsg();
+      return this.msgNode.isRawTextMsg() ? pyFuncForRawTextMsg() : pyFuncForGeneralMsg();
     }
   }
 
@@ -125,6 +144,32 @@ final class MsgFuncGenerator {
         .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
 
     return renderFunc.addArg(prepareFunc.asPyExpr())
+        .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
+        .asPyStringExpr();
+  }
+
+  private PyStringExpr pyFuncForPluralMsg() {
+    SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) msgParts.get(0);
+    MsgPluralNode pluralNode = msgNode.getRepPluralNode(pluralPart.getPluralVarName());
+    Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
+    Map<PyExpr, PyExpr> caseSpecStrToMsgTexts = new LinkedHashMap<>();
+
+    for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> pluralCase : pluralPart.getCases()) {
+      caseSpecStrToMsgTexts.put(
+          new PyStringExpr("'" + pluralCase.first + "'"),
+          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.second) + "'"));
+    }
+
+    prepareFunc.addArg(msgId)
+        .addArg(PyExprUtils.convertMapToPyExpr(caseSpecStrToMsgTexts))
+        .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
+
+    // Translates {@link MsgPluralNode#pluralExpr} into a Python lookup expression.
+    // Note that pluralExpr represent the Soy expression inside the attributes of a plural tag.
+    PyExpr pluralPyExpr = translateToPyExprVisitor.exec(pluralNode.getExpr());
+
+    return renderFunc.addArg(prepareFunc.asPyExpr())
+        .addArg(pluralPyExpr)
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
         .asPyStringExpr();
   }
@@ -158,18 +203,31 @@ final class MsgFuncGenerator {
             (MsgPlaceholderInitialNode) ((AbstractParentSoyNode<?>) substUnitNode).getChild(0);
 
         if (phInitialNode instanceof PrintNode || phInitialNode instanceof CallNode) {
-          substPyExpr = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(phInitialNode));
+          substPyExpr = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(phInitialNode))
+              .toPyString();
         }
 
         // when the placeholder is generated by HTML tags
         if (phInitialNode instanceof MsgHtmlTagNode) {
           substPyExpr = PyExprUtils.concatPyExprs(
-              genPyExprsVisitor.execOnChildren((ParentSoyNode<?>) phInitialNode));
+              genPyExprsVisitor.execOnChildren((ParentSoyNode<?>) phInitialNode))
+              .toPyString();
         }
       }
 
       if  (substPyExpr != null) {
         nodePyVarToPyExprMap.put(new PyStringExpr("'" + phName + "'"), substPyExpr.toPyString());
+      }
+
+      if (substUnitNode instanceof MsgPluralNode) {
+        // Translates {@link MsgPluralNode#pluralExpr} into a Python lookup expression.
+        // Note that {@code pluralExpr} represents the soy expression of the {@code plural} attr,
+        // i.e. the {@code $numDrafts} in {@code {plural $numDrafts}...{/plural}}.
+        substPyExpr = translateToPyExprVisitor.exec(((MsgPluralNode) substUnitNode).getExpr());
+      }
+
+      if (substPyExpr != null) {
+        nodePyVarToPyExprMap.put(new PyStringExpr("'" + phName + "'"), substPyExpr);
       }
     }
 
