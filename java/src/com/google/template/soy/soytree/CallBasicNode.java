@@ -19,8 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.ErrorManager;
-import com.google.template.soy.base.ErrorManagerImpl;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -244,33 +245,28 @@ public final class CallBasicNode extends CallNode {
      *     solely for higher layers (like visitors) that do not already have ErrorManagers.
      */
     public CallBasicNode buildAndThrowIfInvalid() {
-      ErrorManager errorManager = new ErrorManagerImpl();
+      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
       CallBasicNode node = build(errorManager);
-      if (!errorManager.getErrors().isEmpty()) {
-        throw errorManager.getErrors().iterator().next();
-      }
+      errorManager.throwIfErrorsPresent();
       return node;
     }
 
-    public CallBasicNode build(ErrorManager errorManager) {
-      int prevNumErrors = errorManager.getErrors().size();
+    public CallBasicNode build(ErrorReporter errorReporter) {
+      Checkpoint c = errorReporter.checkpoint();
       CommandTextInfo commandTextInfo = commandText != null
-          ? parseCommandText(errorManager)
+          ? parseCommandText(errorReporter)
           : buildCommandText();
-      int newNumErrors = errorManager.getErrors().size();
-      boolean ok = newNumErrors == prevNumErrors;
-      if (ok) {
-        CallBasicNode callBasicNode = new CallBasicNode(
-            id, commandTextInfo, escapingDirectiveNames, calleeName);
-        callBasicNode.setSourceLocation(sourceLocation);
-        return callBasicNode;
-      } else {
+      if (errorReporter.errorsSince(c)) {
         return ERROR;
       }
+      CallBasicNode callBasicNode = new CallBasicNode(
+          id, commandTextInfo, escapingDirectiveNames, calleeName);
+      callBasicNode.setSourceLocation(sourceLocation);
+      return callBasicNode;
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
-    private CommandTextInfo parseCommandText(ErrorManager errorManager) {
+    private CommandTextInfo parseCommandText(ErrorReporter errorReporter) {
       String cmdText =
           commandText +
               ((userSuppliedPlaceholderName != null) ?
@@ -288,7 +284,7 @@ public final class CallBasicNode extends CallNode {
       }
 
       Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, errorManager, sourceLocation);
+          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, errorReporter, sourceLocation);
 
       String nameAttr = attributes.get("name");
       if (nameAttr != null) {
@@ -313,18 +309,18 @@ public final class CallBasicNode extends CallNode {
       }
 
       if (srcCalleeNames.isEmpty()) {
-        errorManager.report(SoySyntaxException.createWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
             "Invalid 'call' command missing callee name: {call " + cmdText + "}.", sourceLocation));
       } else if (srcCalleeNames.size() == 1) {
         sourceCalleeName = srcCalleeNames.get(0);
         if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
             BaseUtils.isDottedIdentifier(sourceCalleeName))) {
-          errorManager.report(SoySyntaxException.createWithMetaInfo(
+          errorReporter.report(SoySyntaxException.createWithMetaInfo(
               "Invalid callee name \"" + sourceCalleeName + "\" for 'call' command.",
               sourceLocation));
         }
       } else {
-        errorManager.report(SoySyntaxException.createWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
             String.format(
                 "Invalid 'call' command with callee name declared multiple times (%s, %s)",
                 srcCalleeNames.get(0), srcCalleeNames.get(1)), sourceLocation));

@@ -16,8 +16,13 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
@@ -29,8 +34,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class CallParamValueNode extends CallParamNode implements ExprHolderNode {
-
+public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
 
   /** The param key. */
   private final String key;
@@ -41,27 +45,14 @@ public class CallParamValueNode extends CallParamNode implements ExprHolderNode 
 
   /**
    * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
    */
-  public CallParamValueNode(int id, String commandText) throws SoySyntaxException {
+  private CallParamValueNode(int id, String key, ExprUnion valueExprUnion, String commandText) {
     super(id, commandText);
 
-    CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
-    key = parseResult.key;
-    valueExprUnion = parseResult.valueExprUnion;
+    this.key = Preconditions.checkNotNull(key);
+    this.valueExprUnion = Preconditions.checkNotNull(valueExprUnion);
 
-    if (valueExprUnion == null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "A 'param' tag should be self-ending (with a trailing '/') if and only if it also" +
-              " contains a value (invalid tag is {param " + commandText + " /}).");
-    }
 
-    if (parseResult.contentKind != null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "The 'kind' attribute is not allowed on self-ending 'param' tags that " +
-              " contain a value (invalid tag is {param " + commandText + " /}).");
-    }
   }
 
 
@@ -69,7 +60,7 @@ public class CallParamValueNode extends CallParamNode implements ExprHolderNode 
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected CallParamValueNode(CallParamValueNode orig) {
+  private CallParamValueNode(CallParamValueNode orig) {
     super(orig);
     this.key = orig.key;
     this.valueExprUnion = (orig.valueExprUnion != null) ? orig.valueExprUnion.clone() : null;
@@ -112,4 +103,49 @@ public class CallParamValueNode extends CallParamNode implements ExprHolderNode 
     return new CallParamValueNode(this);
   }
 
+  public static final class Builder extends CallParamNode.Builder {
+
+    public static final CallParamValueNode ERROR
+        = new Builder(-1, "error: error", SourceLocation.UNKNOWN)
+        .buildAndThrowIfInvalid(); // guaranteed to build
+
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      super(id, commandText, sourceLocation);
+    }
+
+    public CallParamValueNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
+
+      if (parseResult.valueExprUnion == null) {
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
+            "A 'param' tag should be self-ending (with a trailing '/') if and only if it also"
+                + " contains a value (invalid tag is {param " + commandText + " /}).",
+            sourceLocation));
+      }
+
+      if (parseResult.contentKind != null) {
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
+            "The 'kind' attribute is not allowed on self-ending 'param' tags "
+                + "(invalid tag is {param " + commandText + " /}).",
+            sourceLocation));
+      }
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      CallParamValueNode node
+          = new CallParamValueNode(id, parseResult.key, parseResult.valueExprUnion, commandText);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
+
+    private CallParamValueNode buildAndThrowIfInvalid() {
+      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
+      CallParamValueNode node = build(errorManager);
+      errorManager.throwIfErrorsPresent();
+      return node;
+    }
+  }
 }

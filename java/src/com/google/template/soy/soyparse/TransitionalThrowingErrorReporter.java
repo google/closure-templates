@@ -16,30 +16,21 @@
 
 package com.google.template.soy.soyparse;
 
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
-
-import java.util.List;
-
 /**
- * Container for the result of parsing a Soy template.
+ * {@link ErrorReporter} implementation that allows callers to give up and throw an exception
+ * if any errors were encountered.
+ * TODO(user): remove. Soy has traditionally thrown exceptions for every kind of error.
+ * We are in the process of changing this to enable reporting of multiple errors, error recovery,
+ * and so on. This class should be used solely during this transition, in call sites that do not
+ * yet have a proper error manager to report errors to.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class TemplateParseResult {
-  private final List<DeclInfo> headerDecls;
-  private final List<StandaloneNode> bodyNodes;
-
-  TemplateParseResult(List<DeclInfo> headerDecls, List<StandaloneNode> bodyNodes) {
-    this.headerDecls = headerDecls;
-    this.bodyNodes = bodyNodes;
-  }
-
-  public List<DeclInfo> getHeaderDecls() {
-    return headerDecls;
-  }
-
-  public List<StandaloneNode> getBodyNodes() {
-    return bodyNodes;
+@Deprecated
+public final class TransitionalThrowingErrorReporter extends ErrorReporterImpl {
+  public void throwIfErrorsPresent() {
+    if (!errors.isEmpty()) {
+      throw errors.get(0);
+    }
   }
 }

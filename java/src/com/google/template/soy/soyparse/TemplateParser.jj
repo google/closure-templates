@@ -44,7 +44,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.ErrorManager;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -243,7 +243,7 @@ public class TemplateParser {
   private int lineNumOffset;
 
   /** For reporting syntax errors. */
-  private ErrorManager errorManager;
+  private ErrorReporter errorReporter;
 
   /**
    * Constructor that takes a reader object providing the input.
@@ -253,21 +253,21 @@ public class TemplateParser {
    * @param input The input to parse. This reader will not be closed by this parser.
    * @param filePath File path or uri describing where the input is from. Used for reporting.
    * @param templateContentStartLine The start line for input, 1-indexed.
-   * @param errorManager For reporting errors.
+   * @param errorReporter For reporting errors.
    */
   public TemplateParser(
       IdGenerator nodeIdGen,
       Reader input,
       String filePath,
       int templateContentStartLine,
-      ErrorManager errorManager) {
+      ErrorReporter errorReporter) {
     this(input);
     Preconditions.checkNotNull(nodeIdGen);
     this.nodeIdGen = nodeIdGen;
     this.filePath = filePath;
     // Line numbers are 1-indexed but offsets are not.
     this.lineNumOffset = templateContentStartLine - 1;
-    this.errorManager = errorManager;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -279,15 +279,32 @@ public class TemplateParser {
    * @param input The input to parse.
    * @param filePath File path or uri describing where the input is from. Used for reporting.
    * @param templateContentStartLine The start line for input, 1-indexed.
-   * @param errorManager For reporting errors.
+   * @param errorReporter For reporting errors.
    */
   public TemplateParser(
       IdGenerator nodeIdGen,
       String input,
       String filePath,
       int templateContentStartLine,
-      ErrorManager errorManager) {
-    this(nodeIdGen, new StringReader(input), filePath, templateContentStartLine, errorManager);
+      ErrorReporter errorReporter) {
+    this(nodeIdGen, new StringReader(input), filePath, templateContentStartLine, errorReporter);
+  }
+
+  /**
+   * Constructor that takes a string input.
+   * Important: The input should end with a newline sequence (one of "\n", "\r", or "\r\n").
+   *
+   * @param nodeIdGen The node id generator for the tree being built.
+   * @param input The input to parse.
+   * @param filePath File path or uri describing where the input is from. Used for reporting.
+   * @param templateContentStartLine The start line for input, 1-indexed.
+   */
+  public TemplateParser(
+      IdGenerator nodeIdGen,
+      String input,
+      String filePath,
+      int templateContentStartLine) {
+    this(nodeIdGen, input, filePath, templateContentStartLine, new ErrorReporterImpl());
   }
 
 
@@ -2243,7 +2260,7 @@ private TemplateParseResult TemplateContentInput() :
     }
   }
 
-  { return new TemplateParseResult(headerDecls, bodyNodes, errorManager.getErrors()); }
+  { return new TemplateParseResult(headerDecls, bodyNodes); }
 }
 
 
@@ -2591,7 +2608,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
   { // Currently, allow at most one 'fallbackmsg'.
     if (msgFbGrpNode.numChildren() > 2) {
-      errorManager.report(SoySyntaxExceptionUtils.createWithNode(
+      errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
           "Multiple 'fallbackmsg's is not allowed.", msgFbGrpNode));
     }
     return msgFbGrpNode;
@@ -2644,7 +2661,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
         { if (! (stmt instanceof MsgPlaceholderInitialNode)) {
             String commandName =
                 (stmt instanceof IfNode) ? "if" : ((CommandNode) stmt).getCommandName();
-            errorManager.report(SoySyntaxExceptionUtils.createWithNode(
+            errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
                 "Command '" + commandName + "' not allowed within a 'msg' block.", stmt));
           } else {
             templateBlock.add(
@@ -2682,7 +2699,7 @@ private MsgPluralNode MsgPlural() :
           new MsgPluralNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
     } catch (SoySyntaxException e) {
       // TODO(user): consider changing ctor to not throw
-      errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+      errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
           null, e, cmdText.srcLocation(), null, null));
       return ErrorNodes.MSG_PLURAL_NODE;
     }
@@ -2702,7 +2719,7 @@ private MsgPluralNode MsgPlural() :
         msgPluralNode.addChild(msgPluralCaseNode);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
             null, e, cmdText.srcLocation(), null, null));
         return msgPluralNode;
       }
@@ -2712,7 +2729,7 @@ private MsgPluralNode MsgPlural() :
     { if (templateBlockForMsg.size() == 1 &&
           (templateBlockForMsg.get(0) instanceof MsgPluralNode ||
            templateBlockForMsg.get(0) instanceof MsgSelectNode )) {
-        errorManager.report(SoySyntaxExceptionUtils.createWithNode(
+        errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
             "Tags 'plural' and 'select' are not allowed inside 'plural' blocks.",
             templateBlockForMsg.get(0)));
       }
@@ -2730,7 +2747,7 @@ private MsgPluralNode MsgPlural() :
   { if (templateBlockForMsg.size() == 1 &&
         (templateBlockForMsg.get(0) instanceof MsgPluralNode ||
          templateBlockForMsg.get(0) instanceof MsgSelectNode )) {
-      errorManager.report(SoySyntaxExceptionUtils.createWithNode(
+      errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
           "Tags 'plural' and 'select' are not allowed inside 'plural' blocks.",
           templateBlockForMsg.get(0)));
     }
@@ -2774,7 +2791,7 @@ private MsgSelectNode MsgSelect() :
         msgSelectNode.addChild(msgSelectCaseNode);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
             null, e, cmdText.srcLocation(), null, null));
         return msgSelectNode;
       }
@@ -2833,7 +2850,7 @@ private MsgHtmlTagNode MsgHtmlTag() :
       return setSrcLoc(new MsgHtmlTagNode(nodeIdGen.genId(), templateBlock), htmlTagOpen);
     } catch (SoySyntaxException e) {
       // TODO(user): consider changing ctor to not throw
-      errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+      errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
           null, e, createSrcLoc(htmlTagOpen), null, null));
       return ErrorNodes.MSG_HTML_TAG_NODE;
     }
@@ -2871,7 +2888,7 @@ private PrintNode PrintStmt() :
     for (String cmdTextPart : cmdTextParts) {
       if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
         if (phnameAttr != null) {
-          errorManager.report(SoySyntaxException.createWithMetaInfo(
+          errorReporter.report(SoySyntaxException.createWithMetaInfo(
               "Found multiple 'phname' attributes in 'print' command text \"" + cmdText + "\".",
               printTagInfo.srcLocation(), null, null));
         }
@@ -2889,7 +2906,7 @@ private PrintNode PrintStmt() :
     // ------ Process expression. ------
     // Note: First part is expression, rest of parts are directives or directive args.
     if (cmdTextParts.isEmpty()) {
-      errorManager.report(SoySyntaxException.createWithMetaInfo(
+      errorReporter.report(SoySyntaxException.createWithMetaInfo(
           "Found 'print' command with empty command text.",
           printTagInfo.srcLocation(), null, null));
           return null;
@@ -2927,7 +2944,7 @@ private PrintNode PrintStmt() :
         continue;
 
       } else {
-        errorManager.report(SoySyntaxExceptionUtils.createWithNode(
+        errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
             "Invalid 'print' command text \"" + cmdText + "\" (check the directives).", printNode));
       }
     }
@@ -2980,7 +2997,7 @@ private XidNode XidStmt() :
       return setSrcLoc(new XidNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
     } catch (SoySyntaxException e) {
       // TODO(user): consider changing ctor to not throw
-      errorManager.report(e);
+      errorReporter.report(e);
       return ErrorNodes.XID_NODE;
     }
   }
@@ -3024,7 +3041,7 @@ private LetNode LetStmt() :
             new LetValueNode(nodeIdGen.genId(), false, cmdText.parsedContent()), cmdText);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
             null, e, cmdText.srcLocation(), null, null));
         return ErrorNodes.LET_VALUE_NODE;
       }
@@ -3041,7 +3058,7 @@ private LetNode LetStmt() :
             new LetContentNode(nodeIdGen.genId(), false, cmdText.parsedContent()), cmdText);
       } catch (SoySyntaxException e) {
         // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
             null, e, cmdText.srcLocation(), null, null));
         return ErrorNodes.LET_CONTENT_NODE;
       }
@@ -3174,7 +3191,7 @@ private ForeachNode ForeachStmt() :
 {
   cmdText = ForeachTag()
   {
-    ForeachBuilder builder = ForeachBuilder.create(nodeIdGen, errorManager)
+    ForeachBuilder builder = ForeachBuilder.create(nodeIdGen, errorReporter)
         .setCommandLocation(cmdText.srcLocation())
         .setCommandText(cmdText.parsedContent());
   }
@@ -3277,7 +3294,7 @@ private CallNode CallStmt() :
       String cmdTextPart = callTagParts.get(i);
       if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
         if (phnameAttr != null) {
-          errorManager.report(SoySyntaxException.createWithMetaInfo(
+          errorReporter.report(SoySyntaxException.createWithMetaInfo(
               "Found multiple 'phname' attributes in '" + cmdName + "' command text \"" +
                   Joiner.on("").join(callTagParts.subList(1, callTagParts.size())) + "\".",
               callTagInfo.srcLocation(), null, null));
@@ -3309,12 +3326,12 @@ private CallNode CallStmt() :
       callNode = new CallBasicNode.Builder(nodeIdGen.genId(), callTagInfo.srcLocation())
           .commandText(cmdText)
           .userSuppliedPlaceholderName(userSuppliedPhName)
-          .build(errorManager);
+          .build(errorReporter);
     } else {
       callNode = new CallDelegateNode.Builder(nodeIdGen.genId(), callTagInfo.srcLocation())
           .commandText(cmdText)
           .userSuppliedPlaceholderName(userSuppliedPhName)
-          .build(errorManager);
+          .build(errorReporter);
     }
     callNode = setSrcLoc(callNode, callTagInfo);
     callNode.addChildren(callParams);
@@ -3341,15 +3358,9 @@ private CallParamNode CallParam() :
 
     cmdText = ParamTagSelfEnding()
     {
-      try {
-        callParamNode = setSrcLoc(
-          new CallParamValueNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, cmdText.srcLocation(), null, null));
-        return ErrorNodes.CALL_PARAM_VALUE_NODE;
-      }
+      callParamNode = new CallParamValueNode.Builder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
     }
 
   |
@@ -3357,16 +3368,9 @@ private CallParamNode CallParam() :
 
     cmdText = ParamTagNotSelfEnding()
     {
-      CallParamContentNode cpcn = null;
-      try {
-        cpcn = setSrcLoc(
-            new CallParamContentNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, cmdText.srcLocation(), null, null));
-        return callParamNode;
-      }
+      CallParamContentNode cpcn = new CallParamContentNode.Builder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
     }
     templateBlock = TemplateBlock()
     { cpcn.addChildren(templateBlock);

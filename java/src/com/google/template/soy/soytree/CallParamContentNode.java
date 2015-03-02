@@ -16,9 +16,13 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
@@ -31,8 +35,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class CallParamContentNode extends CallParamNode implements RenderUnitNode {
-
+public final class CallParamContentNode extends CallParamNode implements RenderUnitNode {
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
@@ -47,21 +50,13 @@ public class CallParamContentNode extends CallParamNode implements RenderUnitNod
   /**
    * @param id The id for this node.
    * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
    */
-  public CallParamContentNode(int id, String commandText) throws SoySyntaxException {
+  private CallParamContentNode(int id, String key, ContentKind contentKind, String commandText) {
     super(id, commandText);
     parentMixin = new MixinParentNode<>(this);
 
-    CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
-    key = parseResult.key;
-    contentKind = parseResult.contentKind;
-
-    if (parseResult.valueExprUnion != null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "A 'param' tag should contain a value if and only if it is also self-ending (with a" +
-              " trailing '/') (invalid tag is {param " + commandText + "}).");
-    }
+    this.key = key;
+    this.contentKind = contentKind;
   }
 
 
@@ -69,7 +64,7 @@ public class CallParamContentNode extends CallParamNode implements RenderUnitNod
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected CallParamContentNode(CallParamContentNode orig) {
+  private CallParamContentNode(CallParamContentNode orig) {
     super(orig);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
     this.key = orig.key;
@@ -173,6 +168,44 @@ public class CallParamContentNode extends CallParamNode implements RenderUnitNod
 
   @Override public CallParamContentNode clone() {
     return new CallParamContentNode(this);
+  }
+
+  public static final class Builder extends CallParamNode.Builder {
+
+    public static final CallParamContentNode ERROR
+        = new Builder(-1, "error", SourceLocation.UNKNOWN)
+        .buildAndThrowIfInvalid(); // guaranteed to build
+
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      super(id, commandText, sourceLocation);
+    }
+
+    public CallParamContentNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
+      if (parseResult.valueExprUnion != null) {
+        errorReporter.report(SoySyntaxException.createWithoutMetaInfo(
+            "A 'param' tag should contain a value if and only if it is also self-ending (with a" +
+                " trailing '/') (invalid tag is {param " + commandText + "})."));
+
+      }
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      CallParamContentNode node
+          = new CallParamContentNode(id, parseResult.key, parseResult.contentKind, commandText);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
+
+    private CallParamContentNode buildAndThrowIfInvalid() {
+      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
+      CallParamContentNode node = build(errorManager);
+      errorManager.throwIfErrorsPresent();
+      return node;
+    }
   }
 
 }

@@ -156,8 +156,7 @@ public final class SoytreeUtilsTest extends TestCase {
             SOY_SOURCE_FOR_TESTING_CLONING,
             SoyFileKind.SRC,
             "test.soy")
-        .parseSoyFile()
-        .getParseTree();
+        .parseSoyFile();
     soyTree.addChild(soyFile);
 
     SoyFileSetNode clone = soyTree.clone();
@@ -178,8 +177,7 @@ public final class SoytreeUtilsTest extends TestCase {
         SOY_SOURCE_FOR_TESTING_CLONING,
         SoyFileKind.SRC,
         "test.soy")
-        .parseSoyFile()
-        .getParseTree();
+        .parseSoyFile();
     soyTree.addChild(soyFile);
 
     SoyFileSetNode clone = SoytreeUtils.cloneWithNewIds(soyTree, nodeIdGen);
@@ -201,8 +199,7 @@ public final class SoytreeUtilsTest extends TestCase {
         SOY_SOURCE_FOR_TESTING_CLONING,
         SoyFileKind.SRC,
         "test.soy")
-        .parseSoyFile()
-        .getParseTree();
+        .parseSoyFile();
     soyTree.addChild(soyFile);
 
     TemplateNode template = soyFile.getChild(0);
@@ -243,8 +240,7 @@ public final class SoytreeUtilsTest extends TestCase {
         SOY_SOURCE_FOR_TESTING_CLONING,
         SoyFileKind.SRC,
         "test.soy")
-        .parseSoyFile()
-        .getParseTree();
+        .parseSoyFile();
     soyTree.addChild(soyFile);
 
     FindNodeByTypeVisitor<MsgHtmlTagNode> visitor =

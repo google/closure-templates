@@ -17,7 +17,6 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -45,8 +44,6 @@ import com.google.template.soy.soytree.XidNode;
 final class ErrorNodes {
   private ErrorNodes() {}
 
-  static final CallParamValueNode CALL_PARAM_VALUE_NODE
-      = new CallParamValueNode(-1, "error: error");
   static final LetContentNode LET_CONTENT_NODE = new LetContentNode(-1, true, "$error");
   static final LetValueNode LET_VALUE_NODE = new LetValueNode(-1, true, "$error: 1");
   static final MsgHtmlTagNode MSG_HTML_TAG_NODE

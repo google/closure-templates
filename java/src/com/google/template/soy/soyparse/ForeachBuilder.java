@@ -18,7 +18,6 @@ package com.google.template.soy.soyparse;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.template.soy.base.ErrorManager;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -43,12 +42,12 @@ final class ForeachBuilder {
   private static final Pattern FOR_EACH_COMMAND_TEXT_PATTERN =
       Pattern.compile("( [$] \\w+ ) \\s+ in \\s+ (\\S .*)", Pattern.COMMENTS | Pattern.DOTALL);
 
-  static ForeachBuilder create(IdGenerator nodeIdGen, ErrorManager errorManager) {
-    return new ForeachBuilder(nodeIdGen, errorManager);
+  static ForeachBuilder create(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
+    return new ForeachBuilder(nodeIdGen, errorReporter);
   }
 
   private final IdGenerator nodeIdGen;
-  private final ErrorManager errorManager;
+  private final ErrorReporter errorReporter;
   private String cmdText;
   private List<StandaloneNode> templateBlock;
 
@@ -56,9 +55,9 @@ final class ForeachBuilder {
   private List<StandaloneNode> ifEmptyBlock;
   private SourceLocation commandLocation;
 
-  private ForeachBuilder(IdGenerator nodeIdGen, ErrorManager errorManager) {
+  private ForeachBuilder(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
     this.nodeIdGen = nodeIdGen;
-    this.errorManager = errorManager;
+    this.errorReporter = errorReporter;
   }
 
   ForeachBuilder setCommandLocation(SourceLocation location) {
@@ -93,7 +92,7 @@ final class ForeachBuilder {
     ExprRootNode<?> expr = null;
     Matcher matcher = FOR_EACH_COMMAND_TEXT_PATTERN.matcher(cmdText);
     if (!matcher.matches()) {
-      errorManager.report(
+      errorReporter.report(
           SoySyntaxException.createWithMetaInfo(
               "Invalid 'foreach' command text \"" + cmdText + "\".",
               commandLocation, null, null));
@@ -104,7 +103,7 @@ final class ForeachBuilder {
             matcher.group(1),
             "Invalid variable name in 'foreach' command text \"" + cmdText + "\".");
       } catch (SoySyntaxException e) {
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
             null, e, commandLocation, null, null));
       }
       try {
@@ -112,7 +111,7 @@ final class ForeachBuilder {
             matcher.group(2),
             "Invalid expression in 'foreach' command text \"" + cmdText + "\".");
       } catch (SoySyntaxException e) {
-        errorManager.report(SoySyntaxException.createCausedWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
             null, e, commandLocation, null, null));
       }
     }

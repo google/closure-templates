@@ -18,8 +18,6 @@ package com.google.template.soy.soyparse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.ErrorManager;
-import com.google.template.soy.base.ErrorManagerImpl;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -88,7 +86,7 @@ public final class SoyFileSetParser {
   private boolean doCheckOverrides;
 
   /** For reporting parse errors. */
-  private final ErrorManager errorManager = new ErrorManagerImpl();
+  private final ErrorReporterImpl errorManager = new ErrorReporterImpl();
 
   /**
    * @param typeRegistry The type registry to resolve type names.
@@ -203,22 +201,17 @@ public final class SoyFileSetParser {
       if (fileAndVersion == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
         synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
-          Pair<ParseResult<SoyFileNode>, SoyFileSupplier.Version> result = parseSoyFileHelper(
+          fileAndVersion = parseSoyFileHelper(
               soyFileSupplier, nodeIdGen, typeRegistry, errorManager);
-          ParseResult<SoyFileNode> parseResult = result.getFirst();
-
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
-          if (!parseResult.isSuccess()) {
-            return new ParseResult<>(soyTree, parseResult.getParseErrors());
+          if (fileAndVersion.first == null) {
+            return new ParseResult<>(soyTree, errorManager.getErrors());
           }
-
-          SoyFileSupplier.Version version = result.getSecond();
-          fileAndVersion = new Pair<>(parseResult.getParseTree(), version);
           if (doRunInitialParsingPasses) {
             // Run passes that are considered part of initial parsing.
-            runSingleFileParsingPasses(parseResult.getParseTree(), nodeIdGen);
+            runSingleFileParsingPasses(fileAndVersion.getFirst(), nodeIdGen);
           }
         }
         if (doRunCheckingPasses) {
@@ -251,29 +244,29 @@ public final class SoyFileSetParser {
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
    * TODO(brndn): This method should just return a {@link ParseResult} that includes the version.
    */
-  private static Pair<ParseResult<SoyFileNode>, SoyFileSupplier.Version> parseSoyFileHelper(
+  private static Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
       SoyFileSupplier soyFileSupplier,
       IdGenerator nodeIdGen,
       SoyTypeRegistry typeRegistry,
-      ErrorManager errorManager) {
+      ErrorReporter errorReporter) {
 
     String filePath = soyFileSupplier.getFilePath();
 
     SoyFileSupplier.Version version = soyFileSupplier.getVersion();
     try (Reader soyFileReader = soyFileSupplier.open()) {
-      ParseResult<SoyFileNode> result = new SoyFileParser(
+      SoyFileNode soyFileNode = new SoyFileParser(
           typeRegistry,
           nodeIdGen,
           soyFileReader,
           soyFileSupplier.getSoyFileKind(),
           filePath,
-          errorManager)
+          errorReporter)
           .parseSoyFile();
       if (soyFileSupplier.hasChangedSince(version)) {
-        errorManager.report(
+        errorReporter.report(
             SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath));
       }
-      return Pair.of(result, version);
+      return Pair.of(soyFileNode, version);
     } catch (IOException e) {
       throw SoySyntaxException.createCausedWithoutMetaInfo(
           "Error opening/closing Soy file " + soyFileSupplier.getFilePath(), e);

@@ -19,6 +19,8 @@ package com.google.template.soy.soyparse;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -38,7 +40,8 @@ final class ErrorNodeUtils {
   private static final ImmutableSet<? extends SoyNode> ERROR_NODES = ImmutableSet.of(
       CallBasicNode.Builder.ERROR,
       CallDelegateNode.Builder.ERROR,
-      ErrorNodes.CALL_PARAM_VALUE_NODE,
+      CallParamContentNode.Builder.ERROR,
+      CallParamValueNode.Builder.ERROR,
       ErrorNodes.LET_CONTENT_NODE,
       ErrorNodes.LET_VALUE_NODE,
       ErrorNodes.MSG_HTML_TAG_NODE,

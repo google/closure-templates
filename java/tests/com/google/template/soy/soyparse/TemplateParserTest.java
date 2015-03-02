@@ -19,7 +19,6 @@ package com.google.template.soy.soyparse;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.ErrorManagerImpl;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -107,7 +106,7 @@ public final class TemplateParserTest extends TestCase {
           "foo",
           "test.soy",
           /* start line number */ 2,
-          new ErrorManagerImpl())
+          new ErrorReporterImpl())
           .MaybeWhitespace("ErrorMessage");
       fail("Should have failed with a ParseException");
     } catch (ParseException pe) {
@@ -720,7 +719,7 @@ public final class TemplateParserTest extends TestCase {
         "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n" +
         "  BODY\n";
 
-    TemplateParseResult result = parseTemplateContent(templateHeaderAndBody);
+    TestTemplateParseResult result = parseTemplateContent(templateHeaderAndBody);
     assertEquals(7, result.getHeaderDecls().size());
     assertEquals("BODY", result.getBodyNodes().get(0).toSourceString());
 
@@ -1081,7 +1080,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(ContentKind.HTML, deltaNode.getContentKind());
 
     // Test error case.
-    TemplateParseResult result = parseTemplateBody("{let $alpha /}");
+    TestTemplateParseResult result = parseTemplateBody("{let $alpha /}");
     assertFalse(result.isSuccess());
     SoySyntaxException e = result.getParseErrors().iterator().next();
     assertTrue(e.getMessage().contains(
@@ -1789,7 +1788,7 @@ public final class TemplateParserTest extends TestCase {
   }
 
   public void testMultipleErrors() throws ParseException {
-    TemplateParseResult result = parseTemplateBody(
+    TestTemplateParseResult result = parseTemplateBody(
         "{call 123 /}\n" // Invalid callee name "123" for 'call' command.
         + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
         + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
@@ -1819,9 +1818,9 @@ public final class TemplateParserTest extends TestCase {
    * @throws ParseException When the given input has a parse error.
    * @return The parse tree nodes created.
    */
-  private static TemplateParseResult parseTemplateBody(String input)
+  private static TestTemplateParseResult parseTemplateBody(String input)
       throws TokenMgrError, ParseException {
-    TemplateParseResult result = parseTemplateContent(input);
+    TestTemplateParseResult result = parseTemplateContent(input);
     assertNull(result.getHeaderDecls());
     return result;
   }
@@ -1834,15 +1833,17 @@ public final class TemplateParserTest extends TestCase {
    * @throws ParseException When the given input has a parse error.
    * @return The decl infos and parse tree nodes created.
    */
-  private static TemplateParseResult parseTemplateContent(String input)
+  private static TestTemplateParseResult parseTemplateContent(String input)
       throws TokenMgrError, ParseException {
-    return new TemplateParser(
+    ErrorReporterImpl errorManager = new ErrorReporterImpl();
+    TemplateParseResult result = new TemplateParser(
         new IncrementingIdGenerator(),
         input,
         "test.soy",
         1 /* start line number */,
-        new com.google.template.soy.base.ErrorManagerImpl())
+        errorManager)
         .parseTemplateContent();
+    return new TestTemplateParseResult(result, errorManager.getErrors());
   }
 
 
@@ -1860,7 +1861,7 @@ public final class TemplateParserTest extends TestCase {
         input,
         "test.soy",
         /* start line number */ 1,
-        new com.google.template.soy.base.ErrorManagerImpl())
+        new ErrorReporterImpl())
         .MaybeWhitespace(errorMessage);
   }
 
@@ -1872,7 +1873,7 @@ public final class TemplateParserTest extends TestCase {
    * @throws ParseException When the given input has a parse error.
    */
   private static void assertIsTemplateBody(String input) throws TokenMgrError, ParseException {
-    TemplateParseResult result = parseTemplateBody(input);
+    TestTemplateParseResult result = parseTemplateBody(input);
     assertTrue(result.isSuccess());
     assertFalse(ErrorNodeUtils.containsErrors(result.getBodyNodes()));
   }
@@ -1885,7 +1886,7 @@ public final class TemplateParserTest extends TestCase {
    * @throws ParseException When the given input has a parse error.
    */
   private static void assertIsTemplateContent(String input) throws TokenMgrError, ParseException {
-    TemplateParseResult result = parseTemplateContent(input);
+    TestTemplateParseResult result = parseTemplateContent(input);
     assertTrue(result.isSuccess());
     assertFalse(ErrorNodeUtils.containsErrors(result.getBodyNodes()));
   }
@@ -1897,7 +1898,7 @@ public final class TemplateParserTest extends TestCase {
    * @throws AssertionFailedError When the given input is actually a valid template.
    */
   private static void assertIsNotTemplateBody(String input) throws AssertionFailedError {
-    TemplateParseResult result;
+    TestTemplateParseResult result;
     try {
       result = parseTemplateBody(input);
     } catch (TokenMgrError | ParseException e) {
@@ -1914,7 +1915,7 @@ public final class TemplateParserTest extends TestCase {
    */
   private static void assertIsNotTemplateContent(String input) throws AssertionFailedError {
     try {
-      TemplateParseResult result = parseTemplateContent(input);
+      TestTemplateParseResult result = parseTemplateContent(input);
       assertFalse(result.isSuccess());
     } catch (SoySyntaxException sse) {
       // Test passes.

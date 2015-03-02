@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
@@ -24,6 +25,7 @@ import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -48,11 +50,11 @@ public abstract class CallParamNode extends AbstractCommandNode {
   protected static class CommandTextParseResult {
 
     /** The parsed key. */
-    public final String key;
+    final String key;
     /** The parsed value expr, or null if none. */
-    @Nullable public final ExprUnion valueExprUnion;
+    @Nullable final ExprUnion valueExprUnion;
     /** The parsed param's content kind, or null if none. */
-    public final ContentKind contentKind;
+    @Nullable final ContentKind contentKind;
 
     private CommandTextParseResult(
         String key, ExprUnion valueExprUnion, ContentKind contentKind) {
@@ -100,70 +102,6 @@ public abstract class CallParamNode extends AbstractCommandNode {
 
 
   /**
-   * Helper used by subclass constructors to parse the command text.
-   * @param commandText The command text.
-   * @return An info object containing the parse results.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  protected CommandTextParseResult parseCommandTextHelper(String commandText)
-      throws SoySyntaxException {
-
-
-    // Parse the command text into key and optional valueExprText or extra attributes
-    Matcher nctMatcher = NONATTRIBUTE_COMMAND_TEXT.matcher(commandText);
-    if (nctMatcher.matches()) {
-      // Convert {param foo : $bar/} and {param foo kind="xyz"/} syntax into attributes.
-      commandText = "key=\"" + nctMatcher.group(1) + "\"";
-
-      if (nctMatcher.group(3) != null) {
-        Preconditions.checkState(nctMatcher.group(2) == null);
-        commandText += " " + nctMatcher.group(3);
-      }
-
-      // Note that we do not convert a group(2) match into a value= attribute, since the attribute
-      // parser does not support a quoting syntax for double quotes within an attribute, which
-      // would result in errors for e.g. {param foo : bar " baz/}
-    }
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
-    String key = attributes.get("key");
-    String valueExprText;
-    // If the command was of the form {param foo : <bar>}, obtain the value from match group 2.
-    if (nctMatcher.matches() && (nctMatcher.group(2) != null)) {
-      valueExprText = nctMatcher.group(2);
-    } else {
-      valueExprText = attributes.get("value");
-    }
-    ContentKind contentKind =
-        (attributes.get("kind") != null) ?
-        NodeContentKinds.forAttributeValue(attributes.get("kind")) :
-        null;
-
-    // Check the validity of the key name.
-    ExprNode dataRef = ExprParseUtils.parseDataRefElseThrowSoySyntaxException(
-        "$" + key,
-        "Invalid key in 'param' command text \"" + commandText + "\".")
-        .getChild(0);
-    if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "The key in a 'param' tag must be top level, i.e. not contain multiple keys" +
-              " (invalid 'param' command text \"" + commandText + "\").");
-    }
-
-    // If valueExprText exists, try to parse it.
-    ExprUnion valueExprUnion;
-    if (valueExprText != null) {
-      ExprRootNode<?> valueExpr = ExprParseUtils.parseExprElseNull(valueExprText);
-      valueExprUnion =
-          (valueExpr != null) ? new ExprUnion(valueExpr) : new ExprUnion(valueExprText);
-    } else {
-      valueExprUnion = null;
-    }
-
-    return new CommandTextParseResult(key, valueExprUnion, contentKind);
-  }
-
-
-  /**
    * Returns the param key.
    */
   public abstract String getKey();
@@ -173,4 +111,82 @@ public abstract class CallParamNode extends AbstractCommandNode {
     return (CallNode) super.getParent();
   }
 
+  /**
+   * Base class for {@link CallParamContentNode.Builder} and {@link CallParamValueNode.Builder}.
+   */
+  static class Builder {
+
+    protected final int id;
+    protected final String commandText;
+    protected final SourceLocation sourceLocation;
+
+    protected Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Helper used by subclass builders to parse the command text.
+     * @return An info object containing the parse results.
+     */
+    protected CommandTextParseResult parseCommandTextHelper(ErrorReporter errorReporter) {
+      String commandText = this.commandText;
+
+      // Parse the command text into key and optional valueExprText or extra attributes
+      // TODO(user): instead of munging the command text, use a parser that understands
+      // the actual content.
+      Matcher nctMatcher = NONATTRIBUTE_COMMAND_TEXT.matcher(commandText);
+      if (nctMatcher.matches()) {
+        // Convert {param foo : $bar/} and {param foo kind="xyz"/} syntax into attributes.
+        commandText = "key=\"" + nctMatcher.group(1) + "\"";
+
+        if (nctMatcher.group(3) != null) {
+          Preconditions.checkState(nctMatcher.group(2) == null);
+          commandText += " " + nctMatcher.group(3);
+        }
+
+        // Note that we do not convert a group(2) match into a value= attribute, since the attribute
+        // parser does not support a quoting syntax for double quotes within an attribute, which
+        // would result in errors for e.g. {param foo : bar " baz/}
+      }
+      Map<String, String> attributes
+          = ATTRIBUTES_PARSER.parse(commandText, errorReporter, sourceLocation);
+      String key = attributes.get("key");
+      String valueExprText;
+      // If the command was of the form {param foo : <bar>}, obtain the value from match group 2.
+      if (nctMatcher.matches() && (nctMatcher.group(2) != null)) {
+        valueExprText = nctMatcher.group(2);
+      } else {
+        valueExprText = attributes.get("value");
+      }
+      ContentKind contentKind =
+          (attributes.get("kind") != null) ?
+              NodeContentKinds.forAttributeValue(attributes.get("kind")) :
+              null;
+
+      // Check the validity of the key name.
+      ExprNode dataRef = ExprParseUtils.parseDataRefElseThrowSoySyntaxException(
+          "$" + key,
+          "Invalid key in 'param' command text \"" + commandText + "\".")
+          .getChild(0);
+      if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
+            "The key in a 'param' tag must be top level, i.e. not contain multiple keys" +
+                " (invalid 'param' command text \"" + commandText + "\").", sourceLocation));
+      }
+
+      // If valueExprText exists, try to parse it.
+      ExprUnion valueExprUnion;
+      if (valueExprText != null) {
+        ExprRootNode<?> valueExpr = ExprParseUtils.parseExprElseNull(valueExprText);
+        valueExprUnion =
+            (valueExpr != null) ? new ExprUnion(valueExpr) : new ExprUnion(valueExprText);
+      } else {
+        valueExprUnion = null;
+      }
+
+      return new CommandTextParseResult(key, valueExprUnion, contentKind);
+    }
+  }
 }

@@ -20,8 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.ErrorManager;
-import com.google.template.soy.base.ErrorManagerImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -29,6 +27,9 @@ import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -180,21 +181,18 @@ public final class CallDelegateNode extends CallNode {
       return this;
     }
 
-    public CallDelegateNode build(ErrorManager errorManager) {
-      int prevNumErrors = errorManager.getErrors().size();
+    public CallDelegateNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
       CommandTextInfo commandTextInfo = commandText != null
-          ? parseCommandText(errorManager)
+          ? parseCommandText(errorReporter)
           : buildCommandText();
-      int newNumErrors = errorManager.getErrors().size();
-      boolean ok = newNumErrors == prevNumErrors;
-      if (ok) {
-        CallDelegateNode callDelegateNode
-            = new CallDelegateNode(id, commandTextInfo, escapingDirectiveNames);
-        callDelegateNode.setSourceLocation(sourceLocation);
-        return callDelegateNode;
-      } else {
+      if (errorReporter.errorsSince(checkpoint)) {
         return ERROR;
       }
+      CallDelegateNode callDelegateNode
+          = new CallDelegateNode(id, commandTextInfo, escapingDirectiveNames);
+      callDelegateNode.setSourceLocation(sourceLocation);
+      return callDelegateNode;
     }
 
     /**
@@ -204,15 +202,13 @@ public final class CallDelegateNode extends CallNode {
      *     solely for higher layers (like visitors) that do not already have ErrorManagers.
      */
     public CallDelegateNode buildAndThrowIfInvalid() {
-      ErrorManager errorManager = new ErrorManagerImpl();
+      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
       CallDelegateNode node = build(errorManager);
-      if (!errorManager.getErrors().isEmpty()) {
-        throw errorManager.getErrors().iterator().next();
-      }
+      errorManager.throwIfErrorsPresent();
       return node;
     }
 
-    private CommandTextInfo parseCommandText(ErrorManager errorManager) {
+    private CommandTextInfo parseCommandText(ErrorReporter errorReporter) {
       String commandTextWithoutPhnameAttr = this.commandText;
 
       String commandText =
@@ -228,16 +224,16 @@ public final class CallDelegateNode extends CallNode {
       }
 
       Map<String, String> attributes =
-          ATTRIBUTES_PARSER.parse(commandTextWithoutPhnameAttr, errorManager, sourceLocation);
+          ATTRIBUTES_PARSER.parse(commandTextWithoutPhnameAttr, errorReporter, sourceLocation);
 
       String delCalleeName = attributes.get("name");
       if (delCalleeName == null) {
-        errorManager.report(SoySyntaxException.createWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
             "The 'delcall' command text must contain the callee name (encountered command text \""
                 + commandTextWithoutPhnameAttr + "\").", sourceLocation));
       }
       if (!BaseUtils.isDottedIdentifier(delCalleeName)) {
-        errorManager.report(SoySyntaxException.createWithMetaInfo(
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
             "Invalid delegate name \"" + delCalleeName + "\" for 'delcall' command.",
             sourceLocation));
       }
@@ -254,7 +250,7 @@ public final class CallDelegateNode extends CallNode {
         if (delCalleeVariantExpr.getChild(0) instanceof StringNode) {
           String fixedVariantStr = ((StringNode) delCalleeVariantExpr.getChild(0)).getValue();
           if (!BaseUtils.isIdentifier(fixedVariantStr)) {
-            errorManager.report(SoySyntaxException.createWithMetaInfo(
+            errorReporter.report(SoySyntaxException.createWithMetaInfo(
                 "Invalid variant expression \"" + variantExprText + "\" in 'delcall'" +
                     " (variant expression must evaluate to an identifier).", sourceLocation));
           }

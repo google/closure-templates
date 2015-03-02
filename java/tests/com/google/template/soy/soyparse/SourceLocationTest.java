@@ -221,7 +221,6 @@ public final class SourceLocationTest extends TestCase {
         SoyFileKind.SRC,
         "/example/file.soy")
         .parseSoyFile()
-        .getParseTree()
         .getChild(0);
     SourceLocation location = templateNode.getSourceLocation();
     assertEquals(2, location.getLineNumber());
