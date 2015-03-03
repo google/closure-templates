@@ -21,6 +21,8 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -42,8 +44,8 @@ final class ErrorNodeUtils {
       CallDelegateNode.Builder.ERROR,
       CallParamContentNode.Builder.ERROR,
       CallParamValueNode.Builder.ERROR,
-      ErrorNodes.LET_CONTENT_NODE,
-      ErrorNodes.LET_VALUE_NODE,
+      LetContentNode.Builder.ERROR,
+      LetValueNode.Builder.ERROR,
       ErrorNodes.MSG_HTML_TAG_NODE,
       ErrorNodes.MSG_PLURAL_NODE,
       ErrorNodes.XID_NODE);

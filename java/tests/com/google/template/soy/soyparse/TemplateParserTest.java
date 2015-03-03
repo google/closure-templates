@@ -1793,17 +1793,20 @@ public final class TemplateParserTest extends TestCase {
         + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
         + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
         + "{let /}\n"); // Invalid 'let' command text "".
-    assertFalse(result.isSuccess());
-    assertEquals(4, result.getParseErrors().size());
+    assertThat(result.isSuccess()).isFalse();
+    assertThat(result.getParseErrors()).hasSize(5);
     ImmutableList<? extends SoySyntaxException> errors = result.getParseErrors().asList();
-    assertTrue(errors.get(0).getMessage().contains(
-        "Invalid callee name \"123\" for 'call' command."));
-    assertTrue(errors.get(1).getMessage().contains(
-        "Invalid delegate name \"123\" for 'delcall' command."));
-    assertTrue(errors.get(2).getMessage().contains(
-        "Invalid 'foreach' command text \"foo in bar\"."));
-    assertTrue(errors.get(3).getMessage().contains(
-        "Invalid 'let' command text \"\"."));
+    assertThat(errors.get(0).getMessage()).contains(
+        "Invalid callee name \"123\" for 'call' command.");
+    assertThat(errors.get(1).getMessage()).contains(
+        "Invalid delegate name \"123\" for 'delcall' command.");
+    assertThat(errors.get(2).getMessage()).contains(
+        "Invalid 'foreach' command text \"foo in bar\".");
+    assertThat(errors.get(3).getMessage()).contains(
+        "Invalid 'let' command text.");
+    assertThat(errors.get(4).getMessage()).contains(
+        "A 'let' tag should be self-ending (with a trailing '/') if and only if it also contains "
+        + "a value (invalid tag is {let  /}).");
   }
 
 
@@ -1830,20 +1833,29 @@ public final class TemplateParserTest extends TestCase {
    * Parses the given input as a template content (header and body).
    * @param input The input string to parse.
    * @throws TokenMgrError When the given input has a token error.
-   * @throws ParseException When the given input has a parse error.
    * @return The decl infos and parse tree nodes created.
    */
-  private static TestTemplateParseResult parseTemplateContent(String input)
-      throws TokenMgrError, ParseException {
+  private static TestTemplateParseResult parseTemplateContent(String input) throws TokenMgrError {
     ErrorReporterImpl errorManager = new ErrorReporterImpl();
-    TemplateParseResult result = new TemplateParser(
-        new IncrementingIdGenerator(),
-        input,
-        "test.soy",
-        1 /* start line number */,
-        errorManager)
-        .parseTemplateContent();
-    return new TestTemplateParseResult(result, errorManager.getErrors());
+    try {
+      TemplateParseResult result = new TemplateParser(
+          new IncrementingIdGenerator(),
+          input,
+          "test.soy",
+          1 /* start line number */,
+          errorManager)
+          .parseTemplateContent();
+      return new TestTemplateParseResult(result, errorManager.getErrors());
+    } catch (ParseException e) {
+      ImmutableList<? extends SoySyntaxException> errors
+          = new ImmutableList.Builder<SoySyntaxException>()
+          .addAll(errorManager.getErrors())
+          .add(SoySyntaxException.createCausedWithoutMetaInfo(null, e))
+          .build();
+      return new TestTemplateParseResult(
+          new TemplateParseResult(null, null),
+          errors);
+    }
   }
 
 
@@ -1920,8 +1932,6 @@ public final class TemplateParserTest extends TestCase {
     } catch (SoySyntaxException sse) {
       // Test passes.
     } catch (TokenMgrError tme) {
-      // Test passes.
-    } catch (ParseException pe) {
       // Test passes.
     }
   }

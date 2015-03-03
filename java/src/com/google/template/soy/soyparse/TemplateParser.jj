@@ -3036,15 +3036,9 @@ private LetNode LetStmt() :
 
     cmdText = LetTagSelfEnding()
     {
-      try {
-        letNode = setSrcLoc(
-            new LetValueNode(nodeIdGen.genId(), false, cmdText.parsedContent()), cmdText);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, cmdText.srcLocation(), null, null));
-        return ErrorNodes.LET_VALUE_NODE;
-      }
+      letNode = new LetValueNode.Builder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
     }
 
   |
@@ -3052,16 +3046,9 @@ private LetNode LetStmt() :
 
     cmdText = LetTagNotSelfEnding()
     {
-      LetContentNode letContentNode = null;
-      try {
-        letContentNode = setSrcLoc(
-            new LetContentNode(nodeIdGen.genId(), false, cmdText.parsedContent()), cmdText);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, cmdText.srcLocation(), null, null));
-        return ErrorNodes.LET_CONTENT_NODE;
-      }
+      LetContentNode letContentNode = new LetContentNode.Builder(
+            nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+            .build(errorReporter);
     }
     templateBlock = TemplateBlock()
     { letContentNode.addChildren(templateBlock);

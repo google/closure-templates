@@ -53,7 +53,7 @@ public final class ErrorPrettyPrinterTest extends TestCase {
 
     ImmutableList<String> errorReports = getErrorReports(input);
 
-    assertThat(errorReports).hasSize(5);
+    assertThat(errorReports).hasSize(6);
     assertThat(errorReports.get(0)).isEqualTo(
         "In file input.soy:4:1: Invalid 'call' command missing callee name: {call }.\n"
             + "{call /}\n"
@@ -62,16 +62,20 @@ public final class ErrorPrettyPrinterTest extends TestCase {
         "In file input.soy:5:2: Invalid delegate name \"123\" for 'delcall' command.\n"
             + " {delcall 123 /}\n"
             + " ^\n");
-    assertThat(errorReports.get(2)).isEqualTo(
-        "In file input.soy:6:2: Invalid 'let' command text \"\".\n"
+    assertThat(errorReports.get(2)).isEqualTo("In file input.soy:6:2: Invalid 'let' command text.\n"
             + " {let /}\n"
             + " ^\n");
     assertThat(errorReports.get(3)).isEqualTo(
+        "In file input.soy:6:2: A 'let' tag should be self-ending (with a trailing '/') "
+            + "if and only if it also contains a value (invalid tag is {let  /}).\n"
+            + " {let /}\n"
+            + " ^\n");
+    assertThat(errorReports.get(4)).isEqualTo(
         "In file input.soy:7:4: Malformed attributes in 'delcall' command text "
             + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n"
             + "   {delcall foo.bar variant=1 foo=\"bar\" /}\n"
             + "   ^\n");
-    assertThat(errorReports.get(4)).isEqualTo(
+    assertThat(errorReports.get(5)).isEqualTo(
         "In file input.soy:7:4: Unsupported attribute 'foo' in 'delcall' command text "
             + "(name=\"foo.bar\" variant=1 foo=\"bar\").\n" +
         "   {delcall foo.bar variant=1 foo=\"bar\" /}\n" +

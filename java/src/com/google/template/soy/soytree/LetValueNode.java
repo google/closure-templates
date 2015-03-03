@@ -17,10 +17,13 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.defn.LocalVar;
 
 import java.util.List;
 
@@ -36,32 +39,10 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
   /** The value expression that the variable is set to. */
   private final ExprRootNode<?> valueExpr;
 
-  /**
-   * @param id The id for this node.
-   * @param isLocalVarNameUniquified Whether the local var name is already uniquified (e.g. by
-   *     appending node id).
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public LetValueNode(int id, boolean isLocalVarNameUniquified, String commandText) {
-    super(id, isLocalVarNameUniquified, commandText);
 
-    CommandTextParseResult parseResult = parseCommandTextHelper(commandText);
-    valueExpr = parseResult.valueExpr;
-
-    if (valueExpr == null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
-              " contains a value (invalid tag is {let " + commandText + " /}).");
-    }
-
-    if (parseResult.contentKind != null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "The 'kind' attribute is not allowed on self-ending 'let' tags that " +
-              " contain a value (invalid tag is {let " + commandText + " /}).");
-    }
-
-    setVar(new LocalVar(parseResult.localVarName, this, null));
+  private LetValueNode(int id, String localVarName, String commandText, ExprRootNode<?> valueExpr) {
+    super(id, localVarName, commandText);
+    this.valueExpr = valueExpr;
   }
 
 
@@ -103,6 +84,67 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
 
   @Override public LetValueNode clone() {
     return new LetValueNode(this);
+  }
+
+  /**
+   * Builder for {@link LetValueNode}.
+   */
+  public static final class Builder {
+    public static final LetValueNode ERROR = new Builder(-1, "$error: 1", SourceLocation.UNKNOWN)
+        .buildAndThrowIfInvalid(); // guaranteed to be valid
+
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link LetValueNode} built from the builder's state. If the builder's state
+     * is invalid, errors are reported to the {@code errorManager} and {Builder#ERROR} is returned.
+     */
+    public LetValueNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      CommandTextParseResult parseResult
+          = parseCommandTextHelper(commandText, errorReporter, sourceLocation);
+
+      if (parseResult.valueExpr == null) {
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
+            "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
+                " contains a value (invalid tag is {let " + commandText + " /}).", sourceLocation));
+      }
+
+      if (parseResult.contentKind != null) {
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
+            "The 'kind' attribute is not allowed on self-ending 'let' tags that " +
+                " contain a value (invalid tag is {let " + commandText + " /}).", sourceLocation));
+      }
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      LetValueNode node
+          = new LetValueNode(id, parseResult.localVarName, commandText, parseResult.valueExpr);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
+
+    private LetValueNode buildAndThrowIfInvalid() {
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+      LetValueNode node = build(errorReporter);
+      errorReporter.throwIfErrorsPresent();
+      return node;
+    }
   }
 
 }

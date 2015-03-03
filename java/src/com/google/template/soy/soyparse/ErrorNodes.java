@@ -44,8 +44,6 @@ import com.google.template.soy.soytree.XidNode;
 final class ErrorNodes {
   private ErrorNodes() {}
 
-  static final LetContentNode LET_CONTENT_NODE = new LetContentNode(-1, true, "$error");
-  static final LetValueNode LET_VALUE_NODE = new LetValueNode(-1, true, "$error: 1");
   static final MsgHtmlTagNode MSG_HTML_TAG_NODE
       = new MsgHtmlTagNode(-1, ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>")));
   static final MsgPluralNode MSG_PLURAL_NODE = new MsgPluralNode(-1, "plural");
