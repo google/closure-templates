@@ -141,7 +141,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgNode(MsgNode orig) {
+  protected MsgNode(MsgNode orig) {
     super(orig);
     if (orig.genderExprs != null) {
       ImmutableList.Builder<ExprRootNode<?>> builder = ImmutableList.<ExprRootNode<?>>builder();

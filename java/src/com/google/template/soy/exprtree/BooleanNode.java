@@ -25,7 +25,7 @@ import com.google.template.soy.types.primitive.BoolType;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class BooleanNode extends AbstractPrimitiveNode {
+public class BooleanNode extends AbstractPrimitiveNode {
 
 
   /** The boolean value. */
@@ -44,7 +44,7 @@ public final class BooleanNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private BooleanNode(BooleanNode orig) {
+  protected BooleanNode(BooleanNode orig) {
     super(orig);
     this.value = orig.value;
   }

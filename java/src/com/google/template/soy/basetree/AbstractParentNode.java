@@ -14,34 +14,27 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soytree;
-
-import com.google.template.soy.basetree.MixinParentNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+package com.google.template.soy.basetree;
 
 import java.util.List;
 
+
 /**
- * Abstract implementation of a ParentNode and CommandNode.
+ * Abstract implementation of a ParentNode.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class AbstractParentCommandNode<N extends SoyNode>
-    extends AbstractCommandNode implements ParentSoyNode<N> {
+public abstract class AbstractParentNode<N extends Node>
+    extends AbstractNode implements ParentNode<N> {
 
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<N> parentMixin;
 
 
-  /**
-   * @param id The id for this node.
-   * @param commandName The name of the Soy command.
-   * @param commandText The command text, or empty string if none.
-   */
-  public AbstractParentCommandNode(int id, String commandName, String commandText) {
-    super(id, commandName, commandText);
+  /** Constructor. */
+  public AbstractParentNode() {
     parentMixin = new MixinParentNode<N>(this);
   }
 
@@ -50,19 +43,11 @@ public abstract class AbstractParentCommandNode<N extends SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected AbstractParentCommandNode(AbstractParentCommandNode<N> orig) {
+  protected AbstractParentNode(AbstractParentNode<N> orig) {
     super(orig);
     this.parentMixin = new MixinParentNode<N>(orig.parentMixin, this);
   }
 
-
-  @Override public String toSourceString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(getTagString());
-    appendSourceStringForChildren(sb);
-    sb.append("{/").append(getCommandName()).append('}');
-    return sb.toString();
-  }
 
   @Override public int numChildren() {
     return parentMixin.numChildren();

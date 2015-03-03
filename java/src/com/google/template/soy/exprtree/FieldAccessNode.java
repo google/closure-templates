@@ -41,10 +41,6 @@ public final class FieldAccessNode extends DataAccessNode {
     this.fieldName = fieldName;
   }
 
-  private FieldAccessNode(FieldAccessNode orig) {
-    super(orig);
-    this.fieldName = orig.fieldName;
-  }
 
   @Override public Kind getKind() {
     return Kind.FIELD_ACCESS_NODE;
@@ -67,8 +63,9 @@ public final class FieldAccessNode extends DataAccessNode {
   }
 
 
-  @Override public FieldAccessNode clone() {
-    return new FieldAccessNode(this);
+  @Override
+  public ExprNode clone() {
+    return new FieldAccessNode(getChild(0).clone(), fieldName, isNullSafe);
   }
 
 

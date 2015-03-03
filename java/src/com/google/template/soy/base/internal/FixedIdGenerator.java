@@ -51,7 +51,7 @@ public final class FixedIdGenerator implements IdGenerator {
     return fixedId;
   }
 
-  @Override public FixedIdGenerator copy() {
+  @Override public FixedIdGenerator clone() {
     return new FixedIdGenerator(fixedId);
   }
 }

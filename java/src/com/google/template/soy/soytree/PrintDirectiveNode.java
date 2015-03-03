@@ -39,7 +39,7 @@ import java.util.Set;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
+public class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
 
   /** Set of directive names only recognized in V1. */
@@ -111,7 +111,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private PrintDirectiveNode(PrintDirectiveNode orig) {
+  protected PrintDirectiveNode(PrintDirectiveNode orig) {
     super(orig);
     this.srcName = orig.srcName;
     this.name = orig.name;

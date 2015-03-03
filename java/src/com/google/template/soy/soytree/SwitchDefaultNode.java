@@ -25,7 +25,7 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SwitchDefaultNode extends CaseOrDefaultNode implements ConditionalBlockNode {
+public class SwitchDefaultNode extends CaseOrDefaultNode implements ConditionalBlockNode {
 
 
   /**
@@ -40,7 +40,7 @@ public final class SwitchDefaultNode extends CaseOrDefaultNode implements Condit
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SwitchDefaultNode(SwitchDefaultNode orig) {
+  protected SwitchDefaultNode(SwitchDefaultNode orig) {
     super(orig);
   }
 

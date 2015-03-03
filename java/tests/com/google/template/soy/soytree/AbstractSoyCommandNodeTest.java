@@ -52,7 +52,7 @@ public class AbstractSoyCommandNodeTest extends TestCase {
       throw new UnsupportedOperationException();
     }
 
-    @Override public DummyNode clone() {
+    @Override public SoyNode clone() {
       throw new UnsupportedOperationException();
     }
   }

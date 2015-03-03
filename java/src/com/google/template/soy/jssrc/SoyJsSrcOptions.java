@@ -95,21 +95,6 @@ public class SoyJsSrcOptions implements Cloneable {
     useGoogIsRtlForBidiGlobalDir = false;
   }
 
-  private SoyJsSrcOptions(SoyJsSrcOptions orig) {
-    this.shouldAllowDeprecatedSyntax = orig.shouldAllowDeprecatedSyntax;
-    this.isUsingIjData = orig.isUsingIjData;
-    this.codeStyle = orig.codeStyle;
-    this.shouldGenerateJsdoc = orig.shouldGenerateJsdoc;
-    this.shouldProvideRequireSoyNamespaces = orig.shouldProvideRequireSoyNamespaces;
-    this.shouldProvideRequireJsFunctions = orig.shouldProvideRequireJsFunctions;
-    this.shouldProvideBothSoyNamespacesAndJsFunctions =
-        orig.shouldProvideBothSoyNamespacesAndJsFunctions;
-    this.shouldDeclareTopLevelNamespaces = orig.shouldDeclareTopLevelNamespaces;
-    this.shouldGenerateGoogMsgDefs = orig.shouldGenerateGoogMsgDefs;
-    this.googMsgsAreExternal = orig.googMsgsAreExternal;
-    this.bidiGlobalDir = orig.bidiGlobalDir;
-    this.useGoogIsRtlForBidiGlobalDir = orig.useGoogIsRtlForBidiGlobalDir;
-  }
 
   /**
    * Sets whether to allow deprecated syntax (semi backwards compatible mode).
@@ -380,6 +365,11 @@ public class SoyJsSrcOptions implements Cloneable {
 
 
   @Override public final SoyJsSrcOptions clone() {
-    return new SoyJsSrcOptions(this);
+    try {
+      return (SoyJsSrcOptions) super.clone();
+    } catch (CloneNotSupportedException cnse) {
+      throw new RuntimeException("Cloneable interface removed from SoyJsSrcOptions.");
+    }
   }
+
 }

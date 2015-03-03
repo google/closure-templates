@@ -28,7 +28,7 @@ import com.google.template.soy.soytree.defn.LoopVar;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class ForeachNonemptyNode extends AbstractBlockNode
+public class ForeachNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LoopNode, LocalVarBlockNode {
 
   private final LoopVar var;
@@ -47,7 +47,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private ForeachNonemptyNode(ForeachNonemptyNode orig) {
+  protected ForeachNonemptyNode(ForeachNonemptyNode orig) {
     super(orig);
     this.var = orig.var.clone();
   }

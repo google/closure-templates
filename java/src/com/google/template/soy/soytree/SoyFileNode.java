@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
+public class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
 
 
@@ -211,7 +211,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SoyFileNode(SoyFileNode orig) {
+  protected SoyFileNode(SoyFileNode orig) {
     super(orig);
     this.soyFileKind = orig.soyFileKind;
     this.delPackageName = orig.delPackageName;

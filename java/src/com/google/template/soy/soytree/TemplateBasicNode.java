@@ -55,7 +55,7 @@ public class TemplateBasicNode extends TemplateNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private TemplateBasicNode(TemplateBasicNode orig) {
+  protected TemplateBasicNode(TemplateBasicNode orig) {
     super(orig);
     this.isOverride = orig.isOverride;
   }

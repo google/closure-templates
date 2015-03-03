@@ -18,7 +18,6 @@ package com.google.template.soy.shared;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.internal.base.Pair;
@@ -36,12 +35,12 @@ public class SoyAstCacheTest extends TestCase {
   private SoyAstCache cache = new SoyAstCache();
   private Version version1 = EasyMock.createMock(Version.class);
   private Version version2 = EasyMock.createMock(Version.class);
-  private SoyFileNode fileNode1 =
-      new SoyFileNode(0xdeadbeef, SoyFileKind.SRC, null, null, null);
+  private SoyFileNode fileNode1 = EasyMock.createMock(SoyFileNode.class);
+  private SoyFileNode fileNode1Clone = EasyMock.createMock(SoyFileNode.class);
   private SoyFileSupplier supplier1 = EasyMock.createMock(SoyFileSupplier.class);
   private SoyFileSupplier supplier2 = EasyMock.createMock(SoyFileSupplier.class);
 
-  @Override public void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
 
     EasyMock.expect(supplier1.hasChangedSince(version2)).andStubReturn(false);
@@ -53,23 +52,20 @@ public class SoyAstCacheTest extends TestCase {
     EasyMock.expect(supplier2.hasChangedSince(version1)).andStubReturn(true);
     EasyMock.expect(supplier2.getFilePath()).andStubReturn("supplier2.soy");
     EasyMock.replay(supplier2);
+
+    EasyMock.expect(fileNode1.clone()).andStubReturn(fileNode1Clone);
+    EasyMock.replay(fileNode1);
+    EasyMock.expect(fileNode1Clone.clone()).andStubReturn(fileNode1Clone);
+    EasyMock.replay(fileNode1Clone);
   }
 
   public void testGetSet() {
 
     // Matching version.
     cache.put(supplier1, version2, fileNode1);
-    Pair<SoyFileNode, Version> pair = cache.get(supplier1);
-    assertThat(pair.first.getId()).isEqualTo(0xdeadbeef);
-    assertThat(pair.first).isNotSameAs(fileNode1);
-    assertThat(pair.second).isEqualTo(version2);
-
+    assertThat(cache.get(supplier1)).isEqualTo(Pair.of(fileNode1Clone, version2));
     assertThat(cache.get(supplier2)).isNull();
-
-    pair = cache.get(supplier1);
-    assertThat(pair.first.getId()).isEqualTo(0xdeadbeef);
-    assertThat(pair.first).isNotSameAs(fileNode1);
-    assertThat(pair.second).isEqualTo(version2);
+    assertThat(cache.get(supplier1)).isEqualTo(Pair.of(fileNode1Clone, version2));
 
     // Non matching version.
     cache.put(supplier1, version1, fileNode1);

@@ -311,7 +311,7 @@ public final class CallDelegateNode extends CallNode {
    * @param orig The node to copy.
    */
   @SuppressWarnings("ConstantConditions")  // for IntelliJ
-  private CallDelegateNode(CallDelegateNode orig) {
+  protected CallDelegateNode(CallDelegateNode orig) {
     super(orig);
     this.delCalleeName = orig.delCalleeName;
     this.delCalleeVariantExpr =

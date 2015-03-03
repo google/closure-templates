@@ -37,7 +37,7 @@ import java.util.List;
  * <p> All children are {@code MsgNode}s.
  *
  */
-public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
+public class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
     implements StandaloneNode, SplitLevelTopNode<MsgNode>, LocalVarInlineNode {
 
 
@@ -87,7 +87,7 @@ public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private GoogMsgDefNode(GoogMsgDefNode orig) {
+  protected GoogMsgDefNode(GoogMsgDefNode orig) {
     super(orig);
     this.childToMsgIdMap = orig.childToMsgIdMap;  // immutable
     this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;

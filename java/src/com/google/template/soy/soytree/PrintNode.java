@@ -101,7 +101,7 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private PrintNode(PrintNode orig) {
+  protected PrintNode(PrintNode orig) {
     super(orig);
     this.isImplicit = orig.isImplicit;
     this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.clone() : null;

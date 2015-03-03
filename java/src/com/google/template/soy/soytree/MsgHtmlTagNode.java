@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
+public class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
 
   /** Pattern for matching the 'phname' attribute. */
@@ -172,7 +172,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgHtmlTagNode(MsgHtmlTagNode orig) {
+  protected MsgHtmlTagNode(MsgHtmlTagNode orig) {
     super(orig);
     this.lcTagName = orig.lcTagName;
     this.isSelfEnding = orig.isSelfEnding;

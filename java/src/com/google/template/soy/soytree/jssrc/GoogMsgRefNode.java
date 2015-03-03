@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneNode {
+public class GoogMsgRefNode extends AbstractSoyNode implements StandaloneNode {
 
 
   /** The JS var name of the rendered goog msg.. */
@@ -47,7 +47,7 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private GoogMsgRefNode(GoogMsgRefNode orig) {
+  protected GoogMsgRefNode(GoogMsgRefNode orig) {
     super(orig);
     this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;
   }

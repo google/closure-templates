@@ -33,7 +33,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class IfCondNode extends AbstractBlockCommandNode
+public class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {
 
 
@@ -81,7 +81,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private IfCondNode(IfCondNode orig) {
+  protected IfCondNode(IfCondNode orig) {
     super(orig);
     this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.clone() : null;
   }

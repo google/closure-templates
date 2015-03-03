@@ -75,13 +75,6 @@ public class SoyGeneralOptions implements Cloneable {
     supportContentSecurityPolicy = false;
   }
 
-  private SoyGeneralOptions(SoyGeneralOptions orig) {
-    this.declaredSyntaxVersion = orig.declaredSyntaxVersion;
-    this.allowExternalCalls = orig.allowExternalCalls;
-    this.cssHandlingScheme = orig.cssHandlingScheme;
-    this.compileTimeGlobals = orig.compileTimeGlobals;
-    this.supportContentSecurityPolicy = orig.supportContentSecurityPolicy;
-  }
 
   /**
    * Sets the user-declared syntax version name for the Soy file bundle.
@@ -250,7 +243,11 @@ public class SoyGeneralOptions implements Cloneable {
 
 
   @Override public final SoyGeneralOptions clone() {
-    return new SoyGeneralOptions(this);
+    try {
+      return (SoyGeneralOptions) super.clone();
+    } catch (CloneNotSupportedException cnse) {
+      throw new RuntimeException("Cloneable interface removed from SoyGeneralOptions.");
+    }
   }
 
 }

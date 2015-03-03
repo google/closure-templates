@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class LetContentNode extends LetNode implements RenderUnitNode {
+public class LetContentNode extends LetNode implements RenderUnitNode {
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
@@ -69,7 +69,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private LetContentNode(LetContentNode orig) {
+  protected LetContentNode(LetContentNode orig) {
     super(orig);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
     this.contentKind = orig.contentKind;

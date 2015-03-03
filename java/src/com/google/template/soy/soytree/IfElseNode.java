@@ -25,7 +25,7 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class IfElseNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
+public class IfElseNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
 
 
   /**
@@ -40,7 +40,7 @@ public final class IfElseNode extends AbstractBlockCommandNode implements Condit
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private IfElseNode(IfElseNode orig) {
+  protected IfElseNode(IfElseNode orig) {
     super(orig);
   }
 

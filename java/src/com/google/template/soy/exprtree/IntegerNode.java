@@ -27,7 +27,7 @@ import java.util.Objects;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class IntegerNode extends AbstractPrimitiveNode {
+public class IntegerNode extends AbstractPrimitiveNode {
 
 
   /** The integer value. */
@@ -46,7 +46,7 @@ public final class IntegerNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private IntegerNode(IntegerNode orig) {
+  protected IntegerNode(IntegerNode orig) {
     super(orig);
     this.value = orig.value;
   }

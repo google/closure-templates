@@ -59,7 +59,7 @@ public class SwitchNode extends AbstractParentCommandNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SwitchNode(SwitchNode orig) {
+  protected SwitchNode(SwitchNode orig) {
     super(orig);
     this.expr = orig.expr.clone();
   }

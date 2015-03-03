@@ -75,7 +75,7 @@ public final class TofuExceptionsTest extends TestCase {
   }
 
   public void testExceptions_undefined() throws Exception {
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo.boo", 42);
+    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo.boo", "Boo");
     // This is an exception that occurs during expression evaluation
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();

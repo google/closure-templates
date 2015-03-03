@@ -62,14 +62,6 @@ public final class VarRefNode extends AbstractExprNode {
     this.defn = defn;
   }
 
-  private VarRefNode(VarRefNode orig) {
-    super(orig);
-    this.name = orig.name;
-    this.isInjected = orig.isInjected;
-    this.isNullSafeInjected = orig.isNullSafeInjected;
-    this.defn = orig.defn;
-  }
-
   @Override public Kind getKind() {
     return Kind.VAR_REF_NODE;
   }
@@ -138,8 +130,8 @@ public final class VarRefNode extends AbstractExprNode {
     return "$" + (isInjected ? (isNullSafeInjected ? "ij?." : "ij.") : "") + name;
   }
 
-  @Override public VarRefNode clone() {
-    return new VarRefNode(this);
+  @Override public ExprNode clone() {
+    return new VarRefNode(name, isInjected, isNullSafeInjected, defn);
   }
 
   @Override public boolean equals(Object other) {

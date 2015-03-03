@@ -32,7 +32,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SwitchCaseNode extends CaseOrDefaultNode
+public class SwitchCaseNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, ExprHolderNode {
 
 
@@ -61,7 +61,7 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SwitchCaseNode(SwitchCaseNode orig) {
+  protected SwitchCaseNode(SwitchCaseNode orig) {
     super(orig);
     this.exprListText = orig.exprListText;
     this.exprList = Lists.newArrayListWithCapacity(orig.exprList.size());

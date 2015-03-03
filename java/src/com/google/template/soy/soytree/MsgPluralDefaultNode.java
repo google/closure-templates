@@ -25,7 +25,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
+public class MsgPluralDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
 
   /**
@@ -40,7 +40,7 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPluralDefaultNode(MsgPluralDefaultNode orig) {
+  protected MsgPluralDefaultNode(MsgPluralDefaultNode orig) {
     super(orig);
   }
 

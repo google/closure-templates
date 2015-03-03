@@ -94,9 +94,6 @@ public interface ExprNode extends Node {
 
   @Override public ParentExprNode getParent();
 
-  /**
-   * See {@link Node#clone()} for a description of the clone contract.
-   */
   @Override public ExprNode clone();
 
 

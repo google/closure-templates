@@ -25,7 +25,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
+public class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   // A plural 'case' can only have a number in the command text.
   /** The number for this case */
@@ -57,7 +57,7 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPluralCaseNode(MsgPluralCaseNode orig) {
+  protected MsgPluralCaseNode(MsgPluralCaseNode orig) {
     super(orig);
     this.caseNumber = orig.caseNumber;
   }

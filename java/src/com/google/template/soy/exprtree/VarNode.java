@@ -29,7 +29,7 @@ import com.google.template.soy.types.SoyType;
  * explicitly parse an input as a variable using ExpressionParser.parseVariable().
  *
  */
-public final class VarNode extends AbstractExprNode {
+public class VarNode extends AbstractExprNode {
 
 
   /** The variable name (without the dollar sign). */
@@ -48,7 +48,7 @@ public final class VarNode extends AbstractExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private VarNode(VarNode orig) {
+  protected VarNode(VarNode orig) {
     super(orig);
     this.name = orig.name;
   }

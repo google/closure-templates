@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 // TODO: Figure out why the CSS @component syntax doesn't support
 // injected data ($ij.foo).  It looks like Soy is not checking CssNodes for
 // injected data.
-public final class CssNode extends AbstractCommandNode
+public class CssNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, ExprHolderNode {
 
 
@@ -113,7 +113,7 @@ public final class CssNode extends AbstractCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private CssNode(CssNode orig) {
+  protected CssNode(CssNode orig) {
     super(orig);
     //noinspection ConstantConditions IntelliJ
     this.componentNameExpr =

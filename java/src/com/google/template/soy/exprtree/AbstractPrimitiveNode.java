@@ -38,4 +38,5 @@ public abstract class AbstractPrimitiveNode extends AbstractExprNode implements 
   protected AbstractPrimitiveNode(AbstractPrimitiveNode orig) {
     super(orig);
   }
+
 }

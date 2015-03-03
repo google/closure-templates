@@ -26,7 +26,7 @@ import com.google.template.soy.types.primitive.UnknownType;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class GlobalNode extends AbstractExprNode {
+public class GlobalNode extends AbstractExprNode {
 
 
   /** The name of the global. */
@@ -45,7 +45,7 @@ public final class GlobalNode extends AbstractExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private GlobalNode(GlobalNode orig) {
+  protected GlobalNode(GlobalNode orig) {
     super(orig);
     this.name = orig.name;
   }
