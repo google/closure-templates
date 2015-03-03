@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -26,12 +27,14 @@ import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisito
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -342,6 +345,52 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         throw new AssertionError("Unexpected if child node type. Child: " + child);
       }
     }
+  }
+
+  /**
+   * Visits a ForNode and generates a for loop over a given range.
+   *
+   * <p>Example:
+   * <pre>
+   *   {for $i in range(1, $boo)}
+   *     ...
+   *   {/for}
+   * </pre>
+   * might generate
+   * <pre>
+   *   for i4 in xrange(1, opt_data.get('boo')):
+   *     ...
+   * </pre>
+   */
+  @Override protected void visitForNode(ForNode node) {
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
+
+    String varName = node.getVarName();
+    String nodeId = Integer.toString(node.getId());
+
+    // The start of the Python 'for' loop.
+    pyCodeBuilder.appendLineStart("for ", varName,  nodeId, " in ");
+
+    // Build the xrange call. Since the Python param syntax matches Soy range syntax, params can be
+    // directly dropped in.
+    PyFunctionExprBuilder funcBuilder = new PyFunctionExprBuilder("xrange");
+    for (ExprRootNode<?> arg : node.getRangeArgs()) {
+      funcBuilder.addArg(translator.exec(arg));
+    }
+
+    pyCodeBuilder.appendLineEnd(funcBuilder.asPyExpr().getText(), ":");
+
+    // Add a new localVarExprs frame and populate it with the translations from this node.
+    localVarExprs.pushFrame();
+    localVarExprs.addVariable(varName, new PyExpr(varName + nodeId, Integer.MAX_VALUE));
+
+    // Generate the code for the loop body.
+    pyCodeBuilder.increaseIndent();
+    visitChildren(node);
+    pyCodeBuilder.decreaseIndent();
+
+    // Remove the localVarTranslations frame that we added above.
+    localVarExprs.popFrame();
   }
 
   /**

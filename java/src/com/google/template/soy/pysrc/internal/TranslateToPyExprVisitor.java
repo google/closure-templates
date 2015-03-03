@@ -32,7 +32,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
@@ -214,14 +213,10 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
           return refText + genCodeForFieldAccess(
               fieldAccess.getBaseExprChild().getType(), fieldAccess.getFieldName());
         } else {
-          // Generate access to item.
+          // NOTE: Item access assumes existence. Trying to access a missing field will result in a
+          // Python runtime error.
           ItemAccessNode itemAccess = (ItemAccessNode) node;
-          if (itemAccess.getKeyExprChild() instanceof IntegerNode) {
-            return refText + "[" + ((IntegerNode) itemAccess.getKeyExprChild()).getValue() + "]";
-          } else {
-            PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-            return refText + genCodeForKeyAccess(keyPyExpr.getText());
-          }
+          return refText + "[" + visit(itemAccess.getKeyExprChild()).getText() + "]";
         }
       }
 

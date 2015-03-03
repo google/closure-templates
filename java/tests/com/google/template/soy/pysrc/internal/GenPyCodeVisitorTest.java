@@ -133,6 +133,35 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertGeneratedPyFile(soyCode, expectedPyCode);
   }
 
+  public void testFor() {
+    String soyCode =
+        "{for $i in range(5)}\n"
+        + "  {$boo[$i]}\n"
+        + "{/for}\n";
+    String expectedPyCode =
+        "for i### in xrange(5):\n"
+        + "  output.append(str(opt_data.get('boo')[i###]))\n";
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+
+    soyCode =
+        "{for $i in range(5, 10)}\n"
+        + "  {$boo[$i]}\n"
+        + "{/for}\n";
+    expectedPyCode =
+        "for i### in xrange(5, 10):\n"
+        + "  output.append(str(opt_data.get('boo')[i###]))\n";
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+
+    soyCode =
+        "{for $i in range($foo, $boo, $goo)}\n"
+        + "  {$boo[$i]}\n"
+        + "{/for}\n";
+    expectedPyCode =
+        "for i### in xrange(opt_data.get('foo'), opt_data.get('boo'), opt_data.get('goo')):\n"
+        + "  output.append(str(opt_data.get('boo')[i###]))\n";
+    assertGeneratedPyCode(soyCode, expectedPyCode);
+  }
+
   public void testForeach() {
     String soyCode =
         "{foreach $operand in $operands}\n"
@@ -142,9 +171,9 @@ public final class GenPyCodeVisitorTest extends TestCase {
     // There's no simple way to account for all instances of the id in these variables, so for now
     // we just hardcode '3'.
     String expectedPyCode =
-        "operandList4 = opt_data.get('operands')\n"
-        + "for operandIndex4, operandData4 in enumerate(operandList4):\n"
-        + "  output.append(str(operandData4))\n";
+        "operandList### = opt_data.get('operands')\n"
+        + "for operandIndex###, operandData### in enumerate(operandList###):\n"
+        + "  output.append(str(operandData###))\n";
 
     assertGeneratedPyCode(soyCode, expectedPyCode);
 
@@ -156,11 +185,11 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/foreach}\n";
 
     expectedPyCode =
-        "operandList6 = opt_data.get('operands')\n"
-        + "for operandIndex6, operandData6 in enumerate(operandList6):\n"
-        + "  output.extend([str(operandIndex6 == 0),"
-                         + "str(operandIndex6 == len(operandList6) - 1),"
-                         + "str(operandIndex6)])\n";
+        "operandList### = opt_data.get('operands')\n"
+        + "for operandIndex###, operandData### in enumerate(operandList###):\n"
+        + "  output.extend([str(operandIndex### == 0),"
+                         + "str(operandIndex### == len(operandList###) - 1),"
+                         + "str(operandIndex###)])\n";
 
     assertGeneratedPyCode(soyCode, expectedPyCode);
   }
@@ -174,10 +203,10 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/foreach}\n";
 
     String expectedPyCode =
-        "operandList5 = opt_data.get('operands')\n"
-        + "if operandList5:\n"
-        + "  for operandIndex5, operandData5 in enumerate(operandList5):\n"
-        + "    output.append(str(operandData5))\n"
+        "operandList### = opt_data.get('operands')\n"
+        + "if operandList###:\n"
+        + "  for operandIndex###, operandData### in enumerate(operandList###):\n"
+        + "    output.append(str(operandData###))\n"
         + "else:\n"
         + "  output.append(str(opt_data.get('foo')))\n";
 
@@ -226,7 +255,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
   private String getGeneratedPyFile(String soyFileContent) {
     SoyNode node = SharedTestUtils.parseSoyFiles(soyFileContent).getParseTree();
     List<String> fileContents = genPyCodeVisitor.exec(node);
-    return fileContents.get(0).replaceAll("\\([0-9]+", "(###");
+    return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
   /**
@@ -249,6 +278,6 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
     genPyCodeVisitor.visit(node); // note: we're calling visit(), not exec()
 
-    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("\\([0-9]+", "(###");
+    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 }

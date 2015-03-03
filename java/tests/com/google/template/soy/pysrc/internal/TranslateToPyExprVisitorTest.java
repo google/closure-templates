@@ -82,8 +82,8 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyCode("$boo[0].1").translatesTo(
         new PyExpr("opt_data.get('boo')[0][1]", Integer.MAX_VALUE));
     assertThatSoyCode("$boo[$foo][$foo+1]").translatesTo(
-        new PyExpr("opt_data.get('boo').get(opt_data.get('foo')).get("
-            + "runtime.type_safe_add(opt_data.get('foo'), 1))",
+        new PyExpr("opt_data.get('boo')[opt_data.get('foo')]"
+            + "[runtime.type_safe_add(opt_data.get('foo'), 1)]",
             Integer.MAX_VALUE));
 
     assertThatSoyCode("$boo?.goo").translatesTo(
