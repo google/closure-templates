@@ -137,7 +137,7 @@ public class TemplateDelegateNode extends TemplateNode implements ExprHolderNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected TemplateDelegateNode(TemplateDelegateNode orig) {
+  private TemplateDelegateNode(TemplateDelegateNode orig) {
     super(orig);
     this.delTemplateName = orig.delTemplateName;
     this.delTemplateVariant = orig.delTemplateVariant;

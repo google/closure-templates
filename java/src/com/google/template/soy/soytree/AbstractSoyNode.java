@@ -86,7 +86,6 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
   @Override public abstract SoyNode clone();
 
-
   @Override public String toString() {
     return super.toString() + "_" + id;
   }

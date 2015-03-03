@@ -31,7 +31,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class LetValueNode extends LetNode implements ExprHolderNode {
+public final class LetValueNode extends LetNode implements ExprHolderNode {
 
   /** The value expression that the variable is set to. */
   private final ExprRootNode<?> valueExpr;
@@ -69,7 +69,7 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected LetValueNode(LetValueNode orig) {
+  private LetValueNode(LetValueNode orig) {
     super(orig);
     this.valueExpr = orig.valueExpr.clone();
   }

@@ -25,8 +25,7 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
-
+public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
 
   /** The base placeholder name (what the translator sees). */
   private final String basePhName;
@@ -58,7 +57,7 @@ public class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUni
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgPlaceholderNode(MsgPlaceholderNode orig) {
+  private MsgPlaceholderNode(MsgPlaceholderNode orig) {
     super(orig);
     this.basePhName = orig.basePhName;
     this.initialNodeKind = orig.initialNodeKind;

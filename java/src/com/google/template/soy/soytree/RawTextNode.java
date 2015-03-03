@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class RawTextNode extends AbstractSoyNode implements StandaloneNode {
+public final class RawTextNode extends AbstractSoyNode implements StandaloneNode {
 
 
   /** The special chars we need to re-escape for toSourceString(). */
@@ -62,7 +62,7 @@ public class RawTextNode extends AbstractSoyNode implements StandaloneNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected RawTextNode(RawTextNode orig) {
+  private RawTextNode(RawTextNode orig) {
     super(orig);
     this.rawText = orig.rawText;
   }

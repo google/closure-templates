@@ -33,7 +33,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class ForeachNode extends AbstractParentCommandNode<SoyNode>
+public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode, ExprHolderNode {
 
   /** The parsed expression for the list that we're iterating over. */
@@ -55,7 +55,7 @@ public class ForeachNode extends AbstractParentCommandNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected ForeachNode(ForeachNode orig) {
+  private ForeachNode(ForeachNode orig) {
     super(orig);
     this.expr = orig.expr.clone();
   }

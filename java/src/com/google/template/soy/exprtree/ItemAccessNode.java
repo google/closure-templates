@@ -60,6 +60,10 @@ public final class ItemAccessNode extends DataAccessNode {
     addChild(key); // Key is child 1, Base is child 0.
   }
 
+  private ItemAccessNode(ItemAccessNode orig) {
+    super(orig);
+    this.isDotSyntax = orig.isDotSyntax;
+  }
 
   @Override public Kind getKind() {
     return Kind.ITEM_ACCESS_NODE;
@@ -85,8 +89,8 @@ public final class ItemAccessNode extends DataAccessNode {
   }
 
 
-  @Override public ExprNode clone() {
-    return new ItemAccessNode(getChild(0).clone(), getChild(1).clone(), isNullSafe, isDotSyntax);
+  @Override public ItemAccessNode clone() {
+    return new ItemAccessNode(this);
   }
 
 

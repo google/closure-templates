@@ -113,5 +113,4 @@ public abstract class AbstractNode implements Node {
 
 
   @Override public abstract Node clone();
-
 }

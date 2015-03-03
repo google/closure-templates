@@ -65,7 +65,7 @@ public class XidNode extends AbstractCommandNode implements StandaloneNode, Stat
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected XidNode(XidNode orig) {
+  private XidNode(XidNode orig) {
     super(orig);
     text = orig.text;
   }

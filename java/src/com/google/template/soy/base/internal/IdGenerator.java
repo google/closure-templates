@@ -36,6 +36,6 @@ public interface IdGenerator {
    * of ids going forward.
    * @return A clone of this id generator.
    */
-  public IdGenerator clone();
+  public IdGenerator copy();
 
 }

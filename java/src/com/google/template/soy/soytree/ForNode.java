@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class ForNode extends AbstractBlockCommandNode
+public final class ForNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode, ConditionalBlockNode, LoopNode, ExprHolderNode,
     LocalVarBlockNode {
 
@@ -101,7 +101,7 @@ public class ForNode extends AbstractBlockCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected ForNode(ForNode orig) {
+  private ForNode(ForNode orig) {
     super(orig);
     this.var = orig.var.clone();
     this.rangeArgTexts = orig.rangeArgTexts;  // safe to reuse (immutable)

@@ -95,7 +95,7 @@ public class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgSelectNode(MsgSelectNode orig) {
+  private MsgSelectNode(MsgSelectNode orig) {
     super(orig);
     this.selectExpr = orig.selectExpr.clone();
     this.baseSelectVarName = orig.baseSelectVarName;

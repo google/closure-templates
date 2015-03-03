@@ -25,7 +25,8 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class ForeachIfemptyNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
+public final class ForeachIfemptyNode extends AbstractBlockCommandNode
+    implements ConditionalBlockNode {
 
 
   /**
@@ -40,7 +41,7 @@ public class ForeachIfemptyNode extends AbstractBlockCommandNode implements Cond
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected ForeachIfemptyNode(ForeachIfemptyNode orig) {
+  private ForeachIfemptyNode(ForeachIfemptyNode orig) {
     super(orig);
   }
 

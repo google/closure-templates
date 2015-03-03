@@ -25,7 +25,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class ListLiteralNode extends AbstractParentExprNode {
+public final class ListLiteralNode extends AbstractParentExprNode {
 
 
   /**
@@ -40,7 +40,7 @@ public class ListLiteralNode extends AbstractParentExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected ListLiteralNode(ListLiteralNode orig) {
+  private ListLiteralNode(ListLiteralNode orig) {
     super(orig);
   }
 

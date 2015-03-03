@@ -24,7 +24,8 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * Node representing the 'log' statement.
  *
  */
-public class LogNode extends AbstractBlockCommandNode implements StandaloneNode, StatementNode {
+public final class LogNode extends AbstractBlockCommandNode
+    implements StandaloneNode, StatementNode {
 
 
   public LogNode(int id) {
@@ -36,7 +37,7 @@ public class LogNode extends AbstractBlockCommandNode implements StandaloneNode,
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected LogNode(LogNode orig) {
+  private LogNode(LogNode orig) {
     super(orig);
   }
 

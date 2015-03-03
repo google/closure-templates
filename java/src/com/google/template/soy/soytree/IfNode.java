@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class IfNode extends AbstractParentSoyNode<SoyNode>
+public final class IfNode extends AbstractParentSoyNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode {
 
 
@@ -43,7 +43,7 @@ public class IfNode extends AbstractParentSoyNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected IfNode(IfNode orig) {
+  private IfNode(IfNode orig) {
     super(orig);
   }
 

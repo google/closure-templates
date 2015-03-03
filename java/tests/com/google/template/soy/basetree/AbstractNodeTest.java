@@ -16,6 +16,9 @@
 
 package com.google.template.soy.basetree;
 
+import com.google.template.soy.soytree.AbstractParentSoyNode;
+import com.google.template.soy.soytree.SoyNode;
+
 import junit.framework.*;
 
 
@@ -54,26 +57,34 @@ public class AbstractNodeTest extends TestCase {
   }
 
 
-  private static interface DummyNode extends Node {}
+  private static interface DummyNode extends SoyNode {}
 
-  private static class DummyNodeAlpha extends AbstractParentNode<Node> implements DummyNode {
+  private static class DummyNodeAlpha extends AbstractParentSoyNode<SoyNode> implements DummyNode {
+    DummyNodeAlpha() { super(1); }
     @Override public String toSourceString() { return null; }
-    @Override public Node clone() { throw new UnsupportedOperationException(); }
+    @Override public DummyNodeAlpha clone() { throw new UnsupportedOperationException(); }
+    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
-  private static class DummyNodeBeta extends AbstractParentNode<Node> implements DummyNode {
+  private static class DummyNodeBeta extends AbstractParentSoyNode<SoyNode> implements DummyNode {
+    DummyNodeBeta() { super(2); }
     @Override public String toSourceString() { return null; }
-    @Override public Node clone() { throw new UnsupportedOperationException(); }
+    @Override public DummyNodeBeta clone() { throw new UnsupportedOperationException(); }
+    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
-  private static class SillyNode extends AbstractParentNode<Node> {
+  private static class SillyNode extends AbstractParentSoyNode<SoyNode> {
+    SillyNode() { super(3); }
     @Override public String toSourceString() { return null; }
-    @Override public Node clone() { throw new UnsupportedOperationException(); }
+    @Override public SillyNode clone() { throw new UnsupportedOperationException(); }
+    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
-  private static class DopeyNode extends AbstractParentNode<Node> {
+  private static class DopeyNode extends AbstractParentSoyNode<SoyNode> {
+    DopeyNode() { super(4); }
     @Override public String toSourceString() { return null; }
-    @Override public Node clone() { throw new UnsupportedOperationException(); }
+    @Override public DopeyNode clone() { throw new UnsupportedOperationException(); }
+    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
 }
