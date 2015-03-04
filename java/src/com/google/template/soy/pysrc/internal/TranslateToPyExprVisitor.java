@@ -298,8 +298,8 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
     if (nonpluginFn != null) {
       if (numArgs != nonpluginFn.getNumArgs()) {
         throw SoySyntaxException.createWithoutMetaInfo(
-            "Function '" + fnName + "' called with the wrong number of arguments" +
-                " (function call \"" + node.toSourceString() + "\").");
+            "Function '" + fnName + "' called with the wrong number of arguments"
+                + " (function call \"" + node.toSourceString() + "\").");
       }
       switch (nonpluginFn) {
         case IS_FIRST:

@@ -127,9 +127,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testMsgSimpleSoyExpression() {
     String soyCode =
-        "{msg desc=\"var placeholder\"}" +
-          "Hello {$username}" +
-        "{/msg}\n";
+        "{msg desc=\"var placeholder\"}"
+        + "Hello {$username}"
+      + "{/msg}\n";
 
     String expectedPyCode =
         "render("
@@ -145,9 +145,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testMsgMultipleSoyExpressions() {
     String soyCode =
-        "{msg desc=\"var placeholder\"}" +
-          "{$greet} {$username}" +
-        "{/msg}\n";
+        "{msg desc=\"var placeholder\"}"
+        + "{$greet} {$username}"
+      + "{/msg}\n";
 
     String expectedPyCode =
         "render("
@@ -166,9 +166,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testMsgNamespacedSoyExpression() {
     String soyCode =
-        "{msg desc=\"placeholder with namespace\"}" +
-          "Hello {$foo.bar}" +
-        "{/msg}\n";
+        "{msg desc=\"placeholder with namespace\"}"
+        + "Hello {$foo.bar}"
+      + "{/msg}\n";
 
     String expectedPyCode =
         "render("
@@ -183,9 +183,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
   }
   public void testMsgWithArithmeticExpression() {
     String soyCode =
-        "{msg desc=\"var placeholder\"}" +
-          "Hello {$username + 1}" +
-        "{/msg}\n";
+        "{msg desc=\"var placeholder\"}"
+        + "Hello {$username + 1}"
+      + "{/msg}\n";
 
     String expectedPyCode =
         "render("
@@ -201,9 +201,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
   public void testMsgWithHtmlNode() {
     // msg with HTML tags and raw texts
     String soyCode =
-        "{msg desc=\"with link\"}" +
-          "Please click <a href='{$url}'>here</a>." +
-        "{/msg}";
+        "{msg desc=\"with link\"}"
+        + "Please click <a href='{$url}'>here</a>."
+      + "{/msg}";
 
     String expectedPyCode =
         "render("
@@ -222,60 +222,60 @@ public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testMsgWithPlural() {
     String soyCode =
-        "{msg desc=\"simple plural\"}" +
-          "{plural $numDrafts}" +
-            "{case 0}No drafts" +
-            "{case 1}1 draft" +
-            "{default}{$numDrafts} drafts" +
-          "{/plural}" +
-        "{/msg}";
+        "{msg desc=\"simple plural\"}"
+        + "{plural $numDrafts}"
+          + "{case 0}No drafts"
+          + "{case 1}1 draft"
+          + "{default}{$numDrafts} drafts"
+        + "{/plural}"
+      + "{/msg}";
 
     String expectedPyCode =
-        "render_plural(" +
-          "prepare_plural(" +
-            "###, " +
-            "{" +
-              "'=0': 'No drafts', " +
-              "'=1': '1 draft', " +
-              "'other': '{NUM_DRAFTS_2} drafts', " +
-            "}, " +
-            "('NUM_DRAFTS_1', 'NUM_DRAFTS_2', ), " +
-            "desc='simple plural'), " +
-          "opt_data.get('numDrafts'), " +
-          "{" +
-            "'NUM_DRAFTS_1': opt_data.get('numDrafts'), " +
-            "'NUM_DRAFTS_2': str(opt_data.get('numDrafts')), " +
-          "})";
+        "render_plural("
+        + "prepare_plural("
+          + "###, "
+          + "{"
+            + "'=0': 'No drafts', "
+            + "'=1': '1 draft', "
+            + "'other': '{NUM_DRAFTS_2} drafts', "
+          + "}, "
+          + "('NUM_DRAFTS_1', 'NUM_DRAFTS_2', ), "
+          + "desc='simple plural'), "
+        + "opt_data.get('numDrafts'), "
+        + "{"
+          + "'NUM_DRAFTS_1': opt_data.get('numDrafts'), "
+          + "'NUM_DRAFTS_2': str(opt_data.get('numDrafts')), "
+        + "})";
 
     assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgWithPluralAndOffset() {
     String soyCode =
-        "{msg desc=\"offset plural\"}" +
-          "{plural $numDrafts offset=\"2\"}" +
-            "{case 0}No drafts" +
-            "{case 1}1 draft" +
-            "{default}{remainder($numDrafts)} drafts" +
-          "{/plural}" +
-        "{/msg}";
+        "{msg desc=\"offset plural\"}"
+        + "{plural $numDrafts offset=\"2\"}"
+          + "{case 0}No drafts"
+          + "{case 1}1 draft"
+          + "{default}{remainder($numDrafts)} drafts"
+        + "{/plural}"
+      + "{/msg}";
 
     String expectedPyCode =
-        "render_plural(" +
-          "prepare_plural(" +
-            "###, " +
-            "{" +
-              "'=0': 'No drafts', " +
-              "'=1': '1 draft', " +
-              "'other': '{XXX} drafts', " +
-            "}, " +
-            "('NUM_DRAFTS', 'XXX', ), " +
-            "desc='offset plural'), " +
-          "opt_data.get('numDrafts'), " +
-          "{" +
-            "'NUM_DRAFTS': opt_data.get('numDrafts'), " +
-            "'XXX': str(opt_data.get('numDrafts') - 2), " +
-          "})";
+        "render_plural("
+        + "prepare_plural("
+          + "###, "
+          + "{"
+            + "'=0': 'No drafts', "
+            + "'=1': '1 draft', "
+            + "'other': '{XXX} drafts', "
+          + "}, "
+          + "('NUM_DRAFTS', 'XXX', ), "
+          + "desc='offset plural'), "
+        + "opt_data.get('numDrafts'), "
+        + "{"
+          + "'NUM_DRAFTS': opt_data.get('numDrafts'), "
+          + "'XXX': str(opt_data.get('numDrafts') - 2), "
+        + "})";
 
     assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }

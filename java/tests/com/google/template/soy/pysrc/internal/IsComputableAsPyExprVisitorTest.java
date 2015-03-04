@@ -54,10 +54,15 @@ public class IsComputableAsPyExprVisitorTest extends TestCase {
                   true);
     runTestHelper("{call name=\".foo\" data=\"$boo\"}{param key=\"goo\"}Blah{/param}{/call}",
                   true);
-    runTestHelper("{call name=\".foo\" data=\"$boo\"}" +
-                  "{param key=\"goo\"}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
-                  "{/call}",
-                  false);
+    runTestHelper(
+        "{call name=\".foo\" data=\"$boo\"}"
+        + "  {param key=\"goo\"}"
+        + "    {foreach $moo in $moose}"
+        + "      {$moo}"
+        + "    {/foreach}"
+        + "  {/param}"
+        + "{/call}",
+        false);
   }
 
   private static void runTestHelper(String soyNodeCode, boolean expectedResult) {

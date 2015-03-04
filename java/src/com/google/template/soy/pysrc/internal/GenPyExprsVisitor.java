@@ -169,18 +169,18 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
         throw SoySyntaxExceptionUtils.createWithNode(
-            "Failed to find SoyPySrcPrintDirective with name '" + directiveNode.getName() + "'" +
-                " (tag " + node.toSourceString() + ")",
-                directiveNode);
+            "Failed to find SoyPySrcPrintDirective with name '" + directiveNode.getName() + "'"
+                + " (tag " + node.toSourceString() + ")",
+            directiveNode);
       }
 
       // Get directive args.
       List<ExprRootNode<?>> args = directiveNode.getArgs();
       if (!directive.getValidArgsSizes().contains(args.size())) {
         throw SoySyntaxExceptionUtils.createWithNode(
-            "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
-                " arguments (tag " + node.toSourceString() + ").",
-                directiveNode);
+            "Print directive '" + directiveNode.getName() + "' used with the wrong number of"
+                + " arguments (tag " + node.toSourceString() + ").",
+            directiveNode);
       }
 
       // Translate directive args.
