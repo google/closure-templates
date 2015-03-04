@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -40,6 +41,7 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
@@ -120,7 +122,7 @@ final class MsgFuncGenerator {
     addMsgAttributesToPrepare();
 
     if (this.msgNode.isPlrselMsg()) {
-      return this.msgNode.isPluralMsg() ? pyFuncForPluralMsg() : null; // for SelectMsg
+      return this.msgNode.isPluralMsg() ? pyFuncForPluralMsg() : pyFuncForSelectMsg();
     } else {
       return this.msgNode.isRawTextMsg() ? pyFuncForRawTextMsg() : pyFuncForGeneralMsg();
     }
@@ -170,6 +172,22 @@ final class MsgFuncGenerator {
 
     return renderFunc.addArg(prepareFunc.asPyExpr())
         .addArg(pluralPyExpr)
+        .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
+        .asPyStringExpr();
+  }
+
+  private PyStringExpr pyFuncForSelectMsg() {
+    Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
+
+    ImmutableList<SoyMsgPart> msgPartsInIcuSyntax =
+        IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts, true);
+    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax);
+
+    prepareFunc.addArg(msgId)
+        .addArg(pyMsgText)
+        .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
+
+    return renderFunc.addArg(prepareFunc.asPyExpr())
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
         .asPyStringExpr();
   }
@@ -224,6 +242,10 @@ final class MsgFuncGenerator {
         // Note that {@code pluralExpr} represents the soy expression of the {@code plural} attr,
         // i.e. the {@code $numDrafts} in {@code {plural $numDrafts}...{/plural}}.
         substPyExpr = translateToPyExprVisitor.exec(((MsgPluralNode) substUnitNode).getExpr());
+      }
+
+      if (substUnitNode instanceof MsgSelectNode) {
+        substPyExpr = translateToPyExprVisitor.exec(((MsgSelectNode) substUnitNode).getExpr());
       }
 
       if (substPyExpr != null) {

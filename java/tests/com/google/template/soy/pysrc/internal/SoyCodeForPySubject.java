@@ -25,8 +25,10 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soyparse.ParseResult;
@@ -45,7 +47,7 @@ import java.util.Map;
  */
 public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, String> {
 
-  private static final Injector INJECTOR = Guice.createInjector(new PySrcModule());
+  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   private final LocalVariableStack localVarExprs;
 
@@ -111,7 +113,10 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
 
-    PyExpr actualPyExpr = new TranslateToPyExprVisitor(localVarExprs).exec(exprNode);
+    PyExpr actualPyExpr = INJECTOR.getInstance(TranslateToPyExprVisitorFactory.class)
+        .create(localVarExprs)
+        .exec(exprNode);
+
     assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
     assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
 

@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
@@ -49,7 +50,9 @@ import com.google.template.soy.internal.targetexpr.ExprUtils;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 
@@ -75,10 +78,15 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
   private final LocalVariableStack localVarExprs;
 
+  /** Map of all SoyPySrcFunctions (name to function). */
+  private final ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap;
 
   @AssistedInject
-  TranslateToPyExprVisitor(@Assisted LocalVariableStack localVarExprs) {
+  TranslateToPyExprVisitor(
+      ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap,
+      @Assisted LocalVariableStack localVarExprs) {
     this.localVarExprs = localVarExprs;
+    this.soyPySrcFunctionsMap = soyPySrcFunctionsMap;
   }
 
   /**
@@ -289,7 +297,14 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
     return new PyExpr(exprSb.toString(), conditionalPrecedence);
   }
 
-  @Override protected PyExpr visitFunctionNode(FunctionNode node) {
+  /**
+   * Visits function nodes and generates code for build-in function and plugin functions. Guice
+   * builds the look-up map for functions through {@link SharedModule#provideSoyFunctionsMap}.
+   *
+   * @see NonpluginFunction
+   * @see SoyPySrcFunction
+   */
+  @Override protected PyExpr visitFunctionNode(FunctionNode node)  {
     String fnName = node.getFunctionName();
     int numArgs = node.numChildren();
 
@@ -316,8 +331,27 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
       }
     }
 
-    // TODO(dcphillips): Handle plugin functions.
-    throw new UnsupportedOperationException("Plugin functions are not yet supported.");
+    // Handle plugin functions.
+    SoyPySrcFunction fn = soyPySrcFunctionsMap.get(fnName);
+    if (fn != null) {
+      if (!fn.getValidArgsSizes().contains(numArgs)) {
+        throw SoySyntaxException.createWithoutMetaInfo(
+            "Function '" + fnName + "' called with the wrong number of arguments" +
+                " (function call \"" + node.toSourceString() + "\").");
+      }
+      List<PyExpr> args = visitChildren(node);
+      try {
+        return fn.computeForPySrc(args);
+      } catch (Exception e) {
+        throw SoySyntaxException.createCausedWithoutMetaInfo(
+            "Error in function call \"" + node.toSourceString() + "\": " + e.getMessage(), e);
+      }
+    }
+
+    // Function not found.
+    throw SoySyntaxException.createWithoutMetaInfo(
+        "Failed to find function with name '" + fnName + "'" +
+            " (function call \"" + node.toSourceString() + "\").");
   }
 
   private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
