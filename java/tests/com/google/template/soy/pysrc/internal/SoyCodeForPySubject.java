@@ -19,126 +19,149 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.template.soy.SoyModule;
-import com.google.template.soy.exprtree.ExprNode;
+import com.google.inject.Key;
+import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.soyparse.ParseResult;
-import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * Truth assertion which compiles the provided soy code and asserts that the generated PyExprs match
- * the expected expressions.
+ * Truth assertion which compiles the provided soy code and asserts that the generated Python code
+ * matches the expected output.
  *
  */
 public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, String> {
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
+  private static final Injector INJECTOR = Guice.createInjector(new PySrcModule());
 
-  private final LocalVariableStack localVarExprs;
+  private static final String RUNTIME_PATH = "example.runtime";
 
-  SoyCodeForPySubject(FailureStrategy failureStrategy, String code) {
+  private String bidiIsRtlFn = "";
+
+  private String translationPyModuleName = "";
+
+  private boolean isFile;
+
+
+  /**
+   * A Subject for testing sections of Soy code. The provided data can either be an entire Soy file,
+   * or just the body of a template. If just a body is provided, it is wrapped with a simple
+   * template before compiling.
+   *
+   * @param failureStrategy The environment provided FailureStrategy.
+   * @param code The input Soy code to be compiled and tested.
+   * @param isFile Whether the provided code represents a full file.
+   */
+  SoyCodeForPySubject(FailureStrategy failureStrategy, String code, boolean isFile) {
     super(failureStrategy, code);
-    localVarExprs = new LocalVariableStack();
+    this.isFile = isFile;
   }
 
-  public SoyCodeForPySubject with(Map<String, PyExpr> localVarFrame) {
-    localVarExprs.pushFrame();
-    for(String name : localVarFrame.keySet()) {
-      localVarExprs.addVariable(name, localVarFrame.get(name));
-    }
+
+  public SoyCodeForPySubject withBidi(String bidiIsRtlFn) {
+    this.bidiIsRtlFn = bidiIsRtlFn;
     return this;
   }
 
-  /**
-   * Assert soy code compiled to the correct PyExpr.
-   */
-  public void compilesTo(PyExpr expectedPyExpr) {
-    compilesTo(ImmutableList.of(expectedPyExpr));
+  public SoyCodeForPySubject withTranslationModule(String translationPyModuleName) {
+    this.translationPyModuleName = translationPyModuleName;
+    return this;
   }
 
-  /**
-   * Assert soy code compiled to the correct list of PyExprs.
-   * The given piece of Soy code is wrapped in a full body of a template.
-   * The actual result is replaced with ids for ### so that tests don't break when ids change.
-   */
-  public void compilesTo(List<PyExpr> expectedPyExprs) {
-    ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(getSubject());
-    SoyNode node = SharedTestUtils.getNode(result.getParseTree(), 0);
-
-    SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
-    GenPyExprsVisitor genPyExprsVisitor = INJECTOR.getInstance(
-        GenPyExprsVisitorFactory.class).create(localVarExprs);
-    List<PyExpr> actualPyExprs = genPyExprsVisitor.exec(node);
-
-    assertThat(actualPyExprs).hasSize(expectedPyExprs.size());
-    for (int i = 0; i < expectedPyExprs.size(); i++) {
-      PyExpr expectedPyExpr = expectedPyExprs.get(i);
-      PyExpr actualPyExpr = actualPyExprs.get(i);
-      assertThat(actualPyExpr.getText().replaceAll("\\([0-9]+", "(###"))
-        .isEqualTo(expectedPyExpr.getText());
-      assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
+  public void compilesTo(String expectedPyOutput) {
+    if (isFile) {
+      assertThat(compileFile()).isEqualTo(expectedPyOutput);
+    } else {
+      assertThat(compileBody()).isEqualTo(expectedPyOutput);
     }
   }
 
-  public void translatesTo(PyExpr expectedPyExpr) {
-    translatesTo(expectedPyExpr, null);
+  public void compilesToSourceContaining(String expectedPyOutput) {
+    if (isFile) {
+      assertThat(compileFile()).contains(expectedPyOutput);
+    } else {
+      assertThat(compileBody()).contains(expectedPyOutput);
+    }
   }
 
-  /**
-   * Checks that the given Soy expression translates to the given PyExpr.
-   *
-   * @param expectedPyExpr The expected result of the translation.
-   * @param expectedClass The expected class type of the resulting PyExpr.
-   */
-  public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
-    String soyCode = String.format("{print %s}", getSubject());
-    ParseResult<SoyFileSetNode> parseResult = SharedTestUtils.parseSoyFiles(
-        SharedTestUtils.buildStrictTestSoyFileContent(null, soyCode));
-    SoyFileSetNode soyTree = parseResult.getParseTree();
-    List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
-    ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
+  private GenPyCodeVisitor getGenPyCodeVisitor() {
+    // Setup default configs.
+    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn,
+        translationPyModuleName);
+    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
+    apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
+    apiCallScope.seed(Key.get(String.class, RuntimePath.class), RUNTIME_PATH);
 
-    PyExpr actualPyExpr = INJECTOR.getInstance(TranslateToPyExprVisitorFactory.class)
-        .create(localVarExprs)
-        .exec(exprNode);
+    // Add customizable bidi fn and translation module.
+    apiCallScope.seed(Key.get(String.class, BidiIsRtlFn.class), bidiIsRtlFn);
+    apiCallScope.seed(Key.get(String.class, TranslationPyModuleName.class),
+        translationPyModuleName);
 
-    assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
-    assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
+    // Execute the compiler.
+    return INJECTOR.getInstance(GenPyCodeVisitor.class);
+  }
 
-    if (expectedClass != null) {
-      assertThat(actualPyExpr.getClass()).isEqualTo(expectedClass);
-    }
+  private String compileFile() {
+    SoyNode node = SharedTestUtils.parseSoyFiles(getSubject()).getParseTree();
+    List<String> fileContents = getGenPyCodeVisitor().exec(node);
+    return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
+  }
+
+  private String compileBody() {
+    SoyNode node = SharedTestUtils.getNode(
+        SharedTestUtils.parseSoyCode(getSubject()).getParseTree(), 0);
+
+    // Setup the GenPyCodeVisitor's state before the node is visited.
+    GenPyCodeVisitor genPyCodeVisitor = getGenPyCodeVisitor();
+    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
+    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
+    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
+    genPyCodeVisitor.localVarExprs = new LocalVariableStack();
+    genPyCodeVisitor.genPyExprsVisitor =
+        INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
+
+    genPyCodeVisitor.visit(node); // note: we're calling visit(), not exec()
+
+    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
 
   //-----------------------------------------------------------------------------------------------
-  // Public static functions for starting a PyCodeSubject test.
+  // Public static functions for starting a SoyCodeForPySubject test.
 
 
   private static final SubjectFactory<SoyCodeForPySubject, String> SOYCODE =
       new SubjectFactory<SoyCodeForPySubject, String>() {
         @Override
         public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String code) {
-          return new SoyCodeForPySubject(failureStrategy, code);
+          return new SoyCodeForPySubject(failureStrategy, code, false);
+        }
+      };
+
+  private static final SubjectFactory<SoyCodeForPySubject, String> SOYFILE =
+      new SubjectFactory<SoyCodeForPySubject, String>() {
+        @Override
+        public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String file) {
+          return new SoyCodeForPySubject(failureStrategy, file, true);
         }
       };
 
   public static SoyCodeForPySubject assertThatSoyCode(String code) {
     return assertAbout(SOYCODE).that(code);
+  }
+
+  public static SoyCodeForPySubject assertThatSoyFile(String file) {
+    return assertAbout(SOYFILE).that(file);
   }
 }

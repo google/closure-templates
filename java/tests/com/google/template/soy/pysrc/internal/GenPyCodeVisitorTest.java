@@ -16,23 +16,10 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import static com.google.common.truth.Truth.assertThat;
-
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
-import com.google.template.soy.soytree.SoyNode;
+import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyCode;
+import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyFile;
 
 import junit.framework.TestCase;
-
-import java.util.List;
 
 /**
  * Unit tests for GenPyCodeVisitor.
@@ -42,9 +29,7 @@ import java.util.List;
  */
 public final class GenPyCodeVisitorTest extends TestCase {
 
-  private static final Injector INJECTOR = Guice.createInjector(new PySrcModule());
-
-  private static final LocalVariableStack LOCAL_VAR_EXPRS = new LocalVariableStack();
+  private static final String SOY_NAMESPACE = "{namespace boo.foo autoescape=\"strict\"}\n";
 
   private static final String EXPECTED_PYFILE_START =
       "# coding=utf-8\n"
@@ -70,67 +55,54 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "  pass\n"
       + "\n";
 
-  private GenPyCodeVisitor genPyCodeVisitor;
-
-
-  @Override protected void setUp() {
-    // Default to empty values for the bidi and translation configs.
-    setupGenPyCodeVisitor("", "");
-  }
 
   public void testSoyFile() {
-    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n";
-
-    assertGeneratedPyFile(soyCode, EXPECTED_PYFILE_START);
+    assertThatSoyFile(SOY_NAMESPACE).compilesToSourceContaining(EXPECTED_PYFILE_START);
 
     // TODO(dcphillips): Add external template dependency import test once templates are supported.
   }
 
   public void testBidiConfiguration() {
-    setupGenPyCodeVisitor("example.bidi.fn", "");
-
-    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n";
-
     String exptectedBidiConfig = "from example import bidi as external_bidi\n";
 
-    assertInGeneratedPyFile(soyCode, exptectedBidiConfig);
+    assertThatSoyFile(SOY_NAMESPACE).withBidi("example.bidi.fn")
+        .compilesToSourceContaining(exptectedBidiConfig);
   }
 
   public void testTranslationConfiguration() {
-    setupGenPyCodeVisitor("", "example.translate.SimpleTranslator");
-
-    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n";
-
     String exptectedTranslationConfig = "from example.translate import SimpleTranslator\n"
         + "translator_impl = SimpleTranslator()\n";
 
-    assertInGeneratedPyFile(soyCode, exptectedTranslationConfig);
+    assertThatSoyFile(SOY_NAMESPACE).withTranslationModule("example.translate.SimpleTranslator")
+        .compilesToSourceContaining(exptectedTranslationConfig);
   }
 
   public void testBlankTemplate() {
-    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n"
+    String soyFile = SOY_NAMESPACE
         + "{template .helloWorld kind=\"html\"}\n"
         + "{/template}\n";
 
-    String expectedPyCode = EXPECTED_PYFILE_START + "\n\n"
+    String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
         + "def helloWorld(opt_data=None, opt_ijData=None):\n"
         + "  output = []\n"
         + "  return sanitize.SanitizedHtml(''.join(output))\n";
-    assertGeneratedPyFile(soyCode, expectedPyCode);
+
+    assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
 
   public void testSimpleTemplate() {
-    String soyCode = "{namespace boo.foo autoescape=\"strict\"}\n"
+    String soyFile = SOY_NAMESPACE
         + "{template .helloWorld kind=\"html\"}\n"
         + "  Hello World!\n"
         + "{/template}\n";
 
-    String expectedPyCode = EXPECTED_PYFILE_START + "\n\n"
+    String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
         + "def helloWorld(opt_data=None, opt_ijData=None):\n"
         + "  output = []\n"
         + "  output.append('Hello World!')\n"
         + "  return sanitize.SanitizedHtml(''.join(output))\n";
-    assertGeneratedPyFile(soyCode, expectedPyCode);
+
+    assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
 
   public void testFor() {
@@ -141,7 +113,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
     String expectedPyCode =
         "for i### in xrange(5):\n"
         + "  output.append(str(opt_data.get('boo')[i###]))\n";
-    assertGeneratedPyCode(soyCode, expectedPyCode);
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
         "{for $i in range(5, 10)}\n"
@@ -150,7 +122,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
     expectedPyCode =
         "for i### in xrange(5, 10):\n"
         + "  output.append(str(opt_data.get('boo')[i###]))\n";
-    assertGeneratedPyCode(soyCode, expectedPyCode);
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
         "{for $i in range($foo, $boo, $goo)}\n"
@@ -159,7 +131,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
     expectedPyCode =
         "for i### in xrange(opt_data.get('foo'), opt_data.get('boo'), opt_data.get('goo')):\n"
         + "  output.append(str(opt_data.get('boo')[i###]))\n";
-    assertGeneratedPyCode(soyCode, expectedPyCode);
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
   public void testForeach() {
@@ -175,7 +147,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "for operandIndex###, operandData### in enumerate(operandList###):\n"
         + "  output.append(str(operandData###))\n";
 
-    assertGeneratedPyCode(soyCode, expectedPyCode);
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
         "{foreach $operand in $operands}\n"
@@ -191,7 +163,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
                          + "str(operandIndex### == len(operandList###) - 1),"
                          + "str(operandIndex###)])\n";
 
-    assertGeneratedPyCode(soyCode, expectedPyCode);
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
   public void testForeach_ifempty() {
@@ -210,74 +182,6 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "else:\n"
         + "  output.append(str(opt_data.get('foo')))\n";
 
-    assertGeneratedPyCode(soyCode, expectedPyCode);
-  }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Test Utilities.
-
-
-  private void assertGeneratedPyFile(String soyCode, String expectedPyCode) {
-    assertThat(getGeneratedPyFile(soyCode)).isEqualTo(expectedPyCode);
-  }
-
-  private void assertInGeneratedPyFile(String soyCode, String expectedPyCode) {
-    String generatedCode = getGeneratedPyFile(soyCode);
-    assertTrue(generatedCode.contains(expectedPyCode));
-  }
-
-  private void assertGeneratedPyCode(String soyNodeCode, String expectedPyCode) {
-    assertThat(getGeneratedPyCode(soyNodeCode)).isEqualTo(expectedPyCode);
-  }
-
-  private void setupGenPyCodeVisitor(String bidiIsRtlFn, String translationPyModuleName) {
-    String runtimePath = "example.runtime";
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, bidiIsRtlFn,
-        translationPyModuleName);
-    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
-    apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(Key.get(String.class, RuntimePath.class), runtimePath);
-
-    // Default to empty configuration for optional flags.
-    apiCallScope.seed(Key.get(String.class, BidiIsRtlFn.class), bidiIsRtlFn);
-    apiCallScope.seed(Key.get(String.class, TranslationPyModuleName.class),
-        translationPyModuleName);
-    genPyCodeVisitor = INJECTOR.getInstance(GenPyCodeVisitor.class);
-  }
-
-  /**
-   * Generates Python code from the given soy code. Replaces ids with ### so that tests don't break
-   * when ids change.
-   *
-   * @param soyFileContent The string represents a Soy file.
-   */
-  private String getGeneratedPyFile(String soyFileContent) {
-    SoyNode node = SharedTestUtils.parseSoyFiles(soyFileContent).getParseTree();
-    List<String> fileContents = genPyCodeVisitor.exec(node);
-    return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
-  }
-
-  /**
-   * Generates Python code from the given soy code. The given piece of Soy code is wrapped in a
-   * full body of a template.
-   * Also replaces ids with ### so that tests don't break when ids change.
-   *
-   * @param soyCode The Soy code snippet.
-   */
-  private String getGeneratedPyCode(String soyCode) {
-    SoyNode node = SharedTestUtils.getNode(SharedTestUtils.parseSoyCode(soyCode).getParseTree(), 0);
-
-    // Setup the GenPyCodeVisitor's state before the node is visited.
-    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
-    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
-    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
-    genPyCodeVisitor.localVarExprs = LOCAL_VAR_EXPRS;
-    genPyCodeVisitor.genPyExprsVisitor =
-        INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create(LOCAL_VAR_EXPRS);
-
-    genPyCodeVisitor.visit(node); // note: we're calling visit(), not exec()
-
-    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 }

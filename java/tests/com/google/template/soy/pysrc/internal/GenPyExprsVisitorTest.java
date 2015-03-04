@@ -16,7 +16,7 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyCode;
+import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertThatSoyExpr;
 
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -31,7 +31,7 @@ import junit.framework.TestCase;
 public final class GenPyExprsVisitorTest extends TestCase {
 
   public void testRawText() {
-    assertThatSoyCode("I'm feeling lucky!").compilesTo(
+    assertThatSoyExpr("I'm feeling lucky!").compilesTo(
         new PyExpr("'I\\'m feeling lucky!'", Integer.MAX_VALUE));
   }
 
@@ -47,7 +47,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
     String expectedPyExprText =
         "'Blah' if opt_data.get('boo') else 'Bleh' if not opt_data.get('goo') else 'Bluh'";
 
-    assertThatSoyCode(soyNodeCode).compilesTo(
+    assertThatSoyExpr(soyNodeCode).compilesTo(
         new PyExpr(expectedPyExprText,
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -64,7 +64,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
     String expectedPyExprText =
         "('Blah' if opt_data.get('goo') else '') if opt_data.get('boo') else 'Bleh'";
 
-    assertThatSoyCode(soyNodeCode).compilesTo(
+    assertThatSoyExpr(soyNodeCode).compilesTo(
         new PyExpr(expectedPyExprText,
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -83,7 +83,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "desc='Used as a verb.', "
           + "meaning='verb'))";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgFallbackGroupNodeWithTwoNodes() {
@@ -104,7 +104,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
       + "if is_msg_available(###) else render_literal("
         + "prepare_literal(###, 'ARCHIVE', desc=''))";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode,
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode,
         PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 
@@ -122,7 +122,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "desc='The word 'Archive' used as a verb.', "
           + "meaning='verb'))";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgSimpleSoyExpression() {
@@ -140,7 +140,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "desc='var placeholder'), "
         + "{'USERNAME': str(opt_data.get('username')), })";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgMultipleSoyExpressions() {
@@ -161,7 +161,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "'USERNAME': str(opt_data.get('username')), "
         + "})";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgNamespacedSoyExpression() {
@@ -179,7 +179,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "desc='placeholder with namespace'), "
         + "{'BAR': str(opt_data.get('foo').get('bar')), })";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
   public void testMsgWithArithmeticExpression() {
     String soyCode =
@@ -196,7 +196,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "desc='var placeholder'), "
         + "{'XXX': str(runtime.type_safe_add(opt_data.get('username'), 1)), })";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
   public void testMsgWithHtmlNode() {
     // msg with HTML tags and raw texts
@@ -217,7 +217,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
             + "'END_LINK': '</a>', "
           + "})";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgWithPlural() {
@@ -247,7 +247,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "'NUM_DRAFTS_2': str(opt_data.get('numDrafts')), "
         + "})";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgWithPluralAndOffset() {
@@ -277,7 +277,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "'XXX': str(opt_data.get('numDrafts') - 2), "
         + "})";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgWithSelect() {
@@ -329,7 +329,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "'TARGET_GENDER': opt_data.get('targetGender'), "
         + "})";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
   public void testMsgWithPluralWithGender() {
@@ -422,6 +422,6 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "}"
         + ")";
 
-    assertThatSoyCode(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 }
