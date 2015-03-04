@@ -16,13 +16,7 @@
 
 package com.google.template.soy.soyparse;
 
-import com.google.common.collect.ImmutableList;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.XidNode;
 
 /**
@@ -44,8 +38,6 @@ import com.google.template.soy.soytree.XidNode;
 final class ErrorNodes {
   private ErrorNodes() {}
 
-  static final MsgHtmlTagNode MSG_HTML_TAG_NODE
-      = new MsgHtmlTagNode(-1, ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>")));
   static final MsgPluralNode MSG_PLURAL_NODE = new MsgPluralNode(-1, "plural");
   static final XidNode XID_NODE = new XidNode(-1, "error");
 }

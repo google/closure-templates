@@ -16,8 +16,10 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -31,6 +33,7 @@ public class MsgNodeTest extends TestCase {
 
 
   public void testGenPlaceholderNames() throws Exception {
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
 
     // Test message structure:
     // {msg desc=""}
@@ -59,12 +62,14 @@ public class MsgNodeTest extends TestCase {
 
     MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
     // Link 1 start tag.
-    MsgHtmlTagNode link1Start = new MsgHtmlTagNode(
+    MsgHtmlTagNode link1Start = new MsgHtmlTagNode.Builder(
         1,
-        Lists.<StandaloneNode>newArrayList(
+        ImmutableList.<StandaloneNode>of(
             new RawTextNode(0, "<a href=\""),
             new PrintNode(0, true, "$url1", null),
-            new RawTextNode(0, "\">")));
+            new RawTextNode(0, "\">")),
+        SourceLocation.UNKNOWN)
+        .build(errorReporter);
     msg.addChild(new MsgPlaceholderNode(0, link1Start));
     // Link 1 contents.
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$boo", null)));
@@ -72,20 +77,22 @@ public class MsgNodeTest extends TestCase {
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "1 + 1", null)));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "2 + 2", null)));
     // Link 1 end tag.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", errorReporter)));
     // Intervening 'br' tags.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>")));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br/>")));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />")));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />")));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br/>", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", errorReporter)));
     // Link 2 start tag.
-    MsgHtmlTagNode link2Start = new MsgHtmlTagNode(
+    MsgHtmlTagNode link2Start = new MsgHtmlTagNode.Builder(
         2,
-        Lists.<StandaloneNode>newArrayList(
+        ImmutableList.<StandaloneNode>of(
             new RawTextNode(0, "<a href=\""),
             new PrintNode(0, true, "$url2", null),
-            new RawTextNode(0, "\">")));
+            new RawTextNode(0, "\">")),
+        SourceLocation.UNKNOWN)
+        .build(errorReporter);
     msg.addChild(new MsgPlaceholderNode(0, link2Start));
     // Link 2 contents.
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$boo", null)));
@@ -93,10 +100,12 @@ public class MsgNodeTest extends TestCase {
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$goo2", null)));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "2 + 2", null)));
     // Link 2 end tag.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", errorReporter)));
     // All the parts with base placeholder name ZOO.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">")));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">")));
+    msg.addChild(
+        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", errorReporter)));
+    msg.addChild(
+        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", errorReporter)));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$zoo", "zoo")));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$zoo", null)));
     msg.addChild(new MsgPlaceholderNode(0, new PrintNode(0, true, "$foo.zoo", "zoo")));
@@ -104,11 +113,13 @@ public class MsgNodeTest extends TestCase {
     msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(3, SourceLocation.UNKNOWN)
         .commandText(".helper")
         .userSuppliedPlaceholderName("zoo")
-        .buildAndThrowIfInvalid()));
+        .build(errorReporter)));
     msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(4, SourceLocation.UNKNOWN)
         .commandText(".helper")
         .userSuppliedPlaceholderName("zoo")
-        .buildAndThrowIfInvalid()));
+        .build(errorReporter)));
+
+    errorReporter.throwIfErrorsPresent();
 
     assertEquals("START_LINK_1", msg.getPlaceholderName((MsgPlaceholderNode) msg.getChild(0)));
     assertEquals("BOO", msg.getPlaceholderName((MsgPlaceholderNode) msg.getChild(1)));
@@ -782,8 +793,12 @@ public class MsgNodeTest extends TestCase {
   // Helpers.
 
 
-  private MsgHtmlTagNode createSimpleHtmlTag(String content) throws Exception {
-    return new MsgHtmlTagNode(0, Lists.<StandaloneNode>newArrayList(new RawTextNode(0, content)));
+  private MsgHtmlTagNode createSimpleHtmlTag(String content, ErrorReporter errorReporter) {
+    return new MsgHtmlTagNode.Builder(
+        0,
+        ImmutableList.<StandaloneNode>of(new RawTextNode(0, content)),
+        SourceLocation.UNKNOWN)
+        .build(errorReporter);
   }
 
 }

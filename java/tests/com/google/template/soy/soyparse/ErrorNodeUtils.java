@@ -23,6 +23,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -46,7 +47,7 @@ final class ErrorNodeUtils {
       CallParamValueNode.Builder.ERROR,
       LetContentNode.Builder.ERROR,
       LetValueNode.Builder.ERROR,
-      ErrorNodes.MSG_HTML_TAG_NODE,
+      MsgHtmlTagNode.Builder.ERROR,
       ErrorNodes.MSG_PLURAL_NODE,
       ErrorNodes.XID_NODE);
 
