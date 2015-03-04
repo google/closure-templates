@@ -381,8 +381,6 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
    * @param key The key.
    */
   private static String genCodeForKeyAccess(String key) {
-    // TODO(dcphillips): If we know that 'key' exists in the node, we can access it directly and
-    // avoid a slow 'get()' call.
     return ".get(" + key + ")";
   }
 
