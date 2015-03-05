@@ -16,8 +16,6 @@
 
 package com.google.template.soy.sharedpasses;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.SharedTestUtils;
 

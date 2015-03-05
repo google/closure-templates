@@ -18,7 +18,6 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;

@@ -23,7 +23,6 @@ import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 
-
 /**
  * Abstract base class for all SoyNode visitors. A visitor is basically a function implemented for
  * some or all SoyNodes, where the implementation can be different for each specific node class.

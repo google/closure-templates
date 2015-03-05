@@ -18,12 +18,12 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.template.soy.soytree.RawTextNode;
 
 import junit.framework.TestCase;
+
 import java.util.Arrays;
 import java.util.Queue;
 

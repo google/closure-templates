@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-
 /**
  * Node representing a basic template.
  *

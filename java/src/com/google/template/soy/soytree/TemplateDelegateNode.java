@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 import java.util.Objects;
 
-
 /**
  * Node representing a delegate template.
  *
