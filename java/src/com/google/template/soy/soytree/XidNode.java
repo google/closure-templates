@@ -16,10 +16,13 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
@@ -30,7 +33,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode  {
+public final class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
 
 
   /** The text of the identifier. */
@@ -54,10 +57,6 @@ public class XidNode extends AbstractCommandNode implements StandaloneNode, Stat
   public XidNode(int id, String commandText) {
     super(id, "xid", commandText);
     text = commandText;
-    // Verify that the command text is a single identifier literal.
-    if (!BaseUtils.isDottedOrDashedIdent(text)) {
-      throw SoySyntaxException.createWithoutMetaInfo("Invalid xid value: '" + text + "'");
-    }
   }
 
 
@@ -110,5 +109,49 @@ public class XidNode extends AbstractCommandNode implements StandaloneNode, Stat
 
   @Override public XidNode clone() {
     return new XidNode(this);
+  }
+
+  /**
+   * Builder for {@link XidNode}.
+   */
+  public static final class Builder {
+
+    public static final XidNode ERROR = new XidNode(-1, "error");
+
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Builds a new {@link XidNode} from the builder's state. If the builder's state is invalid,
+     * errors are reported to {@code errorReporter} and {@link Builder#ERROR} is returned.
+     */
+    public XidNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      // Verify that the command text is a single identifier literal.
+      if (!BaseUtils.isDottedOrDashedIdent(commandText)) {
+        errorReporter.report(
+            SoySyntaxException.createWithMetaInfo("Invalid xid value", sourceLocation));
+      }
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      XidNode node = new XidNode(id, commandText);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
   }
 }

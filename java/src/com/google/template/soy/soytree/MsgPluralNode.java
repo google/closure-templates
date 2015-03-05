@@ -17,9 +17,13 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
@@ -37,7 +41,7 @@ import java.util.regex.Pattern;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
+public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
 
 
@@ -53,7 +57,6 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   /** Fallback base plural var name. */
   public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";
 
-
   /** The offset. */
   private final int offset;
 
@@ -63,46 +66,16 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
   /** The base plural var name (what the translator sees). */
   private final String basePluralVarName;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public MsgPluralNode(int id, String commandText) throws SoySyntaxException {
+  private MsgPluralNode(
+      int id,
+      String commandText,
+      int offset,
+      ExprRootNode<?> pluralExpr,
+      String basePluralVarName) {
     super(id, "plural", commandText);
-
-    Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
-
-    if (!matcher.matches()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid 'plural' command text \"" + commandText + "\".");
-    }
-
-    pluralExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-        matcher.group(1), "Invalid expression in 'plural' command text \"" + commandText + "\".");
-
-    // If attributes were given, parse them.
-    if (matcher.group(2) != null) {
-      try {
-        Map<String, String> attributes = ATTRIBUTES_PARSER.parse(matcher.group(2).trim());
-        String offsetAttribute = attributes.get("offset");
-        offset = Integer.parseInt(offsetAttribute);
-        if (offset < 0) {
-          throw SoySyntaxException.createWithoutMetaInfo(
-              "The 'offset' for plural must be a nonnegative integer.");
-        }
-      } catch (NumberFormatException nfe) {
-        throw SoySyntaxException.createCausedWithoutMetaInfo(
-            "Invalid offset in 'plural' command text \"" + commandText + "\".", nfe);
-      }
-    } else {
-      offset = 0;
-    }
-
-    basePluralVarName =
-        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
+    this.offset = offset;
+    this.pluralExpr = pluralExpr;
+    this.basePluralVarName = basePluralVarName;
   }
 
 
@@ -167,4 +140,87 @@ public class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     return new MsgPluralNode(this);
   }
 
+  /**
+   * Builder for {@link MsgPluralNode}.
+   */
+  public static final class Builder {
+
+    public static final MsgPluralNode ERROR = new Builder(-1, "plural", SourceLocation.UNKNOWN)
+        .buildAndThrowIfInvalid(); // guaranteed to be valid
+
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link MsgPluralNode} built from the builder's state. If the builder's state
+     * is invalid, errors are reported to {@code errorReporter} and {@link Builder#ERROR}
+     * is returned.
+     */
+    public MsgPluralNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+
+      Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
+      if (!matcher.matches()) {
+        errorReporter.report(SoySyntaxException.createWithMetaInfo(
+            "Invalid 'plural' command text \"" + commandText + "\".", sourceLocation));
+      }
+
+      ExprRootNode<?> pluralExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+          matcher.group(1),
+          "Invalid expression in 'plural' command text \"" + commandText + "\".");
+
+      int offset = 0;
+
+      // If attributes were given, parse them.
+      if (matcher.group(2) != null) {
+        try {
+          Map<String, String> attributes = ATTRIBUTES_PARSER.parse(matcher.group(2).trim());
+          String offsetAttribute = attributes.get("offset");
+          offset = Integer.parseInt(offsetAttribute);
+          if (offset < 0) {
+            errorReporter.report(SoySyntaxException.createWithMetaInfo(
+                "The 'offset' for plural must be a nonnegative integer.", sourceLocation));
+          }
+        } catch (NumberFormatException nfe) {
+          errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
+              "Invalid offset in 'plural' command text \"" + commandText + "\".",
+              nfe,
+              sourceLocation,
+              null /* filePath */,
+              null /* templateName */));
+        }
+      }
+
+      String basePluralVarName = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+              pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      MsgPluralNode node
+          = new MsgPluralNode(id, commandText, offset, pluralExpr, basePluralVarName);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
+
+    private MsgPluralNode buildAndThrowIfInvalid() {
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+      MsgPluralNode node = build(errorReporter);
+      errorReporter.throwIfErrorsPresent();
+      return node;
+    }
+  }
 }

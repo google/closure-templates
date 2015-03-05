@@ -16,7 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 /**
@@ -25,31 +28,15 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
+public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   // A plural 'case' can only have a number in the command text.
   /** The number for this case */
   private final int caseNumber;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public MsgPluralCaseNode(int id, String commandText) throws SoySyntaxException {
+  private MsgPluralCaseNode(int id, String commandText, int caseNumber) {
     super(id, "case", commandText);
-
-    try {
-      caseNumber = Integer.parseInt(commandText);
-      if (caseNumber < 0) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Plural cases must be nonnegative integers.");
-      }
-    } catch (NumberFormatException nfe) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(
-          "Invalid number in 'plural case' command text \"" + getCommandText() + "\".", nfe);
-    }
+    this.caseNumber = caseNumber;
   }
 
 
@@ -76,6 +63,62 @@ public class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode
 
   @Override public MsgPluralCaseNode clone() {
     return new MsgPluralCaseNode(this);
+  }
+
+  /**
+   * Builder for {@link MsgPluralCaseNode}.
+   */
+  public static final class Builder {
+
+    public static final MsgPluralCaseNode ERROR = new MsgPluralCaseNode(-1, "error", 1);
+
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Builds a new {@link MsgPluralCaseNode} from this builder's state. If the builder's state
+     * is invalid, errors are reported to the {@code errorReporter} and {@link Builder#ERROR}
+     * is returned.
+     */
+    public MsgPluralCaseNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+
+      int caseNumber = 0;
+      try {
+        caseNumber = Integer.parseInt(commandText);
+        if (caseNumber < 0) {
+          errorReporter.report(SoySyntaxException.createWithMetaInfo(
+              "Plural cases must be nonnegative integers.", sourceLocation));
+        }
+      } catch (NumberFormatException nfe) {
+        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
+            "Invalid number in 'plural case' command text",
+            nfe,
+            sourceLocation,
+            null /* filePath */,
+            null /* templateName */));
+      }
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      MsgPluralCaseNode node = new MsgPluralCaseNode(id, commandText, caseNumber);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
   }
 
 }

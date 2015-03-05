@@ -16,10 +16,14 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 
@@ -29,30 +33,16 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
+public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
 
   /** The value for this case. */
   private final String caseValue;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public MsgSelectCaseNode(int id, String commandText) throws SoySyntaxException {
+  private MsgSelectCaseNode(int id, String commandText, String caseValue) {
     super(id, "case", commandText);
-
-    ExprRootNode<?> strLit = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-        commandText, "Invalid expression in 'case' command text \"" + commandText + "\".");
-    // Make sure the expression is a string.
-    if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
-        throw SoySyntaxException.createWithoutMetaInfo("Invalid string for select 'case'.");
-    }
-    caseValue = ((StringNode) (strLit.getChild(0))).getValue();
+    this.caseValue = caseValue;
   }
-
 
   /**
    * Copy constructor.
@@ -79,4 +69,73 @@ public class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode
     return new MsgSelectCaseNode(this);
   }
 
+  /**
+   * Builder for {@link MsgSelectCaseNode}.
+   */
+  public static final class Builder {
+    public static final MsgSelectCaseNode ERROR = new MsgSelectCaseNode(-1, "error", "error");
+
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link MsgSelectCaseNode} built from the builder's state. If the builder's
+     * state is invalid, errors are reported to the {@code errorReporter} and {@link Builder#ERROR}
+     * is returned.
+     */
+    public MsgSelectCaseNode build(ErrorReporter errorReporter) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+
+      ExprRootNode<?> strLit;
+
+      try {
+        strLit = ExprParseUtils.parseExprElseThrowSoySyntaxException(
+            commandText, "Invalid expression in 'case' command text \"" + commandText + "\".");
+      } catch (SoySyntaxException e) {
+        errorReporter.report(e);
+        return ERROR;
+      }
+
+      // Make sure the expression is a string.
+      if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
+        errorReporter.report(
+            SoySyntaxException.createWithMetaInfo(
+                "Invalid string for select 'case'.", sourceLocation));
+      }
+      String caseValue = ((StringNode) (strLit.getChild(0))).getValue();
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return ERROR;
+      }
+
+      MsgSelectCaseNode node = new MsgSelectCaseNode(id, commandText, caseValue);
+      node.setSourceLocation(sourceLocation);
+      return node;
+    }
+
+    /**
+     * Returns a new {@link LetContentNode} built from the builder's state.
+     * @throws SoySyntaxException if the builder's state is invalid.
+     * TODO(user): remove. Only needed by
+     * {@link com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor}.
+     */
+    public MsgSelectCaseNode buildAndThrowIfInvalid() {
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+      MsgSelectCaseNode node = build(errorReporter);
+      errorReporter.throwIfErrorsPresent();
+      return node;
+    }
+  }
 }

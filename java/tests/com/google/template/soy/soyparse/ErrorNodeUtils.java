@@ -24,8 +24,10 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
+import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.XidNode;
 
 import java.util.List;
 
@@ -48,8 +50,8 @@ final class ErrorNodeUtils {
       LetContentNode.Builder.ERROR,
       LetValueNode.Builder.ERROR,
       MsgHtmlTagNode.Builder.ERROR,
-      ErrorNodes.MSG_PLURAL_NODE,
-      ErrorNodes.XID_NODE);
+      MsgPluralNode.Builder.ERROR,
+      XidNode.Builder.ERROR);
 
   /**
    * Returns true if the tree rooted at {@code root} contains an error node and is thus invalid.

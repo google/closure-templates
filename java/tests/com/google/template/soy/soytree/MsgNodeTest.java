@@ -31,9 +31,19 @@ import junit.framework.TestCase;
  */
 public class MsgNodeTest extends TestCase {
 
+  private TransitionalThrowingErrorReporter errorReporter;
+
+  @Override
+  protected void setUp() throws Exception {
+    errorReporter = new TransitionalThrowingErrorReporter();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    errorReporter.throwIfErrorsPresent();
+  }
 
   public void testGenPlaceholderNames() throws Exception {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
 
     // Test message structure:
     // {msg desc=""}
@@ -212,11 +222,16 @@ public class MsgNodeTest extends TestCase {
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, "'female'");
+    MsgSelectCaseNode femaleNode
+        = new MsgSelectCaseNode.Builder(0, "'female'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode1 = new MsgPluralNode(0, "$values.people[0] offset=\"1\"");
+    MsgPluralNode pluralNode1
+        = new MsgPluralNode.Builder(0, "$values.people[0] offset=\"1\"", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode11
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode11.addChild(placeholderNode111);
@@ -239,11 +254,16 @@ public class MsgNodeTest extends TestCase {
     selectNode.addChild(femaleNode);
 
     // case 'male'
-    MsgSelectCaseNode maleNode = new MsgSelectCaseNode(0, "'male'");
+    MsgSelectCaseNode maleNode
+        = new MsgSelectCaseNode.Builder(0, "'male'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode2 = new MsgPluralNode(0, "$values.people[1]");
+    MsgPluralNode pluralNode2
+        = new MsgPluralNode.Builder(0, "$values.people[1]", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode21 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode21
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode211 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode21.addChild(placeholderNode211);
@@ -268,9 +288,12 @@ public class MsgNodeTest extends TestCase {
     // default
     MsgSelectDefaultNode selectDefaultNode = new MsgSelectDefaultNode(0);
 
-    MsgPluralNode pluralNode3 = new MsgPluralNode(0, "$values.people[1]");
+    MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
+        0, "$values.people[1]", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode31
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode31.addChild(placeholderNode311);
@@ -350,11 +373,16 @@ public class MsgNodeTest extends TestCase {
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender[5]");
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, "'female'");
+    MsgSelectCaseNode femaleNode
+        = new MsgSelectCaseNode.Builder(0, "'female'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode1 = new MsgPluralNode(0, "$woman.num_friends");
+    MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(
+        0, "$woman.num_friends", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode11
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode11.addChild(placeholderNode111);
@@ -377,11 +405,16 @@ public class MsgNodeTest extends TestCase {
     selectNode.addChild(femaleNode);
 
     // case 'male'
-    MsgSelectCaseNode maleNode = new MsgSelectCaseNode(0, "'male'");
+    MsgSelectCaseNode maleNode
+        = new MsgSelectCaseNode.Builder(0, "'male'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode2 = new MsgPluralNode(0, "$man.num_friends");
+    MsgPluralNode pluralNode2
+        = new MsgPluralNode.Builder(0, "$man.num_friends", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode21 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode21
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode211 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode21.addChild(placeholderNode211);
@@ -406,9 +439,12 @@ public class MsgNodeTest extends TestCase {
     // case 'other'
     MsgSelectDefaultNode selectDefaultNode = new MsgSelectDefaultNode(0);
 
-    MsgPluralNode pluralNode3 = new MsgPluralNode(0, "$thing.nEntities");
+    MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
+        0, "$thing.nEntities", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode31
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode31.addChild(placeholderNode311);
@@ -477,11 +513,16 @@ public class MsgNodeTest extends TestCase {
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, "'female'");
+    MsgSelectCaseNode femaleNode
+        = new MsgSelectCaseNode.Builder(0, "'female'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode1 = new MsgPluralNode(0, "$woman.num_friends.person");
+    MsgPluralNode pluralNode1
+        = new MsgPluralNode.Builder(0, "$woman.num_friends.person", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode11
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode11.addChild(placeholderNode111);
@@ -506,9 +547,12 @@ public class MsgNodeTest extends TestCase {
     // case 'other'
     MsgSelectDefaultNode selectDefaultNode = new MsgSelectDefaultNode(0);
 
-    MsgPluralNode pluralNode3 = new MsgPluralNode(0, "$man.num_friends.person");
+    MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
+        0, "$man.num_friends.person", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode31
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode31.addChild(placeholderNode311);
@@ -596,11 +640,16 @@ public class MsgNodeTest extends TestCase {
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, "'female'");
+    MsgSelectCaseNode femaleNode
+        = new MsgSelectCaseNode.Builder(0, "'female'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode1 = new MsgPluralNode(0, "$woman.num");
+    MsgPluralNode pluralNode1
+        = new MsgPluralNode.Builder(0, "$woman.num", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode11
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode11.addChild(placeholderNode111);
@@ -623,11 +672,14 @@ public class MsgNodeTest extends TestCase {
     selectNode.addChild(femaleNode);
 
     // case 'male'
-    MsgSelectCaseNode maleNode = new MsgSelectCaseNode(0, "'male'");
+    MsgSelectCaseNode maleNode = new MsgSelectCaseNode.Builder(0, "'male'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralNode pluralNode2 = new MsgPluralNode(0, "$man.num");
+    MsgPluralNode pluralNode2 = new MsgPluralNode.Builder(0, "$man.num", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode21 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode21
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode211 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode21.addChild(placeholderNode211);
@@ -652,9 +704,12 @@ public class MsgNodeTest extends TestCase {
     // case 'other'
     MsgSelectDefaultNode selectDefaultNode = new MsgSelectDefaultNode(0);
 
-    MsgPluralNode pluralNode3 = new MsgPluralNode(0, "max($woman.num, $man.num)");
+    MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
+        0, "max($woman.num, $man.num)", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode31
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode31.addChild(placeholderNode311);
@@ -716,7 +771,9 @@ public class MsgNodeTest extends TestCase {
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, "'female'");
+    MsgSelectCaseNode femaleNode
+        = new MsgSelectCaseNode.Builder(0, "'female'", SourceLocation.UNKNOWN)
+        .build(errorReporter);
     RawTextNode femaleTextNode = new RawTextNode(0, "female");
     femaleNode.addChild(femaleTextNode);
     selectNode.addChild(femaleNode);
@@ -747,9 +804,12 @@ public class MsgNodeTest extends TestCase {
     // Build the message.
     MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
 
-    MsgPluralNode pluralNode1 = new MsgPluralNode(0, "$woman.num");
+    MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(
+        0, "$woman.num", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
-    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, "1");
+    MsgPluralCaseNode pluralCaseNode11
+        = new MsgPluralCaseNode.Builder(0, "1", SourceLocation.UNKNOWN).build(errorReporter);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(0, new PrintNode(0, false, "$person", null));
     pluralCaseNode11.addChild(placeholderNode111);

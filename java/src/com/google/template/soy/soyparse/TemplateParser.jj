@@ -2694,16 +2694,9 @@ private MsgPluralNode MsgPlural() :
 {
   cmdText = PluralTag()
   {
-    MsgPluralNode msgPluralNode = null;
-    try {
-      msgPluralNode = setSrcLoc(
-          new MsgPluralNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
-    } catch (SoySyntaxException e) {
-      // TODO(user): consider changing ctor to not throw
-      errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-          null, e, cmdText.srcLocation(), null, null));
-      return ErrorNodes.MSG_PLURAL_NODE;
-    }
+    MsgPluralNode msgPluralNode = new MsgPluralNode.Builder(
+        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        .build(errorReporter);
   }
   MaybeWhitespace("No content allowed between 'plural' and 'case'" +
       " (whitespace and comments are okay).")
@@ -2713,18 +2706,10 @@ private MsgPluralNode MsgPlural() :
 
     cmdText = CaseTag()
     {
-      MsgPluralCaseNode msgPluralCaseNode = null;
-      try {
-        msgPluralCaseNode = setSrcLoc(
-            new MsgPluralCaseNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
-        msgPluralNode.addChild(msgPluralCaseNode);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, cmdText.srcLocation(), null, null));
-        return msgPluralNode;
-      }
-
+      MsgPluralCaseNode msgPluralCaseNode = new MsgPluralCaseNode.Builder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
+      msgPluralNode.addChild(msgPluralCaseNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
     { if (templateBlockForMsg.size() == 1 &&
@@ -2785,17 +2770,10 @@ private MsgSelectNode MsgSelect() :
 
     cmdText = CaseTag()
     {
-      MsgSelectCaseNode msgSelectCaseNode = null;
-      try {
-        msgSelectCaseNode = setSrcLoc(
-            new MsgSelectCaseNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
-        msgSelectNode.addChild(msgSelectCaseNode);
-      } catch (SoySyntaxException e) {
-        // TODO(user): consider changing ctor to not throw
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, cmdText.srcLocation(), null, null));
-        return msgSelectNode;
-      }
+      MsgSelectCaseNode msgSelectCaseNode = new MsgSelectCaseNode.Builder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
+      msgSelectNode.addChild(msgSelectCaseNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
     { msgSelectCaseNode.addChildren(templateBlockForMsg); }
@@ -2991,13 +2969,8 @@ private XidNode XidStmt() :
 {
   cmdText = XidTag()
   {
-    try {
-      return setSrcLoc(new XidNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
-    } catch (SoySyntaxException e) {
-      // TODO(user): consider changing ctor to not throw
-      errorReporter.report(e);
-      return ErrorNodes.XID_NODE;
-    }
+    return new XidNode.Builder(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        .build(errorReporter);
   }
 }
 
