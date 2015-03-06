@@ -328,7 +328,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       Matcher matcher = PHNAME_ATTR_PATTERN.matcher(rawText);
 
       if (matcher.find()) {
-        StringBuilder sb = new StringBuilder(rawText.length());
+        StringBuffer sb = new StringBuffer(rawText.length());
         do {
           String userSuppliedPlaceholderName = matcher.group(1);
           names.add(userSuppliedPlaceholderName);
