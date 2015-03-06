@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprparse.ExprParseUtils;
@@ -26,6 +25,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -43,6 +43,9 @@ import javax.annotation.Nullable;
  */
 public abstract class CallParamNode extends AbstractCommandNode {
 
+  private static final SoyError KEY_IS_NOT_TOP_LEVEL
+      = SoyError.of("The key in a ''param'' tag must be top level, i.e. not contain multiple keys "
+          + "(invalid ''param'' command text \"{0}\").");
 
   /**
    * Return value for {@code parseCommandTextHelper()}.
@@ -171,9 +174,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
           "Invalid key in 'param' command text \"" + commandText + "\".")
           .getChild(0);
       if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "The key in a 'param' tag must be top level, i.e. not contain multiple keys" +
-                " (invalid 'param' command text \"" + commandText + "\").", sourceLocation));
+        errorReporter.report(sourceLocation, KEY_IS_NOT_TOP_LEVEL, commandText);
       }
 
       // If valueExprText exists, try to parse it.

@@ -47,7 +47,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -84,7 +83,6 @@ import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -231,6 +229,23 @@ public class TemplateParser {
   private static final Pattern NONEDGE_LINE_BOUNDARY_PATTERN =
       Pattern.compile("(?<=\\S)" + LINE_BOUNDARY_REGEX + "(?=\\S)");
 
+  private static final SoyError MULTIPLE_FALLBACK_MSGS =
+      SoyError.of("Multiple ''fallbackmsg''s is not allowed.");
+
+  private static final SoyError COMMAND_NOT_ALLOWED_WITHIN_MSG_BLOCK =
+      SoyError.of("Command ''{0}'' not allowed within a ''msg'' block.");
+
+  private static final SoyError PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
+      SoyError.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
+
+  private static final SoyError MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND = SoyError.of(
+      "Found multiple ''phname'' attributes in ''{0}'' command text \"{1}\".");
+
+  private static final SoyError PRINT_COMMAND_WITH_EMPTY_TEXT =
+      SoyError.of("Found ''print'' command with empty command text.");
+
+  private static final SoyError INVALID_PRINT_COMMAND_TEXT =
+      SoyError.of("Invalid ''print'' command text \"{0}\" (check the directives).");
 
   /** Node id generator for the tree being built. */
   private IdGenerator nodeIdGen;
@@ -2609,8 +2624,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
   { // Currently, allow at most one 'fallbackmsg'.
     if (msgFbGrpNode.numChildren() > 2) {
-      errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
-          "Multiple 'fallbackmsg's is not allowed.", msgFbGrpNode));
+      errorReporter.report(cmdText.srcLocation(), MULTIPLE_FALLBACK_MSGS);
     }
     return msgFbGrpNode;
   }
@@ -2662,8 +2676,8 @@ private List<StandaloneNode> TemplateBlockForMsg() :
         { if (! (stmt instanceof MsgPlaceholderInitialNode)) {
             String commandName =
                 (stmt instanceof IfNode) ? "if" : ((CommandNode) stmt).getCommandName();
-            errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
-                "Command '" + commandName + "' not allowed within a 'msg' block.", stmt));
+            errorReporter.report(
+                stmt.getSourceLocation(), COMMAND_NOT_ALLOWED_WITHIN_MSG_BLOCK, commandName);
           } else {
             templateBlock.add(
                   new MsgPlaceholderNode(nodeIdGen.genId(), (MsgPlaceholderInitialNode) stmt));
@@ -2715,9 +2729,9 @@ private MsgPluralNode MsgPlural() :
     { if (templateBlockForMsg.size() == 1 &&
           (templateBlockForMsg.get(0) instanceof MsgPluralNode ||
            templateBlockForMsg.get(0) instanceof MsgSelectNode )) {
-        errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
-            "Tags 'plural' and 'select' are not allowed inside 'plural' blocks.",
-            templateBlockForMsg.get(0)));
+        errorReporter.report(
+            templateBlockForMsg.get(0).getSourceLocation(),
+            PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
       }
       msgPluralCaseNode.addChildren(templateBlockForMsg);
     }
@@ -2733,9 +2747,9 @@ private MsgPluralNode MsgPlural() :
   { if (templateBlockForMsg.size() == 1 &&
         (templateBlockForMsg.get(0) instanceof MsgPluralNode ||
          templateBlockForMsg.get(0) instanceof MsgSelectNode )) {
-      errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
-          "Tags 'plural' and 'select' are not allowed inside 'plural' blocks.",
-          templateBlockForMsg.get(0)));
+      errorReporter.report(
+          templateBlockForMsg.get(0).getSourceLocation(),
+          PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
     }
     msgPluralDefaultNode.addChildren(templateBlockForMsg);
   }
@@ -2864,9 +2878,8 @@ private PrintNode PrintStmt() :
     for (String cmdTextPart : cmdTextParts) {
       if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
         if (phnameAttr != null) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "Found multiple 'phname' attributes in 'print' command text \"" + cmdText + "\".",
-              printTagInfo.srcLocation(), null, null));
+          errorReporter.report(
+              printTagInfo.srcLocation(), MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND, "print", cmdText);
         }
         phnameAttr = cmdTextPart;
       }
@@ -2882,10 +2895,8 @@ private PrintNode PrintStmt() :
     // ------ Process expression. ------
     // Note: First part is expression, rest of parts are directives or directive args.
     if (cmdTextParts.isEmpty()) {
-      errorReporter.report(SoySyntaxException.createWithMetaInfo(
-          "Found 'print' command with empty command text.",
-          printTagInfo.srcLocation(), null, null));
-          return null;
+      errorReporter.report(printTagInfo.srcLocation(), PRINT_COMMAND_WITH_EMPTY_TEXT);
+      return null;
     }
     String exprText = cmdTextParts.get(0).trim();
     PrintNode printNode = setSrcLoc(
@@ -2920,8 +2931,7 @@ private PrintNode PrintStmt() :
         continue;
 
       } else {
-        errorReporter.report(SoySyntaxExceptionUtils.createWithNode(
-            "Invalid 'print' command text \"" + cmdText + "\" (check the directives).", printNode));
+        errorReporter.report(printNode.getSourceLocation(), INVALID_PRINT_COMMAND_TEXT, cmdText);
       }
     }
     // Add last directive.
@@ -3252,10 +3262,11 @@ private CallNode CallStmt() :
       String cmdTextPart = callTagParts.get(i);
       if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
         if (phnameAttr != null) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "Found multiple 'phname' attributes in '" + cmdName + "' command text \"" +
-                  Joiner.on("").join(callTagParts.subList(1, callTagParts.size())) + "\".",
-              callTagInfo.srcLocation(), null, null));
+          errorReporter.report(
+              callTagInfo.srcLocation(),
+              MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND,
+              cmdName,
+              Joiner.on("").join(callTagParts.subList(1, callTagParts.size())));
         }
         phnameAttr = cmdTextPart;
       } else {

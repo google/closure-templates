@@ -20,11 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 
@@ -46,6 +46,14 @@ import javax.annotation.Nullable;
  */
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
+  private static final SoyError HTML_COMMENT_WITHIN_MSG_BLOCK
+      = SoyError.of("Found HTML comment within ''msg'' block: {0}");
+  private static final SoyError UNNAMED_HTML_TAG_WITHIN_MSG_BLOCK
+      = SoyError.of("HTML tag within ''msg'' block has no tag name: {0}");
+  private static final SoyError INVALID_PHNAME_ATTRIBUTE
+      = SoyError.of("''phname'' attribute is not a valid identifier");
+  private static final SoyError MULTIPLE_PHNAME_ATTRIBUTES
+      = SoyError.of("Multiple ''phname'' attributes in HTML tag.");
 
   /** Pattern for matching the 'phname' attribute. */
   private static final Pattern PHNAME_ATTR_PATTERN =
@@ -286,11 +294,9 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       Matcher matcher = TAG_NAME_PATTERN.matcher(firstChildText);
       if (!matcher.find()) {
         if (firstChildText.startsWith("<!--")) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "Found HTML comment within 'msg' block: " + firstChildText, sourceLocation));
+          errorReporter.report(sourceLocation, HTML_COMMENT_WITHIN_MSG_BLOCK, firstChildText);
         } else {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "HTML tag within 'msg' block has no tag name: " + firstChildText, sourceLocation));
+          errorReporter.report(sourceLocation, UNNAMED_HTML_TAG_WITHIN_MSG_BLOCK, firstChildText);
         }
       }
       return matcher.group().toLowerCase(Locale.ENGLISH);
@@ -306,14 +312,12 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
       for (String name : names) {
         if (!BaseUtils.isIdentifier(name)) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "'phname' attribute is not a valid identifier", sourceLocation));
+          errorReporter.report(sourceLocation, INVALID_PHNAME_ATTRIBUTE);
         }
       }
 
       if (names.size() > 1) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "Multiple 'phname' attributes in HTML tag.", sourceLocation));
+        errorReporter.report(sourceLocation, MULTIPLE_PHNAME_ATTRIBUTES);
       }
 
       return Iterables.getFirst(names, null);

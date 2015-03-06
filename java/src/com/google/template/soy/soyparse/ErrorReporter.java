@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soyparse;
 
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SourceLocation;
 
 /**
  * Collects errors during parsing.
@@ -26,9 +26,10 @@ import com.google.template.soy.base.SoySyntaxException;
 public interface ErrorReporter {
 
   /**
-   * Reports the given throwable.
+   * Reports the given {@code error}, formatted according to {@code args} and associated with
+   * the given {@code sourceLocation}.
    */
-  void report(SoySyntaxException e);
+  void report(SourceLocation sourceLocation, SoyError error, String... args);
 
   /**
    * Returns an opaque token (the checkpoint) that callers can later pass back into

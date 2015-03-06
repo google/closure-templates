@@ -45,8 +45,10 @@ public class SoySyntaxException extends RuntimeException {
    *
    * @param message The error message.
    * @return The new SoySyntaxException object.
+   * @deprecated Prefer {@link #createWithMetaInfo}. There's no good reason for not knowing
+   *     where an error comes from.
    */
-  @SuppressWarnings({"deprecation"})
+  @Deprecated
   public static SoySyntaxException createWithoutMetaInfo(String message) {
     return new SoySyntaxException(message);
   }
@@ -58,8 +60,10 @@ public class SoySyntaxException extends RuntimeException {
    * @param message The error message, or null to use the message from the cause.
    * @param cause The cause of this exception.
    * @return The new SoySyntaxException object.
+   * @deprecated Prefer {@link #createCausedWithMetaInfo}. There's no good reason for not knowing
+   *     where an error came from.
    */
-  @SuppressWarnings({"deprecation"})
+  @Deprecated
   public static SoySyntaxException createCausedWithoutMetaInfo(
       @Nullable String message, Throwable cause) {
 

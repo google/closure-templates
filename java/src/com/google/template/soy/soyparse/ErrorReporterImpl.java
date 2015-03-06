@@ -18,6 +18,7 @@ package com.google.template.soy.soyparse;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 
 import java.util.ArrayList;
@@ -32,8 +33,8 @@ class ErrorReporterImpl implements ErrorReporter {
   protected final List<SoySyntaxException> errors = new ArrayList<>();
 
   @Override
-  public void report(SoySyntaxException e) {
-    errors.add(e);
+  public void report(SourceLocation sourceLocation, SoyError error, String... args) {
+    errors.add(SoySyntaxException.createWithMetaInfo(error.format(args), sourceLocation));
   }
 
   @Override

@@ -144,6 +144,8 @@ public class SoyFileParser {
   private static final Pattern ERROR_MSG_LINE_NUM_PAT =
       Pattern.compile("(?<=line )\\d+(?=, column )");
 
+  private static final SoyError UNCATEGORIZED = SoyError.of("In file {0}, template {1}: {2}");
+
 
   /** Type registry for resolving type names. */
   private SoyTypeRegistry typeRegistry;
@@ -249,13 +251,13 @@ public class SoyFileParser {
     try {
         soyFileNode = SoyFile();
     } catch (ParseException e) {
-        errorReporter.report(SoySyntaxException.createCausedWithoutMetaInfo(null, e));
+        errorReporter.report(SourceLocation.UNKNOWN, UNCATEGORIZED, filePath, "", e.getMessage());
     } catch (SoySyntaxException e) {
-        errorReporter.report(e);
+        errorReporter.report(SourceLocation.UNKNOWN, UNCATEGORIZED, filePath, "", e.getMessage());
     } catch (TokenMgrError e) {
-        errorReporter.report(SoySyntaxException.createCausedWithoutMetaInfo(null, e));
+        errorReporter.report(SourceLocation.UNKNOWN, UNCATEGORIZED, filePath, "", e.getMessage());
     } catch (NullPointerException e) {
-        errorReporter.report(SoySyntaxException.createCausedWithoutMetaInfo(null, e));
+        errorReporter.report(SourceLocation.UNKNOWN, UNCATEGORIZED, filePath, "", e.getMessage());
     }
 
     return soyFileNode;
@@ -744,15 +746,27 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       templateBodyNodes = result.getBodyNodes();
     } catch (TokenMgrError tme) {
       String adjustedErrorMsg = adjustLineNumInErrorMsg(tme.getMessage(), templateTag.beginLine);
-      errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-          adjustedErrorMsg, tme, null, filePath, templateNodeBuilder.getTemplateNameForUserMsgs()));
+      errorReporter.report(
+          SourceLocation.UNKNOWN,
+          UNCATEGORIZED,
+          filePath,
+          templateNodeBuilder.getTemplateNameForUserMsgs(),
+          adjustedErrorMsg);
     } catch (ParseException pe) {
       String adjustedErrorMsg = adjustLineNumInErrorMsg(pe.getMessage(), templateTag.beginLine);
-      errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-          adjustedErrorMsg, pe, null, filePath, templateNodeBuilder.getTemplateNameForUserMsgs()));
+      errorReporter.report(
+          SourceLocation.UNKNOWN,
+          UNCATEGORIZED,
+          filePath,
+          templateNodeBuilder.getTemplateNameForUserMsgs(),
+          adjustedErrorMsg);
     } catch (SoySyntaxException sse) {
       errorReporter.report(
-          sse.associateMetaInfo(null, filePath, templateNodeBuilder.getTemplateNameForUserMsgs()));
+          SourceLocation.UNKNOWN,
+          UNCATEGORIZED,
+          filePath,
+          templateNodeBuilder.getTemplateNameForUserMsgs(),
+          sse.getMessage());
     }
   }
 

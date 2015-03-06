@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -52,6 +53,14 @@ import javax.annotation.concurrent.Immutable;
  */
 public final class CallDelegateNode extends CallNode {
 
+  private static final SoyError MISSING_CALLEE_NAME
+      = SoyError.of("The ''delcall'' command text must contain the callee name "
+          + "(encountered command text \"{0}\").");
+  private static final SoyError INVALID_DELEGATE_NAME
+      = SoyError.of("Invalid delegate name \"{0}\" for ''delcall'' command.");
+  private static final SoyError INVALID_VARIANT_EXPRESSION
+      = SoyError.of("Invalid variant expression \"{0}\" in ''delcall''"
+          + " (variant expression must evaluate to an identifier).");
 
   /**
    * Private helper class used by constructors. Encapsulates all the info derived from the command
@@ -228,14 +237,10 @@ public final class CallDelegateNode extends CallNode {
 
       String delCalleeName = attributes.get("name");
       if (delCalleeName == null) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "The 'delcall' command text must contain the callee name (encountered command text \""
-                + commandTextWithoutPhnameAttr + "\").", sourceLocation));
+        errorReporter.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
       }
       if (!BaseUtils.isDottedIdentifier(delCalleeName)) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "Invalid delegate name \"" + delCalleeName + "\" for 'delcall' command.",
-            sourceLocation));
+        errorReporter.report(sourceLocation, INVALID_DELEGATE_NAME, delCalleeName);
       }
 
       String variantExprText = attributes.get("variant");
@@ -250,9 +255,7 @@ public final class CallDelegateNode extends CallNode {
         if (delCalleeVariantExpr.getChild(0) instanceof StringNode) {
           String fixedVariantStr = ((StringNode) delCalleeVariantExpr.getChild(0)).getValue();
           if (!BaseUtils.isIdentifier(fixedVariantStr)) {
-            errorReporter.report(SoySyntaxException.createWithMetaInfo(
-                "Invalid variant expression \"" + variantExprText + "\" in 'delcall'" +
-                    " (variant expression must evaluate to an identifier).", sourceLocation));
+            errorReporter.report(sourceLocation, INVALID_VARIANT_EXPRESSION, variantExprText);
           }
         }
       }

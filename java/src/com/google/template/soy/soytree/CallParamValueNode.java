@@ -19,9 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -35,6 +35,13 @@ import java.util.List;
  *
  */
 public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
+
+  private static final SoyError SELF_ENDING_TAG_WITHOUT_VALUE
+      = SoyError.of("A ''param'' tag should be self-ending (with a trailing ''/'') if and only if "
+          + "it also contains a value (invalid tag is '{'param {0} /'}').");
+  private static final SoyError SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE
+      = SoyError.of("The ''kind'' attribute is not allowed on self-ending ''param'' tags "
+          + "(invalid tag is '{'param {0} /'}').");
 
   /** The param key. */
   private final String key;
@@ -118,17 +125,11 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
       CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
 
       if (parseResult.valueExprUnion == null) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "A 'param' tag should be self-ending (with a trailing '/') if and only if it also"
-                + " contains a value (invalid tag is {param " + commandText + " /}).",
-            sourceLocation));
+        errorReporter.report(sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, commandText);
       }
 
       if (parseResult.contentKind != null) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "The 'kind' attribute is not allowed on self-ending 'param' tags "
-                + "(invalid tag is {param " + commandText + " /}).",
-            sourceLocation));
+        errorReporter.report(sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, commandText);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {

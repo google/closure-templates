@@ -17,12 +17,12 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
@@ -35,6 +35,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  */
 public final class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
 
+  private static final SoyError INVALID_XID_VALUE = SoyError.of("Invalid xid value");
 
   /** The text of the identifier. */
   private final String text;
@@ -141,8 +142,7 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
       Checkpoint checkpoint = errorReporter.checkpoint();
       // Verify that the command text is a single identifier literal.
       if (!BaseUtils.isDottedOrDashedIdent(commandText)) {
-        errorReporter.report(
-            SoySyntaxException.createWithMetaInfo("Invalid xid value", sourceLocation));
+        errorReporter.report(sourceLocation, INVALID_XID_VALUE);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {

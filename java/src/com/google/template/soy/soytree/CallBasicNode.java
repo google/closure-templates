@@ -29,6 +29,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -48,6 +49,13 @@ import javax.annotation.concurrent.Immutable;
  *
  */
 public final class CallBasicNode extends CallNode {
+
+  private static final SoyError MISSING_CALLEE_NAME
+      = SoyError.of("Invalid ''call'' command missing callee name: '{'call {0}'}'.");
+  private static final SoyError BAD_CALLEE_NAME
+      = SoyError.of("Invalid callee name \"{0}\" for ''call'' command.");
+  private static final SoyError MULTIPLE_CALLEE_NAMES
+      = SoyError.of("call: multiple callee names: `{0}`, `{1}`");
 
   /**
    * Helper class used by constructors. Encapsulates all the info derived from the command
@@ -309,21 +317,16 @@ public final class CallBasicNode extends CallNode {
       }
 
       if (srcCalleeNames.isEmpty()) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "Invalid 'call' command missing callee name: {call " + cmdText + "}.", sourceLocation));
+        errorReporter.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
       } else if (srcCalleeNames.size() == 1) {
         sourceCalleeName = srcCalleeNames.get(0);
         if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
             BaseUtils.isDottedIdentifier(sourceCalleeName))) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "Invalid callee name \"" + sourceCalleeName + "\" for 'call' command.",
-              sourceLocation));
+          errorReporter.report(sourceLocation, BAD_CALLEE_NAME, sourceCalleeName);
         }
       } else {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            String.format(
-                "Invalid 'call' command with callee name declared multiple times (%s, %s)",
-                srcCalleeNames.get(0), srcCalleeNames.get(1)), sourceLocation));
+        errorReporter.report(
+            sourceLocation, MULTIPLE_CALLEE_NAMES, srcCalleeNames.get(0), srcCalleeNames.get(1));
       }
 
       Pair<Boolean, ExprRootNode<?>> dataAttrInfo =

@@ -17,11 +17,11 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
@@ -36,6 +36,10 @@ import javax.annotation.Nullable;
  *
  */
 public final class CallParamContentNode extends CallParamNode implements RenderUnitNode {
+
+  private static final SoyError PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING
+      = SoyError.of("A ''param'' tag should contain a value if and only if it is also self-ending "
+          + "(with a trailing ''/'') (invalid tag is '{'param {0}'}').");
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
@@ -184,10 +188,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
       Checkpoint checkpoint = errorReporter.checkpoint();
       CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
       if (parseResult.valueExprUnion != null) {
-        errorReporter.report(SoySyntaxException.createWithoutMetaInfo(
-            "A 'param' tag should contain a value if and only if it is also self-ending (with a" +
-                " trailing '/') (invalid tag is {param " + commandText + "})."));
-
+        errorReporter.report(sourceLocation, PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING, commandText);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {

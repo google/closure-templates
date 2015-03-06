@@ -17,11 +17,11 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
@@ -36,6 +36,10 @@ import javax.annotation.Nullable;
  *
  */
 public final class LetContentNode extends LetNode implements RenderUnitNode {
+
+  private static final SoyError NON_SELF_ENDING_WITH_VALUE
+      = SoyError.of("A ''let'' tag should contain a value if and only if it is also self-ending "
+          + "(with a trailing ''/'').");
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
@@ -197,9 +201,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
           = parseCommandTextHelper(commandText, errorReporter, sourceLocation);
 
       if (parseResult.valueExpr != null) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "A 'let' tag should contain a value if and only if it is also self-ending (with a" +
-                " trailing '/').", sourceLocation));
+        errorReporter.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {

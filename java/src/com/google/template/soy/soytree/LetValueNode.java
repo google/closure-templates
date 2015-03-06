@@ -18,10 +18,10 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -35,6 +35,14 @@ import java.util.List;
  *
  */
 public class LetValueNode extends LetNode implements ExprHolderNode {
+
+  private static final SoyError SELF_ENDING_WITHOUT_VALUE
+      = SoyError.of("A ''let'' tag should be self-ending (with a trailing ''/'') if and only if "
+          + "it also contains a value (invalid tag is '{'let {0} /'}').");
+  private static final SoyError KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE
+      = SoyError.of("The ''kind'' attribute is not allowed on self-ending ''let'' tags that "
+          + "contain a value (invalid tag is '{'let {0} /'}').");
+
 
   /** The value expression that the variable is set to. */
   private final ExprRootNode<?> valueExpr;
@@ -118,15 +126,11 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
           = parseCommandTextHelper(commandText, errorReporter, sourceLocation);
 
       if (parseResult.valueExpr == null) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "A 'let' tag should be self-ending (with a trailing '/') if and only if it also" +
-                " contains a value (invalid tag is {let " + commandText + " /}).", sourceLocation));
+        errorReporter.report(sourceLocation, SELF_ENDING_WITHOUT_VALUE, commandText);
       }
 
       if (parseResult.contentKind != null) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "The 'kind' attribute is not allowed on self-ending 'let' tags that " +
-                " contain a value (invalid tag is {let " + commandText + " /}).", sourceLocation));
+        errorReporter.report(sourceLocation, KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE, commandText);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {

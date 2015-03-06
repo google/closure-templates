@@ -17,9 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 /**
@@ -29,6 +29,11 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  *
  */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
+
+  private static final SoyError PLURAL_CASE_OUT_OF_BOUNDS
+      = SoyError.of("Plural cases must be nonnegative integers.");
+  private static final SoyError MALFORMED_PLURAL_CASE
+      = SoyError.of("Invalid number in ''plural case'' command text");
 
   // A plural 'case' can only have a number in the command text.
   /** The number for this case */
@@ -99,16 +104,10 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
       try {
         caseNumber = Integer.parseInt(commandText);
         if (caseNumber < 0) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              "Plural cases must be nonnegative integers.", sourceLocation));
+          errorReporter.report(sourceLocation, PLURAL_CASE_OUT_OF_BOUNDS);
         }
       } catch (NumberFormatException nfe) {
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            "Invalid number in 'plural case' command text",
-            nfe,
-            sourceLocation,
-            null /* filePath */,
-            null /* templateName */));
+        errorReporter.report(sourceLocation, MALFORMED_PLURAL_CASE);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {

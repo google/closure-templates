@@ -18,6 +18,7 @@ package com.google.template.soy.soyparse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -63,6 +64,9 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyFileSetParser {
+
+  private static final SoyError VERSION_SKEW_IN_SOY_FILE =
+      SoyError.of("Version skew in Soy file {0}");
 
   /** The type registry to resolve type names. */
   private final SoyTypeRegistry typeRegistry;
@@ -264,7 +268,7 @@ public final class SoyFileSetParser {
           .parseSoyFile();
       if (soyFileSupplier.hasChangedSince(version)) {
         errorReporter.report(
-            SoySyntaxException.createWithoutMetaInfo("Version skew in Soy file " + filePath));
+            new SourceLocation(filePath, -1, -1, -1, -1), VERSION_SKEW_IN_SOY_FILE, filePath);
       }
       return Pair.of(soyFileNode, version);
     } catch (IOException e) {

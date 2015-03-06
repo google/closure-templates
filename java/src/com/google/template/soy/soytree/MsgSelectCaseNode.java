@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
@@ -35,6 +36,10 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  */
 public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
+  private static final SoyError INVALID_EXPRESSION_IN_COMMAND_TEXT
+      = SoyError.of("Invalid expression in ''case'' command text \"{0}\".");
+  private static final SoyError INVALID_STRING_FOR_SELECT_CASE
+      = SoyError.of("Invalid string for select ''case''.");
 
   /** The value for this case. */
   private final String caseValue;
@@ -101,18 +106,15 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
       ExprRootNode<?> strLit;
 
       try {
-        strLit = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-            commandText, "Invalid expression in 'case' command text \"" + commandText + "\".");
+        strLit = ExprParseUtils.parseExprElseThrowSoySyntaxException(commandText, null);
       } catch (SoySyntaxException e) {
-        errorReporter.report(e);
+        errorReporter.report(sourceLocation, INVALID_EXPRESSION_IN_COMMAND_TEXT, commandText);
         return ERROR;
       }
 
       // Make sure the expression is a string.
       if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
-        errorReporter.report(
-            SoySyntaxException.createWithMetaInfo(
-                "Invalid string for select 'case'.", sourceLocation));
+        errorReporter.report(sourceLocation, INVALID_STRING_FOR_SELECT_CASE);
       }
       String caseValue = ((StringNode) (strLit.getChild(0))).getValue();
 

@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import java.util.Collection;
@@ -37,6 +38,16 @@ import java.util.regex.Pattern;
  */
 final class CommandTextAttributesParser {
 
+  private static final SoyError MALFORMED_ATTRIBUTES
+      = SoyError.of("Malformed attributes in ''{0}'' command text ({1}).");
+  private static final SoyError UNSUPPORTED_ATTRIBUTE
+      = SoyError.of("Unsupported attribute ''{0}'' in ''{1}'' command text ({2}).");
+  private static final SoyError DUPLICATE_ATTRIBUTE
+      = SoyError.of("Duplicate attribute ''{0}'' in ''{1}'' command text ({2}).");
+  private static final SoyError INVALID_ATTRIBUTE_VALUE
+      = SoyError.of("Invalid value for attribute ''{0}'' in ''{1}'' command text ({2}).");
+  private static final SoyError MISSING_REQUIRED_ATTRIBUTE
+      = SoyError.of("Missing required attribute ''{0}'' in ''{1}'' command text ({2}).");
 
   /** Regex pattern for an attribute in command text.
    *  Note group(1) is attribute name, group(2) is attribute value.
@@ -71,7 +82,7 @@ final class CommandTextAttributesParser {
       // Sanity check that the default values are allowed values.
       if (attribute.allowedValues == Attribute.ALLOW_ALL_VALUES ||
           attribute.defaultValue == null ||
-          attribute.defaultValue == Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED) {
+          Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED.equals(attribute.defaultValue)) {
         continue;  // nothing to check
       }
       Preconditions.checkArgument(attribute.allowedValues.contains(attribute.defaultValue));
@@ -116,9 +127,7 @@ final class CommandTextAttributesParser {
     while (matcher.find(i)) {
 
       if (matcher.start() != i) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            String.format("Malformed attributes in '%s' command text (%s).",
-                commandName, commandText), sourceLocation));
+        errorReporter.report(sourceLocation, MALFORMED_ATTRIBUTES, commandName, commandText);
       }
       i = matcher.end();
 
@@ -126,22 +135,18 @@ final class CommandTextAttributesParser {
       String value = matcher.group(2);
 
       if (!supportedAttributeNames.contains(name)) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            String.format("Unsupported attribute '%s' in '%s' command text (%s).",
-                name, commandName, commandText), sourceLocation));
+        errorReporter.report(
+            sourceLocation, UNSUPPORTED_ATTRIBUTE, name, commandName, commandText);
       }
       if (attributes.containsKey(name)) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            String.format("Duplicate attribute '%s' in '%s' command text (%s).",
-                name, commandName, commandText), sourceLocation));
+        errorReporter.report(
+            sourceLocation, DUPLICATE_ATTRIBUTE, name, commandName, commandText);
       }
       attributes.put(name, value);
     }
 
     if (i != commandText.length()) {
-      errorReporter.report(SoySyntaxException.createWithMetaInfo(
-          String.format("Malformed attributes in '%s' command text (%s).",
-              commandName, commandText), sourceLocation));
+      errorReporter.report(sourceLocation, MALFORMED_ATTRIBUTES, commandName, commandText);
     }
 
     // --- Apply default values or check correctness of supplied values ---
@@ -153,17 +158,23 @@ final class CommandTextAttributesParser {
           continue;  // nothing to check
         }
         if (!supportedAttribute.allowedValues.contains(attributes.get(supportedAttribute.name))) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              String.format("Invalid value for attribute '%s' in '%s' command text (%s).",
-                  supportedAttribute.name, commandName, commandText), sourceLocation));
+          errorReporter.report(
+              sourceLocation,
+              INVALID_ATTRIBUTE_VALUE,
+              supportedAttribute.name,
+              commandName,
+              commandText);
         }
 
       } else {
         // Check that the attribute is not required.
         if (Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED.equals(supportedAttribute.defaultValue)) {
-          errorReporter.report(SoySyntaxException.createWithMetaInfo(
-              String.format("Missing required attribute '%s' in '%s' command text (%s).",
-                  supportedAttribute.name, commandName, commandText), sourceLocation));
+          errorReporter.report(
+              sourceLocation,
+              MISSING_REQUIRED_ATTRIBUTE,
+              supportedAttribute.name,
+              commandName,
+              commandText);
         }
         // Apply default value.
         attributes.put(supportedAttribute.name, supportedAttribute.defaultValue);

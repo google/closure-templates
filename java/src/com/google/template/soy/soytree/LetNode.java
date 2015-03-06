@@ -18,12 +18,12 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 
+  private static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
 
   /**
    * Return value for {@code parseCommandTextHelper()}.
@@ -117,8 +118,7 @@ public abstract class LetNode extends AbstractCommandNode
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      errorReporter.report(SoySyntaxException.createWithMetaInfo(
-          "Invalid 'let' command text.", sourceLocation));
+      errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT);
       return new CommandTextParseResult("error", null, null);
     }
 

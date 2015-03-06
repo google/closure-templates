@@ -18,11 +18,11 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -44,6 +44,12 @@ import java.util.regex.Pattern;
 public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
 
+  private static final SoyError INVALID_PLURAL_COMMAND_TEXT
+      = SoyError.of("Invalid ''plural'' command text \"{0}\".");
+  private static final SoyError PLURAL_OFFSET_OUT_OF_BOUNDS
+      = SoyError.of("The ''offset'' for plural must be a nonnegative integer.");
+  private static final SoyError MALFORMED_PLURAL_OFFSET
+      = SoyError.of("Invalid offset in ''plural'' command text \"{0}\".");
 
   /** An expression, and optional "offset" attribute. */
   private static final Pattern COMMAND_TEXT_PATTERN =
@@ -173,8 +179,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
       Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
       if (!matcher.matches()) {
-        errorReporter.report(SoySyntaxException.createWithMetaInfo(
-            "Invalid 'plural' command text \"" + commandText + "\".", sourceLocation));
+        errorReporter.report(sourceLocation, INVALID_PLURAL_COMMAND_TEXT, commandText);
       }
 
       ExprRootNode<?> pluralExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
@@ -190,16 +195,10 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
           String offsetAttribute = attributes.get("offset");
           offset = Integer.parseInt(offsetAttribute);
           if (offset < 0) {
-            errorReporter.report(SoySyntaxException.createWithMetaInfo(
-                "The 'offset' for plural must be a nonnegative integer.", sourceLocation));
+            errorReporter.report(sourceLocation, PLURAL_OFFSET_OUT_OF_BOUNDS);
           }
         } catch (NumberFormatException nfe) {
-          errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-              "Invalid offset in 'plural' command text \"" + commandText + "\".",
-              nfe,
-              sourceLocation,
-              null /* filePath */,
-              null /* templateName */));
+          errorReporter.report(sourceLocation, MALFORMED_PLURAL_OFFSET, commandText);
         }
       }
 

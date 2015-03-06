@@ -37,6 +37,14 @@ import java.util.regex.Pattern;
  * {@link ForeachNonemptyNode} and {@link ForeachIfemptyNode}.
  */
 final class ForeachBuilder {
+
+  private static final SoyError INVALID_COMMAND_TEXT
+      = SoyError.of("Invalid ''foreach'' command text \"{0}\".");
+  private static final SoyError INVALID_VARIABLE_NAME
+      = SoyError.of("Invalid variable name in ''foreach'' command text \"{0}\".");
+  private static final SoyError INVALID_FOREACH_EXPRESSION
+      = SoyError.of("Invalid expression in ''foreach'' command text \"{0}\".");
+
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, expression
   private static final Pattern FOR_EACH_COMMAND_TEXT_PATTERN =
@@ -92,27 +100,18 @@ final class ForeachBuilder {
     ExprRootNode<?> expr = null;
     Matcher matcher = FOR_EACH_COMMAND_TEXT_PATTERN.matcher(cmdText);
     if (!matcher.matches()) {
-      errorReporter.report(
-          SoySyntaxException.createWithMetaInfo(
-              "Invalid 'foreach' command text \"" + cmdText + "\".",
-              commandLocation, null, null));
+      errorReporter.report(commandLocation, INVALID_COMMAND_TEXT, cmdText);
     } else {
       // TODO(user): consider changing exprparseutils to not throw
       try {
-        varName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(
-            matcher.group(1),
-            "Invalid variable name in 'foreach' command text \"" + cmdText + "\".");
+        varName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(matcher.group(1), null);
       } catch (SoySyntaxException e) {
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, commandLocation, null, null));
+        errorReporter.report(commandLocation, INVALID_VARIABLE_NAME, matcher.group(1));
       }
       try {
-        expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-            matcher.group(2),
-            "Invalid expression in 'foreach' command text \"" + cmdText + "\".");
+        expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(matcher.group(2), null);
       } catch (SoySyntaxException e) {
-        errorReporter.report(SoySyntaxException.createCausedWithMetaInfo(
-            null, e, commandLocation, null, null));
+        errorReporter.report(commandLocation, INVALID_FOREACH_EXPRESSION, matcher.group(2));
       }
     }
 
