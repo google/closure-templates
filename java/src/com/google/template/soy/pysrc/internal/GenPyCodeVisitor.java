@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
@@ -47,6 +48,9 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
+import com.google.template.soy.soytree.SwitchCaseNode;
+import com.google.template.soy.soytree.SwitchDefaultNode;
+import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 
@@ -343,6 +347,84 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         pyCodeBuilder.decreaseIndent();
       } else {
         throw new AssertionError("Unexpected if child node type. Child: " + child);
+      }
+    }
+  }
+
+  /**
+   * Python does not support switch statements, so just replace with if: ... elif: ... else: ...
+   * As some expressions may generate different results each time, the expression is stored before
+   * conditionals (which prevents expression inlining).
+   *
+   * <p>Example:
+   * <pre>
+   *   {switch $boo}
+   *     {case 0}
+   *       ...
+   *     {case 1, 2}
+   *       ...
+   *     {default}
+   *       ...
+   *   {/switch}
+   * </pre>
+   * might generate
+   * <pre>
+   *   switchValue = opt_data.get('boo')
+   *   if switchValue == 0:
+   *     ...
+   *   elif switchValue == 1:
+   *     ...
+   *   elif switchValue == 2:
+   *     ...
+   *   else:
+   *     ...
+   * </pre>
+   */
+  @Override protected void visitSwitchNode(SwitchNode node) {
+    // Run the switch value creation first to ensure side effects always occur.
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
+    String switchValueVarName = "switchValue";
+    PyExpr switchValuePyExpr = translator.exec(node.getExpr());
+    pyCodeBuilder.appendLine(switchValueVarName, " = ", switchValuePyExpr.getText());
+
+    // If a Switch with only a default is provided (no case statements), just execute the inner
+    // code directly.
+    if (node.getChildren().size() == 1 && node.getChild(0) instanceof SwitchDefaultNode) {
+      visitChildren((SwitchDefaultNode) node.getChild(0));
+      return;
+    }
+
+    boolean isFirstCase = true;
+    for (SoyNode child : node.getChildren()) {
+      if (child instanceof SwitchCaseNode) {
+        SwitchCaseNode scn = (SwitchCaseNode) child;
+
+        for (ExprNode caseExpr : scn.getExprList()) {
+          PyExpr casePyExpr = translator.exec(caseExpr);
+          PyExpr conditionFn = new PyFunctionExprBuilder("runtime.type_safe_eq")
+              .addArg(new PyExpr(switchValueVarName, Integer.MAX_VALUE))
+              .addArg(casePyExpr).asPyExpr();
+
+          if (isFirstCase) {
+            pyCodeBuilder.appendLineStart("if ").append(conditionFn.getText()).appendLineEnd(":");
+            isFirstCase = false;
+          } else {
+            pyCodeBuilder.appendLineStart("elif ").append(conditionFn.getText()).appendLineEnd(":");
+          }
+
+          pyCodeBuilder.increaseIndent();
+          visitChildren(scn);
+          pyCodeBuilder.decreaseIndent();
+        }
+      } else if (child instanceof SwitchDefaultNode) {
+        SwitchDefaultNode sdn = (SwitchDefaultNode) child;
+
+        pyCodeBuilder.appendLine("else:");
+        pyCodeBuilder.increaseIndent();
+        visitChildren(sdn);
+        pyCodeBuilder.decreaseIndent();
+      } else {
+        throw new AssertionError("Unexpected switch child node type. Child: " + child);
       }
     }
   }

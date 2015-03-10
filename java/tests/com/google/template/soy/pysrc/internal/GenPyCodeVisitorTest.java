@@ -105,6 +105,39 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
 
+  public void testSwitch() {
+    String soyCode =
+        "{switch $boo}\n"
+        + "  {case 0}\n"
+        + "     Hello\n"
+        + "  {case 1}\n"
+        + "     World\n"
+        + "  {default}\n"
+        + "     !\n"
+        + "{/switch}\n";
+    String expectedPyCode =
+        "switchValue = opt_data.get('boo')\n"
+        + "if runtime.type_safe_eq(switchValue, 0):\n"
+        + "  output.append('Hello')\n"
+        + "elif runtime.type_safe_eq(switchValue, 1):\n"
+        + "  output.append('World')\n"
+        + "else:\n"
+        + "  output.append('!')\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  public void testSwitch_defaultOnly() {
+    String soyCode =
+        "{switch $boo}\n"
+        + "  {default}\n"
+        + "     Hello World!\n"
+        + "{/switch}\n";
+    String expectedPyCode =
+        "switchValue = opt_data.get('boo')\n"
+        + "output.append('Hello World!')\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
   public void testFor() {
     String soyCode =
         "{for $i in range(5)}\n"
