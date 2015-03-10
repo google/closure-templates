@@ -36,12 +36,12 @@ import java.util.Map;
 public class TranslateToPyExprVisitorTest extends TestCase {
 
   public void testNullLiteral() throws Exception {
-    assertThatSoyExpr("null").translatesTo( new PyExpr("None", Integer.MAX_VALUE));
+    assertThatSoyExpr("null").translatesTo(new PyExpr("None", Integer.MAX_VALUE));
   }
 
   public void testBooleanLiteral() throws Exception {
-    assertThatSoyExpr("true").translatesTo( new PyExpr("True", Integer.MAX_VALUE));
-    assertThatSoyExpr("false").translatesTo( new PyExpr("False", Integer.MAX_VALUE));
+    assertThatSoyExpr("true").translatesTo(new PyExpr("True", Integer.MAX_VALUE));
+    assertThatSoyExpr("false").translatesTo(new PyExpr("False", Integer.MAX_VALUE));
   }
 
   public void testStringLiteral() throws Exception {
@@ -50,9 +50,9 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   }
 
   public void testListLiteral() throws Exception {
-    assertThatSoyExpr("['blah', 123, $foo]").translatesTo(
-            new PyExpr("['blah', 123, opt_data.get('foo'), ]", Integer.MAX_VALUE), PyListExpr.class);
     assertThatSoyExpr("[]").translatesTo(new PyExpr("[]", Integer.MAX_VALUE), PyListExpr.class);
+    assertThatSoyExpr("['blah', 123, $foo]").translatesTo(
+        new PyExpr("['blah', 123, opt_data.get('foo'), ]", Integer.MAX_VALUE), PyListExpr.class);
   }
 
   public void testMapLiteral() throws Exception {

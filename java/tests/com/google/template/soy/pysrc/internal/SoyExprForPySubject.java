@@ -51,6 +51,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
 
   private final LocalVariableStack localVarExprs;
 
+
   SoyExprForPySubject(FailureStrategy failureStrategy, String expr) {
     super(failureStrategy, expr);
     localVarExprs = new LocalVariableStack();
@@ -65,17 +66,21 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   }
 
   /**
-   * Assert soy expr compiled to the correct PyExpr.
+   * Asserts the subject compiles to the correct PyExpr.
+   *
+   * @param expectedPyExpr The expected result of compilation.
    */
   public void compilesTo(PyExpr expectedPyExpr) {
     compilesTo(ImmutableList.of(expectedPyExpr));
   }
 
   /**
-   * Assert soy expr compiled to the correct list of PyExprs.
+   * Asserts the subject compiles to the correct list of PyExprs.
    *
    * <p>The given Soy expr is wrapped in a full body of a template. The actual result is replaced
    * with ids for ### so that tests don't break when ids change.
+   *
+   * @param expectedPyExprs The expected result of compilation.
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
     ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(getSubject());
@@ -96,15 +101,21 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     }
   }
 
+  /**
+   * Asserts the subject translates to the expected PyExpr.
+   *
+   * @param expectedPyExpr The expected result of translation.
+   */
   public void translatesTo(PyExpr expectedPyExpr) {
     translatesTo(expectedPyExpr, null);
   }
 
   /**
-   * Checks that the given Soy expression translates to the given PyExpr.
+   * Asserts the subject translates to the expected PyExpr including verification of the exact
+   * PyExpr class (e.g. {@code PyStringExpr.class}).
    *
-   * @param expectedPyExpr The expected result of the translation.
-   * @param expectedClass The expected class type of the resulting PyExpr.
+   * @param expectedPyExpr The expected result of translation.
+   * @param expectedClass The expected class of the resulting PyExpr.
    */
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
     String soyExpr = String.format("{print %s}", getSubject());

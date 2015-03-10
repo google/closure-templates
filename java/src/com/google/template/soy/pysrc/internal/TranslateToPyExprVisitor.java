@@ -81,6 +81,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
   /** Map of all SoyPySrcFunctions (name to function). */
   private final ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap;
 
+
   @AssistedInject
   TranslateToPyExprVisitor(
       ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap,
@@ -98,6 +99,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
       return visit(node);
     }
   };
+
 
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
@@ -182,7 +184,6 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
   }
 
   private String visitNullSafeNodeRecurse(ExprNode node, StringBuilder nullSafetyPrefix) {
-
     switch (node.getKind()) {
       case VAR_REF_NODE: {
         VarRefNode varRef = (VarRefNode) node;
@@ -365,23 +366,23 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
 
   /**
-   * Private helper for {@code visitDataAccessNode()} to generate the code for a key access, e.g.
-   * {@code .get('key')}.
+   * Private helper for {@code visitDataAccessNode()} to generate the code for key access given a
+   * key literal, e.g. {@code .get('key')}.
    *
-   * @param key The key.
+   * @param key The String literal value to be used as a key.
    */
   private static String genCodeForLiteralKeyAccess(String key) {
     return genCodeForKeyAccess("'" + key + "'");
   }
 
   /**
-   * Private helper for {@code visitDataAccessNode()} to generate the code for a key access, e.g.
-   * {@code .get(key)}.
+   * Private helper for {@code visitDataAccessNode()} to generate the code for key access given the
+   * name of a variable to be used as a key, e.g. {@code .get(key)}.
    *
-   * @param key The key.
+   * @param keyName The variable name to be used as a key.
    */
-  private static String genCodeForKeyAccess(String key) {
-    return ".get(" + key + ")";
+  private static String genCodeForKeyAccess(String keyName) {
+    return ".get(" + keyName + ")";
   }
 
   /**
