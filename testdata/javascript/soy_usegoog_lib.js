@@ -2689,7 +2689,7 @@ goog.addDependency('dom/dom.js', ['goog.dom', 'goog.dom.Appendable', 'goog.dom.D
 goog.addDependency('dom/dom_test.js', ['goog.dom.dom_test'], ['goog.dom', 'goog.dom.BrowserFeature', 'goog.dom.DomHelper', 'goog.dom.InputType', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.functions', 'goog.html.testing', 'goog.object', 'goog.string.Unicode', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('dom/fontsizemonitor.js', ['goog.dom.FontSizeMonitor', 'goog.dom.FontSizeMonitor.EventType'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.userAgent'], false);
 goog.addDependency('dom/fontsizemonitor_test.js', ['goog.dom.FontSizeMonitorTest'], ['goog.dom', 'goog.dom.FontSizeMonitor', 'goog.events', 'goog.events.Event', 'goog.testing.PropertyReplacer', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('dom/forms.js', ['goog.dom.forms'], ['goog.dom.InputType', 'goog.structs.Map'], false);
+goog.addDependency('dom/forms.js', ['goog.dom.forms'], ['goog.dom.InputType', 'goog.dom.TagName', 'goog.structs.Map'], false);
 goog.addDependency('dom/forms_test.js', ['goog.dom.formsTest'], ['goog.dom', 'goog.dom.forms', 'goog.testing.jsunit'], false);
 goog.addDependency('dom/fullscreen.js', ['goog.dom.fullscreen', 'goog.dom.fullscreen.EventType'], ['goog.dom', 'goog.userAgent'], false);
 goog.addDependency('dom/iframe.js', ['goog.dom.iframe'], ['goog.dom', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.userAgent'], false);
@@ -2871,7 +2871,7 @@ goog.addDependency('format/emailaddress.js', ['goog.format.EmailAddress'], ['goo
 goog.addDependency('format/emailaddress_test.js', ['goog.format.EmailAddressTest'], ['goog.array', 'goog.format.EmailAddress', 'goog.testing.jsunit'], false);
 goog.addDependency('format/format.js', ['goog.format'], ['goog.i18n.GraphemeBreak', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('format/format_test.js', ['goog.formatTest'], ['goog.dom', 'goog.format', 'goog.string', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
-goog.addDependency('format/htmlprettyprinter.js', ['goog.format.HtmlPrettyPrinter', 'goog.format.HtmlPrettyPrinter.Buffer'], ['goog.object', 'goog.string.StringBuffer'], false);
+goog.addDependency('format/htmlprettyprinter.js', ['goog.format.HtmlPrettyPrinter', 'goog.format.HtmlPrettyPrinter.Buffer'], ['goog.dom.TagName', 'goog.object', 'goog.string.StringBuffer'], false);
 goog.addDependency('format/htmlprettyprinter_test.js', ['goog.format.HtmlPrettyPrinterTest'], ['goog.format.HtmlPrettyPrinter', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('format/internationalizedemailaddress.js', ['goog.format.InternationalizedEmailAddress'], ['goog.format.EmailAddress', 'goog.string'], false);
 goog.addDependency('format/internationalizedemailaddress_test.js', ['goog.format.InternationalizedEmailAddressTest'], ['goog.array', 'goog.format.InternationalizedEmailAddress', 'goog.testing.jsunit'], false);
@@ -2909,7 +2909,7 @@ goog.addDependency('fx/dom.js', ['goog.fx.dom', 'goog.fx.dom.BgColorTransform', 
 goog.addDependency('fx/dragdrop.js', ['goog.fx.DragDrop'], ['goog.fx.AbstractDragDrop', 'goog.fx.DragDropItem'], false);
 goog.addDependency('fx/dragdropgroup.js', ['goog.fx.DragDropGroup'], ['goog.dom', 'goog.fx.AbstractDragDrop', 'goog.fx.DragDropItem'], false);
 goog.addDependency('fx/dragdropgroup_test.js', ['goog.fx.DragDropGroupTest'], ['goog.events', 'goog.fx.DragDropGroup', 'goog.testing.jsunit'], false);
-goog.addDependency('fx/dragger.js', ['goog.fx.DragEvent', 'goog.fx.Dragger', 'goog.fx.Dragger.EventType'], ['goog.dom', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.style', 'goog.style.bidi', 'goog.userAgent'], false);
+goog.addDependency('fx/dragger.js', ['goog.fx.DragEvent', 'goog.fx.Dragger', 'goog.fx.Dragger.EventType'], ['goog.dom', 'goog.dom.TagName', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.style', 'goog.style.bidi', 'goog.userAgent'], false);
 goog.addDependency('fx/dragger_test.js', ['goog.fx.DraggerTest'], ['goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.Event', 'goog.events.EventType', 'goog.fx.Dragger', 'goog.math.Rect', 'goog.style.bidi', 'goog.testing.StrictMock', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('fx/draglistgroup.js', ['goog.fx.DragListDirection', 'goog.fx.DragListGroup', 'goog.fx.DragListGroup.EventType', 'goog.fx.DragListGroupEvent'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.fx.Dragger', 'goog.math.Coordinate', 'goog.string', 'goog.style'], false);
 goog.addDependency('fx/draglistgroup_test.js', ['goog.fx.DragListGroupTest'], ['goog.array', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.BrowserFeature', 'goog.events.Event', 'goog.events.EventType', 'goog.fx.DragEvent', 'goog.fx.DragListDirection', 'goog.fx.DragListGroup', 'goog.fx.Dragger', 'goog.math.Coordinate', 'goog.object', 'goog.testing.events', 'goog.testing.jsunit'], false);
@@ -2966,7 +2966,7 @@ goog.addDependency('html/flash.js', ['goog.html.flash'], ['goog.asserts', 'goog.
 goog.addDependency('html/flash_test.js', ['goog.html.flashTest'], ['goog.html.SafeHtml', 'goog.html.TrustedResourceUrl', 'goog.html.flash', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/legacyconversions.js', ['goog.html.legacyconversions'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl'], false);
 goog.addDependency('html/legacyconversions_test.js', ['goog.html.legacyconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.legacyconversions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
-goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
+goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.TagName', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safehtml_test.js', ['goog.html.safeHtmlTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safescript.js', ['goog.html.SafeScript'], ['goog.asserts', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safescript_test.js', ['goog.html.safeScriptTest'], ['goog.html.SafeScript', 'goog.string.Const', 'goog.testing.jsunit'], false);
@@ -3229,7 +3229,7 @@ goog.addDependency('module/moduleinfo.js', ['goog.module.ModuleInfo'], ['goog.Di
 goog.addDependency('module/moduleinfo_test.js', ['goog.module.ModuleInfoTest'], ['goog.module.BaseModule', 'goog.module.ModuleInfo', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('module/moduleloadcallback.js', ['goog.module.ModuleLoadCallback'], ['goog.debug.entryPointRegistry', 'goog.debug.errorHandlerWeakDep', 'goog.module'], false);
 goog.addDependency('module/moduleloadcallback_test.js', ['goog.module.ModuleLoadCallbackTest'], ['goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.functions', 'goog.module.ModuleLoadCallback', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
-goog.addDependency('module/moduleloader.js', ['goog.module.ModuleLoader'], ['goog.Timer', 'goog.array', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.log', 'goog.module.AbstractModuleLoader', 'goog.net.BulkLoader', 'goog.net.EventType', 'goog.net.jsloader', 'goog.userAgent', 'goog.userAgent.product'], false);
+goog.addDependency('module/moduleloader.js', ['goog.module.ModuleLoader'], ['goog.Timer', 'goog.array', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.labs.userAgent.browser', 'goog.log', 'goog.module.AbstractModuleLoader', 'goog.net.BulkLoader', 'goog.net.EventType', 'goog.net.jsloader', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('module/moduleloader_test.js', ['goog.module.ModuleLoaderTest'], ['goog.array', 'goog.dom', 'goog.events', 'goog.functions', 'goog.module.ModuleLoader', 'goog.module.ModuleManager', 'goog.net.BulkLoader', 'goog.net.XmlHttp', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.events.EventObserver', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('module/modulemanager.js', ['goog.module.ModuleManager', 'goog.module.ModuleManager.CallbackType', 'goog.module.ModuleManager.FailureType'], ['goog.Disposable', 'goog.array', 'goog.asserts', 'goog.async.Deferred', 'goog.debug.Trace', 'goog.dispose', 'goog.log', 'goog.module', 'goog.module.ModuleInfo', 'goog.module.ModuleLoadCallback', 'goog.object'], false);
 goog.addDependency('module/modulemanager_test.js', ['goog.module.ModuleManagerTest'], ['goog.array', 'goog.functions', 'goog.module.BaseModule', 'goog.module.ModuleManager', 'goog.testing', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
@@ -3586,6 +3586,7 @@ goog.addDependency('testing/testcase.js', ['goog.testing.TestCase', 'goog.testin
 goog.addDependency('testing/testcase_test.js', ['goog.testing.TestCaseTest'], ['goog.Promise', 'goog.testing.MockRandom', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/testqueue.js', ['goog.testing.TestQueue'], [], false);
 goog.addDependency('testing/testrunner.js', ['goog.testing.TestRunner'], ['goog.testing.TestCase'], false);
+goog.addDependency('testing/testsuite.js', ['goog.testing.testSuite'], ['goog.testing.TestCase'], false);
 goog.addDependency('testing/ui/rendererasserts.js', ['goog.testing.ui.rendererasserts'], ['goog.testing.asserts', 'goog.ui.ControlRenderer'], false);
 goog.addDependency('testing/ui/rendererasserts_test.js', ['goog.testing.ui.rendererassertsTest'], ['goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.ui.rendererasserts', 'goog.ui.ControlRenderer'], false);
 goog.addDependency('testing/ui/rendererharness.js', ['goog.testing.ui.RendererHarness'], ['goog.Disposable', 'goog.dom.NodeType', 'goog.testing.asserts', 'goog.testing.dom'], false);
@@ -3813,7 +3814,7 @@ goog.addDependency('ui/popupdatepicker_test.js', ['goog.ui.PopupDatePickerTest']
 goog.addDependency('ui/popupmenu.js', ['goog.ui.PopupMenu'], ['goog.events.EventType', 'goog.positioning.AnchoredViewportPosition', 'goog.positioning.Corner', 'goog.positioning.MenuAnchoredPosition', 'goog.positioning.Overflow', 'goog.positioning.ViewportClientPosition', 'goog.structs.Map', 'goog.style', 'goog.ui.Component', 'goog.ui.Menu', 'goog.ui.PopupBase', 'goog.userAgent'], false);
 goog.addDependency('ui/popupmenu_test.js', ['goog.ui.PopupMenuTest'], ['goog.dom', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.math.Box', 'goog.math.Coordinate', 'goog.positioning.Corner', 'goog.style', 'goog.testing.jsunit', 'goog.ui.Menu', 'goog.ui.MenuItem', 'goog.ui.PopupMenu'], false);
 goog.addDependency('ui/progressbar.js', ['goog.ui.ProgressBar', 'goog.ui.ProgressBar.Orientation'], ['goog.a11y.aria', 'goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.ui.Component', 'goog.ui.RangeModel', 'goog.userAgent'], false);
-goog.addDependency('ui/prompt.js', ['goog.ui.Prompt'], ['goog.Timer', 'goog.dom', 'goog.dom.InputType', 'goog.events', 'goog.events.EventType', 'goog.functions', 'goog.html.SafeHtml', 'goog.html.legacyconversions', 'goog.ui.Component', 'goog.ui.Dialog', 'goog.userAgent'], false);
+goog.addDependency('ui/prompt.js', ['goog.ui.Prompt'], ['goog.Timer', 'goog.dom', 'goog.dom.InputType', 'goog.dom.TagName', 'goog.events', 'goog.events.EventType', 'goog.functions', 'goog.html.SafeHtml', 'goog.html.legacyconversions', 'goog.ui.Component', 'goog.ui.Dialog', 'goog.userAgent'], false);
 goog.addDependency('ui/prompt_test.js', ['goog.ui.PromptTest'], ['goog.dom.selection', 'goog.events.InputHandler', 'goog.events.KeyCodes', 'goog.functions', 'goog.string', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.BidiInput', 'goog.ui.Dialog', 'goog.ui.Prompt', 'goog.userAgent', 'goog.userAgent.product'], false);
 goog.addDependency('ui/rangemodel.js', ['goog.ui.RangeModel'], ['goog.events.EventTarget', 'goog.ui.Component'], false);
 goog.addDependency('ui/rangemodel_test.js', ['goog.ui.RangeModelTest'], ['goog.testing.jsunit', 'goog.ui.RangeModel'], false);
@@ -7643,6 +7644,168 @@ goog.array.copyByIndex = function(arr, index_arr) {
   return result;
 };
 
+//javascript/closure/dom/tagname.js
+// Copyright 2007 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Defines the goog.dom.TagName enum.  This enumerates
+ * all HTML tag names specified in either the the W3C HTML 4.01 index of
+ * elements or the HTML5 draft specification.
+ *
+ * References:
+ * http://www.w3.org/TR/html401/index/elements.html
+ * http://dev.w3.org/html5/spec/section-index.html
+ *
+ */
+goog.provide('goog.dom.TagName');
+
+
+/**
+ * Enum of all html tag names specified by the W3C HTML4.01 and HTML5
+ * specifications.
+ * @enum {string}
+ */
+goog.dom.TagName = {
+  A: 'A',
+  ABBR: 'ABBR',
+  ACRONYM: 'ACRONYM',
+  ADDRESS: 'ADDRESS',
+  APPLET: 'APPLET',
+  AREA: 'AREA',
+  ARTICLE: 'ARTICLE',
+  ASIDE: 'ASIDE',
+  AUDIO: 'AUDIO',
+  B: 'B',
+  BASE: 'BASE',
+  BASEFONT: 'BASEFONT',
+  BDI: 'BDI',
+  BDO: 'BDO',
+  BIG: 'BIG',
+  BLOCKQUOTE: 'BLOCKQUOTE',
+  BODY: 'BODY',
+  BR: 'BR',
+  BUTTON: 'BUTTON',
+  CANVAS: 'CANVAS',
+  CAPTION: 'CAPTION',
+  CENTER: 'CENTER',
+  CITE: 'CITE',
+  CODE: 'CODE',
+  COL: 'COL',
+  COLGROUP: 'COLGROUP',
+  COMMAND: 'COMMAND',
+  DATA: 'DATA',
+  DATALIST: 'DATALIST',
+  DD: 'DD',
+  DEL: 'DEL',
+  DETAILS: 'DETAILS',
+  DFN: 'DFN',
+  DIALOG: 'DIALOG',
+  DIR: 'DIR',
+  DIV: 'DIV',
+  DL: 'DL',
+  DT: 'DT',
+  EM: 'EM',
+  EMBED: 'EMBED',
+  FIELDSET: 'FIELDSET',
+  FIGCAPTION: 'FIGCAPTION',
+  FIGURE: 'FIGURE',
+  FONT: 'FONT',
+  FOOTER: 'FOOTER',
+  FORM: 'FORM',
+  FRAME: 'FRAME',
+  FRAMESET: 'FRAMESET',
+  H1: 'H1',
+  H2: 'H2',
+  H3: 'H3',
+  H4: 'H4',
+  H5: 'H5',
+  H6: 'H6',
+  HEAD: 'HEAD',
+  HEADER: 'HEADER',
+  HGROUP: 'HGROUP',
+  HR: 'HR',
+  HTML: 'HTML',
+  I: 'I',
+  IFRAME: 'IFRAME',
+  IMG: 'IMG',
+  INPUT: 'INPUT',
+  INS: 'INS',
+  ISINDEX: 'ISINDEX',
+  KBD: 'KBD',
+  KEYGEN: 'KEYGEN',
+  LABEL: 'LABEL',
+  LEGEND: 'LEGEND',
+  LI: 'LI',
+  LINK: 'LINK',
+  MAP: 'MAP',
+  MARK: 'MARK',
+  MATH: 'MATH',
+  MENU: 'MENU',
+  META: 'META',
+  METER: 'METER',
+  NAV: 'NAV',
+  NOFRAMES: 'NOFRAMES',
+  NOSCRIPT: 'NOSCRIPT',
+  OBJECT: 'OBJECT',
+  OL: 'OL',
+  OPTGROUP: 'OPTGROUP',
+  OPTION: 'OPTION',
+  OUTPUT: 'OUTPUT',
+  P: 'P',
+  PARAM: 'PARAM',
+  PRE: 'PRE',
+  PROGRESS: 'PROGRESS',
+  Q: 'Q',
+  RP: 'RP',
+  RT: 'RT',
+  RUBY: 'RUBY',
+  S: 'S',
+  SAMP: 'SAMP',
+  SCRIPT: 'SCRIPT',
+  SECTION: 'SECTION',
+  SELECT: 'SELECT',
+  SMALL: 'SMALL',
+  SOURCE: 'SOURCE',
+  SPAN: 'SPAN',
+  STRIKE: 'STRIKE',
+  STRONG: 'STRONG',
+  STYLE: 'STYLE',
+  SUB: 'SUB',
+  SUMMARY: 'SUMMARY',
+  SUP: 'SUP',
+  SVG: 'SVG',
+  TABLE: 'TABLE',
+  TBODY: 'TBODY',
+  TD: 'TD',
+  TEMPLATE: 'TEMPLATE',
+  TEXTAREA: 'TEXTAREA',
+  TFOOT: 'TFOOT',
+  TH: 'TH',
+  THEAD: 'THEAD',
+  TIME: 'TIME',
+  TITLE: 'TITLE',
+  TR: 'TR',
+  TRACK: 'TRACK',
+  TT: 'TT',
+  U: 'U',
+  UL: 'UL',
+  VAR: 'VAR',
+  VIDEO: 'VIDEO',
+  WBR: 'WBR'
+};
+
 //javascript/closure/object/object.js
 // Copyright 2006 The Closure Library Authors. All Rights Reserved.
 //
@@ -11002,6 +11165,7 @@ goog.provide('goog.html.SafeHtml');
 
 goog.require('goog.array');
 goog.require('goog.asserts');
+goog.require('goog.dom.TagName');
 goog.require('goog.dom.tags');
 goog.require('goog.html.SafeStyle');
 goog.require('goog.html.SafeStyleSheet');
@@ -11287,7 +11451,9 @@ goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
  * @private @const {!Object<string,boolean>}
  */
 goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet(
-    'embed', 'iframe', 'link', 'object', 'script', 'style', 'template');
+    goog.dom.TagName.EMBED, goog.dom.TagName.IFRAME, goog.dom.TagName.LINK,
+    goog.dom.TagName.OBJECT, goog.dom.TagName.SCRIPT, goog.dom.TagName.STYLE,
+    goog.dom.TagName.TEMPLATE);
 
 
 /**
@@ -11351,7 +11517,7 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
   if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(tagName)) {
     throw Error('Invalid tag name <' + tagName + '>.');
   }
-  if (tagName.toLowerCase() in goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_) {
+  if (tagName.toUpperCase() in goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_) {
     throw Error('Tag name <' + tagName + '> is not allowed for SafeHtml.');
   }
   return goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
@@ -14210,168 +14376,6 @@ goog.dom.safe.setLocationHref = function(loc, url) {
     safeUrl = goog.html.SafeUrl.sanitize(url);
   }
   loc.href = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-//javascript/closure/dom/tagname.js
-// Copyright 2007 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Defines the goog.dom.TagName enum.  This enumerates
- * all HTML tag names specified in either the the W3C HTML 4.01 index of
- * elements or the HTML5 draft specification.
- *
- * References:
- * http://www.w3.org/TR/html401/index/elements.html
- * http://dev.w3.org/html5/spec/section-index.html
- *
- */
-goog.provide('goog.dom.TagName');
-
-
-/**
- * Enum of all html tag names specified by the W3C HTML4.01 and HTML5
- * specifications.
- * @enum {string}
- */
-goog.dom.TagName = {
-  A: 'A',
-  ABBR: 'ABBR',
-  ACRONYM: 'ACRONYM',
-  ADDRESS: 'ADDRESS',
-  APPLET: 'APPLET',
-  AREA: 'AREA',
-  ARTICLE: 'ARTICLE',
-  ASIDE: 'ASIDE',
-  AUDIO: 'AUDIO',
-  B: 'B',
-  BASE: 'BASE',
-  BASEFONT: 'BASEFONT',
-  BDI: 'BDI',
-  BDO: 'BDO',
-  BIG: 'BIG',
-  BLOCKQUOTE: 'BLOCKQUOTE',
-  BODY: 'BODY',
-  BR: 'BR',
-  BUTTON: 'BUTTON',
-  CANVAS: 'CANVAS',
-  CAPTION: 'CAPTION',
-  CENTER: 'CENTER',
-  CITE: 'CITE',
-  CODE: 'CODE',
-  COL: 'COL',
-  COLGROUP: 'COLGROUP',
-  COMMAND: 'COMMAND',
-  DATA: 'DATA',
-  DATALIST: 'DATALIST',
-  DD: 'DD',
-  DEL: 'DEL',
-  DETAILS: 'DETAILS',
-  DFN: 'DFN',
-  DIALOG: 'DIALOG',
-  DIR: 'DIR',
-  DIV: 'DIV',
-  DL: 'DL',
-  DT: 'DT',
-  EM: 'EM',
-  EMBED: 'EMBED',
-  FIELDSET: 'FIELDSET',
-  FIGCAPTION: 'FIGCAPTION',
-  FIGURE: 'FIGURE',
-  FONT: 'FONT',
-  FOOTER: 'FOOTER',
-  FORM: 'FORM',
-  FRAME: 'FRAME',
-  FRAMESET: 'FRAMESET',
-  H1: 'H1',
-  H2: 'H2',
-  H3: 'H3',
-  H4: 'H4',
-  H5: 'H5',
-  H6: 'H6',
-  HEAD: 'HEAD',
-  HEADER: 'HEADER',
-  HGROUP: 'HGROUP',
-  HR: 'HR',
-  HTML: 'HTML',
-  I: 'I',
-  IFRAME: 'IFRAME',
-  IMG: 'IMG',
-  INPUT: 'INPUT',
-  INS: 'INS',
-  ISINDEX: 'ISINDEX',
-  KBD: 'KBD',
-  KEYGEN: 'KEYGEN',
-  LABEL: 'LABEL',
-  LEGEND: 'LEGEND',
-  LI: 'LI',
-  LINK: 'LINK',
-  MAP: 'MAP',
-  MARK: 'MARK',
-  MATH: 'MATH',
-  MENU: 'MENU',
-  META: 'META',
-  METER: 'METER',
-  NAV: 'NAV',
-  NOFRAMES: 'NOFRAMES',
-  NOSCRIPT: 'NOSCRIPT',
-  OBJECT: 'OBJECT',
-  OL: 'OL',
-  OPTGROUP: 'OPTGROUP',
-  OPTION: 'OPTION',
-  OUTPUT: 'OUTPUT',
-  P: 'P',
-  PARAM: 'PARAM',
-  PRE: 'PRE',
-  PROGRESS: 'PROGRESS',
-  Q: 'Q',
-  RP: 'RP',
-  RT: 'RT',
-  RUBY: 'RUBY',
-  S: 'S',
-  SAMP: 'SAMP',
-  SCRIPT: 'SCRIPT',
-  SECTION: 'SECTION',
-  SELECT: 'SELECT',
-  SMALL: 'SMALL',
-  SOURCE: 'SOURCE',
-  SPAN: 'SPAN',
-  STRIKE: 'STRIKE',
-  STRONG: 'STRONG',
-  STYLE: 'STYLE',
-  SUB: 'SUB',
-  SUMMARY: 'SUMMARY',
-  SUP: 'SUP',
-  SVG: 'SVG',
-  TABLE: 'TABLE',
-  TBODY: 'TBODY',
-  TD: 'TD',
-  TEMPLATE: 'TEMPLATE',
-  TEXTAREA: 'TEXTAREA',
-  TFOOT: 'TFOOT',
-  TH: 'TH',
-  THEAD: 'THEAD',
-  TIME: 'TIME',
-  TITLE: 'TITLE',
-  TR: 'TR',
-  TRACK: 'TRACK',
-  TT: 'TT',
-  U: 'U',
-  UL: 'UL',
-  VAR: 'VAR',
-  VIDEO: 'VIDEO',
-  WBR: 'WBR'
 };
 
 //javascript/closure/dom/dom.js
