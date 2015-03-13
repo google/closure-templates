@@ -163,7 +163,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
     // Context a a a a a a a b b b b b b b a
     RawTextNode rawTextNode = new RawTextNode(0, "Hello, <World>!");
     Context a = Context.HTML_PCDATA;
-    Context b = Context.HTML_TAG_NAME;
+    Context b = Context.HTML_PCDATA.derive(Context.State.HTML_TAG_NAME);
     SlicedRawTextNode slicedNode = new SlicedRawTextNode(rawTextNode, a);
     slicedNode.insertSlice(0, a, 4);  // "Hell"
     slicedNode.insertSlice(1, a, 3);  // "o, "

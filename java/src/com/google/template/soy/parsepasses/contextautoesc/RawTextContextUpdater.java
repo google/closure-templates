@@ -19,6 +19,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import com.google.template.soy.soytree.RawTextNode;
 
@@ -139,10 +140,10 @@ final class RawTextContextUpdater {
           // rawText.charAt(endOffset) is now ">" in the example above.
 
           // When an attribute ends, we're back in the tag.
-          endContext = new Context(
-              Context.State.HTML_TAG, context.elType, Context.AttributeType.NONE,
-              Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-              Context.UriPart.NONE);
+          endContext = context.toBuilder()
+              .withState(Context.State.HTML_TAG)
+              .withoutAttrContext()
+              .build();
         } else {
           // Whole tail is part of an unterminated attribute.
           if (attrValueEnd != unprocessedRawTextLen) {
@@ -284,22 +285,79 @@ final class RawTextContextUpdater {
 
 
   /** A transition to a given context. */
-  private static Transition makeTransitionTo(String regex, final Context dest) {
+  private static Transition makeTransitionTo(String regex, final ContentKind kind) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return dest;
+        return prior.toBuilder().withStartKind(kind).build();
       }
     };
+  }
+
+
+  /**
+   * A pattern to match the beginning of a tag with the given name.
+   * @param allowClose true to match a close tag and leave any {@code "/"} indicating
+   *    that the tag starts with {@code </} in group 1.
+   * @return Given {@code "script"}, a pattern that matches the prefix {@code "<script"}
+   *    of {@code "<script>"} but does not match any prefix of {@code "<scriptsareawesome>"}.
+   */
+  private static String regexForSpecialTagNamed(String tagName, boolean allowClose) {
+    return (
+        "(?i)" // Tag names are case-insensitive
+        + "<"  // Starts tag
+        + (allowClose ? "(/?)" : "")
+        + tagName
+        + "(?="  // Lookahead to make sure we're not matching just a prefix of the tag name.
+        + "[\\s>/]|\\z"  // Tag names are terminated by a space, or tag end marker, or end of input.
+        + ")");
+    // The "/" in the lookahead is correct.
+    // <script/>alert(1)</script> and <script/style>alert(2)</script> both alert in Chrome.  Whee!
+  }
+
+  /**
+   * A transition from the start of a tag with the given name to a context in the body of an open
+   * tag for the given element.
+   */
+  private static Transition makeTransitionToTagNamed(String tagName, final Context.ElementType el) {
+    String regex = regexForSpecialTagNamed(tagName, false);
+    return makeTransitionToTag(regex, el);
   }
 
   /** A transition to a context in the body of an open tag for the given element. */
   private static Transition makeTransitionToTag(String regex, final Context.ElementType el) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return new Context(
-            Context.State.HTML_TAG, el, Context.AttributeType.NONE,
-            Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-            Context.UriPart.NONE);
+        return prior.toBuilder()
+            .withState(Context.State.HTML_TAG)
+            .withElType(el)
+            .withoutAttrContext()
+            .build();
+      }
+    };
+  }
+
+  /** A transition on a template tag that updates the template nest depth. */
+  private static Transition makeTemplateTagTransition() {
+    String regex = regexForSpecialTagNamed("template", true);
+    return new Transition(regex) {
+      @Override Context computeNextContext(Context prior, Matcher matcher) {
+        boolean isEndTag = "/".equals(matcher.group(1));
+        if (isEndTag && prior.templateNestDepth == 0) {
+          return Context.ERROR;
+        }
+        Context.Builder builder = prior.toBuilder()
+            .withTemplateNestDepth(prior.templateNestDepth + (isEndTag ? -1 : 1))
+            .withoutAttrContext();
+        if (isEndTag) {
+          builder
+              .withState(Context.State.HTML_TAG)
+              .withElType(Context.ElementType.NORMAL);
+        } else {
+          builder
+              .withState(Context.State.HTML_PCDATA)
+              .withElType(Context.ElementType.NONE);
+        }
+        return builder.build();
       }
     };
   }
@@ -308,10 +366,10 @@ final class RawTextContextUpdater {
   private static Transition makeTransitionBackToTag(String regex) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return new Context(
-            Context.State.HTML_TAG, prior.elType, Context.AttributeType.NONE,
-            Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-            Context.UriPart.NONE);
+        return prior.toBuilder()
+            .withState(Context.State.HTML_TAG)
+            .withoutAttrContext()
+            .build();
       }
     };
   }
@@ -340,10 +398,11 @@ final class RawTextContextUpdater {
         } else {
           attr = Context.AttributeType.PLAIN_TEXT;
         }
-        return new Context(
-            Context.State.HTML_ATTRIBUTE_NAME, prior.elType, attr,
-            Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-            Context.UriPart.NONE);
+        return prior.toBuilder()
+            .withState(Context.State.HTML_ATTRIBUTE_NAME)
+            .withoutAttrContext()
+            .withAttrType(attr)
+            .build();
       }
     };
   }
@@ -353,7 +412,8 @@ final class RawTextContextUpdater {
       String regex, final Context.AttributeEndDelimiter delim) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return Context.computeContextAfterAttributeDelimiter(prior.elType, prior.attrType, delim);
+        return Context.computeContextAfterAttributeDelimiter(
+            prior.elType, prior.attrType, delim, prior.templateNestDepth);
       }
     };
   }
@@ -391,15 +451,17 @@ final class RawTextContextUpdater {
   }
 
   /**
-   * A transition to the given state.
+   * A transition to the given JS string start state.
    */
   private static Transition makeTransitionToJsString(
       String regex, final Context.State state) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return new Context(
-            state, prior.elType, prior.attrType, prior.delimType, Context.JsFollowingSlash.NONE,
-            Context.UriPart.NONE);
+        return prior.toBuilder()
+            .withState(state)
+            .withSlashType(Context.JsFollowingSlash.NONE)
+            .withUriPart(Context.UriPart.NONE)
+            .build();
       }
     };
   }
@@ -449,10 +511,11 @@ final class RawTextContextUpdater {
         return prior.attrType == Context.AttributeType.NONE;
       }
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return new Context(
-            Context.State.HTML_TAG, Context.ElementType.NORMAL, Context.AttributeType.NONE,
-            Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-            Context.UriPart.NONE);
+        return prior.toBuilder()
+            .withState(Context.State.HTML_TAG)
+            .withElType(Context.ElementType.NORMAL)
+            .withoutAttrContext()
+            .build();
       }
     };
     // TODO: This transitions to an HTML_TAG state which can accept attributes.
@@ -475,9 +538,10 @@ final class RawTextContextUpdater {
         } else {
           state = Context.State.CSS_URI;
         }
-        return new Context(
-            state, prior.elType, prior.attrType, prior.delimType, prior.slashType,
-            Context.UriPart.START);
+        return prior.toBuilder()
+            .withState(state)
+            .withUriPart(Context.UriPart.START)
+            .build();
       }
     };
   }
@@ -488,9 +552,10 @@ final class RawTextContextUpdater {
   private static Transition makeDivPreceder(String regex) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return new Context(
-            Context.State.JS, prior.elType, prior.attrType, prior.delimType,
-            Context.JsFollowingSlash.DIV_OP, prior.uriPart);
+        return prior.toBuilder()
+            .withState(Context.State.JS)
+            .withSlashType(Context.JsFollowingSlash.DIV_OP)
+            .build();
       }
     };
   }
@@ -507,17 +572,18 @@ final class RawTextContextUpdater {
   private static final Map<Context.State, List<Transition>> TRANSITIONS =
       ImmutableMap.<Context.State, List<Transition>>builder()
       .put(Context.State.HTML_PCDATA, ImmutableList.of(
-          makeTransitionTo("<!--", Context.HTML_COMMENT),
-          makeTransitionToTag("(?i)<script(?=[\\s>/]|\\z)", Context.ElementType.SCRIPT),
-          makeTransitionToTag("(?i)<style(?=[\\s>/]|\\z)", Context.ElementType.STYLE),
-          makeTransitionToTag("(?i)<textarea(?=[\\s>/]|\\z)", Context.ElementType.TEXTAREA),
-          makeTransitionToTag("(?i)<title(?=[\\s>/]|\\z)", Context.ElementType.TITLE),
-          makeTransitionToTag("(?i)<xmp(?=[\\s>/]|\\z)", Context.ElementType.XMP),
-          makeTransitionTo("</?", Context.HTML_BEFORE_TAG_NAME),
+          makeTransitionToState("<!--", Context.State.HTML_COMMENT),
+          makeTransitionToTagNamed("script", Context.ElementType.SCRIPT),
+          makeTransitionToTagNamed("style", Context.ElementType.STYLE),
+          makeTransitionToTagNamed("textarea", Context.ElementType.TEXTAREA),
+          makeTransitionToTagNamed("title", Context.ElementType.TITLE),
+          makeTransitionToTagNamed("xmp", Context.ElementType.XMP),
+          makeTemplateTagTransition(),
+          makeTransitionToState("</?", Context.State.HTML_BEFORE_TAG_NAME),
           makeTransitionToSelf("[^<]+")))
       .put(Context.State.HTML_BEFORE_TAG_NAME, ImmutableList.of(
-          makeTransitionTo("^[a-zA-Z]+", Context.HTML_TAG_NAME),
-          makeTransitionTo("^(?=[^a-zA-Z])", Context.HTML_PCDATA)))
+          makeTransitionToState("^[a-zA-Z]+", Context.State.HTML_TAG_NAME),
+          makeTransitionTo("^(?=[^a-zA-Z])", ContentKind.HTML)))
       .put(Context.State.HTML_TAG_NAME, ImmutableList.of(
           makeTransitionToSelf("^[a-zA-Z0-9:-]*(?:[a-zA-Z0-9]|\\z)"),
           makeTransitionToTag("^(?=[/\\s>])", Context.ElementType.NORMAL)))
@@ -529,22 +595,31 @@ final class RawTextContextUpdater {
           new Transition("^\\s*/?>") {
             @Override
             Context computeNextContext(Context prior, Matcher matcher) {
+              Context.Builder builder = prior.toBuilder();
+              builder.withoutAttrContext();
               switch (prior.elType) {
                 case SCRIPT:
-                  return Context.JS;
+                  builder.withState(Context.State.JS)
+                      .withSlashType(Context.JsFollowingSlash.REGEX)
+                      .withElType(Context.ElementType.NONE);
+                  break;
                 case STYLE:
-                  return Context.CSS;
+                  builder.withState(Context.State.CSS)
+                      .withElType(Context.ElementType.NONE);
+                  break;
                 case NORMAL:
-                  return Context.HTML_PCDATA;
+                  builder.withState(Context.State.HTML_PCDATA)
+                      .withElType(Context.ElementType.NONE);
+                  break;
+                case LISTING: case TEXTAREA: case TITLE: case XMP:
+                  builder.withState(Context.State.HTML_RCDATA);
+                  break;
                 case NONE:
                   throw new IllegalStateException();
-                case LISTING: case TEXTAREA: case TITLE: case XMP:
-                  return new Context(
-                      Context.State.HTML_RCDATA, prior.elType, Context.AttributeType.NONE,
-                      Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-                      Context.UriPart.NONE);
+                default:
+                  throw new AssertionError("Unrecognized state " + prior.elType);
               }
-              throw new AssertionError("Unrecognized state " + prior.elType);
+              return builder.build();
             }
           },
           makeTransitionToSelf("^\\s+\\z")))
@@ -568,7 +643,7 @@ final class RawTextContextUpdater {
           makeTransitionBackToTag("^(?=>|\\s+[\\w-]+\\s*=)"),
           makeTransitionToSelf("^\\s+")))
       .put(Context.State.HTML_COMMENT, ImmutableList.of(
-          makeTransitionTo("-->", Context.HTML_PCDATA),
+          makeTransitionTo("-->", ContentKind.HTML),
           TRANSITION_TO_SELF))
       .put(Context.State.HTML_NORMAL_ATTR_VALUE, ImmutableList.of(
           TRANSITION_TO_SELF))
@@ -588,13 +663,13 @@ final class RawTextContextUpdater {
       .put(Context.State.CSS_DQ_STRING, ImmutableList.of(
           makeTransitionToState("\"", Context.State.CSS),
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
-          makeTransitionTo("[\n\r\f]", Context.ERROR),
+          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
           makeEndTagTransition("style"),  // TODO: Make this an error transition?
           TRANSITION_TO_SELF))
       .put(Context.State.CSS_SQ_STRING, ImmutableList.of(
           makeTransitionToState("'", Context.State.CSS),
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
-          makeTransitionTo("[\n\r\f]", Context.ERROR),
+          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
           makeEndTagTransition("style"),  // TODO: Make this an error transition?
           TRANSITION_TO_SELF))
       .put(Context.State.CSS_URI, ImmutableList.of(
@@ -606,13 +681,13 @@ final class RawTextContextUpdater {
           makeTransitionToState("'", Context.State.CSS),
           URI_PART_TRANSITION,
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
-          makeTransitionTo("[\n\r\f]", Context.ERROR),
+          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
           makeEndTagTransition("style")))
       .put(Context.State.CSS_DQ_URI, ImmutableList.of(
           makeTransitionToState("\"", Context.State.CSS),
           URI_PART_TRANSITION,
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
-          makeTransitionTo("[\n\r\f]", Context.ERROR),
+          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
           makeEndTagTransition("style")))
       .put(Context.State.JS, ImmutableList.of(
           makeTransitionToState("/\\*", Context.State.JS_BLOCK_COMMENT),
@@ -625,13 +700,15 @@ final class RawTextContextUpdater {
                 throws SoyAutoescapeException {
               switch (prior.slashType) {
                 case DIV_OP:
-                  return new Context(
-                      Context.State.JS, prior.elType, prior.attrType, prior.delimType,
-                      Context.JsFollowingSlash.REGEX, prior.uriPart);
+                  return prior.toBuilder()
+                      .withState(Context.State.JS)
+                      .withSlashType(Context.JsFollowingSlash.REGEX)
+                      .build();
                 case REGEX:
-                  return new Context(
-                      Context.State.JS_REGEX, prior.elType, prior.attrType, prior.delimType,
-                      Context.JsFollowingSlash.NONE, prior.uriPart);
+                  return prior.toBuilder()
+                      .withState(Context.State.JS_REGEX)
+                      .withSlashType(Context.JsFollowingSlash.NONE)
+                      .build();
                 default:
                   StringBuffer rest = new StringBuffer();
                   matcher.appendTail(rest);
@@ -718,10 +795,11 @@ final class RawTextContextUpdater {
             }
             @Override
             Context computeNextContext(Context prior, Matcher matcher) {
-              return new Context(
-                  Context.State.HTML_TAG, Context.ElementType.NORMAL, Context.AttributeType.NONE,
-                  Context.AttributeEndDelimiter.NONE, Context.JsFollowingSlash.NONE,
-                  Context.UriPart.NONE);
+              return prior.toBuilder()
+                  .withState(Context.State.HTML_TAG)
+                  .withElType(Context.ElementType.NORMAL)
+                  .withoutAttrContext()
+                  .build();
             }
           },
           TRANSITION_TO_SELF))

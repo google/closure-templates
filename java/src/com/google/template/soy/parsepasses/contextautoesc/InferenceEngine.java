@@ -191,7 +191,7 @@ final class InferenceEngine {
           "Same ContextPropagatingVisitor cannot be reused for multiple escaping modes.");
       if (autoescapeMode == AutoescapeMode.STRICT) {
         Preconditions.checkState(
-            Context.isValidStartContextForContentKind(templateNode.getContentKind(), context),
+            context.isValidStartContextForContentKind(templateNode.getContentKind()),
             "Strict templates may only be visited in the context for their declared content kind.");
         // Normalize to the canonical context, even if we started in a similar but allowable
         // context (e.g.  single versus double quotes).
@@ -413,7 +413,7 @@ final class InferenceEngine {
       try {
         // It is an error to use autoescape-canceling print directives in strict mode unless in a
         // block of kind text.
-        if (autoescapeMode == AutoescapeMode.STRICT && !context.equals(Context.TEXT)) {
+        if (autoescapeMode == AutoescapeMode.STRICT && context.state != Context.State.TEXT) {
           for (PrintDirectiveNode printDirective : printNode.getChildren()) {
             if (printDirective.getName().equals("|noAutoescape")) {
               // Treat noAutoescape specially:
@@ -505,7 +505,7 @@ final class InferenceEngine {
 
     /**
      * Determines the content kind of the templates.
-     *
+     * <p>
      * This relies on CheckDelegatesVisitor to print friendly messages if the deltemplates differ
      * in content kind.
      */
@@ -544,7 +544,7 @@ final class InferenceEngine {
       if (autoescapeMode == AutoescapeMode.STRICT) {
         // We're currently in a strict mode template. Check what kind of template is being called.
         if (calleeStrictContentKind != null &&
-            Context.isValidStartContextForContentKind(calleeStrictContentKind, startContext)) {
+            startContext.isValidStartContextForContentKind(calleeStrictContentKind)) {
           // As an optimization, don't escape the call site if the callee has the right content
           // kind. Since all deltemplates with the same name must be of the same kind (checked
           // elsewhere), we can make this optimization even if we can't see all the deltemplates.
@@ -555,10 +555,10 @@ final class InferenceEngine {
           // No re-contextualization of the callee is done.
           inferences.setEscapingDirectives(callNode, context, context.getEscapingModes());
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
-        } else if (startContext.equals(Context.TEXT)) {
+        } else if (startContext.state == Context.State.TEXT) {
           // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode
           // since TEXT doesn't make any safety guarantees.
-          return contextualizeCallee(callNode, Context.TEXT, templateName, inferences);
+          return contextualizeCallee(callNode, startContext, templateName, inferences);
         } else {
           // TODO: We could easily allow this in a future release. We can contextualize the callee
           // and re-escape its output. There are two options. TEXT is nicer because there's no
@@ -584,8 +584,7 @@ final class InferenceEngine {
           // teams can do a single monolithic compilation for error checking to prevent this.
           // We're a little loose in this check to allow calling URI templates within URI
           // attributes, even though it's not technically valid HTML, in order to help migration.
-          if (!Context.isValidStartContextForContentKindLoose(
-              calleeStrictContentKind, startContext)) {
+          if (!startContext.isValidStartContextForContentKindLoose(calleeStrictContentKind)) {
             throw SoyAutoescapeException.createWithNode(
                 "Cannot call strictly autoescaped template " + templateName + " of kind=\"" +
                     NodeContentKinds.toAttributeValue(calleeStrictContentKind) +
@@ -640,7 +639,7 @@ final class InferenceEngine {
     /**
      * Determines the end context and a set of inferences for a template in a particular context.
      *
-     * This does not create new cloned templates, but just computes contextualization on existing
+     * <p>This does not create new cloned templates, but just computes contextualization on existing
      * ones.
      *
      * @param startContext The start context we're calling these templates in.
@@ -686,7 +685,7 @@ final class InferenceEngine {
 
     /**
      * Hypothesizes a particular end context and determines a potential end context, if any.
-     *
+     * <p>
      * This returns the *actual* end context determined from this hypothesis. Hypotheses are
      * needed to handle recursive templates, where the output context is needed to compute the
      * context within the template.
@@ -791,15 +790,15 @@ final class InferenceEngine {
 
     /**
      * Checks that the end context of a strict block is compatible with its start context.
-     *
+     * <p>
      * Throws if they mismatch.
      */
     private void checkStrictBlockEndContext(RenderUnitNode node, Context endContext) {
-      if (!Context.isValidEndContextForContentKind(node.getContentKind(), endContext)) {
+      if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
         throw SoyAutoescapeException.createWithNode(
             "A strict block of kind=\"" + NodeContentKinds.toAttributeValue(node.getContentKind()) +
                 "\" cannot end in context " + endContext + ". Likely cause is " +
-                Context.getLikelyEndContextMismatchCause(node.getContentKind(), endContext) + ": " +
+                endContext.getLikelyEndContextMismatchCause(node.getContentKind()) + ": " +
                 node.getTagString(),
             node);
       }
