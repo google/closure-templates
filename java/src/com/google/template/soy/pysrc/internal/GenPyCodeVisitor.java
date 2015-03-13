@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
@@ -42,6 +43,8 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -584,6 +587,69 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
     visitChildren(node);
+  }
+
+  /**
+   * Visits a let node which accepts a value and stores it as a unique variable. The unique variable
+   * name is stored in the LocalVariableStack for use by any subsequent code.
+   *
+   * <p>Example:
+   * <pre>
+   *   {let $boo: $foo[$moo] /}
+   * </pre>
+   * might generate
+   * <pre>
+   *   boo3 = opt_data.get('foo')['moo']
+   * </pre>
+   */
+  @Override protected void visitLetValueNode(LetValueNode node) {
+    String generatedVarName = node.getUniqueVarName();
+
+    // Generate code to define the local var.
+    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
+    PyExpr valuePyExpr = translator.exec(node.getValueExpr());
+    pyCodeBuilder.appendLine(generatedVarName, " = ", valuePyExpr.getText());
+
+    // Add a mapping for generating future references to this local var.
+    localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
+  }
+
+
+  /**
+   * Visits a let node which contains a content section and stores it as a unique variable. The
+   * unique variable name is stored in the LocalVariableStack for use by any subsequent code.
+   *
+   * <p>Note, this is one of the location where Strict mode is enforced in Python templates. As
+   * such, all LetContentNodes must have a contentKind specified.
+   *
+   * <p>Example:
+   * <pre>
+   *   {let $boo kind="html"}
+   *     Hello {$name}
+   *   {/let}
+   * </pre>
+   * might generate
+   * <pre>
+   *   boo3 = sanitize.SanitizedHtml(''.join(['Hello ', sanitize.escape_html(opt_data.get('name'))])
+   * </pre>
+   */
+  @Override protected void visitLetContentNode(LetContentNode node) {
+    if (node.getContentKind() == null) {
+      throw SoySyntaxExceptionUtils.createWithNode(
+          "Let content node is missing a content kind. This may be due to using a non-strict "
+              + "template, which is unsupported in the Python compiler.", node);
+    }
+
+    String generatedVarName = node.getUniqueVarName();
+
+    // Generate the contents of the variable and mark the result as being escaped to the appropriate
+    // kind (e.g., "sanitize.SanitizedHtml").
+    String sanitizedClass = NodeContentKinds.toPySanitizedContentOrdainer(node.getContentKind());
+    PyExpr content = PyExprUtils.concatPyExprs(genPyExprsVisitor.execOnChildren(node)).toPyString();
+    pyCodeBuilder.appendLine(generatedVarName, " = ", sanitizedClass, "(", content.getText(), ")");
+
+    // Add a mapping for generating future references to this local var.
+    localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
   }
 
 

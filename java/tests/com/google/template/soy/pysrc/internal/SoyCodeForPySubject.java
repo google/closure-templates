@@ -95,6 +95,19 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
+  public void compilesWithException(Class<? extends Exception> expectedClass) {
+    try {
+      if (isFile) {
+        compileFile();
+      } else{
+        compileBody();
+      }
+      fail("Compilation suceeded when it should have failed.");
+    } catch (Exception actual) {
+      assertThat(actual).isInstanceOf(expectedClass);
+    }
+  }
+
   private GenPyCodeVisitor getGenPyCodeVisitor() {
     // Setup default configs.
     SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn,
@@ -120,7 +133,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private String compileBody() {
     SoyNode node = SharedTestUtils.getNode(
-        SharedTestUtils.parseSoyCode(getSubject()).getParseTree(), 0);
+        SharedTestUtils.parseStrictSoyCode(getSubject()).getParseTree(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     GenPyCodeVisitor genPyCodeVisitor = getGenPyCodeVisitor();
@@ -128,6 +141,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
     genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
     genPyCodeVisitor.localVarExprs = new LocalVariableStack();
+    genPyCodeVisitor.localVarExprs.pushFrame();
     genPyCodeVisitor.genPyExprsVisitor =
         INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
 

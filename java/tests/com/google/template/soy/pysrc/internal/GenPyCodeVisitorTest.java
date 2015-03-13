@@ -19,6 +19,8 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyCode;
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyFile;
 
+import com.google.template.soy.base.SoySyntaxException;
+
 import junit.framework.TestCase;
 
 /**
@@ -216,5 +218,30 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "  output.append(str(opt_data.get('foo')))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  public void testLetValue() {
+    assertThatSoyCode("{let $foo: $boo /}\n").compilesTo("foo__soy### = opt_data.get('boo')\n");
+  }
+
+  public void testLetContent() {
+    String soyCode =
+        "{let $foo kind=\"html\"}\n"
+        + "  Hello {$boo}\n"
+        + "{/let}\n";
+
+    String expectedPyCode =
+        "foo__soy### = sanitize.SanitizedHtml(''.join(['Hello ',str(opt_data.get('boo'))]))\n";
+
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  public void testLetContent_noContentKind() {
+    String soyCode =
+        "{let $foo}\n"
+        + "  Hello {$boo}\n"
+        + "{/let}\n";
+
+    assertThatSoyCode(soyCode).compilesWithException(SoySyntaxException.class);
   }
 }

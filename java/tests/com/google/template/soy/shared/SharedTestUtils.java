@@ -162,6 +162,18 @@ public final class SharedTestUtils {
 
 
   /**
+   * Parses the given piece of Soy code as the full body of a strict template.
+   *
+   * @param soyCode The code to parse as the full body of a template.
+   * @return The resulting Soy tree.
+   */
+  public static ParseResult<SoyFileSetNode> parseStrictSoyCode(String soyCode) {
+    return parseSoyFiles(new SoyTypeRegistry(), SyntaxVersion.V2_2, true,
+        buildStrictTestSoyFileContent(null, soyCode));
+  }
+
+
+  /**
    * Builds a test Soy file's content from the given Soy code, which will be the body of the only
    * template in the test Soy file.
    *
