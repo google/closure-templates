@@ -252,7 +252,7 @@ public final class Context {
    * @return Empty if there is no appropriate escaping convention to use,
    *     e.g. for comments which do not have escaping conventions.
    */
-  public @Nullable List<EscapingMode> getEscapingModes() {
+  public List<EscapingMode> getEscapingModes() {
     EscapingMode escapingMode = state.escapingMode;
 
     // Short circuit on the error return case first.
