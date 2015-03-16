@@ -1,0 +1,81 @@
+/*
+ * Copyright 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.jbcsrc;
+
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
+
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
+import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
+import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
+
+import junit.framework.TestCase;
+
+/**
+ * Tests for {@link SoyExpression}
+ */
+public class SoyExpressionTest extends TestCase {
+
+  public void testIntExpressions() {
+    IntExpression expr = constant(12L);
+    assertThatExpression(expr).evaluatesTo(12L);
+    assertThatExpression(expr.box()).evaluatesTo(IntegerData.forValue(12));
+    assertThatExpression(expr.box().convert(long.class)).evaluatesTo(12L);
+
+    assertThatExpression(expr.convert(boolean.class)).evaluatesTo(true);
+    assertThatExpression(constant(0L).convert(boolean.class)).evaluatesTo(false);
+    assertThatExpression(expr.convert(String.class)).evaluatesTo("12");
+  }
+
+  public void testFloatExpressions() {
+    FloatExpression expr = constant(12.34D);
+    assertThatExpression(expr).evaluatesTo(12.34D);
+    assertThatExpression(expr.box()).evaluatesTo(FloatData.forValue(12.34D));
+    assertThatExpression(expr.box().convert(double.class)).evaluatesTo(12.34D);
+
+    assertThatExpression(expr.convert(boolean.class)).evaluatesTo(true);
+    assertThatExpression(constant(0D).convert(boolean.class)).evaluatesTo(false);
+
+    assertThatExpression(expr.convert(String.class)).evaluatesTo("12.34");
+  }
+
+  public void testBooleanExpressions() {
+    BoolExpression expr = BoolExpression.FALSE;
+    assertThatExpression(expr).evaluatesTo(false);  // sanity
+    assertThatExpression(expr.box()).evaluatesTo(BooleanData.FALSE);
+    assertThatExpression(expr.box().convert(boolean.class)).evaluatesTo(false);
+    assertThatExpression(expr.convert(String.class)).evaluatesTo("false");
+
+    expr = BoolExpression.TRUE;
+    assertThatExpression(expr).evaluatesTo(true);
+    assertThatExpression(expr.box()).evaluatesTo(BooleanData.TRUE);
+    assertThatExpression(expr.box().convert(boolean.class)).evaluatesTo(true);
+    assertThatExpression(expr.convert(String.class)).evaluatesTo("true");
+  }
+
+  public void testNullExpression() {
+    assertThatExpression(SoyExpression.NULL).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.box()).evaluatesTo(NullData.INSTANCE);
+    assertThatExpression(SoyExpression.NULL.box().convert(Object.class)).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.convert(boolean.class)).evaluatesTo(false);
+    assertThatExpression(SoyExpression.NULL.convert(String.class)).evaluatesTo("null");
+  }
+}

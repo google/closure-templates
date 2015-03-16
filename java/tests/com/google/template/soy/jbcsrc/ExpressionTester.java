@@ -1,0 +1,250 @@
+/*
+ * Copyright 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.jbcsrc;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
+import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
+import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.Subject;
+import com.google.common.truth.SubjectFactory;
+import com.google.common.truth.Truth;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.util.CheckClassAdapter;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+/**
+ * Test-Only utility for testing Expression instances.
+ * 
+ * <p>Since {@link Expression expressions} are fully encapsulated we can represent them as simple
+ * nullary interface methods.  For each expression we will compile an appropriately typed 
+ * implementation of an invoker interface.
+ */
+public final class ExpressionTester {
+  private interface Invoker {}
+  // These need to be public so that our memory classloader can access them across protection 
+  // domains
+  public interface IntInvoker extends Invoker { int invoke(); }
+  public interface CharInvoker extends Invoker{ char invoke(); }
+  public interface BooleanInvoker extends Invoker{ boolean invoke(); }
+  public interface FloatInvoker extends Invoker{ float invoke(); }
+  public interface LongInvoker extends Invoker { long invoke(); }
+  public interface DoubleInvoker extends Invoker{ double invoke(); }
+  public interface ObjectInvoker extends Invoker{ Object invoke(); }
+  
+  /**
+   * Returns a truth subject that can be used to assert on an {@link Expression}.
+   */
+  public static ExpressionSubject assertThatExpression(Expression resp) {
+    return Truth.assertAbout(FACTORY).that(resp);
+  }
+
+  static final class ExpressionSubject extends Subject<ExpressionSubject, Expression> {
+    private ClassData compiledClass;
+    private Invoker invoker;
+
+    private ExpressionSubject(FailureStrategy strategy, Expression subject) {
+      super(strategy, subject);
+    }
+
+    ExpressionSubject evaluatesTo(int expected) {
+      compile();
+      if (((IntInvoker) invoker).invoke() != expected) {
+        fail("evaluatesTo", expected);
+      }
+      return this;
+    }
+
+    /**
+     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
+     * coupled tests.
+     */
+    void hasCode(String ...instructions) {
+      compile();
+      String formatted = Joiner.on('\n').join(instructions);
+      if (!formatted.equals(getSubject().traceExpression().trim())) {
+        fail("hasCode", formatted);
+      }
+    }
+    
+    ExpressionSubject evaluatesTo(boolean expected) {
+      compile();
+      if (((BooleanInvoker) invoker).invoke() != expected) {
+        fail("evaluatesTo", expected);
+      }
+      return this;
+    }
+
+    ExpressionSubject evaluatesTo(double expected) {
+      compile();
+      if (((DoubleInvoker) invoker).invoke() != expected) {
+        fail("evaluatesTo", expected);
+      }
+      return this;
+    }
+
+    ExpressionSubject evaluatesTo(long expected) {
+      compile();
+      if (((LongInvoker) invoker).invoke() != expected) {
+        fail("evaluatesTo", expected);
+      }
+      return this;
+    }
+
+    ExpressionSubject evaluatesTo(char expected) {
+      compile();
+      if (((CharInvoker) invoker).invoke() != expected) {
+        fail("evaluatesTo", expected);
+      }
+      return this;
+    }
+
+    ExpressionSubject evaluatesTo(Object expected) {
+      compile();
+      if (!Objects.equal(((ObjectInvoker) invoker).invoke(), expected)) {
+        fail("evaluatesTo", expected);
+      }
+      return this;
+    }
+
+    private void compile() {
+      if (invoker == null) {
+        try {
+          Class<? extends Invoker> invokerClass = invokerForType(getSubject().type());
+          this.compiledClass = createClass(invokerClass, getSubject());
+          this.invoker = load(invokerClass, compiledClass);
+        } catch (Throwable t) {
+          fail("compile", t);
+        }
+      }
+    }
+  }
+
+  private static final SubjectFactory<ExpressionSubject, Expression> FACTORY =
+      new SubjectFactory<ExpressionSubject, Expression>() {
+        @Override public ExpressionSubject getSubject(FailureStrategy fs, Expression that) {
+          return new ExpressionSubject(fs, that);
+        }
+      };
+
+  static <T> T createInvoker(Class<T> clazz, Expression expr) {
+    Class<? extends Invoker> expected = invokerForType(expr.type());
+    checkArgument(clazz.equals(expected), 
+        "%s isn't an appropriate invoker type for %s, expected %s", clazz, expr.type(), expected);
+    ClassData data = createClass(clazz.asSubclass(Invoker.class), expr);
+    return load(clazz, data);
+  }
+
+  private static <T> T load(Class<T> clazz, ClassData data) {
+    MemoryClassLoader loader = new MemoryClassLoader.Builder().add(data).build();
+    Class<?> generatedClass;
+    try {
+      generatedClass = loader.loadClass(data.type().className());
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+    try {
+      return generatedClass.asSubclass(clazz).newInstance();
+    } catch (InstantiationException | IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static ClassData createClass(Class<? extends Invoker> targetInterface, Expression expr) {
+    java.lang.reflect.Method invokeMethod;
+    try {
+      invokeMethod = targetInterface.getMethod("invoke");
+    } catch (NoSuchMethodException | SecurityException e) {
+      throw new RuntimeException(e);
+    }
+    Class<?> returnType = invokeMethod.getReturnType();
+    if (!Type.getType(returnType).equals(expr.type())) {
+      if (!returnType.equals(Object.class) || expr.type().getSort() != Type.OBJECT) {
+        throw new IllegalArgumentException(targetInterface 
+            + " is not appropriate for this expression");
+      }
+    }
+    TypeInfo generatedType = TypeInfo.create(
+        ExpressionTester.class.getPackage().getName() + "." + targetInterface.getSimpleName() 
+            + "Impl");
+    ClassWriter cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
+    cw.visit(Opcodes.V1_7, 
+        Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL,
+        generatedType.type().getInternalName(), 
+        null, // not a generic type
+        Type.getInternalName(Object.class), // super class
+        new String[] {Type.getInternalName(targetInterface) });
+    BytecodeUtils.defineDefaultConstructor(cw, generatedType);
+    Method invoke = Method.getMethod(invokeMethod);
+    GeneratorAdapter generator = new GeneratorAdapter(Opcodes.ACC_PUBLIC, invoke, null, null, cw);
+    expr.gen(generator);
+    generator.returnValue();
+    generator.endMethod();
+    ClassData data = ClassData.create(generatedType, cw.toByteArray());
+    checkClassData(data);
+    return data;
+  }
+
+  /**
+   * Utility to run the {@link CheckClassAdapter} on the class and print it to a string. for 
+   * debugging.
+   */
+  private static void checkClassData(ClassData clazz) {
+    StringWriter sw = new StringWriter();
+    CheckClassAdapter.verify(
+        new ClassReader(clazz.data()), 
+        ExpressionTester.class.getClassLoader(), 
+        false, 
+        new PrintWriter(sw));
+    String result = sw.toString();
+    if (!result.isEmpty()) {
+      throw new IllegalStateException(result);
+    }
+  }
+
+  private static Class<? extends Invoker> invokerForType(Type type) {
+    switch (type.getSort()) {
+      case Type.INT:
+        return IntInvoker.class;
+      case Type.CHAR:
+        return CharInvoker.class;
+      case Type.BOOLEAN:
+        return BooleanInvoker.class;
+      case Type.FLOAT:
+        return FloatInvoker.class;
+      case Type.LONG:
+        return LongInvoker.class;
+      case Type.DOUBLE:
+        return DoubleInvoker.class;
+      case Type.ARRAY:
+      case Type.OBJECT:
+        return ObjectInvoker.class;
+    }
+    throw new AssertionError("unsupported type" + type);
+  }
+}
