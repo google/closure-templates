@@ -26,7 +26,7 @@ import com.google.template.soy.types.primitive.NullType;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class NullNode extends AbstractPrimitiveNode {
+public final class NullNode extends AbstractPrimitiveNode {
 
 
   public NullNode() {}
@@ -36,7 +36,7 @@ public class NullNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected NullNode(NullNode orig) {
+  private NullNode(NullNode orig) {
     super(orig);
   }
 

@@ -28,7 +28,7 @@ import com.google.common.base.Preconditions;
  * <p> This node should always have exactly one child.
  *
  */
-public class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
+public final class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
 
 
   /**
@@ -44,7 +44,7 @@ public class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected ExprRootNode(ExprRootNode<N> orig) {
+  private ExprRootNode(ExprRootNode<N> orig) {
     super(orig);
   }
 

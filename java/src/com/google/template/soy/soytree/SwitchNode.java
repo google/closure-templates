@@ -34,7 +34,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SwitchNode extends AbstractParentCommandNode<SoyNode>
+public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode, ExprHolderNode {
 
 
@@ -59,7 +59,7 @@ public class SwitchNode extends AbstractParentCommandNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected SwitchNode(SwitchNode orig) {
+  private SwitchNode(SwitchNode orig) {
     super(orig);
     this.expr = orig.expr.clone();
   }

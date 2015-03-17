@@ -53,7 +53,7 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgSelectCaseNode(MsgSelectCaseNode orig) {
+  private MsgSelectCaseNode(MsgSelectCaseNode orig) {
     super(orig);
     this.caseValue = orig.caseValue;
   }

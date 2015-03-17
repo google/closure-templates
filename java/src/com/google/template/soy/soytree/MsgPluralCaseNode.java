@@ -49,7 +49,7 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgPluralCaseNode(MsgPluralCaseNode orig) {
+  private MsgPluralCaseNode(MsgPluralCaseNode orig) {
     super(orig);
     this.caseNumber = orig.caseNumber;
   }

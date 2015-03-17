@@ -31,11 +31,11 @@ public class OperatorNodes {
   /**
    * Node representing the unary '-' (negative) operator.
    */
-  public static class NegativeOpNode extends AbstractOperatorNode {
+  public final static class NegativeOpNode extends AbstractOperatorNode {
 
     public NegativeOpNode() { super(Operator.NEGATIVE); }
 
-    protected NegativeOpNode(NegativeOpNode orig) { super(orig); }
+    private NegativeOpNode(NegativeOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.NEGATIVE_OP_NODE; }
 
@@ -46,11 +46,11 @@ public class OperatorNodes {
   /**
    * Node representing the 'not' operator.
    */
-  public static class NotOpNode extends AbstractOperatorNode {
+  public final static class NotOpNode extends AbstractOperatorNode {
 
     public NotOpNode() { super(Operator.NOT); }
 
-    protected NotOpNode(NotOpNode orig) { super(orig); }
+    private NotOpNode(NotOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.NOT_OP_NODE; }
 
@@ -61,11 +61,11 @@ public class OperatorNodes {
   /**
    * Node representing the '*' (times) operator.
    */
-  public static class TimesOpNode extends AbstractOperatorNode {
+  public final static class TimesOpNode extends AbstractOperatorNode {
 
     public TimesOpNode() { super(Operator.TIMES); }
 
-    protected TimesOpNode(TimesOpNode orig) { super(orig); }
+    private TimesOpNode(TimesOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.TIMES_OP_NODE; }
 
@@ -76,11 +76,11 @@ public class OperatorNodes {
   /**
    * Node representing the '/' (divde by) operator.
    */
-  public static class DivideByOpNode extends AbstractOperatorNode {
+  public final static class DivideByOpNode extends AbstractOperatorNode {
 
     public DivideByOpNode() { super(Operator.DIVIDE_BY); }
 
-    protected DivideByOpNode(DivideByOpNode orig) { super(orig); }
+    private DivideByOpNode(DivideByOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.DIVIDE_BY_OP_NODE; }
 
@@ -91,11 +91,11 @@ public class OperatorNodes {
   /**
    * Node representing the '%' (mod) operator.
    */
-  public static class ModOpNode extends AbstractOperatorNode {
+  public final static class ModOpNode extends AbstractOperatorNode {
 
     public ModOpNode() { super(Operator.MOD); }
 
-    protected ModOpNode(ModOpNode orig) { super(orig); }
+    private ModOpNode(ModOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.MOD_OP_NODE; }
 
@@ -106,11 +106,11 @@ public class OperatorNodes {
   /**
    * Node representing the '+' (plus) operator.
    */
-  public static class PlusOpNode extends AbstractOperatorNode {
+  public final static class PlusOpNode extends AbstractOperatorNode {
 
     public PlusOpNode() { super(Operator.PLUS); }
 
-    protected PlusOpNode(PlusOpNode orig) { super(orig); }
+    private PlusOpNode(PlusOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.PLUS_OP_NODE; }
 
@@ -121,11 +121,11 @@ public class OperatorNodes {
   /**
    * Node representing the binary '-' (minus) operator.
    */
-  public static class MinusOpNode extends AbstractOperatorNode {
+  public final static class MinusOpNode extends AbstractOperatorNode {
 
     public MinusOpNode() { super(Operator.MINUS); }
 
-    protected MinusOpNode(MinusOpNode orig) { super(orig); }
+    private MinusOpNode(MinusOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.MINUS_OP_NODE; }
 
@@ -136,11 +136,11 @@ public class OperatorNodes {
   /**
    * Node representing the '&lt;' (less than) operator.
    */
-  public static class LessThanOpNode extends AbstractOperatorNode {
+  public final static class LessThanOpNode extends AbstractOperatorNode {
 
     public LessThanOpNode() { super(Operator.LESS_THAN); }
 
-    protected LessThanOpNode(LessThanOpNode orig) { super(orig); }
+    private LessThanOpNode(LessThanOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.LESS_THAN_OP_NODE; }
 
@@ -151,11 +151,11 @@ public class OperatorNodes {
   /**
    * Node representing the '&gt;' (greater than) operator.
    */
-  public static class GreaterThanOpNode extends AbstractOperatorNode {
+  public final static class GreaterThanOpNode extends AbstractOperatorNode {
 
     public GreaterThanOpNode() { super(Operator.GREATER_THAN); }
 
-    protected GreaterThanOpNode(GreaterThanOpNode orig) { super(orig); }
+    private GreaterThanOpNode(GreaterThanOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.GREATER_THAN_OP_NODE; }
 
@@ -166,11 +166,11 @@ public class OperatorNodes {
   /**
    * Node representing the '&lt;=' (less than or equal) operator.
    */
-  public static class LessThanOrEqualOpNode extends AbstractOperatorNode {
+  public final static class LessThanOrEqualOpNode extends AbstractOperatorNode {
 
     public LessThanOrEqualOpNode() { super(Operator.LESS_THAN_OR_EQUAL); }
 
-    protected LessThanOrEqualOpNode(LessThanOrEqualOpNode orig) { super(orig); }
+    private LessThanOrEqualOpNode(LessThanOrEqualOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.LESS_THAN_OR_EQUAL_OP_NODE; }
 
@@ -181,11 +181,11 @@ public class OperatorNodes {
   /**
    * Node representing the '&gt;=' (greater than or equal) operator.
    */
-  public static class GreaterThanOrEqualOpNode extends AbstractOperatorNode {
+  public final static class GreaterThanOrEqualOpNode extends AbstractOperatorNode {
 
     public GreaterThanOrEqualOpNode() { super(Operator.GREATER_THAN_OR_EQUAL); }
 
-    protected GreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode orig) { super(orig); }
+    private GreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.GREATER_THAN_OR_EQUAL_OP_NODE; }
 
@@ -196,11 +196,11 @@ public class OperatorNodes {
   /**
    * Node representing the '==' (equal) operator.
    */
-  public static class EqualOpNode extends AbstractOperatorNode {
+  public final static class EqualOpNode extends AbstractOperatorNode {
 
     public EqualOpNode() { super(Operator.EQUAL); }
 
-    protected EqualOpNode(EqualOpNode orig) { super(orig); }
+    private EqualOpNode(EqualOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.EQUAL_OP_NODE; }
 
@@ -211,11 +211,11 @@ public class OperatorNodes {
   /**
    * Node representing the '!=' (not equal) operator.
    */
-  public static class NotEqualOpNode extends AbstractOperatorNode {
+  public final static class NotEqualOpNode extends AbstractOperatorNode {
 
     public NotEqualOpNode() { super(Operator.NOT_EQUAL); }
 
-    protected NotEqualOpNode(NotEqualOpNode orig) { super(orig); }
+    private NotEqualOpNode(NotEqualOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.NOT_EQUAL_OP_NODE; }
 
@@ -226,11 +226,11 @@ public class OperatorNodes {
   /**
    * Node representing the 'and' operator.
    */
-  public static class AndOpNode extends AbstractOperatorNode {
+  public final static class AndOpNode extends AbstractOperatorNode {
 
     public AndOpNode() { super(Operator.AND); }
 
-    protected AndOpNode(AndOpNode orig) { super(orig); }
+    private AndOpNode(AndOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.AND_OP_NODE; }
 
@@ -241,11 +241,11 @@ public class OperatorNodes {
   /**
    * Node representing the 'or' operator.
    */
-  public static class OrOpNode extends AbstractOperatorNode {
+  public final static class OrOpNode extends AbstractOperatorNode {
 
     public OrOpNode() { super(Operator.OR); }
 
-    protected OrOpNode(OrOpNode orig) { super(orig); }
+    private OrOpNode(OrOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.OR_OP_NODE; }
 
@@ -256,11 +256,11 @@ public class OperatorNodes {
   /**
    * Node representing the '?:' (null-coalescing) operator.
    */
-  public static class NullCoalescingOpNode extends AbstractOperatorNode {
+  public final static class NullCoalescingOpNode extends AbstractOperatorNode {
 
     public NullCoalescingOpNode() { super(Operator.NULL_COALESCING); }
 
-    protected NullCoalescingOpNode(NullCoalescingOpNode orig) { super(orig); }
+    private NullCoalescingOpNode(NullCoalescingOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.NULL_COALESCING_OP_NODE; }
 
@@ -271,11 +271,11 @@ public class OperatorNodes {
   /**
    * Node representing the ternary '? :' (conditional) operator.
    */
-  public static class ConditionalOpNode extends AbstractOperatorNode {
+  public final static class ConditionalOpNode extends AbstractOperatorNode {
 
     public ConditionalOpNode() { super(Operator.CONDITIONAL); }
 
-    protected ConditionalOpNode(ConditionalOpNode orig) { super(orig); }
+    private ConditionalOpNode(ConditionalOpNode orig) { super(orig); }
 
     @Override public Kind getKind() { return Kind.CONDITIONAL_OP_NODE; }
 

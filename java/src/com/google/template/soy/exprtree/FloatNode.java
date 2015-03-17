@@ -26,7 +26,7 @@ import com.google.template.soy.types.primitive.FloatType;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class FloatNode extends AbstractPrimitiveNode {
+public final class FloatNode extends AbstractPrimitiveNode {
 
 
   /** The float value */
@@ -45,7 +45,7 @@ public class FloatNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected FloatNode(FloatNode orig) {
+  private FloatNode(FloatNode orig) {
     super(orig);
     this.value = orig.value;
   }

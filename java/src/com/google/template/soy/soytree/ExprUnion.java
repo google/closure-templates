@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
  * case, the expression text can be obtained from {@link #getExprText()}.
  *
  */
-public class ExprUnion {
+public final class ExprUnion {
 
 
   /**
@@ -77,6 +77,10 @@ public class ExprUnion {
     this.exprText = exprTextV1;
   }
 
+  private ExprUnion(ExprUnion orig) {
+    this.expr = orig.expr != null ? orig.expr.clone() : null;
+    this.exprText = orig.exprText;
+  }
 
   /**
    * Returns the expression tree if the expression is in V2 syntax, else null.
@@ -98,7 +102,7 @@ public class ExprUnion {
    * Returns a (deep) clone of this object.
    */
   @Override public ExprUnion clone() {
-    return (expr != null) ? new ExprUnion(expr.clone()) : new ExprUnion(exprText);
+    return new ExprUnion(this);
   }
 
 }

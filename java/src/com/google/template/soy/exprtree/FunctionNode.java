@@ -23,7 +23,7 @@ package com.google.template.soy.exprtree;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class FunctionNode extends AbstractParentExprNode {
+public final class FunctionNode extends AbstractParentExprNode {
 
 
   /** The function name. */
@@ -42,7 +42,7 @@ public class FunctionNode extends AbstractParentExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected FunctionNode(FunctionNode orig) {
+  private FunctionNode(FunctionNode orig) {
     super(orig);
     this.functionName = orig.functionName;
   }

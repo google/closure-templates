@@ -27,7 +27,7 @@ import com.google.template.soy.types.primitive.StringType;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class StringNode extends AbstractPrimitiveNode {
+public final class StringNode extends AbstractPrimitiveNode {
 
 
   /** The string value. */
@@ -46,7 +46,7 @@ public class StringNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected StringNode(StringNode orig) {
+  private StringNode(StringNode orig) {
     super(orig);
     this.value = orig.value;
   }

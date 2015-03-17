@@ -25,7 +25,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class TemplateBasicNode extends TemplateNode {
+public final class TemplateBasicNode extends TemplateNode {
 
   /** Whether this template overrides another (always false for syntax version V2). */
   private final boolean isOverride;
@@ -54,7 +54,7 @@ public class TemplateBasicNode extends TemplateNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected TemplateBasicNode(TemplateBasicNode orig) {
+  private TemplateBasicNode(TemplateBasicNode orig) {
     super(orig);
     this.isOverride = orig.isOverride;
   }

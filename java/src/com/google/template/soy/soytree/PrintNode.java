@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
+public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
     implements StandaloneNode, SplitLevelTopNode<PrintDirectiveNode>, StatementNode,
     ExprHolderNode, MsgPlaceholderInitialNode {
 
@@ -101,7 +101,7 @@ public class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected PrintNode(PrintNode orig) {
+  private PrintNode(PrintNode orig) {
     super(orig);
     this.isImplicit = orig.isImplicit;
     this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.clone() : null;

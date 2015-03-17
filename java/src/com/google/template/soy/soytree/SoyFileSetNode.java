@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
+public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     implements SplitLevelTopNode<SoyFileNode> {
 
 
@@ -50,7 +50,7 @@ public class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected SoyFileSetNode(SoyFileSetNode orig) {
+  private SoyFileSetNode(SoyFileSetNode orig) {
     super(orig);
     this.nodeIdGen = orig.nodeIdGen.clone();
   }

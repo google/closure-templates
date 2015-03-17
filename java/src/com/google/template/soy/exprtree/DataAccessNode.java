@@ -40,6 +40,11 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
     this.isNullSafe = isNullSafe;
   }
 
+  protected DataAccessNode(DataAccessNode orig) {
+    super(orig);
+    this.isNullSafe = orig.isNullSafe;
+  }
+
 
   /** Returns the base expression from which we're looking up the named field. */
   public ExprNode getBaseExprChild() {

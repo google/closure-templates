@@ -37,7 +37,7 @@ import java.util.Objects;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class TemplateDelegateNode extends TemplateNode implements ExprHolderNode {
+public final class TemplateDelegateNode extends TemplateNode implements ExprHolderNode {
 
   /**
    * Value class for a delegate template key (name and variant).
@@ -136,7 +136,7 @@ public class TemplateDelegateNode extends TemplateNode implements ExprHolderNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected TemplateDelegateNode(TemplateDelegateNode orig) {
+  private TemplateDelegateNode(TemplateDelegateNode orig) {
     super(orig);
     this.delTemplateName = orig.delTemplateName;
     this.delTemplateVariant = orig.delTemplateVariant;

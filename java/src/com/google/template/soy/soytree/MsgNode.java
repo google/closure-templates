@@ -45,7 +45,8 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode, MsgBlockNode {
+public final class MsgNode extends AbstractBlockCommandNode
+    implements ExprHolderNode, MsgBlockNode {
 
 
   private static class SubstUnitInfo {
@@ -141,7 +142,7 @@ public class MsgNode extends AbstractBlockCommandNode implements ExprHolderNode,
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgNode(MsgNode orig) {
+  private MsgNode(MsgNode orig) {
     super(orig);
     if (orig.genderExprs != null) {
       ImmutableList.Builder<ExprRootNode<?>> builder = ImmutableList.<ExprRootNode<?>>builder();

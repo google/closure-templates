@@ -113,7 +113,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgHtmlTagNode(MsgHtmlTagNode orig) {
+  private MsgHtmlTagNode(MsgHtmlTagNode orig) {
     super(orig);
     this.lcTagName = orig.lcTagName;
     this.isSelfEnding = orig.isSelfEnding;

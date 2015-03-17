@@ -32,7 +32,7 @@ public final class IncrementingIdGenerator implements IdGenerator {
     currId = 0;
   }
 
-  protected IncrementingIdGenerator(IncrementingIdGenerator orig) {
+  private IncrementingIdGenerator(IncrementingIdGenerator orig) {
     this.currId = orig.currId;
   }
 
@@ -41,8 +41,6 @@ public final class IncrementingIdGenerator implements IdGenerator {
   }
 
   @Override public IncrementingIdGenerator clone() {
-    IncrementingIdGenerator clone = new IncrementingIdGenerator();
-    clone.currId = this.currId;
-    return clone;
+    return new IncrementingIdGenerator(this);
   }
 }

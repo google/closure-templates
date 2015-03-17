@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * special structure for messages).
  *
  */
-public class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
+public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     implements StandaloneNode, SplitLevelTopNode<MsgNode>, StatementNode {
 
 
@@ -48,7 +48,7 @@ public class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgFallbackGroupNode(MsgFallbackGroupNode orig) {
+  private MsgFallbackGroupNode(MsgFallbackGroupNode orig) {
     super(orig);
   }
 

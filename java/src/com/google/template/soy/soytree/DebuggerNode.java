@@ -24,7 +24,8 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * Node representing the 'debugger' statement.
  *
  */
-public class DebuggerNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
+public final class DebuggerNode extends AbstractCommandNode
+    implements StandaloneNode, StatementNode {
 
 
   public DebuggerNode(int id) {
@@ -36,7 +37,7 @@ public class DebuggerNode extends AbstractCommandNode implements StandaloneNode,
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected DebuggerNode(DebuggerNode orig) {
+  private DebuggerNode(DebuggerNode orig) {
     super(orig);
   }
 

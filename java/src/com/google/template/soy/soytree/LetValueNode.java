@@ -34,7 +34,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class LetValueNode extends LetNode implements ExprHolderNode {
+public final class LetValueNode extends LetNode implements ExprHolderNode {
 
   private static final SoyError SELF_ENDING_WITHOUT_VALUE
       = SoyError.of("A ''let'' tag should be self-ending (with a trailing ''/'') if and only if "
@@ -58,7 +58,7 @@ public class LetValueNode extends LetNode implements ExprHolderNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected LetValueNode(LetValueNode orig) {
+  private LetValueNode(LetValueNode orig) {
     super(orig);
     this.valueExpr = orig.valueExpr.clone();
   }

@@ -37,6 +37,12 @@ public final class SoyPySrcOptions implements Cloneable {
     this.translationPyModuleName = translationPyModuleName;
   }
 
+  private SoyPySrcOptions(SoyPySrcOptions orig) {
+    this.runtimePath = orig.runtimePath;
+    this.bidiIsRtlFn = orig.bidiIsRtlFn;
+    this.translationPyModuleName = orig.translationPyModuleName;
+  }
+
   public String getBidiIsRtlFn() {
     return bidiIsRtlFn;
   }
@@ -50,11 +56,7 @@ public final class SoyPySrcOptions implements Cloneable {
   }
 
   @Override public final SoyPySrcOptions clone() {
-    try {
-      return (SoyPySrcOptions) super.clone();
-    } catch (CloneNotSupportedException cnse) {
-      throw new RuntimeException("Cloneable interface removed from SoyPySrcOptions.");
-    }
+    return new SoyPySrcOptions(this);
   }
 
 }

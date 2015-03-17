@@ -89,7 +89,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected MsgPluralNode(MsgPluralNode orig) {
+  private MsgPluralNode(MsgPluralNode orig) {
     super(orig);
     this.offset = orig.offset;
     this.pluralExpr = orig.pluralExpr.clone();

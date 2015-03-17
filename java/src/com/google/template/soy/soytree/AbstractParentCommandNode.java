@@ -127,5 +127,4 @@ public abstract class AbstractParentCommandNode<N extends SoyNode>
   @Override public String toTreeString(int indent) {
     return parentMixin.toTreeString(indent);
   }
-
 }
