@@ -37,6 +37,7 @@ import com.google.template.soy.types.primitive.SanitizedType.JsType;
 import com.google.template.soy.types.primitive.SanitizedType.UriType;
 import com.google.template.soy.types.primitive.StringType;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -143,8 +144,12 @@ public final class SoyTypeRegistry {
    * @param members The members of the union.
    * @return The union type.
    */
-  public UnionType getOrCreateUnionType(Collection<SoyType> members) {
-    return unionTypes.intern(UnionType.of(members));
+  public SoyType getOrCreateUnionType(Collection<SoyType> members) {
+    SoyType type = UnionType.of(members);
+    if (type instanceof UnionType) {
+      type = unionTypes.intern((UnionType) type);
+    }
+    return type;
   }
 
 
@@ -155,8 +160,8 @@ public final class SoyTypeRegistry {
    * @param members The members of the union.
    * @return The union type.
    */
-  public UnionType getOrCreateUnionType(SoyType... members) {
-    return unionTypes.intern(UnionType.of(members));
+  public SoyType getOrCreateUnionType(SoyType... members) {
+    return getOrCreateUnionType(Arrays.asList(members));
   }
 
 

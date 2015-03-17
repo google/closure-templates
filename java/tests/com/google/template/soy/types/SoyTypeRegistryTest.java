@@ -79,13 +79,13 @@ public class SoyTypeRegistryTest extends TestCase {
   }
 
   public void testCreateUnionType() {
-    UnionType u1 = typeRegistry.getOrCreateUnionType(
+    SoyType u1 = typeRegistry.getOrCreateUnionType(
         IntType.getInstance(),
         FloatType.getInstance());
-    UnionType u2 = typeRegistry.getOrCreateUnionType(
+    SoyType u2 = typeRegistry.getOrCreateUnionType(
         IntType.getInstance(),
         FloatType.getInstance());
-    UnionType u3 = typeRegistry.getOrCreateUnionType(
+    SoyType u3 = typeRegistry.getOrCreateUnionType(
         IntType.getInstance(),
         StringType.getInstance());
 

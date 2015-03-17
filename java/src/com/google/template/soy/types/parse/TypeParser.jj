@@ -205,7 +205,7 @@ private SoyType UnionTypeExpr() :
     { members.add(type); }
   )*
 
-  { return members.size() > 1 ? UnionType.of(members) : members.get(0); }
+  { return UnionType.of(members); }
 }
 
 

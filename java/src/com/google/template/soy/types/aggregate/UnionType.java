@@ -17,6 +17,7 @@
 package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
@@ -44,8 +45,9 @@ public final class UnionType implements SoyType {
   private final ImmutableSortedSet<SoyType> members;
 
 
-  private UnionType(Collection<SoyType> members) {
-    this.members = flatten(members);
+  private UnionType(ImmutableSortedSet<SoyType> members) {
+    this.members = ImmutableSortedSet.copyOf(MEMBER_ORDER, members);
+    Preconditions.checkArgument(this.members.size() != 1);
   }
 
 
@@ -53,9 +55,10 @@ public final class UnionType implements SoyType {
    * Convenience method for creating unions.
    * @param members Member types of the union.
    * @return Union of those types.
+   *    If there is exactly one distinct type in members, then this will not be a UnionType.
    */
-  public static UnionType of(SoyType... members) {
-    return new UnionType(Arrays.asList(members));
+  public static SoyType of(SoyType... members) {
+    return of(Arrays.asList(members));
   }
 
 
@@ -63,9 +66,14 @@ public final class UnionType implements SoyType {
    * Create a union from a collection of types.
    * @param members Member types of the union.
    * @return Union of those types.
+   *    If there is exactly one distinct type in members, then this will not be a UnionType.
    */
-  public static UnionType of(Collection<SoyType> members) {
-    return new UnionType(members);
+  public static SoyType of(Collection<SoyType> members) {
+    ImmutableSortedSet<SoyType> flattenedMembers = flatten(members);
+    if (flattenedMembers.size() == 1) {
+      return flattenedMembers.first();
+    }
+    return new UnionType(flattenedMembers);
   }
 
 

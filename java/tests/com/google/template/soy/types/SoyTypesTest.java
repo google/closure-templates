@@ -154,7 +154,7 @@ public class SoyTypesTest extends TestCase {
 
   public void testUnionType() {
     // Test that it flattens properly
-    UnionType utype = UnionType.of(
+    SoyType utype = UnionType.of(
         IntType.getInstance(),
         UnionType.of(IntType.getInstance(), NullType.getInstance()));
     assertThat(utype.toString()).isEqualTo("int|null");
@@ -439,7 +439,7 @@ public class SoyTypesTest extends TestCase {
 
 
   public void testUnionTypeIsInstance() {
-    UnionType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
+    SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
     assertIsInstance(utype,
         INTEGER_DATA, STRING_DATA, HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, JS_DATA);
     assertIsNotInstance(utype,

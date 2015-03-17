@@ -40,10 +40,10 @@ import junit.framework.TestCase;
 public class JsSrcUtilsTest extends TestCase {
 
   private static final ListType LIST_OF_HTML = ListType.of(HtmlType.getInstance());
-  private static final UnionType NULLABLE_LIST_OF_HTML = nullable(LIST_OF_HTML);
-  private static final UnionType UNION_OF_STRING_OR_INT =
+  private static final SoyType NULLABLE_LIST_OF_HTML = nullable(LIST_OF_HTML);
+  private static final SoyType UNION_OF_STRING_OR_INT =
       UnionType.of(StringType.getInstance(), IntType.getInstance());
-  private static final UnionType NULLABLE_STRING = nullable(StringType.getInstance());
+  private static final SoyType NULLABLE_STRING = nullable(StringType.getInstance());
 
   public void testEscapeUnicodeFormatChars() {
     assertThat(
@@ -113,7 +113,7 @@ public class JsSrcUtilsTest extends TestCase {
   }
 
 
-  private static final UnionType nullable(SoyType type) {
+  private static final SoyType nullable(SoyType type) {
     return UnionType.of(type, NullType.getInstance());
   }
 }
