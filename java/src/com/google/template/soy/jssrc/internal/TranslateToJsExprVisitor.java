@@ -391,17 +391,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * @param key The key.
    */
   static String genCodeForKeyAccess(SoyType containerType, SoyType memberType, String key) {
-    if (false) {  // TODO(user): enable these checks once we have fixed https://b/19379232
-      Preconditions.checkNotNull(containerType);
-      Preconditions.checkNotNull(memberType);
-    } else {
-      if (containerType == null) {
-        containerType = UnknownType.getInstance();
-      }
-      if (memberType == null) {
-        memberType = UnknownType.getInstance();
-      }
-    }
+    Preconditions.checkNotNull(containerType);
+    Preconditions.checkNotNull(memberType);
     return JsSrcUtils.isReservedWord(key) ? "['" + key + "']" : "." + key;
   }
 
@@ -416,17 +407,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    */
   private static String genCodeForFieldAccess(
       SoyType baseType, SoyType fieldType, String fieldName) {
-    if (false) {  // TODO(user): enable these checks once we have fixed https://b/19379232
-      Preconditions.checkNotNull(baseType);
-      Preconditions.checkNotNull(fieldType);
-    } else {
-      if (baseType == null) {
-        baseType = UnknownType.getInstance();
-      }
-      if (fieldType == null) {
-        fieldType = UnknownType.getInstance();
-      }
-    }
+    Preconditions.checkNotNull(baseType);
+    Preconditions.checkNotNull(fieldType);
     // For unions, attempt to generate the field access code for each member
     // type, and then see if they all agree.
     if (baseType.getKind() == SoyType.Kind.UNION) {
