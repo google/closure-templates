@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -36,6 +37,7 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -226,6 +228,39 @@ final class InferenceEngine {
       context = newContext;
     }
 
+    @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+      if (autoescapeMode == AutoescapeMode.STRICT || autoescapeMode == AutoescapeMode.CONTEXTUAL) {
+        // (1) Determine the escaping we should do on the node itself, and the context we should
+        // parse the children in.
+        Optional<Context.MsgEscapingStrategy> maybeStrategy = context.getMsgEscapingStrategy();
+        if (!maybeStrategy.isPresent()) {
+          // It's really an error to have a message in one of these contexts. For now, we will
+          // treat these messages exactly like the compiler used to.
+          // TODO(gboyer): Fix all breakages and make this a compilation error.
+          visitChildren(node);
+          return;
+        }
+        Context.MsgEscapingStrategy strategy = maybeStrategy.get();
+        inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
+
+        // (2) Run the inference engine on the parts of the message in that context.
+        Context msgEndContext = new InferenceEngine(
+            autoescapeMode, templateAutoescapeMode, inferences,
+            autoescapeCancellingDirectives, slicedRawTextNodesBuilder)
+            .inferChildren(node, strategy.childContext);
+
+        // (3) Make sure the message didn't itself change context.
+        if (!msgEndContext.equals(strategy.childContext)) {
+          throw SoyAutoescapeException.createWithNode(
+              "Message text should not alter the escaping context. "
+                  + context + " != " + strategy.childContext,
+              node);
+        }
+      } else {
+        // In a non-contextual mode, we just descend into the children.
+        visitChildren(node);
+      }
+    }
 
     // TODO: Reorder visitCall* methods in AbstractSoyNodeVisitor order.
     /**

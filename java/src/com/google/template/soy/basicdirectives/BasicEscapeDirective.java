@@ -33,7 +33,6 @@ import java.util.Set;
 
 import javax.inject.Singleton;
 
-
 /**
  * An escaping directive that is backed by {@link Sanitizers} in java, {@code soyutils.js} or
  * the closure equivalent in JavaScript, and {@code sanitize.py} in Python.
@@ -130,6 +129,24 @@ public abstract class BasicEscapeDirective
 
     @Override protected String escape(SoyValue value) {
       return Sanitizers.filterCssValue(value);
+    }
+  }
+
+
+  /**
+   * Implements the |normalizeHtml directive. This escapes the same as escapeHtml except does not
+   * escape attributes.
+   */
+  @Singleton
+  @SoyPurePrintDirective
+  static final class NormalizeHtml extends BasicEscapeDirective {
+
+    NormalizeHtml() {
+      super("|normalizeHtml");
+    }
+
+    @Override protected String escape(SoyValue value) {
+      return Sanitizers.normalizeHtml(value);
     }
   }
 

@@ -20,7 +20,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-
 /**
  * Guice module for basic Soy print directives.
  *
@@ -36,6 +35,7 @@ public class BasicDirectivesModule extends AbstractModule {
     // Basic escape directives.
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeCssString());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterCssValue());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.NormalizeHtml());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlRcdata());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlAttribute());
     soyDirectivesSetBinder.addBinding().toInstance(

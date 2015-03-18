@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -137,6 +138,25 @@ final class Rewriter {
     }
 
     /**
+     * Grabs the inferred escaping directives from the node in string form.
+     */
+    private ImmutableList<String> getDirectiveNamesForNode(SoyNode node) {
+      ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<>();
+      for (EscapingMode escapingMode : inferences.getEscapingModesForId(node.getId())) {
+        escapingDirectiveNames.add(escapingMode.directiveName);
+      }
+      return escapingDirectiveNames.build();
+    }
+
+    /**
+     * Sets the escaping directives we inferred on the node.
+     */
+    @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+      node.setEscapingDirectiveNames(getDirectiveNamesForNode(node));
+      visitChildren(node);
+    }
+
+    /**
      * Rewrite call targets.
      *
      * Note that this processing is only applicable for CallBasicNodes. The reason is that
@@ -187,11 +207,7 @@ final class Rewriter {
       }
 
       // For strict templates, set any necessary escaping directives.
-      ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<>();
-      for (EscapingMode escapingMode : inferences.getEscapingModesForId(callNode.getId())) {
-        escapingDirectiveNames.add(escapingMode.directiveName);
-      }
-      callNode.setEscapingDirectiveNames(escapingDirectiveNames.build());
+      callNode.setEscapingDirectiveNames(getDirectiveNamesForNode(callNode));
 
       visitChildrenAllowingConcurrentModification(callNode);
     }

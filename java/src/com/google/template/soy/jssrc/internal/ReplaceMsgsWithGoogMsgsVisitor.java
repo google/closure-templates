@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import java.util.List;
 
-
 /**
  * Visitor for replacing {@code MsgFallbackGroupNode}s with corresponding pairs of
  * {@code GoogMsgDefNode}s and {@code GoogMsgRefNode}s.
@@ -104,7 +103,8 @@ class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     GoogMsgDefNode googMsgDefNode =
         new GoogMsgDefNode(nodeIdGen.genId(), msgFbGrpNode, childMsgIds);
     GoogMsgRefNode googMsgRefNode =
-        new GoogMsgRefNode(nodeIdGen.genId(), googMsgDefNode.getRenderedGoogMsgVarName());
+        new GoogMsgRefNode(nodeIdGen.genId(), googMsgDefNode.getRenderedGoogMsgVarName(),
+        msgFbGrpNode.getEscapingDirectiveNames());
 
     BlockNode parent = msgFbGrpNode.getParent();
     int index = parent.getChildIndex(msgFbGrpNode);

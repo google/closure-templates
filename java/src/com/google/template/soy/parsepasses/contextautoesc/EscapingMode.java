@@ -16,13 +16,13 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import java.util.Map;
-
-import javax.annotation.Nullable;
-
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * Ways of escaping dynamic content in a template.
@@ -32,6 +32,9 @@ public enum EscapingMode {
 
   /** Encodes HTML special characters. */
   ESCAPE_HTML(true, ContentKind.HTML),
+
+  /** Escapes HTML except preserves ampersands and entities. */
+  NORMALIZE_HTML(true, null),
 
   /** Like {@link #ESCAPE_HTML} but normalizes known safe HTML since RCDATA can't contain tags. */
   ESCAPE_HTML_RCDATA(true, null),

@@ -1005,6 +1005,21 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
 
 
 /**
+ * Escapes HTML, except preserves entities.
+ *
+ * Used mainly internally for escaping message strings in attribute and rcdata
+ * context, where we explicitly want to preserve any existing entities.
+ *
+ * @param {*} value Value to normalize.
+ * @return {string} A value safe to insert in HTML without any quotes or angle
+ *     brackets.
+ */
+soy.$$normalizeHtml = function(value) {
+  return soy.esc.$$normalizeHtmlHelper(value);
+};
+
+
+/**
  * Escapes HTML special characters in a string so that it can be embedded in
  * RCDATA.
  * <p>

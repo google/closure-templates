@@ -16,10 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 
 /**
  * Represents a group of one or more messages. If more than one message, then they form a fallback
@@ -35,6 +35,12 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     implements StandaloneNode, SplitLevelTopNode<MsgNode>, StatementNode {
 
+  /**
+   * Escaping directives names (including the vertical bar) to apply to the return value. With
+   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if
+   * the template's return value is the correct SanitizedContent object.
+   */
+  private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
 
   /**
    * @param id The id for this node.
@@ -50,6 +56,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    */
   private MsgFallbackGroupNode(MsgFallbackGroupNode orig) {
     super(orig);
+    this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }
 
 
@@ -76,4 +83,19 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     return new MsgFallbackGroupNode(this);
   }
 
+  /**
+   * Sets the inferred escaping directives from the contextual engine.
+   */
+  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
+    this.escapingDirectiveNames = escapingDirectiveNames;
+  }
+
+  /**
+   * Returns the escaping directives, applied from left to right.
+   *
+   * <p>It is an error to call this before the contextual rewriter has been run.
+   */
+  public ImmutableList<String> getEscapingDirectiveNames() {
+    return escapingDirectiveNames;
+  }
 }

@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
@@ -49,7 +50,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * Visitor for generating JS expressions for parse tree nodes.
  *
@@ -75,7 +75,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
 
 
   /** Map of all SoyJsSrcPrintDirectives (name to directive). */
-  Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
+  private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
 
   /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
@@ -186,7 +186,17 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
    * </pre>
    */
   @Override protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
-    jsExprs.add(new JsExpr(node.getRenderedGoogMsgVarName(), Integer.MAX_VALUE));
+    JsExpr result = new JsExpr(node.getRenderedGoogMsgVarName(), Integer.MAX_VALUE);
+
+    // Escaping directives apply to messages, especially in attribute context.
+    for (String directiveName : node.getEscapingDirectiveNames()) {
+      SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveName);
+      Preconditions.checkNotNull(
+          directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
+      result = directive.applyForJsSrc(result, ImmutableList.<JsExpr>of());
+    }
+
+    jsExprs.add(result);
   }
 
 

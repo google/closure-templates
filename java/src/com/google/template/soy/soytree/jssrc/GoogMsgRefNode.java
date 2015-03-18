@@ -16,9 +16,9 @@
 
 package com.google.template.soy.soytree.jssrc;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-
 
 /**
  * Node representing a reference of a message variable (defined by {@code goog.getMsg}).
@@ -32,14 +32,25 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
   /** The JS var name of the rendered goog msg.. */
   private final String renderedGoogMsgVarName;
 
+  // TODO(gboyer): Consider switching out all references to escaping directive names to
+  // the EscapingMode enum, wherever custom print directives are not needed.
+  /**
+   * Escaping directives names (including the vertical bar) to apply to the return value. With
+   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if
+   * the template's return value is the correct SanitizedContent object.
+   */
+  private final ImmutableList<String> escapingDirectiveNames;
+
 
   /**
    * @param id The id for this node.
    * @param renderedGoogMsgVarName The JS var name of the rendered goog msg.
    */
-  public GoogMsgRefNode(int id, String renderedGoogMsgVarName) {
+  public GoogMsgRefNode(
+       int id, String renderedGoogMsgVarName, ImmutableList<String> escapingDirectiveNames) {
     super(id);
     this.renderedGoogMsgVarName = renderedGoogMsgVarName;
+    this.escapingDirectiveNames = escapingDirectiveNames;
   }
 
 
@@ -50,6 +61,7 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
   private GoogMsgRefNode(GoogMsgRefNode orig) {
     super(orig);
     this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;
+    this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }
 
 
@@ -78,4 +90,11 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
     return new GoogMsgRefNode(this);
   }
 
+
+  /**
+   * Returns the escaping directives, applied from left to right.
+   */
+  public ImmutableList<String> getEscapingDirectiveNames() {
+    return escapingDirectiveNames;
+  }
 }

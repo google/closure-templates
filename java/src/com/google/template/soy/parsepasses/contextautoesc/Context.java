@@ -16,13 +16,13 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -252,7 +252,7 @@ public final class Context {
    * @return Empty if there is no appropriate escaping convention to use,
    *     e.g. for comments which do not have escaping conventions.
    */
-  public List<EscapingMode> getEscapingModes() {
+  public ImmutableList<EscapingMode> getEscapingModes() {
     EscapingMode escapingMode = state.escapingMode;
 
     // Short circuit on the error return case first.
@@ -337,6 +337,85 @@ public final class Context {
 
     return extraEscapingMode == null ?
         ImmutableList.of(escapingMode) : ImmutableList.of(escapingMode, extraEscapingMode);
+  }
+
+
+  /**
+   * Policy for how to handle escaping of a translatable message.
+   */
+  static final class MsgEscapingStrategy {
+
+    /**
+     * The context in which to parse the message itself. This affects how print nodes are escaped.
+     */
+    final Context childContext;
+
+    /**
+     * The escaping directives for the entire message after all print nodes have been substituted.
+     */
+    final ImmutableList<EscapingMode> escapingModesForFullMessage;
+
+    MsgEscapingStrategy(
+        Context childContext, ImmutableList<EscapingMode> escapingModesForFullMessage) {
+      this.childContext = childContext;
+      this.escapingModesForFullMessage = escapingModesForFullMessage;
+    }
+  }
+
+
+  /**
+   * Determines the strategy to escape Soy msg tags.
+   *
+   * <p>Importantly, this determines the context that the message should be considered in, how the
+   * print nodes will be escaped, and how the entire message will be escaped.  We need different
+   * strategies in different contexts because messages in general aren't trusted, but we also need
+   * to be able to include markup interspersed in an HTML message; for example, an anchor that Soy
+   * factored out of the message.
+   *
+   * <p>Note that it'd be very nice to be able to simply escape the strings that came out of the
+   * translation database, and distribute the escaping entirely over the print nodes. However, the
+   * translation machinery, especially in Javascript, doesn't offer a way to escape just the bits
+   * that come from the translation database without also re-escaping the substitutions.
+   *
+   * @return relevant strategy, or absent in case there's no valid strategy and it is an error to
+   *     have a message in this context
+   */
+  Optional<MsgEscapingStrategy> getMsgEscapingStrategy() {
+    switch (state) {
+      case HTML_PCDATA:
+        // In normal HTML PCDATA context, it makes sense to escape all of the print nodes, but not
+        // escape the entire message.  This allows Soy to support putting anchors and other small
+        // bits of HTML in messages.
+        return Optional.of(new MsgEscapingStrategy(this, ImmutableList.<EscapingMode>of()));
+
+      case CSS_DQ_STRING:
+      case CSS_SQ_STRING:
+      case JS_DQ_STRING:
+      case JS_SQ_STRING:
+      case TEXT:
+      case URI:
+        if (state == State.URI && uriPart != UriPart.QUERY) {
+          // NOTE: Only support the query portion of URIs.
+          return Optional.<MsgEscapingStrategy>absent();
+        }
+        // In other contexts like JS and CSS strings, it makes sense to treat the message's
+        // placeholders as plain text, but escape the entire result of message evaluation.
+        return Optional.of(new MsgEscapingStrategy(new Context(State.TEXT), getEscapingModes()));
+
+      case HTML_RCDATA:
+      case HTML_NORMAL_ATTR_VALUE:
+        // The weirdest case is HTML attributes. Ideally, we'd like to treat these as a text string
+        // and escape when done.  However, many messages have HTML entities such as &raquo; in them.
+        // A good way around this is to escape the print nodes in the message, but normalize
+        // (escape except for ampersands) the final message.
+        return Optional.of(
+            new MsgEscapingStrategy(this, ImmutableList.of(EscapingMode.NORMALIZE_HTML)));
+
+      default:
+        // Other contexts, primarily source code contexts, don't have a meaningful way to support
+        // natural language text.
+        return Optional.<MsgEscapingStrategy>absent();
+    }
   }
 
 
