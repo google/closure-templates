@@ -84,7 +84,8 @@ public class EvalVisitorTest extends TestCase {
         "boo", 8, "foo.bar", "baz", "foo.goo2", tri, "goo", tri,
         "moo", 3.14, "t", true, "f", false, "n", null,
         "map0", VALUE_HELPER.newEasyDict(), "list0", VALUE_HELPER.newEasyList(),
-        "longNumber", 1000000000000000001L);
+        "longNumber", 1000000000000000001L,
+        "floatNumber", 1.5);
   }
 
 
@@ -469,6 +470,38 @@ public class EvalVisitorTest extends TestCase {
     assertEval("$goo != $foo.goo2", false);
     assertEval("22 != '22'", false);
     assertEval("'' + 22 != '22'", false);
+
+    assertEval("$longNumber < $longNumber", false);
+    assertEval("$longNumber < ($longNumber - 1)", false);
+    assertEval("($longNumber - 1) < $longNumber", true);
+
+    assertEval("$longNumber <= $longNumber", true);
+    assertEval("$longNumber <= ($longNumber - 1)", false);
+    assertEval("($longNumber - 1) <= $longNumber", true);
+
+    assertEval("$longNumber > $longNumber", false);
+    assertEval("$longNumber > ($longNumber - 1)", true);
+    assertEval("($longNumber - 1) > $longNumber", false);
+
+    assertEval("$longNumber >= $longNumber", true);
+    assertEval("$longNumber >= ($longNumber - 1)", true);
+    assertEval("($longNumber - 1) >= $longNumber", false);
+
+    assertEval("$floatNumber < $floatNumber", false);
+    assertEval("$floatNumber < ($floatNumber - 1)", false);
+    assertEval("($floatNumber - 1) < $floatNumber", true);
+
+    assertEval("$floatNumber <= $floatNumber", true);
+    assertEval("$floatNumber <= ($floatNumber - 1)", false);
+    assertEval("($floatNumber - 1) <= $floatNumber", true);
+
+    assertEval("$floatNumber > $floatNumber", false);
+    assertEval("$floatNumber > ($floatNumber - 1)", true);
+    assertEval("($floatNumber - 1) > $floatNumber", false);
+
+    assertEval("$floatNumber >= $floatNumber", true);
+    assertEval("$floatNumber >= ($floatNumber - 1)", true);
+    assertEval("($floatNumber - 1) >= $floatNumber", false);
   }
 
 

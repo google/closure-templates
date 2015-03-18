@@ -17,9 +17,16 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
+import static com.google.template.soy.shared.internal.SharedRuntime.equal;
+import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
+import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEqual;
+import static com.google.template.soy.shared.internal.SharedRuntime.minus;
+import static com.google.template.soy.shared.internal.SharedRuntime.negative;
+import static com.google.template.soy.shared.internal.SharedRuntime.plus;
+import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyMap;
@@ -30,7 +37,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -365,13 +371,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
 
   @Override protected SoyValue visitNegativeOpNode(NegativeOpNode node) {
-
-    SoyValue operand = visit(node.getChild(0));
-    if (operand instanceof IntegerData) {
-      return convertResult( - operand.longValue() );
-    } else {
-      return convertResult( - operand.floatValue() );
-    }
+    return negative(visit(node.getChild(0)));
   }
 
 
@@ -383,24 +383,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
 
   @Override protected SoyValue visitTimesOpNode(TimesOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() * operand1.longValue());
-    } else {
-      return convertResult(operand0.numberValue() * operand1.numberValue());
-    }
+    return times(visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
 
   @Override protected SoyValue visitDivideByOpNode(DivideByOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
-    // Note that this *will* lose precision for longs.
-    return convertResult(operand0.numberValue() / operand1.numberValue());
+    return FloatData.forValue(dividedBy(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
 
@@ -413,133 +401,44 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
 
   @Override protected SoyValue visitPlusOpNode(PlusOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() + operand1.longValue());
-    } else if (operand0 instanceof StringData || operand1 instanceof StringData) {
-      // String concatenation. Note we're calling toString() instead of stringValue() in case one
-      // of the operands needs to be coerced to a string.
-      return convertResult(operand0.toString() + operand1);
-    } else {
-      return convertResult(operand0.numberValue() + operand1.numberValue());
-    }
+    return plus(visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
 
   @Override protected SoyValue visitMinusOpNode(MinusOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() - operand1.longValue());
-    } else {
-      return convertResult(operand0.numberValue() - operand1.numberValue());
-    }
+    return minus(visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
 
   @Override protected SoyValue visitLessThanOpNode(LessThanOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() < operand1.longValue());
-    } else {
-      return convertResult(operand0.numberValue() < operand1.numberValue());
-    }
+    return BooleanData.forValue(lessThan(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
 
   @Override protected SoyValue visitGreaterThanOpNode(GreaterThanOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() > operand1.longValue());
-    } else {
-      return convertResult(operand0.numberValue() > operand1.numberValue());
-    }
+    // note the argument reversal
+    return BooleanData.forValue(lessThan(visit(node.getChild(1)), visit(node.getChild(0))));
   }
 
 
   @Override protected SoyValue visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() <= operand1.longValue());
-    } else {
-      return convertResult(operand0.numberValue() <= operand1.numberValue());
-    }
+    return BooleanData.forValue(lessThanOrEqual(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
 
   @Override protected SoyValue visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return convertResult(operand0.longValue() >= operand1.longValue());
-    } else {
-      return convertResult(operand0.numberValue() >= operand1.numberValue());
-    }
+    // note the argument reversal
+    return BooleanData.forValue(lessThanOrEqual(visit(node.getChild(1)), visit(node.getChild(0))));
   }
-
-
-  /**
-   * Determines if the operand's string form can be equality-compared with a string.
-   */
-  private boolean compareString(StringData stringData, SoyValue other) {
-    // This follows similarly to the Javascript specification, to ensure similar operation
-    // over Javascript and Java: http://www.ecma-international.org/ecma-262/5.1/#sec-11.9.3
-    if (other instanceof StringData || other instanceof SanitizedContent) {
-      return stringData.stringValue().equals(other.toString());
-    }
-    if (other instanceof NumberData) {
-      try {
-        // Parse the string as a number.
-        return Double.parseDouble(stringData.stringValue()) == other.numberValue();
-      } catch (NumberFormatException nfe) {
-        // Didn't parse as a number.
-        return false;
-      }
-    }
-    return false;
-  }
-
-
-  /**
-   * Custom equality operator that smooths out differences between different Soy runtimes.
-   *
-   * This approximates Javascript's behavior, but is much easier to understand.
-   */
-  private boolean equals(SoyValue operand0, SoyValue operand1) {
-    // Treat the case where either is a string specially.
-    if (operand0 instanceof StringData) {
-      return compareString((StringData) operand0, operand1);
-    }
-    if (operand1 instanceof StringData) {
-      return compareString((StringData) operand1, operand0);
-    }
-    return operand0.equals(operand1);
-  }
-
 
   @Override protected SoyValue visitEqualOpNode(EqualOpNode node) {
 
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    return convertResult(equals(operand0, operand1));
+    return convertResult(equal(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
 
   @Override protected SoyValue visitNotEqualOpNode(NotEqualOpNode node) {
-
-    SoyValue operand0 = visit(node.getChild(0));
-    SoyValue operand1 = visit(node.getChild(1));
-    return convertResult(!equals(operand0, operand1));
+    return convertResult(!equal(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
 

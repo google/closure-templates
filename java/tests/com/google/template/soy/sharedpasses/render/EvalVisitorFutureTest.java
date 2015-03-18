@@ -40,6 +40,7 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
         "n", Futures.immediateFuture(null),
         "map0", Futures.immediateFuture(VALUE_HELPER.newEasyDict()),
         "list0", Futures.immediateFuture(VALUE_HELPER.newEasyList()),
-        "longNumber", Futures.immediateFuture(1000000000000000001L));
+        "longNumber", Futures.immediateFuture(1000000000000000001L),
+        "floatNumber", Futures.immediateFuture(1.5D));
   }
 }
