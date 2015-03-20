@@ -185,12 +185,10 @@ def filter_html_attributes(value):
     # attributes, unless the interpretation is unambiguous (ending with quotes
     # or a space).
     return _AMBIGUOUS_ATTR_END_RE.sub(r'\1 ', value.content)
-
-  # TODO(dcphillips): Dynamically inserting attributes that aren't marked as
-  # trusted is probably unnecessary.  Any filtering done here will either be
-  # inadequate for security or not flexible enough.  Having clients use
-  # kind="attributes" in parameters seems like a wiser idea.
-  return generated_sanitize.filter_html_attributes_helper(value)
+  else:
+    raise RuntimeError(
+        'Expected %s to be SanitizedContentKind.Attributes, but is %s.' %
+        (value, _get_content_kind(value)))
 
 
 def filter_html_element_name(value):
@@ -245,6 +243,19 @@ def is_content_kind(value, content_kind):
 #############################
 # Private Utility Functions #
 #############################
+
+def _get_content_kind(value):
+  """Get human-readable name for the kind of value.
+
+  Args:
+    value: A input string.
+  Returns:
+    A string name represented the type of value.
+  """
+  if isinstance(value, SanitizedContent):
+    return CONTENT_KIND.decodeKind(value.content_kind)
+  else:
+    return type(value)
 
 
 def _strip_html_tags(value, tag_whitelist=None):
@@ -360,6 +371,11 @@ def _balance_tags(tags):
 
 class CONTENT_KIND:
   HTML, JS, JS_STR_CHARS, URI, ATTRIBUTES, CSS, TEXT = range(1, 8)
+
+  @staticmethod
+  def decodeKind(i):
+    i = i - 1;
+    return ['HTML', 'JS', 'JS_STR_CHARS', 'URI', 'ATTRIBUTES', 'CSS', 'TEXT'][i]
 
 
 class DIR:
