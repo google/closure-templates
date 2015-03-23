@@ -27,7 +27,6 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -141,16 +140,16 @@ import java.lang.reflect.Modifier;
   }
   
   /**
-   * Stores the item at the top of the stack into the field.
+   * Stores the {@code value} in this field on the given {@code instance}.
    * 
-   * <p>If this is not a {@link #isStatic() static} field, a reference to the owner object should be
-   * the second item from the top of the stack.
+   * @throws IllegalStateException if this is a static field
    */
-  void putField(MethodVisitor mv) {
-    mv.visitFieldInsn(
-        isStatic() ? Opcodes.PUTSTATIC : Opcodes.PUTFIELD,
-        owner().internalName(), 
-        name(), 
-        type().getDescriptor());
+  void putInstanceField(Expression instance, Expression value, GeneratorAdapter adapter) {
+    checkState(!isStatic(), "This field is static!");
+    instance.checkType(owner().type());
+    value.checkType(type());
+    instance.gen(adapter);
+    value.gen(adapter);
+    adapter.putField(owner().type(), name(), type());
   }
 }

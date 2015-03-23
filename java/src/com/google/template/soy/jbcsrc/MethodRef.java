@@ -37,6 +37,7 @@ import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.StringExpression;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
 import com.google.template.soy.shared.internal.SharedRuntime;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -85,6 +86,9 @@ import java.util.Map;
       create(Runtime.class, "stringEqualsAsNumber", String.class, double.class);
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
+  static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
+  static final MethodRef RUNTIME_CHECK_REQUIRED_PARAM = 
+      create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
 
   // Instance methods
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);

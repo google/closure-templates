@@ -16,14 +16,13 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
+import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyRecord;
+
 /**
  * Runtime utilities uniquely for the {@code jbcsrc} backend.
  */
 public final class Runtime {
-  public static RuntimeException missingRequiredParameter(String paramName) {
-    return new RuntimeException("parameter '$" + paramName + "' is undefined");
-  }
-
   public static AssertionError unexpectedStateError(int state) {
     return new AssertionError("Unexpected state requested: " + state);
   }
@@ -33,6 +32,12 @@ public final class Runtime {
       return Double.parseDouble(expr) == number;
     } catch (NumberFormatException nfe) {
       return false;
+    }
+  }
+  
+  public void checkRequiredParam(SoyRecord params, String paramName) {
+    if (!params.hasField(paramName)) {
+      throw new SoyDataException("required param '$" + paramName + "' is undefined");
     }
   }
 }

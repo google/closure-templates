@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.auto.value.AutoValue;
 
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
@@ -35,22 +35,28 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  *    <li>This does not ensure that the {@link #index} is otherwise unused and that only one 
  *        variable is active at a time with the index.
  * </ul>
+ * 
+ * <p>Note: This class does not attempt to make use of the convenience methods on generator adapter
+ * such as {@link GeneratorAdapter#newLocal(Type)} or {@link GeneratorAdapter#loadArg(int)} that
+ * make it easier to work with local variables (and calculating local variable indexes).  Instead
+ * we push this responsibility onto our caller.  This is because GeneratorAdapter doesn't make it
+ * possible to generate local variable debugging tables in this case (e.g. there is no way to map
+ * a method parameter index to a local variable index).
  */
 @AutoValue abstract class LocalVariable extends Expression {
   static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
-    return new AutoValue_LocalVariable("this", true, owner.type(), 0, start, end);
+    return new AutoValue_LocalVariable("this", owner.type(), 0, start, end);
   }
+
   static LocalVariable createLocal(String name, int index, Type type, Label start, Label end) {
     checkArgument(!name.equals("this"));
-    return new AutoValue_LocalVariable(name, false, type, index, start, end);
+    return new AutoValue_LocalVariable(name, type, index, start, end);
   }
 
   /** The name of the variable, ends up in debugging tables. */
   abstract String variableName();
-  abstract boolean isThis();
   @Override abstract Type resultType();
 
-  /** The index in the local variable table. */
   abstract int index();
 
   /** A label defining the earliest point at which this variable is defined. */
@@ -63,7 +69,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
    * Write a local variable table entry for this variable.  This informs debuggers about variable
    * names, types and lifetime.
    */
-  void tableEntry(MethodVisitor mv) {
+  void tableEntry(GeneratorAdapter mv) {
     mv.visitLocalVariable(
         variableName(),
         resultType().getDescriptor(),
@@ -74,16 +80,11 @@ import org.objectweb.asm.commons.GeneratorAdapter;
   }
 
   @Override public void gen(GeneratorAdapter mv) {
-    if (isThis()) {
-      // need to special case this since generator adapter doesn't consider 'this' to be a local.
-      mv.loadThis();  
-    } else {
-      mv.loadLocal(index(), resultType());
-    }
+    mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
   /** Writes the value at the top of the stack to the local variable. */
   void store(GeneratorAdapter mv) {
-    mv.storeLocal(index(), resultType());
+    mv.visitVarInsn(resultType().getOpcode(Opcodes.ISTORE), index());
   }
 }
