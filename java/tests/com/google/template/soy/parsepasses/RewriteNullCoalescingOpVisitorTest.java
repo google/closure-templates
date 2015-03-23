@@ -18,9 +18,11 @@ package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor.RewriteNullCoalescingOpInExprVisitor;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -51,9 +53,11 @@ public class RewriteNullCoalescingOpVisitorTest extends TestCase {
    * Private helper to check the rewrite of one expression.
    */
   private void assertRewrite(String origSrc, String expectedRewrittenSrc) throws Exception {
-
-    ExprNode expr = (new ExpressionParser(origSrc)).parseExpression();
-    (new RewriteNullCoalescingOpInExprVisitor()).exec(expr);
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprNode expr
+        = new ExpressionParser(origSrc, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    errorReporter.throwIfErrorsPresent();
+    new RewriteNullCoalescingOpInExprVisitor().exec(expr);
     String rewrittenSrc = expr.toSourceString();
     assertThat(rewrittenSrc).isEqualTo(expectedRewrittenSrc);
   }

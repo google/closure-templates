@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyValue;
@@ -31,6 +32,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.types.SoyEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
@@ -50,9 +52,13 @@ import javax.annotation.Nullable;
 public class SubstituteGlobalsVisitorTest extends TestCase {
 
 
-  public void testSubstituteGlobals() throws Exception {
+  public void testSubstituteGlobals() {
 
-    ExprRootNode<?> expr = (new ExpressionParser("BOO + 'aaa' + foo.GOO")).parseExpression();
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprRootNode<?> expr
+        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, errorReporter)
+        .parseExpression();
+    errorReporter.throwIfErrorsPresent();
     PlusOpNode plus0 = (PlusOpNode) expr.getChild(0);
     PlusOpNode plus1 = (PlusOpNode) plus0.getChild(0);
 
@@ -73,7 +79,11 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
   public void testSubstituteGlobalsFromType() throws Exception {
 
-    ExprRootNode<?> expr = (new ExpressionParser("foo.BOO + foo.GOO")).parseExpression();
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprRootNode<?> expr
+        = new ExpressionParser("foo.BOO + foo.GOO", SourceLocation.UNKNOWN, errorReporter)
+        .parseExpression();
+    errorReporter.throwIfErrorsPresent();
     PlusOpNode plus0 = (PlusOpNode) expr.getChild(0);
 
     assertThat(((GlobalNode) plus0.getChild(0)).getName()).isEqualTo("foo.BOO");
@@ -136,8 +146,10 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
 
   public void testAssertNoUnboundGlobals() throws Exception {
-
-    ExprRootNode<?> expr = (new ExpressionParser("BOO + 'aaa' + foo.GOO")).parseExpression();
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprRootNode<?> expr
+        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, errorReporter)
+        .parseExpression();
 
     Map<String, PrimitiveData> globals =
         ImmutableMap.<String, PrimitiveData>of(

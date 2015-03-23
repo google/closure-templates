@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyDataException;
@@ -37,12 +39,12 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 
 import junit.framework.TestCase;
@@ -158,21 +160,32 @@ public class EvalVisitorTest extends TestCase {
   /**
    * Asserts that evaluating the given expression causes a ParseException.
    * @param expression The expression to evaluate.
-   * @throws Exception If the assertion is not true or if there's an error.
    */
-  private void assertParseException(String expression, @Nullable String errorMsgSubstring)
-      throws Exception {
-
+  private void assertParseException(String expression) {
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
     try {
-      new ExpressionParser(expression).parseExpression();
-      fail();
-
-    } catch (ParseException pe) {
-      if (errorMsgSubstring != null) {
-        assertThat(pe.getMessage()).contains(errorMsgSubstring);
-      }
-      // Test passes.
+      errorReporter.throwIfErrorsPresent();
+    } catch (SoySyntaxException e) {
+      return; // passes
     }
+    fail("expected ParseException, got none");
+  }
+
+  /**
+   * Asserts that evaluating the given expression causes a ParseException.
+   * @param expression The expression to evaluate.
+   */
+  private void assertParseException(String expression, String errorMsgSubstring) {
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    try {
+      errorReporter.throwIfErrorsPresent();
+    } catch (SoySyntaxException e) {
+      assertThat(e.getMessage()).contains(errorMsgSubstring);
+      return;
+    }
+    fail("expected ParseException, got none");
   }
 
 
@@ -249,7 +262,7 @@ public class EvalVisitorTest extends TestCase {
     result = (SoyList) eval("[]");
     assertThat(result.length()).isEqualTo(0);
 
-    assertParseException("[,]", null);
+    assertParseException("[,]");
   }
 
 
@@ -279,8 +292,8 @@ public class EvalVisitorTest extends TestCase {
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
     assertThat(result.getField("baz").integerValue()).isEqualTo(8);
 
-    assertParseException("[:,]", null);
-    assertParseException("[,:]", null);
+    assertParseException("[:,]");
+    assertParseException("[,:]");
 
     // Test error on single-identifier key.
     assertParseException(

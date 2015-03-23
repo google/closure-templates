@@ -16,6 +16,9 @@
 
 package com.google.template.soy.exprparse;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.exprparse.ExpressionSubject.assertThatExpression;
+
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -38,14 +41,11 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VarNode;
 import com.google.template.soy.exprtree.VarRefNode;
 
-import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
 import java.util.List;
-
 
 /**
  * Unit tests for the Soy expression parser.
@@ -53,204 +53,228 @@ import java.util.List;
  */
 public class ExpressionParserTest extends TestCase {
 
-
-  public void testRecognizeVariable() throws Exception {
-
+  public void testRecognizeVariable() {
     String[] vars = {"$aaa", "$_", "$a0b1_"};
     for (String var : vars) {
-      (new ExpressionParser(var)).parseVariable();
+      assertThatExpression(var).isValidVar();
     }
 
     String[] nonVars = {"$", "$1", "$ aaa", "aaa", "$ij", "$ij.aaa"};
     for (String nonVar : nonVars) {
-      try {
-        (new ExpressionParser(nonVar)).parseVariable();
-        fail();
-      } catch (TokenMgrError tme) {
-        // Test passes.
-      } catch (ParseException pe) {
-        // Test passes.
-      }
+      assertThatExpression(nonVar).isNotValidVar();
     }
   }
 
-
-  public void testRecognizeDataReference() throws Exception {
-
+  public void testRecognizeDataReference() {
     String[] dataRefs =
         {"$aaa", "$ij.aaa", "$a0a0.b1b1", "$aaa.0.bbb.12", "$aaa[0].bbb['ccc'][$eee]",
          "$aaa?.bbb", "$aaa.bbb?[0]?.ccc?['ddd']", "$ij?.aaa",
          "$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]"};
     for (String dataRef : dataRefs) {
-      (new ExpressionParser(dataRef)).parseDataReference();
+      assertThatExpression(dataRef).isValidDataRef();
     }
 
     String[] nonDataRefs =
         {"$", "$ aaa", "aaa", "$1a1a", "$0", "$[12]", "$[$aaa]", "$aaa[]", "$ij[4]", "$aaa.?bbb"};
     for (String nonDataRef : nonDataRefs) {
-      try {
-        (new ExpressionParser(nonDataRef)).parseDataReference();
-        fail();
-      } catch (TokenMgrError tme) {
-        // Test passes.
-      } catch (ParseException pe) {
-        // Test passes.
-      }
+      assertThatExpression(nonDataRef).isNotValidDataRef();
     }
   }
 
 
-  public void testRecognizeGlobal() throws Exception {
-
+  public void testRecognizeGlobal() {
     String[] globals = {"aaa", "aaa.bbb.CCC", "a22 . b88_"};
     for (String global : globals) {
-      (new ExpressionParser(global)).parseGlobal();
+      assertThatExpression(global).isValidGlobal();
     }
 
     String[] nonGlobals = {"$aaa", "1a1a", "aaa.1a1a", "22", "aaa[33]", "aaa[bbb]", "aaa['bbb']"};
     for (String nonGlobal : nonGlobals) {
-      try {
-        (new ExpressionParser(nonGlobal)).parseGlobal();
-        fail();
-      } catch (TokenMgrError tme) {
-        // Test passes.
-      } catch (ParseException pe) {
-        // Test passes.
-      }
+      assertThatExpression(nonGlobal).isNotValidGlobal();
     }
   }
 
 
-  public void testRecognizePrimitives() throws Exception {
-
-    // Null.
-    assertIsExpression("null");
+  public void testRecognizePrimitives() {
+    // Null
+    assertThatExpression("null").isValidExpression();
     // Boolean.
-    assertIsExpression("true", "false");
+    assertThatExpression("true").isValidExpression();
+    assertThatExpression("false").isValidExpression();
     // Integer. (Note the negative sign is actually parsed as the unary "-" operator.)
-    assertIsExpression("0", "00", "26", "-729", "1234567890", "0x0", "0x1A2B", "-0xCAFE88");
-    assertIsNotExpression("0x1a2b", "-0xcafe88");
+    assertThatExpression("0").isValidExpression();
+    assertThatExpression("00").isValidExpression();
+    assertThatExpression("26").isValidExpression();
+    assertThatExpression("-729").isValidExpression();
+    assertThatExpression("1234567890").isValidExpression();
+    assertThatExpression("0x0").isValidExpression();
+    assertThatExpression("0x1A2B").isValidExpression();
+    assertThatExpression("-0xCAFE88").isValidExpression();
+
+    assertThatExpression("0x1a2b").isNotValidExpression();
+    assertThatExpression("-0xcafe88").isNotValidExpression();
+
     // Float. (Note the negative sign is actually parsed as the unary "-" operator.)
-    assertIsExpression("0.0", "3.14159", "-20.0", "6.02e23", "3e3", "3e+3", "-3e-3");
-    assertIsNotExpression("0.", ".0", "-20.", ".14159", "6.02E23", "-3E-3");
+    assertThatExpression("0.0").isValidExpression();
+    assertThatExpression("3.14159").isValidExpression();
+    assertThatExpression("-20.0").isValidExpression();
+    assertThatExpression("6.02e23").isValidExpression();
+    assertThatExpression("3e3").isValidExpression();
+    assertThatExpression("3e+3").isValidExpression();
+    assertThatExpression("-3e-3").isValidExpression();
+
+    assertThatExpression("0.").isNotValidExpression();
+    assertThatExpression(".0").isNotValidExpression();
+    assertThatExpression("-20.").isNotValidExpression();
+    assertThatExpression(".14159").isNotValidExpression();
+    assertThatExpression("6.02E23").isNotValidExpression();
+    assertThatExpression("-3E-3").isNotValidExpression();
+
     // String.
-    assertIsExpression("''", "'abc'", "'\\\\ \\' \\\" \\n \\r \\t \\b \\f  \\u00A9 \\u2468'");
-    assertIsNotExpression("'\\xA9'", "'\\077'", "\"\"", "\"abc\"");
+    assertThatExpression("''").isValidExpression();
+    assertThatExpression("'abc'").isValidExpression();
+    assertThatExpression("'\\\\ \\' \\\" \\n \\r \\t \\b \\f  \\u00A9 \\u2468'").isValidExpression();
+
+    assertThatExpression("'\\xA9'").isNotValidExpression();
+    assertThatExpression("'\\077'").isNotValidExpression();
+    assertThatExpression("\"\"").isNotValidExpression();
+    assertThatExpression("\"abc\"").isNotValidExpression();
   }
 
 
-  public void testRecognizeListsAndMaps() throws Exception {
+  public void testRecognizeListsAndMaps() {
+    assertThatExpression("[]").isValidExpression();
+    assertThatExpression("[55]").isValidExpression();
+    assertThatExpression("[55,]").isValidExpression();
+    assertThatExpression("['blah', 123, $boo]").isValidExpression();
+    assertThatExpression("['blah', 123, $boo,]").isValidExpression();
 
-    assertIsExpression("[]");
-    assertIsExpression("[55]");
-    assertIsExpression("[55,]");
-    assertIsExpression("['blah', 123, $boo]");
-    assertIsExpression("['blah', 123, $boo,]");
-
-    assertIsExpression("[:]");
-    assertIsExpression("['aa': 55]");
-    assertIsExpression("['aa': 55,]");
-    assertIsExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]");
-    assertIsExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]");
+    assertThatExpression("[:]").isValidExpression();
+    assertThatExpression("['aa': 55]").isValidExpression();
+    assertThatExpression("['aa': 55,]").isValidExpression();
+    assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
+    assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
   }
 
 
-  public void testRecognizeDataRefAsExpression() throws Exception {
-    assertIsExpression("$aaa", "$a0a0.b1b1", "$aaa.0.bbb.12", "$aaa[0].bbb['ccc'][$eee]",
-                       "$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]");
-    assertIsNotExpression("$", "$ aaa", "$1a1a", "$0", "$[12]", "$[$aaa]", "$aaa[]");
+  public void testRecognizeDataRefAsExpression() {
+    assertThatExpression("$aaa").isValidExpression();
+    assertThatExpression("$a0a0.b1b1").isValidExpression();
+    assertThatExpression("$aaa.0.bbb.12").isValidExpression();
+    assertThatExpression("$aaa[0].bbb['ccc'][$eee]").isValidExpression();
+    assertThatExpression("$aaa . 1 [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]").isValidExpression();
+
+    assertThatExpression("$").isNotValidExpression();
+    assertThatExpression("$ aaa").isNotValidExpression();
+    assertThatExpression("$1a1a").isNotValidExpression();
+    assertThatExpression("$0").isNotValidExpression();
+    assertThatExpression("$[12]").isNotValidExpression();
+    assertThatExpression("$[$aaa]").isNotValidExpression();
+    assertThatExpression("$aaa[]").isNotValidExpression();
   }
 
 
-  public void testRecognizeGlobalAsExpression() throws Exception {
-    assertIsExpression("aaa", "aaa.bbb.CCC", "a22 . b88_");
-    assertIsNotExpression("1a1a", "aaa.1a1a", "aaa[33]", "aaa[bbb]", "aaa['bbb']");
+  public void testRecognizeGlobalAsExpression() {
+    assertThatExpression("aaa").isValidExpression();
+    assertThatExpression("aaa.bbb.CCC").isValidExpression();
+    assertThatExpression("a22 . b88_").isValidExpression();
+
+    assertThatExpression("1a1a").isNotValidExpression();
+    assertThatExpression("aaa.1a1a").isNotValidExpression();
+    assertThatExpression("aaa[33]").isNotValidExpression();
+    assertThatExpression("aaa[bbb]").isNotValidExpression();
+    assertThatExpression("aaa['bbb']").isNotValidExpression();
   }
 
 
-  public void testRecognizeFunctionCall() throws Exception {
-    assertIsExpression("isFirst($x)", "isLast($y)", "index($z)", "hasData()", "length($x.y.z)",
-                       "round(3.14159)", "round(3.14159, 2)", "floor(3.14)", "ceiling(-8)");
-    assertIsNotExpression("$isFirst()", "$boo.isFirst()");
+  public void testRecognizeFunctionCall() {
+    assertThatExpression("isFirst($x)").isValidExpression();
+    assertThatExpression("isLast($y)").isValidExpression();
+    assertThatExpression("index($z)").isValidExpression();
+    assertThatExpression("hasData()").isValidExpression();
+    assertThatExpression("length($x.y.z)").isValidExpression();
+    assertThatExpression("round(3.14159)").isValidExpression();
+    assertThatExpression("round(3.14159, 2)").isValidExpression();
+    assertThatExpression("floor(3.14)").isValidExpression();
+    assertThatExpression("ceiling(-8)").isValidExpression();
+
+    assertThatExpression("$isFirst()").isNotValidExpression();
+    assertThatExpression("$boo.isFirst()").isNotValidExpression();
   }
 
 
-  public void testRecognizeOperators() throws Exception {
+  public void testRecognizeOperators() {
 
     // Level 8.
-    assertIsExpression("- $a", "not true", "not$a");
-    assertIsNotExpression("+1", "!$a");
+    assertThatExpression("- $a").isValidExpression();
+    assertThatExpression("not true").isValidExpression();
+    assertThatExpression("not$a").isValidExpression();
+    assertThatExpression("+1").isNotValidExpression();
+    assertThatExpression("!$a").isNotValidExpression();
     // Level 7.
-    assertIsExpression("$a * $b", "5/3", "5 %$x", "$a * 4 / -7 % 2");
+    assertThatExpression("$a * $b").isValidExpression();
+    assertThatExpression("5/3").isValidExpression();
+    assertThatExpression("5 %$x").isValidExpression();
+    assertThatExpression("$a * 4 / -7 % 2").isValidExpression();
     // Level 6.
-    assertIsExpression("$a+$b", "7 - 12", " - 3 + 4 - 5");
+    assertThatExpression("$a+$b").isValidExpression();
+    assertThatExpression("7 - 12").isValidExpression();
+    assertThatExpression(" - 3 + 4 - 5").isValidExpression();
     // Level 5.
-    assertIsExpression("$a < 0xA00", "$a>$b", "3<=6", "7.5>= $c");
+    assertThatExpression("$a < 0xA00").isValidExpression();
+    assertThatExpression("$a>$b").isValidExpression();
+    assertThatExpression("3<=6").isValidExpression();
+    assertThatExpression("7.5>= $c").isValidExpression();
     // Level 4.
-    assertIsExpression("$a==0", "-10 != $b");
+    assertThatExpression("$a==0").isValidExpression();
+    assertThatExpression("-10 != $b").isValidExpression();
     // Level 3.
-    assertIsExpression("true and $b");
-    assertIsNotExpression("true && $b");
+    assertThatExpression("true and $b").isValidExpression();
+    assertThatExpression("true && $b").isNotValidExpression();
     // Level 2.
-    assertIsExpression("$a or null");
-    assertIsNotExpression("$a || null");
+    assertThatExpression("$a or null").isValidExpression();
+    assertThatExpression("$a || null").isNotValidExpression();
     // Level 1.
-    assertIsExpression("$boo?:-1", "$a ?: $b ?: $c");
-    assertIsExpression("false?4:-3", "$a ? $b : $c ? $d : $e");
+    assertThatExpression("$boo?:-1").isValidExpression();
+    assertThatExpression("$a ?: $b ?: $c").isValidExpression();
+    assertThatExpression("false?4:-3").isValidExpression();
+    assertThatExpression("$a ? $b : $c ? $d : $e").isValidExpression();
     // Parentheses.
-    assertIsExpression("($a)", "( 4- $b *$c )");
+    assertThatExpression("($a)").isValidExpression();
+    assertThatExpression("( 4- $b *$c )").isValidExpression();
   }
 
 
-  public void testRecognizeAdditional() throws Exception {
-
-    assertIsExpression("1+2*3-4/5<6==7>=-8%9+10");
-    assertIsExpression("((1+2)*((3)-4))/5<6==7>=-8%(9+10)");
-    assertIsExpression("$a and true or $b or $c and false and $d or $e");
-    assertIsExpression("$a and (true or $b) or ($c and false and ($d or $e))");
-    assertIsExpression("$a != 0 ? 33 : $b <= 4 ? 55 : $c ? 77 : $d");
-    assertIsExpression("( ( $a != 0 ? 33 : $b <= 4 ) ? 55 : $c ) ? 77 : $d");
-    assertIsExpression("round(3.14 + length($boo.foo)) != null");
+  public void testRecognizeAdditional() {
+    assertThatExpression("1+2*3-4/5<6==7>=-8%9+10").isValidExpression();
+    assertThatExpression("((1+2)*((3)-4))/5<6==7>=-8%(9+10)").isValidExpression();
+    assertThatExpression("$a and true or $b or $c and false and $d or $e").isValidExpression();
+    assertThatExpression("$a and (true or $b) or ($c and false and ($d or $e))").isValidExpression();
+    assertThatExpression("$a != 0 ? 33 : $b <= 4 ? 55 : $c ? 77 : $d").isValidExpression();
+    assertThatExpression("( ( $a != 0 ? 33 : $b <= 4 ) ? 55 : $c ) ? 77 : $d").isValidExpression();
+    assertThatExpression("round(3.14 + length($boo.foo)) != null").isValidExpression();
   }
 
 
-  public void testRecognizeExpressionList() throws Exception {
-
-    String[] exprLists = {"$aaa, $bbb.ccc + 1, index($ddd)"};
-    for (String exprList : exprLists) {
-      (new ExpressionParser(exprList)).parseExpressionList();
-    }
-
-    String[] nonExprLists = {"", "1, , 3"};
-    for (String nonExprList : nonExprLists) {
-      try {
-        (new ExpressionParser(nonExprList)).parseExpressionList();
-        fail();
-      } catch (TokenMgrError tme) {
-        // Test passes.
-      } catch (ParseException pe) {
-        // Test passes.
-      }
-    }
+  public void testRecognizeExpressionList() {
+    assertThatExpression("$aaa, $bbb.ccc + 1, index($ddd)").isValidExpressionList();
+    assertThatExpression("").isNotValidExpressionList();
+    assertThatExpression("1, , 3").isNotValidExpressionList();
   }
 
 
-  public void testParseVariable() throws Exception {
-
-    VarNode var = (new ExpressionParser("$boo")).parseVariable().getChild(0);
-    assertEquals("boo", var.getName());
-    assertEquals("$boo", var.toSourceString());
+  public void testParseVariable() {
+    assertThatExpression("$boo").isValidVarNamed("boo");
   }
 
 
   public void testParseDataReference() throws Exception {
-
-    ExprNode dataRef = (new ExpressionParser("$boo")).parseDataReference().getChild(0);
+    ExprNode dataRef = assertThatExpression("$boo").isValidDataRef();
     assertNodeEquals(
         new VarRefNode("boo", false, false, null),
         dataRef);
 
-    dataRef = (new ExpressionParser("$boo.foo")).parseDataReference().getChild(0);
+    dataRef = assertThatExpression("$boo.foo").isValidDataRef();
     assertNodeEquals(
         new FieldAccessNode(
             new VarRefNode("boo", false, false, null),
@@ -258,7 +282,7 @@ public class ExpressionParserTest extends TestCase {
             false),
         dataRef);
 
-    dataRef = (new ExpressionParser("$boo.0[$foo]")).parseDataReference().getChild(0);
+    dataRef = assertThatExpression("$boo.0[$foo]").isValidDataRef();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
@@ -270,7 +294,7 @@ public class ExpressionParserTest extends TestCase {
             false),
         dataRef);
 
-    dataRef = (new ExpressionParser("$boo?.0?[$foo]")).parseDataReference().getChild(0);
+    dataRef = assertThatExpression("$boo?.0?[$foo]").isValidDataRef();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
@@ -282,7 +306,7 @@ public class ExpressionParserTest extends TestCase {
             false),
         dataRef);
 
-    dataRef = (new ExpressionParser("$ij?.boo?.0[$ij.foo]")).parseDataReference().getChild(0);
+    dataRef = assertThatExpression("$ij?.boo?.0[$ij.foo]").isValidDataRef();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
@@ -296,150 +320,138 @@ public class ExpressionParserTest extends TestCase {
   }
 
 
-  public void testParseGlobal() throws Exception {
-
-    GlobalNode global = (new ExpressionParser("MOO_2")).parseGlobal().getChild(0);
-    assertEquals("MOO_2", global.getName());
-    assertEquals("MOO_2", global.toSourceString());
-
-    global = (new ExpressionParser("aaa.BBB")).parseGlobal().getChild(0);
-    assertEquals("aaa.BBB", global.getName());
-    assertEquals("aaa.BBB", global.toSourceString());
+  public void testParseGlobal() {
+    assertThatExpression("MOO_2").isValidGlobalNamed("MOO_2");
+    assertThatExpression("aaa.BBB").isValidGlobalNamed("aaa.BBB");
   }
 
 
   public void testParsePrimitives() throws Exception {
 
-    ExprRootNode<?> expr = (new ExpressionParser("null")).parseExpression();
-    assertTrue(expr.getChild(0) instanceof NullNode);
+    ExprRootNode<?> expr = assertThatExpression("null").isValidExpression();
+    assertThat(expr.getChild(0)).isInstanceOf(NullNode.class);
 
-    expr = (new ExpressionParser("true")).parseExpression();
-    assertEquals(true, ((BooleanNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("true").isValidExpression();
+    assertThat(((BooleanNode) expr.getChild(0)).getValue()).isEqualTo(true);
 
-    expr = (new ExpressionParser("false")).parseExpression();
-    assertEquals(false, ((BooleanNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("false").isValidExpression();
+    assertThat(((BooleanNode) expr.getChild(0)).getValue()).isEqualTo(false);
 
-    expr = (new ExpressionParser("26")).parseExpression();
-    assertEquals(26, ((IntegerNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("26").isValidExpression();
+    assertThat(((IntegerNode) expr.getChild(0)).getValue()).isEqualTo(26);
 
-    expr = (new ExpressionParser("0xCAFE")).parseExpression();
-    assertEquals(0xCAFE, ((IntegerNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("0xCAFE").isValidExpression();
+    assertThat(((IntegerNode) expr.getChild(0)).getValue()).isEqualTo(0xCAFE);
 
-    expr = (new ExpressionParser("3.14")).parseExpression();
-    assertEquals(3.14, ((FloatNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("3.14").isValidExpression();
+    assertThat(((FloatNode) expr.getChild(0)).getValue()).isEqualTo(3.14);
 
-    expr = (new ExpressionParser("3e-3")).parseExpression();
-    assertEquals(3e-3, ((FloatNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("3e-3").isValidExpression();
+    assertThat(((FloatNode) expr.getChild(0)).getValue()).isEqualTo(3e-3);
 
-    expr = (new ExpressionParser("'Aa`! \\n \\r \\t \\\\ \\\' \"'")).parseExpression();
-    assertEquals("Aa`! \n \r \t \\ \' \"", ((StringNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("'Aa`! \\n \\r \\t \\\\ \\\' \"'").isValidExpression();
+    assertThat(((StringNode) expr.getChild(0)).getValue()).isEqualTo("Aa`! \n \r \t \\ \' \"");
 
-    expr = (new ExpressionParser("'\\u2222 \\uEEEE \\u9EC4 \\u607A'")).parseExpression();
-    assertEquals("\u2222 \uEEEE \u9EC4 \u607A", ((StringNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("'\\u2222 \\uEEEE \\u9EC4 \\u607A'").isValidExpression();
+    assertThat(((StringNode) expr.getChild(0)).getValue()).isEqualTo("\u2222 \uEEEE \u9EC4 \u607A");
 
-    expr = (new ExpressionParser("'\u2222 \uEEEE \u9EC4 \u607A'")).parseExpression();
-    assertEquals("\u2222 \uEEEE \u9EC4 \u607A", ((StringNode) expr.getChild(0)).getValue());
+    expr = assertThatExpression("'\u2222 \uEEEE \u9EC4 \u607A'").isValidExpression();
+    assertThat(((StringNode) expr.getChild(0)).getValue()).isEqualTo("\u2222 \uEEEE \u9EC4 \u607A");
   }
 
 
   public void testParseListsAndMaps() throws Exception {
 
-    ExprRootNode<?> expr = (new ExpressionParser("[]")).parseExpression();
-    assertEquals(0, ((ListLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("[55]")).parseExpression();
-    assertEquals(1, ((ListLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("[55,]")).parseExpression();
-    assertEquals(1, ((ListLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("['blah', 123, $boo]")).parseExpression();
-    assertEquals(3, ((ListLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("['blah', 123, $boo,]")).parseExpression();
-    assertEquals(3, ((ListLiteralNode) expr.getChild(0)).numChildren());
+    ExprRootNode<?> expr = assertThatExpression("[]").isValidExpression();
+    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(0);
+    expr = assertThatExpression("[55]").isValidExpression();
+    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(1);
+    expr = assertThatExpression("[55,]").isValidExpression();
+    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(1);
+    expr = assertThatExpression("['blah', 123, $boo]").isValidExpression();
+    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(3);
+    expr = assertThatExpression("['blah', 123, $boo,]").isValidExpression();
+    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(3);
 
-    expr = (new ExpressionParser("[:]")).parseExpression();
-    assertEquals(0, ((MapLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("['aa': 55]")).parseExpression();
-    assertEquals(2, ((MapLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("['aa': 55,]")).parseExpression();
-    assertEquals(2, ((MapLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]")).parseExpression();
-    assertEquals(6, ((MapLiteralNode) expr.getChild(0)).numChildren());
-    expr = (new ExpressionParser("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]")).parseExpression();
-    assertEquals(6, ((MapLiteralNode) expr.getChild(0)).numChildren());
+    expr = assertThatExpression("[:]").isValidExpression();
+    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(0);
+    expr = assertThatExpression("['aa': 55]").isValidExpression();
+    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(2);
+    expr = assertThatExpression("['aa': 55,]").isValidExpression();
+    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(2);
+    expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
+    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(6);
+    expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
+    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(6);
   }
 
 
-  public void testParseDataRefAsExpression() throws Exception {
-
-    ExprRootNode<?> expr = (new ExpressionParser("$boo.foo")).parseExpression();
-    assertTrue(expr.getChild(0) instanceof FieldAccessNode);
+  public void testParseDataRefAsExpression() {
+    assertThatExpression("$boo.foo").generatesASTWithRootOfType(FieldAccessNode.class);
   }
 
 
   public void testParseGlobalAsExpression() throws Exception {
-
-    ExprRootNode<?> expr = (new ExpressionParser("aaa.BBB")).parseExpression();
-    assertTrue(expr.getChild(0) instanceof GlobalNode);
+    assertThatExpression("aaa.BBB").generatesASTWithRootOfType(GlobalNode.class);
   }
 
 
   public void testParseFunctionCall() throws Exception {
 
-    ExprRootNode<?> expr = (new ExpressionParser("isFirst($x)")).parseExpression();
+    ExprRootNode<?> expr = assertThatExpression("isFirst($x)").isValidExpression();
     FunctionNode isFirstFn = (FunctionNode) expr.getChild(0);
-    assertEquals("isFirst", isFirstFn.getFunctionName());
-    assertEquals(1, isFirstFn.numChildren());
-    assertEquals("$x", ((VarRefNode) isFirstFn.getChild(0)).toSourceString());
+    assertThat(isFirstFn.getFunctionName()).isEqualTo("isFirst");
+    assertThat(isFirstFn.numChildren()).isEqualTo(1);
+    assertThat(isFirstFn.getChild(0).toSourceString()).isEqualTo("$x");
 
-    expr = (new ExpressionParser("round(3.14159, 2)")).parseExpression();
+    expr = assertThatExpression("round(3.14159, 2)").isValidExpression();
     FunctionNode roundFn = (FunctionNode) expr.getChild(0);
-    assertEquals("round", roundFn.getFunctionName());
-    assertEquals(2, roundFn.numChildren());
-    assertEquals(3.14159, ((FloatNode) roundFn.getChild(0)).getValue());
-    assertEquals(2, ((IntegerNode) roundFn.getChild(1)).getValue());
+    assertThat(roundFn.getFunctionName()).isEqualTo("round");
+    assertThat(roundFn.numChildren()).isEqualTo(2);
+    assertThat(((FloatNode) roundFn.getChild(0)).getValue()).isEqualTo(3.14159);
+    assertThat(((IntegerNode) roundFn.getChild(1)).getValue()).isEqualTo(2);
   }
 
 
   public void testParseOperators() throws Exception {
-
-    ExprRootNode<?> expr = (new ExpressionParser("-11")).parseExpression();
+    ExprRootNode<?> expr = assertThatExpression("-11").isValidExpression();
     NegativeOpNode negOp = (NegativeOpNode) expr.getChild(0);
-    assertEquals(11, ((IntegerNode) negOp.getChild(0)).getValue());
+    assertThat(((IntegerNode) negOp.getChild(0)).getValue()).isEqualTo(11);
 
-    expr = (new ExpressionParser("not false")).parseExpression();
+    expr = assertThatExpression("not false").isValidExpression();
     NotOpNode notOp = (NotOpNode) expr.getChild(0);
-    assertEquals(false, ((BooleanNode) notOp.getChild(0)).getValue());
+    assertThat(((BooleanNode) notOp.getChild(0)).getValue()).isEqualTo(false);
 
-    expr = (new ExpressionParser("90 -14.75")).parseExpression();
+    expr = assertThatExpression("90 -14.75").isValidExpression();
     MinusOpNode minusOp = (MinusOpNode) expr.getChild(0);
-    assertEquals(90, ((IntegerNode) minusOp.getChild(0)).getValue());
-    assertEquals(14.75, ((FloatNode) minusOp.getChild(1)).getValue());
+    assertThat(((IntegerNode) minusOp.getChild(0)).getValue()).isEqualTo(90);
+    assertThat(((FloatNode) minusOp.getChild(1)).getValue()).isEqualTo(14.75);
 
-    expr = (new ExpressionParser("$a or true")).parseExpression();
+    expr = assertThatExpression("$a or true").isValidExpression();
     OrOpNode orOp = (OrOpNode) expr.getChild(0);
-    assertEquals("$a", orOp.getChild(0).toSourceString());
-    assertEquals(true, ((BooleanNode) orOp.getChild(1)).getValue());
+    assertThat(orOp.getChild(0).toSourceString()).isEqualTo("$a");
+    assertThat(((BooleanNode) orOp.getChild(1)).getValue()).isEqualTo(true);
 
-    expr = (new ExpressionParser("$a ?: $b ?: $c")).parseExpression();
+    expr = assertThatExpression("$a ?: $b ?: $c").isValidExpression();
     NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) expr.getChild(0);
-    assertEquals("$a", nullCoalOp0.getChild(0).toSourceString());
+    assertThat(nullCoalOp0.getChild(0).toSourceString()).isEqualTo("$a");
     NullCoalescingOpNode nullCoalOp1 = (NullCoalescingOpNode) nullCoalOp0.getChild(1);
-    assertEquals("$b", nullCoalOp1.getChild(0).toSourceString());
-    assertEquals("$c", nullCoalOp1.getChild(1).toSourceString());
+    assertThat(nullCoalOp1.getChild(0).toSourceString()).isEqualTo("$b");
+    assertThat(nullCoalOp1.getChild(1).toSourceString()).isEqualTo("$c");
 
-    expr = (new ExpressionParser("$a?:$b==null?0*1:0x1")).parseExpression();
+    expr = assertThatExpression("$a?:$b==null?0*1:0x1").isValidExpression();
     NullCoalescingOpNode nullCoalOp = (NullCoalescingOpNode) expr.getChild(0);
-    assertEquals("$a", nullCoalOp.getChild(0).toSourceString());
+    assertThat(nullCoalOp.getChild(0).toSourceString()).isEqualTo("$a");
     ConditionalOpNode condOp = (ConditionalOpNode) nullCoalOp.getChild(1);
-    assertTrue(condOp.getChild(0) instanceof EqualOpNode);
-    assertTrue(condOp.getChild(1) instanceof TimesOpNode);
-    assertTrue(condOp.getChild(2) instanceof IntegerNode);
+    assertThat(condOp.getChild(0)).isInstanceOf(EqualOpNode.class);
+    assertThat(condOp.getChild(1)).isInstanceOf(TimesOpNode.class);
+    assertThat(condOp.getChild(2)).isInstanceOf(IntegerNode.class);
   }
 
 
   public void testParseExpressionList() throws Exception {
-
-    List<ExprRootNode<?>> exprList =
-        (new ExpressionParser("$aaa, $bbb.ccc + 1, index($ddd)")).parseExpressionList();
+    List<ExprRootNode<?>> exprList
+        = assertThatExpression("$aaa, $bbb.ccc + 1, index($ddd)").isValidExpressionList();
     assertTrue(exprList.get(0).getChild(0) instanceof VarRefNode);
     assertTrue(exprList.get(1).getChild(0) instanceof PlusOpNode);
     assertTrue(exprList.get(2).getChild(0) instanceof FunctionNode);
@@ -449,38 +461,6 @@ public class ExpressionParserTest extends TestCase {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-
-  /**
-   * Asserts that the given inputs are all expressions.
-   * @param inputs The input strings to parse.
-   * @throws TokenMgrError When one of the given strings has a token error.
-   * @throws ParseException When one of the given strings has a parse error.
-   */
-  private static void assertIsExpression(String... inputs) throws TokenMgrError, ParseException {
-    for (String input : inputs) {
-      (new ExpressionParser(input)).parseExpression();
-    }
-  }
-
-
-  /**
-   * Asserts that the given inputs are not expressions.
-   * @param inputs The input strings to parse.
-   * @throws AssertionFailedError When one of the given strings is actually a valid expression.
-   */
-  private static void assertIsNotExpression(String... inputs) {
-
-    for (String input : inputs) {
-      try {
-        (new ExpressionParser(input)).parseExpression();
-        fail();
-      } catch (TokenMgrError tme) {
-        // Test passes.
-      } catch (ParseException pe) {
-        // Test passes.
-      }
-    }
-  }
 
   private void assertNodeEquals(ExprNode expected, ExprNode actual) {
     if (!expected.equals(actual)) {

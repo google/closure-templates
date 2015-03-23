@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -28,6 +29,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -278,20 +280,23 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * @param soyExpr The Soy expression to test.
    * @param expectedErrorMsgSubstring An expected substring of the expected exception's message.
    * @param jsSrcOptions The JsSrc compiler options.
-   * @throws Exception
    */
   private void assertSoySyntaxException(
-      String soyExpr, String expectedErrorMsgSubstring, SoyJsSrcOptions jsSrcOptions)
-      throws Exception {
-
-    ExprNode exprNode = (new ExpressionParser(soyExpr)).parseExpression();
+      String soyExpr, String expectedErrorMsgSubstring, SoyJsSrcOptions jsSrcOptions) {
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprNode exprNode
+        = new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    // TODO(user): ExpressionParser has been converted to use ErrorReporter, but
+    // TranslateToJsExprVisitor has not; it still throws SoySyntaxExceptions. Remove the try-catch
+    // once the visitors are converted to use the ErrorReporter.
     try {
       new TranslateToJsExprVisitor(SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS)
           .exec(exprNode);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstring);
+      errorReporter.throwIfErrorsPresent();
+    } catch (SoySyntaxException e) {
+      assertThat(e.getMessage()).contains(expectedErrorMsgSubstring);
+      return;
     }
+    fail("expected SoySyntaxException, got none");
   }
-
 }

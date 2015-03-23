@@ -72,6 +72,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
    * @param srcName The directive name in source code (including vertical bar).
    * @param argsText The text of all the args, or empty string if none (usually empty string).
    * @throws SoySyntaxException If a syntax error is found.
+   * TODO(user): hide ctor behind a builder and enforce proper error reporting.
    */
   public PrintDirectiveNode(int id, String srcName, String argsText) throws SoySyntaxException {
     super(id);
@@ -98,8 +99,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
     List<ExprRootNode<?>> tempArgs;
     if (this.argsText.length() > 0) {
-      tempArgs = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-          argsText, "Invalid arguments for print directive \"" + toSourceString() + "\".");
+      tempArgs =
+          ExprParseUtils.parseExprListElseThrowSoySyntaxException(argsText, getSourceLocation());
     } else {
       tempArgs = Collections.emptyList();
     }

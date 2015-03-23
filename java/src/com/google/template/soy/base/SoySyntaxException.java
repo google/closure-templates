@@ -110,28 +110,6 @@ public class SoySyntaxException extends RuntimeException {
   /**
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * @param message The error message, or null to use the message from the cause.
-   * @param cause The cause of this exception.
-   * @param srcLoc The source location of the error, or null if unknown. At most one of srcLoc and
-   *     filePath may be nonnull (prefer srcLoc since it contains more info).
-   * @param filePath The file path of the file containing the error. At most one of srcLoc and
-   *     filePath may be nonnull (prefer srcLoc since it contains more info).
-   * @param templateName The name of the template containing the error, or null if not available.
-   * @return The new SoySyntaxException object.
-   */
-  public static SoySyntaxException createCausedWithMetaInfo(
-      @Nullable String message, Throwable cause, @Nullable SourceLocation srcLoc,
-      @Nullable String filePath, @Nullable String templateName) {
-
-    Preconditions.checkNotNull(cause);
-    return createCausedWithoutMetaInfo(message, cause)
-        .associateMetaInfo(srcLoc, filePath, templateName);
-  }
-
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
    * @param message A detailed description of what the syntax error is.
    * @deprecated  Do not use outside of Soy code (treat as superpackage-private).
    */

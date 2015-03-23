@@ -18,10 +18,12 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
@@ -44,6 +46,10 @@ public final class ForNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode, ConditionalBlockNode, LoopNode, ExprHolderNode,
     LocalVarBlockNode {
 
+  private static final SoyError INVALID_COMMAND_TEXT
+      = SoyError.of("Invalid ''for'' command text");
+  private static final SoyError INVALID_RANGE_SPECIFICATION
+      = SoyError.of("Invalid range specification");
 
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, arguments to range()
@@ -65,26 +71,29 @@ public final class ForNode extends AbstractBlockCommandNode
   /**
    * @param id The id for this node.
    * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @param sourceLocation The source location for the {@code for }node.
+   * @param errorReporter For reporting errors.
    */
-  public ForNode(int id, String commandText) throws SoySyntaxException {
+  public ForNode(
+      int id,
+      String commandText,
+      SourceLocation sourceLocation,
+      ErrorReporter errorReporter) {
     super(id, "for", commandText);
+    setSourceLocation(sourceLocation);
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid 'for' command text \"" + commandText + "\".");
+      errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT);
     }
 
-    String varName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(
-        matcher.group(1), "Invalid variable name in 'for' command text \"" + commandText + "\".");
+    String varName = parseVarName(
+        matcher.group(1), sourceLocation, errorReporter);
+    List<ExprRootNode<?>> tempRangeArgs = parseRangeArgs(
+        matcher.group(2), sourceLocation, errorReporter);
 
-    List<ExprRootNode<?>> tempRangeArgs = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-        matcher.group(2),
-        "Invalid range specification in 'for' command text \"" + commandText + "\".");
     if (tempRangeArgs.size() > 3) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid range specification in 'for' command text \"" + commandText + "\".");
+      errorReporter.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
     }
     rangeArgs = ImmutableList.copyOf(tempRangeArgs);
 
@@ -94,6 +103,20 @@ public final class ForNode extends AbstractBlockCommandNode
     }
     rangeArgTexts = ImmutableList.copyOf(tempRangeArgTexts);
     var = new LocalVar(varName, this, null);
+  }
+
+  private static String parseVarName(
+      String input, SourceLocation sourceLocation, ErrorReporter errorReporter) {
+    return new ExpressionParser(input, sourceLocation, errorReporter)
+        .parseVariable()
+        .getChild(0)
+        .getName();
+  }
+
+  private static List<ExprRootNode<?>> parseRangeArgs(
+      String input, SourceLocation sourceLocation, ErrorReporter errorReporter) {
+    return new ExpressionParser(input, sourceLocation, errorReporter)
+        .parseExpressionList();
   }
 
 

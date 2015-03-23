@@ -19,17 +19,15 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.ParseException;
-import com.google.template.soy.exprparse.TokenMgrError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -37,13 +35,13 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.SoyError;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,7 +50,7 @@ import java.util.regex.Pattern;
  * Public utilities for Soy users.
  *
  */
-public class SoyUtils {
+public final class SoyUtils {
 
 
   private SoyUtils() {}
@@ -110,25 +108,17 @@ public class SoyUtils {
   /**
    * Error types for bad lines in the compile-time globals file.
    */
-  private static enum CompileTimeGlobalsFileError {
-
-    INVALID_FORMAT("Invalid line format"),
-    INVALID_VALUE("Invalid value"),
-    NON_PRIMITIVE_VALUE("Non-primitive value");
-
-    private final String errorString;
-
-    private CompileTimeGlobalsFileError(String errorString) {
-      this.errorString = errorString;
-    }
-
-    @Override public String toString() {
-      return errorString;
-    }
+  private static final class CompileTimeGlobalsFileErrors {
+    static final SoyError INVALID_FORMAT = SoyError.of("Invalid line format: {0}");
+    static final SoyError INVALID_VALUE = SoyError.of("Invalid value: {0}");
+    static final SoyError NON_PRIMITIVE_VALUE = SoyError.of("Non-primitive value: {0}");
   }
 
 
-  /** Pattern for one line in the compile-time globals file. */
+  /**
+   * Pattern for one line in the compile-time globals file.
+   * TODO(user): consider replacing with {@link java.util.Properties}.
+   */
   // Note: group 1 = key, group 2 = value.
   private static final Pattern COMPILE_TIME_GLOBAL_LINE =
       Pattern.compile("([a-zA-Z_][a-zA-Z_0-9.]*) \\s* = \\s* (.+)", Pattern.COMMENTS);
@@ -145,25 +135,29 @@ public class SoyUtils {
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(
       CharSource inputSource) throws IOException, SoySyntaxException {
     ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
-    List<Pair<CompileTimeGlobalsFileError, String>> errors = Lists.newArrayListWithCapacity(0);
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
 
-    BufferedReader reader = new BufferedReader(inputSource.openStream());
-    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+    try (BufferedReader reader = new BufferedReader(inputSource.openStream())) {
+      int lineNum = 1;
+      for (String line = reader.readLine(); line != null; line = reader.readLine(), ++lineNum) {
 
-      if (line.startsWith("//") || line.trim().length() == 0) {
-        continue;
-      }
+        if (line.startsWith("//") || line.trim().length() == 0) {
+          continue;
+        }
 
-      Matcher matcher = COMPILE_TIME_GLOBAL_LINE.matcher(line);
-      if (!matcher.matches()) {
-        errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_FORMAT, line));
-        continue;
-      }
-      String name = matcher.group(1);
-      String valueText = matcher.group(2).trim();
+        SourceLocation sourceLocation = new SourceLocation("globals", lineNum, 1, lineNum, 1);
 
-      try {
-        ExprNode valueExpr = (new ExpressionParser(valueText)).parseExpression().getChild(0);
+        Matcher matcher = COMPILE_TIME_GLOBAL_LINE.matcher(line);
+        if (!matcher.matches()) {
+          errorReporter.report(sourceLocation, CompileTimeGlobalsFileErrors.INVALID_FORMAT, line);
+          continue;
+        }
+        String name = matcher.group(1);
+        String valueText = matcher.group(2).trim();
+
+        ExprNode valueExpr = new ExpressionParser(valueText, SourceLocation.UNKNOWN, errorReporter)
+            .parseExpression()
+            .getChild(0);
 
         // Handle negative numbers as a special case.
         // TODO: Consider changing parser to actually parse negative numbers as primitives.
@@ -184,9 +178,11 @@ public class SoyUtils {
         // TODO: Consider allowing non-primitives (e.g. list/map literals).
         if (!(valueExpr instanceof PrimitiveNode)) {
           if (valueExpr instanceof GlobalNode || valueExpr instanceof VarRefNode) {
-            errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
+            errorReporter.report(
+                sourceLocation, CompileTimeGlobalsFileErrors.INVALID_VALUE, line);
           } else {
-            errors.add(Pair.of(CompileTimeGlobalsFileError.NON_PRIMITIVE_VALUE, line));
+            errorReporter.report(
+                sourceLocation, CompileTimeGlobalsFileErrors.NON_PRIMITIVE_VALUE, line);
           }
           continue;
         }
@@ -194,23 +190,10 @@ public class SoyUtils {
         // Default case.
         compileTimeGlobalsBuilder.put(
             name, InternalValueUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr));
-
-      } catch (TokenMgrError | ParseException tme) {
-        errors.add(Pair.of(CompileTimeGlobalsFileError.INVALID_VALUE, line));
-        continue;
       }
     }
-
-    if (!errors.isEmpty()) {
-      StringBuilder errorMsgSb =
-          new StringBuilder("Compile-time globals file contains the following errors:\n");
-      for (Pair<CompileTimeGlobalsFileError, String> error : errors) {
-        errorMsgSb.append("[").append(String.format("%-19s", error.first.toString()))
-            .append("] ").append(error.second).append("\n");
-      }
-      throw SoySyntaxException.createWithoutMetaInfo(errorMsgSb.toString());
-    }
-
+    // TODO(user): Remove once callers have access to an error reporter.
+    errorReporter.throwIfErrorsPresent();
     return compileTimeGlobalsBuilder.build();
   }
 }

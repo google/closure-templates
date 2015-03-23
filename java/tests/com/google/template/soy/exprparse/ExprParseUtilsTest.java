@@ -16,6 +16,8 @@
 
 package com.google.template.soy.exprparse;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -40,16 +42,16 @@ public class ExprParseUtilsTest extends TestCase {
       ExprParseUtils.parseExprElseThrowSoySyntaxException("'foo", "bad expr");
       fail();
     } catch (SoySyntaxException sse) {
-      assertEquals("bad expr", sse.getMessage());
-      assertTrue(sse.getCause() instanceof TokenMgrError);
+      assertThat(sse).hasMessage("bad expr");
+      assertThat(sse.getCause()).isInstanceOf(SoySyntaxException.class);
     }
 
     try {
       ExprParseUtils.parseExprElseThrowSoySyntaxException("$ij", "bad expr");
       fail();
     } catch (SoySyntaxException sse) {
-      assertEquals("bad expr", sse.getMessage());
-      assertTrue(sse.getCause() instanceof ParseException);
+      assertThat(sse).hasMessage("bad expr");
+      assertThat(sse.getCause()).isInstanceOf(SoySyntaxException.class);
     }
   }
 

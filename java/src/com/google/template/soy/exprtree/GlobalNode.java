@@ -28,6 +28,8 @@ import com.google.template.soy.types.primitive.UnknownType;
  */
 public final class GlobalNode extends AbstractExprNode {
 
+  public static final GlobalNode ERROR = new GlobalNode("error");
+
 
   /** The name of the global. */
   private final String name;

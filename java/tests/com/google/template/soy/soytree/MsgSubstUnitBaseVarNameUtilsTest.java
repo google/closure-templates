@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -154,8 +155,8 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    * Private helper for {@code testGenNoncollidingBaseNames()}.
    */
   private void assertNoncollidingBaseNamesForExprs(List<String> expected, String exprListText) {
-    List<ExprRootNode<?>> exprRoots =
-        ExprParseUtils.parseExprListElseThrowSoySyntaxException(exprListText, "");
+    List<ExprRootNode<?>> exprRoots = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
+        exprListText, SourceLocation.UNKNOWN);
     List<String> actual =
         MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
     MsgNodeTest.assertEquals(expected, actual);
@@ -167,8 +168,8 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    */
   private void assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
       String expectedErrorMsg, String exprListText) {
-    List<ExprRootNode<?>> exprRoots =
-        ExprParseUtils.parseExprListElseThrowSoySyntaxException(exprListText, "");
+    List<ExprRootNode<?>> exprRoots = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
+        exprListText, SourceLocation.UNKNOWN);
     try {
       MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
       MsgNodeTest.fail();

@@ -18,11 +18,13 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -146,8 +148,10 @@ public class SimplifyExprVisitorTest extends TestCase {
 
 
   private static ExprNode simplifyExpr(String expression) throws Exception {
-
-    ExprRootNode<?> exprRoot = (new ExpressionParser(expression)).parseExpression();
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprRootNode<?> exprRoot
+        = new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    errorReporter.throwIfErrorsPresent();
     SimplifyExprVisitor simplifyExprVisitor = INJECTOR.getInstance(SimplifyExprVisitor.class);
     simplifyExprVisitor.exec(exprRoot);
     return exprRoot.getChild(0);

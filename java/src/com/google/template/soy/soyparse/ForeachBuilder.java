@@ -22,6 +22,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -33,15 +34,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A helper for building {@link ForeachNode}s and its two immediate children:
+ * A helper for building {@link ForeachNode}s and its two immediate children: 
  * {@link ForeachNonemptyNode} and {@link ForeachIfemptyNode}.
  */
 final class ForeachBuilder {
 
   private static final SoyError INVALID_COMMAND_TEXT
       = SoyError.of("Invalid ''foreach'' command text \"{0}\".");
-  private static final SoyError INVALID_VARIABLE_NAME
-      = SoyError.of("Invalid variable name in ''foreach'' command text \"{0}\".");
   private static final SoyError INVALID_FOREACH_EXPRESSION
       = SoyError.of("Invalid expression in ''foreach'' command text \"{0}\".");
 
@@ -75,10 +74,10 @@ final class ForeachBuilder {
 
   ForeachBuilder setCommandText(String cmdText) {
     this.cmdText = cmdText;
-
+    
     return this;
   }
-
+  
   ForeachBuilder setLoopBody(List<StandaloneNode> templateBlock) {
     this.templateBlock = templateBlock;
     return this;
@@ -102,19 +101,17 @@ final class ForeachBuilder {
     if (!matcher.matches()) {
       errorReporter.report(commandLocation, INVALID_COMMAND_TEXT, cmdText);
     } else {
-      // TODO(user): consider changing exprparseutils to not throw
-      try {
-        varName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(matcher.group(1), null);
-      } catch (SoySyntaxException e) {
-        errorReporter.report(commandLocation, INVALID_VARIABLE_NAME, matcher.group(1));
-      }
+      varName = new ExpressionParser(matcher.group(1), commandLocation, errorReporter)
+          .parseVariable()
+          .getChild(0)
+          .getName();
       try {
         expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(matcher.group(2), null);
       } catch (SoySyntaxException e) {
         errorReporter.report(commandLocation, INVALID_FOREACH_EXPRESSION, matcher.group(2));
       }
     }
-
+    
     ForeachNode foreach = new ForeachNode(nodeIdGen.genId(), expr, cmdText);
     foreach.setSourceLocation(commandLocation);
     ForeachNonemptyNode nonEmpty = new ForeachNonemptyNode(nodeIdGen.genId(), varName);

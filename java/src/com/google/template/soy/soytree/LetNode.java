@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.SoyError;
@@ -45,7 +46,7 @@ import javax.annotation.Nullable;
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 
-  private static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
+  static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
 
   /**
    * Return value for {@code parseCommandTextHelper()}.
@@ -122,10 +123,11 @@ public abstract class LetNode extends AbstractCommandNode
       return new CommandTextParseResult("error", null, null);
     }
 
-    String localVarName;
-    // TODO(user): eliminate thrown exceptions from the expression parser.
-    localVarName = ExprParseUtils.parseVarNameElseThrowSoySyntaxException(
-        matcher.group(1), "Invalid variable name in 'let' command text \"" + commandText + "\".");
+    String localVarName = new ExpressionParser(
+        matcher.group(1), sourceLocation, errorReporter)
+        .parseVariable()
+        .getChild(0)
+        .getName();
 
     ExprRootNode<?> valueExpr;
     if (matcher.group(2 /* value expression */) != null) {

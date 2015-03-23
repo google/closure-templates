@@ -47,13 +47,14 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
    * @param id The id for this node.
    * @param commandText The command text.
    * @throws SoySyntaxException If a syntax error is found.
+   * TODO(user): hide ctor behind builder and enforce proper error reporting.
    */
   public SwitchCaseNode(int id, String commandText) throws SoySyntaxException {
     super(id, "case", commandText);
 
     exprListText = commandText;
     exprList = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-        exprListText, "Invalid expression list in 'case' command text \"" + commandText + "\".");
+        exprListText, getSourceLocation());
   }
 
 

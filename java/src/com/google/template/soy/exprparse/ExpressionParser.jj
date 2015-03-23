@@ -40,7 +40,9 @@ package com.google.template.soy.exprparse;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
@@ -63,6 +65,8 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.base.UnescapeUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.SoyError;
 
 import java.io.StringReader;
 import java.util.List;
@@ -164,65 +168,133 @@ import java.util.List;
  * </pre>
  *
  */
-public class ExpressionParser {
+public final class ExpressionParser {
 
+  public static final SoyError INVALID_EXPRESSION_LIST
+      = SoyError.of("Invalid expression list");
+  private static final SoyError INVALID_PARAM_NAME_IJ
+      = SoyError.of("Invalid param name ''ij'' ('ij'' is for injected data ref).");
+  public static final SoyError INVALID_VAR_NAME
+      = SoyError.of("Invalid var name ''{0}''");
+  private static final SoyError INVALID_VAR_NAME_IJ
+      = SoyError.of("Invalid var name ''ij'' ('ij'' is for injected data ref).");
+
+  private static final SoyError SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL
+      = SoyError.of("Disallowed single-identifier key \"{0}\" in map literal "
+          + "(please surround with single quotes for string or parentheses for global).");
+
+  private static final SoyError PARSE_ERROR = SoyError.of("{0}");
+
+  private String input;
+  private SourceLocation parentSourceLocation;
+  private ErrorReporter errorReporter;
 
   /**
    * Constructor that takes a string input.
    * @param input The input to parse.
+   * @param parentSourceLocation the source location associated with the input.
+   * @param errorReporter For reporting syntax errors.
    */
-  public ExpressionParser(String input) {
+  public ExpressionParser(
+      String input, SourceLocation parentSourceLocation, ErrorReporter errorReporter) {
     this(new StringReader(input));
+    this.input = input;
+    this.parentSourceLocation = parentSourceLocation;
+    this.errorReporter = errorReporter;
   }
 
 
   /**
-   * Attempts to parse the input as a comma-separated list of one or more expressions.
-   * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
+   * Parses the input as a comma-separated list of expressions.
+   *
+   * <p>Maintains the following invariant: an empty list is returned if and only if
+   * an error is reported to the parser's {@link ErrorReporter}.
    */
-  public List<ExprRootNode<?>> parseExpressionList() throws TokenMgrError, ParseException {
-    return ExprListInput();
+  public List<ExprRootNode<? extends ExprNode>> parseExpressionList() {
+    try {
+      return ExprListInput();
+    } catch (TokenMgrError e) {
+      errorReporter.report(parentSourceLocation, INVALID_EXPRESSION_LIST);
+      return ImmutableList.of();
+    } catch (ParseException e) {
+      errorReporter.report(parentSourceLocation, INVALID_EXPRESSION_LIST);
+      return ImmutableList.of();
+    }
   }
 
 
   /**
-   * Attempts to parse the input as an expression.
-   * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
+   * Parses the input as an expression.
+   *
+   * <p>Maintains the following invariant: an error node is returned if and only if an error
+   * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<?> parseExpression() throws TokenMgrError, ParseException {
-    return ExprInput();
+  public ExprRootNode<? extends ExprNode> parseExpression() {
+    try {
+      return ExprInput();
+    } catch (ParseException e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+    } catch (TokenMgrError e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+    }
   }
 
 
   /**
-   * Attempts to parse the input as a variable name.
-   * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
+   * Parses the input as a variable name.
+   *
+   * <p>Maintains the following invariant: an error node is returned if and only if an error
+   * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<VarNode> parseVariable() throws TokenMgrError, ParseException {
-    return VarInput();
+  public ExprRootNode<VarNode> parseVariable() {
+    try {
+      return VarInput();
+    } catch (ParseException e) {
+      errorReporter.report(parentSourceLocation, INVALID_VAR_NAME, input);
+      return new ExprRootNode<VarNode>(VarNode.ERROR);
+    } catch (TokenMgrError e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<VarNode>(VarNode.ERROR);
+    }
   }
 
 
   /**
-   * Attempts to parse the input as a data reference.
-   * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
+   * Parses the input as a data reference.
+   *
+   * <p>Maintains the following invariant: an error node is returned if and only if an error
+   * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<ExprNode> parseDataReference() throws TokenMgrError, ParseException {
-    return DataRefInput();
+  public ExprRootNode<? extends ExprNode> parseDataReference() {
+    try {
+      return DataRefInput();
+    } catch (ParseException e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+    } catch (TokenMgrError e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+    }
   }
 
 
   /**
-   * Attempts to parse the input as a global.
-   * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
+   * Parses the input as a global.
+   * <p>Maintains the following invariant: an error node is returned if and only if am error
+   * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<GlobalNode> parseGlobal() throws TokenMgrError, ParseException {
-    return GlobalInput();
+  public ExprRootNode<GlobalNode> parseGlobal() {
+    try {
+      return GlobalInput();
+    } catch (ParseException e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<GlobalNode>(GlobalNode.ERROR);
+    } catch (TokenMgrError e) {
+      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      return new ExprRootNode<GlobalNode>(GlobalNode.ERROR);
+    }
   }
 
 
@@ -238,6 +310,16 @@ public class ExpressionParser {
     }
   }
 
+  private SourceLocation createSrcLoc(Token token) {
+    // TODO(brndn): The Math.max fiddling is required because some callers instantiate
+    // the expression parser with SourceLocation.UNKNOWN (for example, ExprParseUtils).
+    return new SourceLocation(
+        token.image,
+        Math.max(1, parentSourceLocation.getLineNumber()),
+        Math.max(1, parentSourceLocation.getBeginColumn() + token.beginColumn),
+        parentSourceLocation.getLineNumber(),
+        parentSourceLocation.getBeginColumn() + token.endColumn);
+  }
 }
 
 PARSER_END(ExpressionParser)
@@ -679,7 +761,7 @@ private VarNode Var():
   dollarIdent = <DOLLAR_IDENT>
   { String identStr = dollarIdent.image.substring(1);
     if (identStr.equals("ij")) {
-      throw new ParseException("Invalid var name 'ij' ('ij' is for injected data ref).");
+      errorReporter.report(createSrcLoc(dollarIdent), INVALID_VAR_NAME_IJ);
     }
     return new VarNode(identStr);
   }
@@ -714,7 +796,7 @@ private ExprNode DataRef() :
     dollarIdent = <DOLLAR_IDENT>
     { String identStr = dollarIdent.image.substring(1);
       if (identStr.equals("ij")) {
-        throw new ParseException("Invalid param name 'ij' ('ij' is for injected data ref).");
+        errorReporter.report(createSrcLoc(dollarIdent), INVALID_PARAM_NAME_IJ);
       }
       dataRef = new VarRefNode(identStr, false, false, null);
     }
@@ -855,9 +937,9 @@ private MapLiteralNode MapLiteral() :
     [
       LOOKAHEAD( <IDENT> ":" )
       ident = <IDENT>
-      { throw new ParseException(
-            "Disallowed single-identifier key \"" + ident.image + "\" in map literal" +
-            " (please surround with single quotes for string or parentheses for global).");
+      {
+        errorReporter.report(
+            createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL, ident.image);
       }
     ]
     keyExpr = Expr()
@@ -874,9 +956,9 @@ private MapLiteralNode MapLiteral() :
       [
         LOOKAHEAD( <IDENT> ":" )
         ident = <IDENT>
-        { throw new ParseException(
-              "Disallowed single-identifier key \"" + ident.image + "\" in map literal" +
-              " (please surround with single quotes for string or parentheses for global).");
+        {
+          errorReporter.report(
+              createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL, ident.image);
         }
       ]
       keyExpr = Expr()

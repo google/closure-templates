@@ -29,6 +29,8 @@ import javax.annotation.Nullable;
  */
 public final class VarRefNode extends AbstractExprNode {
 
+  public static final VarRefNode ERROR = new VarRefNode("error", false, false, null);
+
   /** The name of the variable. */
   private final String name;
 

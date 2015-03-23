@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -169,10 +170,10 @@ public abstract class CallParamNode extends AbstractCommandNode {
               null;
 
       // Check the validity of the key name.
-      ExprNode dataRef = ExprParseUtils.parseDataRefElseThrowSoySyntaxException(
-          "$" + key,
-          "Invalid key in 'param' command text \"" + commandText + "\".")
+      ExprNode dataRef = new ExpressionParser("$" + key, sourceLocation, errorReporter)
+          .parseDataReference()
           .getChild(0);
+
       if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
         errorReporter.report(sourceLocation, KEY_IS_NOT_TOP_LEVEL, commandText);
       }

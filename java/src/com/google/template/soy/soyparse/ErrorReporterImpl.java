@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-class ErrorReporterImpl implements ErrorReporter {
+public class ErrorReporterImpl implements ErrorReporter {
   protected final List<SoySyntaxException> errors = new ArrayList<>();
 
   @Override

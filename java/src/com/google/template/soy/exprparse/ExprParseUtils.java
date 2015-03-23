@@ -16,9 +16,11 @@
 
 package com.google.template.soy.exprparse;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import java.util.List;
 
@@ -27,12 +29,12 @@ import java.util.List;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * @deprecated Use {@link ExpressionParser} methods directly. TODO(user): remove this class.
  */
-public class ExprParseUtils {
-
+@Deprecated
+public final class ExprParseUtils {
 
   private ExprParseUtils() {}
-
 
   /**
    * Attempts to parse the given exprText as a Soy expression list. If successful, returns the
@@ -40,21 +42,18 @@ public class ExprParseUtils {
    *
    *
    * @param exprListText The text to parse.
-   * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
    * @return The parsed expression list.
+   * @deprecated Use {@link ExpressionParser#parseExpressionList()} directly.
    */
+  @Deprecated
   public static List<ExprRootNode<?>> parseExprListElseThrowSoySyntaxException(
-      String exprListText, String errorMsg) {
-
-    try {
-      return (new ExpressionParser(exprListText)).parseExpressionList();
-    } catch (TokenMgrError tme) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, tme);
-    } catch (ParseException pe) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, pe);
-    }
+      String exprListText, SourceLocation sourceLocation) {
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    List<ExprRootNode<?>> exprs
+        = new ExpressionParser(exprListText, sourceLocation, errorReporter).parseExpressionList();
+    errorReporter.throwIfErrorsPresent();
+    return exprs;
   }
-
 
   /**
    * Attempts to parse the given exprText as a Soy expression. If successful, returns the
@@ -63,19 +62,22 @@ public class ExprParseUtils {
    * @param exprText The text to parse.
    * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
    * @return The parsed expression.
+   * @deprecated Use {@link ExpressionParser#parseExpression()} directly.
    */
+  @Deprecated
   public static ExprRootNode<?> parseExprElseThrowSoySyntaxException(
       String exprText, String errorMsg) {
-
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ExprRootNode<?> rootNode = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
+        .parseExpression();
     try {
-      return (new ExpressionParser(exprText)).parseExpression();
-    } catch (TokenMgrError tme) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, tme);
-    } catch (ParseException pe) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, pe);
+      errorReporter.throwIfErrorsPresent();
+    } catch (SoySyntaxException e) {
+      // Re-throw the exception wrapped with the custom error message.
+      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, e);
     }
+    return rootNode;
   }
-
 
   /**
    * Attempts to parse the given exprText as a Soy expression. If successful, returns the
@@ -86,56 +88,16 @@ public class ExprParseUtils {
    *
    * @param exprText The text to parse.
    * @return The parsed expression, or null if parsing was unsuccessful.
+   * @deprecated Use {@link ExpressionParser#parseExpression()} directly.
    */
+  @Deprecated
   public static ExprRootNode<?> parseExprElseNull(String exprText) {
-
-    try {
-      return (new ExpressionParser(exprText)).parseExpression();
-    } catch (TokenMgrError | ParseException tme) {
-      return null;
-    }
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    Checkpoint checkpoint = errorReporter.checkpoint();
+    ExprRootNode<?> rootNode = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
+        .parseExpression();
+    return errorReporter.errorsSince(checkpoint)
+        ? null
+        : rootNode;
   }
-
-
-  /**
-   * Attempts to parse the given exprText as a Soy variable. If successful, returns the
-   * variable's name. If unsuccessful, throws a SoySyntaxException.
-   *
-   * @param exprText The text to parse.
-   * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
-   * @return The name of the parsed variable.
-   */
-  public static String parseVarNameElseThrowSoySyntaxException(
-      String exprText, String errorMsg) {
-
-    try {
-      return (new ExpressionParser(exprText)).parseVariable().getChild(0).getName();
-    } catch (TokenMgrError tme) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, tme);
-    } catch (ParseException pe) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, pe);
-    }
-  }
-
-
-  /**
-   * Attempts to parse the given exprText as a Soy data reference. If successful, returns the
-   * data reference. If unsuccessful, throws a SoySyntaxException.
-   *
-   * @param exprText The text to parse.
-   * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
-   * @return The parsed data reference.
-   */
-  public static ExprRootNode<ExprNode> parseDataRefElseThrowSoySyntaxException(
-      String exprText, String errorMsg) {
-
-    try {
-      return (new ExpressionParser(exprText)).parseDataReference();
-    } catch (TokenMgrError tme) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, tme);
-    } catch (ParseException pe) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, pe);
-    }
-  }
-
 }

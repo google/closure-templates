@@ -31,6 +31,8 @@ import com.google.template.soy.types.SoyType;
  */
 public final class VarNode extends AbstractExprNode {
 
+  public static final VarNode ERROR = new VarNode("error");
+
 
   /** The variable name (without the dollar sign). */
   private final String name;

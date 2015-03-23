@@ -1131,6 +1131,11 @@ private List<String> CmdTextParts() :
     }
 
     // Process whitespace.
+    // TODO(user): this is the beginning of a code path that should be eliminated.
+    // These trimmed command strings are typically passed into Node constructors and then
+    // re-passed into the expression parser for further parsing. The trimming and re-parsing
+    // makes it hard to reconstruct accurate source location information for expression trees.
+    // This file should be the source of truth for all source location information in Soy.
     for (int i = 0, n = cmdTextParts.size(); i < n; i++) {
       String cmdTextPart = cmdTextParts.get(i);
       if (i == 0) {
@@ -3196,8 +3201,11 @@ private ForNode ForStmt() :
 {
   cmdText = ForTag()
   {
-    ForNode forNode = setSrcLoc(
-        new ForNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
+    ForNode forNode = new ForNode(
+        nodeIdGen.genId(),
+        cmdText.parsedContent(),
+        cmdText.srcLocation(),
+        errorReporter);
   }
 
   templateBlock = TemplateBlock()

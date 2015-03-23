@@ -110,6 +110,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @param commandName The command name -- either 'msg' or 'fallbackmsg'.
    * @param commandText The command text.
    * @throws SoySyntaxException If a syntax error is found.
+   * TODO(user): hide this ctor behind a Builder and enforce proper error reporting.
    */
   public MsgNode(int id, String commandName, String commandText) throws SoySyntaxException {
     super(id, commandName, commandText);
@@ -122,8 +123,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       genderExprs = null;
     } else {
       genderExprs = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-          gendersAttr,
-          "Invalid 'genders' expression list in 'msg' command text \"" + commandText + "\".");
+          gendersAttr, getSourceLocation());
       assert genderExprs != null;  // suppress warnings
       if (genderExprs.size() < 1 || genderExprs.size() > 3) {
         throw SoySyntaxException.createWithoutMetaInfo(
@@ -145,7 +145,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   private MsgNode(MsgNode orig) {
     super(orig);
     if (orig.genderExprs != null) {
-      ImmutableList.Builder<ExprRootNode<?>> builder = ImmutableList.<ExprRootNode<?>>builder();
+      ImmutableList.Builder<ExprRootNode<?>> builder = ImmutableList.builder();
       for (ExprRootNode<?> node : orig.genderExprs) {
         builder.add(node.clone());
       }

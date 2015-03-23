@@ -41,7 +41,12 @@ public class SourceLocation {
   private final int endLine;
   private final int endColumn;
 
-  /** A nullish source location. */
+  /**
+   * A nullish source location.
+   * @deprecated There is no reason to use this other than laziness. Soy has complete source
+   * location information.
+   */
+  @Deprecated
   public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
 
   /**
@@ -135,7 +140,9 @@ public class SourceLocation {
 
   /**
    * True iff this location is known, i.e. not the special value {@link #UNKNOWN}.
+   * @deprecated For the same reason that {@link #UNKNOWN} is.
    */
+  @Deprecated
   boolean isKnown() {
     return !this.equals(UNKNOWN);
   }

@@ -98,7 +98,8 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
    * Builder for {@link LetValueNode}.
    */
   public static final class Builder {
-    public static final LetValueNode ERROR = new Builder(-1, "$error: 1", SourceLocation.UNKNOWN)
+    public static final LetValueNode ERROR
+        = new Builder(-1, "$error: 1", SourceLocation.UNKNOWN)
         .buildAndThrowIfInvalid(); // guaranteed to be valid
 
     private final int id;
