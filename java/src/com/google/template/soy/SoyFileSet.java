@@ -64,6 +64,7 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.sharedpasses.AssertNoExternalCallsVisitor;
+import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
@@ -424,6 +425,19 @@ public final class SoyFileSet {
      */
     public Builder setAllowExternalCalls(boolean allowExternalCalls) {
       getGeneralOptions().setAllowExternalCalls(allowExternalCalls);
+      return this;
+    }
+
+
+    /**
+     * Sets whether to force strict autoescaping. Enabling will cause compile time exceptions if
+     * non-strict autoescaping is used in namespaces or templates.
+     *
+     * @param strictAutoescapingRequired Whether strict autoescaping is required.
+     * @return This builder.
+     */
+    public Builder setStrictAutoescapingRequired(boolean strictAutoescapingRequired) {
+      getGeneralOptions().setStrictAutoescapingRequired(strictAutoescapingRequired);
       return this;
     }
 
@@ -1061,6 +1075,11 @@ public final class SoyFileSet {
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
       (new AssertNoExternalCallsVisitor()).exec(soyTree);
+    }
+
+    // If requiring strict autoescaping, check and enforce it.
+    if (generalOptions.isStrictAutoescapingRequired()) {
+      (new AssertStrictAutoescapingVisitor()).exec(soyTree);
     }
 
     if (checkConformance != null) {

@@ -188,6 +188,9 @@ public final class SoyToPySrcCompiler {
     }
     // Disallow external call entirely in Python.
     sfsBuilder.setAllowExternalCalls(false);
+    // Require strict templates in Python.
+    sfsBuilder.setStrictAutoescapingRequired(true);
+    // Setup the CSS handling scheme.
     String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
     if (cssHandlingSchemeUc.equals("GOOG")) {
       exitWithErrorFn.apply("CSS handling scheme 'GOOG' is not support in Python.");
