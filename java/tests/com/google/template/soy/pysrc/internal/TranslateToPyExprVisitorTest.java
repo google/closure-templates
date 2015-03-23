@@ -52,25 +52,25 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   public void testListLiteral() throws Exception {
     assertThatSoyExpr("[]").translatesTo(new PyExpr("[]", Integer.MAX_VALUE), PyListExpr.class);
     assertThatSoyExpr("['blah', 123, $foo]").translatesTo(
-        new PyExpr("['blah', 123, opt_data.get('foo'), ]", Integer.MAX_VALUE), PyListExpr.class);
+        new PyExpr("['blah', 123, opt_data.get('foo')]", Integer.MAX_VALUE), PyListExpr.class);
   }
 
   public void testMapLiteral() throws Exception {
     // Unquoted keys.
     assertThatSoyExpr("[:]").translatesTo(new PyExpr("{}", Integer.MAX_VALUE));
     assertThatSoyExpr("['aaa': 123, 'bbb': 'blah']").translatesTo(
-        new PyExpr("{'aaa': 123, 'bbb': 'blah', }", Integer.MAX_VALUE));
+        new PyExpr("{'aaa': 123, 'bbb': 'blah'}", Integer.MAX_VALUE));
     assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']").translatesTo(
-        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah', }", Integer.MAX_VALUE));
+        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
 
     // QuotedKeysIfJs should change nothing.
     assertThatSoyExpr("quoteKeysIfJs([:])").translatesTo(new PyExpr("{}", Integer.MAX_VALUE));
     assertThatSoyExpr("quoteKeysIfJs( ['aaa': $foo, 'bbb': 'blah'] )").translatesTo(
-        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah', }", Integer.MAX_VALUE));
+        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
 
     // Non-string keys are allowed in Python.
     assertThatSoyExpr("[1: 'blah', 0: 123]").translatesTo(
-        new PyExpr("{1: 'blah', 0: 123, }", Integer.MAX_VALUE));
+        new PyExpr("{1: 'blah', 0: 123}", Integer.MAX_VALUE));
   }
 
   public void testDataRef() throws Exception {

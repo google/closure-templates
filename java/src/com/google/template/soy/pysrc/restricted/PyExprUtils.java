@@ -16,6 +16,7 @@
 
 package com.google.template.soy.pysrc.restricted;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -23,10 +24,9 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.targetexpr.ExprUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 /**
  * Common utilities for dealing with Python expressions.
@@ -144,19 +144,14 @@ public final class PyExprUtils {
   }
 
   /**
-   * Wraps an expression with the proper SanitizedContent constructor if contentKind is non-null.
+   * Wraps an expression with the proper SanitizedContent constructor.
    *
    * @param contentKind The kind of sanitized content.
    * @param pyExpr The expression to wrap.
    */
-  public static PyExpr maybeWrapAsSanitizedContent(
-      @Nullable ContentKind contentKind, PyExpr pyExpr) {
-    if (contentKind == null) {
-      return pyExpr;
-    } else {
-      String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
-      return new PyExpr(sanitizer + "(" + pyExpr.getText() + ")", Integer.MAX_VALUE);
-    }
+  public static PyExpr wrapAsSanitizedContent(ContentKind contentKind, PyExpr pyExpr) {
+    String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
+    return new PyExpr(sanitizer + "(" + pyExpr.getText() + ")", Integer.MAX_VALUE);
   }
 
   /**
@@ -196,22 +191,18 @@ public final class PyExprUtils {
    *        PyExpr.
    */
   public static PyExpr convertMapToPyExpr(Map<PyExpr, PyExpr> dict) {
-    StringBuilder sb = new StringBuilder();
+    List<String> values = new ArrayList<>();
 
-    sb.append("{");
     for (Map.Entry<PyExpr, PyExpr> entry : dict.entrySet()) {
-      sb.append(entry.getKey().getText());
-      sb.append(": ");
-      sb.append(entry.getValue().getText());
-      sb.append(", ");
+      values.add(entry.getKey().getText() + ": " + entry.getValue().getText());
     }
-    sb.append("}");
 
-    return new PyExpr(sb.toString(), Integer.MAX_VALUE);
+    Joiner joiner = Joiner.on(", ");
+    return new PyExpr("{" + joiner.join(values) + "}", Integer.MAX_VALUE);
   }
 
   private static PyExpr convertIterableToPyExpr(Iterable<?> iterable, boolean asArray) {
-    StringBuilder sb = new StringBuilder();
+    List<String> values = new ArrayList<>();
     String leftDelimiter = "[";
     String rightDelimiter = "]";
 
@@ -223,19 +214,21 @@ public final class PyExprUtils {
     for (Object elem : iterable) {
       if (!(elem instanceof Number || elem instanceof String || elem instanceof PyExpr)) {
         throw new UnsupportedOperationException("Only Number, String and PyExpr is allowed");
+      } else if (elem instanceof Number) {
+        values.add(String.valueOf(elem));
+      } else if (elem instanceof PyExpr) {
+        values.add(((PyExpr) elem).getText());
+      } else if (elem instanceof String) {
+        values.add("'" + elem + "'");
       }
-      if (elem instanceof Number) {
-        sb.append(elem);
-      }
-      if (elem instanceof PyExpr) {
-        sb.append(((PyExpr) elem).getText());
-      }
-      if (elem instanceof String) {
-        sb.append("'" + elem + "'");
-      }
-      sb.append(", ");
     }
 
-    return new PyListExpr(leftDelimiter + sb + rightDelimiter, Integer.MAX_VALUE);
+    String contents = Joiner.on(", ").join(values);
+
+    // Tuples of one element require an extra comma otherwise the parens just set precedence.
+    if (values.size() == 1 && !asArray) {
+      contents += ",";
+    }
+    return new PyListExpr(leftDelimiter + contents + rightDelimiter, Integer.MAX_VALUE);
   }
 }

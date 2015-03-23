@@ -17,9 +17,9 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
@@ -36,6 +36,9 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -96,6 +99,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
 
+  private final GenPyCallExprVisitor genPyCallExprVisitor;
+
   /**
    * @see LocalVariableStack
    */
@@ -112,13 +117,15 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       @TranslationPyModuleName String translationPyModuleName,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
+      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
+      GenPyCallExprVisitor genPyCallExprVisitor) {
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationPyModuleName = translationPyModuleName;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
+    this.genPyCallExprVisitor = genPyCallExprVisitor;
   }
 
 
@@ -644,12 +651,44 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Generate the contents of the variable and mark the result as being escaped to the appropriate
     // kind (e.g., "sanitize.SanitizedHtml").
-    String sanitizedClass = NodeContentKinds.toPySanitizedContentOrdainer(node.getContentKind());
     PyExpr content = PyExprUtils.concatPyExprs(genPyExprsVisitor.execOnChildren(node)).toPyString();
-    pyCodeBuilder.appendLine(generatedVarName, " = ", sanitizedClass, "(", content.getText(), ")");
+    pyCodeBuilder.appendLine(generatedVarName, " = ",
+        PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), content).getText());
 
     // Add a mapping for generating future references to this local var.
     localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
+  }
+
+  /**
+   * Visits a call node and generates the syntax needed to call another template. If all of the
+   * children can be represented as expressions, this is built as an expression itself. If not, the
+   * non-expression params are saved as {@code param<n>} variables before the function call.
+   */
+  @Override protected void visitCallNode(CallNode node) {
+    // If this node has any param children whose contents are not computable as Python expressions,
+    // visit them to generate code to define their respective 'param<n>' variables.
+    for (CallParamNode child : node.getChildren()) {
+      if (child instanceof CallParamContentNode && !isComputableAsPyExprVisitor.exec(child)) {
+        visit(child);
+      }
+    }
+
+    pyCodeBuilder.addToOutputVar(genPyCallExprVisitor.exec(node, localVarExprs));
+  }
+
+  /**
+   * Visits a call param content node which isn't computable as a PyExpr and stores its content in
+   * a variable with the name {@code param<n>} where n is the node's id.
+   */
+  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+    // This node should only be visited when it's not computable as Python expressions.
+    Preconditions.checkArgument(!isComputableAsPyExprVisitor.exec(node),
+        "Should only define 'param<n>' when not computable as Python expressions.");
+
+    pyCodeBuilder.pushOutputVar("param" + node.getId());
+    pyCodeBuilder.initOutputVarIfNecessary();
+    visitChildren(node);
+    pyCodeBuilder.popOutputVar();
   }
 
 
@@ -799,7 +838,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
     // the result of one template and feed it to another, and also to confidently assign sanitized
     // HTML content to innerHTML. This does not use the internal-blocks variant.
-    resultPyExpr = PyExprUtils.maybeWrapAsSanitizedContent(node.getContentKind(), resultPyExpr);
+    resultPyExpr = PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), resultPyExpr);
 
     pyCodeBuilder.appendLine("return ", resultPyExpr.getText());
 

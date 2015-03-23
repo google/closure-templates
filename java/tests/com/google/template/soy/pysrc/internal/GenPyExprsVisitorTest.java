@@ -136,9 +136,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "prepare("
         + "###, "
         + "'Hello {USERNAME}', "
-        + "('USERNAME', ), "
+        + "('USERNAME',), "
         + "desc='var placeholder'), "
-        + "{'USERNAME': str(opt_data.get('username')), })";
+        + "{'USERNAME': str(opt_data.get('username'))})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -154,11 +154,11 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "prepare("
         + "###, "
         + "'{GREET} {USERNAME}', "
-        + "('GREET', 'USERNAME', ), "
+        + "('GREET', 'USERNAME'), "
         + "desc='var placeholder'), "
         + "{"
           + "'GREET': str(opt_data.get('greet')), "
-          + "'USERNAME': str(opt_data.get('username')), "
+          + "'USERNAME': str(opt_data.get('username'))"
         + "})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
@@ -175,9 +175,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "prepare("
         + "###, "
         + "'Hello {BAR}', "
-        + "('BAR', ), "
+        + "('BAR',), "
         + "desc='placeholder with namespace'), "
-        + "{'BAR': str(opt_data.get('foo').get('bar')), })";
+        + "{'BAR': str(opt_data.get('foo').get('bar'))})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -192,9 +192,9 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "prepare("
         + "###, "
         + "'Hello {XXX}', "
-        + "('XXX', ), "
+        + "('XXX',), "
         + "desc='var placeholder'), "
-        + "{'XXX': str(runtime.type_safe_add(opt_data.get('username'), 1)), })";
+        + "{'XXX': str(runtime.type_safe_add(opt_data.get('username'), 1))})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -210,11 +210,11 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "prepare("
           + "###, "
           + "'Please click {START_LINK}here{END_LINK}.', "
-          + "('START_LINK', 'END_LINK', ), "
+          + "('START_LINK', 'END_LINK'), "
           + "desc='with link'), "
           + "{"
             + "'START_LINK': ''.join(['<a href=\\'',str(opt_data.get('url')),'\\'>']), "
-            + "'END_LINK': '</a>', "
+            + "'END_LINK': '</a>'"
           + "})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
@@ -237,14 +237,14 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "{"
             + "'=0': 'No drafts', "
             + "'=1': '1 draft', "
-            + "'other': '{NUM_DRAFTS_2} drafts', "
+            + "'other': '{NUM_DRAFTS_2} drafts'"
           + "}, "
-          + "('NUM_DRAFTS_1', 'NUM_DRAFTS_2', ), "
+          + "('NUM_DRAFTS_1', 'NUM_DRAFTS_2'), "
           + "desc='simple plural'), "
         + "opt_data.get('numDrafts'), "
         + "{"
           + "'NUM_DRAFTS_1': opt_data.get('numDrafts'), "
-          + "'NUM_DRAFTS_2': str(opt_data.get('numDrafts')), "
+          + "'NUM_DRAFTS_2': str(opt_data.get('numDrafts'))"
         + "})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
@@ -267,14 +267,14 @@ public final class GenPyExprsVisitorTest extends TestCase {
           + "{"
             + "'=0': 'No drafts', "
             + "'=1': '1 draft', "
-            + "'other': '{XXX} drafts', "
+            + "'other': '{XXX} drafts'"
           + "}, "
-          + "('NUM_DRAFTS', 'XXX', ), "
+          + "('NUM_DRAFTS', 'XXX'), "
           + "desc='offset plural'), "
         + "opt_data.get('numDrafts'), "
         + "{"
           + "'NUM_DRAFTS': opt_data.get('numDrafts'), "
-          + "'XXX': str(opt_data.get('numDrafts') - 2), "
+          + "'XXX': str(opt_data.get('numDrafts') - 2)"
         + "})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
@@ -323,10 +323,10 @@ public final class GenPyExprsVisitorTest extends TestCase {
               + "other{Reply to them.}}"
             + "}"
           + "}', "
-          + "('USER_GENDER', 'TARGET_GENDER', ), desc='...'), "
+          + "('USER_GENDER', 'TARGET_GENDER'), desc='...'), "
         + "{"
         + "'USER_GENDER': opt_data.get('userGender'), "
-        + "'TARGET_GENDER': opt_data.get('targetGender'), "
+        + "'TARGET_GENDER': opt_data.get('targetGender')"
         + "})";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
@@ -408,7 +408,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
                 + "}"
               + "}"
             + "}', "
-            + "('PEOPLE_0_GENDER', 'PEOPLE_1_GENDER', 'NUM', 'NAME_1', 'NAME_2', ), "
+            + "('PEOPLE_0_GENDER', 'PEOPLE_1_GENDER', 'NUM', 'NAME_1', 'NAME_2'), "
             + "desc='plural with offsets'), "
           + "{"
             + "'PEOPLE_0_GENDER': None if opt_data.get('people')[0] is None "
@@ -418,7 +418,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
             + "'NUM': len(opt_data.get('people')), "
             + "'NAME_1': str(opt_data.get('people')[0].get('name')), "
             + "'NAME_2': str(None if opt_data.get('people')[1] is None "
-              + "else opt_data.get('people')[1].get('name')), "
+              + "else opt_data.get('people')[1].get('name'))"
           + "}"
         + ")";
 

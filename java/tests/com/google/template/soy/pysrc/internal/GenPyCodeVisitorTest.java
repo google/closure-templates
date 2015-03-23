@@ -81,7 +81,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testBlankTemplate() {
     String soyFile = SOY_NAMESPACE
-        + "{template .helloWorld kind=\"html\"}\n"
+        + "{template .helloWorld}\n"
         + "{/template}\n";
 
     String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
@@ -94,7 +94,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testSimpleTemplate() {
     String soyFile = SOY_NAMESPACE
-        + "{template .helloWorld kind=\"html\"}\n"
+        + "{template .helloWorld}\n"
         + "  Hello World!\n"
         + "{/template}\n";
 

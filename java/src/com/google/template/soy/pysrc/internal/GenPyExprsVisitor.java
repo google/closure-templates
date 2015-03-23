@@ -30,6 +30,8 @@ import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -73,6 +75,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
 
+  private final GenPyCallExprVisitor genPyCallExprVisitor;
+
   private final MsgFuncGeneratorFactory msgFuncGeneratorFactory;
 
   private final LocalVariableStack localVarExprs;
@@ -91,11 +95,13 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       MsgFuncGeneratorFactory msgFuncGeneratorFactory,
       TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
+      GenPyCallExprVisitor genPyCallExprVisitor,
       @Assisted LocalVariableStack localVarExprs) {
     this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
+    this.genPyCallExprVisitor = genPyCallExprVisitor;
     this.msgFuncGeneratorFactory = msgFuncGeneratorFactory;
     this.localVarExprs = localVarExprs;
   }
@@ -282,6 +288,14 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   }
 
   @Override protected void visitIfElseNode(IfElseNode node) {
+    visitChildren(node);
+  }
+
+  @Override protected void visitCallNode(CallNode node) {
+    pyExprs.add(genPyCallExprVisitor.exec(node, localVarExprs));
+  }
+
+  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
     visitChildren(node);
   }
 }

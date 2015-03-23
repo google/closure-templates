@@ -79,6 +79,11 @@ public final class PyFunctionExprBuilder {
     return this;
   }
 
+  public PyFunctionExprBuilder addArg(boolean b) {
+    this.argList.add(new PyExpr(b ? "True" : "False", Integer.MAX_VALUE));
+    return this;
+  }
+
   public PyFunctionExprBuilder addArg(int i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
