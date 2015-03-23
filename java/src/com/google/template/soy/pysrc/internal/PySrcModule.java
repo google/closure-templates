@@ -58,7 +58,9 @@ public final class PySrcModule extends AbstractModule {
     // Bindings for when explicit dependencies are required.
     bind(PySrcMain.class);
     bind(GenPyCodeVisitor.class);
+    bind(GenPyCallExprVisitor.class);
     bind(IsComputableAsPyExprVisitor.class);
+    bind(IsCalleeInFileVisitor.class);
 
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(GenPyExprsVisitorFactory.class));
