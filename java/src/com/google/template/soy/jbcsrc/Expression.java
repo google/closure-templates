@@ -30,11 +30,22 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 /**
- * An expression has a {@link #type} and can {@link #gen generate} code to evaluate the expression.
+ * An expression has a {@link #resultType()} and can {@link #gen generate} code to evaluate the
+ * expression.
  * 
  * <p>Expressions should be side effect free and also should not <em>consume</em> stack items.
  */
 abstract class Expression {
+  /** Returns true if all referenced expressions are {@linkplain #isConstant() constant}. */
+  static boolean areAllConstant(Iterable<? extends Expression> args) {
+    for (Expression arg : args) {
+      if (!arg.isConstant()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Checks that the given expressions are compatible with the given types.
    */
@@ -52,12 +63,12 @@ abstract class Expression {
    * Generate code to evaluate the expression.
    *   
    * <p>The generated code satisfies the invariant that the top of the runtime stack will contain a
-   * value with this {@link #type} immediately after evaluation of the code. 
+   * value with this {@link #resultType()} immediately after evaluation of the code. 
    */
   abstract void gen(GeneratorAdapter adapter);
   
   /** The type of the expression. */
-  abstract Type type();
+  abstract Type resultType();
 
   /** 
    * A constant expression is one that does not reference any variables. It may contain an 
@@ -72,10 +83,10 @@ abstract class Expression {
   }
 
   final void checkType(Type expected, String fmt, Object ...args) {
-    if (type().equals(expected)) {
+    if (resultType().equals(expected)) {
       return;
     }
-    if (expected.getSort() == type().getSort() && expected.getSort() == Type.OBJECT) {
+    if (expected.getSort() == resultType().getSort() && expected.getSort() == Type.OBJECT) {
       // for class types we really need to know type hierarchy information to test for 
       // whether actualType is assignable to expectedType.
       // This test is mostly optimistic so we just assume that they match. The verifier will tell
@@ -87,7 +98,7 @@ abstract class Expression {
     String message = String.format(
         "Type mismatch. Expected %s, got %s.",
         expected,
-        type());
+        resultType());
     if (!fmt.isEmpty()) {
       message = String.format(fmt, args) + ". " + message;
     }
@@ -119,7 +130,7 @@ abstract class Expression {
   }
 
   @Override public String toString() {
-    return name() + "<" + type() + ">:\n" + traceExpression();
+    return name() + "<" + resultType() + ">:\n" + traceExpression();
   }
 
   /**

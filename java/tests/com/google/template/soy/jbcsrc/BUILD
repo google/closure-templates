@@ -10,6 +10,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/com/google/common/base",
+        "//java/com/google/common/collect",
         "//java/com/google/common/testing",
         "//third_party/java/asm",
         "//third_party/java/asm:asm-commons",
@@ -19,8 +20,11 @@ java_library(
         "//third_party/java/junit",
         "//third_party/java/truth",
         "//third_party/java_src/soy/java/com/google/template/soy/data",
+        "//third_party/java_src/soy/java/com/google/template/soy/exprtree",
         "//third_party/java_src/soy/java/com/google/template/soy/jbcsrc",
         "//third_party/java_src/soy/java/com/google/template/soy/sharedpasses:render",
+        "//third_party/java_src/soy/java/com/google/template/soy/soytree",
+        "//third_party/java_src/soy/javatests/com/google/template/soy/shared:test_utils",
     ],
 )
 

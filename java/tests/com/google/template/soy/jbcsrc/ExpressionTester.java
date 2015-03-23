@@ -46,7 +46,9 @@ import java.io.StringWriter;
  * implementation of an invoker interface.
  */
 public final class ExpressionTester {
-  private interface Invoker {}
+  private interface Invoker {
+    void voidInvoke();
+  }
   // These need to be public so that our memory classloader can access them across protection 
   // domains
   public interface IntInvoker extends Invoker { int invoke(); }
@@ -94,52 +96,71 @@ public final class ExpressionTester {
     
     ExpressionSubject evaluatesTo(boolean expected) {
       compile();
-      if (((BooleanInvoker) invoker).invoke() != expected) {
-        fail("evaluatesTo", expected);
+      boolean actual = ((BooleanInvoker) invoker).invoke();
+      if (actual != expected) {
+        failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
       return this;
     }
 
     ExpressionSubject evaluatesTo(double expected) {
       compile();
-      if (((DoubleInvoker) invoker).invoke() != expected) {
-        fail("evaluatesTo", expected);
+      double actual = ((DoubleInvoker) invoker).invoke();
+      if (actual != expected) {
+        failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
       return this;
     }
 
     ExpressionSubject evaluatesTo(long expected) {
       compile();
-      if (((LongInvoker) invoker).invoke() != expected) {
-        fail("evaluatesTo", expected);
+      long actual = ((LongInvoker) invoker).invoke();
+      if (actual != expected) {
+        failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
       return this;
     }
 
     ExpressionSubject evaluatesTo(char expected) {
       compile();
-      if (((CharInvoker) invoker).invoke() != expected) {
-        fail("evaluatesTo", expected);
+      char actual = ((CharInvoker) invoker).invoke();
+      if (actual != expected) {
+        failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
       return this;
     }
 
     ExpressionSubject evaluatesTo(Object expected) {
       compile();
-      if (!Objects.equal(((ObjectInvoker) invoker).invoke(), expected)) {
-        fail("evaluatesTo", expected);
+      Object actual = ((ObjectInvoker) invoker).invoke();
+      if (!Objects.equal(actual, expected)) {
+        failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
       return this;
+    }
+
+    ExpressionSubject throwsExceptionOfType(Class<? extends Throwable> clazz) {
+      compile();
+      try {
+        invoker.voidInvoke();
+      } catch (Throwable t) {
+        if (!clazz.isInstance(t)) {
+          failWithBadResults("throws an exception of type", clazz, "fails with", t);
+        }
+        return this;
+      }
+      fail("throws an exception");
+      return this;  // dead code, but the compiler can't prove it
     }
 
     private void compile() {
       if (invoker == null) {
         try {
-          Class<? extends Invoker> invokerClass = invokerForType(getSubject().type());
+          Class<? extends Invoker> invokerClass = invokerForType(getSubject().resultType());
           this.compiledClass = createClass(invokerClass, getSubject());
           this.invoker = load(invokerClass, compiledClass);
         } catch (Throwable t) {
-          fail("compile", t);
+          throw new RuntimeException("Compilation of" + getDisplaySubject() + " failed", t);
         }
       }
     }
@@ -153,9 +174,10 @@ public final class ExpressionTester {
       };
 
   static <T> T createInvoker(Class<T> clazz, Expression expr) {
-    Class<? extends Invoker> expected = invokerForType(expr.type());
+    Class<? extends Invoker> expected = invokerForType(expr.resultType());
     checkArgument(clazz.equals(expected), 
-        "%s isn't an appropriate invoker type for %s, expected %s", clazz, expr.type(), expected);
+        "%s isn't an appropriate invoker type for %s, expected %s", clazz, expr.resultType(), 
+        expected);
     ClassData data = createClass(clazz.asSubclass(Invoker.class), expr);
     return load(clazz, data);
   }
@@ -183,8 +205,8 @@ public final class ExpressionTester {
       throw new RuntimeException(e);
     }
     Class<?> returnType = invokeMethod.getReturnType();
-    if (!Type.getType(returnType).equals(expr.type())) {
-      if (!returnType.equals(Object.class) || expr.type().getSort() != Type.OBJECT) {
+    if (!Type.getType(returnType).equals(expr.resultType())) {
+      if (!returnType.equals(Object.class) || expr.resultType().getSort() != Type.OBJECT) {
         throw new IllegalArgumentException(targetInterface 
             + " is not appropriate for this expression");
       }
@@ -204,6 +226,18 @@ public final class ExpressionTester {
     GeneratorAdapter generator = new GeneratorAdapter(Opcodes.ACC_PUBLIC, invoke, null, null, cw);
     expr.gen(generator);
     generator.returnValue();
+    generator.endMethod();
+
+    Method voidInvoke;
+    try {
+      voidInvoke = Method.getMethod(Invoker.class.getMethod("voidInvoke"));
+    } catch (NoSuchMethodException | SecurityException e) {
+      throw new RuntimeException(e);  // this method definitely exists
+    }
+    generator = new GeneratorAdapter(Opcodes.ACC_PUBLIC, voidInvoke, null, null, cw);
+    generator.loadThis();
+    generator.invokeVirtual(generatedType.type(), invoke);
+    generator.visitInsn(Opcodes.RETURN);
     generator.endMethod();
     ClassData data = ClassData.create(generatedType, cw.toByteArray());
     checkClassData(data);

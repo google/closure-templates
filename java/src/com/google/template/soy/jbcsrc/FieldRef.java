@@ -113,13 +113,13 @@ import java.lang.reflect.Modifier;
    */
   Expression accessor(final Expression owner) {
     checkState(!isStatic());
-    checkArgument(owner.type().equals(this.owner().type()));
+    checkArgument(owner.resultType().equals(this.owner().type()));
     return new Expression() {
       @Override public void gen(GeneratorAdapter mv) {
         owner.gen(mv);
-        mv.getField(owner().type(), FieldRef.this.name(), type());
+        mv.getField(owner().type(), FieldRef.this.name(), resultType());
       }
-      @Override public Type type() {
+      @Override public Type resultType() {
         return FieldRef.this.type();
       }
     };
@@ -132,9 +132,9 @@ import java.lang.reflect.Modifier;
     checkState(isStatic());
     return new Expression() {
       @Override public void gen(GeneratorAdapter mv) {
-        mv.getStatic(owner().type(), FieldRef.this.name(), type());
+        mv.getStatic(owner().type(), FieldRef.this.name(), resultType());
       }
-      @Override public Type type() {
+      @Override public Type resultType() {
         return FieldRef.this.type();
       }
     };

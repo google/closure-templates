@@ -27,4 +27,12 @@ public final class Runtime {
   public static AssertionError unexpectedStateError(int state) {
     return new AssertionError("Unexpected state requested: " + state);
   }
+  
+  public static boolean stringEqualsAsNumber(String expr, double number) {
+    try {
+      return Double.parseDouble(expr) == number;
+    } catch (NumberFormatException nfe) {
+      return false;
+    }
+  }
 }

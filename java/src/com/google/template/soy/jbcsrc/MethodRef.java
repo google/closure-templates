@@ -16,8 +16,11 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.Expression.areAllConstant;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -32,6 +35,8 @@ import com.google.template.soy.jbcsrc.SoyExpression.BoxedExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.StringExpression;
+import com.google.template.soy.jbcsrc.runtime.Runtime;
+import com.google.template.soy.shared.internal.SharedRuntime;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -41,6 +46,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +65,26 @@ import java.util.Map;
       create(ListImpl.class, "forProviderList", List.class);
   static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP = 
       create(DictImpl.class, "forProviderMap", Map.class);
+  static final MethodRef RUNTIME_DIVIDED_BY = 
+      create(SharedRuntime.class, "dividedBy", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_TIMES = 
+      create(SharedRuntime.class, "times", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_MINUS = 
+      create(SharedRuntime.class, "minus", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_PLUS = 
+      create(SharedRuntime.class, "plus", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_LESS_THAN =
+      create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_LESS_THAN_OR_EQUAL = 
+      create(SharedRuntime.class, "lessThanOrEqual", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_EQUAL = 
+      create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
+  static final MethodRef RUNTIME_NEGATIVE = 
+      create(SharedRuntime.class, "negative", SoyValue.class);
+  static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER = 
+      create(Runtime.class, "stringEqualsAsNumber", String.class, double.class);
+  static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
+  static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
 
   // Instance methods
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
@@ -144,11 +170,16 @@ import java.util.Map;
 
   Expression invoke(final Expression ...args) {
     Expression.checkTypes(argTypes(), args);
+    final boolean isConstant = areAllConstant(Arrays.asList(args));
     if (SoyValue.class.isAssignableFrom(returnType())) {
       Class<? extends SoyValue> boxType = returnType().asSubclass(SoyValue.class);
       return new BoxedExpression(boxType) {
         @Override public void gen(GeneratorAdapter mv) {
           invoke(mv, args);
+        }
+
+        @Override boolean isConstant() {
+          return isConstant;
         }
       };
     }
@@ -157,12 +188,20 @@ import java.util.Map;
         @Override public void gen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
+
+        @Override boolean isConstant() {
+          return isConstant;
+        }
       };
     }
     if (long.class.equals(returnType())) {
       return new IntExpression() {
         @Override public void gen(GeneratorAdapter mv) {
           invoke(mv, args);
+        }
+
+        @Override boolean isConstant() {
+          return isConstant;
         }
       };
     }
@@ -171,12 +210,20 @@ import java.util.Map;
         @Override public void gen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
+
+        @Override boolean isConstant() {
+          return isConstant;
+        }
       };
     }
     if (String.class.equals(returnType())) {
       return new StringExpression() {
         @Override public void gen(GeneratorAdapter mv) {
           invoke(mv, args);
+        }
+
+        @Override boolean isConstant() {
+          return isConstant;
         }
       };
     }
@@ -188,8 +235,12 @@ import java.util.Map;
         invoke(mv, args);
       }
 
-      @Override Type type() {
+      @Override Type resultType() {
         return type;
+      }
+
+      @Override boolean isConstant() {
+        return isConstant;
       }
     };
   }

@@ -47,7 +47,7 @@ final class BytecodeUtils {
         mv.push(value);
       }
 
-      @Override public Type type() {
+      @Override public Type resultType() {
         return Type.INT_TYPE;
       }
 
@@ -64,7 +64,7 @@ final class BytecodeUtils {
         mv.push(value);
       }
 
-      @Override public Type type() {
+      @Override public Type resultType() {
         return Type.CHAR_TYPE;
       }
 
@@ -111,6 +111,36 @@ final class BytecodeUtils {
         return true;
       }
     };
+  }
+
+  /**
+   * Returns an expression that calls an appropriate dup opcode for the given type.
+   */
+  static Expression dupExpr(final Type type) {
+    switch (type.getSize()) {
+      case 1:
+        return new Expression() {
+          @Override void gen(GeneratorAdapter mv) {
+            mv.dup();
+          }
+
+          @Override Type resultType() {
+            return type;
+          }
+        };
+      case 2:
+        return new Expression() {
+          @Override void gen(GeneratorAdapter mv) {
+            mv.dup2();
+          }
+
+          @Override Type resultType() {
+            return type;
+          }
+        };
+      default:
+        throw new AssertionError("cannot dup() " + type);
+    }
   }
 
   /** Loads the default value for the type onto the stack. Useful for initializing fields. */
@@ -169,15 +199,16 @@ final class BytecodeUtils {
   static BoolExpression compare(final int comparisonOpcode, final Expression left, 
       final Expression right) {
     checkIntComparisonOpcode(comparisonOpcode);
-    checkArgument(left.type().equals(right.type()), 
-        "left and right must have matching types, found %s and %s", left.type(), right.type());
+    checkArgument(left.resultType().equals(right.resultType()), 
+        "left and right must have matching types, found %s and %s", left.resultType(), 
+        right.resultType());
     return new BoolExpression() {
       @Override public void gen(GeneratorAdapter mv) {
         left.gen(mv);
         right.gen(mv);
         Label ifTrue = mv.newLabel();
         Label end = mv.newLabel();
-        mv.ifCmp(left.type(), comparisonOpcode, ifTrue);
+        mv.ifCmp(left.resultType(), comparisonOpcode, ifTrue);
         mv.push(false);
         mv.goTo(end);
         mv.mark(ifTrue);
@@ -208,9 +239,9 @@ final class BytecodeUtils {
    * Returns an expression that evaluates to the logical negation of the given boolean valued 
    * expression.
    */
-  static SoyExpression logicalNot(final Expression baseExpr) {
+  static BoolExpression logicalNot(final Expression baseExpr) {
     baseExpr.checkType(Type.BOOLEAN_TYPE);
-    checkArgument(baseExpr.type().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
+    checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
     return new BoolExpression() {
       @Override void gen(GeneratorAdapter mv) {
         baseExpr.gen(mv);

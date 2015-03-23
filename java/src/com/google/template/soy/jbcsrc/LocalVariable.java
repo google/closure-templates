@@ -48,7 +48,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
   /** The name of the variable, ends up in debugging tables. */
   abstract String variableName();
   abstract boolean isThis();
-  @Override abstract Type type();
+  @Override abstract Type resultType();
 
   /** The index in the local variable table. */
   abstract int index();
@@ -66,7 +66,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
   void tableEntry(MethodVisitor mv) {
     mv.visitLocalVariable(
         variableName(),
-        type().getDescriptor(),
+        resultType().getDescriptor(),
         null /** no generic signature */,
         start(),
         end(),
@@ -78,12 +78,12 @@ import org.objectweb.asm.commons.GeneratorAdapter;
       // need to special case this since generator adapter doesn't consider 'this' to be a local.
       mv.loadThis();  
     } else {
-      mv.loadLocal(index(), type());
+      mv.loadLocal(index(), resultType());
     }
   }
 
   /** Writes the value at the top of the stack to the local variable. */
   void store(GeneratorAdapter mv) {
-    mv.storeLocal(index(), type());
+    mv.storeLocal(index(), resultType());
   }
 }

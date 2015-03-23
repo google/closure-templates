@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -29,8 +30,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An Expression involving a soy value.
@@ -52,7 +53,7 @@ abstract class SoyExpression extends Expression {
     this.type = Type.getType(clazz);
   }
 
-  @Override final Type type() {
+  @Override final Type resultType() {
     return type;
   }
 
@@ -66,33 +67,65 @@ abstract class SoyExpression extends Expression {
     return clazz;
   }
 
-  /**
-   * Returns {@code true} if the current value is {@link #convert(Class)} convertable to a 
-   * {@link SoyExpression} with the {@code target} type as its {@link #clazz}.
-   */
-  boolean convertibleTo(Class<?> target) {
-    if (target.equals(long.class)) {
-      return clazz().equals(long.class) || clazz().equals(IntegerData.class);
-    }
-    if (target.equals(double.class)) {
-      return clazz().equals(double.class) || clazz().equals(FloatData.class);
-    }
-    if (target.equals(boolean.class) || target.equals(String.class)) {
-      // everything is convertable to boolean or string
-      return true;
-    }
-    return false;
-  }
   
+  /**
+   * Returns {@code true} if the expression is known to be a string at compile time.
+   * 
+   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
+   * <em>not</em> a string, just that it is not <em>known</em> to be a string at compile time. For
+   * example, {@code $b ? 'hello' : 2} is a valid soy expression that will be typed as 'any' at
+   * compile time.  So {@link #isKnownString()} on that soy expression will return false even though
+   * it may in fact be a string. 
+   */
+  boolean isKnownString() {
+    // It 'is' a string if it is unboxed or is one of our string types
+    return clazz().equals(String.class)
+        || StringData.class.isAssignableFrom(clazz)
+        || SanitizedContent.class.isAssignableFrom(clazz);
+  }
+
+  /**
+   * Returns {@code true} if the expression is known to be an int at compile time.
+   * 
+   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
+   * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time. 
+   */
+  boolean isKnownInt() {
+    return clazz().equals(long.class) || clazz().equals(IntegerData.class);
+  }
+
+  /**
+   * Returns {@code true} if the expression is known to be a float at compile time.
+   * 
+   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
+   * <em>not</em> a float, just that it is not <em>known</em> to be a float at compile time. 
+   */
+  boolean isKnownFloat() {
+    return clazz().equals(double.class) || clazz().equals(FloatData.class);
+  }
+
+  /**
+   * Returns {@code true} if the expression is known to be an {@linkplain #isKnownInt() int} or a 
+   * {@linkplain #isKnownFloat() float} at compile time.
+   * 
+   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
+   * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time. 
+   */
+  final boolean isKnownNumber() {
+    return isKnownFloat() || isKnownInt();
+  }
+
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
   abstract SoyExpression box();
 
+  // TODO(lukes): consider replacing this with toInt() toFloat() toStr() methods which could be
+  // more strongly typed.
+  
   /**
-   * Converts this to a {@link SoyExpression} with the given {@link #clazz()} iff it is 
-   * {@link #convertibleTo(Class)} it.
+   * Converts this to a {@link SoyExpression} with the given {@link #clazz()} if possible
    * 
    * <p>This will either be a type coercion or an unboxing operation (or return {@code this} if the
-   * type already matches).
+   * type already matches).  Note: type coercions may throw exceptions at runtime.
    */
   SoyExpression convert(Class<?> asType) {
     if (asType.equals(long.class)) {
@@ -102,7 +135,7 @@ abstract class SoyExpression extends Expression {
       return MethodRef.SOY_VALUE_FLOAT_VALUE.invokeAsBoxedSoyExpression(this);
     }
     if (asType.equals(String.class)) {
-      // string coercion is performed via the toString method apparently.
+      // string coercion is performed via the toString method
       return MethodRef.TO_STRING.invokeAsBoxedSoyExpression(this);
     }
     if (asType.equals(boolean.class)) {
@@ -131,7 +164,7 @@ abstract class SoyExpression extends Expression {
   /**
    * Default subtype of {@link BoxedExpression} used by our core expression implementations.
    */
-  private abstract static class DefaultBoxed extends BoxedExpression {
+  abstract static class DefaultBoxed extends BoxedExpression {
     private final SoyExpression unboxed;
 
     DefaultBoxed(Class<? extends SoyValue> clazz, SoyExpression unboxed) {
@@ -139,8 +172,16 @@ abstract class SoyExpression extends Expression {
       this.unboxed = unboxed;
     }
 
-    @Override boolean convertibleTo(Class<?> target) {
-      return unboxed.convertibleTo(target);
+    @Override boolean isKnownFloat() {
+      return unboxed.isKnownFloat();
+    }
+
+    @Override boolean isKnownInt() {
+      return unboxed.isKnownInt();
+    }
+
+    @Override boolean isKnownString() {
+      return unboxed.isKnownString();
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -223,6 +264,14 @@ abstract class SoyExpression extends Expression {
       if (asType.equals(long.class)) {
         return this;
       }
+      if (asType.equals(double.class)) {
+        return new FloatExpression() {
+          @Override void gen(GeneratorAdapter adapter) {
+            IntExpression.this.gen(adapter);
+            adapter.cast(Type.LONG_TYPE, Type.DOUBLE_TYPE);
+          }
+        };
+      }
       return super.convert(asType);
     }
   }
@@ -283,6 +332,9 @@ abstract class SoyExpression extends Expression {
       if (asType.equals(double.class)) {
         return this;
       }
+      if (asType.equals(long.class)) {
+        throw new UnsupportedOperationException("floats cannot be converted to ints");
+      }
       return super.convert(asType);
     }
   }
@@ -312,11 +364,11 @@ abstract class SoyExpression extends Expression {
   }
 
   /**
-   * An expression for a {@code LinkedHashMap}.
+   * An expression for a {@code Map}.
    */
   abstract static class MapExpression extends SoyExpression {
     MapExpression() {
-      super(LinkedHashMap.class);
+      super(Map.class);
     }
 
     @Override SoyExpression box() {
@@ -328,7 +380,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
-      if (asType.equals(LinkedHashMap.class)) {
+      if (Map.class.isAssignableFrom(asType)) {
         return this;
       }
       return super.convert(asType);
@@ -336,11 +388,11 @@ abstract class SoyExpression extends Expression {
   }
 
   /**
-   * An expression for an {@code ArrayList}.
+   * An expression for a {@code List}.
    */
   abstract static class ListExpression extends SoyExpression {
     ListExpression() {
-      super(ArrayList.class);
+      super(List.class);
     }
 
     @Override SoyExpression box() {
@@ -352,7 +404,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
-      if (asType.equals(ArrayList.class)) {
+      if (List.class.isAssignableFrom(asType)) {
         return this;
       }
       return super.convert(asType);
