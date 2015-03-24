@@ -129,11 +129,17 @@ final class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDi
       Iterable<String> optionalSafeTagExprs = Iterables.transform(args, TARGET_EXPR_TO_STRING);
 
       // Verify that all exprs are single-quoted valid OptionalSafeTags.
-      FluentIterable.from(optionalSafeTagExprs)
-          .transform(SINGLE_QUOTED_TO_UNQUOTED)
-          .transform(OptionalSafeTag.FROM_TAG_NAME)
-          .toSet();
-
+      for (String singleQuoted : optionalSafeTagExprs) {
+        if (singleQuoted.length() < 2
+            || singleQuoted.charAt(0) != '\''
+            || singleQuoted.charAt(singleQuoted.length() - 1) != '\'') {
+          throw new IllegalArgumentException(
+              String.format("The cleanHtml directive expects arguments to be tag name string "
+                + "literals, such as 'span'. Encountered: %s", singleQuoted));
+        }
+        String tagName = singleQuoted.substring(1, singleQuoted.length() - 1);
+        OptionalSafeTag.fromTagName(tagName);  // throws if invalid
+      }
       optionalSafeTagsArg = ", [" + ARG_JOINER.join(optionalSafeTagExprs) + "]";
     }
     return optionalSafeTagsArg;
@@ -150,20 +156,6 @@ final class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDi
       new Function<TargetExpr, String>() {
     @Override public String apply(TargetExpr expr) {
       return expr.getText();
-    }
-  };
-
-  private static final Function<String, String> SINGLE_QUOTED_TO_UNQUOTED =
-      new Function<String, String>() {
-    @Override public String apply(String singleQuoted) {
-      if (singleQuoted.length() < 2
-          || singleQuoted.charAt(0) != '\''
-          || singleQuoted.charAt(singleQuoted.length() - 1) != '\'') {
-        throw new IllegalArgumentException(
-            String.format("The cleanHtml directive expects arguments to be tag name string "
-                + "literals, such as 'span'. Encountered: %s", singleQuoted));
-      }
-      return singleQuoted.substring(1, singleQuoted.length() - 1);
     }
   };
 }
