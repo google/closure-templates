@@ -404,10 +404,13 @@ public final class Context {
 
       case HTML_RCDATA:
       case HTML_NORMAL_ATTR_VALUE:
+      case HTML_COMMENT:
         // The weirdest case is HTML attributes. Ideally, we'd like to treat these as a text string
         // and escape when done.  However, many messages have HTML entities such as &raquo; in them.
         // A good way around this is to escape the print nodes in the message, but normalize
         // (escape except for ampersands) the final message.
+        // Also, content inside <title>, <textarea>, and HTML comments have a similar requirement,
+        // where any entities in the messages are probably intended to be preserved.
         return Optional.of(
             new MsgEscapingStrategy(this, ImmutableList.of(EscapingMode.NORMALIZE_HTML)));
 

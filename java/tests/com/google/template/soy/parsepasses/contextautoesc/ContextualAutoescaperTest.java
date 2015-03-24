@@ -2198,6 +2198,114 @@ public final class ContextualAutoescaperTest extends TestCase {
         .isEqualTo(ImmutableList.of("|escapeHtml"));
   }
 
+  private String getForbiddenMsgError(String path, String template, String context) {
+    return "In file " + path + ", template " + template + ": "
+        + "Messages are not supported in this context, because it would mean asking translators to "
+        + "write source code: (Context " + context + ")";
+  }
+
+  public void testMsgForbiddenUriStartContext() {
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main}\n",
+            "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:3", "main", "URI START"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main kind=\"uri\"}\n",
+            "  {msg desc=\"foo\"}message{/msg}\n",
+            "{/template}"));
+  }
+
+  public void testMsgForbiddenJsContext() {
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:11", "main", "JS REGEX"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main}\n",
+            "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:11", "main", "JS REGEX"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:3", "main", "JS REGEX"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main kind=\"js\"}\n",
+            "  {msg desc=\"foo\"}message{/msg}\n",
+            "{/template}"));
+  }
+
+  public void testMsgForbiddenHtmlContexts() {
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:8", "main", "HTML_TAG NORMAL"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main}\n",
+            "  <div {msg desc=\"foo\"}attributes{/msg}>Test</div>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:4", "main", "HTML_BEFORE_TAG_NAME"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "  <{msg desc=\"foo\"}tagname{/msg}>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:5", "main", "HTML_BEFORE_TAG_NAME"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "  </{msg desc=\"foo\"}tagname{/msg}>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:3", "main", "HTML_TAG"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main kind=\"attributes\"}\n",
+            "  {msg desc=\"foo\"}message{/msg}\n",
+            "{/template}"));
+  }
+
+  public void testMsgForbiddenCssContext() {
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:10", "main", "CSS"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main}\n",
+            "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:10", "main", "CSS"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        getForbiddenMsgError("no-path:4:3", "main", "CSS"),
+        join(
+            "{namespace ns}\n\n",
+            "{template main kind=\"css\"}\n",
+            "  {msg desc=\"foo\"}message{/msg}\n",
+            "{/template}"));
+  }
 
   // TODO: Tests for dynamic attributes: <a on{$name}="...">,
   // <div data-{$name}={$value}>

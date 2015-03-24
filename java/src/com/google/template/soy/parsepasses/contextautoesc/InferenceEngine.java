@@ -234,11 +234,10 @@ final class InferenceEngine {
         // parse the children in.
         Optional<Context.MsgEscapingStrategy> maybeStrategy = context.getMsgEscapingStrategy();
         if (!maybeStrategy.isPresent()) {
-          // It's really an error to have a message in one of these contexts. For now, we will
-          // treat these messages exactly like the compiler used to.
-          // TODO(gboyer): Fix all breakages and make this a compilation error.
-          visitChildren(node);
-          return;
+          throw SoyAutoescapeException.createWithNode(
+              "Messages are not supported in this context, because it would mean asking "
+                  + "translators to write source code: " + context,
+              node);
         }
         Context.MsgEscapingStrategy strategy = maybeStrategy.get();
         inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
