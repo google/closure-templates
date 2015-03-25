@@ -87,7 +87,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
       Throwable t = result.getParseErrors().asList().get(0);
       assertThat(t).isInstanceOf(SoySyntaxException.class);
       assertThat(t.getMessage()).contains(
-          "Attribute 'genders' does not contain exactly 1-3 expressions");
+          "Attribute 'genders' does not contain 1-3 expressions");
   }
 
 

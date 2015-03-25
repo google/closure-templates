@@ -16,7 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -42,7 +44,10 @@ public class PrintNodeTest extends TestCase {
         pn.genSamenessKey().equals((new PrintNode(4, true, "$boo", null)).genSamenessKey()));
 
     pn = new PrintNode(0, true, "$boo.foo", null);
-    pn.addChild(new PrintDirectiveNode(0, "|insertWordBreaks", "8"));
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    pn.addChild(new PrintDirectiveNode.Builder(0, "|insertWordBreaks", "8", SourceLocation.UNKNOWN)
+            .build(errorReporter));
+    errorReporter.throwIfErrorsPresent();
     assertEquals("FOO", pn.genBasePhName());
     assertFalse(
         pn.genSamenessKey().equals((new PrintNode(4, true, "$boo.foo", null)).genSamenessKey()));

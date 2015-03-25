@@ -16,9 +16,11 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.ExprUnion;
@@ -92,7 +94,11 @@ public class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
     if (componentNameExpr != null) {
       PrintNode pn =
           new PrintNode(nodeIdGen.genId(), false, new ExprUnion(componentNameExpr), null);
-      pn.addChild(new PrintDirectiveNode(nodeIdGen.genId(), "|id", ""));
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+      pn.addChild(new PrintDirectiveNode.Builder(
+          nodeIdGen.genId(), "|id", "", SourceLocation.UNKNOWN)
+      .build(errorReporter));
+      errorReporter.throwIfErrorsPresent();
       parent.addChild(indexInParent, pn);
       indexInParent += 1;
     }

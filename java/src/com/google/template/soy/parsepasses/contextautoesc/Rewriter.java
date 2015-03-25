@@ -19,7 +19,9 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -106,9 +108,14 @@ final class Rewriter {
     @Override protected void visitPrintNode(PrintNode printNode) {
       int id = printNode.getId();
       ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForId(id);
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
       for (EscapingMode escapingMode : escapingModes) {
-        PrintDirectiveNode newPrintDirective = new PrintDirectiveNode(
-            inferences.getIdGenerator().genId(), escapingMode.directiveName, "");
+        PrintDirectiveNode newPrintDirective = new PrintDirectiveNode.Builder(
+            inferences.getIdGenerator().genId(),
+            escapingMode.directiveName,
+            "",
+            SourceLocation.UNKNOWN)
+            .build(errorReporter);
         newPrintDirective.setSourceLocation(printNode.getSourceLocation());
 
         // Figure out where to put the new directive.
@@ -127,6 +134,7 @@ final class Rewriter {
 
         printNode.addChild(newPrintDirectiveIndex, newPrintDirective);
       }
+      errorReporter.throwIfErrorsPresent();
     }
 
     /**

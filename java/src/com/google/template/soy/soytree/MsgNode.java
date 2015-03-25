@@ -16,15 +16,16 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -48,6 +49,29 @@ import javax.annotation.Nullable;
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode {
 
+  static final SoyError WRONG_NUMBER_OF_GENDER_EXPRS = SoyError.of(
+      "Attribute ''genders'' does not contain 1-3 expressions");
+
+  /**
+   * Returns a new {@link Builder} representing a {@code msg} MsgNode.
+   * @param id The node's id.
+   * @param commandText The node's command text.
+   * @param sourceLocation The node's source location.
+   *
+   */
+  public static Builder msg(int id, String commandText, SourceLocation sourceLocation) {
+    return new Builder(id, "msg", commandText, sourceLocation);
+  }
+
+  /**
+   * Returns a new {@link Builder} representing a {@code fallbackmsg} MsgNode.
+   * @param id The node's id.
+   * @param commandText The node's command text.
+   * @param sourceLocation The node's source location.
+   */
+  public static Builder fallbackmsg(int id, String commandText, SourceLocation sourceLocation) {
+    return new Builder(id, "fallbackmsg", commandText, sourceLocation);
+  }
 
   private static class SubstUnitInfo {
 
@@ -104,37 +128,19 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** The substitution unit info (var name mappings, or null if not yet generated. */
   private SubstUnitInfo substUnitInfo = null;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandName The command name -- either 'msg' or 'fallbackmsg'.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   * TODO(user): hide this ctor behind a Builder and enforce proper error reporting.
-   */
-  public MsgNode(int id, String commandName, String commandText) throws SoySyntaxException {
+  private MsgNode(
+      int id,
+      @Nullable List<ExprRootNode<?>> genderExprs,
+      String commandName,
+      String commandText,
+      String meaning,
+      String desc,
+      boolean isHidden) {
     super(id, commandName, commandText);
-    Preconditions.checkArgument(commandName.equals("msg") || commandName.equals("fallbackmsg"));
-
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
-
-    String gendersAttr = attributes.get("genders");
-    if (gendersAttr == null) {
-      genderExprs = null;
-    } else {
-      genderExprs = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-          gendersAttr, getSourceLocation());
-      assert genderExprs != null;  // suppress warnings
-      if (genderExprs.size() < 1 || genderExprs.size() > 3) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Attribute 'genders' does not contain exactly 1-3 expressions (in tag {msg "
-                + commandText + "}).");
-      }
-    }
-
-    meaning = attributes.get("meaning");
-    desc = attributes.get("desc");
-    isHidden = attributes.get("hidden").equals("true");
+    this.genderExprs = genderExprs;
+    this.meaning = meaning;
+    this.desc = desc;
+    this.isHidden = isHidden;
   }
 
 
@@ -494,5 +500,47 @@ public final class MsgNode extends AbstractBlockCommandNode
     return new SubstUnitInfo(
         ImmutableMap.copyOf(substUnitVarNameToRepNodeMap),
         ImmutableMap.copyOf(substUnitNodeToVarNameMap));
+  }
+
+  /**
+   * Builder for {@link MsgNode}. Access through {@link MsgNode#msg} or {@link MsgNode#fallbackmsg}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandName;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    private Builder(int id, String commandName, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandName = commandName;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link MsgNode} from the state of this builder, reporting syntax errors
+     * to the given {@link ErrorReporter}.
+     */
+    public MsgNode build(ErrorReporter errorReporter) {
+
+      Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
+
+      String gendersAttr = attributes.get("genders");
+      List<ExprRootNode<?>> genderExprs = null;
+      if (gendersAttr != null) {
+        genderExprs = new ExpressionParser(
+            gendersAttr, sourceLocation, errorReporter)
+            .parseExpressionList();
+        if (genderExprs.isEmpty() || genderExprs.size() > 3) {
+          errorReporter.report(sourceLocation, WRONG_NUMBER_OF_GENDER_EXPRS);
+        }
+      }
+
+      String meaning = attributes.get("meaning");
+      String desc = attributes.get("desc");
+      boolean isHidden = attributes.get("hidden").equals("true");
+      return new MsgNode(id, genderExprs, commandName, commandText, meaning, desc, isHidden);
+    }
   }
 }

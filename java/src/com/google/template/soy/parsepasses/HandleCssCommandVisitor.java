@@ -17,12 +17,14 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -101,9 +103,13 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
         newNode = new RawTextNode(nodeIdGen.genId(), cssNode.getCommandText());
 
       } else if (cssHandlingScheme == CssHandlingScheme.REFERENCE) {
+        TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
         PrintNode newPrintNode =
             new PrintNode(nodeIdGen.genId(), false, cssNode.getCommandText(), null);
-        newPrintNode.addChild(new PrintDirectiveNode(nodeIdGen.genId(), "|noAutoescape", ""));
+        newPrintNode.addChild(new PrintDirectiveNode.Builder(
+            nodeIdGen.genId(), "|noAutoescape", "", SourceLocation.UNKNOWN)
+            .build(errorReporter));
+        errorReporter.throwIfErrorsPresent();
         newNode = newPrintNode;
         // Check that the expression is a valid reference.
         boolean isInvalidExpr = false;

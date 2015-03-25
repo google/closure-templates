@@ -2605,8 +2605,8 @@ private MsgFallbackGroupNode MsgStmt() :
   {
     MsgFallbackGroupNode msgFbGrpNode = setSrcLoc(
         new MsgFallbackGroupNode(nodeIdGen.genId()), cmdText);
-    msgNode = setSrcLoc(
-        new MsgNode(nodeIdGen.genId(), "msg", cmdText.parsedContent()), cmdText);
+    msgNode = MsgNode.msg(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        .build(errorReporter);
     msgFbGrpNode.addChild(msgNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2617,8 +2617,9 @@ private MsgFallbackGroupNode MsgStmt() :
 
     cmdText = FallbackmsgTag()
     {
-      msgNode = setSrcLoc(
-          new MsgNode(nodeIdGen.genId(), "fallbackmsg", cmdText.parsedContent()), cmdText);
+      msgNode = MsgNode.fallbackmsg(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
       msgFbGrpNode.addChild(msgNode);
     }
     templateBlockForMsg = TemplateBlockForMsg()
@@ -2915,9 +2916,9 @@ private PrintNode PrintStmt() :
       if (cmdTextPart.startsWith("|")) {
         // Create previous directive and save current directive name.
         if (directiveName != null) {
-          printNode.addChild(setSrcLoc(
-              new PrintDirectiveNode(nodeIdGen.genId(), directiveName, ""),
-              printTagInfo));
+          printNode.addChild(new PrintDirectiveNode.Builder(
+              nodeIdGen.genId(), directiveName, "", printTagInfo.srcLocation())
+              .build(errorReporter));
         }
         directiveName = cmdTextPart;
 
@@ -2927,9 +2928,9 @@ private PrintNode PrintStmt() :
           throw new AssertionError();
         }
         String argsText = cmdTextPart.substring(1);
-        printNode.addChild(setSrcLoc(
-            new PrintDirectiveNode(nodeIdGen.genId(), directiveName, argsText),
-            printTagInfo));
+        printNode.addChild(new PrintDirectiveNode.Builder(
+            nodeIdGen.genId(), directiveName, argsText, printTagInfo.srcLocation())
+            .build(errorReporter));
         directiveName = null;
 
       } else if (cmdTextPart.trim().length() == 0) {
@@ -2941,8 +2942,9 @@ private PrintNode PrintStmt() :
     }
     // Add last directive.
     if (directiveName != null) {
-      printNode.addChild(setSrcLoc(
-          new PrintDirectiveNode(nodeIdGen.genId(), directiveName, ""), printTagInfo));
+      printNode.addChild(new PrintDirectiveNode.Builder(
+          nodeIdGen.genId(), directiveName, "", printTagInfo.srcLocation())
+          .build(errorReporter));
     }
 
     return printNode;
@@ -3125,8 +3127,9 @@ private SwitchNode SwitchStmt() :
 
     cmdText = CaseTag()
     {
-      SwitchCaseNode switchCaseNode = setSrcLoc(
-          new SwitchCaseNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
+      SwitchCaseNode switchCaseNode = new SwitchCaseNode.Builder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+          .build(errorReporter);
       switchNode.addChild(switchCaseNode);
     }
     templateBlock = TemplateBlock()

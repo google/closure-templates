@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soyparse.ErrorReporter;
@@ -70,7 +72,7 @@ public class MsgNodeTest extends TestCase {
     // 2. To differentiate {$foo.goo} and {$goo}, normally the new names would be GOO_1 and GOO_2.
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     // Link 1 start tag.
     MsgHtmlTagNode link1Start = new MsgHtmlTagNode.Builder(
         1,
@@ -218,7 +220,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
 
     // case 'female'
@@ -369,7 +371,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender[5]");
 
     // case 'female'
@@ -509,7 +511,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
 
     // case 'female'
@@ -636,7 +638,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
 
     // case 'female'
@@ -767,7 +769,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
 
     // case 'female'
@@ -802,7 +804,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
 
     MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(
         0, "$woman.num", SourceLocation.UNKNOWN)
@@ -840,13 +842,22 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = new MsgNode(0, "msg", "desc=\"\"");
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
     RawTextNode rawTextNode = new RawTextNode(0, "raw text");
     msg.addChild(rawTextNode);
 
     // Test.
     assertTrue(msg.isRawTextMsg());
     assertTrue(!msg.isPlrselMsg());
+  }
+
+  public void testWrongNumberOfGenderExprs() {
+    assertThatTemplateContent("{msg desc=\"\" genders=\"\"}{/msg}")
+        .causesError(MsgNode.WRONG_NUMBER_OF_GENDER_EXPRS)
+        .at(1, 1);
+    assertThatTemplateContent("{msg desc=\"\" genders=\"$foo, $bar, $baz, $quux\"}{/msg}")
+        .causesError(MsgNode.WRONG_NUMBER_OF_GENDER_EXPRS)
+        .at(1, 1);
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -22,8 +22,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
-import java.util.List;
-
 /**
  * Utilities for parsing expressions.
  *
@@ -35,25 +33,6 @@ import java.util.List;
 public final class ExprParseUtils {
 
   private ExprParseUtils() {}
-
-  /**
-   * Attempts to parse the given exprText as a Soy expression list. If successful, returns the
-   * expression list. If unsuccessful, throws a SoySyntaxException.
-   *
-   *
-   * @param exprListText The text to parse.
-   * @return The parsed expression list.
-   * @deprecated Use {@link ExpressionParser#parseExpressionList()} directly.
-   */
-  @Deprecated
-  public static List<ExprRootNode<?>> parseExprListElseThrowSoySyntaxException(
-      String exprListText, SourceLocation sourceLocation) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    List<ExprRootNode<?>> exprs
-        = new ExpressionParser(exprListText, sourceLocation, errorReporter).parseExpressionList();
-    errorReporter.throwIfErrorsPresent();
-    return exprs;
-  }
 
   /**
    * Attempts to parse the given exprText as a Soy expression. If successful, returns the

@@ -17,10 +17,12 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -111,8 +113,10 @@ public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
     // If appropriate, apply autoescape by adding an |escapeHtml directive (should be applied first
     // because other directives may add HTML tags).
     if (currTemplateShouldAutoescape && !shouldCancelAutoescape) {
-      PrintDirectiveNode newEscapeHtmlDirectiveNode =
-          new PrintDirectiveNode(nodeIdGen.genId(), EscapeHtmlDirective.NAME, "");
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+      PrintDirectiveNode newEscapeHtmlDirectiveNode = new PrintDirectiveNode.Builder(
+          nodeIdGen.genId(), EscapeHtmlDirective.NAME, "", SourceLocation.UNKNOWN)
+          .build(errorReporter);
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }

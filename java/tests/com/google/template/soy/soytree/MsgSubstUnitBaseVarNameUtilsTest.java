@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -155,8 +157,11 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    * Private helper for {@code testGenNoncollidingBaseNames()}.
    */
   private void assertNoncollidingBaseNamesForExprs(List<String> expected, String exprListText) {
-    List<ExprRootNode<?>> exprRoots = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-        exprListText, SourceLocation.UNKNOWN);
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    List<ExprRootNode<?>> exprRoots = new ExpressionParser(
+        exprListText, SourceLocation.UNKNOWN, errorReporter)
+        .parseExpressionList();
+    errorReporter.throwIfErrorsPresent();
     List<String> actual =
         MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
     MsgNodeTest.assertEquals(expected, actual);
@@ -168,8 +173,12 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    */
   private void assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
       String expectedErrorMsg, String exprListText) {
-    List<ExprRootNode<?>> exprRoots = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-        exprListText, SourceLocation.UNKNOWN);
+
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    List<ExprRootNode<?>> exprRoots = new ExpressionParser(
+        exprListText, SourceLocation.UNKNOWN, errorReporter)
+        .parseExpressionList();
+    errorReporter.throwIfErrorsPresent();
     try {
       MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
       MsgNodeTest.fail();

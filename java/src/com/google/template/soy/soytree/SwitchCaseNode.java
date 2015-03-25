@@ -17,9 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -42,19 +43,12 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
   /** The parsed expression list. */
   private final List<ExprRootNode<?>> exprList;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   * TODO(user): hide ctor behind builder and enforce proper error reporting.
-   */
-  public SwitchCaseNode(int id, String commandText) throws SoySyntaxException {
+  private SwitchCaseNode(
+      int id, String commandText, List<ExprRootNode<?>> exprList, SourceLocation sourceLocation) {
     super(id, "case", commandText);
-
-    exprListText = commandText;
-    exprList = ExprParseUtils.parseExprListElseThrowSoySyntaxException(
-        exprListText, getSourceLocation());
+    this.exprList = exprList;
+    this.exprListText = commandText;
+    setSourceLocation(sourceLocation);
   }
 
 
@@ -96,6 +90,37 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
 
   @Override public SwitchCaseNode clone() {
     return new SwitchCaseNode(this);
+  }
+
+  /**
+   * Builder for {@link SwitchCaseNode}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link SwitchCaseNode} from the state of this builder, reporting syntax errors
+     * to the given {@link ErrorReporter}.
+     */
+    public SwitchCaseNode build(ErrorReporter errorReporter) {
+      List<ExprRootNode<?>> exprList = new ExpressionParser(
+          commandText, sourceLocation, errorReporter)
+          .parseExpressionList();
+      return new SwitchCaseNode(id, commandText, exprList, sourceLocation);
+    }
   }
 
 }
