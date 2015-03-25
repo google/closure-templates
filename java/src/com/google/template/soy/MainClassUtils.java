@@ -18,8 +18,10 @@ package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -27,6 +29,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.template.soy.SoyFileSet.Builder;
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -37,6 +40,7 @@ import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -44,10 +48,18 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
- * Private utils for classes with a main() method.
+ * Utilities for classes with a {@code main()} method.
  *
  */
-class MainClassUtils {
+final class MainClassUtils {
+
+  /**
+   * Represents a top-level entry point into the Soy codebase.
+   * Used by {@link #run} to catch unexpected exceptions and print errors.
+   */
+  interface Main {
+    CompilationResult main() throws IOException;
+  }
 
   private MainClassUtils() {}
 
@@ -61,7 +73,7 @@ class MainClassUtils {
    * flags, but never to turn them off. This implementation allows an optional param value
    * true/false/1/0 so that the user can turn on or off the flag.
    */
-  public static class BooleanOptionHandler extends OptionHandler<Boolean> {
+  public static final class BooleanOptionHandler extends OptionHandler<Boolean> {
 
     /** {@link OptionHandler#OptionHandler(CmdLineParser,OptionDef,Setter)} */
     public BooleanOptionHandler(
@@ -105,10 +117,10 @@ class MainClassUtils {
   /**
    * OptionHandler for args4j that handles a comma-delimited list.
    */
-  public abstract static class ListOptionHandler<T> extends OptionHandler<T> {
+  abstract static class ListOptionHandler<T> extends OptionHandler<T> {
 
     /** {@link OptionHandler#OptionHandler(CmdLineParser,OptionDef,Setter)} */
-    public ListOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super T> setter) {
+    ListOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super T> setter) {
       super(parser, option, setter);
     }
 
@@ -117,7 +129,7 @@ class MainClassUtils {
      * @param item One item from the list.
      * @return The object representation of the item.
      */
-    public abstract T parseItem(String item);
+    abstract T parseItem(String item);
 
     @Override public int parseArguments(Parameters params) throws CmdLineException {
       for (String item : params.getParameter(0).split(",")) {
@@ -135,7 +147,7 @@ class MainClassUtils {
   /**
    * OptionHandler for args4j that handles a comma-delimited list of strings.
    */
-  public static class StringListOptionHandler extends ListOptionHandler<String> {
+  public static final class StringListOptionHandler extends ListOptionHandler<String> {
 
     /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
     public StringListOptionHandler(
@@ -143,7 +155,7 @@ class MainClassUtils {
       super(parser, option, setter);
     }
 
-    @Override public String parseItem(String item) {
+    @Override String parseItem(String item) {
       return item;
     }
   }
@@ -158,7 +170,7 @@ class MainClassUtils {
    * @return The CmdLineParser that was created and used to parse the args (can be used to print
    *     usage text for flags when reporting errors).
    */
-  public static CmdLineParser parseFlags(Object objWithFlags, String[] args, String usagePrefix) {
+  static CmdLineParser parseFlags(Object objWithFlags, String[] args, String usagePrefix) {
 
     CmdLineParser cmdLineParser = new CmdLineParser(objWithFlags);
     cmdLineParser.setUsageWidth(100);
@@ -173,6 +185,37 @@ class MainClassUtils {
     return cmdLineParser;
   }
 
+  static void run(Main method) {
+    int status = runInternal(method);
+    System.exit(status);
+  }
+
+  @VisibleForTesting
+  static int runInternal(Main method) {
+    CompilationResult result;
+    try {
+      result = method.main();
+    } catch (Exception e) {
+      System.err.println("INTERNAL SOY ERROR.\n"
+          + "Please open an issue at "
+          + "https://github.com/google/closure-templates/issues"
+          + " with this stack trace and repro steps"
+      );
+      e.printStackTrace(System.err);
+      return 1;
+    }
+
+    if (!result.isSuccess()) {
+      ImmutableCollection<? extends SoySyntaxException> errors = result.getErrors();
+      System.err.printf("%d errors:%n", errors.size());
+      for (SoySyntaxException e : errors) {
+        System.err.println(e.getMessage());
+      }
+    }
+
+    return result.isSuccess() ? 0 : 1;
+  }
+
 
   /**
    * Prints an error message and the usage string, and then exits.
@@ -181,7 +224,7 @@ class MainClassUtils {
    * @param cmdLineParser The CmdLineParser used to print usage text for flags.
    * @param usagePrefix The string to prepend to the usage message (when reporting an error).
    */
-  public static void exitWithError(
+  static void exitWithError(
       String errorMsg, CmdLineParser cmdLineParser, String usagePrefix) {
 
     System.err.println("\nError: " + errorMsg + "\n\n");
@@ -201,8 +244,7 @@ class MainClassUtils {
    * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
    *     given additional plugin modules (if any).
    */
-  public static Injector createInjector(
-      String msgPluginModuleName, @Nullable String pluginModuleNames) {
+  static Injector createInjector(String msgPluginModuleName, @Nullable String pluginModuleNames) {
 
     List<Module> guiceModules = Lists.newArrayListWithCapacity(2);
 
@@ -229,7 +271,7 @@ class MainClassUtils {
    * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
    *     given additional plugin modules (if any).
    */
-  public static Injector createInjector(@Nullable String pluginModuleNames) {
+  static Injector createInjector(@Nullable String pluginModuleNames) {
 
     List<Module> guiceModules = Lists.newArrayListWithCapacity(2);
 
@@ -275,7 +317,7 @@ class MainClassUtils {
    * @param deps The deps from the --deps flag, or empty list if not applicable.
    * @param exitWithErrorFn A function that exits with an error message followed by a usage message.
    */
-  public static void addSoyFilesToBuilder(
+  static void addSoyFilesToBuilder(
       Builder sfsBuilder, String inputPrefix, Collection<String> srcs, Collection<String> args,
       Collection<String> deps, Collection<String> indirectDeps,
       Function<String, Void> exitWithErrorFn) {

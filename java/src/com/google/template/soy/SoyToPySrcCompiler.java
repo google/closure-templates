@@ -17,8 +17,8 @@
 package com.google.template.soy;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableCollection;
 import com.google.inject.Injector;
+import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -145,14 +145,19 @@ public final class SoyToPySrcCompiler {
    * @throws IOException If there are problems reading the input files or writing the output file.
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  public static void main(String[] args) throws IOException, SoySyntaxException {
-    (new SoyToPySrcCompiler()).execMain(args);
+  public static void main(final String[] args) throws IOException, SoySyntaxException {
+    MainClassUtils.run(new Main() {
+      @Override
+      public CompilationResult main() throws IOException {
+        return new SoyToPySrcCompiler().execMain(args);
+      }
+    });
   }
 
 
   private SoyToPySrcCompiler() {}
 
-  private void execMain(String[] args) throws IOException, SoySyntaxException {
+  private CompilationResult execMain(String[] args) throws IOException {
 
     final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
 
@@ -206,15 +211,6 @@ public final class SoyToPySrcCompiler {
         new SoyPySrcOptions(runtimePath, bidiIsRtlFn, translationPyModuleName);
 
     // Compile.
-    CompilationResult result = sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);
-    if (!result.isSuccess()) {
-      ImmutableCollection<? extends SoySyntaxException> errors = result.getErrors();
-      System.err.printf("%d errors:%n", errors.size());
-      for (SoySyntaxException e : errors) {
-        System.err.println(e.getMessage());
-      }
-      System.exit(1);
-    }
+    return sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);
   }
-
 }

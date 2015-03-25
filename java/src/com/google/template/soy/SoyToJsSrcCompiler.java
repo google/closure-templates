@@ -19,7 +19,7 @@ package com.google.template.soy;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
-import com.google.template.soy.base.internal.ErrorPrettyPrinter;
+import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
@@ -239,15 +239,18 @@ public final class SoyToJsSrcCompiler {
    * @throws IOException If there are problems reading the input files or writing the output file.
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  public static void main(String[] args) throws IOException, SoySyntaxException {
-    (new SoyToJsSrcCompiler()).execMain(args);
+  public static void main(final String[] args) throws IOException, SoySyntaxException {
+    MainClassUtils.run(new Main() {
+      @Override
+      public CompilationResult main() throws IOException {
+        return new SoyToJsSrcCompiler().execMain(args);
+      }
+    });
   }
-
 
   private SoyToJsSrcCompiler() {}
 
-
-  private void execMain(String[] args) throws IOException, SoySyntaxException {
+  private CompilationResult execMain(String[] args) throws IOException {
 
     final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
 
@@ -278,8 +281,8 @@ public final class SoyToJsSrcCompiler {
     String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
     sfsBuilder.setCssHandlingScheme(
         cssHandlingSchemeUc.equals("GOOG") ?
-        CssHandlingScheme.BACKEND_SPECIFIC : CssHandlingScheme.valueOf(cssHandlingSchemeUc));
-    if (compileTimeGlobalsFile.length() > 0) {
+            CssHandlingScheme.BACKEND_SPECIFIC : CssHandlingScheme.valueOf(cssHandlingSchemeUc));
+    if (!compileTimeGlobalsFile.isEmpty()) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
     sfsBuilder.setSupportContentSecurityPolicy(supportContentSecurityPolicy);
@@ -299,18 +302,10 @@ public final class SoyToJsSrcCompiler {
 
     // Compile.
     boolean generateLocalizedJs = !locales.isEmpty();
-    CompilationResult result = generateLocalizedJs
+    return generateLocalizedJs
         ? sfs.compileToJsSrcFiles(
-            outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat)
+        outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat)
         : sfs.compileToJsSrcFiles(
             outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
-
-    if (!result.isSuccess()) {
-      ErrorPrettyPrinter prettyPrinter = sfs.getErrorPrettyPrinter(System.err);
-      for (SoySyntaxException e : result.getErrors()) {
-        prettyPrinter.print(e);
-      }
-      System.exit(1);
-    }
   }
 }
