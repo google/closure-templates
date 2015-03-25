@@ -2779,8 +2779,8 @@ private MsgSelectNode MsgSelect() :
 {
   cmdText = SelectTag()
   {
-    MsgSelectNode msgSelectNode = setSrcLoc(
-        new MsgSelectNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
+    MsgSelectNode msgSelectNode = new MsgSelectNode.Builder(
+        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation()).build(errorReporter);
   }
   MaybeWhitespace("No content allowed between 'select' and 'case'" +
       " (whitespace and comments are okay).")
@@ -3002,7 +3002,8 @@ private CssNode CssStmt() :
 {
   cmdText = CssTag()
   {
-    return setSrcLoc(new CssNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
+    return new CssNode.Builder(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        .build(errorReporter);
   }
 }
 
@@ -3115,8 +3116,9 @@ private SwitchNode SwitchStmt() :
 {
   cmdText = SwitchTag()
   {
-    SwitchNode switchNode = setSrcLoc(
-        new SwitchNode(nodeIdGen.genId(), cmdText.parsedContent()), cmdText);
+    SwitchNode switchNode = new SwitchNode.Builder(
+        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        .build(errorReporter);
   }
 
   MaybeWhitespace("No content allowed between 'switch' and 'case'" +

@@ -17,9 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -50,16 +51,15 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   private final String baseSelectVarName;
 
 
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public MsgSelectNode(int id, String commandText) throws SoySyntaxException {
+  private MsgSelectNode(
+      int id,
+      String commandText,
+      ExprRootNode<?> selectExpr,
+      SourceLocation sourceLocation) {
     super(id, "select", commandText);
+    setSourceLocation(sourceLocation);
 
-    selectExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-        commandText, "Invalid data reference in 'select' command text \"" + commandText + "\".");
+    this.selectExpr = selectExpr;
 
     // TODO: Maybe allow user to write 'phname' attribute in 'select' tag.
     // Note: If we do add support for 'phname' for 'select', it would also be a good time to clean
@@ -137,6 +137,36 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   @Override public MsgSelectNode clone() {
     return new MsgSelectNode(this);
+  }
+
+  /**
+   * Builder for {@link MsgSelectNode}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link MsgSelectNode} built from this builder's state, reporting syntax errors
+     * to the given {@link ErrorReporter}.
+     */
+    public MsgSelectNode build(ErrorReporter errorReporter) {
+      ExprRootNode<?> selectExpr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+          .parseExpression();
+      return new MsgSelectNode(id, commandText, selectExpr, sourceLocation);
+    }
   }
 
 }

@@ -221,7 +221,8 @@ public class MsgNodeTest extends TestCase {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
-    MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
+    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
@@ -372,7 +373,8 @@ public class MsgNodeTest extends TestCase {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
-    MsgSelectNode selectNode = new MsgSelectNode(0, "$gender[5]");
+    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender[5]", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
@@ -512,7 +514,9 @@ public class MsgNodeTest extends TestCase {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
-    MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
+    MsgSelectNode selectNode
+        = new MsgSelectNode.Builder(0, "$gender.person", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
@@ -639,7 +643,8 @@ public class MsgNodeTest extends TestCase {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
-    MsgSelectNode selectNode = new MsgSelectNode(0, "$gender");
+    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
@@ -770,7 +775,9 @@ public class MsgNodeTest extends TestCase {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", SourceLocation.UNKNOWN).build(errorReporter);
-    MsgSelectNode selectNode = new MsgSelectNode(0, "$gender.person");
+    MsgSelectNode selectNode
+        = new MsgSelectNode.Builder(0, "$gender.person", SourceLocation.UNKNOWN)
+        .build(errorReporter);
 
     // case 'female'
     MsgSelectCaseNode femaleNode

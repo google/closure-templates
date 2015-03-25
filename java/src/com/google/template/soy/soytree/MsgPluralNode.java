@@ -18,7 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
@@ -182,9 +182,9 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         errorReporter.report(sourceLocation, INVALID_PLURAL_COMMAND_TEXT, commandText);
       }
 
-      ExprRootNode<?> pluralExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-          matcher.group(1),
-          "Invalid expression in 'plural' command text \"" + commandText + "\".");
+      ExprRootNode<?> pluralExpr
+          = new ExpressionParser(matcher.group(1), sourceLocation, errorReporter)
+          .parseExpression();
 
       int offset = 0;
 

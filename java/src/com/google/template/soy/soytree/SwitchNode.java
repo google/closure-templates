@@ -17,9 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -41,17 +42,11 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
   /** The parsed expression. */
   private final ExprRootNode<?> expr;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public SwitchNode(int id, String commandText) throws SoySyntaxException {
+  private SwitchNode(
+      int id, String commandText, ExprRootNode<?> expr, SourceLocation sourceLocation) {
     super(id, "switch", commandText);
-
-    expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-        commandText, "Invalid expression in 'switch' command text \"" + commandText + "\".");
+    setSourceLocation(sourceLocation);
+    this.expr = expr;
   }
 
 
@@ -101,4 +96,33 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
     return new SwitchNode(this);
   }
 
+  /**
+   * Builder for {@link SwitchNode}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link SwitchNode} built from this builder's state, reporting syntax errors
+     * to the given {@link ErrorReporter}.
+     */
+    public SwitchNode build(ErrorReporter errorReporter) {
+      ExprRootNode<?> expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+          .parseExpression();
+      return new SwitchNode(id, commandText, expr, sourceLocation);
+    }
+  }
 }

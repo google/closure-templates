@@ -19,9 +19,7 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
@@ -41,8 +39,6 @@ final class ForeachBuilder {
 
   private static final SoyError INVALID_COMMAND_TEXT
       = SoyError.of("Invalid ''foreach'' command text \"{0}\".");
-  private static final SoyError INVALID_FOREACH_EXPRESSION
-      = SoyError.of("Invalid expression in ''foreach'' command text \"{0}\".");
 
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, expression
@@ -105,11 +101,8 @@ final class ForeachBuilder {
           .parseVariable()
           .getChild(0)
           .getName();
-      try {
-        expr = ExprParseUtils.parseExprElseThrowSoySyntaxException(matcher.group(2), null);
-      } catch (SoySyntaxException e) {
-        errorReporter.report(commandLocation, INVALID_FOREACH_EXPRESSION, matcher.group(2));
-      }
+      expr = new ExpressionParser(matcher.group(2), commandLocation, errorReporter)
+          .parseExpression();
     }
     
     ForeachNode foreach = new ForeachNode(nodeIdGen.genId(), expr, cmdText);

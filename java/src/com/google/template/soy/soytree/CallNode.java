@@ -18,11 +18,13 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersionBound;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -127,11 +129,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Private helper function for subclass constructors to parse the 'data' attribute.
    *
    * @param dataAttr The 'data' attribute in a call.
-   * @param commandTextForErrorMsgs The call command text for use in error messages.
+   * @param errorReporter For reporting syntax errors.
    * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
   protected static Pair<Boolean, ExprRootNode<?>> parseDataAttributeHelper(
-      String dataAttr, String commandTextForErrorMsgs) {
+      String dataAttr, ErrorReporter errorReporter) {
 
     boolean isPassingData;
     ExprRootNode<?> dataExpr;
@@ -143,9 +145,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       dataExpr = null;
     } else {
       isPassingData = true;
-      dataExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-          dataAttr,
-          "Invalid expression in call command text \"" + commandTextForErrorMsgs + "\".");
+      dataExpr = new ExpressionParser(dataAttr, SourceLocation.UNKNOWN, errorReporter)
+          .parseExpression();
     }
 
     return Pair.<Boolean, ExprRootNode<?>>of(isPassingData, dataExpr);

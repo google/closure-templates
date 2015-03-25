@@ -17,14 +17,15 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -81,28 +82,18 @@ public final class CssNode extends AbstractCommandNode
    */
   Pair<SoyCssRenamingMap, String> renameCache;
 
-
-  /**
-   * @param id The id for this node.
-   * @param commandText The command text.
-   */
-  public CssNode(int id, String commandText) throws SoySyntaxException {
+  private CssNode(
+      int id,
+      String commandText,
+      @Nullable ExprRootNode<?> componentNameExpr,
+      String selectorText,
+      SourceLocation sourceLocation) {
     super(id, "css", commandText);
+    setSourceLocation(sourceLocation);
+    this.componentNameExpr = componentNameExpr;
+    this.selectorText = selectorText;
 
-    int delimPos = commandText.lastIndexOf(',');
-    if (delimPos != -1) {
-      String componentNameText = commandText.substring(0, delimPos).trim();
-      componentNameExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-          componentNameText,
-          "Invalid component name expression in 'css' command text \"" +
-              componentNameText + "\".");
-      selectorText = commandText.substring(delimPos + 1).trim();
-    } else {
-      componentNameExpr = null;
-      selectorText = commandText;
-    }
-
-    if (! SELECTOR_TEXT_PATTERN.matcher(selectorText).matches()) {
+    if (!SELECTOR_TEXT_PATTERN.matcher(selectorText).matches()) {
       maybeSetSyntaxVersionBound(new SyntaxVersionBound(
           SyntaxVersion.V2_1, "Invalid 'css' command text."));
     }
@@ -192,4 +183,40 @@ public final class CssNode extends AbstractCommandNode
     return new CssNode(this);
   }
 
+  /**
+   * Builder for {@link CssNode}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    /**
+     * @param id The node's id.
+     * @param commandText The node's command text.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link CssNode} built from the builder's state, reporting syntax errors
+     * to the given {@link ErrorReporter}.
+     */
+    public CssNode build(ErrorReporter errorReporter) {
+      int delimPos = commandText.lastIndexOf(',');
+      ExprRootNode<?> componentNameExpr = null;
+      String selectorText = commandText;
+      if (delimPos != -1) {
+        String componentNameText = commandText.substring(0, delimPos).trim();
+        componentNameExpr = new ExpressionParser(componentNameText, sourceLocation, errorReporter)
+            .parseExpression();
+        selectorText = commandText.substring(delimPos + 1).trim();
+      }
+      return new CssNode(id, commandText, componentNameExpr, selectorText, sourceLocation);
+    }
+  }
 }

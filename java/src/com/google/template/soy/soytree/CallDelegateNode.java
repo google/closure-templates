@@ -23,7 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.Pair;
@@ -248,9 +248,8 @@ public final class CallDelegateNode extends CallNode {
       if (variantExprText == null) {
         delCalleeVariantExpr = null;
       } else {
-        delCalleeVariantExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-            variantExprText,
-            String.format("Invalid variant expression \"%s\" in 'delcall'.", variantExprText));
+        delCalleeVariantExpr = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
+            .parseExpression();
         // If the variant is a fixed string, do a sanity check.
         if (delCalleeVariantExpr.getChild(0) instanceof StringNode) {
           String fixedVariantStr = ((StringNode) delCalleeVariantExpr.getChild(0)).getValue();
@@ -261,7 +260,7 @@ public final class CallDelegateNode extends CallNode {
       }
 
       Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), commandText);
+          parseDataAttributeHelper(attributes.get("data"), errorReporter);
 
       String allowemptydefaultAttr = attributes.get("allowemptydefault");
       Boolean allowsEmptyDefault =

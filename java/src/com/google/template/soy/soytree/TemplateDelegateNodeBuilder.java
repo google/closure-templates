@@ -19,15 +19,17 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -117,9 +119,11 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     if (variantExprText == null) {
       this.delTemplateVariant = "";
     } else {
-      ExprRootNode<?> variantExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-          variantExprText,
-          String.format("Invalid variant expression \"%s\" in 'deltemplate'.", variantExprText));
+      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+      ExprRootNode<?> variantExpr
+          = new ExpressionParser(variantExprText, SourceLocation.UNKNOWN, errorReporter)
+              .parseExpression();
+      errorReporter.throwIfErrorsPresent();
       ExprNode child = variantExpr.getChild(0);
       if (child instanceof StringNode) {
         // A string literal is being used as template variant, so the expression value can

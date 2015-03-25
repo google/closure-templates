@@ -330,7 +330,7 @@ public final class CallBasicNode extends CallNode {
       }
 
       Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), cmdText);
+          parseDataAttributeHelper(attributes.get("data"), errorReporter);
 
       return new CommandTextInfo(
           cmdText, sourceCalleeName, dataAttrInfo.first, dataAttrInfo.second,

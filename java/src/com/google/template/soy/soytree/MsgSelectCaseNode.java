@@ -18,7 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soyparse.ErrorReporter;
@@ -36,8 +36,6 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  */
 public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-  private static final SoyError INVALID_EXPRESSION_IN_COMMAND_TEXT
-      = SoyError.of("Invalid expression in ''case'' command text \"{0}\".");
   private static final SoyError INVALID_STRING_FOR_SELECT_CASE
       = SoyError.of("Invalid string for select ''case''.");
 
@@ -103,25 +101,19 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
     public MsgSelectCaseNode build(ErrorReporter errorReporter) {
       Checkpoint checkpoint = errorReporter.checkpoint();
 
-      ExprRootNode<?> strLit;
-
-      try {
-        strLit = ExprParseUtils.parseExprElseThrowSoySyntaxException(commandText, null);
-      } catch (SoySyntaxException e) {
-        errorReporter.report(sourceLocation, INVALID_EXPRESSION_IN_COMMAND_TEXT, commandText);
-        return ERROR;
-      }
+      ExprRootNode<?> strLit = new ExpressionParser(commandText, sourceLocation, errorReporter)
+          .parseExpression();
 
       // Make sure the expression is a string.
       if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
         errorReporter.report(sourceLocation, INVALID_STRING_FOR_SELECT_CASE);
       }
-      String caseValue = ((StringNode) (strLit.getChild(0))).getValue();
 
       if (errorReporter.errorsSince(checkpoint)) {
         return ERROR;
       }
 
+      String caseValue = ((StringNode) (strLit.getChild(0))).getValue();
       MsgSelectCaseNode node = new MsgSelectCaseNode(id, commandText, caseValue);
       node.setSourceLocation(sourceLocation);
       return node;

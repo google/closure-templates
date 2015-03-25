@@ -354,27 +354,27 @@ public abstract class TemplateNodeBuilder {
   }
 
   /** @return the id for this node. */
-  public Integer getId() {
+  Integer getId() {
     return id;
   }
 
   /** @return The lowest known syntax version bound. */
-  public SyntaxVersionBound getSyntaxVersionBound() {
+  SyntaxVersionBound getSyntaxVersionBound() {
     return syntaxVersionBound;
   }
 
   /** @return The command text. */
-  public String getCmdText() {
+  String getCmdText() {
     return cmdText;
   }
 
   /** @return The full SoyDoc, including the start/end tokens, or null. */
-  public String getSoyDoc() {
+  String getSoyDoc() {
     return soyDoc;
   }
 
   /** @return The description portion of the SoyDoc (before declarations), or null. */
-  public String getSoyDocDesc() {
+  String getSoyDocDesc() {
     return soyDocDesc;
   }
 

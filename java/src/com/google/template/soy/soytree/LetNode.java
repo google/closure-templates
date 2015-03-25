@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
@@ -129,15 +128,10 @@ public abstract class LetNode extends AbstractCommandNode
         .getChild(0)
         .getName();
 
-    ExprRootNode<?> valueExpr;
-    if (matcher.group(2 /* value expression */) != null) {
-      // TODO(user): eliminate thrown exceptions from the expression parser.
-      valueExpr = ExprParseUtils.parseExprElseThrowSoySyntaxException(
-          matcher.group(2),
-          "Invalid value expression in 'let' command text \"" + commandText + "\".");
-    } else {
-      valueExpr = null;
-    }
+    String valueExprString = matcher.group(2);
+    ExprRootNode<?> valueExpr = valueExprString != null
+        ? new ExpressionParser(valueExprString, sourceLocation, errorReporter).parseExpression()
+        : null;
 
     ContentKind contentKind;
     if (matcher.group(3 /* optional attributes */) != null) {

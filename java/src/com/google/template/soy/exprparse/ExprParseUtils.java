@@ -17,7 +17,6 @@
 package com.google.template.soy.exprparse;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
@@ -33,30 +32,6 @@ import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 public final class ExprParseUtils {
 
   private ExprParseUtils() {}
-
-  /**
-   * Attempts to parse the given exprText as a Soy expression. If successful, returns the
-   * expression. If unsuccessful, throws a SoySyntaxException.
-   *
-   * @param exprText The text to parse.
-   * @param errorMsg The error message for the SoySyntaxException when parsing is unsuccessful.
-   * @return The parsed expression.
-   * @deprecated Use {@link ExpressionParser#parseExpression()} directly.
-   */
-  @Deprecated
-  public static ExprRootNode<?> parseExprElseThrowSoySyntaxException(
-      String exprText, String errorMsg) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprRootNode<?> rootNode = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
-        .parseExpression();
-    try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
-      // Re-throw the exception wrapped with the custom error message.
-      throw SoySyntaxException.createCausedWithoutMetaInfo(errorMsg, e);
-    }
-    return rootNode;
-  }
 
   /**
    * Attempts to parse the given exprText as a Soy expression. If successful, returns the
