@@ -596,7 +596,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * <pre>
    *   /**
    *    * Maps characters to the escaped versions for the named escape directives.\n")
-   *    * @type {Object.<string, string>}\n")
+   *    * @type {Object<string, string>}\n")
    *    * @private\n")
    *    *\/
    *     soy.esc.$$ESCAPE_MAP_FOR_&lt;NAME&gt;_

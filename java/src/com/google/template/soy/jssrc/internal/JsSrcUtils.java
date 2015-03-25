@@ -127,19 +127,19 @@ public class JsSrcUtils {
         if (listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return nonNullablePrefix + "Array";
         }
-        return nonNullablePrefix +
-            "Array.<" + getJsTypeExpr(listType.getElementType(), false, true) + ">";
+        return nonNullablePrefix
+            + "Array<" + getJsTypeExpr(listType.getElementType(), false, true) + ">";
       }
 
       case MAP: {
         MapType mapType = (MapType) type;
-        if (mapType.getKeyType().getKind() == SoyType.Kind.ANY &&
-            mapType.getValueType().getKind() == SoyType.Kind.ANY) {
-          return nonNullablePrefix + "Object.<?,?>";
+        if (mapType.getKeyType().getKind() == SoyType.Kind.ANY
+            && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
+          return nonNullablePrefix + "Object<?,?>";
         }
         String keyTypeName = getJsTypeExpr(mapType.getKeyType(), false, true);
         String valueTypeName = getJsTypeExpr(mapType.getValueType(), false, true);
-        return nonNullablePrefix + "Object.<" + keyTypeName + "," + valueTypeName + ">";
+        return nonNullablePrefix + "Object<" + keyTypeName + "," + valueTypeName + ">";
       }
 
       case RECORD: {

@@ -513,7 +513,7 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
  * NOTE: New code should consider using goog.soy.renderElement instead.
  *
  * @param {Element} element The element whose content we are rendering.
- * @param {null|function(ARG_TYPES, null=, Object.<string, *>=):*} template
+ * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
  * @param {ARG_TYPES} opt_templateData The data for the template.
  * @param {Object=} opt_injectedData The injected data for the template.
@@ -532,7 +532,7 @@ soy.renderElement = goog.soy.renderElement;
  * NOTE: New code should consider using goog.soy.renderAsFragment
  * instead (note that the arguments are different).
  *
- * @param {null|function(ARG_TYPES, null=, Object.<string, *>=):*} template
+ * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
  * @param {ARG_TYPES} opt_templateData The data for the template.
  * @param {Document=} opt_document The document used to create DOM nodes. If not
@@ -557,7 +557,7 @@ soy.renderAsFragment = function(
  * NOTE: New code should consider using goog.soy.renderAsElement
  * instead (note that the arguments are different).
  *
- * @param {null|function(ARG_TYPES, null=, Object.<string, *>=):*} template
+ * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
  * @param {ARG_TYPES} opt_templateData The data for the template.
  * @param {Document=} opt_document The document used to create DOM nodes. If not
@@ -634,7 +634,7 @@ soy.$$checkMapKey = function(key) {
 /**
  * Gets the keys in a map as an array. There are no guarantees on the order.
  * @param {Object} map The map to get the keys of.
- * @return {!Array.<string>} The array of keys in the given map.
+ * @return {!Array<string>} The array of keys in the given map.
  */
 soy.$$getMapKeys = function(map) {
   var mapKeys = [];
@@ -757,9 +757,9 @@ soy.$$getDelegateFn = function(
  * Private helper soy.$$getDelegateFn(). This is the empty template function
  * that is returned whenever there's no delegate implementation found.
  *
- * @param {Object.<string, *>=} opt_data
+ * @param {Object<string, *>=} opt_data
  * @param {soy.StringBuilder=} opt_sb
- * @param {Object.<string, *>=} opt_ijData
+ * @param {Object<string, *>=} opt_ijData
  * @return {string}
  * @private
  */
@@ -984,7 +984,7 @@ soy.$$escapeHtml = function(value) {
  *
  * @param {*} value The string-like value to be escaped. May not be a string,
  *     but the value will be coerced to a string.
- * @param {Array.<string>=} opt_safeTags Additional tag names to whitelist.
+ * @param {Array<string>=} opt_safeTags Additional tag names to whitelist.
  * @return {!soydata.SanitizedHtml} A sanitized and normalized version of value.
  */
 soy.$$cleanHtml = function(value, opt_safeTags) {
@@ -1064,7 +1064,7 @@ soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
  *
  * @param {*} value The HTML to be escaped. May not be a string, but the
  *     value will be coerced to a string.
- * @param {Object.<string, boolean>=} opt_tagWhitelist Has an own property whose
+ * @param {Object<string, boolean>=} opt_tagWhitelist Has an own property whose
  *     name is a lower-case tag name and whose value is {@code 1} for
  *     each element that is allowed in the output.
  * @return {string} A representation of value without disallowed tags,
@@ -1159,7 +1159,7 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
  * If {@code <table>} is used for formatting, embedded HTML shouldn't be able
  * to use a mismatched {@code </table>} to break page layout.
  *
- * @param {Array.<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
+ * @param {Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
  *    that will be modified in place to be either an open tag, one or more close
  *    tags concatenated, or the empty string.
  * @return {string} zero or more closed tags that close all elements that are
@@ -1622,7 +1622,7 @@ soy.$$isLowSurrogate_ = function(ch) {
 /**
  * Cache of bidi formatter by context directionality, so we don't keep on
  * creating new objects.
- * @type {!Object.<!goog.i18n.BidiFormatter>}
+ * @type {!Object<!goog.i18n.BidiFormatter>}
  * @private
  */
 soy.$$bidiFormatterCache_ = {};
@@ -1848,7 +1848,7 @@ soy.esc.$$escapeUriHelper = function(v) {
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
   '\x00': '\x26#0;',
@@ -1885,7 +1885,7 @@ soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x00': '\\x00',
@@ -1936,7 +1936,7 @@ soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
   '\x00': '\\0 ',
@@ -1980,7 +1980,7 @@ soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object.<string, string>}
+ * @private {!Object<string, string>}
  */
 soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI_ = {
   '\x00': '%00',
@@ -2308,7 +2308,7 @@ soy.esc.$$LT_REGEX_ = /</g;
 /**
  * Maps lower-case names of innocuous tags to true.
  *
- * @private {!Object.<string, boolean>}
+ * @private {!Object<string, boolean>}
  */
 soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'sub': true, 'sup': true, 'u': true};
 

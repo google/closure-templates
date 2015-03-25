@@ -581,7 +581,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       if (useStrongTyping) {
         genParamsRecordType(node);
       } else {
-        jsCodeBuilder.appendLine(" * @param {Object.<string, *>=} opt_data");
+        jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_data");
       }
       if (isCodeStyleStringbuilder) {
         jsCodeBuilder.appendLine(" * @param {soy.StringBuilder=} opt_sb");
@@ -589,7 +589,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         jsCodeBuilder.appendLine(" * @param {(null|undefined)=} opt_ignored");
       }
       if (isUsingIjData) {
-        jsCodeBuilder.appendLine(" * @param {Object.<string, *>=} opt_ijData");
+        jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData");
       }
       // For strict autoescaping templates, the result is actually a typesafe wrapper.
       // We prepend "!" to indicate it is non-nullable.

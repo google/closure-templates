@@ -129,7 +129,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * Maps characters to the escaped versions for the named escape directives.\n")
-        .append(" * @private {!Object.<string, string>}\n")
+        .append(" * @private {!Object<string, string>}\n")
         .append(" */\n")
         .append("soy.esc.$$ESCAPE_MAP_FOR_").append(mapName).append("_");
   }
@@ -184,7 +184,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("/**\n")
         .append(" * Maps lower-case names of innocuous tags to true.\n")
         .append(" *\n")
-        .append(" * @private {!Object.<string, boolean>}\n")
+        .append(" * @private {!Object<string, boolean>}\n")
         .append(" */\n")
         .append("soy.esc.$$SAFE_TAG_WHITELIST_ = ")
         .append(toJsStringSet(TagWhitelist.FORMATTING.asSet()))
