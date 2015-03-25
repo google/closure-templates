@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
-import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -130,27 +129,29 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
         }
       };
     }
-    final List<SoyExpression> children = new ArrayList<>(numChildren);
+    List<Statement> adds = new ArrayList<>(numChildren);
+    // Now evaluate each child, which should result in the value being at the top of the stack
+    // and then add it to the list.
+    Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(ArrayList.class));
+    boolean localIsConstant = true;
     for (ExprNode child : node.getChildren()) {
       // All children must be soy values
-      children.add(visit(child).box());
+      SoyExpression childExpr = visit(child).box();
+      localIsConstant = localIsConstant && childExpr.isConstant();
+      adds.add(MethodRef.ARRAY_LIST_ADD.invoke(dupExpr, childExpr).toStatement());
     }
+    final boolean isConstant = localIsConstant;
+    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
+        .construct(BytecodeUtils.constant(numChildren));
+    final Statement addAll = Statement.concat(adds);
     return new ListExpression() {
       @Override public void gen(GeneratorAdapter mv) {
-        ConstructorRef.ARRAY_LIST_SIZE
-            .construct(BytecodeUtils.constant(numChildren))
-            .gen(mv);
-        // Now evaluate each child, which should result in the value being at the top of the stack
-        // and then add it to the list.
-        Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(ArrayList.class));
-        for (SoyExpression child : children) {
-          MethodRef.ARRAY_LIST_ADD.invoke(dupExpr, child).gen(mv);
-          mv.visitInsn(Opcodes.POP);  // pop the boolean result, we don't care about it
-        }
+        construct.gen(mv);
+        addAll.gen(mv);
       }
 
       @Override boolean isConstant() {
-        return Expression.areAllConstant(children);
+        return isConstant;
       }
     };
   }
@@ -169,32 +170,32 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
       };
     }
     final int hashMapCapacity = hashMapCapacity(numItems);
-    final List<SoyExpression> keys = new ArrayList<>(numItems);
-    final List<SoyExpression> values = new ArrayList<>(numItems);
+    Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(LinkedHashMap.class));
+    List<Statement> puts = new ArrayList<>(numItems);
+    boolean localIsConstant = true;
     for (int i = 0; i < numItems; i++) {
       // Keys are strings and values are boxed SoyValues
-      keys.add(visit(node.getChild(2 * i)).convert(String.class));
-      values.add(visit(node.getChild(2 * i + 1)).box());
+      SoyExpression key = visit(node.getChild(2 * i)).convert(String.class);
+      SoyExpression value = visit(node.getChild(2 * i + 1)).box();
+      localIsConstant = localIsConstant && key.isConstant() && value.isConstant();
+      // TODO(user): Assert that the return value of put() is null? The current impl doesn't
+      // care, but perhaps we should
+      puts.add(MethodRef.LINKED_HASH_MAP_PUT.invoke(dupExpr, key, value).toStatement());
     }
+    final boolean isConstant = localIsConstant;
+    final Expression construct = ConstructorRef.LINKED_HASH_MAP_SIZE
+        .construct(BytecodeUtils.constant(hashMapCapacity));
+    final Statement putAll = Statement.concat(puts);
     return new MapExpression() {
       @Override public void gen(GeneratorAdapter mv) {
         // create a linkedhashmap with the expected size.
-        ConstructorRef.LINKED_HASH_MAP_SIZE
-            .construct(BytecodeUtils.constant(hashMapCapacity))
-            .gen(mv);
+        construct.gen(mv);
         // call put for each key value pair.
-        Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(LinkedHashMap.class));
-        for (int i = 0; i < numItems; i++) {
-          MethodRef.LINKED_HASH_MAP_PUT.invoke(dupExpr, keys.get(i), values.get(i)).gen(mv);
-          // pop the object return value.
-          // TODO(user): Assert that it is null? The current impl doesn't care, but perhaps we
-          // should
-          mv.visitInsn(Opcodes.POP);
-        }
+        putAll.gen(mv);
       }
 
       @Override boolean isConstant() {
-        return Expression.areAllConstant(Iterables.concat(keys, values));
+        return isConstant;
       }
     };
   }

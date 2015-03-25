@@ -143,7 +143,7 @@ public class SourceLocation {
    * @deprecated For the same reason that {@link #UNKNOWN} is.
    */
   @Deprecated
-  boolean isKnown() {
+  public boolean isKnown() {
     return !this.equals(UNKNOWN);
   }
 

@@ -20,14 +20,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 /**
  * An expression has a {@link #resultType()} and can {@link #gen generate} code to evaluate the
@@ -35,7 +29,7 @@ import java.io.StringWriter;
  * 
  * <p>Expressions should be side effect free and also should not <em>consume</em> stack items.
  */
-abstract class Expression {
+abstract class Expression extends BytecodeProducer {
   /** Returns true if all referenced expressions are {@linkplain #isConstant() constant}. */
   static boolean areAllConstant(Iterable<? extends Expression> args) {
     for (Expression arg : args) {
@@ -65,7 +59,7 @@ abstract class Expression {
    * <p>The generated code satisfies the invariant that the top of the runtime stack will contain a
    * value with this {@link #resultType()} immediately after evaluation of the code. 
    */
-  abstract void gen(GeneratorAdapter adapter);
+  @Override abstract void gen(GeneratorAdapter adapter);
   
   /** The type of the expression. */
   abstract Type resultType();
@@ -105,32 +99,32 @@ abstract class Expression {
     throw new IllegalArgumentException(message);
   }
 
-  /**
-   * Returns a human readable string for the code that this expression generates.
+  /** 
+   * Convert this expression to a statement, by executing it and throwing away the result.
+   * 
+   * <p>This is useful for invoking non-void methods when we don't care about the result.
    */
-  final String traceExpression() {
-    // TODO(lukes): textifier has support for custom label names by overriding appendLabel.  
-    // Consider trying to make use of (using the Label.info field? adding a custom NamedLabel
-    // sub type?)
-    Textifier textifier = new Textifier(Opcodes.ASM5) {
-      {
-        // reset tab sizes.  Since we don't care about formatting class names or method signatures
-        // (only code). We only need to set the tab2,tab3 and ltab settings (tab is for class 
-        // members).
-        this.tab = null;  // trigger an error if used.
-        this.tab2 = "  ";  // tab setting for instructions
-        this.tab3 = "";  // tab setting for switch cases
-        this.ltab = "";  // tab setting for labels
+  Statement toStatement() {
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        Expression.this.gen(adapter);
+        switch (resultType().getSize()) {
+          case 0:
+            throw new AssertionError("void expressions are not allowed");
+          case 1:
+            adapter.pop();
+            break;
+          case 2:
+            adapter.pop2();
+            break;
+        }
       }
+      
     };
-    gen(new GeneratorAdapter(new TraceMethodVisitor(textifier), 0, "trace", "()V"));
-    StringWriter writer = new StringWriter();
-    textifier.print(new PrintWriter(writer));
-    return writer.toString();  // N.B. adds a trailing newline
   }
-
+  
   @Override public String toString() {
-    return name() + "<" + resultType() + ">:\n" + traceExpression();
+    return name() + "<" + resultType() + ">:\n" + trace();
   }
 
   /**

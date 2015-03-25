@@ -89,7 +89,7 @@ public final class ExpressionTester {
     void hasCode(String ...instructions) {
       compile();
       String formatted = Joiner.on('\n').join(instructions);
-      if (!formatted.equals(getSubject().traceExpression().trim())) {
+      if (!formatted.equals(getSubject().trace().trim())) {
         fail("hasCode", formatted);
       }
     }
