@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.Expression.areAllConstant;
 
 import com.google.auto.value.AutoValue;
@@ -35,9 +36,11 @@ import com.google.template.soy.jbcsrc.SoyExpression.BoxedExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
 import com.google.template.soy.jbcsrc.SoyExpression.StringExpression;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
 import com.google.template.soy.shared.internal.SharedRuntime;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -89,6 +92,7 @@ import java.util.Map;
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
   static final MethodRef RUNTIME_CHECK_REQUIRED_PARAM = 
       create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
+  static final MethodRef RUNTIME_LOGGER = create(Runtime.class, "logger");
 
   // Instance methods
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
@@ -109,6 +113,14 @@ import java.util.Map;
   static final MethodRef INTEGER_DATA_GET_VALUE = create(IntegerData.class, "getValue");
   static final MethodRef INTEGER_DATA_INTEGER_VALUE = create(IntegerData.class, "integerValue");
   static final MethodRef STRING_CONCAT = create(String.class, "concat", String.class);
+  static final MethodRef ADVISING_APPENDABLE_APPEND = 
+      create(AdvisingAppendable.class, "append", CharSequence.class);
+  static final MethodRef ADVISING_APPENDABLE_APPEND_CHAR = 
+      create(AdvisingAppendable.class, "append", char.class);
+  static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR = 
+      create(RenderContext.class, "renameCssSelector", String.class);
+  static final MethodRef RENDER_CONTEXT_RENAME_XID = 
+      create(RenderContext.class, "renameXid", String.class);
 
   private static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     Method m;
@@ -172,7 +184,20 @@ import java.util.Map;
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
 
+  Statement invokeVoid(final Expression ...args) {
+    checkState(void.class.equals(returnType()), "Method return type is not void.");
+    Expression.checkTypes(argTypes(), args);
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        invoke(adapter, args);
+      }
+    };
+  }
+  
   Expression invoke(final Expression ...args) {
+    // void methods violate the expression contract of pushing a result onto the runtime stack.
+    checkState(!void.class.equals(returnType()), 
+        "Cannot produce an expression from a void method.");
     Expression.checkTypes(argTypes(), args);
     final boolean isConstant = areAllConstant(Arrays.asList(args));
     if (SoyValue.class.isAssignableFrom(returnType())) {

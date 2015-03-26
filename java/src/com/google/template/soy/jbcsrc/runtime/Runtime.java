@@ -18,6 +18,9 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+
+import java.io.IOException;
 
 /**
  * Runtime utilities uniquely for the {@code jbcsrc} backend.
@@ -39,5 +42,31 @@ public final class Runtime {
     if (!params.hasField(paramName)) {
       throw new SoyDataException("required param '$" + paramName + "' is undefined");
     }
+  }
+
+  private static final AdvisingAppendable LOGGER = new AdvisingAppendable() {
+    @Override public boolean softLimitReached() {
+      return false;
+    }
+    
+    @Override public AdvisingAppendable append(char c) throws IOException {
+      System.out.append(c);
+      return this;
+    }
+    
+    @Override public AdvisingAppendable append(CharSequence csq, int start, int end) {
+      System.out.append(csq, start, end);
+      return this;
+    }
+    
+    @Override
+    public AdvisingAppendable append(CharSequence csq) {
+      System.out.append(csq);
+      return this;
+    }
+  };
+  
+  public static AdvisingAppendable logger() {
+    return LOGGER;
   }
 }

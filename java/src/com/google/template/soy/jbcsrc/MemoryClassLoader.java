@@ -42,6 +42,13 @@ final class MemoryClassLoader extends ClassLoader {
   static final class Builder {
     private final Map<String, ClassData> generatedClasses = new LinkedHashMap<>();
 
+    Builder addAll(Iterable<ClassData> classes) {
+      for (ClassData item : classes) {
+        add(item);
+      }
+      return this;
+    }
+
     Builder add(ClassData classData) {
       ClassData prev = generatedClasses.put(classData.type().className(), classData);
       if (prev != null) {

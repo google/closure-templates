@@ -25,6 +25,7 @@ java_library(
         "//third_party/java_src/soy/java/com/google/template/soy/jbcsrc/api",
         "//third_party/java_src/soy/java/com/google/template/soy/shared",
         "//third_party/java_src/soy/java/com/google/template/soy/sharedpasses:render",
+        "//third_party/java_src/soy/java/com/google/template/soy/soyparse",
         "//third_party/java_src/soy/java/com/google/template/soy/soytree",
         "//third_party/java_src/soy/javatests/com/google/template/soy/shared:test_utils",
     ],

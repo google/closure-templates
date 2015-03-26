@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -28,7 +29,7 @@ import java.util.Map;
  */
 final class BytecodeCompiler {
   /**
-   * Compiles all the tempaltes in the given registry.
+   * Compiles all the templates in the given registry.
    *
    * <p>TODO(lukes): this interface is insufficient.  We will eventually need additional data to
    * implement print directives, escaping directives, and soy functions.  Look at the jssrc compiler
@@ -44,30 +45,32 @@ final class BytecodeCompiler {
     MemoryClassLoader loader = compileTemplates(registry, compilerRegistry);
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
     // TODO(lukes): support deltemplates eventually
-    for (Map.Entry<String, TemplateBasicNode> template :
-        registry.getBasicTemplatesMap().entrySet()) {
-      String name = template.getKey();
-      CompiledTemplateMetadata templateInfo = compilerRegistry.getTemplateInfo(name);
-
-      // We construct the factories via reflection to bridge the gap between generated and
-      // non-generated code.  However, each factory only needs to be constructed once so the
-      // reflective cost isn't paid on a per render basis.
-      CompiledTemplate.Factory factory;
-      try {
-        Class<? extends CompiledTemplate.Factory> factoryClass =
-            Class.forName(templateInfo.factory().className(), true /* run clinit */, loader)
-                .asSubclass(CompiledTemplate.Factory.class);
-        factory = factoryClass.newInstance();
-      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-        // this should be impossible since our factories are public with a default constructor.
-        // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
-        // consider catching them here to add information about our generated types. (e.g. add the
-        // class trace and a pointer on how to file a soy bug)
-        throw new AssertionError(e);
-      }
-      factories.put(name, factory);
+    for (String name : registry.getBasicTemplatesMap().keySet()) {
+      factories.put(name, loadFactory(compilerRegistry.getTemplateInfo(name), loader));
     }
     return new CompiledTemplates(factories.build());
+  }
+
+  @VisibleForTesting static CompiledTemplate.Factory loadFactory(
+      CompiledTemplateMetadata templateInfo,
+      ClassLoader loader) {
+    // We construct the factories via reflection to bridge the gap between generated and
+    // non-generated code.  However, each factory only needs to be constructed once so the
+    // reflective cost isn't paid on a per render basis.
+    CompiledTemplate.Factory factory;
+    try {
+      Class<? extends CompiledTemplate.Factory> factoryClass =
+          Class.forName(templateInfo.factory().className(), true /* run clinit */, loader)
+              .asSubclass(CompiledTemplate.Factory.class);
+      factory = factoryClass.newInstance();
+    } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+      // this should be impossible since our factories are public with a default constructor.
+      // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
+      // consider catching them here to add information about our generated types. (e.g. add the
+      // class trace and a pointer on how to file a soy bug)
+      throw new AssertionError(e);
+    }
+    return factory;
   }
 
   /**

@@ -35,11 +35,7 @@ import java.io.StringWriter;
   abstract TypeInfo type();
   abstract byte[] data();
 
-  /**
-   * Utility to run the {@link TraceClassVisitor} on the data and print it to a string. for 
-   * debugging.
-   */
-  String traceClass() {
+  @Override public String toString() {
     StringWriter sw = new StringWriter();
     new ClassReader(data())
         .accept(new TraceClassVisitor(null, new Textifier(), new PrintWriter(sw)), 0);

@@ -140,16 +140,21 @@ import java.lang.reflect.Modifier;
   }
   
   /**
-   * Stores the {@code value} in this field on the given {@code instance}.
+   * Returns a {@link Statement} that stores the {@code value} in this field on the given 
+   * {@code instance}.
    * 
    * @throws IllegalStateException if this is a static field
    */
-  void putInstanceField(Expression instance, Expression value, GeneratorAdapter adapter) {
+  Statement putInstanceField(final Expression instance, final Expression value) {
     checkState(!isStatic(), "This field is static!");
     instance.checkType(owner().type());
     value.checkType(type());
-    instance.gen(adapter);
-    value.gen(adapter);
-    adapter.putField(owner().type(), name(), type());
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        instance.gen(adapter);
+        value.gen(adapter);
+        adapter.putField(owner().type(), name(), type());
+      }
+    };
   }
 }

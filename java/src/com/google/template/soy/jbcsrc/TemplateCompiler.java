@@ -20,8 +20,11 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -127,13 +130,16 @@ final class TemplateCompiler {
         new Type[] { Type.getType(IOException.class) },
         writer);
     ga.mark(start);
-    SourceLocation templateSourceLocation = template.node().getSourceLocation();
-    ga.visitLineNumber(templateSourceLocation.getLineNumber(), start);
-    // TODO(lukes): implement the actual template!  all this does is hardcode it to 
+    SoyNodeCompiler nodeCompiler = new SoyNodeCompiler(
+        appendableVar,
+        contextVar,
+        new ExprCompiler());
+    Statement statement = nodeCompiler.compile(template.node());
+    statement.gen(ga);
+    // TODO(lukes): add detach/reattach, all this does is hardcode it to
     // 'return RenderResult.done();'
     MethodRef.RENDER_RESULT_DONE.invoke().gen(ga);
     ga.mark(end);
-    ga.visitLineNumber(templateSourceLocation.getEndLine(), end);
     ga.returnValue();
     thisVar.tableEntry(ga);
     appendableVar.tableEntry(ga);
@@ -177,15 +183,32 @@ final class TemplateCompiler {
         MethodRef.RUNTIME_CHECK_REQUIRED_PARAM.invoke(paramsVar, constant(param.name())).gen(ga);
       }
     }
-    // TODO(lukes): should we have a 'Statement' abstraction for things like field assignments?
-    // I think the answer is 'yes', but beyond being an Expression with no resultType, im not sure
-    // what it should look like.
     // this.params = params;
-    paramsField.putInstanceField(thisVar, paramsVar, ga);
+    paramsField.putInstanceField(thisVar, paramsVar).gen(ga);
     ga.visitInsn(Opcodes.RETURN);
     ga.visitLabel(end);
     thisVar.tableEntry(ga);
     paramsVar.tableEntry(ga);
     ga.endMethod();
+  }
+
+  // TODO(lukes): support these expressions, most likely by extracting sufficient data structures 
+  // such that they can be implemented directly in ExpressionCompiler.
+  private static final class ExprCompiler extends ExpressionCompiler {
+    @Override protected SoyExpression visitVarRefNode(VarRefNode node) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override protected SoyExpression visitItemAccessNode(ItemAccessNode node) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override protected SoyExpression visitFunctionNode(FunctionNode node) {
+      throw new UnsupportedOperationException();
+    }
   }
 }
