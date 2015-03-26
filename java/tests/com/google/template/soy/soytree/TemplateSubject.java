@@ -39,7 +39,7 @@ import java.util.List;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-final class TemplateSubject extends Subject<TemplateSubject, String> {
+public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   private SourceLocation actualSourceLocation;
 
@@ -55,11 +55,11 @@ final class TemplateSubject extends Subject<TemplateSubject, String> {
     super(failureStrategy, s);
   }
 
-  static TemplateSubject assertThatTemplateContent(String input) {
+  public static TemplateSubject assertThatTemplateContent(String input) {
     return Truth.assertAbout(FACTORY).that(input);
   }
 
-  TemplateSubject causesError(SoyError error) {
+  public TemplateSubject causesError(SoyError error) {
     ErrorReporter errorReporter = new ErrorReporter();
     try {
       new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
@@ -73,7 +73,7 @@ final class TemplateSubject extends Subject<TemplateSubject, String> {
     return this;
   }
 
-  void at(int expectedLine, int expectedColumn) {
+  public void at(int expectedLine, int expectedColumn) {
     if (expectedLine != actualSourceLocation.getLineNumber()
         || expectedColumn != actualSourceLocation.getBeginColumn()) {
       failWithRawMessage(

@@ -22,6 +22,8 @@ import static com.google.template.soy.MainClassUtils.runInternal;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.ErrorPrettyPrinter;
+import com.google.template.soy.base.internal.SoyFileSupplier;
 
 import junit.framework.TestCase;
 
@@ -38,7 +40,7 @@ public final class MainClassUtilsTest extends TestCase {
     assertThat(runInternal(new Main() {
       @Override
       public CompilationResult main() throws IOException {
-        return new CompilationResult(ImmutableList.<SoySyntaxException>of());
+        return CompilationResult.success();
       }
     })).isEqualTo(0);
   }
@@ -66,7 +68,8 @@ public final class MainClassUtilsTest extends TestCase {
       @Override
       public CompilationResult main() throws IOException {
         return new CompilationResult(
-            ImmutableList.of(SoySyntaxException.createWithoutMetaInfo("OOPS")));
+            ImmutableList.of(SoySyntaxException.createWithoutMetaInfo("OOPS")),
+            new ErrorPrettyPrinter(ImmutableList.<SoyFileSupplier>of()));
       }
     })).isEqualTo(1);
   }

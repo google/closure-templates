@@ -90,7 +90,6 @@ import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -682,10 +681,6 @@ public final class SoyFileSet {
     return generalOptions;
   }
 
-  ErrorPrettyPrinter getErrorPrettyPrinter(PrintStream err) {
-    return new ErrorPrettyPrinter(soyFileSuppliers, err);
-  }
-
   /**
    * Generates Java classes containing parse info (param names, template names, meta info). There
    * will be one Java class per Soy file.
@@ -977,7 +972,8 @@ public final class SoyFileSet {
         .parse();
 
     if (!parseResult.isSuccess()) {
-      return new CompilationResult(parseResult.getParseErrors());
+      return new CompilationResult(
+          parseResult.getParseErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
     }
 
     SoyFileSetNode soyTree = parseResult.getParseTree();
@@ -1012,7 +1008,7 @@ public final class SoyFileSet {
             soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
       }
     }
-    return new CompilationResult(ImmutableList.<SoySyntaxException>of());
+    return CompilationResult.success();
   }
 
 
@@ -1039,7 +1035,8 @@ public final class SoyFileSet {
         typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
         .parse();
     if (!parseResult.isSuccess()) {
-      return new CompilationResult(parseResult.getParseErrors());
+      return new CompilationResult(
+          parseResult.getParseErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
     }
 
     SoyFileSetNode soyTree = parseResult.getParseTree();
@@ -1048,7 +1045,7 @@ public final class SoyFileSet {
     pySrcMainProvider.get().genPyFiles(
         soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
 
-    return new CompilationResult(ImmutableList.<SoySyntaxException>of());
+    return CompilationResult.success();
   }
 
 

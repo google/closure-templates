@@ -36,11 +36,11 @@ import java.util.regex.Pattern;
  * A class for parsing attributes out of command text.
  *
  */
-final class CommandTextAttributesParser {
+public final class CommandTextAttributesParser {
 
-  private static final SoyError MALFORMED_ATTRIBUTES
+  public static final SoyError MALFORMED_ATTRIBUTES
       = SoyError.of("Malformed attributes in ''{0}'' command text ({1}).");
-  private static final SoyError UNSUPPORTED_ATTRIBUTE
+  public static final SoyError UNSUPPORTED_ATTRIBUTE
       = SoyError.of("Unsupported attribute ''{0}'' in ''{1}'' command text ({2}).");
   private static final SoyError DUPLICATE_ATTRIBUTE
       = SoyError.of("Duplicate attribute ''{0}'' in ''{1}'' command text ({2}).");

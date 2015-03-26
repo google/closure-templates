@@ -36,15 +36,13 @@ import java.util.List;
 public final class ErrorPrettyPrinter {
 
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
-  private final PrintStream err;
 
-  public ErrorPrettyPrinter(List<SoyFileSupplier> suppliers, PrintStream err) {
+  public ErrorPrettyPrinter(List<SoyFileSupplier> suppliers) {
     ImmutableMap.Builder<String, SoyFileSupplier> builder = new Builder<>();
     for (SoyFileSupplier supplier : suppliers) {
       builder.put(supplier.getFilePath(), supplier);
     }
     this.filePathsToSuppliers = builder.build();
-    this.err = err;
   }
 
   /**
@@ -52,7 +50,7 @@ public final class ErrorPrettyPrinter {
    * of Soy source code containing the error and a caret pointing at the exact place where the error
    * was found.
    */
-  public void print(SoySyntaxException e) {
+  public void print(SoySyntaxException e, PrintStream err) {
     // Start by printing the actual text of the exception.
     err.println(e.getMessage());
 

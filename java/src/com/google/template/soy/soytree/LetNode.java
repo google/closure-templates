@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 
-  static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
+  public static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
 
   /**
    * Return value for {@code parseCommandTextHelper()}.

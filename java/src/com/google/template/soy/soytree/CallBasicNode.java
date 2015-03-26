@@ -50,7 +50,7 @@ import javax.annotation.concurrent.Immutable;
  */
 public final class CallBasicNode extends CallNode {
 
-  private static final SoyError MISSING_CALLEE_NAME
+  public static final SoyError MISSING_CALLEE_NAME
       = SoyError.of("Invalid ''call'' command missing callee name: '{'call {0}'}'.");
   private static final SoyError BAD_CALLEE_NAME
       = SoyError.of("Invalid callee name \"{0}\" for ''call'' command.");

@@ -56,7 +56,7 @@ public final class CallDelegateNode extends CallNode {
   private static final SoyError MISSING_CALLEE_NAME
       = SoyError.of("The ''delcall'' command text must contain the callee name "
           + "(encountered command text \"{0}\").");
-  private static final SoyError INVALID_DELEGATE_NAME
+  public static final SoyError INVALID_DELEGATE_NAME
       = SoyError.of("Invalid delegate name \"{0}\" for ''delcall'' command.");
   private static final SoyError INVALID_VARIANT_EXPRESSION
       = SoyError.of("Invalid variant expression \"{0}\" in ''delcall''"

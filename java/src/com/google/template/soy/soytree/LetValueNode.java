@@ -36,7 +36,7 @@ import java.util.List;
  */
 public final class LetValueNode extends LetNode implements ExprHolderNode {
 
-  private static final SoyError SELF_ENDING_WITHOUT_VALUE
+  public static final SoyError SELF_ENDING_WITHOUT_VALUE
       = SoyError.of("A ''let'' tag should be self-ending (with a trailing ''/'') if and only if "
           + "it also contains a value (invalid tag is '{'let {0} /'}').");
   private static final SoyError KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE

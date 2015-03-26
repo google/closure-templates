@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -29,7 +28,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.template.soy.SoyFileSet.Builder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -206,11 +204,7 @@ final class MainClassUtils {
     }
 
     if (!result.isSuccess()) {
-      ImmutableCollection<? extends SoySyntaxException> errors = result.getErrors();
-      System.err.printf("%d errors:%n", errors.size());
-      for (SoySyntaxException e : errors) {
-        System.err.println(e.getMessage());
-      }
+      result.printErrors(System.err);
     }
 
     return result.isSuccess() ? 0 : 1;
