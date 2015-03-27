@@ -79,6 +79,15 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     return this;
   }
 
+  /**
+   * Asserts that the subject compiles to the expected Python output.
+   *
+   * <p> During compilation, freestanding bodies are compiled as strict templates with the output
+   * variable already being initialized. Additionally, any automatically generated variables have
+   * generated IDs replaced with '###'. Thus 'name123' would become 'name###'.
+   *
+   * @param expectedPyOutput The expected Python result of compilation.
+   */
   public void compilesTo(String expectedPyOutput) {
     if (isFile) {
       assertThat(compileFile()).isEqualTo(expectedPyOutput);
@@ -87,6 +96,13 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
+  /**
+   * Asserts that the subject compiles to Python output which contains the expected output.
+   *
+   * <p>Compilation follows the same rules as {@link #compilesTo}.
+   *
+   * @param expectedPyOutput The expected Python result of compilation.
+   */
   public void compilesToSourceContaining(String expectedPyOutput) {
     if (isFile) {
       assertThat(compileFile()).contains(expectedPyOutput);
@@ -95,6 +111,13 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
+  /**
+   * Asserts that the subject compilation throws the expected exception.
+   *
+   * <p>Compilation follows the same rules as {@link #compilesTo}.
+   *
+   * @param expectedClass The class of the expected exception.
+   */
   public void compilesWithException(Class<? extends Exception> expectedClass) {
     try {
       if (isFile) {

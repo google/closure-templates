@@ -147,6 +147,12 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * possible. This will let us avoid some {@code output.append} calls and save a bit of time.
    */
   @Override protected void visitChildren(ParentSoyNode<?> node) {
+    // If the first child cannot be written as an expression, we need to init the output variable
+    // first or face potential scoping issues with the output variable being initialized too late.
+    if (node.numChildren() > 0 && !isComputableAsPyExprVisitor.exec(node.getChild(0))) {
+      pyCodeBuilder.initOutputVarIfNecessary();
+    }
+
     List<PyExpr> childPyExprs = new ArrayList<>();
 
     for (SoyNode child : node.getChildren()) {
@@ -346,13 +352,13 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
 
         pyCodeBuilder.increaseIndent();
-        visit(icn);
+        visitChildren(icn);
         pyCodeBuilder.decreaseIndent();
 
       } else if (child instanceof IfElseNode) {
         pyCodeBuilder.appendLine("else:");
         pyCodeBuilder.increaseIndent();
-        visit(child);
+        visitChildren((IfElseNode) child);
         pyCodeBuilder.decreaseIndent();
       } else {
         throw new AssertionError("Unexpected if child node type. Child: " + child);

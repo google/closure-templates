@@ -107,6 +107,32 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
 
+  public void testOutputScope() {
+    String soyFile = SOY_NAMESPACE
+        + "{template .helloWorld}\n"
+        + "  {if $foo}\n"
+        + "    {for $i in range(5)}\n"
+        + "      {$boo[$i]}\n"
+        + "    {/for}\n"
+        + "  {else}\n"
+        + "    Blah\n"
+        + "  {/if}\n"
+        + "{/template}\n";
+
+    String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
+        + "def helloWorld(opt_data=None, opt_ijData=None):\n"
+        + "  opt_data = opt_data or {}\n"
+        + "  output = []\n"
+        + "  if opt_data.get('foo'):\n"
+        + "    for i### in xrange(5):\n"
+        + "      output.append(str(opt_data.get('boo')[i###]))\n"
+        + "  else:\n"
+        + "    output.append('Blah')\n"
+        + "  return sanitize.SanitizedHtml(''.join(output))\n";
+
+    assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
+  }
+
   public void testSwitch() {
     String soyCode =
         "{switch $boo}\n"
