@@ -75,7 +75,6 @@ import javax.inject.Inject;
  *
  */
 final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
-  private static final String TRANSLATOR_INTERFACE_NAME = "translator_impl";
 
   /** The module path for the runtime libraries. */
   private final String runtimePath;
@@ -745,7 +744,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String translationNamespace = nameSpaceAndName.first;
       String translationName = nameSpaceAndName.second;
       pyCodeBuilder.appendLine("from ", translationNamespace, " import ", translationName);
-      pyCodeBuilder.appendLine(TRANSLATOR_INTERFACE_NAME, " = ", translationName, "()");
+      pyCodeBuilder.appendLine(MsgFuncGenerator.TRANSLATOR_NAME, " = ", translationName, "()");
     }
   }
 

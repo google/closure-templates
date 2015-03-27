@@ -60,6 +60,8 @@ final class MsgFuncGenerator {
     public MsgFuncGenerator create(MsgNode node, LocalVariableStack localVarExprs);
   }
 
+  static final String TRANSLATOR_NAME = "translator_impl";
+
   /** The msg node to generate the function calls from. */
   private final MsgNode msgNode;
 
@@ -90,18 +92,18 @@ final class MsgFuncGenerator {
 
     if (this.msgNode.isPlrselMsg()) {
       if (this.msgNode.isPluralMsg()) {
-        this.prepareFunc = new PyFunctionExprBuilder("prepare_plural");
-        this.renderFunc = new PyFunctionExprBuilder("render_plural");
+        this.prepareFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".prepare_plural");
+        this.renderFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".render_plural");
       } else {
-        this.prepareFunc = new PyFunctionExprBuilder("prepare_icu");
-        this.renderFunc = new PyFunctionExprBuilder("render_icu");
+        this.prepareFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".prepare_icu");
+        this.renderFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".render_icu");
       }
     } else if (this.msgNode.isRawTextMsg()) {
-      this.prepareFunc = new PyFunctionExprBuilder("prepare_literal");
-      this.renderFunc = new PyFunctionExprBuilder("render_literal");
+      this.prepareFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".prepare_literal");
+      this.renderFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".render_literal");
     } else {
-      this.prepareFunc = new PyFunctionExprBuilder("prepare");
-      this.renderFunc = new PyFunctionExprBuilder("render");
+      this.prepareFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".prepare");
+      this.renderFunc = new PyFunctionExprBuilder(TRANSLATOR_NAME + ".render");
     }
 
     MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msgNode);
@@ -193,10 +195,6 @@ final class MsgFuncGenerator {
   }
 
   private void addMsgAttributesToPrepare() {
-    if (this.msgNode.getDesc() != null) {
-      prepareFunc.addKwarg("desc", this.msgNode.getDesc());
-    }
-
     if (this.msgNode.getMeaning() != null) {
       prepareFunc.addKwarg("meaning", this.msgNode.getMeaning());
     }
