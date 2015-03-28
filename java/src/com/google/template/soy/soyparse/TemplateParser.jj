@@ -2905,8 +2905,11 @@ private PrintNode PrintStmt() :
       return null;
     }
     String exprText = cmdTextParts.get(0).trim();
-    PrintNode printNode = setSrcLoc(
-        new PrintNode(nodeIdGen.genId(), isImplicit, exprText, userSuppliedPhName), printTagInfo);
+    PrintNode printNode
+        = new PrintNode.Builder(nodeIdGen.genId(), isImplicit, printTagInfo.srcLocation())
+            .exprText(exprText)
+            .userSuppliedPlaceholderName(userSuppliedPhName)
+            .build(errorReporter);
 
     // ------ Process directives (if any). ------
     String directiveName = null;
@@ -3065,8 +3068,9 @@ private IfNode IfStmt() :
   cmdText = IfTag()
   {
     IfNode ifNode = setSrcLoc(new IfNode(nodeIdGen.genId()), cmdText);
-    ifCondNode = setSrcLoc(
-        new IfCondNode(nodeIdGen.genId(), "if", cmdText.parsedContent()), cmdText);
+    ifCondNode = IfCondNode.ifBuilder(
+        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        .build(errorReporter);
     ifNode.addChild(ifCondNode);
   }
   templateBlock = TemplateBlock()
@@ -3077,8 +3081,8 @@ private IfNode IfStmt() :
 
     cmdText = ElseifTag()
     {
-      ifCondNode = setSrcLoc(
-          new IfCondNode(nodeIdGen.genId(), "elseif", cmdText.parsedContent()), cmdText);
+      ifCondNode = IfCondNode.elseifBuilder(
+          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation()).build(errorReporter);
       ifNode.addChild(ifCondNode);
     }
     templateBlock = TemplateBlock()

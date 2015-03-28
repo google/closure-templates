@@ -92,8 +92,10 @@ public class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
     // If this CssNode has componentName, add a PrintNode (with '|id' directive) to print it.
     ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
-      PrintNode pn =
-          new PrintNode(nodeIdGen.genId(), false, new ExprUnion(componentNameExpr), null);
+      PrintNode pn
+          = new PrintNode.Builder(nodeIdGen.genId(), false /* isImplicit */, SourceLocation.UNKNOWN)
+          .exprUnion(new ExprUnion(componentNameExpr))
+          .build(null);
       TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
       pn.addChild(new PrintDirectiveNode.Builder(
           nodeIdGen.genId(), "|id", "", SourceLocation.UNKNOWN)

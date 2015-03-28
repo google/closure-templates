@@ -80,7 +80,9 @@ public final class MsgHtmlTagNodeTest extends TestCase {
         1,
         ImmutableList.<StandaloneNode>of(
             new RawTextNode(0, "<div class=\""),
-            new PrintNode(0, true, "$cssClass", null),
+            new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+                .exprText("$cssClass")
+                .build(errorReporter),
             new RawTextNode(0, "\">")),
         SourceLocation.UNKNOWN)
         .build(errorReporter);
@@ -89,7 +91,9 @@ public final class MsgHtmlTagNodeTest extends TestCase {
         2,
         ImmutableList.<StandaloneNode>of(
             new RawTextNode(0, "<div class=\""),
-            new PrintNode(0, true, "$cssClass", null),
+            new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+                .exprText("$cssClass")
+                .build(errorReporter),
             new RawTextNode(0, "\">")),
         SourceLocation.UNKNOWN)
         .build(errorReporter)

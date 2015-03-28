@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
@@ -28,7 +30,7 @@ import junit.framework.TestCase;
  * Unit tests for CallNode.
  *
  */
-public class CallNodeTest extends TestCase {
+public final class CallNodeTest extends TestCase {
 
 
   /** Escaping list of directive names. */
@@ -91,13 +93,12 @@ public class CallNodeTest extends TestCase {
         .escapingDirectiveNames(NO_ESCAPERS)
         .buildAndThrowIfInvalid();
 
-    assertEquals(expectedCommandText, normCallNode.getCommandText());
-
-    assertEquals(callNode.getSyntaxVersionBound(), normCallNode.getSyntaxVersionBound());
-    assertEquals(callNode.getCalleeName(), normCallNode.getCalleeName());
-    assertEquals(callNode.isPassingData(), normCallNode.isPassingData());
-    assertEquals(callNode.isPassingAllData(), normCallNode.isPassingAllData());
-    assertEquals(callNode.getDataExpr(), normCallNode.getDataExpr());
+    assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
+    assertThat(normCallNode.getSyntaxVersionBound()).isEqualTo(callNode.getSyntaxVersionBound());
+    assertThat(normCallNode.getCalleeName()).isEqualTo(callNode.getCalleeName());
+    assertThat(normCallNode.isPassingData()).isEqualTo(callNode.isPassingData());
+    assertThat(normCallNode.isPassingAllData()).isEqualTo(callNode.isPassingAllData());
+    assertThat(normCallNode.getDataExpr()).isEqualTo(callNode.getDataExpr());
   }
 
 }

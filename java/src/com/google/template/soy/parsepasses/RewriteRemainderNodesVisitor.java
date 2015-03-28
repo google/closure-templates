@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -102,7 +103,10 @@ public class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
         // Now rewrite the PrintNode (reusing the old node id).
         String newExprText =
             "(" + currPluralNode.getExpr().toSourceString() + ") - " + currPluralNode.getOffset();
-        PrintNode newPrintNode = new PrintNode(node.getId(), node.isImplicit(), newExprText, null);
+        PrintNode newPrintNode
+            = new PrintNode.Builder(node.getId(), node.isImplicit(), SourceLocation.UNKNOWN)
+                .exprText(newExprText)
+                .build(null);
         newPrintNode.addChildren(node.getChildren());
         node.getParent().replaceChild(node, newPrintNode);
       }

@@ -16,8 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 
@@ -30,6 +32,17 @@ import junit.framework.TestCase;
  */
 public class AbstractSoyNodeVisitorTest extends TestCase {
 
+  private TransitionalThrowingErrorReporter errorReporter;
+
+  @Override
+  protected void setUp() throws Exception {
+    errorReporter = new TransitionalThrowingErrorReporter();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    errorReporter.throwIfErrorsPresent();
+  }
 
   public void testUsingIncompleteOutputVisitor() throws SoySyntaxException {
 
@@ -44,14 +57,23 @@ public class AbstractSoyNodeVisitorTest extends TestCase {
         (new TemplateBasicNodeBuilder(testSoyFileHeaderInfo))
             .setId(0).setCmdText("name=\".foo\"").setSoyDoc("/** @param goo */").build();
     soyFile.addChild(template1);
-    template1.addChild(new PrintNode(0, true, "$goo", null));
-    template1.addChild(new PrintNode(0, true, "2 + 2", null));
+    template1.addChild(
+        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("$goo")
+            .build(errorReporter));
+    template1.addChild(
+        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("2 + 2")
+            .build(errorReporter));
 
     TemplateNode template2 =
         (new TemplateBasicNodeBuilder(testSoyFileHeaderInfo))
             .setId(0).setCmdText("name=\".moo\"").setSoyDoc(null).build();
     soyFile.addChild(template2);
-    template2.addChild(new PrintNode(0, true, "'moo'", null));
+    template2.addChild(
+        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("'moo'")
+            .build(errorReporter));
 
     IncompleteOutputVisitor iov = new IncompleteOutputVisitor();
     assertEquals("[Parent][SoyFile][Parent][Print][Print][Parent][Print]", iov.exec(soyTree));

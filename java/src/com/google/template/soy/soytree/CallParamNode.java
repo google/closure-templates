@@ -20,12 +20,13 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.exprparse.ExprParseUtils;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
@@ -61,7 +62,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
     @Nullable final ContentKind contentKind;
 
     private CommandTextParseResult(
-        String key, ExprUnion valueExprUnion, ContentKind contentKind) {
+        String key, @Nullable ExprUnion valueExprUnion, @Nullable ContentKind contentKind) {
       this.key = key;
       this.valueExprUnion = valueExprUnion;
       this.contentKind = contentKind;
@@ -178,16 +179,25 @@ public abstract class CallParamNode extends AbstractCommandNode {
         errorReporter.report(sourceLocation, KEY_IS_NOT_TOP_LEVEL, commandText);
       }
 
-      // If valueExprText exists, try to parse it.
-      ExprUnion valueExprUnion;
-      if (valueExprText != null) {
-        ExprRootNode<?> valueExpr = ExprParseUtils.parseExprElseNull(valueExprText);
-        valueExprUnion =
-            (valueExpr != null) ? new ExprUnion(valueExpr) : new ExprUnion(valueExprText);
-      } else {
-        valueExprUnion = null;
+      if (valueExprText == null) {
+        return new CommandTextParseResult(key, null /* valueExprUnion */, contentKind);
       }
 
+      // If valueExprText exists, try to parse it.
+      // TODO(user): Remove throwaway ErrorReporter.
+      // Explanation: In certain cases, Soy considers param nodes with clearly malformed command
+      // texts not to be an error. (See TemplateParserTest#testRecognizeCommands, around line 359.)
+      // To preserve that behavior, we create a throwaway error reporter here in order not to
+      // report it back to the main error reporter.
+      //
+      // Use the real error manager once any currently broken templates are migrated.
+      ErrorReporter throwaway = new ErrorReporterImpl();
+      Checkpoint checkpoint = throwaway.checkpoint();
+      ExprRootNode<?> valueExpr
+          = new ExpressionParser(valueExprText, sourceLocation, throwaway).parseExpression();
+      ExprUnion valueExprUnion = throwaway.errorsSince(checkpoint)
+          ? new ExprUnion(valueExprText)
+          : new ExprUnion(valueExpr);
       return new CommandTextParseResult(key, valueExprUnion, contentKind);
     }
   }

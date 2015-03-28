@@ -16,6 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
@@ -27,50 +30,84 @@ import junit.framework.TestCase;
  * Unit tests for PrintNode.
  *
  */
-public class PrintNodeTest extends TestCase {
+public final class PrintNodeTest extends TestCase {
 
+  private TransitionalThrowingErrorReporter errorReporter;
+
+  @Override
+  protected void setUp() throws Exception {
+    errorReporter = new TransitionalThrowingErrorReporter();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    errorReporter.throwIfErrorsPresent();
+  }
 
   public void testPlaceholderMethods() throws SoySyntaxException {
+    PrintNode pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo")
+        .build(errorReporter);
+    assertThat(pn.genBasePhName()).isEqualTo("BOO");
+    assertThat(pn.genSamenessKey()).isEqualTo(
+        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("$boo")
+            .build(errorReporter)
+            .genSamenessKey());
+    assertThat(pn.genSamenessKey()).isEqualTo(
+        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("  $boo  ")
+            .build(errorReporter)
+            .genSamenessKey());
 
-    PrintNode pn = new PrintNode(0, true, "$boo", null);
-    assertEquals("BOO", pn.genBasePhName());
-    assertTrue(pn.genSamenessKey().equals((new PrintNode(4, true, "$boo", null)).genSamenessKey()));
-    assertTrue(
-        pn.genSamenessKey().equals((new PrintNode(4, true, "  $boo  ", null)).genSamenessKey()));
+    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo.foo")
+        .build(errorReporter);
+    assertThat(pn.genBasePhName()).isEqualTo("FOO");
+    assertThat(pn.genSamenessKey()).isNotEqualTo(
+        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("$boo")
+            .build(errorReporter)
+            .genSamenessKey());
 
-    pn = new PrintNode(0, true, "$boo.foo", null);
-    assertEquals("FOO", pn.genBasePhName());
-    assertFalse(
-        pn.genSamenessKey().equals((new PrintNode(4, true, "$boo", null)).genSamenessKey()));
-
-    pn = new PrintNode(0, true, "$boo.foo", null);
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo.foo")
+        .build(errorReporter);
     pn.addChild(new PrintDirectiveNode.Builder(0, "|insertWordBreaks", "8", SourceLocation.UNKNOWN)
             .build(errorReporter));
-    errorReporter.throwIfErrorsPresent();
-    assertEquals("FOO", pn.genBasePhName());
-    assertFalse(
-        pn.genSamenessKey().equals((new PrintNode(4, true, "$boo.foo", null)).genSamenessKey()));
+    assertThat(pn.genBasePhName()).isEqualTo("FOO");
+    assertThat(pn.genSamenessKey()).isNotEqualTo(
+        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("$boo.foo")
+            .build(errorReporter)
+            .genSamenessKey());
 
-    pn = new PrintNode(0, true, "$boo['foo']", null);
-    assertEquals("Fallback value expected.", "XXX", pn.genBasePhName());
+    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo['foo']")
+        .build(errorReporter);
+    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
 
-    pn = new PrintNode(0, true, "$boo + $foo", null);
-    assertEquals("Fallback value expected.", "XXX", pn.genBasePhName());
+    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo + $foo")
+        .build(errorReporter);
+    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
 
     // V1 syntax.
-    pn = new PrintNode(0, true, "\"blah\"", null);
-    assertEquals("Fallback value expected.", "XXX", pn.genBasePhName());
+    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("\"blah\"")
+        .build(errorReporter);
+    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
   }
-
 
   public void testToSourceString() {
+    PrintNode pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo")
+        .build(errorReporter);
+    assertThat(pn.toSourceString()).isEqualTo("{$boo}");
 
-    PrintNode pn = new PrintNode(0, true, "$boo", null);
-    assertEquals("{$boo}", pn.toSourceString());
-
-    pn = new PrintNode(0, false, "$boo", null);
-    assertEquals("{print $boo}", pn.toSourceString());
+    pn = new PrintNode.Builder(0, false /* isImplicit */, SourceLocation.UNKNOWN)
+        .exprText("$boo")
+        .build(errorReporter);
+    assertThat(pn.toSourceString()).isEqualTo("{print $boo}");
   }
-
 }

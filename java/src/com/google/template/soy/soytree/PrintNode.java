@@ -16,11 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -56,41 +60,14 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
-
-  /**
-   * @param id The id for this node.
-   * @param isImplicit Whether the command 'print' is implicit.
-   * @param exprText The text of the expression to print.
-   * @param userSuppliedPlaceholderName The user-supplied placeholder name, or null if not supplied
-   *     or not applicable.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public PrintNode(
-      int id, boolean isImplicit, String exprText, @Nullable String userSuppliedPlaceholderName)
-      throws SoySyntaxException {
-
-    super(id, "print", "");
-
-    this.isImplicit = isImplicit;
-    ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(exprText);
-    this.exprUnion = (expr != null) ? new ExprUnion(expr) : new ExprUnion(exprText);
-    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-  }
-
-
-  /**
-   * Constructor for use by passes that want to create a PrintNode with already-parsed expression.
-   *
-   * @param id The id for this node.
-   * @param isImplicit Whether the command 'print' is implicit.
-   * @param exprUnion The parsed expression.
-   * @param userSuppliedPlaceholderName The user-supplied placeholder name, or null if not supplied
-   *     or not applicable.
-   */
-  public PrintNode(
-      int id, boolean isImplicit, ExprUnion exprUnion,
+  private PrintNode(
+      int id,
+      boolean isImplicit,
+      ExprUnion exprUnion,
+      SourceLocation sourceLocation,
       @Nullable String userSuppliedPlaceholderName) {
     super(id, "print", "");
+    setSourceLocation(sourceLocation);
     this.isImplicit = isImplicit;
     this.exprUnion = exprUnion;
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
@@ -194,6 +171,96 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Override public PrintNode clone() {
     return new PrintNode(this);
+  }
+
+  /**
+   * Builder for {@link PrintNode}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final boolean isImplicit;
+    private final SourceLocation sourceLocation;
+
+    @Nullable private String exprText;
+    @Nullable private ExprUnion exprUnion;
+    @Nullable private String userSuppliedPlaceholderName;
+
+    /**
+     * @param id The node's id.
+     * @param isImplicit Whether the command {@code print} is implicit.
+     * @param sourceLocation The node's source location.
+     */
+    public Builder(int id, boolean isImplicit, SourceLocation sourceLocation) {
+      this.id = id;
+      this.isImplicit = isImplicit;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * @param exprText The node's expression text.
+     * @return This builder, for chaining.
+     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion}
+     * has already been set.
+     */
+    public Builder exprText(String exprText) {
+      Preconditions.checkState(this.exprText == null);
+      Preconditions.checkState(this.exprUnion == null);
+      this.exprText = exprText;
+      return this;
+    }
+
+    /**
+     * @param exprUnion The parsed expression for this print node.
+     * @return This builder, for chaining.
+     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion}
+     * has already been set.
+     */
+    public Builder exprUnion(ExprUnion exprUnion) {
+      Preconditions.checkState(this.exprText == null);
+      Preconditions.checkState(this.exprUnion == null);
+      this.exprUnion = exprUnion;
+      return this;
+    }
+
+    /**
+     * @param userSuppliedPlaceholderName The user-supplied placeholder name.
+     * @return This object, for chaining.
+     */
+    public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
+      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+      return this;
+    }
+
+    /**
+     * Returns a new {@link PrintNode} built from this builder's state.
+     * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #exprUnion}
+     * have been set.
+     * TODO(user): Most node builders report syntax errors to the {@link ErrorReporter}
+     * argument. This builder ignores the error reporter argument because print nodes have
+     * {@linkplain PrintNode#FALLBACK_BASE_PLACEHOLDER_NAME special fallback logic} for when
+     * parsing of the user-supplied placeholder name fails. Such parsing failures should thus not
+     * currently be reported as "errors". It seems possible and desirable to change Soy to consider
+     * these to be errors, but it's not trivial, because it could break templates that currently
+     * compile.
+     */
+    public PrintNode build(ErrorReporter unusedForNow) {
+      ExprUnion exprUnion = getOrParseExprUnion();
+      return new PrintNode(id, isImplicit, exprUnion, sourceLocation, userSuppliedPlaceholderName);
+    }
+
+    private ExprUnion getOrParseExprUnion() {
+      if (exprUnion != null) {
+        return exprUnion;
+      }
+      Preconditions.checkNotNull(exprText);
+      ErrorReporter internal = new ErrorReporterImpl();
+      Checkpoint checkpoint = internal.checkpoint();
+      ExprRootNode<?> expr = new ExpressionParser(exprText, sourceLocation, internal)
+          .parseExpression();
+      return internal.errorsSince(checkpoint)
+          ? new ExprUnion(exprText)
+          : new ExprUnion(expr);
+    }
   }
 
 }

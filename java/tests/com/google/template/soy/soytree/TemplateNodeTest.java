@@ -17,12 +17,14 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -480,6 +482,7 @@ public class TemplateNodeTest extends TestCase {
   }
 
   public void testToSourceString() {
+    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
     TemplateNode tn =
         (new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, TYPE_REGISTRY))
             .setId(0).setCmdText("name=\".boo\"")
@@ -496,8 +499,14 @@ public class TemplateNodeTest extends TestCase {
                 new DeclInfo("@param", "too   :   string|null", null, false)))
             .build();
     tn.addChild(new RawTextNode(0, "  "));  // 2 spaces
-    tn.addChild(new PrintNode(0, true, "$foo", null));
-    tn.addChild(new PrintNode(0, true, "$goo", null));
+    tn.addChild(
+        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("$foo")
+            .build(errorReporter));
+    tn.addChild(
+        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            .exprText("$goo")
+            .build(errorReporter));
     tn.addChild(new RawTextNode(0, "  "));  // 2 spaces
 
     assertEquals("" +
@@ -514,5 +523,6 @@ public class TemplateNodeTest extends TestCase {
         "{sp} {$foo}{$goo} {sp}\n" +
         "{/template}\n",
         tn.toSourceString());
+    errorReporter.throwIfErrorsPresent();
   }
 }

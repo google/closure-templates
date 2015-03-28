@@ -18,8 +18,12 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.exprparse.ExprParseUtils;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -40,28 +44,29 @@ public final class IfCondNode extends AbstractBlockCommandNode
   /** The parsed expression. */
   private final ExprUnion exprUnion;
 
-
   /**
-   * @param id The id for this node.
-   * @param commandName The command name -- either 'if' or 'elseif'.
-   * @param commandText The command text.
+   * @param id The node's id.
+   * @param commandText The node's command text.
+   * @param sourceLocation The node's source location.
    */
-  public IfCondNode(int id, String commandName, String commandText) {
-
-    this(id, commandName, buildExprUnion(commandText));
+  public static Builder ifBuilder(int id, String commandText, SourceLocation sourceLocation) {
+    return new Builder(id, "if", commandText, sourceLocation);
   }
 
-
   /**
-   * A helper for {@link #IfCondNode(int,String,String)} that parses the condition to an
-   * {@code ExpUnion}.
-   * @param commandText The command text.
+   * @param id The node's id.
+   * @param commandText The node's command text.
+   * @param sourceLocation The node's source location.
    */
-  private static ExprUnion buildExprUnion(String commandText) {
-    ExprRootNode<?> expr = ExprParseUtils.parseExprElseNull(commandText);
-    return (expr != null) ? new ExprUnion(expr) : new ExprUnion(commandText);
+  public static Builder elseifBuilder(int id, String commandText, SourceLocation sourceLocation) {
+    return new Builder(id, "elseif", commandText, sourceLocation);
   }
 
+  private IfCondNode(
+      int id, String commandName, ExprUnion condition, SourceLocation sourceLocation) {
+    this(id, commandName, condition);
+    setSourceLocation(sourceLocation);
+  }
 
   /**
    * @param id The id for this node.
@@ -130,6 +135,48 @@ public final class IfCondNode extends AbstractBlockCommandNode
 
   @Override public IfCondNode clone() {
     return new IfCondNode(this);
+  }
+
+  /**
+   * Builder for {@link IfCondNode}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandName;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    private Builder(int id, String commandName, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandName = commandName;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link IfCondNode} built from this builder's state.
+     * TODO(user): Most node builders report syntax errors to the {@link ErrorReporter}
+     * argument. This builder ignores the error reporter argument because if nodes have
+     * special fallback logic for when parsing of the command text fails.
+     * Such parsing failures should thus not currently be reported as "errors".
+     * It seems possible and desirable to change Soy to consider these to be errors,
+     * but it's not trivial, because it could break templates that currently compile.
+     */
+    public IfCondNode build(ErrorReporter unusedForNow) {
+      ExprUnion condition = buildExprUnion();
+      return new IfCondNode(id, commandName, condition, sourceLocation);
+    }
+
+    private ExprUnion buildExprUnion() {
+      ErrorReporter errorReporter = new ErrorReporterImpl();
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      ExprRootNode<?> expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+          .parseExpression();
+      return errorReporter.errorsSince(checkpoint)
+          ? new ExprUnion(commandText)
+          : new ExprUnion(expr);
+    }
+
   }
 
 }

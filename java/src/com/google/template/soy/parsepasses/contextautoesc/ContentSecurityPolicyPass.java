@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -540,11 +541,12 @@ public final class ContentSecurityPolicyPass {
    * Builds the Soy command {@code {$ij.csp_nonce}}.
    */
   private static PrintNode makeInjectedCspNoncePrintNode(IdGenerator idGenerator) {
-    return new PrintNode(
+    return new PrintNode.Builder(
         idGenerator.genId(),
         true,  // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
-        new ExprUnion(new ExprRootNode<ExprNode>(makeReferenceToInjectedCspNonce())),
-        null);
+        SourceLocation.UNKNOWN)
+        .exprUnion(new ExprUnion(new ExprRootNode<ExprNode>(makeReferenceToInjectedCspNonce())))
+        .build(null);
   }
 
 

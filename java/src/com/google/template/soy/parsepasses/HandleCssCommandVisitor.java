@@ -104,8 +104,12 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
 
       } else if (cssHandlingScheme == CssHandlingScheme.REFERENCE) {
         TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-        PrintNode newPrintNode =
-            new PrintNode(nodeIdGen.genId(), false, cssNode.getCommandText(), null);
+        PrintNode newPrintNode = new PrintNode.Builder(
+            nodeIdGen.genId(),
+            false /* isImplicit */,
+            SourceLocation.UNKNOWN)
+            .exprText(cssNode.getCommandText())
+            .build(errorReporter);
         newPrintNode.addChild(new PrintDirectiveNode.Builder(
             nodeIdGen.genId(), "|noAutoescape", "", SourceLocation.UNKNOWN)
             .build(errorReporter));
