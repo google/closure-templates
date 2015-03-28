@@ -168,18 +168,7 @@ import java.util.Map;
   abstract String methodDescriptor();
   abstract Class<?> returnType();
   abstract ImmutableList<Type> argTypes();
-  
-  private void invoke(GeneratorAdapter mv) {
-    mv.visitMethodInsn(
-        opcode(),
-        owner().internalName(),
-        methodName(),
-        methodDescriptor(),
-        // This is for whether the methods owner is an interface.  This is mostly to handle java8
-        // default methods on interfaces.  We don't care about those currently, but ASM requires 
-        // this.
-        opcode() == Opcodes.INVOKEINTERFACE);
-  }
+
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are 
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
@@ -203,7 +192,7 @@ import java.util.Map;
     if (SoyValue.class.isAssignableFrom(returnType())) {
       Class<? extends SoyValue> boxType = returnType().asSubclass(SoyValue.class);
       return new BoxedExpression(boxType) {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
 
@@ -214,7 +203,7 @@ import java.util.Map;
     }
     if (double.class.equals(returnType())) {
       return new FloatExpression() {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
 
@@ -225,7 +214,7 @@ import java.util.Map;
     }
     if (long.class.equals(returnType())) {
       return new IntExpression() {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
 
@@ -236,7 +225,7 @@ import java.util.Map;
     }
     if (boolean.class.equals(returnType())) {
       return new BoolExpression() {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
 
@@ -247,7 +236,7 @@ import java.util.Map;
     }
     if (String.class.equals(returnType())) {
       return new StringExpression() {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           invoke(mv, args);
         }
 
@@ -260,7 +249,7 @@ import java.util.Map;
     return new Expression() {
       final Type type = Type.getType(returnType());
 
-      @Override void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         invoke(mv, args);
       }
 
@@ -285,6 +274,14 @@ import java.util.Map;
     for (Expression arg : args) {
       arg.gen(mv);
     }
-    invoke(mv);
+    mv.visitMethodInsn(
+        opcode(),
+        owner().internalName(),
+        methodName(),
+        methodDescriptor(),
+        // This is for whether the methods owner is an interface.  This is mostly to handle java8
+        // default methods on interfaces.  We don't care about those currently, but ASM requires 
+        // this.
+        opcode() == Opcodes.INVOKEINTERFACE);
   }
 }

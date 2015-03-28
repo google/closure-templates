@@ -16,6 +16,12 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.MethodRef.BOOLEAN_DATA_FOR_VALUE;
+import static com.google.template.soy.jbcsrc.MethodRef.DICT_IMPL_FOR_PROVIDER_MAP;
+import static com.google.template.soy.jbcsrc.MethodRef.INTEGER_DATA_FOR_VALUE;
+import static com.google.template.soy.jbcsrc.MethodRef.LIST_IMPL_FOR_PROVIDER_LIST;
+import static com.google.template.soy.jbcsrc.MethodRef.STRING_DATA_FOR_VALUE;
+
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
@@ -164,12 +170,19 @@ abstract class SoyExpression extends Expression {
   /**
    * Default subtype of {@link BoxedExpression} used by our core expression implementations.
    */
-  abstract static class DefaultBoxed extends BoxedExpression {
+  static final class DefaultBoxed extends BoxedExpression {
     private final SoyExpression unboxed;
+    private final Expression boxed;
 
-    DefaultBoxed(Class<? extends SoyValue> clazz, SoyExpression unboxed) {
+    DefaultBoxed(Class<? extends SoyValue> clazz, SoyExpression unboxed, Expression boxed) {
       super(clazz);
+      boxed.checkType(Type.getType(clazz));
       this.unboxed = unboxed;
+      this.boxed = boxed;
+    }
+
+    @Override void doGen(GeneratorAdapter adapter) {
+      boxed.gen(adapter);
     }
 
     @Override boolean isKnownFloat() {
@@ -198,29 +211,21 @@ abstract class SoyExpression extends Expression {
    */
   abstract static class BoolExpression extends SoyExpression {
     static final BoolExpression FALSE = new BoolExpression() {
-      @Override void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(false);
       }
 
       @Override SoyExpression box() {
-        return new DefaultBoxed(BooleanData.class, FALSE) {
-          @Override void gen(GeneratorAdapter mv) {
-            FieldRef.BOOLEAN_DATA_FALSE.accessor().gen(mv);
-          }
-        };
+        return new DefaultBoxed(BooleanData.class, FALSE, FieldRef.BOOLEAN_DATA_FALSE.accessor());
       }
     };
 
     static final BoolExpression TRUE = new BoolExpression() {
-      @Override void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(true);
       }
       @Override SoyExpression box() {
-        return new DefaultBoxed(BooleanData.class, TRUE) {
-          @Override void gen(GeneratorAdapter mv) {
-            FieldRef.BOOLEAN_DATA_TRUE.accessor().gen(mv);
-          }
-        };
+        return new DefaultBoxed(BooleanData.class, TRUE, FieldRef.BOOLEAN_DATA_TRUE.accessor());
       }
     };
 
@@ -229,11 +234,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override SoyExpression box() {
-      return new DefaultBoxed(BooleanData.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(BoolExpression.this).gen(mv);
-        }
-      };
+      return new DefaultBoxed(BooleanData.class, this, BOOLEAN_DATA_FOR_VALUE.invoke(this));
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -253,11 +254,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override SoyExpression box() {
-      return new DefaultBoxed(IntegerData.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          MethodRef.INTEGER_DATA_FOR_VALUE.invoke(IntExpression.this).gen(mv);
-        }
-      };
+      return new DefaultBoxed(IntegerData.class, this, INTEGER_DATA_FOR_VALUE.invoke(this));
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -266,7 +263,7 @@ abstract class SoyExpression extends Expression {
       }
       if (asType.equals(double.class)) {
         return new FloatExpression() {
-          @Override void gen(GeneratorAdapter adapter) {
+          @Override void doGen(GeneratorAdapter adapter) {
             IntExpression.this.gen(adapter);
             adapter.cast(Type.LONG_TYPE, Type.DOUBLE_TYPE);
           }
@@ -285,16 +282,12 @@ abstract class SoyExpression extends Expression {
       super(Object.class);
     }
 
-    @Override void gen(GeneratorAdapter mv) {
+    @Override void doGen(GeneratorAdapter mv) {
       mv.visitInsn(Opcodes.ACONST_NULL);
     }
     
     @Override SoyExpression box() {
-      return new DefaultBoxed(NullData.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          FieldRef.NULL_DATA_INSTANCE.accessor().gen(mv);
-        }
-      };
+      return new DefaultBoxed(NullData.class, this, FieldRef.NULL_DATA_INSTANCE.accessor());
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -321,11 +314,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override SoyExpression box() {
-      return new DefaultBoxed(FloatData.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          MethodRef.FLOAT_DATA_FOR_VALUE.invoke(FloatExpression.this).gen(mv);
-        }
-      };
+      return new DefaultBoxed(FloatData.class, this, MethodRef.FLOAT_DATA_FOR_VALUE.invoke(this));
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -348,11 +337,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override SoyExpression box() {
-      return new DefaultBoxed(StringData.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          MethodRef.STRING_DATA_FOR_VALUE.invoke(StringExpression.this).gen(mv);
-        }
-      };
+      return new DefaultBoxed(StringData.class, this, STRING_DATA_FOR_VALUE.invoke(this));
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -372,11 +357,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override SoyExpression box() {
-      return new DefaultBoxed(DictImpl.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(MapExpression.this).gen(mv);
-        }
-      };
+      return new DefaultBoxed(DictImpl.class, this, DICT_IMPL_FOR_PROVIDER_MAP.invoke(this));
     }
 
     @Override final SoyExpression convert(Class<?> asType) {
@@ -396,11 +377,7 @@ abstract class SoyExpression extends Expression {
     }
 
     @Override SoyExpression box() {
-      return new DefaultBoxed(ListImpl.class, this) {
-        @Override void gen(GeneratorAdapter mv) {
-          MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(ListExpression.this).gen(mv);
-        }
-      };
+      return new DefaultBoxed(ListImpl.class, this, LIST_IMPL_FOR_PROVIDER_LIST.invoke(this));
     }
 
     @Override final SoyExpression convert(Class<?> asType) {

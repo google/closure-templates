@@ -114,12 +114,12 @@ import java.lang.reflect.Modifier;
     checkState(!isStatic());
     checkArgument(owner.resultType().equals(this.owner().type()));
     return new Expression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         owner.gen(mv);
         mv.getField(owner().type(), FieldRef.this.name(), resultType());
       }
-      @Override public Type resultType() {
-        return FieldRef.this.type();
+      @Override Type resultType() {
+        return type();
       }
     };
   }
@@ -130,11 +130,11 @@ import java.lang.reflect.Modifier;
   Expression accessor() {
     checkState(isStatic());
     return new Expression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.getStatic(owner().type(), FieldRef.this.name(), resultType());
       }
-      @Override public Type resultType() {
-        return FieldRef.this.type();
+      @Override Type resultType() {
+        return type();
       }
     };
   }

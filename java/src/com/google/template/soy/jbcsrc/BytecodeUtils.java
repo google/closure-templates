@@ -32,6 +32,10 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
+import java.lang.reflect.Field;
+
+import javax.annotation.Nullable;
+
 /**
  * A set of utilities for generating simple expressions in bytecode
  */
@@ -44,11 +48,11 @@ final class BytecodeUtils {
   /** Returns an {@link Expression }that can load the given 'int' constant. */
   static Expression constant(final int value) {
     return new Expression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
 
-      @Override public Type resultType() {
+      @Override Type resultType() {
         return Type.INT_TYPE;
       }
 
@@ -61,11 +65,11 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given 'char' constant. */
   static Expression constant(final char value) {
     return new Expression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
 
-      @Override public Type resultType() {
+      @Override Type resultType() {
         return Type.CHAR_TYPE;
       }
 
@@ -78,7 +82,7 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given long constant. */
   static IntExpression constant(final long value) {
     return new IntExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
 
@@ -90,7 +94,7 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given double constant. */
   static FloatExpression constant(final double value) {
     return new FloatExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
 
@@ -104,7 +108,7 @@ final class BytecodeUtils {
   static StringExpression constant(final String value) {
     checkNotNull(value);
     return new StringExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
 
@@ -121,7 +125,7 @@ final class BytecodeUtils {
     switch (type.getSize()) {
       case 1:
         return new Expression() {
-          @Override void gen(GeneratorAdapter mv) {
+          @Override void doGen(GeneratorAdapter mv) {
             mv.dup();
           }
 
@@ -131,7 +135,7 @@ final class BytecodeUtils {
         };
       case 2:
         return new Expression() {
-          @Override void gen(GeneratorAdapter mv) {
+          @Override void doGen(GeneratorAdapter mv) {
             mv.dup2();
           }
 
@@ -203,7 +207,7 @@ final class BytecodeUtils {
         "left and right must have matching types, found %s and %s", left.resultType(), 
         right.resultType());
     return new BoolExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         left.gen(mv);
         right.gen(mv);
         Label ifTrue = mv.newLabel();
@@ -243,7 +247,7 @@ final class BytecodeUtils {
     baseExpr.checkType(Type.BOOLEAN_TYPE);
     checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
     return new BoolExpression() {
-      @Override void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         baseExpr.gen(mv);
         // Surprisingly, java bytecode uses a branch (instead of 'xor 1' or something) to implement
         // this. This is most likely useful for allowing true to be represented by any non-zero
@@ -262,5 +266,41 @@ final class BytecodeUtils {
         return baseExpr.isConstant();
       }
     };
+  }
+
+  @Nullable private static final Field labelStatusField;
+  static {
+    Field field = null;
+    try {
+      field = Label.class.getDeclaredField("status");
+      field.setAccessible(true);
+    } catch (NoSuchFieldException | SecurityException e) {
+      // The open source asm build renames package private fields to single character ids just to
+      // make it less usable  #fml.
+    }
+    labelStatusField = field;
+  }
+
+  /**
+   * Returns a new {@link Label} that is only suitable for use as mechanism to attach line numbers
+   * 
+   * <p>Using this {@link Label} as a target for a jump instruction may result in undefined
+   * behavior.
+   */
+  static Label newDebugLabel() {
+    // Work around for a bug in COMPUTE_FRAMES described here
+    // http://mail.ow2.org/wws/arc/asm/2015-03/msg00002.html
+    Label l = new Label();
+    if (labelStatusField != null) {
+      // This is mostly an optimization, but would be nice to work around issues in frame 
+      // calculations
+      try {
+        int status = labelStatusField.getInt(l);
+        labelStatusField.setInt(l, status | 1 /* Label.DEBUG */);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return l;
   }
 }

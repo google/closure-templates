@@ -59,7 +59,7 @@ abstract class Expression extends BytecodeProducer {
    * <p>The generated code satisfies the invariant that the top of the runtime stack will contain a
    * value with this {@link #resultType()} immediately after evaluation of the code. 
    */
-  @Override abstract void gen(GeneratorAdapter adapter);
+  @Override abstract void doGen(GeneratorAdapter adapter);
   
   /** The type of the expression. */
   abstract Type resultType();

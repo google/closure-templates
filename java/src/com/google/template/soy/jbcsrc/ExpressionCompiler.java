@@ -120,8 +120,9 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final int numChildren = node.getChildren().size();
     if (numChildren == 0) {
       return new ListExpression() {
-        @Override void gen(GeneratorAdapter adapter) {
-          MethodRef.IMMUTABLE_LIST_OF.invoke().gen(adapter);
+        final Expression immutableListOf = MethodRef.IMMUTABLE_LIST_OF.invoke();
+        @Override void doGen(GeneratorAdapter adapter) {
+          immutableListOf.gen(adapter);
         }
 
         @Override boolean isConstant() {
@@ -145,7 +146,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
         .construct(BytecodeUtils.constant(numChildren));
     final Statement addAll = Statement.concat(adds);
     return new ListExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         construct.gen(mv);
         addAll.gen(mv);
       }
@@ -160,8 +161,9 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final int numItems = node.numChildren() / 2;
     if (numItems == 0) {
       return new MapExpression() {
-        @Override void gen(GeneratorAdapter adapter) {
-          MethodRef.IMMUTABLE_MAP_OF.invoke().gen(adapter);
+        final Expression immutableMapOf = MethodRef.IMMUTABLE_MAP_OF.invoke();
+        @Override void doGen(GeneratorAdapter adapter) {
+          immutableMapOf.gen(adapter);
         }
 
         @Override boolean isConstant() {
@@ -187,7 +189,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
         .construct(BytecodeUtils.constant(hashMapCapacity));
     final Statement putAll = Statement.concat(puts);
     return new MapExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         // create a linkedhashmap with the expected size.
         construct.gen(mv);
         // call put for each key value pair.
@@ -360,7 +362,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final SoyExpression leftInt = left.convert(long.class);
     final SoyExpression rightInt = right.convert(long.class);
     return new IntExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         leftInt.gen(mv);
         rightInt.gen(mv);
         mv.visitInsn(operator);
@@ -377,7 +379,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final SoyExpression leftInt = left.convert(double.class);
     final SoyExpression rightInt = right.convert(double.class);
     return new FloatExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         leftInt.gen(mv);
         rightInt.gen(mv);
         mv.visitInsn(operator);
@@ -396,7 +398,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     if (child.isKnownInt()) {
       final SoyExpression intExpr = child.convert(long.class);
       return new IntExpression() {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           intExpr.gen(mv);
           mv.visitInsn(Opcodes.LNEG);
         }
@@ -405,7 +407,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     if (child.isKnownNumber()) {
       final SoyExpression floatExpr = child.convert(double.class);
       return new FloatExpression() {
-        @Override public void gen(GeneratorAdapter mv) {
+        @Override void doGen(GeneratorAdapter mv) {
           floatExpr.gen(mv);
           mv.visitInsn(Opcodes.DNEG);
         }
@@ -425,7 +427,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
     final SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
     return new BoolExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         // Note: short circuiting, if left is false we don't eval right
         left.gen(mv);
         Label ifFalsy = new Label();
@@ -448,7 +450,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
     final SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
     return new BoolExpression() {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         // Note: short circuiting, if left is true we don't eval right
         left.gen(mv);
         Label ifTruthy = new Label();
@@ -476,11 +478,11 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final boolean constant =
         condition.isConstant() && trueBranch.isConstant() && falseBranch.isConstant();
     if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
+      final SoyExpression trueAsLong = trueBranch.convert(long.class);
+      final SoyExpression falseAsLong = falseBranch.convert(long.class);
       return new IntExpression() {
-        @Override void gen(GeneratorAdapter adapter) {
-          doCondition(adapter, condition,
-              trueBranch.convert(long.class),
-              falseBranch.convert(long.class));
+        @Override void doGen(GeneratorAdapter adapter) {
+          doCondition(adapter, condition, trueAsLong, falseAsLong);
         }
 
         @Override boolean isConstant() {
@@ -489,11 +491,11 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
       };
     }
     if (trueBranch.isKnownNumber() && falseBranch.isKnownNumber()) {
+      final SoyExpression trueAsFloat = trueBranch.convert(double.class);
+      final SoyExpression falseAsFloat = falseBranch.convert(double.class);
       return new FloatExpression() {
-        @Override void gen(GeneratorAdapter adapter) {
-          doCondition(adapter, condition,
-              trueBranch.convert(double.class),
-              falseBranch.convert(double.class));
+        @Override void doGen(GeneratorAdapter adapter) {
+          doCondition(adapter, condition, trueAsFloat, falseAsFloat);
         }
 
         @Override boolean isConstant() {
@@ -502,11 +504,11 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
       };
     }
     if (trueBranch.isKnownString() && falseBranch.isKnownString()) {
+      final SoyExpression trueAsString = trueBranch.convert(String.class);
+      final SoyExpression falseAsString = falseBranch.convert(String.class);
       return new StringExpression() {
-        @Override void gen(GeneratorAdapter adapter) {
-          doCondition(adapter, condition,
-              trueBranch.convert(String.class),
-              falseBranch.convert(String.class));
+        @Override void doGen(GeneratorAdapter adapter) {
+          doCondition(adapter, condition, trueAsString, falseAsString);
         }
 
         @Override boolean isConstant() {
@@ -520,7 +522,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final SoyExpression trueBoxed = trueBranch.box();
     final SoyExpression falseBoxed = falseBranch.box();
     return new BoxedExpression(node.getType().javaType()) {
-      @Override public void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         doCondition(mv, condition, trueBoxed, falseBoxed);
       }
 

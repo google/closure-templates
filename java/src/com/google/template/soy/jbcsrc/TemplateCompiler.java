@@ -180,7 +180,8 @@ final class TemplateCompiler {
         // nullable, it will fail a strict type check... leading to much confusion notably on the
         // difference between optional params and required nullable params.  For now, i will enforce
         // that required means you have to pass it.
-        MethodRef.RUNTIME_CHECK_REQUIRED_PARAM.invoke(paramsVar, constant(param.name())).gen(ga);
+        MethodRef.RUNTIME_CHECK_REQUIRED_PARAM.invoke(
+            paramsVar, constant(param.name())).gen(ga);
       }
     }
     // this.params = params;

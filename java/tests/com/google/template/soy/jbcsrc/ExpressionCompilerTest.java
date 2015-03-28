@@ -311,13 +311,14 @@ public class ExpressionCompilerTest extends TestCase {
    * useful for testing fallback implementations in the compiler.
    */
   private SoyExpression untypedBoxedSoyExpression(final SoyExpression expr) {
+    final SoyExpression boxed = expr.box();
     return new SoyExpression(SoyValue.class) {
       @Override SoyExpression box() {
         return this;
       }
 
-      @Override void gen(GeneratorAdapter adapter) {
-        expr.box().gen(adapter);
+      @Override void doGen(GeneratorAdapter adapter) {
+        boxed.gen(adapter);
       }
     };
   }

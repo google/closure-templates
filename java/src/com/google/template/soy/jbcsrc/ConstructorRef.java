@@ -17,10 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
@@ -63,7 +61,7 @@ import java.util.LinkedHashMap;
   Expression construct(final Expression ...args) {
     Expression.checkTypes(argTypes(), args);
     return new Expression() {
-      @Override void gen(GeneratorAdapter mv) {
+      @Override void doGen(GeneratorAdapter mv) {
         mv.newInstance(instanceClass().type());
         // push a second reference onto the stack so there is still a reference to the new object
         // after invoking the constructor (constructors are void methods)

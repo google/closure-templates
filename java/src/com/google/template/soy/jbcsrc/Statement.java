@@ -18,10 +18,8 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
 import com.google.template.soy.base.SourceLocation;
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.Arrays;
@@ -57,39 +55,12 @@ abstract class Statement extends BytecodeProducer {
     };
   }
 
-  // Optional because there will be many situations where having a source location is not possible
-  // e.g. NULL_STATEMENT.  In general we should attempt to associate source locations whenever we
-  // have one.  
-  // TODO(lukes): when exprnodes get support for SourceLocation, move this optional sourcelocation
-  // support up into BytecodeProcessor.
-  private final Optional<SourceLocation> location;
-  private final Label start;
-  private final Label end;
-
   Statement() {
-    this(Optional.<SourceLocation>absent());
+    super();
   }
 
-  // when UNKNOWN source locations go away, so can this use of isKnown
-  @SuppressWarnings("deprecation")
   Statement(SourceLocation location) {
-    this(location.isKnown() ? Optional.of(location) : Optional.<SourceLocation>absent());
-  }
-
-  private Statement(Optional<SourceLocation> location) {
-    this.location = location;
-    this.start = new Label();
-    this.end = new Label();
-  }
-
-  /** The label at the begining of the statement. */
-  public final Label start() {
-    return start;
-  }
-
-  /** The label at the end of the statement. */
-  public final Label end() {
-    return end;
+    super(location);
   }
 
   /**
@@ -103,24 +74,6 @@ abstract class Statement extends BytecodeProducer {
       }
     };
   }
-
-  /** Generate code to implement the statement. */
-  @Override final void gen(GeneratorAdapter adapter) {
-    adapter.mark(start);
-    doGen(adapter);
-    adapter.mark(end);
-    if (location.isPresent()) {
-      // These add entries to the line number tables that are associated with the current method.
-      // The line number table is just a mapping of of bytecode offset (aka 'pc') to line number,
-      // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.12
-      // It is used by the JVM to add source data to stack traces and by debuggers to highlight
-      // source files.
-      adapter.visitLineNumber(location.get().getLineNumber(), start);
-      adapter.visitLineNumber(location.get().getEndLine(), end);
-    }
-  }
-
-  abstract void doGen(GeneratorAdapter adapter);
 
   @Override public String toString() {
     return "Statement:\n" + trace();

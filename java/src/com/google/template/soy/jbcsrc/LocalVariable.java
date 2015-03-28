@@ -79,7 +79,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
         index());
   }
 
-  @Override public void gen(GeneratorAdapter mv) {
+  @Override public void doGen(GeneratorAdapter mv) {
     mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
