@@ -71,7 +71,7 @@ public class ApiCallScopeBindingAnnotations {
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface RuntimePath {}
+  public @interface PyRuntimePath {}
 
   /**
    * Annotation for the bidiIsRtlFn parameter in the ApiCallScope.
@@ -79,13 +79,13 @@ public class ApiCallScopeBindingAnnotations {
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface BidiIsRtlFn {}
+  public @interface PyBidiIsRtlFn {}
 
   /**
-   * Annotation for the translationPyModuleName parameter in the ApiCallScope.
+   * Annotation for the translationClass parameter in the ApiCallScope.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface TranslationPyModuleName {}
+  public @interface PyTranslationClass {}
 }

@@ -29,9 +29,9 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.soytree.SoyNode;
 
 import java.util.List;
@@ -49,7 +49,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private String bidiIsRtlFn = "";
 
-  private String translationPyModuleName = "";
+  private String translationClass = "";
 
   private boolean isFile;
 
@@ -74,8 +74,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     return this;
   }
 
-  public SoyCodeForPySubject withTranslationModule(String translationPyModuleName) {
-    this.translationPyModuleName = translationPyModuleName;
+  public SoyCodeForPySubject withTranslationClass(String translationClass) {
+    this.translationClass = translationClass;
     return this;
   }
 
@@ -133,16 +133,14 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private GenPyCodeVisitor getGenPyCodeVisitor() {
     // Setup default configs.
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn,
-        translationPyModuleName);
+    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn, translationClass);
     GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
     apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(Key.get(String.class, RuntimePath.class), RUNTIME_PATH);
+    apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), RUNTIME_PATH);
 
     // Add customizable bidi fn and translation module.
-    apiCallScope.seed(Key.get(String.class, BidiIsRtlFn.class), bidiIsRtlFn);
-    apiCallScope.seed(Key.get(String.class, TranslationPyModuleName.class),
-        translationPyModuleName);
+    apiCallScope.seed(Key.get(String.class, PyBidiIsRtlFn.class), bidiIsRtlFn);
+    apiCallScope.seed(Key.get(String.class, PyTranslationClass.class), translationClass);
 
     // Execute the compiler.
     return INJECTOR.getInstance(GenPyCodeVisitor.class);

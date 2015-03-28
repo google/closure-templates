@@ -28,19 +28,19 @@ public final class SoyPySrcOptions implements Cloneable {
   /** The base module path for loading the runtime modules. */
   private final String runtimePath;
 
-  /** The absolute translation module name used in Python runtime. */
-  private final String translationPyModuleName;
+  /** The full module and class path to a runtime library for translation. */
+  private final String translationClass;
 
-  public SoyPySrcOptions(String runtimePath, String bidiIsRtlFn, String translationPyModuleName) {
+  public SoyPySrcOptions(String runtimePath, String bidiIsRtlFn, String translationClass) {
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
-    this.translationPyModuleName = translationPyModuleName;
+    this.translationClass = translationClass;
   }
 
   private SoyPySrcOptions(SoyPySrcOptions orig) {
     this.runtimePath = orig.runtimePath;
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
-    this.translationPyModuleName = orig.translationPyModuleName;
+    this.translationClass = orig.translationClass;
   }
 
   public String getBidiIsRtlFn() {
@@ -51,8 +51,8 @@ public final class SoyPySrcOptions implements Cloneable {
     return runtimePath;
   }
 
-  public String getTranslationPyModuleName() {
-    return translationPyModuleName;
+  public String getTranslationClass() {
+    return translationClass;
   }
 
   @Override public final SoyPySrcOptions clone() {

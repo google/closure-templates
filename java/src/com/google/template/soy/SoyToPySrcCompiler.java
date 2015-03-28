@@ -58,13 +58,6 @@ public final class SoyToPySrcCompiler {
           handler = MainClassUtils.StringListOptionHandler.class)
   private List<String> srcs = new ArrayList<String>();
 
-  @Option(name = "--translationPyModuleName",
-          usage = "Python class name used in python runtime to instantiate translation."
-              + " It should be given in absolute module path in dot notation format, "
-              + " for example: my.package.module.TranslatorClass."
-              + " It is required for {msg} command.")
-  private String translationPyModuleName = "";
-
   @Option(name = "--runtimePath",
           required = true,
           usage = "[Required] The module path used to find the python runtime libraries. This"
@@ -98,6 +91,20 @@ public final class SoyToPySrcCompiler {
                   + " outputted filename outside of the final py extension.")
   private String outputPathFormat = "";
 
+  @Option(name = "--translationClass",
+          usage = "The full class name of the python runtime translation class."
+              + " The name should include the absolute module path and class name in dot notation"
+              + " format (e.g. \"my.package.module.TranslatorClass\")."
+              + " It is required for {msg} command.")
+  private String translationClass = "";
+
+  @Option(name = "--bidiIsRtlFn",
+          usage = "The full name of a function used to determine if bidi is rtl for setting global"
+                  + " directionality. The name should include the absolute module path and function"
+                  + "name in dot notation format (e.g. \"my.app.bidi.is_rtl\"). Only applicable if"
+                  + " your Soy code uses bidi functions/directives.")
+  private String bidiIsRtlFn = "";
+
   @Option(name = "--syntaxVersion",
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.2, 2.3).")
   private String syntaxVersion = "";
@@ -120,13 +127,6 @@ public final class SoyToPySrcCompiler {
                   + " from Java, consider using the utility"
                   + " SoyUtils.generateCompileTimeGlobalsFile().")
   private String compileTimeGlobalsFile = "";
-
-  @Option(name = "--bidiIsRtlFn",
-          usage = "The full name of a function used to determine if bidi is rtl for setting global"
-                  + " directionality. The name should include the full module path and function"
-                  + "name (e.g. \"my.app.bidi.is_rtl\"). Only applicable if your Soy code uses bidi"
-                  + " functions/directives.")
-  private String bidiIsRtlFn = "";
 
   @Option(name = "--pluginModules",
           usage = "Specifies the full class names of Guice modules for function plugins and"
@@ -207,8 +207,7 @@ public final class SoyToPySrcCompiler {
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyPySrcOptions.
-    SoyPySrcOptions pySrcOptions =
-        new SoyPySrcOptions(runtimePath, bidiIsRtlFn, translationPyModuleName);
+    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, bidiIsRtlFn, translationClass);
 
     // Compile.
     return sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);

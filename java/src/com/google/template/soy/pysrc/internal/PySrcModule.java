@@ -30,9 +30,9 @@ import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.ModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
@@ -71,13 +71,13 @@ public final class PySrcModule extends AbstractModule {
     bind(SoyPySrcOptions.class)
         .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
         .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(RuntimePath.class)
+    bind(String.class).annotatedWith(PyRuntimePath.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(BidiIsRtlFn.class)
+    bind(String.class).annotatedWith(PyBidiIsRtlFn.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(TranslationPyModuleName.class)
+    bind(String.class).annotatedWith(PyTranslationClass.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);
   }

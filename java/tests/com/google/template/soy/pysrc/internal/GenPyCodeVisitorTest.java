@@ -75,7 +75,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
     String exptectedTranslationConfig = "from example.translate import SimpleTranslator\n"
         + "translator_impl = SimpleTranslator()\n";
 
-    assertThatSoyFile(SOY_NAMESPACE).withTranslationModule("example.translate.SimpleTranslator")
+    assertThatSoyFile(SOY_NAMESPACE).withTranslationClass("example.translate.SimpleTranslator")
         .compilesToSourceContaining(exptectedTranslationConfig);
   }
 

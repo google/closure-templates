@@ -31,9 +31,9 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.BidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.RuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.TranslationPyModuleName;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -82,8 +82,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The module and function name for the bidi isRtl function. */
   private final String bidiIsRtlFn;
 
-  /** The module name for the translation module used at runtime. */
-  private final String translationPyModuleName;
+  /** The module and class name for the translation class used at runtime. */
+  private final String translationClass;
 
   /** The contents of the generated Python files. */
   private List<String> pyFilesContents;
@@ -107,20 +107,19 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * @param runtimePath The module path for the runtime libraries.
-   * @param translationPyModuleName Python module name used in python runtime to instantiate
-   *        translation.
+   * @param translationClass Python class path used in python runtime to execute translation.
    */
   @Inject
-  GenPyCodeVisitor(@RuntimePath String runtimePath,
-      @BidiIsRtlFn String bidiIsRtlFn,
-      @TranslationPyModuleName String translationPyModuleName,
+  GenPyCodeVisitor(@PyRuntimePath String runtimePath,
+      @PyBidiIsRtlFn String bidiIsRtlFn,
+      @PyTranslationClass String translationClass,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor) {
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
-    this.translationPyModuleName = translationPyModuleName;
+    this.translationClass = translationClass;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
@@ -745,8 +744,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Add import and instantiate statements for translator module
     // TODO(steveyang): remember the check when implementing MsgNode
-    if (!translationPyModuleName.isEmpty()) {
-      Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(translationPyModuleName);
+    if (!translationClass.isEmpty()) {
+      Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(translationClass);
       String translationNamespace = nameSpaceAndName.first;
       String translationName = nameSpaceAndName.second;
       pyCodeBuilder.appendLine("from ", translationNamespace, " import ", translationName);
