@@ -31,8 +31,8 @@ import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -162,7 +162,8 @@ public final class TemplateTester {
 
     private void compile() {
       if (classData == null) {
-        ParseResult<SoyFileSetNode> parseSoyFiles = SharedTestUtils.parseSoyFiles(getSubject());
+        ParseResult<SoyFileSetNode> parseSoyFiles =
+            SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
         if (!parseSoyFiles.isSuccess()) {
           fail("parsed successfully", parseSoyFiles.getParseErrors());
         }

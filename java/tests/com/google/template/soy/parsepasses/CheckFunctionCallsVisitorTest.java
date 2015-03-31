@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -248,7 +248,9 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
       String soyContent, SyntaxVersion declaredSyntaxVersion)
       throws Exception {
 
-    SoyFileSetNode fileSet = SharedTestUtils.parseSoyFiles(soyContent).getParseTree();
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent)
+        .parse()
+        .getParseTree();
     Map<String, SoyFunction> soyFunctions = ImmutableMap.<String, SoyFunction>of(
         "min",
         new SoyFunction() {

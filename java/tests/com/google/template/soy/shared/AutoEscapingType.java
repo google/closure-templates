@@ -16,7 +16,7 @@
 
 package com.google.template.soy.shared;
 
-enum AutoEscapingType {
+public enum AutoEscapingType {
   DEPRECATED_NONCONTEXTUAL("deprecated-noncontextual"),
   STRICT("strict");
 

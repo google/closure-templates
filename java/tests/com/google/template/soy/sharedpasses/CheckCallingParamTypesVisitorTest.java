@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -286,14 +286,18 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
   }
 
   private SoyFileSetNode assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .parse()
+        .getParseTree();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     (new CheckCallingParamTypesVisitor()).exec(soyTree);
     return soyTree;
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .parse()
+        .getParseTree();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckCallingParamTypesVisitor()).exec(soyTree);

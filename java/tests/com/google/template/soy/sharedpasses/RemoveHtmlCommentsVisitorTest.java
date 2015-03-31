@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -49,8 +50,9 @@ public final class RemoveHtmlCommentsVisitorTest extends TestCase {
         "  <!-- comment 5 -->\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
-        false /* doRunInitialParsingPasses */, testFileContent)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .doRunInitialParsingPasses(false)
+        .parse()
         .getParseTree();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 

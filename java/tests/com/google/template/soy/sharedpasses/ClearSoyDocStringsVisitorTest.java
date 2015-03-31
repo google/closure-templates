@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 
@@ -45,7 +46,9 @@ public final class ClearSoyDocStringsVisitorTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .parse()
+        .getParseTree();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.getSoyDoc()).contains("blah");

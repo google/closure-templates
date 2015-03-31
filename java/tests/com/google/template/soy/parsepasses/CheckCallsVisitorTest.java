@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -165,7 +165,9 @@ public final class CheckCallsVisitorTest extends TestCase {
 
 
   private void assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .parse()
+        .getParseTree();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     (new CheckCallsVisitor()).exec(soyTree);
   }
@@ -173,7 +175,9 @@ public final class CheckCallsVisitorTest extends TestCase {
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .parse()
+        .getParseTree();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckCallsVisitor()).exec(soyTree);

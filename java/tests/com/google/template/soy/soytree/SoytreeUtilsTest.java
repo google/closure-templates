@@ -24,7 +24,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -58,7 +58,9 @@ public final class SoytreeUtilsTest extends TestCase {
         "  {/foreach}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .parse()
+        .getParseTree();
 
     CountingVisitor countingVisitor = new CountingVisitor();
     SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor);

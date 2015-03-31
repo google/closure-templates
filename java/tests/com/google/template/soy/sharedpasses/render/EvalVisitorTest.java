@@ -41,6 +41,7 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
@@ -99,7 +100,8 @@ public class EvalVisitorTest extends TestCase {
    */
   private SoyValue eval(String expression) throws Exception {
     PrintNode code =
-        (PrintNode) SharedTestUtils.parseSoyCode("{" + expression + "}")
+        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
+            .parse()
             .getParseTree()
             .getChild(0)
             .getChild(0)

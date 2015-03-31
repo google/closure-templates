@@ -21,7 +21,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -159,7 +159,9 @@ public class PrerenderVisitorTest extends TestCase {
    * @throws Exception If there's an error.
    */
   private static String prerender(String input) throws Exception {
-    SoyFileSetNode fileSet = SharedTestUtils.parseSoyCode(input).getParseTree();
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forTemplateContents(input)
+        .parse()
+        .getParseTree();
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =

@@ -31,7 +31,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
 import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.PrintNode;
 
 import junit.framework.TestCase;
@@ -296,7 +296,7 @@ public class ExpressionCompilerTest extends TestCase {
 
   private SoyExpression compileExpression(String soyExpr) {
     PrintNode code =
-        (PrintNode) SharedTestUtils.parseSoyCode("{" + soyExpr + "}")
+        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + soyExpr + "}").parse()
         .getParseTree()
         .getChild(0)
         .getChild(0)

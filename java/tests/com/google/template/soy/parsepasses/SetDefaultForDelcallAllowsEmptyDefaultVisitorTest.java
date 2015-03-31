@@ -19,7 +19,7 @@ package com.google.template.soy.parsepasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -33,20 +33,22 @@ public class SetDefaultForDelcallAllowsEmptyDefaultVisitorTest extends TestCase 
 
 
   public void testDefaultValueForAllowsEmptyDefault() throws Exception {
-
     String testTemplateContent = "" +
         "  {delcall my.delegate.template /}\n";
-    String testFileContent = SharedTestUtils.buildTestSoyFileContent(testTemplateContent);
 
     // Test with declared syntax version 2.1.
-    SoyFileSetNode soyTree =
-        SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_1, true, testFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(testTemplateContent)
+        .declaredSyntaxVersion(SyntaxVersion.V2_1)
+        .parse()
+        .getParseTree();
     CallDelegateNode delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
     assertThat(delcall.allowsEmptyDefault()).isTrue();
 
     // Test with declared syntax version 2.2.
-    soyTree =
-        SharedTestUtils.parseSoyFiles(SyntaxVersion.V2_2, true, testFileContent).getParseTree();
+    soyTree = SoyFileSetParserBuilder.forTemplateContents(testTemplateContent)
+        .declaredSyntaxVersion(SyntaxVersion.V2_2)
+        .parse()
+        .getParseTree();
     delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
     assertThat(delcall.allowsEmptyDefault()).isFalse();
   }

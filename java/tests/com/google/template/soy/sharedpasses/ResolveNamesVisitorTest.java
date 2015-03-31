@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -70,9 +70,10 @@ public final class ResolveNamesVisitorTest extends TestCase {
   }
 
   public void testParamNameLookupSuccess() {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool}",
         "{$pa}"))
+        .parse()
         .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
@@ -81,9 +82,10 @@ public final class ResolveNamesVisitorTest extends TestCase {
   }
 
   public void testInjectedParamNameLookupSuccess() {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@inject pa: bool}",
         "{$pa}"))
+        .parse()
         .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
@@ -92,9 +94,10 @@ public final class ResolveNamesVisitorTest extends TestCase {
   }
 
   public void testLetNameLookupSuccess() {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{let $pa: 1 /}",
         "{$pa}"))
+        .parse()
         .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
@@ -103,7 +106,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
   }
 
   public void testMultiplLocalsAndScopesNumbering() {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool}",
         "{@param pb: bool}",
         "{let $la: 1 /}",
@@ -111,6 +114,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         "  {$pa}{$pb}{$la + $item}",
         "{/foreach}",
         "{let $lb: 1 /}"))
+        .parse()
         .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
@@ -131,10 +135,11 @@ public final class ResolveNamesVisitorTest extends TestCase {
   }
 
   public void testMultipleLocals() {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{let $la: 1 /}",
         "{let $lb: $la /}",
         "{let $lc: $lb /}"))
+        .parse()
         .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
@@ -171,17 +176,18 @@ public final class ResolveNamesVisitorTest extends TestCase {
             "  {let $la: $la /}",
             "{/foreach}"));
     // valid, $item and $la are defined in non-overlapping scopes
-    SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{foreach $item in ['a', 'b']}",
         "  {let $la: $la /}",
         "{/foreach}",
         "{foreach $item in ['a', 'b']}",
         "  {let $la: $la /}",
-        "{/foreach}"));
+        "{/foreach}"))
+        .parse();
   }
 
   public void testLetContentSlotLifetime() {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(constructTemplateSource(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{let $a}",
         "  {if true}",  // introduce an extra scope
         "    {let $b: 2 /}",
@@ -189,6 +195,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         "  {/if}",
         "{/let}",
         "{$a}"))
+        .parse()
         .getParseTree();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
@@ -230,8 +237,11 @@ public final class ResolveNamesVisitorTest extends TestCase {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveNamesFails(String expectedError, String fileContent) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
-        typeRegistry, SyntaxVersion.V2_0, false, fileContent)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent)
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .doRunInitialParsingPasses(false)
+        .typeRegistry(typeRegistry)
+        .parse()
         .getParseTree();
     try {
       createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);

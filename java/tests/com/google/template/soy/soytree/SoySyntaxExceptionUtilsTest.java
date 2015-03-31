@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 
 import junit.framework.TestCase;
 
@@ -38,7 +38,9 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .parse()
+        .getParseTree();
 
     String message = "Some error happened.";
     Throwable cause = new Throwable();
@@ -64,7 +66,9 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         "{template name=\".foo\"}\n" +
         "  {$goo}\n" +
         "{/template}\n";
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .parse()
+        .getParseTree();
     PrintNode pn = (PrintNode) soyTree.getChild(0).getChild(0).getChild(0);
 
     // Before.

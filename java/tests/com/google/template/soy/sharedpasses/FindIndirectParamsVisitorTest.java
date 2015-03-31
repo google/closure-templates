@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -110,7 +110,8 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
         "{template .four}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(fileContent1, fileContent2)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent1, fileContent2)
+        .parse()
         .getParseTree();
 
     SoyFileNode a = soyTree.getChild(0);

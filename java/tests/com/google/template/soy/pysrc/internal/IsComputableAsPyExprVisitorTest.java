@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -66,8 +67,10 @@ public class IsComputableAsPyExprVisitorTest extends TestCase {
   }
 
   private static void runTestHelper(String soyNodeCode, boolean expectedResult) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyNodeCode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyNodeCode)
+        .parse()
+        .getParseTree();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
-    assertThat((boolean) (new IsComputableAsPyExprVisitor().exec(node))).isEqualTo(expectedResult);
+    assertThat(new IsComputableAsPyExprVisitor().exec(node)).isEqualTo(expectedResult);
   }
 }

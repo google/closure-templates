@@ -19,7 +19,7 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -46,7 +46,9 @@ public class SimplifyVisitorTest extends TestCase {
         "{for $i in range(5)}" +
         "  blah{$boo}blah" +
         "{/for}";
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .parse()
+        .getParseTree();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     ForNode forNode = (ForNode) template.getChild(3);
@@ -253,7 +255,9 @@ public class SimplifyVisitorTest extends TestCase {
 
   private static List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .parse()
+        .getParseTree();
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
     simplifyVisitor.exec(soyTree);
     return soyTree.getChild(0).getChild(0).getChildren();
@@ -262,7 +266,9 @@ public class SimplifyVisitorTest extends TestCase {
 
   private static SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .parse()
+        .getParseTree();
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
     simplifyVisitor.exec(soyTree);
     return soyTree;

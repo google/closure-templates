@@ -26,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
@@ -70,7 +70,9 @@ public final class TofuExceptionsTest extends TestCase {
   private SoyTofu tofu;
 
   @Override protected void setUp() throws Exception {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(SOY_FILE).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(SOY_FILE)
+        .parse()
+        .getParseTree();
     tofu = INJECTOR.getInstance(BaseTofuFactory.class).create(soyTree, false);
   }
 

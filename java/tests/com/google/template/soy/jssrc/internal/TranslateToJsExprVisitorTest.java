@@ -28,7 +28,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -243,12 +243,13 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    */
   private void assertTranslation(
       String soyExpr, JsExpr expectedJsExpr, SoyJsSrcOptions jsSrcOptions) throws Exception {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
         "/***/\n" +
         "{template .aaa}\n" +
         "{print \n" + soyExpr + "}\n" +
         "{/template}\n")
+        .parse()
         .getParseTree();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();

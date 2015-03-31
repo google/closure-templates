@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -45,7 +46,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  {/select}\n" +
         "{/msg}\n";
     try {
-      SharedTestUtils.parseSoyCode(soyCode);
+      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
       fail();
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage())
@@ -63,7 +64,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  You joined {$owner}'s community.\n" +
         "{/msg}\n";
     try {
-      SharedTestUtils.parseSoyCode(soyCode);
+      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
       fail();
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage())
@@ -79,7 +80,8 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    desc=\"...\"}\n" +
         "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n" +
         "{/msg}\n";
-      ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(soyCode);
+    ParseResult<SoyFileSetNode> result = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .parse();
       if (result.isSuccess()) {
         fail();
       }
@@ -101,7 +103,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  {/plural}\n" +
         "{/msg}\n";
     try {
-      SharedTestUtils.parseSoyCode(soyCode);
+      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
       fail();
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage())
@@ -119,8 +121,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  Save\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(
-        false /*don't run initial parsing passes*/, soyCode)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .doRunInitialParsingPasses(false)
+        .parse()
         .getParseTree();
 
     // Before.
@@ -149,8 +152,10 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    {default}Save\n" +
         "  {/select}\n" +
         "{/msg}\n";
-    SoyFileSetNode soyTreeUsingSelect = SharedTestUtils.parseSoyCode(soyCodeUsingSelect)
-        .getParseTree();
+    SoyFileSetNode soyTreeUsingSelect =
+        SoyFileSetParserBuilder.forTemplateContents(soyCodeUsingSelect)
+            .parse()
+            .getParseTree();
     MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
     assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
         .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
@@ -164,8 +169,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  {plural $num}{case 1}Send it{default}Send {$num}{/plural}\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(
-        false /*don't run initial parsing passes*/, soyCode)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .doRunInitialParsingPasses(false)
+        .parse()
         .getParseTree();
 
     // Before.
@@ -200,7 +206,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  {/select}\n" +
         "{/msg}\n";
     SoyFileSetNode soyTreeUsingSelect =
-        SharedTestUtils.parseSoyCode(soyCodeUsingSelect).getParseTree();
+        SoyFileSetParserBuilder.forTemplateContents(soyCodeUsingSelect).parse().getParseTree();
     MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
     assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
         .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
@@ -214,8 +220,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  You starred {$target[0].name}'s photo in {$target[1].name}'s album.\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(
-        false /*don't run initial parsing passes*/, soyCode)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .doRunInitialParsingPasses(false)
+        .parse()
         .getParseTree();
 
     // Before.

@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -38,7 +39,9 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
 
   public List<CssNode> compileTemplate(String templateText) {
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SharedTestUtils.parseSoyFiles(templateText).getParseTree());
+        SoyFileSetParserBuilder.forFileContents(templateText)
+            .parse()
+            .getParseTree());
     new ResolvePackageRelativeCssNamesVisitor().exec(template);
     return getCssNodes(template);
   }

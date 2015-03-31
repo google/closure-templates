@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -46,7 +47,9 @@ public final class RenameCssVisitorTest extends TestCase {
   public void testWithoutCssRenamingMap() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SharedTestUtils.parseSoyFiles(TEST_FILE_CONTENT).getParseTree());
+        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);
@@ -77,7 +80,9 @@ public final class RenameCssVisitorTest extends TestCase {
   public void testWithCssRenamingMap() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SharedTestUtils.parseSoyFiles(TEST_FILE_CONTENT).getParseTree());
+        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);

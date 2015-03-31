@@ -24,7 +24,7 @@ import com.google.inject.Injector;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
@@ -69,7 +69,9 @@ public class TofuRenderVisitorTest extends TestCase {
         "  {$boo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContent)
+        .parse()
+        .getParseTree();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree);
 
     // Important: This test will be doing its intended job only if we run

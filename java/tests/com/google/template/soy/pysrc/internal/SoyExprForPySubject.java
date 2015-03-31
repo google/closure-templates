@@ -31,6 +31,7 @@ import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisito
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -83,7 +84,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * @param expectedPyExprs The expected result of compilation.
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
-    ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(getSubject());
+    ParseResult<SoyFileSetNode> result
+        = SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse();
     SoyNode node = SharedTestUtils.getNode(result.getParseTree(), 0);
 
     SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
@@ -119,7 +121,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    */
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
     String soyExpr = String.format("{print %s}", getSubject());
-    ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(soyExpr);
+    ParseResult<SoyFileSetNode> result
+        = SoyFileSetParserBuilder.forTemplateContents(soyExpr).parse();
     PrintNode node = (PrintNode)SharedTestUtils.getNode(result.getParseTree(), 0);
     ExprNode exprNode = node.getExprUnion().getExpr();
 

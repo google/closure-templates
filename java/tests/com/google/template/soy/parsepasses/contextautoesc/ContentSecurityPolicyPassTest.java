@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -216,7 +216,9 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
 
   private SoyFileSetNode parseAndApplyCspPass(String input) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(namespace + input).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(namespace + input)
+        .parse()
+        .getParseTree();
 
     ContextualAutoescaper contextualAutoescaper = new ContextualAutoescaper(
         ImmutableMap.<String, SoyPrintDirective>of());

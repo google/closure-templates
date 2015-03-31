@@ -21,6 +21,7 @@ import com.google.inject.Key;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.soyparse.ParseResult;
@@ -92,7 +93,8 @@ class JsSrcTestUtils {
    * @return The resulting parse tree.
    */
   static ParseResult<SoyFileSetNode> parseSoyCode(String soyCode) {
-    ParseResult<SoyFileSetNode> result = SharedTestUtils.parseSoyCode(soyCode);
+    ParseResult<SoyFileSetNode> result
+        = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     (new ReplaceMsgsWithGoogMsgsVisitor()).exec(result.getParseTree());
     return result;
   }

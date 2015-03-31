@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -70,7 +70,9 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
         "  {/if}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(testFileContent).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .parse()
+        .getParseTree();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     PrintNode a = (PrintNode) template.getChild(0);

@@ -19,7 +19,7 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -81,7 +81,10 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
    * @return A SoySyntaxException if thrown by the visitor.
    */
   private SoySyntaxException executeStrictCheck(String soyCode) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(false, soyCode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyCode)
+        .doRunInitialParsingPasses(false)
+        .parse()
+        .getParseTree();
 
     SoySyntaxException error = null;
     try {

@@ -31,6 +31,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -70,9 +71,10 @@ public class InsertMsgsVisitorTest extends TestCase {
 
   public void testBasicMsgsUsingSoySource() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT).getParseTree());
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -108,9 +110,10 @@ public class InsertMsgsVisitorTest extends TestCase {
 
   public void testBasicMsgsUsingMsgBundle() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(BASIC_TEST_FILE_CONTENT).getParseTree());
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -185,9 +188,10 @@ public class InsertMsgsVisitorTest extends TestCase {
 
   public void testPlrselMsgsUsingSoySource() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT).getParseTree());
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(2);
@@ -210,9 +214,10 @@ public class InsertMsgsVisitorTest extends TestCase {
 
   public void testPlrselMsgsUsingMsgBundle() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(PLRSEL_TEST_FILE_CONTENT).getParseTree());
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(2);
@@ -330,9 +335,10 @@ public class InsertMsgsVisitorTest extends TestCase {
 
   public void testFallbackMsgsUsingSoySource() {
 
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT).getParseTree());
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(6);
@@ -359,10 +365,10 @@ public class InsertMsgsVisitorTest extends TestCase {
 
   public void testFallbackMsgsUsingMsgBundle() {
 
-
-    TemplateNode template =
-        (TemplateNode) SharedTestUtils.getNode(
-            SharedTestUtils.parseSoyFiles(FALLBACK_TEST_FILE_CONTENT).getParseTree());
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
+            .parse()
+            .getParseTree());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(6);

@@ -23,7 +23,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.TestingEnvironment;
@@ -114,7 +114,7 @@ public class PreevalVisitorTest extends TestCase {
    */
   private static SoyValue preeval(String expression) throws Exception {
     PrintNode code =
-        (PrintNode) SharedTestUtils.parseSoyCode("{" + expression + "}")
+        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}").parse()
             .getParseTree()
             .getChild(0)
             .getChild(0)

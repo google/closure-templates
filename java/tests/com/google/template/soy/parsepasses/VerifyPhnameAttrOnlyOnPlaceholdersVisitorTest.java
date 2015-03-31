@@ -19,7 +19,7 @@ package com.google.template.soy.parsepasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -40,15 +40,19 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCas
 
 
   private void assertValidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
-    (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .parse()
+        .getParseTree();
+    new VerifyPhnameAttrOnlyOnPlaceholdersVisitor().exec(soyTree);
   }
 
 
   private void assertInvalidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyCode(soyCode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .parse()
+        .getParseTree();
     try {
-      (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(soyTree);
+      new VerifyPhnameAttrOnlyOnPlaceholdersVisitor().exec(soyTree);
       fail();
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage()).contains("Found 'phname' attribute not on a msg placeholder");

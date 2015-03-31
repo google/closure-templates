@@ -25,9 +25,12 @@ import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
@@ -147,14 +150,19 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   }
 
   private String compileFile() {
-    SoyNode node = SharedTestUtils.parseSoyFiles(getSubject()).getParseTree();
+    SoyNode node = SoyFileSetParserBuilder.forFileContents(getSubject())
+        .parse()
+        .getParseTree();
     List<String> fileContents = getGenPyCodeVisitor().exec(node);
     return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
   private String compileBody() {
     SoyNode node = SharedTestUtils.getNode(
-        SharedTestUtils.parseStrictSoyCode(getSubject()).getParseTree(), 0);
+        SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, getSubject())
+            .declaredSyntaxVersion(SyntaxVersion.V2_2)
+            .parse()
+            .getParseTree(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     GenPyCodeVisitor genPyCodeVisitor = getGenPyCodeVisitor();

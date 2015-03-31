@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -354,7 +354,9 @@ public final class CheckSoyDocVisitorTest extends TestCase {
 
   private static void runSoyFilesTestHelper(String... soyFileContents)
       throws SoySyntaxException {
-    SoyFileSetNode soyTree = SharedTestUtils.parseSoyFiles(soyFileContents).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .parse()
+        .getParseTree();
 
     (new CheckSoyDocVisitor(SyntaxVersion.V1_0)).exec(soyTree);
   }

@@ -17,7 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyFileSetParserBuilder;
 
 import junit.framework.TestCase;
 
@@ -72,16 +72,20 @@ public class CheckTemplateVisibilityTest extends TestCase {
 
   private void assertVisibilityError(String... sources) {
     try {
-      SharedTestUtils.parseSoyFiles(
-        true /* doRunInitialParsingPasses */, true /* doRunCheckingPasses */, sources);
+      SoyFileSetParserBuilder.forFileContents(sources)
+          .doRunCheckingPasses(true)
+          .parse()
+          .getParseTree();
       fail("expected a SoySyntaxException");
     } catch (SoySyntaxException expected) {}
   }
 
   private void assertNoVisibilityError(String... sources) {
     try {
-      SharedTestUtils.parseSoyFiles(
-        true /* doRunInitialParsingPasses */, true /* doRunCheckingPasses */, sources);
+      SoyFileSetParserBuilder.forFileContents(sources)
+          .doRunCheckingPasses(true)
+          .parse()
+          .getParseTree();
     } catch (SoySyntaxException e) {
       fail();
     }
