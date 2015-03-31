@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 

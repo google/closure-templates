@@ -18,8 +18,8 @@ package com.google.template.soy.sharedpasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;

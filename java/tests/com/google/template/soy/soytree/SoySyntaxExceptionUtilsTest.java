@@ -16,8 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 
 import junit.framework.TestCase;
 

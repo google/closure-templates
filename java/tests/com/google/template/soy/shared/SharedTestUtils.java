@@ -31,7 +31,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Shared utilities for unit tests.
  *
@@ -118,7 +117,7 @@ public final class SharedTestUtils {
    * @param soyCode The code to parse as the full body of a template.
    * @return The test Soy file's content.
    */
-  static String buildTestSoyFileContent(
+  public static String buildTestSoyFileContent(
       AutoEscapingType autoEscaping, @Nullable List<String> soyDocParamNames, String soyCode) {
 
     String namespace = "brittle.test.ns";

@@ -18,8 +18,8 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;

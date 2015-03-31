@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -44,18 +44,21 @@ import com.google.template.soy.sharedpasses.RemoveHtmlCommentsVisitor;
 import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
 import com.google.template.soy.sharedpasses.ResolveExpressionTypesVisitor;
 import com.google.template.soy.sharedpasses.ResolveNamesVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
+import com.google.template.soy.soyparse.ParseResult;
+import com.google.template.soy.soyparse.SoyError;
+import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Static functions for parsing a set of Soy files into a {@link SoyFileSetNode}.
@@ -72,21 +75,25 @@ public final class SoyFileSetParser {
   private final SoyTypeRegistry typeRegistry;
 
   /** Optional file cache. */
-  private SoyAstCache cache;
+  @Nullable private final SoyAstCache cache;
 
   /** User-declared syntax version. */
-  private SyntaxVersion declaredSyntaxVersion;
+  private final SyntaxVersion declaredSyntaxVersion;
 
   /** The suppliers of the Soy files to parse. */
   private final List<SoyFileSupplier> soyFileSuppliers;
 
   /** Whether to run initial parsing passes. */
-  private boolean doRunInitialParsingPasses;
+  private final boolean doRunInitialParsingPasses;
 
   /** Whether to run checking passes. */
-  private boolean doRunCheckingPasses;
+  private final boolean doRunCheckingPasses;
 
-  /** Whether to check overrides. */
+  /**
+   * Whether to check overrides.
+   * TODO(brndn): remove ASAP. Template overrides are an undocumented V1-only feature
+   * whose only use seems to be in Soy tests.
+   */
   private boolean doCheckOverrides;
 
   /** For reporting parse errors. */
@@ -96,24 +103,33 @@ public final class SoyFileSetParser {
    * @param typeRegistry The type registry to resolve type names.
    * @param astCache The AST cache to use, if any.
    * @param declaredSyntaxVersion User-declared syntax version.
-   * @param soyFileSuppliers The suppliers for the Soy files.
+   * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
    */
   public SoyFileSetParser(
-      SoyTypeRegistry typeRegistry, @Nullable SoyAstCache astCache,
-      SyntaxVersion declaredSyntaxVersion, SoyFileSupplier... soyFileSuppliers) {
-    this(typeRegistry, astCache, declaredSyntaxVersion, Arrays.asList(soyFileSuppliers));
+      SoyTypeRegistry typeRegistry,
+      @Nullable SoyAstCache astCache,
+      SyntaxVersion declaredSyntaxVersion,
+      List<SoyFileSupplier> soyFileSuppliers) {
+    // By default, run all the parsing and checking passes.
+    this(typeRegistry, astCache, declaredSyntaxVersion, soyFileSuppliers, true, true);
+    this.doCheckOverrides = true;
   }
-
 
   /**
    * @param typeRegistry The type registry to resolve type names.
    * @param astCache The AST cache to use, if any.
    * @param declaredSyntaxVersion User-declared syntax version.
    * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
+   * @param doRunInitialParsingPasses Whether to run initial parsing passes.
+   * @param doRunCheckingPasses Whether to run checking passes.
    */
-  public SoyFileSetParser(
-      SoyTypeRegistry typeRegistry, @Nullable SoyAstCache astCache,
-      SyntaxVersion declaredSyntaxVersion, List<SoyFileSupplier> soyFileSuppliers) {
+  SoyFileSetParser(
+      SoyTypeRegistry typeRegistry,
+      @Nullable SoyAstCache astCache,
+      SyntaxVersion declaredSyntaxVersion,
+      List<SoyFileSupplier> soyFileSuppliers,
+      boolean doRunInitialParsingPasses,
+      boolean doRunCheckingPasses) {
 
     this.typeRegistry = typeRegistry;
     this.cache = astCache;
@@ -121,39 +137,9 @@ public final class SoyFileSetParser {
     this.soyFileSuppliers = soyFileSuppliers;
     verifyUniquePaths(soyFileSuppliers);
 
-    // By default, do everything.
-    this.doRunInitialParsingPasses = true;
-    this.doRunCheckingPasses = true;
-    this.doCheckOverrides = true;
-  }
-
-
-  /**
-   * Sets whether to run initial parsing passes. Returns self.
-   */
-  public SoyFileSetParser setDoRunInitialParsingPasses(boolean doRunInitialParsingPasses) {
     this.doRunInitialParsingPasses = doRunInitialParsingPasses;
-    if (! doRunInitialParsingPasses) {
-      this.doRunCheckingPasses = false;
-      this.doCheckOverrides = false;
-    }
-    return this;
-  }
-
-
-  /**
-   * Sets whether to run checking passes. Returns self.
-   */
-  public SoyFileSetParser setDoRunCheckingPasses(boolean doRunCheckingPasses) {
     this.doRunCheckingPasses = doRunCheckingPasses;
-    if (doRunCheckingPasses) {
-      Preconditions.checkState(doRunInitialParsingPasses);
-    } else {
-      this.doCheckOverrides = false;
-    }
-    return this;
   }
-
 
   /**
    * Sets whether to check overrides. Returns self.

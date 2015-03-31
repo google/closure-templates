@@ -18,9 +18,9 @@ package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 

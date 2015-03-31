@@ -72,7 +72,6 @@ import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisito
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soyparse.ParseResult;
-import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;

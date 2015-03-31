@@ -28,7 +28,7 @@ import com.google.template.soy.soytree.SoyNode;
  * @param <T> Type of the root of the parse tree. Should be either
  *     {@link com.google.template.soy.soytree.SoyFileSetNode} or
  *     {@link com.google.template.soy.soytree.SoyFileNode}, which are the roots produced by
- *     {@link com.google.template.soy.soyparse.SoyFileSetParser} and
+ *     {@link com.google.template.soy.SoyFileSetParser} and
  *     {@link com.google.template.soy.soyparse.SoyFileParser} respectively.
  * @author brndn@google.com (Brendan Linn)
  */

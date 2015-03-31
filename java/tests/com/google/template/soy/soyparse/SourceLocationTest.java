@@ -17,12 +17,12 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.Joiner;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -195,12 +195,11 @@ public final class SourceLocationTest extends TestCase {
     // message.
     // JavaCC is pretty good about never using null as a token value.
     try {
-      (new SoyFileSetParser(
-          new SoyTypeRegistry(), null, SyntaxVersion.V2_0,
+      SoyFileSetParserBuilder.forSuppliers(
           SoyFileSupplier.Factory.create(
               "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
-              SoyFileKind.SRC, "borken.soy")))
-          .setDoRunInitialParsingPasses(false)
+              SoyFileKind.SRC, "borken.soy"))
+          .doRunInitialParsingPasses(false)
           .parse();
     } catch (SoySyntaxException ex) {
       // OK
@@ -229,19 +228,12 @@ public final class SourceLocationTest extends TestCase {
   }
 
 
-  private void assertSourceLocations(
-      String asciiArtExpectedOutput, String soySourceCode)
-      throws Exception {
-
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        new SoyTypeRegistry(),
-        null,
-        SyntaxVersion.V2_0,
+  private void assertSourceLocations(String asciiArtExpectedOutput, String soySourceCode) {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
         SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy"))
-        .setDoRunInitialParsingPasses(false)
+        .doRunInitialParsingPasses(false)
         .parse()
         .getParseTree();
-
     String actual = new AsciiArtVisitor().exec(soyTree);
     assertEquals(asciiArtExpectedOutput, actual);
   }

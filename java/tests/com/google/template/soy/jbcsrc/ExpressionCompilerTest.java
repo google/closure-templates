@@ -20,6 +20,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -32,7 +33,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.types.primitive.AnyType;
 

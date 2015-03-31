@@ -18,7 +18,7 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 

@@ -48,12 +48,11 @@ public class ErrorReporterImpl implements ErrorReporter {
   }
 
   /**
-   * Returns the full list of errors reported to this error manager.
-   * This is a package-private implementation method, rather than a public interface method,
-   * because there is only one caller that needs to know the full list of errors:
-   * {@link SoyFileSetParser#parseWithVersions}.
+   * Returns the full list of errors reported to this error reporter.
+   * TODO(user): only a couple top-level places in the codebase should be able to use this.
+   * Make package-private once the error refactoring is complete.
    */
-  ImmutableCollection<? extends SoySyntaxException> getErrors() {
+  public ImmutableCollection<? extends SoySyntaxException> getErrors() {
     return ImmutableList.copyOf(errors);
   }
 }

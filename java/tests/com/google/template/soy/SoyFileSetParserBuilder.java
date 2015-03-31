@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared;
+package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.shared.AutoEscapingType;
+import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.soyparse.ParseResult;
-import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -32,7 +34,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 /**
- * Fluent builder for configuring {@link SoyFileSetParser}s in tests.
+ * Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests.
  *
  * @author brndn@google.com (Brendan Linn)
  */
@@ -166,9 +168,9 @@ public final class SoyFileSetParserBuilder {
         typeRegistry,
         astCache,
         declaredSyntaxVersion,
-        soyFileSuppliers)
-        .setDoRunInitialParsingPasses(doRunInitialParsingPasses)
-        .setDoRunCheckingPasses(doRunCheckingPasses)
+        soyFileSuppliers,
+        doRunInitialParsingPasses,
+        doRunCheckingPasses)
         .parse();
   }
 }

@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;

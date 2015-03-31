@@ -19,7 +19,7 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;

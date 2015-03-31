@@ -18,10 +18,10 @@ package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;

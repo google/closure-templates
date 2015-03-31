@@ -23,20 +23,17 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soyparse.SoyFileSetParser;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
@@ -2379,18 +2376,15 @@ public final class ContextualAutoescaperTest extends TestCase {
   private void assertRewriteFails(
       @Nullable String msg,
       String... inputs) {
-    List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
+    SoyFileSupplier[] soyFileSuppliers = new SoyFileSupplier[inputs.length];
     for (int i = 0; i < inputs.length; ++i) {
-      soyFileSuppliers.add(SoyFileSupplier.Factory.create(
-          inputs[i], SoyFileKind.SRC, inputs.length == 1 ? "no-path" : "no-path-" + i));
+      soyFileSuppliers[i] = SoyFileSupplier.Factory.create(
+          inputs[i], SoyFileKind.SRC, inputs.length == 1 ? "no-path" : "no-path-" + i);
     }
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        new SoyTypeRegistry(),
-        null,
-        SyntaxVersion.V1_0,
-        soyFileSuppliers)
-        .setDoRunInitialParsingPasses(true)
-        .setDoRunCheckingPasses(true)
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
+        .declaredSyntaxVersion(SyntaxVersion.V1_0)
+        .doRunInitialParsingPasses(true)
+        .doRunCheckingPasses(true)
         .parse()
         .getParseTree();
 
