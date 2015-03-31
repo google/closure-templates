@@ -20,10 +20,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.List;
@@ -35,10 +35,11 @@ final class ControlFlow {
   private ControlFlow() {}
 
   @AutoValue abstract static class IfBlock {
-    static IfBlock create(BoolExpression cond, Statement block) {
+    static IfBlock create(Expression cond, Statement block) {
+      cond.checkType(Type.BOOLEAN_TYPE);
       return new AutoValue_ControlFlow_IfBlock(cond, block);
     }
-    abstract BoolExpression condition();
+    abstract Expression condition();
     abstract Statement block();
   }
 

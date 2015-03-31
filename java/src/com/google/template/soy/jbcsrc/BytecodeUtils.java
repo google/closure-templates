@@ -19,10 +19,9 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.StringExpression;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Primitives;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -31,7 +30,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.util.Printer;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 
 import javax.annotation.Nullable;
@@ -42,80 +43,142 @@ import javax.annotation.Nullable;
 final class BytecodeUtils {
   static final Method NULLARY_INIT = Method.getMethod("void <init>()");
   static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
+  private static final ImmutableMap<String, Class<?>> PRIMITIVES_MAP;
+
+  static {
+    ImmutableMap.Builder<String, Class<?>> builder = ImmutableMap.builder();
+    for (Class<?> cl : Primitives.allPrimitiveTypes()) {
+      builder.put(cl.getName(), cl);
+    }
+    PRIMITIVES_MAP = builder.build();
+  }
 
   private BytecodeUtils() {}
 
-  /** Returns an {@link Expression }that can load the given 'int' constant. */
-  static Expression constant(final int value) {
-    return new Expression() {
+  /**
+   * Returns the runtime class represented by the given type.
+   *
+   * @throws IllegalArgumentException if the class cannot be found.  It is expected that this
+   *     method will only be called for types that have a runtime on the compilers classpath.
+   */
+  static Class<?> classFromAsmType(Type type) {
+    switch (type.getSort()) {
+      case Type.ARRAY:
+        Class<?> elementType = classFromAsmType(type.getElementType());
+        // The easiest way to generically get an array class.
+        Object array = Array.newInstance(elementType, 0);
+        return array.getClass();
+      case Type.OBJECT:
+        try {
+          return Class.forName(type.getClassName(), false, BytecodeUtils.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+          throw new IllegalArgumentException("Could not load " + type, e);
+        }
+      case Type.METHOD:
+        throw new IllegalArgumentException("Method types are not supported: " + type);
+      default:
+        // primitive, class.forname doesn't work on primitives
+        return PRIMITIVES_MAP.get(type.getClassName());
+    }
+  }
+
+  /** Returns an {@link Expression} that can load the given 'boolean' constant. */
+  static Expression constant(final boolean value) {
+    return new SimpleExpression(Type.BOOLEAN_TYPE, true) {
       @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
+    };
+  }
 
-      @Override Type resultType() {
-        return Type.INT_TYPE;
-      }
-
-      @Override boolean isConstant() {
-        return true;
+  /** Returns an {@link Expression} that can load the given 'int' constant. */
+  static Expression constant(final int value) {
+    return new SimpleExpression(Type.INT_TYPE, true) {
+      @Override void doGen(GeneratorAdapter mv) {
+        mv.push(value);
       }
     };
   }
   
   /** Returns an {@link Expression} that can load the given 'char' constant. */
   static Expression constant(final char value) {
-    return new Expression() {
+    return new SimpleExpression(Type.CHAR_TYPE, true) {
       @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
-      }
-
-      @Override Type resultType() {
-        return Type.CHAR_TYPE;
-      }
-
-      @Override boolean isConstant() {
-        return true;
       }
     };
   }
 
   /** Returns an {@link Expression} that can load the given long constant. */
-  static IntExpression constant(final long value) {
-    return new IntExpression() {
+  static Expression constant(final long value) {
+    return new SimpleExpression(Type.LONG_TYPE, true) {
       @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
-      }
-
-      @Override boolean isConstant() {
-        return true;
       }
     };
   }
+
   /** Returns an {@link Expression} that can load the given double constant. */
-  static FloatExpression constant(final double value) {
-    return new FloatExpression() {
+  static Expression constant(final double value) {
+    return new SimpleExpression(Type.DOUBLE_TYPE, true) {
       @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
-      }
-
-      @Override boolean isConstant() {
-        return true;
       }
     };
   }
 
   /** Returns an {@link Expression} that can load the given String constant. */
-  static StringExpression constant(final String value) {
+  static Expression constant(final String value) {
     checkNotNull(value);
-    return new StringExpression() {
+    return new SimpleExpression(Type.getType(String.class), true) {
       @Override void doGen(GeneratorAdapter mv) {
         mv.push(value);
       }
+    };
+  }
 
-      @Override boolean isConstant() {
-        return true;
+  /**
+   * Returns an expression that does a numeric conversion cast from the given expression to the
+   * given type.
+   * 
+   * @throws IllegalArgumentException if either the expression or the target type is not a numeric 
+   *     primitive
+   */
+  static Expression numericConversion(final Expression expr, final Type to) {
+    if (to.equals(expr.resultType())) {
+      return expr;
+    }
+    if (!isNumericPrimitive(to) || !isNumericPrimitive(expr.resultType())) {
+      throw new IllegalArgumentException("Cannot convert from " + expr.resultType() + " to " + to);
+    }
+    return new SimpleExpression(to, expr.isConstant()) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        expr.gen(adapter);
+        adapter.cast(expr.resultType(), to);
       }
     };
+  }
+
+  private static boolean isNumericPrimitive(Type type) {
+    int sort = type.getSort();
+    switch (sort) {
+      case Type.OBJECT:
+      case Type.ARRAY:
+      case Type.VOID:
+      case Type.METHOD:
+      case Type.BOOLEAN:
+        return false;
+      case Type.BYTE:
+      case Type.CHAR:
+      case Type.DOUBLE:
+      case Type.INT:
+      case Type.SHORT:
+      case Type.LONG:
+      case Type.FLOAT:
+        return true;
+      default:
+        throw new AssertionError("unexpected type " + type);
+    }
   }
 
   /**
@@ -124,23 +187,15 @@ final class BytecodeUtils {
   static Expression dupExpr(final Type type) {
     switch (type.getSize()) {
       case 1:
-        return new Expression() {
+        return new SimpleExpression(type, false) {
           @Override void doGen(GeneratorAdapter mv) {
             mv.dup();
           }
-
-          @Override Type resultType() {
-            return type;
-          }
         };
       case 2:
-        return new Expression() {
+        return new SimpleExpression(type, false) {
           @Override void doGen(GeneratorAdapter mv) {
             mv.dup2();
-          }
-
-          @Override Type resultType() {
-            return type;
           }
         };
       default:
@@ -200,13 +255,13 @@ final class BytecodeUtils {
   /**
    * Compares the two {@code double} valued expressions using the provided comparison operation.
    */
-  static BoolExpression compare(final int comparisonOpcode, final Expression left, 
+  static Expression compare(final int comparisonOpcode, final Expression left, 
       final Expression right) {
-    checkIntComparisonOpcode(comparisonOpcode);
     checkArgument(left.resultType().equals(right.resultType()), 
         "left and right must have matching types, found %s and %s", left.resultType(), 
         right.resultType());
-    return new BoolExpression() {
+    checkIntComparisonOpcode(left.resultType(), comparisonOpcode);
+    return new SimpleExpression(Type.BOOLEAN_TYPE, left.isConstant() && right.isConstant()) {
       @Override void doGen(GeneratorAdapter mv) {
         left.gen(mv);
         right.gen(mv);
@@ -219,21 +274,22 @@ final class BytecodeUtils {
         mv.push(true);
         mv.mark(end);
       }
-
-      @Override boolean isConstant() {
-        return left.isConstant() && right.isConstant();
-      }
     };
   }
 
-  private static void checkIntComparisonOpcode(int opcode) {
+  private static void checkIntComparisonOpcode(Type comparisonType, int opcode) {
     switch (opcode) {
       case Opcodes.IFEQ:
       case Opcodes.IFNE:
+        return;
       case Opcodes.IFGT:
       case Opcodes.IFGE:
       case Opcodes.IFLT:
       case Opcodes.IFLE:
+        if (comparisonType.getSort() == Type.ARRAY || comparisonType.getSort() == Type.OBJECT) {
+          throw new IllegalArgumentException(
+              "Type: " + comparisonType + " cannot be compared via " + Printer.OPCODES[opcode]);
+        }
         return;
     }
     throw new IllegalArgumentException("Unsupported opcode for comparison operation: " + opcode);
@@ -243,10 +299,10 @@ final class BytecodeUtils {
    * Returns an expression that evaluates to the logical negation of the given boolean valued 
    * expression.
    */
-  static BoolExpression logicalNot(final Expression baseExpr) {
+  static Expression logicalNot(final Expression baseExpr) {
     baseExpr.checkType(Type.BOOLEAN_TYPE);
     checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
-    return new BoolExpression() {
+    return new SimpleExpression(Type.BOOLEAN_TYPE, baseExpr.isConstant()) {
       @Override void doGen(GeneratorAdapter mv) {
         baseExpr.gen(mv);
         // Surprisingly, java bytecode uses a branch (instead of 'xor 1' or something) to implement
@@ -260,10 +316,6 @@ final class BytecodeUtils {
         mv.mark(ifTrue);
         mv.push(false);
         mv.mark(end);
-      }
-
-      @Override boolean isConstant() {
-        return baseExpr.isConstant();
       }
     };
   }

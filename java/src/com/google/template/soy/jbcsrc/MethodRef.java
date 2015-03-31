@@ -31,11 +31,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.BoxedExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.StringExpression;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -87,12 +83,16 @@ import java.util.Map;
       create(SharedRuntime.class, "negative", SoyValue.class);
   static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER = 
       create(Runtime.class, "stringEqualsAsNumber", String.class, double.class);
+  static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN = 
+      create(Runtime.class, "coerceToBoolean", double.class);
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
   static final MethodRef RUNTIME_CHECK_REQUIRED_PARAM = 
       create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
   static final MethodRef RUNTIME_LOGGER = create(Runtime.class, "logger");
+  static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
+  static final MethodRef DOUBLE_TO_STRING = create(Double.class, "toString", double.class);
 
   // Instance methods
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
@@ -113,6 +113,7 @@ import java.util.Map;
   static final MethodRef INTEGER_DATA_GET_VALUE = create(IntegerData.class, "getValue");
   static final MethodRef INTEGER_DATA_INTEGER_VALUE = create(IntegerData.class, "integerValue");
   static final MethodRef STRING_CONCAT = create(String.class, "concat", String.class);
+  static final MethodRef STRING_IS_EMPTY = create(String.class, "isEmpty");
   static final MethodRef ADVISING_APPENDABLE_APPEND = 
       create(AdvisingAppendable.class, "append", CharSequence.class);
   static final MethodRef ADVISING_APPENDABLE_APPEND_CHAR = 
@@ -178,7 +179,7 @@ import java.util.Map;
     Expression.checkTypes(argTypes(), args);
     return new Statement() {
       @Override void doGen(GeneratorAdapter adapter) {
-        invoke(adapter, args);
+        doInvoke(adapter, args);
       }
     };
   }
@@ -188,89 +189,17 @@ import java.util.Map;
     checkState(!void.class.equals(returnType()), 
         "Cannot produce an expression from a void method.");
     Expression.checkTypes(argTypes(), args);
-    final boolean isConstant = areAllConstant(Arrays.asList(args));
-    if (SoyValue.class.isAssignableFrom(returnType())) {
-      Class<? extends SoyValue> boxType = returnType().asSubclass(SoyValue.class);
-      return new BoxedExpression(boxType) {
-        @Override void doGen(GeneratorAdapter mv) {
-          invoke(mv, args);
-        }
-
-        @Override boolean isConstant() {
-          return isConstant;
-        }
-      };
-    }
-    if (double.class.equals(returnType())) {
-      return new FloatExpression() {
-        @Override void doGen(GeneratorAdapter mv) {
-          invoke(mv, args);
-        }
-
-        @Override boolean isConstant() {
-          return isConstant;
-        }
-      };
-    }
-    if (long.class.equals(returnType())) {
-      return new IntExpression() {
-        @Override void doGen(GeneratorAdapter mv) {
-          invoke(mv, args);
-        }
-
-        @Override boolean isConstant() {
-          return isConstant;
-        }
-      };
-    }
-    if (boolean.class.equals(returnType())) {
-      return new BoolExpression() {
-        @Override void doGen(GeneratorAdapter mv) {
-          invoke(mv, args);
-        }
-
-        @Override boolean isConstant() {
-          return isConstant;
-        }
-      };
-    }
-    if (String.class.equals(returnType())) {
-      return new StringExpression() {
-        @Override void doGen(GeneratorAdapter mv) {
-          invoke(mv, args);
-        }
-
-        @Override boolean isConstant() {
-          return isConstant;
-        }
-      };
-    }
-    // default
-    return new Expression() {
-      final Type type = Type.getType(returnType());
-
+    boolean isConstant = areAllConstant(Arrays.asList(args));
+    // TODO(lukes): this assumes all methods are idempotent... not really true.  how should we
+    // distinguish? we could annotate each methodref?
+    return new SimpleExpression(Type.getType(returnType()), isConstant) {
       @Override void doGen(GeneratorAdapter mv) {
-        invoke(mv, args);
-      }
-
-      @Override Type resultType() {
-        return type;
-      }
-
-      @Override boolean isConstant() {
-        return isConstant;
+        doInvoke(mv, args);
       }
     };
   }
 
-  SoyExpression invokeAsBoxedSoyExpression(final SoyExpression ...args) {
-    for (int i = 0; i < args.length; i++) {
-      args[i] = args[i].box();
-    }
-    return (SoyExpression) invoke(args);
-  }
-
-  private void invoke(GeneratorAdapter mv, Expression... args) {
+  private void doInvoke(GeneratorAdapter mv, Expression... args) {
     for (Expression arg : args) {
       arg.gen(mv);
     }

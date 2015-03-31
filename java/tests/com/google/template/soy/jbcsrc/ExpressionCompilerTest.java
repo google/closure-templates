@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDataException;
@@ -30,13 +32,11 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
 import com.google.template.soy.shared.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.types.primitive.AnyType;
 
 import junit.framework.TestCase;
-
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -104,12 +104,16 @@ public class ExpressionCompilerTest extends TestCase {
   public void testNegativeOpNode() {
     assertExpression("-1").evaluatesTo(-1L);
     assertExpression("-1.0").evaluatesTo(-1.0);
-    assertExpression("-'asdf'").throwsExceptionOfType(SoyDataException.class);
+    // TODO(user): this should be rejected by the type checker
+    try {
+      compileExpression("-'asdf'");
+      fail();
+    } catch (IllegalArgumentException expected) {}
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(1L)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("-$foo").evaluatesTo(IntegerData.forValue(-1));
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(1D)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1D))));
     assertExpression("-$foo").evaluatesTo(FloatData.forValue(-1.0));
   }
 
@@ -122,12 +126,12 @@ public class ExpressionCompilerTest extends TestCase {
       fail();
     } catch (Exception expected) {}
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(3L)));
-    variables.put("bar", untypedBoxedSoyExpression(BytecodeUtils.constant(2L)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
     assertExpression("$foo % $bar").evaluatesTo(1L);
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(3.0)));
-    variables.put("bar", untypedBoxedSoyExpression(BytecodeUtils.constant(2.0)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     assertExpression("$foo % $bar").throwsExceptionOfType(SoyDataException.class);
   }
 
@@ -135,8 +139,8 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("3 / 2").evaluatesTo(1.5);  // note the coercion to floating point
     assertExpression("4.2 / 2").evaluatesTo(2.1);
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(3.0)));
-    variables.put("bar", untypedBoxedSoyExpression(BytecodeUtils.constant(2.0)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     assertExpression("$foo / $bar").evaluatesTo(1.5);
   }
 
@@ -144,8 +148,8 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("4.2 * 2").evaluatesTo(8.4);
     assertExpression("4 * 2").evaluatesTo(8L);
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(3.0)));
-    variables.put("bar", untypedBoxedSoyExpression(BytecodeUtils.constant(2.0)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     assertExpression("$foo * $bar").evaluatesTo(FloatData.forValue(6.0));
   }
 
@@ -153,8 +157,8 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("4.2 - 2").evaluatesTo(2.2);
     assertExpression("4 - 2").evaluatesTo(2L);
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(3.0)));
-    variables.put("bar", untypedBoxedSoyExpression(BytecodeUtils.constant(2.0)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     assertExpression("$foo - $bar").evaluatesTo(FloatData.forValue(1.0));
   }
 
@@ -164,11 +168,11 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("4 + '2'").evaluatesTo("42");
     assertExpression("'4' + 2").evaluatesTo("42");
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant("foo")));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
     assertExpression("$foo + 2").evaluatesTo(StringData.forValue("foo2"));
     assertExpression("$foo + '2'").evaluatesTo("foo2");  // Note, not boxed
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant(1L)));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("$foo + 2").evaluatesTo(IntegerData.forValue(3));
     assertExpression("$foo + '2'").evaluatesTo("12");
   }
@@ -177,18 +181,18 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("not false").evaluatesTo(true);
     assertExpression("not true").evaluatesTo(false);
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant("foo")));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
     assertExpression("not $foo").evaluatesTo(false);
 
-    variables.put("foo", untypedBoxedSoyExpression(BytecodeUtils.constant("")));
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant(""))));
     assertExpression("not $foo").evaluatesTo(true);  // empty string is falsy
   }
 
   public void testComparisonOperators() {
-    variables.put("oneInt", untypedBoxedSoyExpression(BytecodeUtils.constant(1L)));
-    variables.put("oneFloat", untypedBoxedSoyExpression(BytecodeUtils.constant(1.0)));
-    variables.put("twoInt", untypedBoxedSoyExpression(BytecodeUtils.constant(2L)));
-    variables.put("twoFloat", untypedBoxedSoyExpression(BytecodeUtils.constant(2.0)));
+    variables.put("oneInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
+    variables.put("oneFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1.0))));
+    variables.put("twoInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
+    variables.put("twoFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
 
     for (String one : ImmutableList.of("1", "1.0", "$oneInt", "$oneFloat")) {
       for (String two : ImmutableList.of("2", "2.0", "$twoInt", "$twoFloat")) {
@@ -220,8 +224,8 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   public void testConditionalOperatorse() {
-    variables.put("true", untypedBoxedSoyExpression(BoolExpression.TRUE));
-    variables.put("false", untypedBoxedSoyExpression(BoolExpression.FALSE));
+    variables.put("true", untypedBoxedSoyExpression(SoyExpression.TRUE));
+    variables.put("false", untypedBoxedSoyExpression(SoyExpression.FALSE));
 
     for (String trueExpr : ImmutableList.of("true", "$true")) {
       for (String falseExpr : ImmutableList.of("false", "$false")) {
@@ -247,16 +251,16 @@ public class ExpressionCompilerTest extends TestCase {
     assertExprEquals("'12.0'", "'12.0'");
     assertExprEquals("'asdf'", "'asdf'");
 
-    variables.put("str", untypedBoxedSoyExpression(BytecodeUtils.constant("foo")));
+    variables.put("str", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
     assertExprEquals("$str", "'foo'");
     assertExprNotEquals("$str", "'bar'");
 
-    variables.put("intStr", untypedBoxedSoyExpression(BytecodeUtils.constant("12")));
+    variables.put("intStr", untypedBoxedSoyExpression(SoyExpression.forString(constant("12"))));
     assertExprEquals("$intStr", "'12'");
     assertExprEquals("$intStr", "12");
     assertExprNotEquals("$intStr", "'bar'");
 
-    variables.put("floatStr", untypedBoxedSoyExpression(BytecodeUtils.constant(12.0)));
+    variables.put("floatStr", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(12.0))));
     assertExprEquals("$floatStr", "'12'");
     assertExprEquals("$floatStr", "12");
     assertExprNotEquals("$floatStr", "'bar'");
@@ -311,15 +315,6 @@ public class ExpressionCompilerTest extends TestCase {
    * useful for testing fallback implementations in the compiler.
    */
   private SoyExpression untypedBoxedSoyExpression(final SoyExpression expr) {
-    final SoyExpression boxed = expr.box();
-    return new SoyExpression(SoyValue.class) {
-      @Override SoyExpression box() {
-        return this;
-      }
-
-      @Override void doGen(GeneratorAdapter adapter) {
-        boxed.gen(adapter);
-      }
-    };
+    return SoyExpression.forSoyValue(AnyType.getInstance(), expr.box());
   }
 }

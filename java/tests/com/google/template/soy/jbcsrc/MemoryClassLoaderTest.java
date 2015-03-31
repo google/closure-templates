@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.SoyExpression.FALSE;
+
 import com.google.common.testing.GcFinalization;
 import com.google.template.soy.jbcsrc.ExpressionTester.BooleanInvoker;
 
@@ -31,8 +33,7 @@ public class MemoryClassLoaderTest extends TestCase {
   // Our memory classloaders should be garbage collectable when all references to their types 
   // disapear
   public void testCollectable() {
-    BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, 
-        SoyExpression.BoolExpression.FALSE);
+    BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
     assertEquals(false, invoker.invoke());  // sanity, the invoker works
     MemoryClassLoader loader = (MemoryClassLoader) invoker.getClass().getClassLoader();
     WeakReference<MemoryClassLoader> loaderRef = new WeakReference<MemoryClassLoader>(loader);

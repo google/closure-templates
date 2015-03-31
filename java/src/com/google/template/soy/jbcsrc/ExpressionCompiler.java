@@ -17,6 +17,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.primitives.Ints;
@@ -50,13 +51,11 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.BoxedExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.ListExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.MapExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.StringExpression;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.aggregate.RecordType;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -66,12 +65,16 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Compiles a {@link ExprNode} to a {@link SoyExpression}.
  *
  * <p>This is an abstract class that supports all expressions except var refs, data access and
  * function calls.
+ *
+ * <p>TODO(lukes): move all expression subtypes from here to another class (most likely as static
+ * methods on Expression)
  */
 abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpression> {
 
@@ -98,19 +101,19 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
   }
 
   @Override protected final SoyExpression visitFloatNode(FloatNode node) {
-    return BytecodeUtils.constant(node.getValue());
+    return SoyExpression.forFloat(constant(node.getValue()));
   }
 
   @Override protected final SoyExpression visitStringNode(StringNode node) {
-    return BytecodeUtils.constant(node.getValue());
+    return SoyExpression.forString(constant(node.getValue()));
   }
 
   @Override protected final SoyExpression visitBooleanNode(BooleanNode node) {
-    return node.getValue() ? BoolExpression.TRUE : BoolExpression.FALSE;
+    return node.getValue() ? SoyExpression.TRUE : SoyExpression.FALSE;
   }
 
   @Override protected final SoyExpression visitIntegerNode(IntegerNode node) {
-    return BytecodeUtils.constant((long) node.getValue());
+    return SoyExpression.forInt(BytecodeUtils.constant((long) node.getValue()));
   }
 
   // Collection literals
@@ -118,109 +121,97 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
   @Override protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
     // First we construct an ArrayList of the appropriate size
     final int numChildren = node.getChildren().size();
+    ListType listType = (ListType) node.getType();
     if (numChildren == 0) {
-      return new ListExpression() {
-        final Expression immutableListOf = MethodRef.IMMUTABLE_LIST_OF.invoke();
-        @Override void doGen(GeneratorAdapter adapter) {
-          immutableListOf.gen(adapter);
-        }
-
-        @Override boolean isConstant() {
-          return true;
-        }
-      };
+      return SoyExpression.forList(listType, MethodRef.IMMUTABLE_LIST_OF.invoke().asConstant());
     }
     List<Statement> adds = new ArrayList<>(numChildren);
     // Now evaluate each child, which should result in the value being at the top of the stack
     // and then add it to the list.
     Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(ArrayList.class));
-    boolean localIsConstant = true;
+    boolean isConstant = true;
     for (ExprNode child : node.getChildren()) {
       // All children must be soy values
       SoyExpression childExpr = visit(child).box();
-      localIsConstant = localIsConstant && childExpr.isConstant();
+      isConstant = isConstant && childExpr.isConstant();
       adds.add(MethodRef.ARRAY_LIST_ADD.invoke(dupExpr, childExpr).toStatement());
     }
-    final boolean isConstant = localIsConstant;
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
         .construct(BytecodeUtils.constant(numChildren));
     final Statement addAll = Statement.concat(adds);
-    return new ListExpression() {
-      @Override void doGen(GeneratorAdapter mv) {
-        construct.gen(mv);
-        addAll.gen(mv);
-      }
-
-      @Override boolean isConstant() {
-        return isConstant;
-      }
-    };
+    return SoyExpression.forList(listType,
+        new SimpleExpression(Type.getType(List.class), isConstant) {
+          @Override void doGen(GeneratorAdapter mv) {
+            construct.gen(mv);
+            addAll.gen(mv);
+          }
+        });
   }
 
   @Override protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
+    // map literals are either records (if all the strings are literals) or maps if they aren't
+    // constants.
     final int numItems = node.numChildren() / 2;
     if (numItems == 0) {
-      return new MapExpression() {
-        final Expression immutableMapOf = MethodRef.IMMUTABLE_MAP_OF.invoke();
-        @Override void doGen(GeneratorAdapter adapter) {
-          immutableMapOf.gen(adapter);
-        }
-
-        @Override boolean isConstant() {
-          return true;
-        }
-      };
+      MapType mapType = (MapType) node.getType();
+      return SoyExpression.forMap(mapType, MethodRef.IMMUTABLE_MAP_OF.invoke().asConstant());
     }
+    boolean isRecord = node.getType().getKind() == Kind.RECORD;
     final int hashMapCapacity = hashMapCapacity(numItems);
     Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(LinkedHashMap.class));
     List<Statement> puts = new ArrayList<>(numItems);
-    boolean localIsConstant = true;
+    boolean isConstant = true;
     for (int i = 0; i < numItems; i++) {
       // Keys are strings and values are boxed SoyValues
-      SoyExpression key = visit(node.getChild(2 * i)).convert(String.class);
+      SoyExpression key = visit(node.getChild(2 * i));
+      if (isRecord) {
+        key = key.convert(String.class);
+      } else {
+        key = key.box();
+      }
       SoyExpression value = visit(node.getChild(2 * i + 1)).box();
-      localIsConstant = localIsConstant && key.isConstant() && value.isConstant();
+      isConstant = isConstant && key.isConstant() && value.isConstant();
       // TODO(user): Assert that the return value of put() is null? The current impl doesn't
       // care, but perhaps we should
       puts.add(MethodRef.LINKED_HASH_MAP_PUT.invoke(dupExpr, key, value).toStatement());
     }
-    final boolean isConstant = localIsConstant;
     final Expression construct = ConstructorRef.LINKED_HASH_MAP_SIZE
         .construct(BytecodeUtils.constant(hashMapCapacity));
     final Statement putAll = Statement.concat(puts);
-    return new MapExpression() {
+    Expression mapExpr = new SimpleExpression(Type.getType(Map.class), isConstant) {
       @Override void doGen(GeneratorAdapter mv) {
         // create a linkedhashmap with the expected size.
         construct.gen(mv);
         // call put for each key value pair.
         putAll.gen(mv);
       }
-
-      @Override boolean isConstant() {
-        return isConstant;
-      }
     };
+    if (isRecord) {
+      return SoyExpression.forRecord((RecordType) node.getType(), mapExpr);
+    }
+    return SoyExpression.forMap((MapType) node.getType(), mapExpr);
   }
 
   // Comparison operators.
 
   @Override protected final SoyExpression visitEqualOpNode(EqualOpNode node) {
-    return doEquals(visit(node.getChild(0)), visit(node.getChild(1)));
+    return SoyExpression.forBool(doEquals(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
   @Override protected final SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
-    return logicalNot(doEquals(visit(node.getChild(0)), visit(node.getChild(1))));
+    return SoyExpression.forBool(
+        logicalNot(doEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
   }
 
-  private BoolExpression doEquals(final SoyExpression left, final SoyExpression right) {
+  private Expression doEquals(final SoyExpression left, final SoyExpression right) {
     // We can special case when we know the types.
     // If either is a string, we run special logic so test for that first
     // otherwise we special case primitives and eventually fall back to our runtime.
     if (left.isKnownString()) {
-      return doEqualsString((StringExpression) left.convert(String.class), right);
+      return doEqualsString(left.convert(String.class), right);
     }
     if (right.isKnownString()) {
-      return doEqualsString((StringExpression) right.convert(String.class), left);
+      return doEqualsString(right.convert(String.class), left);
     }
     if (left.isKnownInt() && right.isKnownInt()) {
       return compare(Opcodes.IFEQ, left.convert(long.class), right.convert(long.class));
@@ -228,60 +219,68 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     if (left.isKnownNumber() && right.isKnownNumber()) {
       return compare(Opcodes.IFEQ, left.convert(double.class), right.convert(double.class));
     }
-    return (BoolExpression) MethodRef.RUNTIME_EQUAL.invokeAsBoxedSoyExpression(left, right);
+    return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
   }
 
-  private BoolExpression doEqualsString(StringExpression stringExpr, SoyExpression other) {
+  private Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
     if (other.isKnownString()) {
       SoyExpression strOther = other.convert(String.class);
-      return (BoolExpression) MethodRef.EQUALS.invoke(stringExpr, strOther);
+      return MethodRef.EQUALS.invoke(stringExpr, strOther);
     }
     if (other.isKnownNumber()) {
       // in this case, we actually try to convert stringExpr to a number
-      return (BoolExpression) MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER
+      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER
           .invoke(stringExpr, other.convert(double.class));
     }
     // We don't know what other is, assume the worst and call out to our boxed implementation
     // TODO(lukes): in this case we know that the first param is a string, maybe we can specialize
     // the runtime to take advantage of this and avoid reboxing the string (and rechecking the type)
-    return (BoolExpression) MethodRef.RUNTIME_EQUAL.invokeAsBoxedSoyExpression(stringExpr, other);
+    return MethodRef.RUNTIME_EQUAL.invoke(stringExpr.box(), other.box());
   }
 
   @Override protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
     SoyExpression left = visit(node.getChild(0));
     SoyExpression right = visit(node.getChild(1));
     if (left.isKnownInt() && right.isKnownInt()) {
-      return compare(Opcodes.IFLT, left.convert(long.class), right.convert(long.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFLT, left.convert(long.class), right.convert(long.class)));
     }
     if (left.isKnownNumber() && right.isKnownNumber()) {
-      return compare(Opcodes.IFLT, left.convert(double.class), right.convert(double.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFLT, left.convert(double.class), right.convert(double.class)));
     }
-    return MethodRef.RUNTIME_LESS_THAN.invokeAsBoxedSoyExpression(left, right);
+    return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(left.box(), right.box()));
   }
 
   @Override protected final SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
     SoyExpression left = visit(node.getChild(0));
     SoyExpression right = visit(node.getChild(1));
     if (left.isKnownInt() && right.isKnownInt()) {
-      return compare(Opcodes.IFGT, left.convert(long.class), right.convert(long.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFGT, left.convert(long.class), right.convert(long.class)));
     }
     if (left.isKnownNumber() && right.isKnownNumber()) {
-      return compare(Opcodes.IFGT, left.convert(double.class), right.convert(double.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFGT, left.convert(double.class), right.convert(double.class)));
     }
     // Note the argument reversal
-    return MethodRef.RUNTIME_LESS_THAN.invokeAsBoxedSoyExpression(right, left);
+    return SoyExpression.forBool(
+        MethodRef.RUNTIME_LESS_THAN.invoke(right.box(), left.box()));
   }
 
   @Override protected final SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
     SoyExpression left = visit(node.getChild(0));
     SoyExpression right = visit(node.getChild(1));
     if (left.isKnownInt() && right.isKnownInt()) {
-      return compare(Opcodes.IFLE, left.convert(long.class), right.convert(long.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFLE, left.convert(long.class), right.convert(long.class)));
     }
     if (left.isKnownNumber() && right.isKnownNumber()) {
-      return compare(Opcodes.IFLE, left.convert(double.class), right.convert(double.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFLE, left.convert(double.class), right.convert(double.class)));
     }
-    return MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invokeAsBoxedSoyExpression(left, right);
+    return SoyExpression.forBool(
+        MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(left.box(), right.box()));
   }
 
   @Override protected final SoyExpression visitGreaterThanOrEqualOpNode(
@@ -289,13 +288,16 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     SoyExpression left = visit(node.getChild(0));
     SoyExpression right = visit(node.getChild(1));
     if (left.isKnownInt() && right.isKnownInt()) {
-      return compare(Opcodes.IFGE, left.convert(long.class), right.convert(long.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFGE, left.convert(long.class), right.convert(long.class)));
     }
     if (left.isKnownNumber() && right.isKnownNumber()) {
-      return compare(Opcodes.IFGE, left.convert(double.class), right.convert(double.class));
+      return SoyExpression.forBool(
+          compare(Opcodes.IFGE, left.convert(double.class), right.convert(double.class)));
     }
     // Note the reversal of the arguments.
-    return MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invokeAsBoxedSoyExpression(right, left);
+    return SoyExpression.forBool(
+        MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(right.box(), left.box()));
   }
 
   // Binary operators
@@ -313,9 +315,11 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     if (left.isKnownString() || right.isKnownString()) {
       SoyExpression leftString = left.convert(String.class);
       SoyExpression rightString = right.convert(String.class);
-      return (SoyExpression) MethodRef.STRING_CONCAT.invoke(leftString, rightString);
+      return SoyExpression.forString(
+          MethodRef.STRING_CONCAT.invoke(leftString, rightString));
     }
-    return MethodRef.RUNTIME_PLUS.invokeAsBoxedSoyExpression(left, right);
+    return SoyExpression.forSoyValue(node.getType(),
+        MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
   }
 
   @Override protected final SoyExpression visitMinusOpNode(MinusOpNode node) {
@@ -327,7 +331,8 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     if (left.isKnownNumber() && right.isKnownNumber()) {
       return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
     }
-    return MethodRef.RUNTIME_MINUS.invokeAsBoxedSoyExpression(left, right);
+    return SoyExpression.forSoyValue(node.getType(),
+        MethodRef.RUNTIME_MINUS.invoke(left.box(), right.box()));
   }
 
   @Override protected final SoyExpression visitTimesOpNode(TimesOpNode node) {
@@ -340,7 +345,8 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
       return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
     }
 
-    return MethodRef.RUNTIME_TIMES.invokeAsBoxedSoyExpression(left, right);
+    return SoyExpression.forSoyValue(node.getType(),
+        MethodRef.RUNTIME_TIMES.invoke(left.box(), right.box()));
   }
 
   @Override protected final SoyExpression visitDivideByOpNode(DivideByOpNode node) {
@@ -357,38 +363,32 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     return applyBinaryIntOperator(Opcodes.LREM, visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
-  private IntExpression applyBinaryIntOperator(final int operator, SoyExpression left,
+  private SoyExpression applyBinaryIntOperator(final int operator, SoyExpression left,
       SoyExpression right) {
     final SoyExpression leftInt = left.convert(long.class);
     final SoyExpression rightInt = right.convert(long.class);
-    return new IntExpression() {
-      @Override void doGen(GeneratorAdapter mv) {
-        leftInt.gen(mv);
-        rightInt.gen(mv);
-        mv.visitInsn(operator);
-      }
-
-      @Override boolean isConstant() {
-        return leftInt.isConstant() && rightInt.isConstant();
-      }
-    };
+    return SoyExpression.forInt(
+        new SimpleExpression(Type.LONG_TYPE, leftInt.isConstant() && rightInt.isConstant()) {
+          @Override void doGen(GeneratorAdapter mv) {
+            leftInt.gen(mv);
+            rightInt.gen(mv);
+            mv.visitInsn(operator);
+          }
+        });
   }
 
-  private FloatExpression applyBinaryFloatOperator(final int operator, SoyExpression left,
+  private SoyExpression applyBinaryFloatOperator(final int operator, SoyExpression left,
       SoyExpression right) {
-    final SoyExpression leftInt = left.convert(double.class);
-    final SoyExpression rightInt = right.convert(double.class);
-    return new FloatExpression() {
-      @Override void doGen(GeneratorAdapter mv) {
-        leftInt.gen(mv);
-        rightInt.gen(mv);
-        mv.visitInsn(operator);
-      }
-
-      @Override boolean isConstant() {
-        return leftInt.isConstant() && rightInt.isConstant();
-      }
-    };
+    final SoyExpression leftFloat = left.convert(double.class);
+    final SoyExpression rightFloat = right.convert(double.class);
+    return SoyExpression.forFloat(
+        new SimpleExpression(Type.DOUBLE_TYPE, leftFloat.isConstant() && rightFloat.isConstant()) {
+          @Override void doGen(GeneratorAdapter mv) {
+            leftFloat.gen(mv);
+            rightFloat.gen(mv);
+            mv.visitInsn(operator);
+          }
+        });
   }
 
   // Unary negation
@@ -397,142 +397,125 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     final SoyExpression child = visit(node.getChild(0));
     if (child.isKnownInt()) {
       final SoyExpression intExpr = child.convert(long.class);
-      return new IntExpression() {
+      return SoyExpression.forInt(new SimpleExpression(Type.LONG_TYPE, child.isConstant()) {
         @Override void doGen(GeneratorAdapter mv) {
           intExpr.gen(mv);
           mv.visitInsn(Opcodes.LNEG);
         }
-      };
+      });
     }
     if (child.isKnownNumber()) {
       final SoyExpression floatExpr = child.convert(double.class);
-      return new FloatExpression() {
+      return SoyExpression.forFloat(new SimpleExpression(Type.DOUBLE_TYPE, child.isConstant()) {
         @Override void doGen(GeneratorAdapter mv) {
           floatExpr.gen(mv);
           mv.visitInsn(Opcodes.DNEG);
         }
-      };
+      });
     }
-    return MethodRef.RUNTIME_NEGATIVE.invokeAsBoxedSoyExpression(child);
+    return SoyExpression.forSoyValue(node.getType(),
+        MethodRef.RUNTIME_NEGATIVE.invoke(child.box()));
   }
 
   // Boolean operators
 
   @Override protected final SoyExpression visitNotOpNode(NotOpNode node) {
     // All values are convertible to boolean
-    return logicalNot(visit(node.getChild(0)).convert(boolean.class));
+    return SoyExpression.forBool(
+        logicalNot(visit(node.getChild(0)).convert(boolean.class)));
   }
 
   @Override protected final SoyExpression visitAndOpNode(AndOpNode node) {
     final SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
     final SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
-    return new BoolExpression() {
-      @Override void doGen(GeneratorAdapter mv) {
-        // Note: short circuiting, if left is false we don't eval right
-        left.gen(mv);
-        Label ifFalsy = new Label();
-        Label end = new Label();
-        mv.ifZCmp(Opcodes.IFEQ, ifFalsy);
-        right.gen(mv);
-        mv.goTo(end);
-        mv.mark(ifFalsy);
-        mv.push(false);
-        mv.mark(end);
-      }
 
-      @Override boolean isConstant() {
-        return left.isConstant() && right.isConstant();
-      }
-    };
+    return SoyExpression.forBool(
+        new SimpleExpression(Type.BOOLEAN_TYPE, left.isConstant() && right.isConstant()) {
+          @Override void doGen(GeneratorAdapter mv) {
+            // Note: short circuiting, if left is false we don't eval right
+            left.gen(mv);
+            Label ifFalsy = new Label();
+            Label end = new Label();
+            mv.ifZCmp(Opcodes.IFEQ, ifFalsy);
+            right.gen(mv);
+            mv.goTo(end);
+            mv.mark(ifFalsy);
+            mv.push(false);
+            mv.mark(end);
+          }
+        });
   }
 
   @Override protected final SoyExpression visitOrOpNode(OrOpNode node) {
     final SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
     final SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
-    return new BoolExpression() {
-      @Override void doGen(GeneratorAdapter mv) {
-        // Note: short circuiting, if left is true we don't eval right
-        left.gen(mv);
-        Label ifTruthy = new Label();
-        Label end = new Label();
-        mv.ifZCmp(Opcodes.IFNE, ifTruthy);
-        right.gen(mv);
-        mv.goTo(end);
-        mv.mark(ifTruthy);
-        mv.push(true);
-        mv.mark(end);
-      }
-
-      @Override boolean isConstant() {
-        return left.isConstant() && right.isConstant();
-      }
-    };
+    return SoyExpression.forBool(
+        new SimpleExpression(Type.BOOLEAN_TYPE, left.isConstant() && right.isConstant()) {
+          @Override void doGen(GeneratorAdapter mv) {
+            // Note: short circuiting, if left is true we don't eval right
+            left.gen(mv);
+            Label ifTruthy = new Label();
+            Label end = new Label();
+            mv.ifZCmp(Opcodes.IFNE, ifTruthy);
+            right.gen(mv);
+            mv.goTo(end);
+            mv.mark(ifTruthy);
+            mv.push(true);
+            mv.mark(end);
+          }
+        });
   }
 
 
   @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
-    final BoolExpression condition =
-        (BoolExpression) visit(node.getChild(0)).convert(boolean.class);
-    final SoyExpression trueBranch = visit(node.getChild(1));
-    final SoyExpression falseBranch = visit(node.getChild(2));
-    final boolean constant =
+    final SoyExpression condition = visit(node.getChild(0)).convert(boolean.class);
+    SoyExpression trueBranch = visit(node.getChild(1));
+    SoyExpression falseBranch = visit(node.getChild(2));
+    boolean constant =
         condition.isConstant() && trueBranch.isConstant() && falseBranch.isConstant();
     if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
       final SoyExpression trueAsLong = trueBranch.convert(long.class);
       final SoyExpression falseAsLong = falseBranch.convert(long.class);
-      return new IntExpression() {
-        @Override void doGen(GeneratorAdapter adapter) {
-          doCondition(adapter, condition, trueAsLong, falseAsLong);
-        }
-
-        @Override boolean isConstant() {
-          return constant;
-        }
-      };
+      return SoyExpression.forInt(
+          new SimpleExpression(Type.LONG_TYPE, constant) {
+            @Override void doGen(GeneratorAdapter adapter) {
+              doCondition(adapter, condition, trueAsLong, falseAsLong);
+            }
+          });
     }
     if (trueBranch.isKnownNumber() && falseBranch.isKnownNumber()) {
       final SoyExpression trueAsFloat = trueBranch.convert(double.class);
       final SoyExpression falseAsFloat = falseBranch.convert(double.class);
-      return new FloatExpression() {
+      return SoyExpression.forFloat(new SimpleExpression(Type.DOUBLE_TYPE, constant) {
         @Override void doGen(GeneratorAdapter adapter) {
           doCondition(adapter, condition, trueAsFloat, falseAsFloat);
         }
-
-        @Override boolean isConstant() {
-          return constant;
-        }
-      };
+      });
     }
     if (trueBranch.isKnownString() && falseBranch.isKnownString()) {
       final SoyExpression trueAsString = trueBranch.convert(String.class);
       final SoyExpression falseAsString = falseBranch.convert(String.class);
-      return new StringExpression() {
+      return SoyExpression.forString(new SimpleExpression(Type.getType(String.class), constant) {
         @Override void doGen(GeneratorAdapter adapter) {
           doCondition(adapter, condition, trueAsString, falseAsString);
         }
-
-        @Override boolean isConstant() {
-          return constant;
-        }
-      };
+      });
     }
     // Fallback to boxing and use the type from the type checker as our node type.
     // TODO(lukes): can we do better here? other types? if the types match can we generically unbox?
     // in the common case the runtime type will just be SoyValue, which is not very useful.
     final SoyExpression trueBoxed = trueBranch.box();
     final SoyExpression falseBoxed = falseBranch.box();
-    return new BoxedExpression(node.getType().javaType()) {
-      @Override void doGen(GeneratorAdapter mv) {
-        doCondition(mv, condition, trueBoxed, falseBoxed);
-      }
-
-      @Override boolean isConstant() {
-        return condition.isConstant() && trueBranch.isConstant() && falseBranch.isConstant();
-      }
-    };
+    final Type type = Type.getType(node.getType().javaType());
+    return SoyExpression.forSoyValue(node.getType(),
+        new SimpleExpression(type, constant) {
+          @Override void doGen(GeneratorAdapter mv) {
+            doCondition(mv, condition, trueBoxed, falseBoxed);
+          }
+        });
   }
 
-  private static void doCondition(GeneratorAdapter mv, BoolExpression condition,
+  private static void doCondition(GeneratorAdapter mv, Expression condition,
       SoyExpression trueBranch, SoyExpression falseBranch) {
     condition.gen(mv);
     Label ifFalse = new Label();

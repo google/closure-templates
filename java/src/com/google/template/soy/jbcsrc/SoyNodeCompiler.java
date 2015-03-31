@@ -23,7 +23,6 @@ import static com.google.template.soy.jbcsrc.Statement.concat;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -85,9 +84,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        BoolExpression cond = 
-            (BoolExpression) exprCompiler.compile(icn.getExprUnion().getExpr())
-                .convert(boolean.class);
+        SoyExpression cond = 
+            exprCompiler.compile(icn.getExprUnion().getExpr()).convert(boolean.class);
         Statement block = childrenAsStatement(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {

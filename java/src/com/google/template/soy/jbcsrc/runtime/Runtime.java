@@ -69,4 +69,9 @@ public final class Runtime {
   public static AdvisingAppendable logger() {
     return LOGGER;
   }
+  
+  public static boolean coerceToBoolean(double v) {
+    // only NaN is != to itself so this ensures that v is not NaN and not == 0.0
+    return v != 0.0 & v == v;
+  }
 }

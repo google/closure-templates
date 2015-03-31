@@ -25,6 +25,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -61,6 +62,9 @@ import java.lang.reflect.Modifier;
       java.lang.reflect.Field declaredField = owner.getDeclaredField(name);
       if (!Modifier.isStatic(declaredField.getModifiers())) {
         throw new IllegalStateException("Field: " + declaredField + " is not static");
+      }
+      if (!Modifier.isFinal(declaredField.getModifiers())) {
+        throw new IllegalStateException("Field: " + declaredField + " is not final");
       }
       fieldType = declaredField.getType();
     } catch (Exception e) {
@@ -113,13 +117,10 @@ import java.lang.reflect.Modifier;
   Expression accessor(final Expression owner) {
     checkState(!isStatic());
     checkArgument(owner.resultType().equals(this.owner().type()));
-    return new Expression() {
+    return new SimpleExpression(type(), owner.isConstant()) {
       @Override void doGen(GeneratorAdapter mv) {
         owner.gen(mv);
         mv.getField(owner().type(), FieldRef.this.name(), resultType());
-      }
-      @Override Type resultType() {
-        return type();
       }
     };
   }
@@ -129,12 +130,9 @@ import java.lang.reflect.Modifier;
    */
   Expression accessor() {
     checkState(isStatic());
-    return new Expression() {
+    return new SimpleExpression(type(), true /* isConstant */) {
       @Override void doGen(GeneratorAdapter mv) {
         mv.getStatic(owner().type(), FieldRef.this.name(), resultType());
-      }
-      @Override Type resultType() {
-        return type();
       }
     };
   }

@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 
@@ -30,6 +31,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * <p>Expressions should be side effect free and also should not <em>consume</em> stack items.
  */
 abstract class Expression extends BytecodeProducer {
+
   /** Returns true if all referenced expressions are {@linkplain #isConstant() constant}. */
   static boolean areAllConstant(Iterable<? extends Expression> args) {
     for (Expression arg : args) {
@@ -119,10 +121,16 @@ abstract class Expression extends BytecodeProducer {
             break;
         }
       }
-      
     };
   }
   
+  Expression asConstant() {
+    if (isConstant()) {
+      return this;
+    }
+    return new ConstantExpression(this);
+  }
+
   @Override public String toString() {
     return name() + "<" + resultType() + ">:\n" + trace();
   }
@@ -136,5 +144,47 @@ abstract class Expression extends BytecodeProducer {
     }
     String simpleName = this.getClass().getSimpleName();
     return simpleName.isEmpty() ? "Expression" : simpleName;
+  }
+
+  /**
+   * A simple {@link Expression} for when the type and constant status are known at construction 
+   * time.
+   */
+  abstract static class SimpleExpression extends Expression {
+    private final Type resultType;
+    private final boolean isConstant;
+
+    SimpleExpression(Type resultType, boolean isConstant) {
+      this.resultType = checkNotNull(resultType);
+      this.isConstant = isConstant;
+    }
+
+    @Override final boolean isConstant() {
+      return isConstant;
+    }
+
+    @Override final Type resultType() {
+      return resultType;
+    }
+  }
+
+  private static final class ConstantExpression extends Expression {
+    private final Expression delegate;
+
+    ConstantExpression(Expression expression) {
+      this.delegate = expression;
+    }
+
+    @Override void doGen(GeneratorAdapter adapter) {
+      delegate.gen(adapter);
+    }
+
+    @Override Type resultType() {
+      return delegate.resultType();
+    }
+
+    @Override boolean isConstant() {
+      return true;
+    }
   }
 }

@@ -21,10 +21,6 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
 
-import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.FloatExpression;
-import com.google.template.soy.jbcsrc.SoyExpression.IntExpression;
-
 import junit.framework.TestCase;
 
 import org.objectweb.asm.Opcodes;
@@ -56,13 +52,13 @@ public class BytecodeUtilsTest extends TestCase {
   }
 
   public void testLogicalNot() {
-    assertThatExpression(logicalNot(BoolExpression.FALSE)).evaluatesTo(true);
-    assertThatExpression(logicalNot(BoolExpression.TRUE)).evaluatesTo(false);
+    assertThatExpression(logicalNot(constant(false))).evaluatesTo(true);
+    assertThatExpression(logicalNot(constant(true))).evaluatesTo(false);
   }
 
   public void testCompareLongs() {
-    IntExpression one = constant(1L);
-    IntExpression two = constant(2L);
+    Expression one = constant(1L);
+    Expression two = constant(2L);
     assertThatExpression(compare(Opcodes.IFNE, one, two)).evaluatesTo(true);
     assertThatExpression(compare(Opcodes.IFLT, one, two)).evaluatesTo(true);
     assertThatExpression(compare(Opcodes.IFLE, one, two)).evaluatesTo(true);
@@ -75,9 +71,9 @@ public class BytecodeUtilsTest extends TestCase {
   }
   
   public void testCompareDoubles() {
-    FloatExpression one = constant(1D);
-    FloatExpression two = constant(2D);
-    FloatExpression nan = constant(Double.NaN);
+    Expression one = constant(1D);
+    Expression two = constant(2D);
+    Expression nan = constant(Double.NaN);
 
     assertThatExpression(compare(Opcodes.IFNE, one, two)).evaluatesTo(true);
     assertThatExpression(compare(Opcodes.IFLT, one, two)).evaluatesTo(true);
