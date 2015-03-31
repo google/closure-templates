@@ -32,6 +32,62 @@ import java.util.Map;
  */
 public class BytecodeCompilerTest extends TestCase {
 
+  public void testIfNode() {
+    assertThatTemplateBody(
+        "{if true}", 
+        "  hello",
+        "{/if}").rendersAs("hello");
+
+    assertThatTemplateBody(
+        "{if false}", 
+        "  hello",
+        "{/if}").rendersAs("");
+
+    assertThatTemplateBody(
+        "{if false}", 
+        "  one",
+        "{elseif false}",
+        "  two",
+        "{/if}").rendersAs("");
+    assertThatTemplateBody(
+        "{if true}", 
+        "  one",
+        "{elseif false}",
+        "  two",
+        "{/if}").rendersAs("one");
+    assertThatTemplateBody(
+        "{if false}", 
+        "  one",
+        "{elseif true}",
+        "  two",
+        "{/if}").rendersAs("two");
+
+    assertThatTemplateBody(
+        "{if true}",
+        "  one",
+        "{elseif true}",
+        "  two",
+        "{else}",
+        "  three",
+        "{/if}").rendersAs("one");
+    assertThatTemplateBody(
+        "{if false}",
+        "  one",
+        "{elseif true}",
+        "  two",
+        "{else}",
+        "  three",
+        "{/if}").rendersAs("two");
+    assertThatTemplateBody(
+        "{if false}",
+        "  one",
+        "{elseif false}",
+        "  two",
+        "{else}",
+        "  three",
+        "{/if}").rendersAs("three");
+  }
+
   public void testPrintNode() {
     assertThatTemplateBody("{1 + 2}").rendersAs("3");
     assertThatTemplateBody("{'asdf'}").rendersAs("asdf");

@@ -117,7 +117,7 @@ final class TemplateCompiler {
   private void generateRenderMethod() {
     Label start = new Label();
     Label end = new Label();
-    LocalVariable thisVar = createThisVar(template.factory(), start, end);
+    LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
     LocalVariable appendableVar = 
         createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
     LocalVariable contextVar = 

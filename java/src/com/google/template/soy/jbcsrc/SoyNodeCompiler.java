@@ -21,20 +21,30 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
 import static com.google.template.soy.jbcsrc.Statement.concat;
 
+import com.google.common.base.Optional;
+import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
+import com.google.template.soy.jbcsrc.SoyExpression.BoolExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfElseNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
 
 import org.objectweb.asm.Type;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Comiles {@link SoyNode soy nodes} into {@link Statement statements}.
@@ -62,7 +72,30 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitTemplateBasicNode(TemplateNode node) {
     // TODO(lukes): the start of a template should include a jump table for reattaching
-    return Statement.concat(visitChildren(node));
+    return childrenAsStatement(node);
+  }
+
+  private Statement childrenAsStatement(ParentSoyNode<? extends SoyNode> node) {
+    return Statement.concat(visitChildren(node)).withSourceLocation(node.getSourceLocation());
+  }
+
+  @Override protected Statement visitIfNode(IfNode node) {
+    List<IfBlock> ifs = new ArrayList<>();
+    Optional<Statement> elseBlock = Optional.absent();
+    for (SoyNode child : node.getChildren()) {
+      if (child instanceof IfCondNode) {
+        IfCondNode icn = (IfCondNode) child;
+        BoolExpression cond = 
+            (BoolExpression) exprCompiler.compile(icn.getExprUnion().getExpr())
+                .convert(boolean.class);
+        Statement block = childrenAsStatement(icn);
+        ifs.add(IfBlock.create(cond, block));
+      } else {
+        IfElseNode ien = (IfElseNode) child;
+        elseBlock = Optional.of(childrenAsStatement(ien));
+      }
+    }
+    return ControlFlow.ifElseChain(ifs, elseBlock).withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitPrintNode(PrintNode node) {
