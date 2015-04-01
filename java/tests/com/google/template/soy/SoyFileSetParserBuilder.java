@@ -105,7 +105,6 @@ public final class SoyFileSetParserBuilder {
    * <ul>
    *   <li>{@link com.google.template.soy.parsepasses.CheckCallsVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.CheckDelegatesVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.CheckOverridesVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor}
    *   </li>

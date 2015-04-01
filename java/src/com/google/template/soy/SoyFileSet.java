@@ -743,7 +743,6 @@ public final class SoyFileSet {
     SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
     ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
         typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
-        .setDoCheckOverrides(false)
         .parse();
     if (!parseResult.isSuccess()) {
       throw compositeException(parseResult.getParseErrors());
@@ -782,7 +781,6 @@ public final class SoyFileSet {
       SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
       ParseResult<SoyFileSetNode> parseResult= new SoyFileSetParser(
           typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
-          .setDoCheckOverrides(false)
           .parse();
       if (!parseResult.isSuccess()) {
         throw compositeException(parseResult.getParseErrors());

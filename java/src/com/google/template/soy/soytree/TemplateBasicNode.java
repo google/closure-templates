@@ -27,27 +27,21 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  */
 public final class TemplateBasicNode extends TemplateNode {
 
-  /** Whether this template overrides another (always false for syntax version V2). */
-  private final boolean isOverride;
-
   /**
    * Main constructor. This is package-private because TemplateBasicNode instances should be built
    * using TemplateBasicNodeBuilder.
    *
    * @param nodeBuilder Builder containing template initialization params.
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param isOverride Whether this template overrides another (always false for syntax version V2).
    * @param visibility Visibility of this template.
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
   TemplateBasicNode(
       TemplateBasicNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
-      boolean isOverride,
       Visibility visibility,
       ImmutableList<TemplateParam> params) {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
-    this.isOverride = isOverride;
   }
 
   /**
@@ -56,16 +50,10 @@ public final class TemplateBasicNode extends TemplateNode {
    */
   private TemplateBasicNode(TemplateBasicNode orig) {
     super(orig);
-    this.isOverride = orig.isOverride;
   }
 
   @Override public Kind getKind() {
     return Kind.TEMPLATE_BASIC_NODE;
-  }
-
-  /** Returns whether this template overrides another (always false for syntax version V2). */
-  public boolean isOverride() {
-    return isOverride;
   }
 
   @Override public TemplateBasicNode clone() {

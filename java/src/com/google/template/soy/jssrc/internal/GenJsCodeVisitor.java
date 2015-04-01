@@ -73,7 +73,6 @@ import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -101,6 +100,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.inject.Inject;
 
 /**
@@ -431,9 +431,6 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     SortedSet<String> templateNames = Sets.newTreeSet();
     for (TemplateNode template : soyFile.getChildren()) {
-      if (template instanceof TemplateBasicNode && ((TemplateBasicNode) template).isOverride()) {
-        continue;  // generated function name already provided
-      }
       templateNames.add(template.getTemplateName());
     }
     for (String templateName : templateNames) {
@@ -598,10 +595,6 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
       jsCodeBuilder.appendLine(" * @return {", returnType, "}");
       String suppressions = "checkTypes";
-      if (node instanceof TemplateBasicNode &&
-          ((TemplateBasicNode) node).isOverride()) {
-        suppressions += "|duplicate";
-      }
       jsCodeBuilder.appendLine(" * @suppress {" + suppressions + "}");
       if (node.getVisibility() == Visibility.PRIVATE) {
         jsCodeBuilder.appendLine(" * @private");

@@ -266,14 +266,13 @@ final class Inferences {
       boolean useAttrStyleForName = tn.getCommandText().contains("name=");
 
       if (tn instanceof TemplateBasicNode) {
-        TemplateBasicNode tbn = (TemplateBasicNode) tn;
         String derivedPartialName = (tn.getPartialTemplateName() != null) ?
             derivedName.substring(soyFileHeaderInfo.namespace.length()) : null;
         clone =
             (new TemplateBasicNodeBuilder(soyFileHeaderInfo))
                 .setId(cloneId)
                 .setCmdTextInfo(
-                    derivedName, derivedPartialName, useAttrStyleForName, tbn.isOverride(),
+                    derivedName, derivedPartialName, useAttrStyleForName,
                     tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
                     tn.getRequiredCssNamespaces())
                 .setSoyDoc(tn.getSoyDoc())

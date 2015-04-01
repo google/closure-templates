@@ -27,7 +27,6 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parsepasses.CheckCallsVisitor;
 import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
-import com.google.template.soy.parsepasses.CheckOverridesVisitor;
 import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
 import com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor;
 import com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor;
@@ -89,13 +88,6 @@ public final class SoyFileSetParser {
   /** Whether to run checking passes. */
   private final boolean doRunCheckingPasses;
 
-  /**
-   * Whether to check overrides.
-   * TODO(brndn): remove ASAP. Template overrides are an undocumented V1-only feature
-   * whose only use seems to be in Soy tests.
-   */
-  private boolean doCheckOverrides;
-
   /** For reporting parse errors. */
   private final ErrorReporterImpl errorManager = new ErrorReporterImpl();
 
@@ -112,7 +104,6 @@ public final class SoyFileSetParser {
       List<SoyFileSupplier> soyFileSuppliers) {
     // By default, run all the parsing and checking passes.
     this(typeRegistry, astCache, declaredSyntaxVersion, soyFileSuppliers, true, true);
-    this.doCheckOverrides = true;
   }
 
   /**
@@ -139,17 +130,6 @@ public final class SoyFileSetParser {
 
     this.doRunInitialParsingPasses = doRunInitialParsingPasses;
     this.doRunCheckingPasses = doRunCheckingPasses;
-  }
-
-  /**
-   * Sets whether to check overrides. Returns self.
-   */
-  public SoyFileSetParser setDoCheckOverrides(boolean doCheckOverrides) {
-    this.doCheckOverrides = doCheckOverrides;
-    if (doCheckOverrides) {
-      Preconditions.checkState(doRunCheckingPasses);
-    }
-    return this;
   }
 
 
@@ -306,9 +286,6 @@ public final class SoyFileSetParser {
    */
   private void runWholeFileSetCheckingPasses(SoyFileSetNode soyTree) {
     (new CheckSoyDocVisitor(declaredSyntaxVersion)).exec(soyTree);
-    if (doCheckOverrides) {
-      (new CheckOverridesVisitor()).exec(soyTree);
-    }
     (new CheckDelegatesVisitor()).exec(soyTree);
     (new CheckCallsVisitor()).exec(soyTree);
     (new CheckCallingParamTypesVisitor()).exec(soyTree);
