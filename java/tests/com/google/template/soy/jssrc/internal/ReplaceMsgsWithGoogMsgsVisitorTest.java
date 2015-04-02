@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -49,7 +50,8 @@ public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
         "  <span id=\"{for $i in range(3)}{$i}{/for}\">\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree = JsSrcTestUtils.parseSoyCode(soyCode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     GoogMsgDefNode gmd0 = (GoogMsgDefNode) template.getChild(0);
@@ -116,7 +118,7 @@ public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
         "{/msg}\n";
 
     try {
-      JsSrcTestUtils.parseSoyCode(soyCode);
+      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage())
           .contains(

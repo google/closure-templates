@@ -33,7 +33,6 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.shared.SoyCssRenamingMap;
-import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -162,14 +161,9 @@ public final class TemplateTester {
 
     private void compile() {
       if (classData == null) {
-        ParseResult<SoyFileSetNode> parseSoyFiles =
-            SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
-        if (!parseSoyFiles.isSuccess()) {
-          fail("parsed successfully", parseSoyFiles.getParseErrors());
-        }
+        SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
-        SoyFileSetNode fileSet = parseSoyFiles.getParseTree();
         TemplateRegistry registry = new TemplateRegistry(fileSet);
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());

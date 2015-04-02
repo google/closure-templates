@@ -83,8 +83,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
   private SoySyntaxException executeStrictCheck(String soyCode) {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyCode)
         .doRunInitialParsingPasses(false)
-        .parse()
-        .getParseTree();
+        .parse();
 
     SoySyntaxException error = null;
     try {

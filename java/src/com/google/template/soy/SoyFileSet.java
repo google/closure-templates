@@ -17,14 +17,10 @@
 package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
@@ -34,7 +30,6 @@ import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.ErrorPrettyPrinter;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
@@ -71,7 +66,8 @@ import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.Tr
 import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
-import com.google.template.soy.soyparse.ParseResult;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -150,6 +146,9 @@ public final class SoyFileSet {
     /** Type registry for this fileset only. */
     private SoyTypeRegistry localTypeRegistry;
 
+    /** For reporting errors. */
+    private final ErrorReporter errorReporter = new ErrorReporterImpl();
+
     /**
      * Constructs a builder using a statically-injected configuration.
      *
@@ -210,7 +209,10 @@ public final class SoyFileSet {
         factory = GuiceInitializer.getHackySoyFileSetFactory();
       }
       return factory.create(
-          setBuilder.build().asList(), cache, getGeneralOptions(), localTypeRegistry);
+          setBuilder.build().asList(),
+          cache, getGeneralOptions(),
+          localTypeRegistry,
+          errorReporter);
     }
 
 
@@ -556,7 +558,8 @@ public final class SoyFileSet {
         List<SoyFileSupplier> soyFileSuppliers,
         SoyAstCache cache,
         SoyGeneralOptions options,
-        @Assisted("localTypeRegistry") SoyTypeRegistry localTypeRegistry);
+        @Assisted("localTypeRegistry") SoyTypeRegistry localTypeRegistry,
+        @Assisted("errorReporter") ErrorReporter errorReporter);
   }
 
 
@@ -606,6 +609,9 @@ public final class SoyFileSet {
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
 
+  /** For reporting errors during parsing. */
+  private final ErrorReporter errorReporter;
+
 
   /**
    * @param baseTofuFactory Factory for creating an instance of BaseTofu.
@@ -637,6 +643,7 @@ public final class SoyFileSet {
       @Assisted List<SoyFileSupplier> soyFileSuppliers,
       @Assisted SoyGeneralOptions generalOptions,
       @Assisted @Nullable SoyAstCache cache,
+      @Assisted("errorReporter") ErrorReporter errorReporter,
       @Assisted("localTypeRegistry") @Nullable SoyTypeRegistry localTypeRegistry) {
 
     // Default value is optionally replaced using method injection.
@@ -656,6 +663,7 @@ public final class SoyFileSet {
     this.soyFileSuppliers = soyFileSuppliers;
     this.cache = cache;
     this.generalOptions = generalOptions.clone();
+    this.errorReporter = errorReporter;
   }
 
 
@@ -698,14 +706,10 @@ public final class SoyFileSet {
 
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
-    if (!parseResult.isSuccess()) {
-      throw compositeException(parseResult.getParseErrors());
-    }
 
-    SoyFileSetNode soyTree = parseResult.getParseTree();
     // Do renaming of package-relative class names.
     new ResolvePackageRelativeCssNamesVisitor().exec(soyTree);
     return (new GenerateParseInfoVisitor(javaPackage, javaClassNameSource)).exec(soyTree);
@@ -721,10 +725,10 @@ public final class SoyFileSet {
   public TemplateRegistry generateTemplateRegistry() {
     // If you want your Soy templates to be indexed, you have to use modern syntax.
     SyntaxVersion version = generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    ParseResult<SoyFileSetNode> result = new SoyFileSetParser(
-        typeRegistry, cache, version, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, version, soyFileSuppliers, errorReporter)
         .parse();
-    return new TemplateRegistry(result.getParseTree());
+    return new TemplateRegistry(soyTree);
   }
 
   /**
@@ -741,15 +745,10 @@ public final class SoyFileSet {
     // Override the type registry with a version that simply returns unknown
     // for any named type.
     SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
-    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
-    if (!parseResult.isSuccess()) {
-      throw compositeException(parseResult.getParseErrors());
-    }
-
-    SoyFileSetNode soyTree = parseResult.getParseTree();
-    return (new ExtractMsgsVisitor()).exec(soyTree);
+    return new ExtractMsgsVisitor().exec(soyTree);
   }
 
 
@@ -779,14 +778,10 @@ public final class SoyFileSet {
       SyntaxVersion declaredSyntaxVersion =
           generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V1_0);
       SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
-      ParseResult<SoyFileSetNode> parseResult= new SoyFileSetParser(
-          typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+      SoyFileSetNode soyTree = new SoyFileSetParser(
+          typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
           .parse();
-      if (!parseResult.isSuccess()) {
-        throw compositeException(parseResult.getParseErrors());
-      }
 
-      SoyFileSetNode soyTree = parseResult.getParseTree();
       List<TemplateNode> allPublicTemplates = Lists.newArrayList();
       for (SoyFileNode soyFile : soyTree.getChildren()) {
         for (TemplateNode template : soyFile.getChildren()) {
@@ -857,14 +852,9 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
-    if (!parseResult.isSuccess()) {
-      throw compositeException(parseResult.getParseErrors());
-    }
-
-    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     // If allowExternalCalls is not explicitly set, then disallow by default for Tofu backend.
@@ -924,14 +914,9 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
-    if (!parseResult.isSuccess()) {
-      throw compositeException(parseResult.getParseErrors());
-    }
-
-    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     return jsSrcMainProvider.get().genJsSrc(soyTree, jsSrcOptions, msgBundle);
@@ -964,16 +949,10 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
 
-    if (!parseResult.isSuccess()) {
-      return new CompilationResult(
-          parseResult.getParseErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
-    }
-
-    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     if (locales.isEmpty()) {
@@ -1028,15 +1007,10 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
 
-    ParseResult<SoyFileSetNode> parseResult = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers)
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
-    if (!parseResult.isSuccess()) {
-      return new CompilationResult(
-          parseResult.getParseErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
-    }
 
-    SoyFileSetNode soyTree = parseResult.getParseTree();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     pySrcMainProvider.get().genPyFiles(
@@ -1145,17 +1119,5 @@ public final class SoyFileSet {
           return UnknownType.getInstance();
         }
       }));
-  }
-
-  private static SoySyntaxException compositeException(
-      ImmutableCollection<? extends SoySyntaxException> exceptions) {
-    String compositeMessage = Joiner.on('\n').join(Iterables.transform(exceptions,
-        new Function<SoySyntaxException, String>() {
-          @Override
-          public String apply(SoySyntaxException e) {
-            return e.getMessage() != null ? e.getMessage() : "";
-          }
-        }));
-    return SoySyntaxException.createWithoutMetaInfo(compositeMessage);
   }
 }

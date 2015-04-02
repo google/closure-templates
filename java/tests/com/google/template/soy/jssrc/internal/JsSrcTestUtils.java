@@ -18,15 +18,11 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
-import com.google.template.soy.soyparse.ParseResult;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode;
 
 import javax.annotation.Nullable;
 
@@ -34,7 +30,7 @@ import javax.annotation.Nullable;
  * Utilities for unit tests in the Js Src backend.
  *
  */
-class JsSrcTestUtils {
+final class JsSrcTestUtils {
 
   private JsSrcTestUtils() {}
 
@@ -82,43 +78,4 @@ class JsSrcTestUtils {
     apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
     apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), jsSrcOptions.isUsingIjData());
   }
-
-
-  /**
-   * Parses the given piece of Soy code as the full body of a template.
-   *
-   * <p> Important: ReplaceMsgsWithGoogMsgsVisitor will be run on the parse tree.
-   *
-   * @param soyCode The code to parse as the full body of a template.
-   * @return The resulting parse tree.
-   */
-  static ParseResult<SoyFileSetNode> parseSoyCode(String soyCode) {
-    ParseResult<SoyFileSetNode> result
-        = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    (new ReplaceMsgsWithGoogMsgsVisitor()).exec(result.getParseTree());
-    return result;
-  }
-
-
-  /**
-   * Parses the given piece of Soy code as the full body of a template, and then returns the node
-   * within the resulting template parse tree indicated by the given indices to reach the desired
-   * node.
-   *
-   * <p> Important: ReplaceMsgsWithGoogMsgsVisitor will be run on the parse tree.
-   *
-   * @param soyCode The code to parse as the full body of a template.
-   * @param indicesToNode The indices to reach the desired node to retrieve. E.g. To retrieve the
-   *     first child of the template, simply pass a single 0.
-   * @return The desired node in the resulting template parse tree.
-   */
-  static ParseResult<SoyNode> parseSoyCodeAndGetNode(String soyCode, int... indicesToNode) {
-    ParseResult<SoyFileSetNode> result = parseSoyCode(soyCode);
-    if (!result.isSuccess()) {
-      return new ParseResult<>(null, result.getParseErrors());
-    }
-    SoyNode node = SharedTestUtils.getNode(result.getParseTree(), indicesToNode);
-    return new ParseResult<>(node, result.getParseErrors());
-  }
-
 }

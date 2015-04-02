@@ -24,7 +24,8 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
-import com.google.template.soy.soyparse.ParseResult;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -46,9 +47,11 @@ public final class SoyFileSetParserBuilder {
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
   @Nullable private SoyAstCache astCache = null;
+  private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
 
   /**
-   * Returns a builder that gets its Soy inputs from the given {@code fileContents}.
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string
+   * as the full contents of a Soy file.
    */
   public static SoyFileSetParserBuilder forFileContents(String... fileContents) {
     return new SoyFileSetParserBuilder(fileContents);
@@ -62,15 +65,16 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
-   * Returns a builder that gets its Soy inputs from the given {@code templateContents}.
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string
+   * as the contents of a Soy template.
    */
   public static SoyFileSetParserBuilder forTemplateContents(String... templateContents) {
     return forTemplateContents(AutoEscapingType.DEPRECATED_NONCONTEXTUAL, templateContents);
   }
 
   /**
-   * Returns a builder that gets its Soy inputs from the given {@code templateContents},
-   * using the given {@link AutoEscapingType}.
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string
+   * as the contents of a Soy template, and using the given {@link AutoEscapingType}.
    */
   public static SoyFileSetParserBuilder forTemplateContents(
       AutoEscapingType autoEscapingType, String... templateContents) {
@@ -142,6 +146,14 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
+   * Sets the parser's error reporter. Returns this object, for chaining.
+   */
+  public SoyFileSetParserBuilder errorReporter(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+    return this;
+  }
+
+  /**
    * Sets the parser's type registry. Returns this object, for chaining.
    */
   public SoyFileSetParserBuilder typeRegistry(SoyTypeRegistry typeRegistry) {
@@ -162,12 +174,22 @@ public final class SoyFileSetParserBuilder {
     return soyFileSuppliers;
   }
 
-  public ParseResult<SoyFileSetNode> parse() {
+  /**
+   * Constructs a parse tree from the builder's state, returning the root of the tree.
+   *
+   * <p>Note: since {@link SoyFileSetParserBuilder} can only be used in tests, this method
+   * will throw an {@link AssertionError} if any error is encountered during parsing. For tests
+   * that require different behavior (for example, tests that need to inspect the full list of
+   * errors encountered during compilation), pass a different {@link ErrorReporter} implementation
+   * to {@link #errorReporter}.
+   */
+  public SoyFileSetNode parse() {
     return new SoyFileSetParser(
         typeRegistry,
         astCache,
         declaredSyntaxVersion,
         soyFileSuppliers,
+        errorReporter,
         doRunInitialParsingPasses,
         doRunCheckingPasses)
         .parse();

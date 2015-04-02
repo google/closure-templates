@@ -36,8 +36,7 @@ public final class HandleCssCommandVisitorTest extends TestCase {
 
   public void testHandleLiteral() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents("{css selected-option}")
-        .parse()
-        .getParseTree();
+        .parse();
     (new HandleCssCommandVisitor(CssHandlingScheme.LITERAL)).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((RawTextNode) soyNode).getRawText()).isEqualTo("selected-option");
@@ -45,15 +44,13 @@ public final class HandleCssCommandVisitorTest extends TestCase {
 
   public void testHandleReference() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents("{css $cssSelectedOption}")
-        .parse()
-        .getParseTree();
+        .parse();
     (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("$cssSelectedOption");
 
     soyTree = SoyFileSetParserBuilder.forTemplateContents("{css CSS_SELECTED_OPTION}")
-        .parse()
-        .getParseTree();
+        .parse();
     (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
     soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("CSS_SELECTED_OPTION");

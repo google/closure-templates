@@ -70,9 +70,7 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
         "  {/if}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     PrintNode a = (PrintNode) template.getChild(0);

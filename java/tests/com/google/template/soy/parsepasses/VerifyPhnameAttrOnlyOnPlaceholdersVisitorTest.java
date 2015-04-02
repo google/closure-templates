@@ -40,17 +40,13 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCas
 
 
   private void assertValidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     new VerifyPhnameAttrOnlyOnPlaceholdersVisitor().exec(soyTree);
   }
 
 
   private void assertInvalidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     try {
       new VerifyPhnameAttrOnlyOnPlaceholdersVisitor().exec(soyTree);
       fail();

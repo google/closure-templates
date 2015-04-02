@@ -19,7 +19,6 @@ package com.google.template.soy.soyparse;
 import com.google.common.base.Joiner;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -194,16 +193,15 @@ public final class SourceLocationTest extends TestCase {
     // look for a line number and break in a way that suppresses the real error
     // message.
     // JavaCC is pretty good about never using null as a token value.
-    try {
-      SoyFileSetParserBuilder.forSuppliers(
+    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
+    SoyFileSetParserBuilder.forSuppliers(
           SoyFileSupplier.Factory.create(
               "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
               SoyFileKind.SRC, "borken.soy"))
           .doRunInitialParsingPasses(false)
+          .errorReporter(errorReporter)
           .parse();
-    } catch (SoySyntaxException ex) {
-      // OK
-    }
+    assertEquals(1, errorReporter.getErrors().size());
   }
 
   public void testAdditionalSourceLocationInfo() throws Exception {
@@ -232,8 +230,7 @@ public final class SourceLocationTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
         SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy"))
         .doRunInitialParsingPasses(false)
-        .parse()
-        .getParseTree();
+        .parse();
     String actual = new AsciiArtVisitor().exec(soyTree);
     assertEquals(asciiArtExpectedOutput, actual);
   }

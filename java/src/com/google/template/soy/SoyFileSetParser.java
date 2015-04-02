@@ -44,8 +44,6 @@ import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
 import com.google.template.soy.sharedpasses.ResolveExpressionTypesVisitor;
 import com.google.template.soy.sharedpasses.ResolveNamesVisitor;
 import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporterImpl;
-import com.google.template.soy.soyparse.ParseResult;
 import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -89,7 +87,7 @@ public final class SoyFileSetParser {
   private final boolean doRunCheckingPasses;
 
   /** For reporting parse errors. */
-  private final ErrorReporterImpl errorManager = new ErrorReporterImpl();
+  private final ErrorReporter errorReporter;
 
   /**
    * @param typeRegistry The type registry to resolve type names.
@@ -101,9 +99,11 @@ public final class SoyFileSetParser {
       SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
-      List<SoyFileSupplier> soyFileSuppliers) {
+      List<SoyFileSupplier> soyFileSuppliers,
+      ErrorReporter errorReporter) {
     // By default, run all the parsing and checking passes.
-    this(typeRegistry, astCache, declaredSyntaxVersion, soyFileSuppliers, true, true);
+    this(
+        typeRegistry, astCache, declaredSyntaxVersion, soyFileSuppliers, errorReporter, true, true);
   }
 
   /**
@@ -111,6 +111,7 @@ public final class SoyFileSetParser {
    * @param astCache The AST cache to use, if any.
    * @param declaredSyntaxVersion User-declared syntax version.
    * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
+   * @param errorReporter For reporting errors during parsing.
    * @param doRunInitialParsingPasses Whether to run initial parsing passes.
    * @param doRunCheckingPasses Whether to run checking passes.
    */
@@ -119,6 +120,7 @@ public final class SoyFileSetParser {
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
       List<SoyFileSupplier> soyFileSuppliers,
+      ErrorReporter errorReporter,
       boolean doRunInitialParsingPasses,
       boolean doRunCheckingPasses) {
 
@@ -126,6 +128,7 @@ public final class SoyFileSetParser {
     this.cache = astCache;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
     this.soyFileSuppliers = soyFileSuppliers;
+    this.errorReporter = errorReporter;
     verifyUniquePaths(soyFileSuppliers);
 
     this.doRunInitialParsingPasses = doRunInitialParsingPasses;
@@ -136,7 +139,7 @@ public final class SoyFileSetParser {
   /**
    * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
-  public ParseResult<SoyFileSetNode> parse() {
+  public SoyFileSetNode parse() {
     return parseWithVersions();
   }
 
@@ -157,7 +160,7 @@ public final class SoyFileSetParser {
   /**
    * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
-  private ParseResult<SoyFileSetNode> parseWithVersions() {
+  private SoyFileSetNode parseWithVersions() {
     Preconditions.checkState((cache == null) || (doRunInitialParsingPasses && doRunCheckingPasses),
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
             "caching inconsistent versions");
@@ -171,13 +174,12 @@ public final class SoyFileSetParser {
       if (fileAndVersion == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
         synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
-          fileAndVersion = parseSoyFileHelper(
-              soyFileSupplier, nodeIdGen, typeRegistry, errorManager);
+          fileAndVersion = parseSoyFileHelper(soyFileSupplier, nodeIdGen, typeRegistry);
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
           if (fileAndVersion.first == null) {
-            return new ParseResult<>(soyTree, errorManager.getErrors());
+            return soyTree;
           }
           if (doRunInitialParsingPasses) {
             // Run passes that are considered part of initial parsing.
@@ -202,7 +204,7 @@ public final class SoyFileSetParser {
       runWholeFileSetCheckingPasses(soyTree);
     }
 
-    return new ParseResult<>(soyTree, errorManager.getErrors());
+    return soyTree;
   }
 
 
@@ -212,13 +214,9 @@ public final class SoyFileSetParser {
    * @param soyFileSupplier Supplier of the Soy file content and path.
    * @param nodeIdGen The generator of node ids.
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
-   * TODO(brndn): This method should just return a {@link ParseResult} that includes the version.
    */
-  private static Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
-      SoyFileSupplier soyFileSupplier,
-      IdGenerator nodeIdGen,
-      SoyTypeRegistry typeRegistry,
-      ErrorReporter errorReporter) {
+  private Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
+      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry) {
 
     String filePath = soyFileSupplier.getFilePath();
 

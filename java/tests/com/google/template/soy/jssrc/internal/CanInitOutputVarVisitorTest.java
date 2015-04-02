@@ -18,8 +18,11 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
+import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;
@@ -108,7 +111,9 @@ public class CanInitOutputVarVisitorTest extends TestCase {
   private static void runTestHelper(
       String soyCode, boolean isSameValueAsIsComputableAsJsExprsVisitor, int... indicesToNode) {
 
-    SoyNode node = JsSrcTestUtils.parseSoyCodeAndGetNode(soyCode, indicesToNode).getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(jsSrcOptions);
     CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(jsSrcOptions, icajev);

@@ -299,9 +299,8 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   private SoyExpression compileExpression(String soyExpr) {
-    PrintNode code =
-        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + soyExpr + "}").parse()
-        .getParseTree()
+    PrintNode code = (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + soyExpr + "}")
+        .parse()
         .getChild(0)
         .getChild(0)
         .getChild(0);

@@ -102,7 +102,6 @@ public class EvalVisitorTest extends TestCase {
     PrintNode code =
         (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
             .parse()
-            .getParseTree()
             .getChild(0)
             .getChild(0)
             .getChild(0);

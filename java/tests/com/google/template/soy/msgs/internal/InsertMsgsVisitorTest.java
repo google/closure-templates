@@ -72,9 +72,7 @@ public class InsertMsgsVisitorTest extends TestCase {
   public void testBasicMsgsUsingSoySource() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -111,9 +109,7 @@ public class InsertMsgsVisitorTest extends TestCase {
   public void testBasicMsgsUsingMsgBundle() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -189,9 +185,7 @@ public class InsertMsgsVisitorTest extends TestCase {
   public void testPlrselMsgsUsingSoySource() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(2);
@@ -215,9 +209,7 @@ public class InsertMsgsVisitorTest extends TestCase {
   public void testPlrselMsgsUsingMsgBundle() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(2);
@@ -336,9 +328,7 @@ public class InsertMsgsVisitorTest extends TestCase {
   public void testFallbackMsgsUsingSoySource() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(6);
@@ -366,9 +356,7 @@ public class InsertMsgsVisitorTest extends TestCase {
   public void testFallbackMsgsUsingMsgBundle() {
 
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(6);

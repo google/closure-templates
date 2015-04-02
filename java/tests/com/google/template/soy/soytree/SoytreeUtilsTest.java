@@ -58,9 +58,7 @@ public final class SoytreeUtilsTest extends TestCase {
         "  {/foreach}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     CountingVisitor countingVisitor = new CountingVisitor();
     SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor);

@@ -249,8 +249,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         "{template .aaa}\n" +
         "{print \n" + soyExpr + "}\n" +
         "{/template}\n")
-        .parse()
-        .getParseTree();
+        .parse();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
     JsExpr actualJsExpr =

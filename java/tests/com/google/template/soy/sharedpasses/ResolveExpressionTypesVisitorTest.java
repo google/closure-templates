@@ -93,8 +93,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{@param? pb: list<int>}",
         "{$pa}",
         "{$pb}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -115,8 +114,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{$pe}",
         "{$pe[0]}",
         "{$pe[1 + 1][2]}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -135,8 +133,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{@param pa: [a:int, b:string]}",
         "{$pa.a}",
         "{$pa.b}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -159,8 +156,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -224,8 +220,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -266,8 +261,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -299,8 +293,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -318,8 +311,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_3)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     types = getPrintStatementTypes(soyTree);
@@ -361,8 +353,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     ImmutableSet<SoyType> types = ImmutableSet.copyOf(getPrintStatementTypes(soyTree));
@@ -381,8 +372,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -404,8 +394,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -424,8 +413,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -444,8 +432,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -505,8 +492,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{else}",
         "  {$pa}", // #15 must be null
         "{/if}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -545,8 +531,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{if $pb ? $pa : false}",
         "  {$pa}", // #3 don't know
         "{/if}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -563,8 +548,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{$pa ? $pa : $pb}", // #0 must be non-null
         "{$pa != null ?: $pb}", // #1 must be non-null
         "{$pa ?: $pb}"))
-        .parse() // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
-        .getParseTree();
+        .parse(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -579,8 +563,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{@inject? pb: list<int>}",
         "{$pa}",
         "{$pb}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -616,8 +599,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     try {
       createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);

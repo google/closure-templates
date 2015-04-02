@@ -111,8 +111,7 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
         "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent1, fileContent2)
-        .parse()
-        .getParseTree();
+        .parse();
 
     SoyFileNode a = soyTree.getChild(0);
     TemplateNode a0 = a.getChild(0);

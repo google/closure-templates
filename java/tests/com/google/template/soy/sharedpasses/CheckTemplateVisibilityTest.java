@@ -74,8 +74,7 @@ public class CheckTemplateVisibilityTest extends TestCase {
     try {
       SoyFileSetParserBuilder.forFileContents(sources)
           .doRunCheckingPasses(true)
-          .parse()
-          .getParseTree();
+          .parse();
       fail("expected a SoySyntaxException");
     } catch (SoySyntaxException expected) {}
   }
@@ -84,8 +83,7 @@ public class CheckTemplateVisibilityTest extends TestCase {
     try {
       SoyFileSetParserBuilder.forFileContents(sources)
           .doRunCheckingPasses(true)
-          .parse()
-          .getParseTree();
+          .parse();
     } catch (SoySyntaxException e) {
       fail();
     }

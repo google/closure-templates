@@ -379,19 +379,14 @@ public final class CheckDelegatesVisitorTest extends TestCase {
 
 
   private void assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     (new CheckDelegatesVisitor()).exec(soyTree);
   }
 
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckDelegatesVisitor()).exec(soyTree);

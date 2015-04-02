@@ -70,9 +70,7 @@ public final class TofuExceptionsTest extends TestCase {
   private SoyTofu tofu;
 
   @Override protected void setUp() throws Exception {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(SOY_FILE)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse();
     tofu = INJECTOR.getInstance(BaseTofuFactory.class).create(soyTree, false);
   }
 

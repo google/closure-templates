@@ -38,9 +38,7 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     String message = "Some error happened.";
     Throwable cause = new Throwable();
@@ -66,9 +64,7 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         "{template name=\".foo\"}\n" +
         "  {$goo}\n" +
         "{/template}\n";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     PrintNode pn = (PrintNode) soyTree.getChild(0).getChild(0).getChild(0);
 
     // Before.

@@ -43,9 +43,7 @@ public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
         "  Blah{$goo}blah\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
     template.addChild(new RawTextNode(0, "bleh"));
     template.addChild(new RawTextNode(0, "bluh"));

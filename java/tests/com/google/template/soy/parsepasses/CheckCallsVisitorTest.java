@@ -165,19 +165,14 @@ public final class CheckCallsVisitorTest extends TestCase {
 
 
   private void assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     (new CheckCallsVisitor()).exec(soyTree);
   }
 
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckCallsVisitor()).exec(soyTree);

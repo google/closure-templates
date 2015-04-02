@@ -45,11 +45,8 @@ public final class RenameCssVisitorTest extends TestCase {
 
 
   public void testWithoutCssRenamingMap() {
-
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);
@@ -78,11 +75,8 @@ public final class RenameCssVisitorTest extends TestCase {
 
 
   public void testWithCssRenamingMap() {
-
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT)
-            .parse()
-            .getParseTree());
+        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT).parse());
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);

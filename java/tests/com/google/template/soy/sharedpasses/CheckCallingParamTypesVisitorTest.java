@@ -286,18 +286,14 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
   }
 
   private SoyFileSetNode assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     (new CheckCallingParamTypesVisitor()).exec(soyTree);
     return soyTree;
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
     try {
       (new CheckCallingParamTypesVisitor()).exec(soyTree);

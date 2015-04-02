@@ -248,9 +248,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
       String soyContent, SyntaxVersion declaredSyntaxVersion)
       throws Exception {
 
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent).parse();
     Map<String, SoyFunction> soyFunctions = ImmutableMap.<String, SoyFunction>of(
         "min",
         new SoyFunction() {

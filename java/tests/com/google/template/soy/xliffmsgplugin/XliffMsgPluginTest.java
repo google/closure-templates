@@ -49,8 +49,7 @@ public class XliffMsgPluginTest extends TestCase {
     URL testSoyFile = Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2.soy");
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
         SoyFileSupplier.Factory.create(testSoyFile, SoyFileKind.SRC))
-        .parse()
-        .getParseTree();
+        .parse();
     SoyMsgBundle msgBundle = (new ExtractMsgsVisitor()).exec(soyTree);
 
     XliffMsgPlugin msgPlugin = new XliffMsgPlugin();

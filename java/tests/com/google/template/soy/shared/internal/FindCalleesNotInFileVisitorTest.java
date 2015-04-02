@@ -64,9 +64,7 @@ public class FindCalleesNotInFileVisitorTest extends TestCase {
         "  {call boo.hoo.roo data=\"all\" /}\n" +  // not defined in this file
         "{/deltemplate}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     SoyFileNode soyFile = soyTree.getChild(0);
 
     Set<String> calleesNotInFile = (new FindCalleesNotInFileVisitor()).exec(soyFile);

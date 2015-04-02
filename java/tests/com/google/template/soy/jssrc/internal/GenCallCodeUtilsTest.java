@@ -22,8 +22,11 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
 
@@ -175,8 +178,8 @@ public class GenCallCodeUtilsTest extends TestCase {
   private String getCallExprTextHelper(
       String callSource, ImmutableList<String> escapingDirectives) {
 
-    CallNode callNode = (CallNode) JsSrcTestUtils.parseSoyCodeAndGetNode(callSource, 0)
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callSource).parse();
+    CallNode callNode = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     // Manually setting the escaping directives.
     callNode.setEscapingDirectiveNames(escapingDirectives);
 

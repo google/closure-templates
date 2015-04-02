@@ -354,10 +354,7 @@ public final class CheckSoyDocVisitorTest extends TestCase {
 
   private static void runSoyFilesTestHelper(String... soyFileContents)
       throws SoySyntaxException {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .parse()
-        .getParseTree();
-
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     (new CheckSoyDocVisitor(SyntaxVersion.V1_0)).exec(soyTree);
   }
 }

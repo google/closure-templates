@@ -150,9 +150,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   }
 
   private String compileFile() {
-    SoyNode node = SoyFileSetParserBuilder.forFileContents(getSubject())
-        .parse()
-        .getParseTree();
+    SoyNode node = SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
     List<String> fileContents = getGenPyCodeVisitor().exec(node);
     return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
@@ -161,8 +159,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     SoyNode node = SharedTestUtils.getNode(
         SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, getSubject())
             .declaredSyntaxVersion(SyntaxVersion.V2_2)
-            .parse()
-            .getParseTree(), 0);
+            .parse(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     GenPyCodeVisitor genPyCodeVisitor = getGenPyCodeVisitor();

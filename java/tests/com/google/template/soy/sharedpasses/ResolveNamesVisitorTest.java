@@ -73,8 +73,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool}",
         "{$pa}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
@@ -85,8 +84,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@inject pa: bool}",
         "{$pa}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
@@ -97,8 +95,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{let $pa: 1 /}",
         "{$pa}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
@@ -114,8 +111,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         "  {$pa}{$pb}{$la + $item}",
         "{/foreach}",
         "{let $lb: 1 /}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
@@ -139,8 +135,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         "{let $la: 1 /}",
         "{let $lb: $la /}",
         "{let $lc: $lb /}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
@@ -195,8 +190,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         "  {/if}",
         "{/let}",
         "{$a}"))
-        .parse()
-        .getParseTree();
+        .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 1 because each new $la binding overwrites the prior one
@@ -241,8 +235,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
-        .parse()
-        .getParseTree();
+        .parse();
     try {
       createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
       fail("Expected SoySyntaxException");

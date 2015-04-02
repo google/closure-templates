@@ -114,8 +114,8 @@ public class PreevalVisitorTest extends TestCase {
    */
   private static SoyValue preeval(String expression) throws Exception {
     PrintNode code =
-        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}").parse()
-            .getParseTree()
+        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
+            .parse()
             .getChild(0)
             .getChild(0)
             .getChild(0);

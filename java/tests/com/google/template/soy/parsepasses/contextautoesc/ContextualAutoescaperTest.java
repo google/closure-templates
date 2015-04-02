@@ -1902,8 +1902,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         "{template main autoescape=\"strict\"}\n",
         "<b>{$foo |customOtherDirective}</b>\n",
         "{/template}"))
-        .parse()
-        .getParseTree();
+        .parse();
     String rewrittenTemplate = rewrittenSource(soyTree);
     assertThat(rewrittenTemplate.trim())
         .isEqualTo(join("{template main autoescape=\"strict\"}\n",
@@ -2142,9 +2141,7 @@ public final class ContextualAutoescaperTest extends TestCase {
           "foo()" +
         "\n{/template}";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source).parse();
     new CheckEscapingSanityVisitor().exec(soyTree);
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
@@ -2183,9 +2180,7 @@ public final class ContextualAutoescaperTest extends TestCase {
           "Hello World" +
         "\n{/deltemplate}";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source).parse();
     new CheckEscapingSanityVisitor().exec(soyTree);
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
@@ -2338,9 +2333,7 @@ public final class ContextualAutoescaperTest extends TestCase {
   private void assertContextualRewriting(String expectedOutput, String... inputs)
       throws SoyAutoescapeException {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs).parse();
     new CheckEscapingSanityVisitor().exec(soyTree);
 
     String source = rewrittenSource(soyTree);
@@ -2358,9 +2351,8 @@ public final class ContextualAutoescaperTest extends TestCase {
         .replaceAll("\\s+autoescape\\s*=\\s*\"(deprecated-contextual|strict)\"",
             " autoescape=\"deprecated-noncontextual\"")
         .replaceAll("\\s+kind\\s*=\\s*\"([a-z]*)\"", "");
-    SoyFileSetNode soyTree2 = SoyFileSetParserBuilder.forFileContents(inputWithoutAutoescape)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree2
+        = SoyFileSetParserBuilder.forFileContents(inputWithoutAutoescape).parse();
     String original = soyTree2.getChild(0).toSourceString();
     assertThat(rewrittenSource(soyTree2)).isEqualTo(original);
   }
@@ -2385,8 +2377,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         .declaredSyntaxVersion(SyntaxVersion.V1_0)
         .doRunInitialParsingPasses(true)
         .doRunCheckingPasses(true)
-        .parse()
-        .getParseTree();
+        .parse();
 
     try {
       new CheckEscapingSanityVisitor().exec(soyTree);

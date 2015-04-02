@@ -46,9 +46,7 @@ public final class ClearSoyDocStringsVisitorTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.getSoyDoc()).contains("blah");

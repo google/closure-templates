@@ -41,9 +41,7 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "  {param xxx: $xxx /}\n" +
         "  {param yyyZzz: $yyyZzz /}\n" +
         "{/call}\n";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode).parse();
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
     assertThat(SharedTestUtils.getNode(soyTree, 0).toSourceString())
         .isEqualTo("{call .foo data=\"all\" /}");
@@ -52,7 +50,7 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "{call .foo data=\"all\"}\n" +
         "  {param xxx: $xxx /}\n" +
         "{/call}\n";
-    soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode).parse().getParseTree();
+    soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode).parse();
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
     assertThat(SharedTestUtils.getNode(soyTree, 0).toSourceString())
         .isEqualTo("{call .foo data=\"all\" /}");
@@ -128,9 +126,7 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
 
   private void testUnchangedCallHelper(String callCode) throws Exception {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode).parse();
     CallNode callNodeBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     callNodeBeforePass.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
     (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
@@ -153,9 +149,7 @@ public class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "    {param xxx: $xxx /}\n" +
         "  {/call}\n" +
         "{/foreach}";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .parse()
-        .getParseTree();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
 
     CallNode callNodeOutsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     CallNode callNodeInsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 1, 0, 0);
