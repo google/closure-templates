@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_METHOD;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 
@@ -125,12 +126,14 @@ final class TemplateCompiler {
 
     GeneratorAdapter ga = new GeneratorAdapter(
         Opcodes.ACC_PUBLIC,
-        CompiledTemplateMetadata.RENDER_METHOD,
+        RENDER_METHOD,
         null /* no generic signature */,
         new Type[] { Type.getType(IOException.class) },
         writer);
     ga.mark(start);
+    VariableSet variables = new VariableSet(template.typeInfo(), thisVar, RENDER_METHOD);
     SoyNodeCompiler nodeCompiler = new SoyNodeCompiler(
+        variables,
         appendableVar,
         contextVar,
         new ExprCompiler());
@@ -144,7 +147,9 @@ final class TemplateCompiler {
     thisVar.tableEntry(ga);
     appendableVar.tableEntry(ga);
     contextVar.tableEntry(ga);
+    variables.generateTableEntries(ga);
     ga.endMethod();
+    variables.defineFields(writer);
   }
 
   /** 

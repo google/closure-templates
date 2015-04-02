@@ -32,6 +32,49 @@ import java.util.Map;
  */
 public class BytecodeCompilerTest extends TestCase {
 
+  public void testSwitchNode() {
+    assertThatTemplateBody(
+        "{switch 1}", 
+        "  {case 1}",
+        "    one",
+        "  {case 2}",
+        "    two",
+        "  {default}",
+        "    default",
+        "{/switch}").rendersAs("one");
+    
+    assertThatTemplateBody(
+        "{switch 2}", 
+        "  {case 1}",
+        "    one",
+        "  {case 2}",
+        "    two",
+        "  {default}",
+        "    default",
+        "{/switch}").rendersAs("two");
+    assertThatTemplateBody(
+        "{switch 'asdf'}", 
+        "  {case 1}",
+        "    one",
+        "  {case 2}",
+        "    two",
+        "  {default}",
+        "    default",
+        "{/switch}").rendersAs("default");
+  }
+
+  public void testNestedSwitch() {
+    assertThatTemplateBody(
+        "{switch 'a'}", 
+        "  {case 'a'}",
+        "    {switch 1} {case 1} sub {default} sub default {/switch}",
+        "  {case 2}",
+        "    two",
+        "  {default}",
+        "    default",
+        "{/switch}").rendersAs(" sub ");
+  }
+
   public void testIfNode() {
     assertThatTemplateBody(
         "{if true}", 

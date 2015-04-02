@@ -18,12 +18,21 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalAnd;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalOr;
 import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
+
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import junit.framework.TestCase;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
+
+import java.util.List;
 
 /**
  * Tests for {@link BytecodeUtils}
@@ -65,11 +74,11 @@ public class BytecodeUtilsTest extends TestCase {
     assertThatExpression(compare(Opcodes.IFGT, one, two)).evaluatesTo(false);
     assertThatExpression(compare(Opcodes.IFGE, one, two)).evaluatesTo(false);
     assertThatExpression(compare(Opcodes.IFEQ, one, two)).evaluatesTo(false);
-    
+
     assertThatExpression(compare(Opcodes.IFLE, two, two)).evaluatesTo(true);
     assertThatExpression(compare(Opcodes.IFGE, two, two)).evaluatesTo(true);
   }
-  
+
   public void testCompareDoubles() {
     Expression one = constant(1D);
     Expression two = constant(2D);
@@ -103,5 +112,67 @@ public class BytecodeUtilsTest extends TestCase {
     assertThatExpression(compare(Opcodes.IFGE, two, nan)).evaluatesTo(false);
     assertThatExpression(compare(Opcodes.IFGT, nan, two)).evaluatesTo(false);
     assertThatExpression(compare(Opcodes.IFGT, two, nan)).evaluatesTo(false);
+  }
+
+  public void testShortCircuitingLogicalOperators_basic() {
+    assertThatExpression(logicalOr(constant(false))).evaluatesTo(false);
+    assertThatExpression(logicalOr(constant(true))).evaluatesTo(true);
+
+    assertThatExpression(logicalAnd(constant(false))).evaluatesTo(false);
+    assertThatExpression(logicalAnd(constant(true))).evaluatesTo(true);
+
+    assertThatExpression(logicalOr(constant(false), constant(false)))
+        .evaluatesTo(false);
+    assertThatExpression(logicalOr(constant(false), constant(true)))
+        .evaluatesTo(true);
+    assertThatExpression(logicalOr(constant(true), constant(false)))
+        .evaluatesTo(true);
+    assertThatExpression(logicalOr(constant(true), constant(true)))
+        .evaluatesTo(true);
+
+    assertThatExpression(logicalAnd(constant(false), constant(false)))
+        .evaluatesTo(false);
+    assertThatExpression(logicalAnd(constant(false), constant(true)))
+        .evaluatesTo(false);
+    assertThatExpression(logicalAnd(constant(true), constant(false)))
+        .evaluatesTo(false);
+    assertThatExpression(logicalAnd(constant(true), constant(true)))
+        .evaluatesTo(true);
+  }
+
+  public void testShortCircuitingLogicalOperators_compatibleWithJavaOperators() {
+    ImmutableList<Boolean> bools = ImmutableList.of(true, false);
+    for (boolean a : bools) {
+      for (boolean b : bools) {
+        for (boolean c : bools) {
+          for (boolean d : bools) {
+            List<Expression> exprs =
+                ImmutableList.of(constant(a), constant(b), constant(c), constant(d));
+            assertThatExpression(logicalOr(exprs)).evaluatesTo(a || b || c || d);
+            assertThatExpression(logicalAnd(exprs)).evaluatesTo(a && b && c && d);
+          }
+        }
+      }
+    }
+  }
+
+  // Use an expression that only ever throws for branches that are supposed to be skipped.
+  public void testShortCircuitingLogicalOperators_shortCircuits() {
+    assertThatExpression(throwingBoolExpression())
+        .throwsExceptionOfType(IllegalStateException.class);
+
+    assertThatExpression(logicalOr(ImmutableList.of(constant(true), throwingBoolExpression())))
+        .evaluatesTo(true);
+    assertThatExpression(logicalAnd(ImmutableList.of(constant(false), throwingBoolExpression())))
+        .evaluatesTo(false);
+  }
+
+  private static Expression throwingBoolExpression() {
+    return new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+       @Override void doGen(GeneratorAdapter adapter) {
+         adapter.throwException(Type.getType(IllegalStateException.class),
+             "shouldn't have called me");
+       }
+    };
   }
 }

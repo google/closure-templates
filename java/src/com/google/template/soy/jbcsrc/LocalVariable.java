@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Optional;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -44,6 +45,11 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * a method parameter index to a local variable index).
  */
 @AutoValue abstract class LocalVariable extends Expression {
+  // TODO(lukes): the fact that you need to specify the start and end labels during construction
+  // ends up being awkward... Due to the fact that it is unclear who is responsible for actually
+  // visiting the labels.  Maybe this object should be label agnostic and the labels should just be
+  // parameters to tableEntry?
+
   static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
     return new AutoValue_LocalVariable("this", owner.type(), 0, start, end);
   }
@@ -83,8 +89,34 @@ import org.objectweb.asm.commons.GeneratorAdapter;
     mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
+  /**
+   * Return a {@link Statement} that stores the value of the given expression into this variable.
+   */
+  Statement store(final Expression expr) {
+    return store(expr, Optional.<Label>absent());
+  }
+
+  /**
+   * Return a {@link Statement} that stores the value of the given expression into this variable.
+   * 
+   * @param expr The expression to store
+   * @param firstVarInstruction A label to use to mark the store instruction
+   */
+  Statement store(final Expression expr, Label firstVarInstruction) {
+    return store(expr, Optional.<Label>of(firstVarInstruction));
+  }
+
   /** Writes the value at the top of the stack to the local variable. */
-  void store(GeneratorAdapter mv) {
-    mv.visitVarInsn(resultType().getOpcode(Opcodes.ISTORE), index());
+  private Statement store(final Expression expr, final Optional<Label> firstVarInstruction) {
+    expr.checkType(resultType());
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        expr.gen(adapter);
+        if (firstVarInstruction.isPresent()) {
+          adapter.mark(firstVarInstruction.get());
+        }
+        adapter.visitVarInsn(resultType().getOpcode(Opcodes.ISTORE), index());
+      }
+    };
   }
 }

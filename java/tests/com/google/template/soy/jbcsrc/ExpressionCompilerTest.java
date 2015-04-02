@@ -223,7 +223,7 @@ public class ExpressionCompilerTest extends TestCase {
     }
   }
 
-  public void testConditionalOperatorse() {
+  public void testConditionalOperators() {
     variables.put("true", untypedBoxedSoyExpression(SoyExpression.TRUE));
     variables.put("false", untypedBoxedSoyExpression(SoyExpression.FALSE));
 

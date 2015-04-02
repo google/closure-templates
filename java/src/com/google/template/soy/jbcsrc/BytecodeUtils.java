@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Primitives;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
@@ -33,9 +34,7 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.Printer;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-
-import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * A set of utilities for generating simple expressions in bytecode
@@ -252,6 +251,12 @@ final class BytecodeUtils {
     mg.endMethod();
   }
 
+  // TODO(lukes): some of these branch operators are a little too branchy.  For example, the
+  // expression a == b || a == c, could be implemented by
+  // logicalOr(compare(Opcodes.IFEQ, a, b), compare(Opcodes.IFEQ, a, c)), but that is not optimal
+  // instead we could allow compare to take an expression for what to do when the comparison fails
+  // that way we could save a branch.  Maybe these operators are a failed abstraction?
+
   /**
    * Compares the two {@code double} valued expressions using the provided comparison operation.
    */
@@ -320,39 +325,105 @@ final class BytecodeUtils {
     };
   }
 
-  @Nullable private static final Field labelStatusField;
-  static {
-    Field field = null;
-    try {
-      field = Label.class.getDeclaredField("status");
-      field.setAccessible(true);
-    } catch (NoSuchFieldException | SecurityException e) {
-      // The open source asm build renames package private fields to single character ids just to
-      // make it less usable  #fml.
+  /**
+   * Compares two {@link SoyExpression}s for equality using soy == semantics.
+   */
+  static Expression compareSoyEquals(final SoyExpression left, final SoyExpression right) {
+    // We can special case when we know the types.
+    // If either is a string, we run special logic so test for that first
+    // otherwise we special case primitives and eventually fall back to our runtime.
+    if (left.isKnownString()) {
+      return doEqualsString(left.convert(String.class), right);
     }
-    labelStatusField = field;
+    if (right.isKnownString()) {
+      return doEqualsString(right.convert(String.class), left);
+    }
+    if (left.isKnownInt() && right.isKnownInt()) {
+      return compare(Opcodes.IFEQ, left.convert(long.class), right.convert(long.class));
+    }
+    if (left.isKnownNumber() && right.isKnownNumber()) {
+      return compare(Opcodes.IFEQ, left.convert(double.class), right.convert(double.class));
+    }
+    return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
+  }
+
+  private static Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
+    if (other.isKnownString()) {
+      SoyExpression strOther = other.convert(String.class);
+      return MethodRef.EQUALS.invoke(stringExpr, strOther);
+    }
+    if (other.isKnownNumber()) {
+      // in this case, we actually try to convert stringExpr to a number
+      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER
+          .invoke(stringExpr, other.convert(double.class));
+    }
+    // We don't know what other is, assume the worst and call out to our boxed implementation
+    // TODO(lukes): in this case we know that the first param is a string, maybe we can specialize
+    // the runtime to take advantage of this and avoid reboxing the string (and rechecking the type)
+    return MethodRef.RUNTIME_EQUAL.invoke(stringExpr.box(), other.box());
   }
 
   /**
-   * Returns a new {@link Label} that is only suitable for use as mechanism to attach line numbers
-   * 
-   * <p>Using this {@link Label} as a target for a jump instruction may result in undefined
-   * behavior.
+   * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
+   * expressions.
    */
-  static Label newDebugLabel() {
-    // Work around for a bug in COMPUTE_FRAMES described here
-    // http://mail.ow2.org/wws/arc/asm/2015-03/msg00002.html
-    Label l = new Label();
-    if (labelStatusField != null) {
-      // This is mostly an optimization, but would be nice to work around issues in frame 
-      // calculations
-      try {
-        int status = labelStatusField.getInt(l);
-        labelStatusField.setInt(l, status | 1 /* Label.DEBUG */);
-      } catch (IllegalAccessException e) {
-        throw new RuntimeException(e);
-      }
+  static Expression logicalOr(Expression ...expressions) {
+    return logicalOr(ImmutableList.copyOf(expressions));
+  }
+
+  /**
+   * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
+   * expressions.
+   */
+  static Expression logicalOr(List<? extends Expression> expressions) {
+    return doShortCircuitingLogicalOperator(ImmutableList.copyOf(expressions), true);
+  }
+
+  /**
+   * Implements the short circuiting logical and ({@code &&}) operator over the list of boolean
+   * expressions.
+   */
+  static Expression logicalAnd(Expression ...expressions) {
+    return logicalAnd(ImmutableList.copyOf(expressions));
+  }
+
+  /**
+   * Implements the short circuiting logical and ({@code &&}) operator over the list of boolean
+   * expressions.
+   */
+  static Expression logicalAnd(List<? extends Expression> expressions) {
+    return doShortCircuitingLogicalOperator(ImmutableList.copyOf(expressions), false);
+  }
+
+  private static Expression doShortCircuitingLogicalOperator(
+      final ImmutableList<? extends Expression> expressions, final boolean isOrOperator) {
+    checkArgument(!expressions.isEmpty());
+    for (Expression expr : expressions) {
+      expr.checkType(Type.BOOLEAN_TYPE);
     }
-    return l;
+    if (expressions.size() == 1) {
+      return expressions.get(0);
+    }
+
+    return new SimpleExpression(Type.BOOLEAN_TYPE, Expression.areAllConstant(expressions)) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        Label end = new Label();
+        Label shortCircuit = new Label();
+        for (int i = 0; i < expressions.size(); i++) {
+          Expression expr = expressions.get(i);
+          expr.gen(adapter);
+          if (i == expressions.size() - 1) {
+            // if we are the last one, just goto end. Whatever the result of the last expression is
+            // determines the result of the whole expression (when all prior tests fail).
+            adapter.goTo(end);
+          } else {
+            adapter.ifZCmp(isOrOperator ? Opcodes.IFNE : Opcodes.IFEQ, shortCircuit);
+          }
+        }
+        adapter.mark(shortCircuit);
+        adapter.push(isOrOperator);  // default for || is true && is false
+        adapter.mark(end);
+      }
+    };
   }
 }

@@ -195,47 +195,14 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
   // Comparison operators.
 
   @Override protected final SoyExpression visitEqualOpNode(EqualOpNode node) {
-    return SoyExpression.forBool(doEquals(visit(node.getChild(0)), visit(node.getChild(1))));
+    return SoyExpression.forBool(
+        BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
   @Override protected final SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
     return SoyExpression.forBool(
-        logicalNot(doEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
-  }
-
-  private Expression doEquals(final SoyExpression left, final SoyExpression right) {
-    // We can special case when we know the types.
-    // If either is a string, we run special logic so test for that first
-    // otherwise we special case primitives and eventually fall back to our runtime.
-    if (left.isKnownString()) {
-      return doEqualsString(left.convert(String.class), right);
-    }
-    if (right.isKnownString()) {
-      return doEqualsString(right.convert(String.class), left);
-    }
-    if (left.isKnownInt() && right.isKnownInt()) {
-      return compare(Opcodes.IFEQ, left.convert(long.class), right.convert(long.class));
-    }
-    if (left.isKnownNumber() && right.isKnownNumber()) {
-      return compare(Opcodes.IFEQ, left.convert(double.class), right.convert(double.class));
-    }
-    return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
-  }
-
-  private Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
-    if (other.isKnownString()) {
-      SoyExpression strOther = other.convert(String.class);
-      return MethodRef.EQUALS.invoke(stringExpr, strOther);
-    }
-    if (other.isKnownNumber()) {
-      // in this case, we actually try to convert stringExpr to a number
-      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER
-          .invoke(stringExpr, other.convert(double.class));
-    }
-    // We don't know what other is, assume the worst and call out to our boxed implementation
-    // TODO(lukes): in this case we know that the first param is a string, maybe we can specialize
-    // the runtime to take advantage of this and avoid reboxing the string (and rechecking the type)
-    return MethodRef.RUNTIME_EQUAL.invoke(stringExpr.box(), other.box());
+        logicalNot(
+            BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
   }
 
   @Override protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
@@ -426,44 +393,15 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
   }
 
   @Override protected final SoyExpression visitAndOpNode(AndOpNode node) {
-    final SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
-    final SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
-
-    return SoyExpression.forBool(
-        new SimpleExpression(Type.BOOLEAN_TYPE, left.isConstant() && right.isConstant()) {
-          @Override void doGen(GeneratorAdapter mv) {
-            // Note: short circuiting, if left is false we don't eval right
-            left.gen(mv);
-            Label ifFalsy = new Label();
-            Label end = new Label();
-            mv.ifZCmp(Opcodes.IFEQ, ifFalsy);
-            right.gen(mv);
-            mv.goTo(end);
-            mv.mark(ifFalsy);
-            mv.push(false);
-            mv.mark(end);
-          }
-        });
+    SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
+    SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
+    return SoyExpression.forBool(BytecodeUtils.logicalAnd(left, right));
   }
 
   @Override protected final SoyExpression visitOrOpNode(OrOpNode node) {
-    final SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
-    final SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
-    return SoyExpression.forBool(
-        new SimpleExpression(Type.BOOLEAN_TYPE, left.isConstant() && right.isConstant()) {
-          @Override void doGen(GeneratorAdapter mv) {
-            // Note: short circuiting, if left is true we don't eval right
-            left.gen(mv);
-            Label ifTruthy = new Label();
-            Label end = new Label();
-            mv.ifZCmp(Opcodes.IFNE, ifTruthy);
-            right.gen(mv);
-            mv.goTo(end);
-            mv.mark(ifTruthy);
-            mv.push(true);
-            mv.mark(end);
-          }
-        });
+    SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
+    SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
+    return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
   }
 
 
