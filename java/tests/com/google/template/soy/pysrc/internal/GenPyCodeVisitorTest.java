@@ -270,4 +270,12 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
     assertThatSoyCode(soyCode).compilesWithException(SoySyntaxException.class);
   }
+
+  public void testCallReturnsString() {
+    String soyCode = "{call .foo data=\"all\" /}";
+
+    String expectedPyCode = "output.append(str(ns.foo(opt_data, opt_ijData)))\n";
+
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
 }
