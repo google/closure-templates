@@ -141,20 +141,28 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoCallWithoutParam = function(opt_data, opt_ignored) {
-  return soy.examples.simple.helloWorld(null) + '<br>' + soy.examples.features.tripReport_(null) + '<br>' + soy.examples.features.tripReport_(opt_data) + '<br>' + soy.examples.features.tripReport_(opt_data.tripInfo) + '<br>';
+  return soy.examples.features.tripReport_(null) + '<br>' + soy.examples.features.tripReport_(opt_data) + '<br>' + soy.examples.features.tripReport_(opt_data.tripInfo) + '<br>';
 };
 if (goog.DEBUG) {
   soy.examples.features.demoCallWithoutParam.soyTemplateName = 'soy.examples.features.demoCallWithoutParam';
 }
 
 
+soy.examples.features.demoCallOtherFile = function(opt_data, opt_ignored) {
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.examples.simple.helloWorld(null) + '<br>');
+};
+if (goog.DEBUG) {
+  soy.examples.features.demoCallOtherFile.soyTemplateName = 'soy.examples.features.demoCallOtherFile';
+}
+
+
 soy.examples.features.demoCallWithParam = function(opt_data, opt_ignored) {
   var output = '';
-  var destinationList196 = opt_data.destinations;
-  var destinationListLen196 = destinationList196.length;
-  for (var destinationIndex196 = 0; destinationIndex196 < destinationListLen196; destinationIndex196++) {
-    var destinationData196 = destinationList196[destinationIndex196];
-    output += soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData196})) + '<br>' + ((destinationIndex196 % 2 == 0) ? soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData196}) + '<br>' : '');
+  var destinationList197 = opt_data.destinations;
+  var destinationListLen197 = destinationList197.length;
+  for (var destinationIndex197 = 0; destinationIndex197 < destinationListLen197; destinationIndex197++) {
+    var destinationData197 = destinationList197[destinationIndex197];
+    output += soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData197})) + '<br>' + ((destinationIndex197 % 2 == 0) ? soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData197}) + '<br>' : '');
   }
   return output;
 };
@@ -164,19 +172,19 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoCallWithParamBlock = function(opt_data, opt_ignored) {
-  var param200 = '';
+  var param201 = '';
   switch (Math.floor(Math.random() * 3)) {
     case 0:
-      param200 += 'Boston';
+      param201 += 'Boston';
       break;
     case 1:
-      param200 += 'Singapore';
+      param201 += 'Singapore';
       break;
     case 2:
-      param200 += 'Zurich';
+      param201 += 'Zurich';
       break;
   }
-  var output = '' + soy.examples.features.tripReport_({name: opt_data.name, destination: param200});
+  var output = '' + soy.examples.features.tripReport_({name: opt_data.name, destination: param201});
   output += '<br>';
   return output;
 };
@@ -196,14 +204,14 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoParamWithKindAttribute = function(opt_data, opt_ignored) {
   var output = '<div>';
-  var param237 = '';
-  var iList241 = opt_data.list;
-  var iListLen241 = iList241.length;
-  for (var iIndex241 = 0; iIndex241 < iListLen241; iIndex241++) {
-    var iData241 = iList241[iIndex241];
-    param237 += '<li>' + soy.$$escapeHtml(iData241) + '</li>';
+  var param238 = '';
+  var iList242 = opt_data.list;
+  var iListLen242 = iList242.length;
+  for (var iIndex242 = 0; iIndex242 < iListLen242; iIndex242++) {
+    var iData242 = iList242[iIndex242];
+    param238 += '<li>' + soy.$$escapeHtml(iData242) + '</li>';
   }
-  output += soy.examples.features.demoParamWithKindAttributeCallee_({message: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('<b>' + soy.$$escapeHtml(opt_data.message) + '</b>'), listItems: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param237)});
+  output += soy.examples.features.demoParamWithKindAttributeCallee_({message: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('<b>' + soy.$$escapeHtml(opt_data.message) + '</b>'), listItems: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param238)});
   output += '</div>';
   return output;
 };
@@ -222,11 +230,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoExpressions = function(opt_data, opt_ignored) {
   var output = 'First student\'s major: ' + soy.$$escapeHtml(opt_data.students[0].major) + '<br>Last student\'s year: ' + soy.$$escapeHtml(opt_data.students[opt_data.students.length - 1].year) + '<br>Random student\'s major: ' + soy.$$escapeHtml(opt_data.students[Math.floor(Math.random() * opt_data.students.length)].major) + '<br>';
-  var studentList289 = opt_data.students;
-  var studentListLen289 = studentList289.length;
-  for (var studentIndex289 = 0; studentIndex289 < studentListLen289; studentIndex289++) {
-    var studentData289 = studentList289[studentIndex289];
-    output += soy.$$escapeHtml(studentData289.name) + ':' + ((studentIndex289 == 0) ? ' First.' : (studentIndex289 == studentListLen289 - 1) ? ' Last.' : (studentIndex289 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex289 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData289.major) + '.' + ((studentData289.major == 'Physics' || studentData289.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData289.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData289.year < 2000 ? Math.round((studentData289.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData289.year < 2000) ? soy.$$escapeHtml(Math.round((studentData289.year - 1905) / 10) * 10) : '00') + 's.<br>';
+  var studentList290 = opt_data.students;
+  var studentListLen290 = studentList290.length;
+  for (var studentIndex290 = 0; studentIndex290 < studentListLen290; studentIndex290++) {
+    var studentData290 = studentList290[studentIndex290];
+    output += soy.$$escapeHtml(studentData290.name) + ':' + ((studentIndex290 == 0) ? ' First.' : (studentIndex290 == studentListLen290 - 1) ? ' Last.' : (studentIndex290 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex290 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData290.major) + '.' + ((studentData290.major == 'Physics' || studentData290.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData290.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData290.year < 2000 ? Math.round((studentData290.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData290.year < 2000) ? soy.$$escapeHtml(Math.round((studentData290.year - 1905) / 10) * 10) : '00') + 's.<br>';
   }
   return output;
 };
@@ -245,11 +253,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.buildCommaSeparatedList_ = function(opt_data, opt_ignored) {
   var output = '';
-  var itemList307 = opt_data.items;
-  var itemListLen307 = itemList307.length;
-  for (var itemIndex307 = 0; itemIndex307 < itemListLen307; itemIndex307++) {
-    var itemData307 = itemList307[itemIndex307];
-    output += ((! (itemIndex307 == 0)) ? ', ' : '') + soy.$$escapeHtml(itemData307);
+  var itemList308 = opt_data.items;
+  var itemListLen308 = itemList308.length;
+  for (var itemIndex308 = 0; itemIndex308 < itemListLen308; itemIndex308++) {
+    var itemData308 = itemList308[itemIndex308];
+    output += ((! (itemIndex308 == 0)) ? ', ' : '') + soy.$$escapeHtml(itemData308);
   }
   return output;
 };
@@ -260,11 +268,11 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoBidiSupport = function(opt_data, opt_ignored) {
   var output = '<div id="title1" style="font-variant:small-caps" ' + soy.$$escapeHtml(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>zby ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Zyour zfavorite zkeyword: <select>';
-  var keywordList339 = opt_data.keywords;
-  var keywordListLen339 = keywordList339.length;
-  for (var keywordIndex339 = 0; keywordIndex339 < keywordListLen339; keywordIndex339++) {
-    var keywordData339 = keywordList339[keywordIndex339];
-    output += '<option value="' + soy.$$escapeHtml(keywordData339) + '">' + soy.$$bidiUnicodeWrap(1, soy.$$escapeHtml(keywordData339)) + '</option>';
+  var keywordList340 = opt_data.keywords;
+  var keywordListLen340 = keywordList340.length;
+  for (var keywordIndex340 = 0; keywordIndex340 < keywordListLen340; keywordIndex340++) {
+    var keywordData340 = keywordList340[keywordIndex340];
+    output += '<option value="' + soy.$$escapeHtml(keywordData340) + '">' + soy.$$bidiUnicodeWrap(1, soy.$$escapeHtml(keywordData340)) + '</option>';
   }
   output += '</select></div><a href="#" style="float:right">Zhelp</a><br>';
   return output;

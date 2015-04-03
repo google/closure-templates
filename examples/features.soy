@@ -280,9 +280,6 @@
  */
 {template .demoCallWithoutParam}
 
-  // Call template defined in a different file.
-  {call soy.examples.simple.helloWorld /}<br>
-
   // Call template defined in this file.
   {call .tripReport_ /}<br>
 
@@ -293,6 +290,17 @@
 
   // Pass a subset of the current template data to the callee.
   {call .tripReport_ data="$tripInfo" /}<br>
+
+{/template}
+
+
+/**
+ * Demo a 'call' out to a template defined in another file.
+ */
+{template .demoCallOtherFile autoescape="strict"}
+
+  // Call template defined in a different file.
+  {call soy.examples.simple.helloWorld /}<br>
 
 {/template}
 

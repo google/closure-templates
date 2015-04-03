@@ -49,6 +49,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String DEMO_FOR = "soy.examples.features.demoFor";
     /** The full template name of the .demoCallWithoutParam template. */
     public static final String DEMO_CALL_WITHOUT_PARAM = "soy.examples.features.demoCallWithoutParam";
+    /** The full template name of the .demoCallOtherFile template. */
+    public static final String DEMO_CALL_OTHER_FILE = "soy.examples.features.demoCallOtherFile";
     /** The full template name of the .demoCallWithParam template. */
     public static final String DEMO_CALL_WITH_PARAM = "soy.examples.features.demoCallWithParam";
     /** The full template name of the .demoCallWithParamBlock template. */
@@ -625,6 +627,38 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
 
 
   /**
+   * Demo a 'call' out to a template defined in another file.
+   */
+  public static final class DemoCallOtherFileSoyTemplateInfo extends SoyTemplateInfo {
+
+    /** This template's full name. */
+    public static final String __NAME__ = "soy.examples.features.demoCallOtherFile";
+    /** This template's partial name. */
+    public static final String __PARTIAL_NAME__ = ".demoCallOtherFile";
+
+    private DemoCallOtherFileSoyTemplateInfo() {
+      super(
+          "soy.examples.features.demoCallOtherFile",
+          ImmutableMap.<String, ParamRequisiteness>of(),
+          ImmutableSortedSet.<String>of(),
+          false,
+          false);
+    }
+
+    private static final DemoCallOtherFileSoyTemplateInfo __INSTANCE__ =
+        new DemoCallOtherFileSoyTemplateInfo();
+
+    public static DemoCallOtherFileSoyTemplateInfo getInstance() {
+      return __INSTANCE__;
+    }
+  }
+
+  /** Same as DemoCallOtherFileSoyTemplateInfo.getInstance(). */
+  public static final DemoCallOtherFileSoyTemplateInfo DEMO_CALL_OTHER_FILE =
+      DemoCallOtherFileSoyTemplateInfo.getInstance();
+
+
+  /**
    * Demo 'call' with 'param's.
    */
   public static final class DemoCallWithParamSoyTemplateInfo extends SoyTemplateInfo {
@@ -991,6 +1025,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_FOREACH,
             DEMO_FOR,
             DEMO_CALL_WITHOUT_PARAM,
+            DEMO_CALL_OTHER_FILE,
             DEMO_CALL_WITH_PARAM,
             DEMO_CALL_WITH_PARAM_BLOCK,
             DEMO_PARAM_WITH_KIND_ATTRIBUTE,

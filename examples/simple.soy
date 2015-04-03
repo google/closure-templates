@@ -15,7 +15,7 @@
 // Simple examples.
 // Author: Kai Huang
 
-{namespace soy.examples.simple autoescape="deprecated-noncontextual"}
+{namespace soy.examples.simple autoescape="strict"}
 
 
 /**
@@ -33,7 +33,7 @@
  * @param? name The name of the person to say hello to.
  */
 {template .helloName}
-  {if hasData() and $name}
+  {if $name}
     {msg desc="Says hello to a person."}
       Hello {$name}!
     {/msg}
