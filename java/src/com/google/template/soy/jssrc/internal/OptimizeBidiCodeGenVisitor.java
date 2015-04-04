@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.sharedpasses.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -75,10 +76,14 @@ class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
    * @param bidiGlobalDir The bidi global directionality.
+   * @param errorReporter For reporting errors.
    */
   @Inject
   public OptimizeBidiCodeGenVisitor(
-      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, BidiGlobalDir bidiGlobalDir) {
+      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
+      BidiGlobalDir bidiGlobalDir,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.bidiGlobalDir = bidiGlobalDir;
   }
@@ -106,7 +111,7 @@ class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // If we made any replacements, we may have created consecutive RawTextNodes, so clean them up.
     if (madeReplacement) {
-      (new CombineConsecutiveRawTextNodesVisitor()).exec(node);
+      new CombineConsecutiveRawTextNodesVisitor(errorReporter).exec(node);
     }
   }
 

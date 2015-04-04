@@ -46,6 +46,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -177,12 +178,17 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   protected RenderVisitor(
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      EvalVisitorFactory evalVisitorFactory, Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry, SoyRecord data,
+      EvalVisitorFactory evalVisitorFactory,
+      Appendable outputBuf,
+      ErrorReporter errorReporter,
+      @Nullable TemplateRegistry templateRegistry,
+      SoyRecord data,
       @Nullable SoyRecord ijData,
-      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
-
+      @Nullable Set<String> activeDelPackageNames,
+      @Nullable SoyMsgBundle msgBundle,
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
+    super(errorReporter);
     Preconditions.checkNotNull(data);
 
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
@@ -232,10 +238,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @return The newly created RenderVisitor instance.
    */
   protected RenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
-
     return new RenderVisitor(
-        soyJavaDirectivesMap, evalVisitorFactory, outputBuf, templateRegistry,
-        data, ijData, activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
+        soyJavaDirectivesMap,
+        evalVisitorFactory,
+        outputBuf,
+        errorReporter,
+        templateRegistry,
+        data,
+        ijData,
+        activeDelPackageNames,
+        msgBundle,
+        xidRenamingMap,
+        cssRenamingMap);
   }
 
   /**
@@ -273,7 +287,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     if (assistantForMsgs == null) {
-      assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle);
+      assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle, errorReporter);
     }
     if (!node.getEscapingDirectiveNames().isEmpty()) {
       // The entire message needs to be escaped, so we need to render to a temporary buffer.
@@ -461,7 +475,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
                 + rangeArg.toSourceString() + "\" does not resolve to an integer.",
             node);
       }
-      rangeArgValues.add(((IntegerData) rangeArgValue).integerValue());
+      rangeArgValues.add(rangeArgValue.integerValue());
     }
 
     int increment = (rangeArgValues.size() == 3) ? rangeArgValues.remove(2) : 1 /* default */;

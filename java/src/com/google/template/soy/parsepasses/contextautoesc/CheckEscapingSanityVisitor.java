@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -45,6 +46,9 @@ public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Voi
   /** Current escaping mode. */
   private AutoescapeMode autoescapeMode;
 
+  public CheckEscapingSanityVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.

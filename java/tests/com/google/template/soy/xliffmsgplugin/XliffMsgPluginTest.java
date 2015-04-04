@@ -30,6 +30,8 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -41,16 +43,17 @@ import java.util.List;
  * Unit tests for XliffMsgPlugin.
  *
  */
-public class XliffMsgPluginTest extends TestCase {
-
+public final class XliffMsgPluginTest extends TestCase {
 
   public void testGenerateExtractedMsgsFile() throws Exception {
 
     URL testSoyFile = Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2.soy");
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
         SoyFileSupplier.Factory.create(testSoyFile, SoyFileKind.SRC))
+        .errorReporter(boom)
         .parse();
-    SoyMsgBundle msgBundle = (new ExtractMsgsVisitor()).exec(soyTree);
+    SoyMsgBundle msgBundle = new ExtractMsgsVisitor(boom).exec(soyTree);
 
     XliffMsgPlugin msgPlugin = new XliffMsgPlugin();
 

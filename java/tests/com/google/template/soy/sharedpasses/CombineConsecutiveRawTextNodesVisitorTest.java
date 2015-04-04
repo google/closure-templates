@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -43,14 +45,17 @@ public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
         "  Blah{$goo}blah\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .errorReporter(boom)
+        .parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
     template.addChild(new RawTextNode(0, "bleh"));
     template.addChild(new RawTextNode(0, "bluh"));
 
     assertThat(template.numChildren()).isEqualTo(5);
 
-    (new CombineConsecutiveRawTextNodesVisitor()).exec(soyTree);
+    new CombineConsecutiveRawTextNodesVisitor(boom).exec(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(3);
     assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("Blah");

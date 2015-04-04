@@ -25,6 +25,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -63,6 +64,8 @@ class GenCallCodeUtils {
   /** Factory for creating an instance of GenJsExprsVisitor. */
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
 
   /**
    * @param jsSrcOptions The options for generating JS source code.
@@ -70,19 +73,22 @@ class GenCallCodeUtils {
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
+   * @param errorReporter For reporting errors.
    */
   @Inject
   GenCallCodeUtils(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap, SoyJsSrcOptions jsSrcOptions,
       @IsUsingIjData boolean isUsingIjData, JsExprTranslator jsExprTranslator,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
+      GenJsExprsVisitorFactory genJsExprsVisitorFactory,
+      ErrorReporter errorReporter) {
     this.jsSrcOptions = jsSrcOptions;
     this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
     this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
+    this.errorReporter = errorReporter;
   }
 
 

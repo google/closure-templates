@@ -38,6 +38,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.sharedpasses.IsUsingIjDataVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
@@ -72,6 +73,9 @@ public class JsSrcMain {
   /** Provider for getting an instance of GenJsCodeVisitor. */
   private final Provider<GenJsCodeVisitor> genJsCodeVisitorProvider;
 
+  /** For reporting errors during code generation. */
+  private final ErrorReporter errorReporter;
+
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
@@ -82,13 +86,16 @@ public class JsSrcMain {
    */
   @Inject
   public JsSrcMain(
-      @ApiCall GuiceSimpleScope apiCallScope, SimplifyVisitor simplifyVisitor,
+      @ApiCall GuiceSimpleScope apiCallScope,
+      SimplifyVisitor simplifyVisitor,
       Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
-      Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
+      Provider<GenJsCodeVisitor> genJsCodeVisitorProvider,
+      ErrorReporter errorReporter) {
     this.apiCallScope = apiCallScope;
     this.simplifyVisitor = simplifyVisitor;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -105,13 +112,15 @@ public class JsSrcMain {
    * @throws SoySyntaxException If a syntax error is found.
    */
   public List<String> genJsSrc(
-      SoyFileSetNode soyTree, SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle)
+      SoyFileSetNode soyTree,
+      SoyJsSrcOptions jsSrcOptions,
+      @Nullable SoyMsgBundle msgBundle)
       throws SoySyntaxException {
 
     // Generate code with the opt_ijData param if either (a) the user specified the compiler flag
     // --isUsingIjData or (b) any of the Soy code in the file set references injected data.
-    boolean isUsingIjData =
-        jsSrcOptions.isUsingIjData() || (new IsUsingIjDataVisitor()).exec(soyTree);
+    boolean isUsingIjData = jsSrcOptions.isUsingIjData()
+        || new IsUsingIjDataVisitor(errorReporter).exec(soyTree);
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
     Preconditions.checkState(
@@ -133,8 +142,8 @@ public class JsSrcMain {
 
       // Replace MsgNodes.
       if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
-        (new ReplaceMsgsWithGoogMsgsVisitor()).exec(soyTree);
-        (new MoveGoogMsgDefNodesEarlierVisitor()).exec(soyTree);
+        new ReplaceMsgsWithGoogMsgsVisitor(errorReporter).exec(soyTree);
+        new MoveGoogMsgDefNodesEarlierVisitor(errorReporter).exec(soyTree);
         Preconditions.checkState(
             bidiGlobalDir != null,
             "If enabling shouldGenerateGoogMsgDefs, must also set bidi global directionality.");
@@ -143,7 +152,8 @@ public class JsSrcMain {
             bidiGlobalDir == null || bidiGlobalDir.isStaticValue(),
             "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
         try {
-          (new InsertMsgsVisitor(msgBundle, false)).exec(soyTree);
+          new InsertMsgsVisitor(msgBundle, false /* dontErrorOnPlrselMsgs */, errorReporter)
+              .exec(soyTree);
         } catch (EncounteredPlrselMsgException e) {
           throw SoySyntaxExceptionUtils.createWithNode(
               "JS code generation currently only supports plural/select messages when" +
@@ -178,8 +188,12 @@ public class JsSrcMain {
    * @throws IOException If there is an error in opening/writing an output JS file.
    */
   public void genJsFiles(
-      SoyFileSetNode soyTree, SoyJsSrcOptions jsSrcOptions, @Nullable String locale,
-      @Nullable SoyMsgBundle msgBundle, String outputPathFormat, String inputPathsPrefix)
+      SoyFileSetNode soyTree,
+      SoyJsSrcOptions jsSrcOptions,
+      @Nullable String locale,
+      @Nullable SoyMsgBundle msgBundle,
+      String outputPathFormat,
+      String inputPathsPrefix)
       throws SoySyntaxException, IOException {
 
     List<String> jsFileContents = genJsSrc(soyTree, jsSrcOptions, msgBundle);

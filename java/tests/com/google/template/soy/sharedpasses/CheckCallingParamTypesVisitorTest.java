@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -286,17 +288,25 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
   }
 
   private SoyFileSetNode assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
-    (new CheckCallingParamTypesVisitor()).exec(soyTree);
+    ErrorReporter errorReporter = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .errorReporter(errorReporter)
+        .parse();
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, errorReporter).exec(soyTree);
+    new CheckCallingParamTypesVisitor(errorReporter).exec(soyTree);
     return soyTree;
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .errorReporter(boom)
+        .parse();
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
     try {
-      (new CheckCallingParamTypesVisitor()).exec(soyTree);
+      // TODO(user): even though the visitor has an error reporter, it doesn't *use* the error
+      // reporter yet. Remove this try-catch once it does.
+      new CheckCallingParamTypesVisitor(boom).exec(soyTree);
       fail("Exception expected");
     } catch (SoySyntaxException sse) {
       assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);

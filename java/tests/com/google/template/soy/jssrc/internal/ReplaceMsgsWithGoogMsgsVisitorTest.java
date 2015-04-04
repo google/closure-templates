@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -39,7 +41,6 @@ import junit.framework.TestCase;
  */
 public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
 
-
   public void testReplaceMsgsWithGoogMsgsVisitor() {
 
     String soyCode = "" +
@@ -50,8 +51,11 @@ public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
         "  <span id=\"{for $i in range(3)}{$i}{/for}\">\n" +
         "{/msg}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
+        .parse();
+    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     GoogMsgDefNode gmd0 = (GoogMsgDefNode) template.getChild(0);

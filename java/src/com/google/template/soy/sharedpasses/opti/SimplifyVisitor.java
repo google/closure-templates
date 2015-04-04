@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
@@ -65,8 +66,7 @@ import javax.inject.Inject;
  * <p> {@link #exec} should be called on a full Soy tree.
  *
  */
-public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
-
+public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** SimplifyExprVisitor instance used by this visitor. */
   private final SimplifyExprVisitor simplifyExprVisitor;
@@ -82,7 +82,10 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Inject
   public SimplifyVisitor(
-      SimplifyExprVisitor simplifyExprVisitor, PrerenderVisitorFactory prerenderVisitorFactory) {
+      SimplifyExprVisitor simplifyExprVisitor,
+      PrerenderVisitorFactory prerenderVisitorFactory,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.simplifyExprVisitor = simplifyExprVisitor;
     this.prerenderVisitorFactory = prerenderVisitorFactory;
   }
@@ -94,7 +97,7 @@ public class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyFileSetNode nodeAsRoot = (SoyFileSetNode) node;
 
     // First simplify all expressions in the subtree.
-    SoytreeUtils.execOnAllV2Exprs(nodeAsRoot, simplifyExprVisitor);
+    SoytreeUtils.execOnAllV2Exprs(nodeAsRoot, simplifyExprVisitor, errorReporter);
 
     // Setup.
     nodeIdGen = nodeAsRoot.getNodeIdGenerator();

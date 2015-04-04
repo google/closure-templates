@@ -20,6 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
@@ -47,8 +48,7 @@ import javax.annotation.Nullable;
  * this pass.
  *
  */
-public class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
-
+public final class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** The CSS renaming map to use for renaming selector text, or null to use the source text. */
   private final SoyCssRenamingMap cssRenamingMap;
@@ -56,12 +56,13 @@ public class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
 
-
   /**
    * @param cssRenamingMap The CSS renaming map to use for renaming selector text, or null to use
    *     the source text.
+   * @param errorReporter For reporting errors.
    */
-  public RenameCssVisitor(@Nullable SoyCssRenamingMap cssRenamingMap) {
+  public RenameCssVisitor(@Nullable SoyCssRenamingMap cssRenamingMap, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.cssRenamingMap = cssRenamingMap;
   }
 

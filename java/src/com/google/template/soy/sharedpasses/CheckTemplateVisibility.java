@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -34,7 +35,7 @@ import com.google.template.soy.soytree.Visibility;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
+public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
@@ -42,6 +43,10 @@ public class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
   /** Save the name of the file and template currently being visited. */
   private String currentFileName;
   private String currentTemplateName;
+
+  public CheckTemplateVisibility(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     templateRegistry = new TemplateRegistry(node);

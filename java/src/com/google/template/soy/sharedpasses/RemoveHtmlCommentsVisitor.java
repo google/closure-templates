@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -58,7 +59,8 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Constructor when working on tree fragments that are not part of a SoyFileSet.
    */
-  public RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen) {
+  public RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
+    super(errorReporter);
     explicitNodeIdGen = nodeIdGen;
   }
 
@@ -66,8 +68,8 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Constructor when working with full soy file sets.
    */
-  public RemoveHtmlCommentsVisitor() {
-    this(null);
+  public RemoveHtmlCommentsVisitor(ErrorReporter errorReporter) {
+    this(null, errorReporter);
   }
 
 

@@ -22,6 +22,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Map;
@@ -38,13 +39,13 @@ import javax.annotation.Nullable;
  *
  */
 // TODO: Attempt to remove this class.
-class TofuRenderVisitor extends RenderVisitor {
-
+final class TofuRenderVisitor extends RenderVisitor {
 
   /**
    * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param tofuEvalVisitorFactory Factory for creating an instance of TofuEvalVisitor.
    * @param outputBuf The Appendable to append the output to.
+   * @param errorReporter For reporting errors.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
    *     tests).
    * @param data The current template data.
@@ -58,24 +59,44 @@ class TofuRenderVisitor extends RenderVisitor {
    */
   protected TofuRenderVisitor(
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      TofuEvalVisitorFactory tofuEvalVisitorFactory, Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry, SoyRecord data, @Nullable SoyRecord ijData,
+      TofuEvalVisitorFactory tofuEvalVisitorFactory,
+      Appendable outputBuf,
+      ErrorReporter errorReporter,
+      @Nullable TemplateRegistry templateRegistry,
+      SoyRecord data,
+      @Nullable SoyRecord ijData,
       @Nullable Set<String> activeDelPackageNames,
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyMsgBundle msgBundle,
+      @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
-
     super(
-        soyJavaDirectivesMap, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData,
-        activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
+        soyJavaDirectivesMap,
+        tofuEvalVisitorFactory,
+        outputBuf,
+        errorReporter,
+        templateRegistry,
+        data,
+        ijData,
+        activeDelPackageNames,
+        msgBundle,
+        xidRenamingMap,
+        cssRenamingMap);
   }
 
 
   @Override protected TofuRenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
-
     return new TofuRenderVisitor(
-        soyJavaDirectivesMap, (TofuEvalVisitorFactory) evalVisitorFactory, outputBuf,
-        templateRegistry, data, ijData, activeDelPackageNames, msgBundle,
-        xidRenamingMap, cssRenamingMap);
+        soyJavaDirectivesMap,
+        (TofuEvalVisitorFactory) evalVisitorFactory,
+        outputBuf,
+        errorReporter,
+        templateRegistry,
+        data,
+        ijData,
+        activeDelPackageNames,
+        msgBundle,
+        xidRenamingMap,
+        cssRenamingMap);
   }
 
 }

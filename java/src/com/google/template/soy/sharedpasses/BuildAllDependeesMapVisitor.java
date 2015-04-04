@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.LetNode;
@@ -83,7 +84,7 @@ import javax.annotation.Nullable;
  *     which would be incorrect.
  *
  */
-public class BuildAllDependeesMapVisitor
+public final class BuildAllDependeesMapVisitor
     extends AbstractSoyNodeVisitor<Map<SoyNode, List<SoyNode>>> {
 
 
@@ -94,6 +95,9 @@ public class BuildAllDependeesMapVisitor
    *  (nearest dependee is first). */
   private Map<SoyNode, List<SoyNode>> allDependeesMap;
 
+  public BuildAllDependeesMapVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Map<SoyNode, List<SoyNode>> exec(SoyNode node) {
 
@@ -280,11 +284,11 @@ public class BuildAllDependeesMapVisitor
    * @param exprUnion The expression (V1 or V2 syntax).
    * @return The set of top-level references in the given expression.
    */
-  private static Set<String> getTopLevelRefsInExpr(ExprUnion exprUnion) {
+  private Set<String> getTopLevelRefsInExpr(ExprUnion exprUnion) {
 
     if (exprUnion.getExpr() != null) {
       // V2 expression.
-      return (new GetTopLevelRefsInExprVisitor()).exec(exprUnion.getExpr());
+      return new GetTopLevelRefsInExprVisitor(errorReporter).exec(exprUnion.getExpr());
     } else {
       // V1 expression.
       return getTopLevelRefsInV1Expr(exprUnion.getExprText());
@@ -296,9 +300,14 @@ public class BuildAllDependeesMapVisitor
    * Helper for getTopLevelRefsInExpr() to get top-level references from a Soy V2 expression.
    * Returns the set of top-level references in the given expression.
    */
-  private static class GetTopLevelRefsInExprVisitor extends AbstractExprNodeVisitor<Set<String>> {
+  private static final class GetTopLevelRefsInExprVisitor
+      extends AbstractExprNodeVisitor<Set<String>> {
 
     private Set<String> topLevelRefs;
+
+    GetTopLevelRefsInExprVisitor(ErrorReporter errorReporter) {
+      super(errorReporter);
+    }
 
     @Override public Set<String> exec(ExprNode node) {
       topLevelRefs = Sets.newHashSet();

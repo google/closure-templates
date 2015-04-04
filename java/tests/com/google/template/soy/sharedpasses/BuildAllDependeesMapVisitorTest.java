@@ -19,6 +19,8 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -70,7 +72,11 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
         "  {/if}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .errorReporter(boom)
+        .parse();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     PrintNode a = (PrintNode) template.getChild(0);
@@ -95,7 +101,8 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
     PrintNode fo = (PrintNode) cpcn.getChild(1);
 
     // Build the nearest-dependee map.
-    Map<SoyNode, List<SoyNode>> allDependeesMap = (new BuildAllDependeesMapVisitor()).exec(soyTree);
+    Map<SoyNode, List<SoyNode>> allDependeesMap
+        = new BuildAllDependeesMapVisitor(boom).exec(soyTree);
 
     assertThat(allDependeesMap.get(a)).containsExactly(template);
     assertThat(allDependeesMap.get(bc)).containsExactly(template);

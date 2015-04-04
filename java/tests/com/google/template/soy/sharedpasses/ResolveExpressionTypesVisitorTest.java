@@ -25,6 +25,8 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -74,7 +76,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
 
   private static ResolveNamesVisitor createResolveNamesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
-    return new ResolveNamesVisitor(declaredSyntaxVersion);
+    return new ResolveNamesVisitor(declaredSyntaxVersion, ExplodingErrorReporter.get());
   }
 
   private static ResolveExpressionTypesVisitor
@@ -84,7 +86,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
 
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
-    return new ResolveExpressionTypesVisitor(typeRegistry, declaredSyntaxVersion);
+    return new ResolveExpressionTypesVisitor(
+        typeRegistry, declaredSyntaxVersion, ExplodingErrorReporter.get());
   }
 
   public void testOptionalParamTypes() {
@@ -617,7 +620,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
    * @return A list of expression types.
    */
   private List<SoyType> getPrintStatementTypes(SoyNode node) {
-    CollectPrintStatementTypesVisitor visitor = new CollectPrintStatementTypesVisitor();
+    CollectPrintStatementTypesVisitor visitor = new CollectPrintStatementTypesVisitor(
+        ExplodingErrorReporter.get());
     visitor.exec(node);
     return visitor.getTypes();
   }
@@ -628,6 +632,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
    */
   public static class CollectPrintStatementTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     private final List<SoyType> types = Lists.newArrayList();
+
+    public CollectPrintStatementTypesVisitor(ErrorReporter errorReporter) {
+      super(errorReporter);
+    }
 
     public List<SoyType> getTypes() {
       return types;

@@ -188,23 +188,6 @@ public class SoyFileParser {
   }
 
   /**
-   * Constructor that takes a reader object providing the input.
-   * @param typeRegistry The type registry for resolving type names.
-   * @param nodeIdGen The node id generator for the tree being built.
-   * @param input The input to parse.
-   * @param soyFileKind The kind of this Soy file.
-   * @param filePath The path of the source being parsed. Used for reporting.
-   */
-  public SoyFileParser(
-      SoyTypeRegistry typeRegistry,
-      IdGenerator nodeIdGen,
-      Reader input,
-      SoyFileKind soyFileKind,
-      String filePath) {
-      this(typeRegistry, nodeIdGen, input, soyFileKind, filePath, new ErrorReporterImpl());
-    }
-
-  /**
    * Constructor that takes a string input.
    * @param typeRegistry The type registry for resolving type names.
    * @param nodeIdGen The node id generator for the tree being built.

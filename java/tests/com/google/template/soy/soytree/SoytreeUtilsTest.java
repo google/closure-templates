@@ -25,6 +25,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -58,10 +60,13 @@ public final class SoytreeUtilsTest extends TestCase {
         "  {/foreach}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .errorReporter(boom)
+        .parse();
 
-    CountingVisitor countingVisitor = new CountingVisitor();
-    SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor);
+    CountingVisitor countingVisitor = new CountingVisitor(boom);
+    SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor, boom);
     CountingVisitor.Counts counts = countingVisitor.getCounts();
     assertEquals(3, counts.numExecs);
     assertEquals(10, counts.numVisitedNodes);
@@ -83,7 +88,8 @@ public final class SoytreeUtilsTest extends TestCase {
 
     private final Counts counts;
 
-    public CountingVisitor() {
+    public CountingVisitor(ErrorReporter errorReporter) {
+      super(errorReporter);
       counts = new Counts();
     }
 
@@ -234,17 +240,19 @@ public final class SoytreeUtilsTest extends TestCase {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileNode soyFile = new SoyFileParser(
         new SoyTypeRegistry(),
         nodeIdGen,
         SOY_SOURCE_FOR_TESTING_CLONING,
         SoyFileKind.SRC,
-        "test.soy")
+        "test.soy",
+        boom)
         .parseSoyFile();
     soyTree.addChild(soyFile);
 
     FindNodeByTypeVisitor<MsgHtmlTagNode> visitor =
-        new FindNodeByTypeVisitor<>(MsgHtmlTagNode.class);
+        new FindNodeByTypeVisitor<>(MsgHtmlTagNode.class, boom);
     List<MsgHtmlTagNode> msgHtmlTagNodes = visitor.exec(soyFile);
     assertFalse(msgHtmlTagNodes.isEmpty());
 
@@ -272,7 +280,8 @@ public final class SoytreeUtilsTest extends TestCase {
     /** The type of nodes to look for. */
     final Class<? extends T> type;
 
-    FindNodeByTypeVisitor(Class<? extends T> type) {
+    FindNodeByTypeVisitor(Class<? extends T> type, ErrorReporter errorReporter) {
+      super(errorReporter);
       this.type = type;
     }
 

@@ -19,6 +19,7 @@ package com.google.template.soy.parsepasses;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -40,12 +41,15 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
  * <p> {@link #exec} should be called on a full parse tree. There is no return value.
  *
  */
-public class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** The MsgPluralNode most recently visited. */
   private MsgPluralNode currPluralNode;
 
+  public RewriteRemainderNodesVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.

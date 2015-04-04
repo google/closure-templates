@@ -243,6 +243,10 @@ public final class SourceLocationTest extends TestCase {
     final StringBuilder sb = new StringBuilder();
     int depth;
 
+    private AsciiArtVisitor() {
+      super(ExplodingErrorReporter.get());
+    }
+
     @Override public String exec(SoyNode node) {
       visit(node);
       return sb.toString();

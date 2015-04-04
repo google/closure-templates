@@ -29,6 +29,8 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -230,13 +232,16 @@ public final class GenJsExprsVisitorTest extends TestCase {
    */
   private static void assertGeneratedJsExprs(
       String soyCode, List<JsExpr> expectedJsExprs, int... indicesToNode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
+        .parse();
     // Required by testPrintGoogMsg.
-    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    GenJsExprsVisitor gjev =
-        INJECTOR.getInstance(GenJsExprsVisitorFactory.class).create(LOCAL_VAR_TRANSLATIONS);
+    GenJsExprsVisitor gjev = INJECTOR.getInstance(GenJsExprsVisitorFactory.class)
+        .create(LOCAL_VAR_TRANSLATIONS);
     List<JsExpr> actualJsExprs = gjev.exec(node);
 
     assertThat(actualJsExprs).hasSize(expectedJsExprs.size());

@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
@@ -27,15 +28,21 @@ import java.util.Set;
  * Visitor for determining whether any code in a Soy tree uses injected data.
  *
  */
-public class IsUsingIjDataVisitor {
+public final class IsUsingIjDataVisitor {
 
+  private final ErrorReporter errorReporter;
+
+  public IsUsingIjDataVisitor(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   /**
    * Runs this pass on the given Soy tree.
    */
   public boolean exec(SoyFileSetNode soyTree) {
 
-    FindIjParamsInExprHelperVisitor helperVisitor = new FindIjParamsInExprHelperVisitor();
+    FindIjParamsInExprHelperVisitor helperVisitor
+        = new FindIjParamsInExprHelperVisitor(errorReporter);
 
     // We only care whether the result set is empty, so shortcircuit the pass as soon as the result
     // set is nonempty.
@@ -47,7 +54,8 @@ public class IsUsingIjDataVisitor {
           public boolean shouldShortcircuit(AbstractExprNodeVisitor<Set<String>> exprNodeVisitor) {
             return !((FindIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().isEmpty();
           }
-        });
+        },
+    errorReporter);
 
     return !helperVisitor.getResult().isEmpty();
   }

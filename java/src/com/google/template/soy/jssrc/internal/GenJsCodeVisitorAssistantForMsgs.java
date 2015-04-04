@@ -30,6 +30,7 @@ import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -104,10 +105,16 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    * @param genJsExprsVisitor The current GenJsExprsVisitor.
    */
   GenJsCodeVisitorAssistantForMsgs(
-      GenJsCodeVisitor master, SoyJsSrcOptions jsSrcOptions, JsExprTranslator jsExprTranslator,
-      GenCallCodeUtils genCallCodeUtils, IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      JsCodeBuilder jsCodeBuilder, Deque<Map<String, JsExpr>> localVarTranslations,
-      GenJsExprsVisitor genJsExprsVisitor) {
+      GenJsCodeVisitor master,
+      SoyJsSrcOptions jsSrcOptions,
+      JsExprTranslator jsExprTranslator,
+      GenCallCodeUtils genCallCodeUtils,
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
+      JsCodeBuilder jsCodeBuilder,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      GenJsExprsVisitor genJsExprsVisitor,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.master = master;
     this.jsSrcOptions = jsSrcOptions;
     this.jsExprTranslator = jsExprTranslator;

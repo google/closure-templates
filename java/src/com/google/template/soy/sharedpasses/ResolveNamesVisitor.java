@@ -27,6 +27,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
@@ -211,7 +212,8 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   private final SyntaxVersion declaredSyntaxVersion;
   private String currentTemplateName;
 
-  public ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion) {
+  public ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -314,7 +316,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
    * Visitor which resolves all variable and parameter references in expressions
    * to point to the corresponding declaration object.
    */
-  private class ResolveNamesExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private final class ResolveNamesExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     /** SoyNode owning the expression; Used for error reporting. */
     private final ExprHolderNode owningSoyNode;
@@ -327,7 +329,8 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
      * @param owningSoyNode The current error context, in other words the SoyNode owning the
      *     expression being scanned.
      */
-    public ResolveNamesExprVisitor(ExprHolderNode owningSoyNode) {
+    ResolveNamesExprVisitor(ExprHolderNode owningSoyNode) {
+      super(ResolveNamesVisitor.this.errorReporter);
       this.owningSoyNode = owningSoyNode;
     }
 

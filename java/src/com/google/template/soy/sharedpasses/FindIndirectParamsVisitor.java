@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -231,8 +232,11 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
   /**
    * @param templateRegistry Map from template name to TemplateNode to use during the pass.
+   * @param errorReporter For reporting errors.
    */
-  public FindIndirectParamsVisitor(@Nullable TemplateRegistry templateRegistry) {
+  public FindIndirectParamsVisitor(
+      @Nullable TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.templateRegistry = templateRegistry;
   }
 

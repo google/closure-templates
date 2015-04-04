@@ -22,6 +22,8 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -118,9 +120,12 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
    */
   private static void runTestHelper(
       String soyCode, boolean expectedResult, int... indicesToNode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
+        .parse();
     // Several tests have msg nodes.
-    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
     assertThat(new IsComputableAsJsExprsVisitor(jsSrcOptions).exec(node))
         .isEqualTo(expectedResult);

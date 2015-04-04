@@ -22,6 +22,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -110,7 +112,9 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
         "{template .four}\n" +
         "{/template}\n";
 
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent1, fileContent2)
+        .errorReporter(boom)
         .parse();
 
     SoyFileNode a = soyTree.getChild(0);
@@ -128,7 +132,8 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
     TemplateNode b3 = b.getChild(3);
     TemplateNode b4 = b.getChild(4);
 
-    IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(null)).exec(a0);
+    IndirectParamsInfo ipi
+        = new FindIndirectParamsVisitor(null /* templateRegistry */, boom).exec(a0);
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 

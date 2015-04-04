@@ -30,6 +30,8 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -2141,9 +2143,12 @@ public final class ContextualAutoescaperTest extends TestCase {
           "foo()" +
         "\n{/template}";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source).parse();
-    new CheckEscapingSanityVisitor().exec(soyTree);
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
+        .errorReporter(boom)
+        .parse();
+    new CheckEscapingSanityVisitor(boom).exec(soyTree);
+    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
@@ -2180,9 +2185,12 @@ public final class ContextualAutoescaperTest extends TestCase {
           "Hello World" +
         "\n{/deltemplate}";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source).parse();
-    new CheckEscapingSanityVisitor().exec(soyTree);
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
+        .errorReporter(boom)
+        .parse();
+    new CheckEscapingSanityVisitor(boom).exec(soyTree);
+    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
@@ -2320,7 +2328,9 @@ public final class ContextualAutoescaperTest extends TestCase {
   private String rewrittenSource(SoyFileSetNode soyTree)
       throws SoyAutoescapeException {
 
-    List<TemplateNode> tmpls = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree);
+    List<TemplateNode> tmpls
+        = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, ExplodingErrorReporter.get())
+        .rewrite(soyTree);
 
     StringBuilder src = new StringBuilder();
     src.append(soyTree.getChild(0).toSourceString());
@@ -2333,8 +2343,11 @@ public final class ContextualAutoescaperTest extends TestCase {
   private void assertContextualRewriting(String expectedOutput, String... inputs)
       throws SoyAutoescapeException {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs).parse();
-    new CheckEscapingSanityVisitor().exec(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs)
+        .errorReporter(boom)
+        .parse();
+    new CheckEscapingSanityVisitor(boom).exec(soyTree);
 
     String source = rewrittenSource(soyTree);
     assertThat(source.trim()).isEqualTo(expectedOutput);
@@ -2380,7 +2393,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         .parse();
 
     try {
-      new CheckEscapingSanityVisitor().exec(soyTree);
+      new CheckEscapingSanityVisitor(ExplodingErrorReporter.get()).exec(soyTree);
       rewrittenSource(soyTree);
     } catch (SoyAutoescapeException ex) {
       // Find the root cause; during contextualization, we re-wrap exceptions on the path to a

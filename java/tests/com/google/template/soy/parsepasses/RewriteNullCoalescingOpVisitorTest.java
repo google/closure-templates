@@ -22,22 +22,20 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor.RewriteNullCoalescingOpInExprVisitor;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
 
 
 /**
- * Unit tests for RewriteNullCoalescingOpVisitor.
+ * Unit tests for {@link RewriteNullCoalescingOpVisitor}.
  *
  */
-public class RewriteNullCoalescingOpVisitorTest extends TestCase {
-
+public final class RewriteNullCoalescingOpVisitorTest extends TestCase {
 
   public void testRewriteExpr() throws Exception {
-
     assertRewrite("$boo ?: -1", "isNonnull($boo) ? $boo : -1");
-
     assertRewrite("$a ?: $b ?: $c", "isNonnull($a) ? $a : isNonnull($b) ? $b : $c");
     assertRewrite("$a ?: $b ? $c : $d", "isNonnull($a) ? $a : $b ? $c : $d");
     assertRewrite("$a ? $b ?: $c : $d", "$a ? (isNonnull($b) ? $b : $c) : $d");
@@ -48,18 +46,12 @@ public class RewriteNullCoalescingOpVisitorTest extends TestCase {
     assertRewrite("($a ?: $b) ? $c : $d", "(isNonnull($a) ? $a : $b) ? $c : $d");
   }
 
-
-  /**
-   * Private helper to check the rewrite of one expression.
-   */
-  private void assertRewrite(String origSrc, String expectedRewrittenSrc) throws Exception {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+  private static void assertRewrite(String origSrc, String expectedRewrittenSrc) throws Exception {
+    ErrorReporter boom = ExplodingErrorReporter.get();
     ExprNode expr
-        = new ExpressionParser(origSrc, SourceLocation.UNKNOWN, errorReporter).parseExpression();
-    errorReporter.throwIfErrorsPresent();
-    new RewriteNullCoalescingOpInExprVisitor().exec(expr);
+        = new ExpressionParser(origSrc, SourceLocation.UNKNOWN, boom).parseExpression();
+    new RewriteNullCoalescingOpInExprVisitor(boom).exec(expr);
     String rewrittenSrc = expr.toSourceString();
     assertThat(rewrittenSrc).isEqualTo(expectedRewrittenSrc);
   }
-
 }

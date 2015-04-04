@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -30,7 +32,6 @@ import junit.framework.TestCase;
  */
 public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
 
-
   public void testVerifyPhnameAttrOnlyOnPlaceholders() {
     assertInvalidSoyCode("{$boo phname=\"foo\"}");
     assertInvalidSoyCode("{call .helper phname=\"foo\" /}");
@@ -38,21 +39,26 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCas
     assertValidSoyCode("{msg desc=\"\"}{call .helper phname=\"foo\" /}{/msg}");
   }
 
-
   private void assertValidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    new VerifyPhnameAttrOnlyOnPlaceholdersVisitor().exec(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
+        .parse();
+    new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(boom).exec(soyTree);
   }
 
-
   private void assertInvalidSoyCode(String soyCode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
+        .parse();
     try {
-      new VerifyPhnameAttrOnlyOnPlaceholdersVisitor().exec(soyTree);
+      new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(boom).exec(soyTree);
       fail();
     } catch (SoySyntaxException sse) {
+      // TODO(user): even though the visitor has an error reporter, it doesn't *use* the error
+      // reporter yet. Remove this try-catch once it does.
       assertThat(sse.getMessage()).contains("Found 'phname' attribute not on a msg placeholder");
     }
   }
-
 }

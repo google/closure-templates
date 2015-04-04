@@ -19,8 +19,8 @@ package com.google.template.soy.sharedpasses;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Maps;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -28,6 +28,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -105,15 +106,20 @@ public class FindIjParamsVisitor {
    *  results that were found in previous calls to exec. */
   private final Map<TemplateNode, Set<String>> templateToLocalIjParamsMap;
 
+  private final ErrorReporter errorReporter;
+
 
   /**
    * @param templateRegistry Map from template name to TemplateNode to use during the pass.
+   * @param errorReporter For reporting errors.
    */
-  public FindIjParamsVisitor(@Nullable TemplateRegistry templateRegistry) {
+  public FindIjParamsVisitor(
+      @Nullable TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
     this.findTransitiveDepTemplatesVisitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry);
-    depsInfoToIjParamsInfoMap = Maps.newHashMap();
-    templateToLocalIjParamsMap = Maps.newHashMap();
+        new FindTransitiveDepTemplatesVisitor(templateRegistry, errorReporter);
+    depsInfoToIjParamsInfoMap = new HashMap<>();
+    templateToLocalIjParamsMap = new HashMap<>();
   }
 
 
@@ -135,8 +141,9 @@ public class FindIjParamsVisitor {
       for (TemplateNode template : depsInfo.depTemplateSet) {
 
         if (! templateToLocalIjParamsMap.containsKey(template)) {
-          FindIjParamsInExprHelperVisitor helperVisitor = new FindIjParamsInExprHelperVisitor();
-          SoytreeUtils.execOnAllV2Exprs(template, helperVisitor);
+          FindIjParamsInExprHelperVisitor helperVisitor
+              = new FindIjParamsInExprHelperVisitor(errorReporter);
+          SoytreeUtils.execOnAllV2Exprs(template, helperVisitor, errorReporter);
           Set<String> localIjParams = helperVisitor.getResult();
           templateToLocalIjParamsMap.put(template, localIjParams);
         }

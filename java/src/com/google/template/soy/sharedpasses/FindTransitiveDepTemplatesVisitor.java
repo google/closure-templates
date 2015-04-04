@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -58,9 +59,8 @@ import javax.annotation.Nullable;
  * results from previous calls to exec.
  *
  */
-public class FindTransitiveDepTemplatesVisitor
+public final class FindTransitiveDepTemplatesVisitor
     extends AbstractSoyNodeVisitor<TransitiveDepTemplatesInfo> {
-
 
   /**
    * Return value for {@code FindTransitiveDepTemplatesVisitor}.
@@ -302,8 +302,11 @@ public class FindTransitiveDepTemplatesVisitor
 
   /**
    * @param templateRegistry Map from template name to TemplateNode to use during the pass.
+   * @param errorReporter For reporting errors.
    */
-  public FindTransitiveDepTemplatesVisitor(@Nullable TemplateRegistry templateRegistry) {
+  public FindTransitiveDepTemplatesVisitor(
+      @Nullable TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.templateRegistry = templateRegistry;
     templateToFinishedInfoMap = Maps.newHashMap();
   }

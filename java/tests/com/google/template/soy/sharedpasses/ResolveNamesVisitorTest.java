@@ -25,6 +25,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -66,7 +67,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
 
   private static ResolveNamesVisitor createResolveNamesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
-    return new ResolveNamesVisitor(declaredSyntaxVersion);
+    return new ResolveNamesVisitor(declaredSyntaxVersion, ExplodingErrorReporter.get());
   }
 
   public void testParamNameLookupSuccess() {

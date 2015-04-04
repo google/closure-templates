@@ -24,6 +24,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;
@@ -115,8 +116,8 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
       Set<String> expectedLibs, String soyCode) {
     SoyNode node = SharedTestUtils.getNode(
         SoyFileSetParserBuilder.forTemplateContents(soyCode).parse());
-    GenDirectivePluginRequiresVisitor gdprv =
-        new GenDirectivePluginRequiresVisitor(testDirectivesMap);
+    GenDirectivePluginRequiresVisitor gdprv = new GenDirectivePluginRequiresVisitor(
+        testDirectivesMap, ExplodingErrorReporter.get());
     Set<String> actualLibs = gdprv.exec(node);
     assertThat(expectedLibs).isEqualTo(actualLibs);
   }

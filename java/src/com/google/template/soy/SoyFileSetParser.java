@@ -248,17 +248,25 @@ public final class SoyFileSetParser {
   private void runSingleFileParsingPasses(SoyFileNode fileNode, IdGenerator nodeIdGen) {
     // Note: RewriteGenderMsgsVisitor must be run first due to the assertion in
     // MsgNode.getAllExprUnions().
-    (new RewriteGenderMsgsVisitor(nodeIdGen)).exec(fileNode);
-    (new RewriteRemainderNodesVisitor()).exec(fileNode);
-    (new ReplaceHasDataFunctionVisitor(declaredSyntaxVersion)).exec(fileNode);
-    (new RewriteNullCoalescingOpVisitor()).exec(fileNode);
-    (new SetFullCalleeNamesVisitor()).exec(fileNode);
-    (new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion)).exec(fileNode);
+    new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter)
+        .exec(fileNode);
+    new RewriteRemainderNodesVisitor(errorReporter)
+        .exec(fileNode);
+    new ReplaceHasDataFunctionVisitor(declaredSyntaxVersion, errorReporter)
+        .exec(fileNode);
+    new RewriteNullCoalescingOpVisitor(errorReporter)
+        .exec(fileNode);
+    new SetFullCalleeNamesVisitor(errorReporter)
+        .exec(fileNode);
+    new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion, errorReporter)
+        .exec(fileNode);
     if (declaredSyntaxVersion == SyntaxVersion.V1_0) {
-      (new RemoveHtmlCommentsVisitor(nodeIdGen)).exec(fileNode);
+      new RemoveHtmlCommentsVisitor(nodeIdGen, errorReporter).exec(fileNode);
     }
-    (new ResolveNamesVisitor(declaredSyntaxVersion)).exec(fileNode);
-    (new ResolveExpressionTypesVisitor(typeRegistry, declaredSyntaxVersion)).exec(fileNode);
+    new ResolveNamesVisitor(declaredSyntaxVersion, errorReporter)
+        .exec(fileNode);
+    new ResolveExpressionTypesVisitor(typeRegistry, declaredSyntaxVersion, errorReporter)
+        .exec(fileNode);
   }
 
 
@@ -266,14 +274,16 @@ public final class SoyFileSetParser {
    * Private helper for {@code parseWithVersion()} that operate on single files.
    */
   private void runSingleFileCheckingPasses(SoyFileNode fileNode) {
-
-    (new VerifyPhnameAttrOnlyOnPlaceholdersVisitor()).exec(fileNode);
-    (new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true)).exec(fileNode);
-
+    new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(errorReporter)
+        .exec(fileNode);
+    new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter)
+        .exec(fileNode);
     // Check for errors based on inferred (as opposed to declared) required syntax version.
-    SyntaxVersion inferredSyntaxVersion = (new InferRequiredSyntaxVersionVisitor()).exec(fileNode);
+    SyntaxVersion inferredSyntaxVersion = new InferRequiredSyntaxVersionVisitor(errorReporter)
+        .exec(fileNode);
     if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
-      (new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false)).exec(fileNode);
+      new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
+          .exec(fileNode);
     }
   }
 
@@ -283,10 +293,15 @@ public final class SoyFileSetParser {
    * tree.
    */
   private void runWholeFileSetCheckingPasses(SoyFileSetNode soyTree) {
-    (new CheckSoyDocVisitor(declaredSyntaxVersion)).exec(soyTree);
-    (new CheckDelegatesVisitor()).exec(soyTree);
-    (new CheckCallsVisitor()).exec(soyTree);
-    (new CheckCallingParamTypesVisitor()).exec(soyTree);
-    (new CheckTemplateVisibility()).exec(soyTree);
+    new CheckSoyDocVisitor(declaredSyntaxVersion, errorReporter)
+        .exec(soyTree);
+    new CheckDelegatesVisitor(errorReporter)
+        .exec(soyTree);
+    new CheckCallsVisitor(errorReporter)
+        .exec(soyTree);
+    new CheckCallingParamTypesVisitor(errorReporter)
+        .exec(soyTree);
+    new CheckTemplateVisibility(errorReporter)
+        .exec(soyTree);
   }
 }

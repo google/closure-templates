@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -49,7 +50,7 @@ import java.util.Set;
  * {@code SoySyntaxException} is thrown if an error is found.
  *
  */
-public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** A template registry built from the Soy tree. */
@@ -61,6 +62,9 @@ public class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Current delegate package name, or null if none (during pass). */
   private String currDelPackageName;
 
+  public CheckDelegatesVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode soyNode) {
 

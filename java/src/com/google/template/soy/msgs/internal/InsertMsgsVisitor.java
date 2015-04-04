@@ -23,6 +23,7 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -59,8 +60,7 @@ import javax.annotation.Nullable;
  * this pass.
  *
  */
-public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
-
+public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * Exception thrown when a plural or select message is encountered.
@@ -97,7 +97,11 @@ public class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
    *     will throw an {@link EncounteredPlrselMsgException} when encountering a plural or
    *     select message.
    */
-  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle, boolean dontErrorOnPlrselMsgs) {
+  public InsertMsgsVisitor(
+      @Nullable SoyMsgBundle msgBundle,
+      boolean dontErrorOnPlrselMsgs,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.msgBundle = msgBundle;
     this.dontErrorOnPlrselMsgs = dontErrorOnPlrselMsgs;
   }

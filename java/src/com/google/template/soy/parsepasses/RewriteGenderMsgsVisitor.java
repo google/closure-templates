@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPluralNode;
@@ -45,7 +46,7 @@ import javax.annotation.Nullable;
  * levels of 'select'.
  *
  */
-public class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** Fallback base select var name. */
@@ -61,7 +62,8 @@ public class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
    *
    * @param nodeIdGen The same node ID generator used to generate the existing tree nodes.
    */
-  public RewriteGenderMsgsVisitor(IdGenerator nodeIdGen) {
+  public RewriteGenderMsgsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.nodeIdGen = Preconditions.checkNotNull(nodeIdGen);
   }
 

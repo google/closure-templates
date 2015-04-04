@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -32,7 +33,7 @@ import java.util.Map;
  * Unit tests for AbstractExprNodeVisitor.
  *
  */
-public class AbstractExprNodeVisitorTest extends TestCase {
+public final class AbstractExprNodeVisitorTest extends TestCase {
 
 
   public void testConcreteImplementation() throws SoySyntaxException {
@@ -80,18 +81,19 @@ public class AbstractExprNodeVisitorTest extends TestCase {
   }
 
 
-  private static class IncompleteEvalVisitor extends AbstractExprNodeVisitor<Double> {
+  private static final class IncompleteEvalVisitor extends AbstractExprNodeVisitor<Double> {
 
     private final Map<String, Double> env;
 
     private Deque<Double> resultStack;
 
-    public IncompleteEvalVisitor(Map<String, Double> env) {
+    IncompleteEvalVisitor(Map<String, Double> env) {
+      super(ExplodingErrorReporter.get());
       this.env = env;
     }
 
     @Override public Double exec(ExprNode node) {
-      resultStack = new ArrayDeque<Double>();
+      resultStack = new ArrayDeque<>();
       visit(node);
       return resultStack.peek();
     }

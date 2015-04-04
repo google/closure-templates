@@ -19,6 +19,7 @@ package com.google.template.soy.parsepasses;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -40,8 +41,11 @@ import com.google.template.soy.soytree.TemplateNode;
  * or ancestor of a template).
  *
  */
-public class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  public ChangeCallsToPassAllDataVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode node) {
 

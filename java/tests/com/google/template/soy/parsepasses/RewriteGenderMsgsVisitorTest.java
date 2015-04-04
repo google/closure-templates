@@ -22,7 +22,9 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporterImpl;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -120,7 +122,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  Save\n" +
         "{/msg}\n";
 
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
         .doRunInitialParsingPasses(false)
         .parse();
 
@@ -130,7 +134,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         .isEqualTo("{msg genders=\"$userGender\" desc=\"Button text.\"}Save");
 
     // Rewrite.
-    (new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator())).exec(soyTree);
+    new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator(), boom).exec(soyTree);
 
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
@@ -165,7 +169,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  {plural $num}{case 1}Send it{default}Send {$num}{/plural}\n" +
         "{/msg}\n";
 
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
         .doRunInitialParsingPasses(false)
         .parse();
 
@@ -176,7 +182,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
             + "{plural $num}{case 1}Send it{default}Send {$num}{/plural}");
 
     // Rewrite.
-    (new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator())).exec(soyTree);
+    new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator(), boom).exec(soyTree);
 
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
@@ -215,7 +221,9 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "  You starred {$target[0].name}'s photo in {$target[1].name}'s album.\n" +
         "{/msg}\n";
 
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(boom)
         .doRunInitialParsingPasses(false)
         .parse();
 
@@ -227,7 +235,7 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
             + "You starred {$target[0].name}'s photo in {$target[1].name}'s album.");
 
     // Rewrite.
-    (new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator())).exec(soyTree);
+    new RewriteGenderMsgsVisitor(soyTree.getNodeIdGenerator(), boom).exec(soyTree);
 
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);

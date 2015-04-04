@@ -58,6 +58,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
@@ -109,7 +110,10 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
   private TypeSubstitution substitutions;
 
   public ResolveExpressionTypesVisitor(
-      SoyTypeRegistry typeRegistry, SyntaxVersion declaredSyntaxVersion) {
+      SoyTypeRegistry typeRegistry,
+      SyntaxVersion declaredSyntaxVersion,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.typeOps = new SoyTypeOps(typeRegistry);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
@@ -316,7 +320,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
    * Visitor which resolves all variable and parameter references in expressions
    * to point to the corresponding declaration object.
    */
-  private class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private final class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     /** SoyNode owning the expression; Used for error reporting. */
     private final ExprHolderNode owningSoyNode;
@@ -330,6 +334,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
      *     expression being scanned.
      */
     public ResolveTypesExprVisitor(ExprHolderNode owningSoyNode) {
+      super(ResolveExpressionTypesVisitor.this.errorReporter);
       this.owningSoyNode = owningSoyNode;
     }
 
@@ -797,12 +802,16 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
    * of instanceof + flow-based type analysis would effectively allow template authors
    * to do typecasts, without having to add a cast operator to the language.
    */
-  private class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
+  private final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
     // Type constraints that are valid if the condition is true.
-    public Map<VarDefn, SoyType> positiveTypeConstraints = Maps.newHashMap();
+    Map<VarDefn, SoyType> positiveTypeConstraints = Maps.newHashMap();
 
     // Type constraints that are valid if the condition is false.
-    public Map<VarDefn, SoyType> negativeTypeConstraints = Maps.newHashMap();
+    Map<VarDefn, SoyType> negativeTypeConstraints = Maps.newHashMap();
+
+    TypeNarrowingConditionVisitor() {
+      super(ResolveExpressionTypesVisitor.this.errorReporter);
+    }
 
     @Override public Void exec(ExprNode node) {
       visit(node);
@@ -813,7 +822,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       visitAndImplicitlyCastToBoolean(node.getChild(0));
     }
 
-    public void visitAndImplicitlyCastToBoolean(ExprNode node) {
+    void visitAndImplicitlyCastToBoolean(ExprNode node) {
       // In places where the expression is implicitly cast to a boolean, treat
       // a reference to a variable as a comparison of that variable with null.
       // So for example an expression like {if $var} should be treated as

@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyNode;
@@ -44,7 +45,9 @@ public class ReplaceHasDataFunctionVisitor extends AbstractSoyNodeVisitor<Void> 
 
   private final SyntaxVersion declaredSyntaxVersion;
 
-  public ReplaceHasDataFunctionVisitor(SyntaxVersion declaredSyntaxVersion) {
+  public ReplaceHasDataFunctionVisitor(
+      SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -73,12 +76,13 @@ public class ReplaceHasDataFunctionVisitor extends AbstractSoyNodeVisitor<Void> 
    * Private helper class for ReplaceHasDataFunctionVisitor to visit expressions.
    * This class does the real work.
    */
-  private class ReplaceHasDataFunctionInExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private final class ReplaceHasDataFunctionInExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     /** The SoyNode that holds the expression being visited. */
     private final ExprHolderNode holder;
 
-    public ReplaceHasDataFunctionInExprVisitor(ExprHolderNode holder) {
+    ReplaceHasDataFunctionInExprVisitor(ExprHolderNode holder) {
+      super(ReplaceHasDataFunctionVisitor.this.errorReporter);
       this.holder = holder;
     }
 

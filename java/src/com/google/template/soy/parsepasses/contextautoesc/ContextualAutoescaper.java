@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -70,6 +71,9 @@ public final class ContextualAutoescaper {
   /** Maps print directive names to the content kinds they consume and produce. */
   private final Map<String, SanitizedContent.ContentKind> sanitizedContentOperators;
 
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
+
   /** The conclusions drawn by the last {@link #rewrite}. */
   private Inferences inferences;
 
@@ -84,9 +88,11 @@ public final class ContextualAutoescaper {
    * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive) such that
    *     {@code soyDirectivesMap.get(key).getName().equals(key)} for all key in
    *     {@code soyDirectivesMap.keySet()}.
+   * @param errorReporter For reporting errors.
    */
   @Inject
-  ContextualAutoescaper(final Map<String, SoyPrintDirective> soyDirectivesMap) {
+  ContextualAutoescaper(
+      final Map<String, SoyPrintDirective> soyDirectivesMap, ErrorReporter errorReporter) {
     // Compute the set of directives that are escaping directives.
     this(ImmutableSet.copyOf(Collections2.filter(
         soyDirectivesMap.keySet(),
@@ -96,7 +102,8 @@ public final class ContextualAutoescaper {
             return soyDirectivesMap.get(directiveName).shouldCancelAutoescape();
           }
         })),
-        makeOperatorKindMap(soyDirectivesMap));
+        makeOperatorKindMap(soyDirectivesMap),
+        errorReporter);
   }
 
   /**
@@ -107,9 +114,11 @@ public final class ContextualAutoescaper {
    */
   public ContextualAutoescaper(
       Iterable<? extends String> autoescapeCancellingDirectives,
-      Map<? extends String, ? extends SanitizedContent.ContentKind> sanitizedContentOperators) {
+      Map<? extends String, ? extends SanitizedContent.ContentKind> sanitizedContentOperators,
+      ErrorReporter errorReporter) {
     this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);
+    this.errorReporter = errorReporter;
   }
 
 
@@ -144,7 +153,7 @@ public final class ContextualAutoescaper {
     ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder = ImmutableList.builder();
 
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
-    TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
+    TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName, errorReporter);
     // Generate a call graph, creating a dummy root that calls all non-private template in
     // Context.PCDATA, and then type the minimal ancestor set needed to reach all contextual
     // templates whether private or not.
@@ -162,8 +171,12 @@ public final class ContextualAutoescaper {
           Context.getStartContextForContentKind(templateNode.getContentKind()) :
           Context.HTML_PCDATA;
       InferenceEngine.inferTemplateEndContext(
-          templateNode, startContext, inferences, autoescapeCancellingDirectives,
-          slicedRawTextNodesBuilder);
+          templateNode,
+          startContext,
+          inferences,
+          autoescapeCancellingDirectives,
+          slicedRawTextNodesBuilder,
+          errorReporter);
     }
 
     // Store inferences so that after processing, clients can access the output contexts for
@@ -174,7 +187,7 @@ public final class ContextualAutoescaper {
     this.slicedRawTextNodes = slicedRawTextNodesBuilder.build();
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    return new Rewriter(inferences, sanitizedContentOperators).rewrite(fileSet);
+    return new Rewriter(inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
   }
 
 

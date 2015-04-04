@@ -42,6 +42,7 @@ import com.google.template.soy.sharedpasses.RenameCssVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -75,8 +76,9 @@ public class BaseTofu implements SoyTofu {
      * @param soyTree The Soy parse tree containing all the files in the Soy file set.
      * @param isCaching Whether this instance caches intermediate Soy trees after substitutions from
      *     the msgBundle and the cssRenamingMap.
+     * @param errorReporter For reporting errors.
      */
-    public BaseTofu create(SoyFileSetNode soyTree, boolean isCaching);
+    public BaseTofu create(SoyFileSetNode soyTree, boolean isCaching, ErrorReporter errorReporter);
   }
 
 
@@ -110,6 +112,8 @@ public class BaseTofu implements SoyTofu {
   /** Map from template node to injected params info for all templates. */
   private final ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap;
 
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
 
   /**
    * @param valueHelper Instance of SoyValueHelper to use.
@@ -122,9 +126,13 @@ public class BaseTofu implements SoyTofu {
    */
   @AssistedInject
   public BaseTofu(
-      SoyValueHelper valueHelper, @ApiCall GuiceSimpleScope apiCallScope,
-      TofuRenderVisitorFactory tofuRenderVisitorFactory, SimplifyVisitor simplifyVisitor,
-      @Assisted SoyFileSetNode soyTree, @Assisted boolean isCaching) {
+      SoyValueHelper valueHelper,
+      @ApiCall GuiceSimpleScope apiCallScope,
+      TofuRenderVisitorFactory tofuRenderVisitorFactory,
+      SimplifyVisitor simplifyVisitor,
+      @Assisted SoyFileSetNode soyTree,
+      @Assisted boolean isCaching,
+      @Assisted ErrorReporter errorReporter) {
 
     this.valueHelper = valueHelper;
     this.apiCallScope = apiCallScope;
@@ -132,6 +140,7 @@ public class BaseTofu implements SoyTofu {
     this.simplifyVisitor = simplifyVisitor;
     this.soyTree = soyTree;
     this.isCaching = isCaching;
+    this.errorReporter = errorReporter;
 
     if (isCaching) {
       cachedTemplateRegistries = Maps.newHashMap();
@@ -142,8 +151,8 @@ public class BaseTofu implements SoyTofu {
     SoyFileSetNode soyTreeForNoCaching = soyTree.clone();
     templateRegistryForNoCaching = buildTemplateRegistry(soyTreeForNoCaching);
     templateToIjParamsInfoMap =
-        (new FindIjParamsVisitor(templateRegistryForNoCaching)).execOnAllTemplates(
-            soyTreeForNoCaching);
+        new FindIjParamsVisitor(templateRegistryForNoCaching, errorReporter)
+            .execOnAllTemplates(soyTreeForNoCaching);
   }
 
 
@@ -260,8 +269,10 @@ public class BaseTofu implements SoyTofu {
         return null;
       }
       SoyFileSetNode soyTreeClone = soyTree.clone();
-      (new InsertMsgsVisitor(key.first, true)).exec(soyTreeClone);
-      (new RenameCssVisitor(key.second)).exec(soyTreeClone);
+      new InsertMsgsVisitor(key.first, true /* dontErrorOnPlrselMsgs */ , errorReporter)
+          .exec(soyTreeClone);
+      new RenameCssVisitor(key.second, errorReporter)
+          .exec(soyTreeClone);
       simplifyVisitor.exec(soyTreeClone);
       templateRegistry = buildTemplateRegistry(soyTreeClone);
       cachedTemplateRegistries.put(key, templateRegistry);
@@ -358,8 +369,15 @@ public class BaseTofu implements SoyTofu {
 
     try {
       RenderVisitor rv = tofuRenderVisitorFactory.create(
-          outputBuf, templateRegistry, data, ijData, activeDelPackageNames, msgBundle,
-          idRenamingMap, cssRenamingMap);
+          outputBuf,
+          templateRegistry,
+          data,
+          errorReporter,
+          ijData,
+          activeDelPackageNames,
+          msgBundle,
+          idRenamingMap,
+          cssRenamingMap);
       rv.exec(template);
 
     } catch (RenderException re) {

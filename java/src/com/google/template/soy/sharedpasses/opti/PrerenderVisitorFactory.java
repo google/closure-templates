@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Map;
@@ -32,7 +33,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-public class PrerenderVisitorFactory {
+public final class PrerenderVisitorFactory {
 
 
   /** Map of all SoyJavaPrintDirectives (name to directive). */
@@ -41,13 +42,17 @@ public class PrerenderVisitorFactory {
   /** Factory for creating an instance of PreevalVisitor. */
   private final PreevalVisitorFactory preevalVisitorFactory;
 
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
 
   @Inject
   public PrerenderVisitorFactory(
       @Shared Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      PreevalVisitorFactory preevalVisitorFactory) {
+      PreevalVisitorFactory preevalVisitorFactory,
+      ErrorReporter errorReporter) {
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.preevalVisitorFactory = preevalVisitorFactory;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -60,9 +65,7 @@ public class PrerenderVisitorFactory {
    */
   public PrerenderVisitor create(
       Appendable outputBuf, TemplateRegistry templateRegistry) {
-
     return new PrerenderVisitor(
-        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf, templateRegistry);
+        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf, errorReporter, templateRegistry);
   }
-
 }

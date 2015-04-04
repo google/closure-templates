@@ -25,6 +25,7 @@ import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.Translate
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.soyparse.ErrorReporter;
 
 import java.util.Deque;
 import java.util.Map;
@@ -44,6 +45,7 @@ class JsExprTranslator {
   /** Factory for creating an instance of TranslateToJsExprVisitor. */
   private final TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory;
 
+  private final ErrorReporter errorReporter;
 
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
@@ -53,9 +55,11 @@ class JsExprTranslator {
   @Inject
   JsExprTranslator(
       Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
-      TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory) {
+      TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory,
+      ErrorReporter errorReporter) {
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.translateToJsExprVisitorFactory = translateToJsExprVisitorFactory;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -76,7 +80,7 @@ class JsExprTranslator {
 
     if (expr != null &&
         (exprText == null ||
-         (new CheckAllFunctionsSupportedVisitor(soyJsSrcFunctionsMap)).exec(expr))) {
+         new CheckAllFunctionsSupportedVisitor(soyJsSrcFunctionsMap, errorReporter).exec(expr))) {
       // V2 expression.
       return translateToJsExprVisitorFactory.create(localVarTranslations).exec(expr);
     } else {
@@ -99,7 +103,9 @@ class JsExprTranslator {
     /** Whether all functions in the expression are supported. */
     private boolean areAllFunctionsSupported;
 
-    public CheckAllFunctionsSupportedVisitor(Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap) {
+    private CheckAllFunctionsSupportedVisitor(
+        Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, ErrorReporter errorReporter) {
+      super(errorReporter);
       this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     }
 

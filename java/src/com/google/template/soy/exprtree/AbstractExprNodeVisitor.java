@@ -38,6 +38,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 
 
 /**
@@ -69,6 +70,9 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
  */
 public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<ExprNode, R> {
 
+  public AbstractExprNodeVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override protected void visit(ExprNode node) {
 

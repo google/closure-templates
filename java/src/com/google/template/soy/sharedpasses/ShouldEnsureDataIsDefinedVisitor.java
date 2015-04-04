@@ -21,6 +21,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
 import com.google.template.soy.soytree.TemplateNode;
@@ -34,7 +35,13 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class ShouldEnsureDataIsDefinedVisitor {
+public final class ShouldEnsureDataIsDefinedVisitor {
+
+  private final ErrorReporter errorReporter;
+
+  public ShouldEnsureDataIsDefinedVisitor(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   /**
    * Runs this pass on the given template.
@@ -51,7 +58,7 @@ public class ShouldEnsureDataIsDefinedVisitor {
 
     // Run the ExistsRegDataRefInExprVisitor on all expressions in the template, shortcircuiting as
     // soon as we find one regular data ref.
-    ExistsRegDataRefInExprVisitor helperVisitor = new ExistsRegDataRefInExprVisitor();
+    ExistsRegDataRefInExprVisitor helperVisitor = new ExistsRegDataRefInExprVisitor(errorReporter);
 
     SoytreeUtils.execOnAllV2ExprsShortcircuitably(
         template,
@@ -61,7 +68,8 @@ public class ShouldEnsureDataIsDefinedVisitor {
           public boolean shouldShortcircuit(AbstractExprNodeVisitor<Void> exprNodeVisitor) {
             return ((ExistsRegDataRefInExprVisitor) exprNodeVisitor).foundRegDataRef();
           }
-        });
+        },
+        errorReporter);
 
     return helperVisitor.foundRegDataRef();
   }
@@ -74,7 +82,11 @@ public class ShouldEnsureDataIsDefinedVisitor {
    * <p> Note: This visitor assumes VarRefNodes in the expression are correctly marked as being
    * local var data refs as appropriate (i.e. variable name resolution has been performed).
    */
-  private static class ExistsRegDataRefInExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private static final class ExistsRegDataRefInExprVisitor extends AbstractExprNodeVisitor<Void> {
+
+    private ExistsRegDataRefInExprVisitor(ErrorReporter errorReporter) {
+      super(errorReporter);
+    }
 
     /** Whether this visitor has found a regular data ref in all the exec() calls so far. */
     private boolean foundRegDataRef = false;

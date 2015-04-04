@@ -23,6 +23,7 @@ import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
@@ -48,31 +49,44 @@ import javax.annotation.Nullable;
  * <p> The rendered output will be appended to the Appendable provided to the constructor.
  *
  */
-class PrerenderVisitor extends RenderVisitor {
-
+final class PrerenderVisitor extends RenderVisitor {
 
   /**
    * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to
    *     directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
+   * @param errorReporter For reporting errors.
    * @param templateRegistry A registry of all templates.
    */
   PrerenderVisitor(
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      PreevalVisitorFactory preevalVisitorFactory, Appendable outputBuf,
+      PreevalVisitorFactory preevalVisitorFactory,
+      Appendable outputBuf,
+      ErrorReporter errorReporter,
       @Nullable TemplateRegistry templateRegistry) {
-
     super(
-        soyJavaDirectivesMap, preevalVisitorFactory, outputBuf,
-        templateRegistry, SoyValueHelper.EMPTY_DICT, null, null, null, null, null);
+        soyJavaDirectivesMap,
+        preevalVisitorFactory,
+        outputBuf,
+        errorReporter,
+        templateRegistry,
+        SoyValueHelper.EMPTY_DICT,
+        null /* ijData */,
+        null /* activeDelPackageNames */,
+        null /* msgBundle */,
+        null /* xidRenamingMap */,
+        null /* cssRenamingMap */);
   }
 
 
   @Override protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
 
     return new PrerenderVisitor(
-        soyJavaDirectivesMap, (PreevalVisitorFactory) evalVisitorFactory, outputBuf,
+        soyJavaDirectivesMap,
+        (PreevalVisitorFactory) evalVisitorFactory,
+        outputBuf,
+        errorReporter,
         templateRegistry);
   }
 

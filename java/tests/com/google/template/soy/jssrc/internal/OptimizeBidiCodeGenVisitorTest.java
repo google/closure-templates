@@ -26,6 +26,8 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -58,6 +60,7 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET =
       BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
 
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
   public void testOptimizeBidiCodeGenForStaticDir() {
 
@@ -69,7 +72,7 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_STATIC_LTR);
+        SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_STATIC_LTR, FAIL);
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
@@ -91,7 +94,7 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET);
+        SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET, FAIL);
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 

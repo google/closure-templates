@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -71,12 +73,14 @@ public class SoytreeUtils {
 
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
 
-    AbstractSoyNodeVisitor<Void> visitor = new AbstractSoyNodeVisitor<Void>() {
+    AbstractSoyNodeVisitor<Void> visitor = new AbstractSoyNodeVisitor<Void>(
+        ExplodingErrorReporter.get()) {
       @SuppressWarnings("unchecked") // Casting safe after isAssignableFrom check.
-      @Override public void visitSoyNode(SoyNode soyNode) {
+      @Override
+      public void visitSoyNode(SoyNode soyNode) {
         if (classObject.isAssignableFrom(soyNode.getClass())) {
           matchedNodesBuilder.add((T) soyNode);
-          if (! doSearchSubtreesOfMatchedNodes) {
+          if (!doSearchSubtreesOfMatchedNodes) {
             return;
           }
         }
@@ -104,11 +108,14 @@ public class SoytreeUtils {
    * @param <R> The ExprNode visitor's return type.
    * @param node The root of the subtree to visit all expressions in.
    * @param exprNodeVisitor The visitor to execute on all expressions.
+   * @param errorReporter For reporting errors during the visit.
    */
   public static <R> void execOnAllV2Exprs(
-      SoyNode node, AbstractExprNodeVisitor<R> exprNodeVisitor) {
-
-    execOnAllV2ExprsShortcircuitably(node, exprNodeVisitor, null);
+      SoyNode node,
+      AbstractExprNodeVisitor<R> exprNodeVisitor,
+      ErrorReporter errorReporter) {
+    execOnAllV2ExprsShortcircuitably(
+        node, exprNodeVisitor, null /* shortcircuiter */, errorReporter);
   }
 
 
@@ -125,12 +132,15 @@ public class SoytreeUtils {
    * @param node The root of the subtree to visit all expressions in.
    * @param exprNodeVisitor The visitor to execute on all expressions.
    * @param shortcircuiter The Shortcircuiter to tell us when to shortcircuit the pass.
+   * @param errorReporter For reporting errors during the visit.
    * @see Shortcircuiter
    */
   public static <R> void execOnAllV2ExprsShortcircuitably(
-      SoyNode node, AbstractExprNodeVisitor<R> exprNodeVisitor, Shortcircuiter<R> shortcircuiter) {
-
-    (new VisitAllV2ExprsVisitor<R>(exprNodeVisitor, shortcircuiter)).exec(node);
+      SoyNode node,
+      AbstractExprNodeVisitor<R> exprNodeVisitor,
+      Shortcircuiter<R> shortcircuiter,
+      ErrorReporter errorReporter) {
+    new VisitAllV2ExprsVisitor<>(exprNodeVisitor, shortcircuiter, errorReporter).exec(node);
   }
 
 
@@ -158,14 +168,17 @@ public class SoytreeUtils {
    *
    * @param <R> The ExprNode visitor's return type.
    */
-  private static class VisitAllV2ExprsVisitor<R> extends AbstractSoyNodeVisitor<R> {
+  private static final class VisitAllV2ExprsVisitor<R> extends AbstractSoyNodeVisitor<R> {
 
     private final AbstractExprNodeVisitor<R> exprNodeVisitor;
 
     private final Shortcircuiter<R> shortcircuiter;
 
-    public VisitAllV2ExprsVisitor(
-        AbstractExprNodeVisitor<R> exprNodeVisitor, @Nullable Shortcircuiter<R> shortcircuiter) {
+    private VisitAllV2ExprsVisitor(
+        AbstractExprNodeVisitor<R> exprNodeVisitor,
+        @Nullable Shortcircuiter<R> shortcircuiter,
+        ErrorReporter errorReporter) {
+      super(errorReporter);
       this.exprNodeVisitor = exprNodeVisitor;
       this.shortcircuiter = shortcircuiter;
     }
@@ -277,6 +290,7 @@ public class SoytreeUtils {
      * @param nodeIdGen The generator for new node ids.
      */
     public GenNewIdsVisitor(IdGenerator nodeIdGen) {
+      super(ExplodingErrorReporter.get());
       this.nodeIdGen = nodeIdGen;
     }
 

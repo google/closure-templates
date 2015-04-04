@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 
@@ -33,14 +34,20 @@ import com.google.template.soy.soytree.SoytreeUtils;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class RewriteNullCoalescingOpVisitor {
+public final class RewriteNullCoalescingOpVisitor {
 
+  private final ErrorReporter errorReporter;
+
+  public RewriteNullCoalescingOpVisitor(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   /**
    * Runs this pass on the given Soy node's subtree.
    */
   public void exec(SoyNode node) {
-    SoytreeUtils.execOnAllV2Exprs(node, new RewriteNullCoalescingOpInExprVisitor());
+    SoytreeUtils.execOnAllV2Exprs(
+        node, new RewriteNullCoalescingOpInExprVisitor(errorReporter), errorReporter);
   }
 
 
@@ -51,6 +58,9 @@ public class RewriteNullCoalescingOpVisitor {
   @VisibleForTesting
   static class RewriteNullCoalescingOpInExprVisitor extends AbstractExprNodeVisitor<Void> {
 
+    RewriteNullCoalescingOpInExprVisitor(ErrorReporter errorReporter) {
+      super(errorReporter);
+    }
 
     @Override protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
 

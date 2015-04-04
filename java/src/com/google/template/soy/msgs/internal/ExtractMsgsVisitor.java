@@ -22,6 +22,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -41,15 +42,18 @@ import java.util.List;
  * returned in a {@code SoyMsgBundle} (locale "en").
  *
  */
-public class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
+public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
 
   /** List of messages collected during the pass. */
-  List<SoyMsg> msgs;
+  private List<SoyMsg> msgs;
 
   /** Current Soy file path (during a pass). */
-  String currentSource;
+  private String currentSource;
 
+  public ExtractMsgsVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or

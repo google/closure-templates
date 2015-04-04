@@ -25,6 +25,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.ExprUnion;
@@ -59,7 +60,7 @@ import java.util.Set;
  * match the data keys referenced in that template.
  *
  */
-public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
@@ -73,7 +74,8 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * @param declaredSyntaxVersion User-declared syntax version,
    */
-  public CheckSoyDocVisitor(SyntaxVersion declaredSyntaxVersion) {
+  public CheckSoyDocVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -98,7 +100,8 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
       } else {
         try {
           // TODO SOON: Use a simpler visitor that doesn't report errors and shortcircuits.
-          (new ReportSyntaxVersionErrorsVisitor(SyntaxVersion.V2_0, true)).exec(soyFile);
+          new ReportSyntaxVersionErrorsVisitor(SyntaxVersion.V2_0, true, errorReporter)
+              .exec(soyFile);
           doCheckSoyDocInFile = true;
         } catch (SoySyntaxException sse) {
           doCheckSoyDocInFile = false;
@@ -118,11 +121,12 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
     Set<String> dataKeys = Sets.newHashSet();  // data keys referenced in this template
-    getDataKeysInExprVisitor = new GetDataKeysInExprVisitor(dataKeys);
+    getDataKeysInExprVisitor = new GetDataKeysInExprVisitor(dataKeys, errorReporter);
 
     visitChildren(node);
 
-    IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
+    IndirectParamsInfo ipi
+        = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
 
     List<String> unusedParams = Lists.newArrayList();
     for (TemplateParam param : node.getAllParams()) {
@@ -212,14 +216,15 @@ public class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    * (excluding local vars and injected data keys) will be added to the {@code dataKeys} set passed
    * in to the constructor. There is no return value.
    */
-  private static class GetDataKeysInExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private static final class GetDataKeysInExprVisitor extends AbstractExprNodeVisitor<Void> {
     /** The set used to collect the data keys found. */
     private final Set<String> dataKeys;
 
     /**
      * @param dataKeys The set used to collect the data keys found.
      */
-    public GetDataKeysInExprVisitor(Set<String> dataKeys) {
+    GetDataKeysInExprVisitor(Set<String> dataKeys, ErrorReporter errorReporter) {
+      super(errorReporter);
       this.dataKeys = dataKeys;
     }
 

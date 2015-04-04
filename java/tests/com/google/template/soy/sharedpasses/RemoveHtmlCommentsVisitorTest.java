@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -50,7 +52,9 @@ public final class RemoveHtmlCommentsVisitorTest extends TestCase {
         "  <!-- comment 5 -->\n" +
         "{/template}\n";
 
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .errorReporter(boom)
         .doRunInitialParsingPasses(false)
         .parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
@@ -58,7 +62,7 @@ public final class RemoveHtmlCommentsVisitorTest extends TestCase {
     // Before.
     assertThat(template.numChildren()).isEqualTo(7);
 
-    (new RemoveHtmlCommentsVisitor()).exec(soyTree);
+    new RemoveHtmlCommentsVisitor(boom).exec(soyTree);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(4);

@@ -44,6 +44,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -78,7 +79,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.XidNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.types.SoyObjectType;
@@ -113,7 +113,7 @@ import javax.inject.Inject;
  * generated JS file (corresponding to one Soy file).
  *
  */
-class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
+final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
 
   /** Regex pattern to look for dots in a template name. */
@@ -178,17 +178,6 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** Type operators. */
   private final SoyTypeOps typeOps;
 
-  /**
-   * @param jsSrcOptions The options for generating JS source code.
-   * @param isUsingIjData Whether any of the Soy code uses injected data.
-   * @param jsExprTranslator Instance of JsExprTranslator to use.
-   * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
-   * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to use.
-   * @param canInitOutputVarVisitor The CanInitOutputVarVisitor to use.
-   * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
-   * @param genDirectivePluginRequiresVisitor Instance of GenDirectivePluginRequiresVisitor.
-   * @param genFunctionPluginRequiresVisitor Instance of GenFunctionPluginRequiresVisitor.
-   */
   @Inject
   GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions, @IsUsingIjData boolean isUsingIjData,
@@ -198,7 +187,9 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor,
       GenFunctionPluginRequiresVisitor genFunctionPluginRequiresVisitor,
-      SoyTypeOps typeOps) {
+      SoyTypeOps typeOps,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.jsSrcOptions = jsSrcOptions;
     this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
@@ -516,7 +507,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     String prevCalleeNamespace = null;
     Set<String> calleeNamespaces = Sets.newTreeSet();
-    for (String calleeNotInFile : (new FindCalleesNotInFileVisitor()).exec(soyFile)) {
+    for (String calleeNotInFile : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
       if (lastDotIndex == -1) {
         throw SoySyntaxExceptionUtils.createWithNode(
@@ -541,7 +532,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
 
-    for (String calleeNotInFile : (new FindCalleesNotInFileVisitor()).exec(soyFile)) {
+    for (String calleeNotInFile : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
       jsCodeBuilder.appendLine("goog.require('", calleeNotInFile, "');");
     }
   }
@@ -647,7 +638,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     localVarTranslations.push(Maps.<String, JsExpr>newHashMap());
 
     // Generate statement to ensure data is defined, if necessary.
-    if ((new ShouldEnsureDataIsDefinedVisitor()).exec(node)) {
+    if (new ShouldEnsureDataIsDefinedVisitor(errorReporter).exec(node)) {
       jsCodeBuilder.appendLine("opt_data = opt_data || {};");
     }
 
@@ -729,8 +720,15 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
     if (assistantForMsgs == null) {
       assistantForMsgs = new GenJsCodeVisitorAssistantForMsgs(
-          this, jsSrcOptions, jsExprTranslator, genCallCodeUtils, isComputableAsJsExprsVisitor,
-          jsCodeBuilder, localVarTranslations, genJsExprsVisitor);
+          this /* master */,
+          jsSrcOptions,
+          jsExprTranslator,
+          genCallCodeUtils,
+          isComputableAsJsExprsVisitor,
+          jsCodeBuilder,
+          localVarTranslations,
+          genJsExprsVisitor,
+          errorReporter);
     }
     assistantForMsgs.visitForUseByMaster(node);
   }
@@ -1323,7 +1321,8 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // inferred from the indirect params, then the explicit type wins.
     // Also note that indirect param types may not be inferrable if the target
     // is not in the current compilation file set.
-    IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
+    IndirectParamsInfo ipi
+        = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
     // If there are any calls outside of the file set, then we can't know
     // the complete types of any indirect params. In such a case, we can simply
     // omit the indirect params from the function type signature, since record
@@ -1373,7 +1372,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
         continue;
       }
-      String paramName = ((HeaderParam) param).name();
+      String paramName = param.name();
       SoyType paramType = param.type();
       String paramVal = (param.isInjected() ? "opt_ijData" : "opt_data") +
           TranslateToJsExprVisitor.genCodeForKeyAccess(AnyType.getInstance(), paramType, paramName);
@@ -1633,7 +1632,7 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   // of generic types.
   @SuppressWarnings({"rawtypes", "unchecked"})
   private boolean hasNodeTypes(SoyFileNode soyFile, Class... nodeTypes) {
-    return new HasNodeTypesVisitor(nodeTypes).exec(soyFile);
+    return new HasNodeTypesVisitor(nodeTypes, errorReporter).exec(soyFile);
   }
 
   /**
@@ -1684,9 +1683,10 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   private SortedSet<String> getRequiredObjectTypes(SoyFileNode soyFile) {
     SortedSet<String> requiredObjectTypes = Sets.newTreeSet();
-    FieldImportsVisitor fieldImportsVisitor = new FieldImportsVisitor(requiredObjectTypes);
+    FieldImportsVisitor fieldImportsVisitor
+        = new FieldImportsVisitor(requiredObjectTypes, errorReporter);
     for (TemplateNode template : soyFile.getChildren()) {
-      SoytreeUtils.execOnAllV2Exprs(template, fieldImportsVisitor);
+      SoytreeUtils.execOnAllV2Exprs(template, fieldImportsVisitor, errorReporter);
       for (TemplateParam param : template.getAllParams()) {
         if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
           continue;
@@ -1710,10 +1710,11 @@ class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Helper class to visit all field reference expressions that result in
    * additional goog.require imports.
    */
-  private static class FieldImportsVisitor extends AbstractExprNodeVisitor<Void> {
+  private static final class FieldImportsVisitor extends AbstractExprNodeVisitor<Void> {
     private final SortedSet<String> imports;
 
-    public FieldImportsVisitor(SortedSet<String> imports) {
+    FieldImportsVisitor(SortedSet<String> imports, ErrorReporter errorReporter) {
+      super(errorReporter);
       this.imports = imports;
     }
 

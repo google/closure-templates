@@ -21,9 +21,12 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
@@ -45,8 +48,11 @@ public final class RenameCssVisitorTest extends TestCase {
 
 
   public void testWithoutCssRenamingMap() {
-    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT).parse());
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT)
+        .errorReporter(boom)
+        .parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);
@@ -56,8 +62,8 @@ public final class RenameCssVisitorTest extends TestCase {
     assertThat(cn7.getComponentNameText()).isEqualTo("$goo");
     assertThat(cn7.getSelectorText()).isEqualTo("BBB");
 
-    (new RenameCssVisitor(null)).exec(template);
-    (new CombineConsecutiveRawTextNodesVisitor()).exec(template);
+    new RenameCssVisitor(null /* cssRenamingMap */, boom).exec(template);
+    new CombineConsecutiveRawTextNodesVisitor(boom).exec(template);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(5);
@@ -75,8 +81,11 @@ public final class RenameCssVisitorTest extends TestCase {
 
 
   public void testWithCssRenamingMap() {
-    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT).parse());
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(TEST_FILE_CONTENT)
+        .errorReporter(boom)
+        .parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
     assertThat(template.numChildren()).isEqualTo(9);
@@ -94,8 +103,8 @@ public final class RenameCssVisitorTest extends TestCase {
           }
         };
 
-    (new RenameCssVisitor(cssRenamingMap)).exec(template);
-    (new CombineConsecutiveRawTextNodesVisitor()).exec(template);
+    new RenameCssVisitor(cssRenamingMap, boom).exec(template);
+    new CombineConsecutiveRawTextNodesVisitor(boom).exec(template);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(5);

@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -34,10 +36,12 @@ import junit.framework.TestCase;
  */
 public final class HandleCssCommandVisitorTest extends TestCase {
 
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+
   public void testHandleLiteral() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents("{css selected-option}")
         .parse();
-    (new HandleCssCommandVisitor(CssHandlingScheme.LITERAL)).exec(soyTree);
+    new HandleCssCommandVisitor(CssHandlingScheme.LITERAL, FAIL).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((RawTextNode) soyNode).getRawText()).isEqualTo("selected-option");
   }
@@ -45,13 +49,13 @@ public final class HandleCssCommandVisitorTest extends TestCase {
   public void testHandleReference() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents("{css $cssSelectedOption}")
         .parse();
-    (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
+    new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE, FAIL).exec(soyTree);
     SoyNode soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("$cssSelectedOption");
 
     soyTree = SoyFileSetParserBuilder.forTemplateContents("{css CSS_SELECTED_OPTION}")
         .parse();
-    (new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE)).exec(soyTree);
+    new HandleCssCommandVisitor(CssHandlingScheme.REFERENCE, FAIL).exec(soyTree);
     soyNode = SharedTestUtils.getNode(soyTree, 0);
     assertThat(((PrintNode) soyNode).getExprText()).isEqualTo("CSS_SELECTED_OPTION");
   }

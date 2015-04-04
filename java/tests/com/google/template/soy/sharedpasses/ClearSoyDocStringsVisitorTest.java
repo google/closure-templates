@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 
@@ -46,14 +48,17 @@ public final class ClearSoyDocStringsVisitorTest extends TestCase {
         "  {$goo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .errorReporter(boom)
+        .parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.getSoyDoc()).contains("blah");
     assertThat(template.getSoyDocDesc()).contains("blah");
     assertThat(template.getParams().get(0).desc()).contains("blah");
 
-    (new ClearSoyDocStringsVisitor()).exec(soyTree);
+    new ClearSoyDocStringsVisitor(boom).exec(soyTree);
 
     assertThat(template.getSoyDoc()).isNull();
     assertThat(template.getSoyDocDesc()).isNull();

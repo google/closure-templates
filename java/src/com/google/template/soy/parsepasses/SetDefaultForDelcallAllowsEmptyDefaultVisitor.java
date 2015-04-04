@@ -18,6 +18,7 @@ package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -35,16 +36,15 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * {@code CallDelegateNode}s. There is no return value.
  *
  */
-public class SetDefaultForDelcallAllowsEmptyDefaultVisitor extends AbstractSoyNodeVisitor<Void> {
-
+public final class SetDefaultForDelcallAllowsEmptyDefaultVisitor
+    extends AbstractSoyNodeVisitor<Void> {
 
   /** Default value for CallDelegateNode.allowsEmptyDefault. */
   private final boolean defaultValueForAllowsEmptyDefault;
 
-
-  public SetDefaultForDelcallAllowsEmptyDefaultVisitor(SyntaxVersion declaredSyntaxVersion) {
-    // Note: For readability, purposely not simplifying.
-    //noinspection RedundantConditionalExpression IntelliJ
+  public SetDefaultForDelcallAllowsEmptyDefaultVisitor(
+      SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.defaultValueForAllowsEmptyDefault = declaredSyntaxVersion.num < SyntaxVersion.V2_2.num;
   }
 

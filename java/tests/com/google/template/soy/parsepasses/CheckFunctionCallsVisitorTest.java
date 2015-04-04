@@ -25,6 +25,8 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -245,10 +247,13 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
 
 
   private void applyCheckFunctionCallsVisitor(
-      String soyContent, SyntaxVersion declaredSyntaxVersion)
-      throws Exception {
+      String soyContent, SyntaxVersion declaredSyntaxVersion) {
 
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent)
+        .errorReporter(boom)
+        .parse();
     Map<String, SoyFunction> soyFunctions = ImmutableMap.<String, SoyFunction>of(
         "min",
         new SoyFunction() {
@@ -261,7 +266,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
           }
         });
     CheckFunctionCallsVisitor visitor =
-        new CheckFunctionCallsVisitor(soyFunctions, declaredSyntaxVersion);
+        new CheckFunctionCallsVisitor(soyFunctions, declaredSyntaxVersion, boom);
     visitor.exec(fileSet);
   }
 

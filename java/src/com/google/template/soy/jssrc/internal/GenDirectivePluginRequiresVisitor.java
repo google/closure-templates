@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -32,8 +33,7 @@ import javax.inject.Inject;
  * template.
  *
  */
-class GenDirectivePluginRequiresVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
-
+final class GenDirectivePluginRequiresVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
 
   private final Map<String, SoyLibraryAssistedJsSrcPrintDirective>
       soyLibraryAssistedJsSrcDirectivesMap;
@@ -43,7 +43,9 @@ class GenDirectivePluginRequiresVisitor extends AbstractSoyNodeVisitor<SortedSet
 
   @Inject
   public GenDirectivePluginRequiresVisitor(
-      Map<String, SoyLibraryAssistedJsSrcPrintDirective> soyLibraryAssistedJsSrcDirectivesMap) {
+      Map<String, SoyLibraryAssistedJsSrcPrintDirective> soyLibraryAssistedJsSrcDirectivesMap,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.soyLibraryAssistedJsSrcDirectivesMap = soyLibraryAssistedJsSrcDirectivesMap;
   }
 

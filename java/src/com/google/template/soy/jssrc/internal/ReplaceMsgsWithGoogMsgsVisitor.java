@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.msgs.internal.MsgUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -38,12 +39,14 @@ import java.util.List;
  * <p> {@link #exec} must be called on a full parse tree.
  *
  */
-class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
-
+final class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** The list of MsgFallbackGroupNodes found in the given node's subtree. */
   private List<MsgFallbackGroupNode> msgFbGrpNodes;
 
+  public ReplaceMsgsWithGoogMsgsVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode node) {
     msgFbGrpNodes = Lists.newArrayList();

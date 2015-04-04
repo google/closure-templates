@@ -17,8 +17,8 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.SoyError;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -32,22 +32,19 @@ import com.google.template.soy.soytree.TemplateNode;
  * can choose to disallow all other types of autoescaping besides strict.
  *
  */
-public class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError INVALID_AUTOESCAPING =
       SoyError.of("Invalid use of non-strict when strict autoescaping is required.");
 
-  /** Error reporter to capture any failures. */
-  private TransitionalThrowingErrorReporter errorReporter;
+  public AssertStrictAutoescapingVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode soyNode) {
     Preconditions.checkArgument(
         soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
-
-    errorReporter = new TransitionalThrowingErrorReporter();
     super.exec(soyNode);
-
-    errorReporter.throwIfErrorsPresent();
     return null;
   }
 

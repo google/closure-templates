@@ -22,8 +22,11 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -38,9 +41,12 @@ import java.util.List;
 public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
 
   public List<CssNode> compileTemplate(String templateText) {
-    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forFileContents(templateText).parse());
-    new ResolvePackageRelativeCssNamesVisitor().exec(template);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(templateText)
+        .errorReporter(boom)
+        .parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
+    new ResolvePackageRelativeCssNamesVisitor(boom).exec(template);
     return getCssNodes(template);
   }
 
@@ -121,7 +127,8 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
    * @return A list of CSS nodes.
    */
   private <T extends SoyNode> List<T> getCssNodes(SoyNode root) {
-    CollectNodesVisitor visitor = new CollectNodesVisitor(CssNode.class);
+    CollectNodesVisitor visitor
+        = new CollectNodesVisitor(CssNode.class, ExplodingErrorReporter.get());
     visitor.exec(root);
     return (List<T>) visitor.getNodes();
   }
@@ -134,7 +141,8 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
     private final List<SoyNode> nodes = Lists.newArrayList();
     private final Class<?> nodeType;
 
-    CollectNodesVisitor(Class<?> nodeType) {
+    CollectNodesVisitor(Class<?> nodeType, ErrorReporter errorReporter) {
+      super(errorReporter);
       this.nodeType = nodeType;
     }
 

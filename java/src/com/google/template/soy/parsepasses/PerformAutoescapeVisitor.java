@@ -22,6 +22,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -47,8 +48,7 @@ import javax.inject.Inject;
  * modified. There is no return value.
  *
  */
-public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
-
+public final class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Map of all SoyPrintDirectives (name to directive). */
   private final Map<String, SoyPrintDirective> soyDirectivesMap;
@@ -64,7 +64,9 @@ public class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive).
    */
   @Inject
-  public PerformAutoescapeVisitor(Map<String, SoyPrintDirective> soyDirectivesMap) {
+  public PerformAutoescapeVisitor(
+      Map<String, SoyPrintDirective> soyDirectivesMap, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.soyDirectivesMap = soyDirectivesMap;
   }
 

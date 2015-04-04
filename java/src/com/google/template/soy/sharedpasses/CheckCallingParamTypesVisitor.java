@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -67,7 +68,7 @@ import java.util.Set;
  * been run.
  *
  */
-public class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
@@ -77,6 +78,10 @@ public class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> 
 
   /** Map of all template parameters, both explicit and implicit, organized by template. */
   private final Map<TemplateNode, TemplateParamTypes> paramTypesMap = Maps.newHashMap();
+
+  public CheckCallingParamTypesVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   /**
    * {@inheritDoc}
@@ -323,7 +328,8 @@ public class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> 
       // Note that we don't check here whether the explicit type and the implicit
       // types are in agreement - that will be done when it's this template's
       // turn to be analyzed as a caller.
-      IndirectParamsInfo ipi = (new FindIndirectParamsVisitor(templateRegistry)).exec(node);
+      IndirectParamsInfo ipi
+          = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
       for (String indirectParamName: ipi.indirectParamTypes.keySet()) {
         if (paramTypes.params.containsKey(indirectParamName)) {
           continue;

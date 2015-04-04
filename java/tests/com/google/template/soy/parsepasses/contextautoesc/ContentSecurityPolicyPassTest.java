@@ -22,6 +22,8 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -216,10 +218,13 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
 
   private SoyFileSetNode parseAndApplyCspPass(String input) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(namespace + input).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(namespace + input)
+        .errorReporter(boom)
+        .parse();
 
-    ContextualAutoescaper contextualAutoescaper = new ContextualAutoescaper(
-        ImmutableMap.<String, SoyPrintDirective>of());
+    ContextualAutoescaper contextualAutoescaper
+        = new ContextualAutoescaper(ImmutableMap.<String, SoyPrintDirective>of(), boom);
     List<TemplateNode> extras = contextualAutoescaper.rewrite(soyTree);
 
     SoyFileNode file = soyTree.getChild(soyTree.numChildren() - 1);

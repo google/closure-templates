@@ -21,6 +21,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.internal.TofuModule.Tofu;
 
@@ -61,6 +62,7 @@ class TofuRenderVisitorFactory {
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
+   * @param errorReporter For reporting errors during the visit.
    * @param ijData The current injected data.
    * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
    *     when known to be irrelevant, i.e. when not using delegates feature.
@@ -71,14 +73,28 @@ class TofuRenderVisitorFactory {
    * @return The newly created TofuRenderVisitor instance.
    */
   public TofuRenderVisitor create(
-      Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
+      Appendable outputBuf,
+      TemplateRegistry templateRegistry,
+      SoyRecord data,
+      ErrorReporter errorReporter,
       @Nullable SoyRecord ijData,
-      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
+      @Nullable Set<String> activeDelPackageNames,
+      @Nullable SoyMsgBundle msgBundle,
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new TofuRenderVisitor(
-        soyJavaDirectivesMap, tofuEvalVisitorFactory, outputBuf, templateRegistry, data, ijData,
-        activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
+        soyJavaDirectivesMap,
+        tofuEvalVisitorFactory,
+        outputBuf,
+        errorReporter,
+        templateRegistry,
+        data,
+        ijData,
+        activeDelPackageNames,
+        msgBundle,
+        xidRenamingMap,
+        cssRenamingMap);
   }
 
 }

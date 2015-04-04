@@ -16,7 +16,9 @@
 
 package com.google.template.soy.basetree;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.template.soy.soyparse.ErrorReporter;
 
 
 /**
@@ -34,6 +36,11 @@ import com.google.common.collect.Lists;
  */
 public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisitor<N, R> {
 
+  protected final ErrorReporter errorReporter;
+
+  public AbstractNodeVisitor(ErrorReporter errorReporter) {
+    this.errorReporter = Preconditions.checkNotNull(errorReporter);
+  }
 
   @Override public R exec(N node) {
     visit(node);

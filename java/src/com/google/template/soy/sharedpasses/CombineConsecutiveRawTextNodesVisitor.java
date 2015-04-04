@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -35,12 +36,15 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
 
+  public CombineConsecutiveRawTextNodesVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode node) {
 

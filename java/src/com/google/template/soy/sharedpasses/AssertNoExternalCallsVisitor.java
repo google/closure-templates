@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -37,7 +38,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * no return value. A {@code SoySyntaxException} is thrown if an error is found.
  *
  */
-public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Log of all found errors. */
   private StringBuilder errorBuffer;
@@ -45,6 +46,9 @@ public class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
+  public AssertNoExternalCallsVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode soyNode) {
 

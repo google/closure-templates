@@ -19,6 +19,8 @@ package com.google.template.soy.shared.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -64,10 +66,13 @@ public class FindCalleesNotInFileVisitorTest extends TestCase {
         "  {call boo.hoo.roo data=\"all\" /}\n" +  // not defined in this file
         "{/deltemplate}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .errorReporter(boom)
+        .parse();
     SoyFileNode soyFile = soyTree.getChild(0);
 
-    Set<String> calleesNotInFile = (new FindCalleesNotInFileVisitor()).exec(soyFile);
+    Set<String> calleesNotInFile = new FindCalleesNotInFileVisitor(boom).exec(soyFile);
     assertThat(calleesNotInFile).doesNotContain("boo.foo.goo");
     assertThat(calleesNotInFile).doesNotContain("boo.foo.moo");
     assertThat(calleesNotInFile).contains("boo.woo.hoo");

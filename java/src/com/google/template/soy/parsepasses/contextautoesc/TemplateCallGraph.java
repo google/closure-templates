@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -44,7 +45,8 @@ final class TemplateCallGraph {
    * @param templatesByName A map whose values are the vertices for the call graph, and whose
    *      keys are matched against {@link CallBasicNode#getCalleeName()} to come up with the edges.
    */
-  TemplateCallGraph(final Map<String, ImmutableList<TemplateNode>> templatesByName) {
+  TemplateCallGraph(
+      final Map<String, ImmutableList<TemplateNode>> templatesByName, ErrorReporter errorReporter) {
     // Visit each template's body to find call nodes and build the edge multimap.
     for (ImmutableList<TemplateNode> templateNodes : templatesByName.values()) {
       for (final TemplateNode tn : templateNodes) {
@@ -52,6 +54,11 @@ final class TemplateCallGraph {
          * Finds calls in templates to build a call graph.
          */
         class CallGraphBuilder extends AbstractSoyNodeVisitor<Void> {
+
+          public CallGraphBuilder(ErrorReporter errorReporter) {
+            super(errorReporter);
+          }
+
           @Override
           public void visitCallBasicNode(CallBasicNode call) {
             ImmutableList<TemplateNode> callees = templatesByName.get(call.getCalleeName());
@@ -69,7 +76,7 @@ final class TemplateCallGraph {
           }
         }
 
-        new CallGraphBuilder().exec(tn);
+        new CallGraphBuilder(errorReporter).exec(tn);
       }
     }
   }

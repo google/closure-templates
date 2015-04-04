@@ -18,6 +18,7 @@ package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -39,7 +40,7 @@ import java.util.Map;
  * {@code CallBasicNode}s. There is no return value.
  *
  */
-public class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** The namespace of the current file that we're in (during the pass). */
@@ -48,6 +49,9 @@ public class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Alias-to-namespace map of the current file (during the pass). */
   private Map<String, String> currAliasToNamespaceMap;
 
+  public SetFullCalleeNamesVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public Void exec(SoyNode soyNode) {
     Preconditions.checkArgument(

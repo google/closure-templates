@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
@@ -64,8 +65,10 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * @param cssHandlingScheme Scheme for handling 'css' commands.
+   * @param errorReporter For reporting errors.
    */
-  public HandleCssCommandVisitor(CssHandlingScheme cssHandlingScheme) {
+  public HandleCssCommandVisitor(CssHandlingScheme cssHandlingScheme, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.cssHandlingScheme = cssHandlingScheme;
   }
 

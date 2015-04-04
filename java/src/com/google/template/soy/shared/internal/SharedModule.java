@@ -42,6 +42,8 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -211,6 +213,12 @@ public class SharedModule extends AbstractModule {
             return new SoyJavaRuntimePrintDirectiveAdapter(input);
           }
         });
+  }
+
+  @Provides
+  @Singleton
+  ErrorReporter provideErrorReporter() {
+    return new ErrorReporterImpl();
   }
 
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.CaseFormat;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -28,11 +29,15 @@ import com.google.template.soy.soytree.TemplateNode;
 /**
  * Visitor class which converts package-relative CSS class names to absolute names.
  */
-public class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private String packagePrefix = null;
+    private String packagePrefix = null;
 
-  @Override protected void visitTemplateNode(TemplateNode node) {
+    public ResolvePackageRelativeCssNamesVisitor(ErrorReporter errorReporter) {
+        super(errorReporter);
+    }
+
+    @Override protected void visitTemplateNode(TemplateNode node) {
     // Compute the CSS package prefix for this template. The search order is:
     // 1) cssbase on the template
     // 2) cssbase on the namespace

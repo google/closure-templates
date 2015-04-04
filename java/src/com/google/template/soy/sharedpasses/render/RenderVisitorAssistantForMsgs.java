@@ -30,6 +30,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -54,8 +55,7 @@ import java.util.List;
  * Assistant visitor for RenderVisitor to handle messages.
  *
  */
-class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
-
+final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
   /** Master instance of RenderVisitor. */
   private final RenderVisitor master;
@@ -71,8 +71,11 @@ class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    * @param master The master RenderVisitor instance.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
+   * @param errorReporter For reporting errors.
    */
-  RenderVisitorAssistantForMsgs(RenderVisitor master, SoyMsgBundle msgBundle) {
+  RenderVisitorAssistantForMsgs(
+      RenderVisitor master, SoyMsgBundle msgBundle, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.master = master;
     this.msgBundle = msgBundle;
     this.currPluralRemainderValue = -1;

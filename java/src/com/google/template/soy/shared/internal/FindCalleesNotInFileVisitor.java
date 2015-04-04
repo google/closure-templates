@@ -18,6 +18,7 @@ package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -45,7 +46,7 @@ import java.util.SortedSet;
  * in T.
  *
  */
-public class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
+public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
 
 
   /** The names of templates defined in this file. */
@@ -54,6 +55,9 @@ public class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSe
   /** The names of called templates not defined in this file (the result). */
   private SortedSet<String> calleesNotInFile;
 
+  public FindCalleesNotInFileVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override public SortedSet<String> exec(SoyNode node) {
 

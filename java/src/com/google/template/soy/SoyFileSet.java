@@ -67,7 +67,6 @@ import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisito
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -146,9 +145,6 @@ public final class SoyFileSet {
     /** Type registry for this fileset only. */
     private SoyTypeRegistry localTypeRegistry;
 
-    /** For reporting errors. */
-    private final ErrorReporter errorReporter = new ErrorReporterImpl();
-
     /**
      * Constructs a builder using a statically-injected configuration.
      *
@@ -209,10 +205,7 @@ public final class SoyFileSet {
         factory = GuiceInitializer.getHackySoyFileSetFactory();
       }
       return factory.create(
-          setBuilder.build().asList(),
-          cache, getGeneralOptions(),
-          localTypeRegistry,
-          errorReporter);
+          setBuilder.build().asList(), cache, getGeneralOptions(), localTypeRegistry);
     }
 
 
@@ -558,8 +551,7 @@ public final class SoyFileSet {
         List<SoyFileSupplier> soyFileSuppliers,
         SoyAstCache cache,
         SoyGeneralOptions options,
-        @Assisted("localTypeRegistry") SoyTypeRegistry localTypeRegistry,
-        @Assisted("errorReporter") ErrorReporter errorReporter);
+        @Assisted("localTypeRegistry") SoyTypeRegistry localTypeRegistry);
   }
 
 
@@ -640,10 +632,10 @@ public final class SoyFileSet {
       ContextualAutoescaper contextualAutoescaper,
       SimplifyVisitor simplifyVisitor,
       SoyTypeRegistry typeRegistry,
+      ErrorReporter errorReporter,
       @Assisted List<SoyFileSupplier> soyFileSuppliers,
       @Assisted SoyGeneralOptions generalOptions,
       @Assisted @Nullable SoyAstCache cache,
-      @Assisted("errorReporter") ErrorReporter errorReporter,
       @Assisted("localTypeRegistry") @Nullable SoyTypeRegistry localTypeRegistry) {
 
     // Default value is optionally replaced using method injection.
@@ -711,8 +703,9 @@ public final class SoyFileSet {
         .parse();
 
     // Do renaming of package-relative class names.
-    new ResolvePackageRelativeCssNamesVisitor().exec(soyTree);
-    return (new GenerateParseInfoVisitor(javaPackage, javaClassNameSource)).exec(soyTree);
+    new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(soyTree);
+    return new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, errorReporter)
+        .exec(soyTree);
   }
 
   /**
@@ -748,7 +741,7 @@ public final class SoyFileSet {
     SoyFileSetNode soyTree = new SoyFileSetParser(
         typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
-    return new ExtractMsgsVisitor().exec(soyTree);
+    return new ExtractMsgsVisitor(errorReporter).exec(soyTree);
   }
 
 
@@ -792,12 +785,13 @@ public final class SoyFileSet {
       }
 
       Map<TemplateNode, TransitiveDepTemplatesInfo> depsInfoMap =
-          (new FindTransitiveDepTemplatesVisitor(null)).execOnMultipleTemplates(allPublicTemplates);
+          new FindTransitiveDepTemplatesVisitor(null /* templateRegistry */, errorReporter)
+              .execOnMultipleTemplates(allPublicTemplates);
       TransitiveDepTemplatesInfo mergedDepsInfo =
           TransitiveDepTemplatesInfo.merge(depsInfoMap.values());
 
-      SoyMsgBundle extractedMsgBundle =
-          (new ExtractMsgsVisitor()).execOnMultipleNodes(mergedDepsInfo.depTemplateSet);
+      SoyMsgBundle extractedMsgBundle = new ExtractMsgsVisitor(errorReporter)
+          .execOnMultipleNodes(mergedDepsInfo.depTemplateSet);
 
       ImmutableSet.Builder<Long> extractedMsgIdsBuilder = ImmutableSet.builder();
       for (SoyMsg extractedMsg : extractedMsgBundle) {
@@ -864,13 +858,17 @@ public final class SoyFileSet {
     }
 
     // Note: Globals should have been substituted already. The pass below is just a check.
-    (new SubstituteGlobalsVisitor(
-        generalOptions.getCompileTimeGlobals(), typeRegistry, true)).exec(soyTree);
+    new SubstituteGlobalsVisitor(
+        generalOptions.getCompileTimeGlobals(),
+        typeRegistry,
+        true /* shouldAssertNoUnboundGlobals */,
+        errorReporter)
+        .exec(soyTree);
 
     // Clear the SoyDoc strings because they use unnecessary memory.
-    (new ClearSoyDocStringsVisitor()).exec(soyTree);
+    new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
 
-    return baseTofuFactory.create(soyTree, tofuOptions.useCaching());
+    return baseTofuFactory.create(soyTree, tofuOptions.useCaching(), errorReporter);
   }
 
 
@@ -1035,19 +1033,19 @@ public final class SoyFileSet {
     // Check that all function calls have a SoyFunction definition and have the correct arity.
     // This really belongs in SoyFileSetParser, but moving it there would cause SoyFileSetParser to
     // need to be injected, and that feels like overkill at this time.
-    checkFunctionCallsVisitorFactory.create(declaredSyntaxVersion).exec(soyTree);
+    checkFunctionCallsVisitorFactory.create(declaredSyntaxVersion, errorReporter).exec(soyTree);
 
     // Do renaming of package-relative class names.
-    new ResolvePackageRelativeCssNamesVisitor().exec(soyTree);
+    new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(soyTree);
 
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
-      (new AssertNoExternalCallsVisitor()).exec(soyTree);
+      (new AssertNoExternalCallsVisitor(errorReporter)).exec(soyTree);
     }
 
     // If requiring strict autoescaping, check and enforce it.
     if (generalOptions.isStrictAutoescapingRequired()) {
-      (new AssertStrictAutoescapingVisitor()).exec(soyTree);
+      (new AssertStrictAutoescapingVisitor(errorReporter)).exec(soyTree);
     }
 
     if (checkConformance != null) {
@@ -1059,10 +1057,14 @@ public final class SoyFileSet {
     }
 
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
-    (new HandleCssCommandVisitor(generalOptions.getCssHandlingScheme())).exec(soyTree);
+    new HandleCssCommandVisitor(generalOptions.getCssHandlingScheme(), errorReporter).exec(soyTree);
     if (generalOptions.getCompileTimeGlobals() != null || typeRegistry != null) {
-      (new SubstituteGlobalsVisitor(
-          generalOptions.getCompileTimeGlobals(), typeRegistry, false)).exec(soyTree);
+      new SubstituteGlobalsVisitor(
+          generalOptions.getCompileTimeGlobals(),
+          typeRegistry,
+          false /* shouldAssertNoUnboundGlobals */,
+          errorReporter)
+          .exec(soyTree);
     }
 
     // Run contextual escaping after CSS has been done, but before the autoescape visitor adds
@@ -1078,14 +1080,14 @@ public final class SoyFileSet {
     }
 
     // Attempt to simplify the tree.
-    (new ChangeCallsToPassAllDataVisitor()).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor(errorReporter).exec(soyTree);
     simplifyVisitor.exec(soyTree);
   }
 
 
   private void doContextualEscaping(SoyFileSetNode soyTree)
       throws SoySyntaxException {
-    new CheckEscapingSanityVisitor().exec(soyTree);
+    new CheckEscapingSanityVisitor(errorReporter).exec(soyTree);
     List<TemplateNode> extraTemplates = contextualAutoescaper.rewrite(soyTree);
     // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
     if (!extraTemplates.isEmpty()) {

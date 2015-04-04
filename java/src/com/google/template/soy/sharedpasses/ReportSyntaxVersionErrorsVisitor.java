@@ -25,6 +25,7 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -49,7 +50,7 @@ import java.util.List;
  * user-declared syntax version.
  *
  */
-public class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** The required minimum syntax version to check for. */
@@ -67,8 +68,11 @@ public class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Voi
    * @param requiredSyntaxVersion The required minimum syntax version to check for.
    * @param isDeclared True if the required syntax version that we're checking for is user-declared.
    *     False if it is inferred.
+   * @param errorReporter For reporting errors.
    */
-  public ReportSyntaxVersionErrorsVisitor(SyntaxVersion requiredSyntaxVersion, boolean isDeclared) {
+  public ReportSyntaxVersionErrorsVisitor(
+      SyntaxVersion requiredSyntaxVersion, boolean isDeclared, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.requiredSyntaxVersion = requiredSyntaxVersion;
     this.isDeclared = isDeclared;
     this.syntaxExceptions = null;
@@ -196,7 +200,7 @@ public class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Voi
   // -----------------------------------------------------------------------------------------------
 
 
-  private class ReportSyntaxVersionErrorsExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private final class ReportSyntaxVersionErrorsExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
     /** The ExprHolderNode that this visitor was created for. */
@@ -206,7 +210,8 @@ public class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Voi
     private ExprRootNode<?> exprRoot;
 
 
-    public ReportSyntaxVersionErrorsExprVisitor(ExprHolderNode exprHolder) {
+    ReportSyntaxVersionErrorsExprVisitor(ExprHolderNode exprHolder) {
+      super(ReportSyntaxVersionErrorsVisitor.this.errorReporter);
       this.exprHolder = exprHolder;
     }
 

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -59,9 +60,16 @@ final class Rewriter {
   /** Maps print directive names to the content kinds they consume and produce. */
   private final Map<String, ContentKind> sanitizedContentOperators;
 
-  public Rewriter(Inferences inferences, Map<String, ContentKind> sanitizedContentOperators) {
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
+
+  Rewriter(
+      Inferences inferences,
+      Map<String, ContentKind> sanitizedContentOperators,
+      ErrorReporter errorReporter) {
     this.inferences = inferences;
     this.sanitizedContentOperators = sanitizedContentOperators;
+    this.errorReporter = errorReporter;
   }
 
   /**
@@ -91,7 +99,11 @@ final class Rewriter {
   /**
    * A visitor that applies the changes in Inferences to a Soy tree.
    */
-  final class RewriterVisitor extends AbstractSoyNodeVisitor<Void> {
+  private final class RewriterVisitor extends AbstractSoyNodeVisitor<Void> {
+
+    public RewriterVisitor() {
+      super(Rewriter.this.errorReporter);
+    }
 
     /**
      * Keep track of template nodes so we know which are derived and which aren't.

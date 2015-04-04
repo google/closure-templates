@@ -32,7 +32,8 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.types.SoyEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
@@ -53,12 +54,10 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
 
   public void testSubstituteGlobals() {
-
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ErrorReporter boom = ExplodingErrorReporter.get();
     ExprRootNode<?> expr
-        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, errorReporter)
+        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
-    errorReporter.throwIfErrorsPresent();
     PlusOpNode plus0 = (PlusOpNode) expr.getChild(0);
     PlusOpNode plus1 = (PlusOpNode) plus0.getChild(0);
 
@@ -69,7 +68,12 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
         ImmutableMap.<String, PrimitiveData>of(
             "BOO", StringData.forValue("boo"), "foo.GOO", StringData.forValue("goo"),
             "foo.MOO", StringData.forValue("moo"));
-    ((new SubstituteGlobalsVisitor(globals, null, false)).new SubstituteGlobalsInExprVisitor())
+    new SubstituteGlobalsVisitor(
+        globals,
+        null /* typeRegistry */,
+        false /* shouldAssertNoUnboundGlobals */,
+        boom)
+        .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
     assertThat(((StringNode) plus1.getChild(0)).getValue()).isEqualTo("boo");
@@ -78,12 +82,10 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
 
   public void testSubstituteGlobalsFromType() throws Exception {
-
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ErrorReporter boom = ExplodingErrorReporter.get();
     ExprRootNode<?> expr
-        = new ExpressionParser("foo.BOO + foo.GOO", SourceLocation.UNKNOWN, errorReporter)
+        = new ExpressionParser("foo.BOO + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
-    errorReporter.throwIfErrorsPresent();
     PlusOpNode plus0 = (PlusOpNode) expr.getChild(0);
 
     assertThat(((GlobalNode) plus0.getChild(0)).getName()).isEqualTo("foo.BOO");
@@ -135,9 +137,13 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
     };
 
     // Create a registry with the enum type
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistry(
-        ImmutableSet.<SoyTypeProvider>of(enumTypeProvider));
-    ((new SubstituteGlobalsVisitor(null, typeRegistry, false)).new SubstituteGlobalsInExprVisitor())
+    SoyTypeRegistry typeRegistry = new SoyTypeRegistry(ImmutableSet.of(enumTypeProvider));
+    new SubstituteGlobalsVisitor(
+        null /* compileTimeGlobals */,
+        typeRegistry,
+        false /* shouldAssertNoUnboundGlobals */,
+        boom)
+        .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
     assertThat(((IntegerNode) plus0.getChild(0)).getValue()).isEqualTo(1);
@@ -146,9 +152,9 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
 
   public void testAssertNoUnboundGlobals() throws Exception {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ErrorReporter boom = ExplodingErrorReporter.get();
     ExprRootNode<?> expr
-        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, errorReporter)
+        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
 
     Map<String, PrimitiveData> globals =
@@ -157,7 +163,11 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
             "foo.MOO", StringData.forValue("moo"));
 
     try {
-      ((new SubstituteGlobalsVisitor(globals, null, true)).new SubstituteGlobalsInExprVisitor())
+      new SubstituteGlobalsVisitor(
+          globals, null /* typeRegistry */,
+          true /* shouldAssertNoUnboundGlobals */,
+          boom)
+          .new SubstituteGlobalsInExprVisitor()
           .exec(expr);
       fail();
     } catch (SoySyntaxException sse) {

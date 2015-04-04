@@ -35,6 +35,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -116,7 +117,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
-      GenPyCallExprVisitor genPyCallExprVisitor) {
+      GenPyCallExprVisitor genPyCallExprVisitor,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
@@ -758,7 +761,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
-    for (String calleeNotInFile : (new FindCalleesNotInFileVisitor()).exec(soyFile)) {
+    for (String calleeNotInFile : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
       if (lastDotIndex == -1) {
         throw SoySyntaxExceptionUtils.createWithNode(
@@ -826,7 +829,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     localVarExprs.pushFrame();
 
     // Generate statement to ensure data exists as an object, if ever used.
-    if ((new ShouldEnsureDataIsDefinedVisitor()).exec(node)) {
+    if (new ShouldEnsureDataIsDefinedVisitor(errorReporter).exec(node)) {
       pyCodeBuilder.appendLine("opt_data = opt_data or {}");
     }
 

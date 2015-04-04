@@ -23,6 +23,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Map;
@@ -39,8 +40,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-public class RenderVisitorFactory {
-
+public final class RenderVisitorFactory {
 
   /** Map of all SoyJavaPrintDirectives (name to directive). */
   private final Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
@@ -48,13 +48,17 @@ public class RenderVisitorFactory {
   /** Factory for creating an instance of EvalVisitor. */
   private final EvalVisitorFactory evalVisitorFactory;
 
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
 
   @Inject
   public RenderVisitorFactory(
       @Shared Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      EvalVisitorFactory evalVisitorFactory) {
+      EvalVisitorFactory evalVisitorFactory,
+      ErrorReporter errorReporter) {
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -80,8 +84,17 @@ public class RenderVisitorFactory {
       @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new RenderVisitor(
-        soyJavaDirectivesMap, evalVisitorFactory, outputBuf, templateRegistry, data, ijData,
-        activeDelPackageNames, msgBundle, xidRenamingMap, cssRenamingMap);
+        soyJavaDirectivesMap,
+        evalVisitorFactory,
+        outputBuf,
+        errorReporter,
+        templateRegistry,
+        data,
+        ijData,
+        activeDelPackageNames,
+        msgBundle,
+        xidRenamingMap,
+        cssRenamingMap);
   }
 
 }

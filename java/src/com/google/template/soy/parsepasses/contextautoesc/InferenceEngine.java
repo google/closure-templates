@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -92,16 +93,18 @@ final class InferenceEngine {
    * @return The end context when the given template is reached from {@code startContext}.
    */
   public static Context inferTemplateEndContext(
-      TemplateNode templateNode, Context startContext, Inferences inferences,
+      TemplateNode templateNode,
+      Context startContext,
+      Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
-      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder)
-      throws SoyAutoescapeException {
+      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
+      ErrorReporter errorReporter) throws SoyAutoescapeException {
     Context endContext;
     try {
       AutoescapeMode autoescapeMode = templateNode.getAutoescapeMode();
       InferenceEngine inferenceEngine = new InferenceEngine(
           autoescapeMode, autoescapeMode, inferences, autoescapeCancellingDirectives,
-          slicedRawTextNodesBuilder);
+          slicedRawTextNodesBuilder, errorReporter);
       // Context started off as startContext and we have propagated context through all of
       // template's children, so now context is the template's end context.
       endContext = inferenceEngine.infer(templateNode, startContext);
@@ -133,10 +136,16 @@ final class InferenceEngine {
   /** Records context transitions found by the raw text node escaper. */
   private final ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder;
 
+  /** For reporting errors. */
+  private final ErrorReporter errorReporter;
+
   private InferenceEngine(
-      AutoescapeMode autoescapeMode, AutoescapeMode templateAutoescapeMode, Inferences inferences,
+      AutoescapeMode autoescapeMode,
+      AutoescapeMode templateAutoescapeMode,
+      Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
-      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder) {
+      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
+      ErrorReporter errorReporter) {
     this.autoescapeMode = autoescapeMode;
     this.templateAutoescapeMode = templateAutoescapeMode;
     this.inferences = inferences;
@@ -144,6 +153,7 @@ final class InferenceEngine {
     this.slicedRawTextNodesBuilder = slicedRawTextNodesBuilder;
     this.defaultEscapingMode = (autoescapeMode != AutoescapeMode.FALSE) ?
         EscapingMode.ESCAPE_HTML : null;
+    this.errorReporter = errorReporter;
   }
 
   private Context infer(SoyNode node, Context context) {
@@ -168,6 +178,7 @@ final class InferenceEngine {
     private Context context;
 
     public ContextPropagatingVisitor(Context context) {
+      super(InferenceEngine.this.errorReporter);
       this.context = context;
     }
 
@@ -245,7 +256,7 @@ final class InferenceEngine {
         // (2) Run the inference engine on the parts of the message in that context.
         Context msgEndContext = new InferenceEngine(
             autoescapeMode, templateAutoescapeMode, inferences,
-            autoescapeCancellingDirectives, slicedRawTextNodesBuilder)
+            autoescapeCancellingDirectives, slicedRawTextNodesBuilder, errorReporter)
             .inferChildren(node, strategy.childContext);
 
         // (3) Make sure the message didn't itself change context.
@@ -743,7 +754,7 @@ final class InferenceEngine {
       for (TemplateNode templateNode : templateNodes) {
         Context c = inferTemplateEndContext(
             templateNode, startContext, inferences, autoescapeCancellingDirectives,
-            slicedRawTextNodesBuilder);
+            slicedRawTextNodesBuilder, errorReporter);
         endContext = (endContext != null) ? Context.union(endContext, c) : c;
       }
       return Pair.of(inferences, endContext);
@@ -816,7 +827,7 @@ final class InferenceEngine {
       // because this visitor does not visit non-contextual templates.
       final Context endContext = new InferenceEngine(
           AutoescapeMode.STRICT, templateAutoescapeMode, inferences, autoescapeCancellingDirectives,
-          slicedRawTextNodesBuilder)
+          slicedRawTextNodesBuilder, errorReporter)
         .inferChildren(node, Context.getStartContextForContentKind(node.getContentKind()));
       checkStrictBlockEndContext(node, endContext);
     }
@@ -847,7 +858,7 @@ final class InferenceEngine {
       // such as the contextual autoescaper not seeing typed parameters in nested calls.
       final Context paramContentNodeEndContext = new InferenceEngine(
           AutoescapeMode.CONTEXTUAL, templateAutoescapeMode, inferences,
-          autoescapeCancellingDirectives, slicedRawTextNodesBuilder)
+          autoescapeCancellingDirectives, slicedRawTextNodesBuilder, errorReporter)
         .inferChildren(node, Context.HTML_PCDATA);
       if (!paramContentNodeEndContext.equals(Context.HTML_PCDATA)) {
         throw SoyAutoescapeException.createWithNode(

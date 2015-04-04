@@ -42,6 +42,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import com.google.template.soy.soyparse.ErrorReporter;
 
 import javax.inject.Inject;
 
@@ -51,7 +52,7 @@ import javax.inject.Inject;
  * Package-private helper for {@link SimplifyVisitor}.
  *
  */
-class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
+final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
   /** The PreevalVisitor for this instance (can reuse). */
@@ -59,7 +60,9 @@ class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
   @Inject
-  SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
+  SimplifyExprVisitor(
+      PreevalVisitorFactory preevalVisitorFactory, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.preevalVisitor = preevalVisitorFactory.create(Environment.prerenderingEnvironment());
   }
 

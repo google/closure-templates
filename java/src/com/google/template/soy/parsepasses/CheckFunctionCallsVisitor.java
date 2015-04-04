@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -47,7 +48,7 @@ import java.util.Set;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
@@ -57,8 +58,10 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     /**
      * @param declaredSyntaxVersion User-declared syntax version.
+     * @param errorReporter For reporting errors during the visit.
      */
-    public CheckFunctionCallsVisitor create(SyntaxVersion declaredSyntaxVersion);
+    public CheckFunctionCallsVisitor create(
+        SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter);
   }
 
 
@@ -71,7 +74,10 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @AssistedInject
   public CheckFunctionCallsVisitor(
-      Map<String, SoyFunction> soyFunctionsByName, @Assisted SyntaxVersion declaredSyntaxVersion) {
+      Map<String, SoyFunction> soyFunctionsByName,
+      @Assisted SyntaxVersion declaredSyntaxVersion,
+      @Assisted ErrorReporter errorReporter) {
+    super(errorReporter);
     this.soyFunctionsByName = ImmutableMap.copyOf(soyFunctionsByName);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
@@ -114,6 +120,7 @@ public class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
     CheckFunctionCallsExprVisitor(ExprHolderNode container) {
+      super(CheckFunctionCallsVisitor.this.errorReporter);
       this.container = container;
     }
 

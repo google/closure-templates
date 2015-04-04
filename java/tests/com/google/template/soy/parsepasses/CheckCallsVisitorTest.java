@@ -22,6 +22,8 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -31,7 +33,6 @@ import junit.framework.TestCase;
  *
  */
 public final class CheckCallsVisitorTest extends TestCase {
-
 
   public void testMissingParam() {
 
@@ -165,22 +166,27 @@ public final class CheckCallsVisitorTest extends TestCase {
 
 
   private void assertValidSoyFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
-    (new CheckCallsVisitor()).exec(soyTree);
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .errorReporter(boom)
+        .parse();
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    new CheckCallsVisitor(boom).exec(soyTree);
   }
 
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    (new CheckSoyDocVisitor(SyntaxVersion.V2_0)).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
     try {
-      (new CheckCallsVisitor()).exec(soyTree);
+      new CheckCallsVisitor(boom).exec(soyTree);
     } catch (SoySyntaxException sse) {
+      // TODO(user): even though the visitor has an error reporter, it doesn't *use* the error
+      // reporter yet. Remove this try-catch once it does.
       assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
       return;  // test passes
     }
     fail();
   }
-
 }
