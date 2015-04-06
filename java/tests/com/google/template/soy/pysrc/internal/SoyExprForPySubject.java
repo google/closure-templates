@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -27,11 +28,15 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -49,11 +54,14 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
+  private ImmutableMap<String, PrimitiveData> globals;
+
   private final LocalVariableStack localVarExprs;
 
 
   SoyExprForPySubject(FailureStrategy failureStrategy, String expr) {
     super(failureStrategy, expr);
+    globals = null;
     localVarExprs = new LocalVariableStack();
   }
 
@@ -62,6 +70,11 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     for(String name : localVarFrame.keySet()) {
       localVarExprs.addVariable(name, localVarFrame.get(name));
     }
+    return this;
+  }
+
+  public SoyExprForPySubject withGlobals(ImmutableMap<String, PrimitiveData> globals) {
+    this.globals = globals;
     return this;
   }
 
@@ -121,6 +134,11 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
     String soyExpr = String.format("{print %s}", getSubject());
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyExpr).parse();
+    if (this.globals != null) {
+      ErrorReporter boom = ExplodingErrorReporter.get();
+      new SubstituteGlobalsVisitor(globals, null /* typeRegistry */,
+          true /* shouldAssertNoUnboundGlobals */, boom).exec(soyTree);
+    }
     PrintNode node = (PrintNode)SharedTestUtils.getNode(soyTree, 0);
     ExprNode exprNode = node.getExprUnion().getExpr();
 

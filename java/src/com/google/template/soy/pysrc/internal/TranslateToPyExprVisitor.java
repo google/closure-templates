@@ -33,6 +33,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
@@ -234,6 +235,10 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
         return PyExprUtils.maybeProtect(value, Integer.MAX_VALUE).getText();
       }
     }
+  }
+
+  @Override protected PyExpr visitGlobalNode(GlobalNode node) {
+    return new PyExpr(node.toSourceString(), Integer.MAX_VALUE);
   }
 
 

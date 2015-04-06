@@ -18,7 +18,12 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertThatSoyExpr;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -71,6 +76,21 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     // Non-string keys are allowed in Python.
     assertThatSoyExpr("[1: 'blah', 0: 123]").translatesTo(
         new PyExpr("{1: 'blah', 0: 123}", Integer.MAX_VALUE));
+  }
+
+  public void testGlobals() throws Exception {
+    ImmutableMap<String, PrimitiveData> globals = ImmutableMap.<String, PrimitiveData>builder()
+        .put("STR", StringData.forValue("Hello World"))
+        .put("NUM", IntegerData.forValue(55))
+        .put("BOOL", BooleanData.forValue(true))
+        .build();
+
+    assertThatSoyExpr("STR").withGlobals(globals).translatesTo(
+        new PyExpr("'Hello World'", Integer.MAX_VALUE));
+    assertThatSoyExpr("NUM").withGlobals(globals).translatesTo(
+        new PyExpr("55", Integer.MAX_VALUE));
+    assertThatSoyExpr("BOOL").withGlobals(globals).translatesTo(
+        new PyExpr("True", Integer.MAX_VALUE));
   }
 
   public void testDataRef() throws Exception {
