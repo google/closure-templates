@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -30,6 +31,7 @@ import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.ErrorPrettyPrinter;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
@@ -67,6 +69,7 @@ import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisito
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -982,9 +985,8 @@ public final class SoyFileSet {
             soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
       }
     }
-    return CompilationResult.success();
+    return compilationResult();
   }
-
 
   /**
    * Compiles this Soy file set into Python source code files and writes these Python files to
@@ -1014,7 +1016,15 @@ public final class SoyFileSet {
     pySrcMainProvider.get().genPyFiles(
         soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
 
-    return CompilationResult.success();
+    return compilationResult();
+  }
+
+  private CompilationResult compilationResult() {
+    ImmutableCollection<? extends SoySyntaxException> errors =
+        errorReporter instanceof ErrorReporterImpl
+            ? ((ErrorReporterImpl) errorReporter).getErrors()
+            : ImmutableList.<SoySyntaxException>of();
+    return new CompilationResult(errors, new ErrorPrettyPrinter(soyFileSuppliers));
   }
 
 
