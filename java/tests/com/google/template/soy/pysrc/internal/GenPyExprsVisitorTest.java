@@ -122,6 +122,24 @@ public final class GenPyExprsVisitorTest extends TestCase {
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
+  public void testMsgOnlyLiteralWithBraces() {
+    // Should escape '{' and '}' in format string.
+    // @see https://docs.python.org/2/library/string.html#formatstrings
+
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"The word 'Archive' used as a verb.\"}"
+          + "{lb}Archive{rb}"
+      + "{/msg}\n";
+    String expectedPyCode =
+        "translator_impl.render_literal("
+        + "translator_impl.prepare_literal("
+          + "###, "
+          + "'{{Archive}}', "
+          + "meaning='verb'))";
+
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
+
   public void testMsgSimpleSoyExpression() {
     String soyCode =
         "{msg desc=\"var placeholder\"}"
@@ -150,6 +168,26 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "translator_impl.prepare("
         + "###, "
         + "'{GREET} {USERNAME}', "
+        + "('GREET', 'USERNAME')), "
+        + "{"
+          + "'GREET': str(opt_data.get('greet')), "
+          + "'USERNAME': str(opt_data.get('username'))"
+        + "})";
+
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
+
+  public void testMsgMultipleSoyExpressionsWithBraces() {
+    String soyCode =
+        "{msg desc=\"var placeholder\"}"
+        + "{$greet} {lb}{$username}{rb}"
+      + "{/msg}\n";
+
+    String expectedPyCode =
+        "translator_impl.render("
+        + "translator_impl.prepare("
+        + "###, "
+        + "'{GREET} {{{USERNAME}}}', "
         + "('GREET', 'USERNAME')), "
         + "{"
           + "'GREET': str(opt_data.get('greet')), "

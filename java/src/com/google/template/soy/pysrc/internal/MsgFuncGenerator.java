@@ -16,6 +16,7 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
@@ -131,16 +132,16 @@ final class MsgFuncGenerator {
   }
 
   private PyStringExpr pyFuncForRawTextMsg() {
-    SoyMsgRawTextPart rawTextPart = (SoyMsgRawTextPart) msgParts.get(0);
+    String pyMsgText = processMsgPartsHelper(msgParts, escaperForPyFormatString);
 
     prepareFunc.addArg(msgId)
-        .addArg(rawTextPart.getRawText());
+        .addArg(pyMsgText);
     return renderFunc.addArg(prepareFunc.asPyExpr())
         .asPyStringExpr();
   }
 
   private PyStringExpr pyFuncForGeneralMsg() {
-    String pyMsgText = processMsgPartsHelper(msgParts);
+    String pyMsgText = processMsgPartsHelper(msgParts, escaperForPyFormatString);
     Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
 
     prepareFunc.addArg(msgId)
@@ -161,7 +162,7 @@ final class MsgFuncGenerator {
     for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> pluralCase : pluralPart.getCases()) {
       caseSpecStrToMsgTexts.put(
           new PyStringExpr("'" + pluralCase.first + "'"),
-          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.second) + "'"));
+          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.second, nullEscaper) + "'"));
     }
 
     prepareFunc.addArg(msgId)
@@ -183,7 +184,7 @@ final class MsgFuncGenerator {
 
     ImmutableList<SoyMsgPart> msgPartsInIcuSyntax =
         IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts, true);
-    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax);
+    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax, nullEscaper);
 
     prepareFunc.addArg(msgId)
         .addArg(pyMsgText)
@@ -260,18 +261,22 @@ final class MsgFuncGenerator {
    * <p>It only processes {@link SoyMsgRawTextPart} and {@link SoyMsgPlaceholderPart} and ignores
    * others, because we didn't generate a direct string for plural and select nodes.
    *
-   * <p>For {@link SoyMsgRawTextPart}, it appends the raw text; For {@link SoyMsgPlaceholderPart},
-   * it turns the placeholder's variable name into Python replace format.
+   * <p>For {@link SoyMsgRawTextPart}, it appends the raw text and applies necessary escaping; For
+   * {@link SoyMsgPlaceholderPart}, it turns the placeholder's variable name into Python replace
+   * format.
    *
    * @param parts The SoyMsgPart parts to convert.
+   * @param escaper A Function which provides escaping for raw text.
    *
    * @return A String representing all the {@code parts} in Python.
    */
-  private static String processMsgPartsHelper(ImmutableList<SoyMsgPart> parts) {
+  private static String processMsgPartsHelper(ImmutableList<SoyMsgPart> parts,
+      Function<String, String> escaper) {
     StringBuilder rawMsgTextSb = new StringBuilder();
     for (SoyMsgPart part : parts) {
       if (part instanceof SoyMsgRawTextPart) {
-        rawMsgTextSb.append(((SoyMsgRawTextPart) part).getRawText());
+        rawMsgTextSb.append(escaper.apply(
+            ((SoyMsgRawTextPart) part).getRawText()));
       }
 
       if (part instanceof SoyMsgPlaceholderPart) {
@@ -282,4 +287,28 @@ final class MsgFuncGenerator {
     }
     return rawMsgTextSb.toString();
   }
+
+  /**
+   * A mapper to apply escaping for python format string.
+   *
+   * <p>It escapes '{' and '}' to '{{' and '}}' in the String.
+   * @see "https://docs.python.org/2/library/string.html#formatstrings"
+   */
+  private static Function<String, String> escaperForPyFormatString =
+      new Function<String, String>() {
+    @Override
+    public String apply(String str) {
+      return str.replaceAll("\\{", "{{").replaceAll("\\}", "}}");
+    }
+  };
+
+  /**
+   * A mapper which does nothing.
+   */
+  private static Function<String, String> nullEscaper = new Function<String, String>() {
+    @Override
+    public String apply(String str) {
+      return str;
+    }
+  };
 }

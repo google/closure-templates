@@ -43,7 +43,9 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
     return msg_text
 
   def render_literal(self, msg):
-    return msg
+    # Calling format() to apply the same escape mechanism for '{' and '} as
+    # formatted string
+    return msg.format()
 
   def prepare(self, msg_id, msg_text, msg_placeholders):
     return msg_text
