@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_METHOD;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
@@ -25,6 +26,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
@@ -33,6 +35,8 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import org.objectweb.asm.ClassWriter;
@@ -136,7 +140,7 @@ final class TemplateCompiler {
         variables,
         appendableVar,
         contextVar,
-        new ExprCompiler());
+        new ExprCompiler(variables));
     Statement statement = nodeCompiler.compile(template.node());
     statement.gen(ga);
     // TODO(lukes): add detach/reattach, all this does is hardcode it to
@@ -201,7 +205,23 @@ final class TemplateCompiler {
   // TODO(lukes): support these expressions, most likely by extracting sufficient data structures 
   // such that they can be implemented directly in ExpressionCompiler.
   private static final class ExprCompiler extends ExpressionCompiler {
+    private final VariableSet variables;
+
+    ExprCompiler(VariableSet variables) {
+      this.variables = checkNotNull(variables);
+    }
+
     @Override protected SoyExpression visitVarRefNode(VarRefNode node) {
+      VarDefn defn = node.getDefnDecl();
+      if (defn.kind() == VarDefn.Kind.LOCAL_VAR) {
+        LocalVar local = (LocalVar) defn;
+        if (local.declaringNode().getKind() == SoyNode.Kind.FOR_NODE) {
+          // an index variable in a {for $index in range(...)} statement
+          // These are special because they do not need any attaching/detaching logic
+          return variables.getVariable(node.getName()).expr();
+        }
+      }
+      // TODO(lukes): add support for params, ijs, and other locals
       throw new UnsupportedOperationException();
     }
 

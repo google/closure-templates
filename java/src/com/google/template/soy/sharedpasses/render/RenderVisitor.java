@@ -57,6 +57,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -465,28 +466,32 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitForNode(ForNode node) {
 
-    List<Integer> rangeArgValues = Lists.newArrayList();
+    RangeArgs rangeArgs = node.getRangeArgs();
 
-    for (ExprNode rangeArg : node.getRangeArgs()) {
-      SoyValue rangeArgValue = eval(rangeArg, node);
-      if (!(rangeArgValue instanceof IntegerData)) {
-        throw RenderException.createWithSource(
-            "In 'for' command " + node.toSourceString() + ", the expression \""
-                + rangeArg.toSourceString() + "\" does not resolve to an integer.",
-            node);
-      }
-      rangeArgValues.add(rangeArgValue.integerValue());
-    }
-
-    int increment = (rangeArgValues.size() == 3) ? rangeArgValues.remove(2) : 1 /* default */;
-    int init = (rangeArgValues.size() == 2) ? rangeArgValues.remove(0) : 0 /* default */;
-    int limit = rangeArgValues.get(0);
+    int increment = rangeArgs.increment().isPresent()
+        ? evalRangeArg(node, rangeArgs.increment().get())
+        : 1 /* default */;
+    int init = rangeArgs.start().isPresent()
+        ? evalRangeArg(node, rangeArgs.start().get())
+        : 0 /* default */;
+    int limit = evalRangeArg(node, rangeArgs.limit());
 
     LocalVar localVarName = node.getVar();
     for (int i = init; i < limit; i += increment) {
       env.bind(localVarName, IntegerData.forValue(i));
       visitChildren(node);
     }
+  }
+
+  private int evalRangeArg(ForNode node, ExprRootNode<?> rangeArg) {
+    SoyValue rangeArgValue = eval(rangeArg, node);
+    if (!(rangeArgValue instanceof IntegerData)) {
+      throw RenderException.createWithSource(
+          "In 'for' command " + node.toSourceString() + ", the expression \""
+              + rangeArg.toSourceString() + "\" does not resolve to an integer.",
+          node);
+    }
+    return rangeArgValue.integerValue();
   }
 
 

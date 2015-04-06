@@ -16,12 +16,14 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
@@ -32,6 +34,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +48,53 @@ import java.util.regex.Pattern;
 public final class ForNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode, ConditionalBlockNode, LoopNode, ExprHolderNode,
     LocalVarBlockNode {
+
+  /**
+   * The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement.
+   */
+  @AutoValue public abstract static class RangeArgs {
+    static final RangeArgs ERROR = create(
+        Optional.<ExprRootNode<?>>absent(),
+        new ExprRootNode<>(VarRefNode.ERROR),
+        Optional.<ExprRootNode<?>>absent());
+
+    static RangeArgs create(Optional<ExprRootNode<?>> start,
+        ExprRootNode<?> limit, Optional<ExprRootNode<?>> increment) {
+      return new AutoValue_ForNode_RangeArgs(start, limit, increment);
+    }
+
+    RangeArgs() {}
+
+    /**
+     * The expression for the iteration start point.
+     *
+     * <p>This is optional, the default beginning of iteration is {@code 0} if this is not set.
+     */
+    public abstract Optional<ExprRootNode<?>> start();
+
+    /**
+     * The expression for the iteration end point.  This is interpreted as an exclusive limit.
+     */
+    public abstract ExprRootNode<?> limit();
+
+    /**
+     * The expression for the iteration increment.
+     *
+     * <p>This is optional, the default increment {@code 1} if this is not set.
+     */
+    public abstract Optional<ExprRootNode<?>> increment();
+
+    private RangeArgs copy() {
+      return create(
+          start().isPresent()
+              ? Optional.<ExprRootNode<?>>of(start().get().clone())
+              : Optional.<ExprRootNode<?>>absent(),
+          limit().clone(),
+          increment().isPresent()
+              ? Optional.<ExprRootNode<?>>of(increment().get().clone())
+              : Optional.<ExprRootNode<?>>absent());
+    }
+  }
 
   private static final SoyError INVALID_COMMAND_TEXT
       = SoyError.of("Invalid ''for'' command text");
@@ -61,12 +111,8 @@ public final class ForNode extends AbstractBlockCommandNode
   /** The Local variable for this loop. */
   private final LocalVar var;
 
-  /** The texts of the individual range args (sort of canonicalized). */
-  private final ImmutableList<String> rangeArgTexts;
-
   /** The parsed range args. */
-  private final ImmutableList<ExprRootNode<?>> rangeArgs;
-
+  private final RangeArgs rangeArgs;
 
   /**
    * @param id The id for this node.
@@ -89,19 +135,34 @@ public final class ForNode extends AbstractBlockCommandNode
 
     String varName = parseVarName(
         matcher.group(1), sourceLocation, errorReporter);
-    List<ExprRootNode<?>> tempRangeArgs = parseRangeArgs(
+    List<ExprRootNode<?>> rangeArgs = parseRangeArgs(
         matcher.group(2), sourceLocation, errorReporter);
 
-    if (tempRangeArgs.size() > 3) {
+    if (rangeArgs.size() > 3) {
       errorReporter.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
-    }
-    rangeArgs = ImmutableList.copyOf(tempRangeArgs);
+      this.rangeArgs = RangeArgs.ERROR;
+    } else if (rangeArgs.isEmpty()) {
+      this.rangeArgs = RangeArgs.ERROR;
+    } else {
+      // OK, now interpret the args
+      // If there are 2 or more args, then the first is the 'start' value
+      ExprRootNode<?> start = rangeArgs.size() >= 2 ? rangeArgs.get(0) : null;
 
-    List<String> tempRangeArgTexts = Lists.newArrayList();
-    for (ExprNode rangeArg : rangeArgs) {
-      tempRangeArgTexts.add(rangeArg.toSourceString());
+      // If there are 3 args, then the last one is the increment.
+      ExprRootNode<?> increment = rangeArgs.size() == 3 ? rangeArgs.get(2) : null;
+
+      // the limit is the first item if there is only one arg, otherwise it is the second arg
+      ExprRootNode<?> limit = rangeArgs.get(rangeArgs.size() == 1 ? 0 : 1);
+      for (Iterator<ExprRootNode<?>> iterator = rangeArgs.iterator(); iterator.hasNext();) {
+        ExprRootNode<?> i = iterator.next();
+        System.err.println(i);
+      }
+      this.rangeArgs = RangeArgs.create(
+          Optional.<ExprRootNode<?>>fromNullable(start),
+          limit,
+          Optional.<ExprRootNode<?>>fromNullable(increment));
     }
-    rangeArgTexts = ImmutableList.copyOf(tempRangeArgTexts);
+
     var = new LocalVar(varName, this, null);
   }
 
@@ -127,13 +188,7 @@ public final class ForNode extends AbstractBlockCommandNode
   private ForNode(ForNode orig) {
     super(orig);
     this.var = orig.var.clone();
-    this.rangeArgTexts = orig.rangeArgTexts;  // safe to reuse (immutable)
-    List<ExprRootNode<?>> tempRangeArgs =
-        Lists.newArrayListWithCapacity(orig.rangeArgs.size());
-    for (ExprRootNode<?> origRangeArg : orig.rangeArgs) {
-      tempRangeArgs.add(origRangeArg.clone());
-    }
-    this.rangeArgs = ImmutableList.copyOf(tempRangeArgs);
+    this.rangeArgs = orig.rangeArgs.copy();
   }
 
 
@@ -152,20 +207,19 @@ public final class ForNode extends AbstractBlockCommandNode
   }
 
 
-  /** Returns the texts of the individual range args (sort of canonicalized). */
-  public List<String> getRangeArgTexts() {
-    return rangeArgTexts;
-  }
-
-
   /** Returns the parsed range args. */
-  public List<ExprRootNode<?>> getRangeArgs() {
+  public RangeArgs getRangeArgs() {
     return rangeArgs;
   }
 
 
   @Override public List<ExprUnion> getAllExprUnions() {
-    return ExprUnion.createList(rangeArgs);
+    return ExprUnion.createList(
+        ImmutableList.copyOf(
+            Iterables.concat(
+                rangeArgs.start().asSet(),
+                ImmutableList.of(rangeArgs.limit()),
+                rangeArgs.increment().asSet())));
   }
 
 

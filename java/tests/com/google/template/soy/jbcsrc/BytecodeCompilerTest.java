@@ -32,6 +32,29 @@ import java.util.Map;
  */
 public class BytecodeCompilerTest extends TestCase {
 
+  public void testForNode() {
+    // empty loop
+    assertThatTemplateBody(
+        "{for $i in range(2, 2)}",
+        "  {$i}",
+        "{/for}").rendersAs("");
+
+    assertThatTemplateBody(
+        "{for $i in range(10)}", 
+        "  {$i}",
+        "{/for}").rendersAs("0123456789");
+
+    assertThatTemplateBody(
+        "{for $i in range(2, 10)}", 
+        "  {$i}",
+        "{/for}").rendersAs("23456789");
+
+    assertThatTemplateBody(
+        "{for $i in range(2, 10, 2)}", 
+        "  {$i}",
+        "{/for}").rendersAs("2468");
+  }
+
   public void testSwitchNode() {
     assertThatTemplateBody(
         "{switch 1}", 

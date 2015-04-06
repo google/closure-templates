@@ -22,10 +22,11 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
 import static com.google.template.soy.jbcsrc.Statement.concat;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
-import com.google.template.soy.jbcsrc.SoyExpression.LocalVariableBinding;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -33,6 +34,8 @@ import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -49,7 +52,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
 
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,10 +119,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     List<IfBlock> cases = new ArrayList<>();
     Optional<Statement> defaultBlock = Optional.absent();
     Scope scope = variables.enterScope();
-    Variable variable = scope.createSynthetic("switchVar", expression.resultType(), start, end);
-    LocalVariableBinding binding = expression.createBinding(variable.local(), start);
-    init = binding.initializer();
-    expression = binding.accessor();
+    Variable variable = scope.createSynthetic("switchVar", expression, start, end);
+    init = variable.initializer();
+    expression = variable.expr();
 
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
@@ -145,6 +149,117 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         .withSourceLocation(node.getSourceLocation());
   }
 
+  @Override protected Statement visitForNode(ForNode node) {
+    // Despite appearances, range() is not a soy function, it is essentially a keyword that only
+    // works in for loops, there are 3 forms.
+    // {for $i in range(3)}{$i}{/for} -> 0 1 2
+    // {for $i in range(2, 5)} ... {/for} -> 2 3 4
+    // {for $i in range(2, 8, 2)} ... {/for} -> 2 4 6
+
+    // TODO(lukes): this all works in terms of longs, but the Tofu implementation works by doing a
+    // checked downcast to int.  Should we do the same? A minor benefit would be that we can use
+    // the specialized int comparison instructions (and smaller locals).
+    Scope scope = variables.enterScope();
+    final Label end = new Label();
+    final CompiledRangeArgs rangeArgs = calculateRangeArgs(end, node.getRangeArgs(), scope);
+    // The currentIndex variable has a user defined name and we always need a local for it because
+    // we mutate it across loop iterations.
+    Label start = new Label();
+    final Variable currentIndex = 
+        scope.create(node.getVarName(), rangeArgs.startIndex(), start, end);
+    final Statement incrementCurrentIndex = incrementInt(currentIndex, rangeArgs.increment());
+
+    final Statement loopBody = childrenAsStatement(node);
+
+    // Note it is important that exitScope is called _after_ the children are visited.
+    // TODO(lukes): this is somewhat error-prone... we could maybe manage it by have the scope 
+    // maintain a sequence of statements and then all statements would be added to Scope which would
+    // return a statement for the whole thing at the end... would that be clearer?
+    final Statement exitScope = scope.exitScope();
+    return new Statement(node.getSourceLocation()) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        currentIndex.initializer().gen(adapter);
+        for (Statement initializer : rangeArgs.initStatements()) {
+          initializer.gen(adapter);
+        }
+        // We need to check for an empty loop by doing an entry test
+        Label loopStart = adapter.mark();
+
+        // If current >= limit we are done
+        currentIndex.expr().gen(adapter);
+        rangeArgs.limit().gen(adapter);
+        adapter.ifCmp(Type.LONG_TYPE, Opcodes.IFGE, end);
+        
+        loopBody.gen(adapter);
+
+        // at the end of the loop we need to increment and jump back.
+        incrementCurrentIndex.gen(adapter);
+        adapter.goTo(loopStart);
+        exitScope.gen(adapter);
+      }
+    };
+  }
+
+  @AutoValue abstract static class CompiledRangeArgs {
+    /** How much to increment the loop index by, defaults to {@code 1}. */
+    abstract SoyExpression increment();
+
+    /** Where to start loop iteration, defaults to {@code 0}. */
+    abstract SoyExpression startIndex();
+
+    /** Where to end loop iteration, defaults to {@code 0}. */
+    abstract SoyExpression limit();
+    
+    /** Statements that must have been run prior to using any of the above expressions. */
+    abstract ImmutableList<Statement> initStatements();
+  }
+
+  /**
+   * Interprets the given expressions as the arguments of a {@code range(...)} expression in a
+   * {@code for} loop.
+   */
+  private CompiledRangeArgs calculateRangeArgs(Label end, RangeArgs rangeArgs, Scope scope) {
+    final ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
+    SoyExpression increment;
+    if (rangeArgs.increment().isPresent()) {
+      increment = exprCompiler.compile(rangeArgs.increment().get()).convert(long.class);
+      // If the expression is non-trivial we should cache it in a local variable
+      if (!increment.isConstant()) {
+        Variable variable = scope.createSynthetic("increment", increment, new Label(), end);
+        initStatements.add(variable.initializer());
+        increment = variable.expr();
+      }
+    } else {
+      increment = SoyExpression.forInt(constant(1L));
+    }
+    SoyExpression startIndex;
+    if (rangeArgs.start().isPresent()) {
+      startIndex = exprCompiler.compile(rangeArgs.start().get()).convert(long.class);
+    } else {
+      startIndex = SoyExpression.forInt(constant(0L));
+    }
+    SoyExpression limit = exprCompiler.compile(rangeArgs.limit()).convert(long.class);
+    // If the expression is non-trivial we should cache it in a local variable
+    if (!limit.isConstant()) {
+      Variable variable = scope.createSynthetic("limit", limit, new Label(), end);
+      initStatements.add(variable.initializer());
+      limit = variable.expr();
+    }
+    return new AutoValue_SoyNodeCompiler_CompiledRangeArgs(
+        increment, startIndex, limit, initStatements.build());
+  }
+
+  private Statement incrementInt(final Variable variable, final SoyExpression increment) {
+    Expression nextIndex = new Expression.SimpleExpression(Type.LONG_TYPE, false) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        variable.expr().gen(adapter);
+        increment.gen(adapter);
+        adapter.visitInsn(Opcodes.LADD);
+      }
+    };
+    return variable.local().store(nextIndex);
+  }
+
   @Override protected Statement visitPrintNode(PrintNode node) {
     if (!node.getChildren().isEmpty()) {
       throw new UnsupportedOperationException(
@@ -152,6 +267,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               + node.toSourceString());
     }
     SoyExpression printExpr = exprCompiler.compile(node.getExprUnion().getExpr());
+    // TODO(lukes): we should specialize the print operator for our primitives to avoid this box 
+    // operator.  would only work if there were no print directives
     return MethodRef.SOY_VALUE_RENDER
         .invokeVoid(printExpr.box(), appendableExpression)
         .withSourceLocation(node.getSourceLocation());

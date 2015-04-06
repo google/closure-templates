@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
@@ -59,11 +60,22 @@ final class VariableSet {
      *
      * @param proposedName A proposed name for the variable, the name may be modified to ensure
      *     uniqueness
-     * @param type  The type of the variable
      * @param start The earliest location at which the variable is defined
      * @param end The latest location at which the variable is defined
      */
-    abstract Variable createSynthetic(String proposedName, Type type, Label start, Label end);
+    abstract Variable createSynthetic(String proposedName, SoyExpression initializer, Label start,
+        Label end);
+    /**
+     * Creates a new 'synthetic' variable.  A synthetic variable is a variable that is
+     * introduced by the compiler rather than a user defined name.
+     *
+     * @param name The name of the variable, the name is assumed to be unique (enforced by the 
+     *     ResolveNamesVisitor).
+     * @param initializer The expression that can be used to initialize the variable
+     * @param start The earliest location at which the variable is defined
+     * @param end The latest location at which the variable is defined
+     */
+    abstract Variable create(String name, SoyExpression initializer, Label start, Label end);
 
     /**
      * Returns a statement that should be used when exiting the scope.  This is responsible for
@@ -108,18 +120,26 @@ final class VariableSet {
    */
   final class Variable {
     private FieldRef fieldRef;  // lazily allocated on a save/restore operation
+    private final Statement initializer; 
     private final LocalVariable local;
+    private final SoyExpression expression;
 
-    private Variable(LocalVariable local) {
+    private Variable(Statement initializer, LocalVariable local, SoyExpression expression) {
+      this.initializer = initializer;
       this.local = local;
+      this.expression = expression;
+    }
+
+    Statement initializer() {
+      return initializer;
     }
     
-    LocalVariable local() {
-      return local;
+    SoyExpression expr() {
+      return expression;
     }
 
     Statement save() {
-      return getField().putInstanceField(thisVar, local());
+      return getField().putInstanceField(thisVar, local);
     }
 
     Statement restore() {
@@ -138,6 +158,10 @@ final class VariableSet {
       if (fieldRef != null) {
         fieldRef.defineField(writer);
       }
+    }
+
+    LocalVariable local() {
+      return local;
     }
   }
 
@@ -169,15 +193,17 @@ final class VariableSet {
     frames.push(currentFrame);
     return new Scope() {
       @Override Variable createSynthetic(
-          String proposedName, Type type, Label start, Label end) {
+          String proposedName, SoyExpression initExpr, Label start, Label end) {
         VarKey key = VarKey.create(Kind.SYNTHETIC, proposedName);
         // synthetics are prefixed by $ by convention
         String name = getAvailableFieldName("$" + proposedName);
-        int index = reserveSlotFor(type);
-        Variable var = new Variable(LocalVariable.createLocal(name, index, type, start, end));
-        currentFrame.put(key, var);
-        allVariables.add(var);
-        return var;
+        return doCreate(name, start, end, initExpr, key);
+      }
+
+      @Override Variable create(String name, SoyExpression initExpr, Label start, Label end) {
+        VarKey key = VarKey.create(Kind.USER_DEFINED, name);
+        checkState(fieldNames.add(name), "A variable with the name %s already exists!", name);
+        return doCreate(name, start, end, initExpr, key);
       }
 
       @Override Statement exitScope() {
@@ -201,13 +227,27 @@ final class VariableSet {
           }
         };
       }
+
+      private Variable doCreate(
+          String name, Label start, Label end, SoyExpression initExpr, VarKey key) {
+        int index = reserveSlotFor(initExpr.resultType());
+        LocalVariable local = 
+            LocalVariable.createLocal(name, index, initExpr.resultType(), start, end);
+        Variable var = new Variable(
+            local.store(initExpr, start), 
+            local, 
+            initExpr.withSource(local));
+        currentFrame.put(key, var);
+        allVariables.add(var);
+        return var;
+      }
     };
   }
 
   /** Write a local variable table entry for every registered variable. */
   void generateTableEntries(GeneratorAdapter ga) {
     for (Variable var : allVariables) {
-      var.local().tableEntry(ga);
+      var.local.tableEntry(ga);
     }
   }
 
@@ -218,6 +258,21 @@ final class VariableSet {
     }
   }
 
+  /**
+   * Looks up a user defined variable with the given name.  The variable must have been created
+   * in a currently active scope.
+   */
+  Variable getVariable(String name) {
+    VarKey varKey = VarKey.create(Kind.USER_DEFINED, name);
+    for (Map<VarKey, Variable> f : frames) {
+      Variable variable = f.get(varKey);
+      if (variable != null) {
+        return variable;
+      }
+    }
+    throw new IllegalArgumentException("No variable named: '" + name + "' is bound");
+  }
+  
   private int reserveSlotFor(Type type) {
     int size = type.getSize();
     checkArgument(size != 0);

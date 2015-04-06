@@ -30,7 +30,6 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -52,6 +51,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -1077,19 +1077,17 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String nodeId = Integer.toString(node.getId());
 
     // Get the JS expression text for the init/limit/increment values.
-    List<ExprRootNode<?>> rangeArgs = Lists.newArrayList(node.getRangeArgs());
-    String incrementJsExprText =
-        (rangeArgs.size() == 3) ?
-        jsExprTranslator.translateToJsExpr(rangeArgs.remove(2), null, localVarTranslations)
-            .getText() :
-        "1" /* default */;
-    String initJsExprText =
-        (rangeArgs.size() == 2) ?
-        jsExprTranslator.translateToJsExpr(rangeArgs.remove(0), null, localVarTranslations)
-            .getText() :
-        "0" /* default */;
+    RangeArgs range = node.getRangeArgs();
+    String incrementJsExprText = range.increment().isPresent()
+        ? jsExprTranslator.translateToJsExpr(range.increment().get(), null, localVarTranslations)
+            .getText()
+        : "1" /* default */;
+    String initJsExprText = range.start().isPresent()
+        ? jsExprTranslator.translateToJsExpr(range.start().get(), null, localVarTranslations)
+            .getText()
+        : "0" /* default */;
     String limitJsExprText =
-        jsExprTranslator.translateToJsExpr(rangeArgs.get(0), null, localVarTranslations).getText();
+        jsExprTranslator.translateToJsExpr(range.limit(), null, localVarTranslations).getText();
 
     // If any of the JS expressions for init/limit/increment isn't an integer, precompute its value.
     String initCode;

@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyValue;
@@ -34,7 +33,6 @@ import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.StringType;
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -317,23 +315,10 @@ class SoyExpression extends Expression {
   }
 
   /**
-   * Various metadata about a 'binding' of an expression to a local variable.
+   * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
    */
-  @AutoValue abstract static class LocalVariableBinding {
-    /** A soy expression for the local variable. */
-    abstract SoyExpression accessor();
-    /** A statement that initializes the local variable. */
-    abstract Statement initializer();
-  }
-
-  /**
-   * Returns a {@link LocalVariableBinding} for this soy variable.  
-   * {@code startLabel} is visited by the {@link LocalVariableBinding#initializer()}
-   */
-  LocalVariableBinding createBinding(LocalVariable variable, Label startLabel) {
-    return new AutoValue_SoyExpression_LocalVariableBinding(
-        new SoyExpression(soyType, clazz, variable),
-        variable.store(this, startLabel));
+  SoyExpression withSource(Expression expr) {
+    return new SoyExpression(soyType, clazz, expr);
   }
 
   /**

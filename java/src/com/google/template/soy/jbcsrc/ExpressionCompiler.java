@@ -404,7 +404,6 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
   }
 
-
   @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
     final SoyExpression condition = visit(node.getChild(0)).convert(boolean.class);
     SoyExpression trueBranch = visit(node.getChild(1));

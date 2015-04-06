@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -40,6 +39,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -473,8 +473,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Build the xrange call. Since the Python param syntax matches Soy range syntax, params can be
     // directly dropped in.
     PyFunctionExprBuilder funcBuilder = new PyFunctionExprBuilder("xrange");
-    for (ExprRootNode<?> arg : node.getRangeArgs()) {
-      funcBuilder.addArg(translator.exec(arg));
+    for (ExprUnion arg : node.getAllExprUnions()) {
+      funcBuilder.addArg(translator.exec(arg.getExpr()));
     }
 
     pyCodeBuilder.appendLineEnd(funcBuilder.asPyExpr().getText(), ":");

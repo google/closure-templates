@@ -23,7 +23,6 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -1231,7 +1230,7 @@ public final class TemplateParserTest extends TestCase {
   public void testParseForStmt() throws Exception {
 
     String templateBody =
-        "  {for $i in range(1, $items.length + 1)}\n" +  // note: not actually V2, but parses fine
+        "  {for $i in range(1, $itemsLength + 1)}\n" +
         "    {msg desc=\"Numbered item.\"}\n" +
         "      {$i}: {$items[$i - 1]}{\\n}\n" +
         "    {/msg}\n" +
@@ -1242,16 +1241,13 @@ public final class TemplateParserTest extends TestCase {
 
     ForNode fn = (ForNode) nodes.get(0);
     assertEquals("i", fn.getVarName());
+    ForNode.RangeArgs rangeArgs = fn.getRangeArgs();
+    assertThat(rangeArgs.increment()).isAbsent();
+    assertEquals("1", rangeArgs.start().get().toSourceString());
+    assertEquals("$itemsLength + 1", rangeArgs.limit().toSourceString());
 
-    List<String> rangeArgTexts = fn.getRangeArgTexts();
-    assertEquals(2, rangeArgTexts.size());
-    assertEquals("1", rangeArgTexts.get(0));
-    assertEquals("$items.length + 1", rangeArgTexts.get(1));
-
-    List<ExprRootNode<?>> rangeArgs = fn.getRangeArgs();
-    assertEquals(2, rangeArgs.size());
-    assertTrue(rangeArgs.get(0).getChild(0) instanceof IntegerNode);
-    assertTrue(rangeArgs.get(1).getChild(0) instanceof PlusOpNode);
+    assertThat(rangeArgs.start().get().getChild(0)).isInstanceOf(IntegerNode.class);
+    assertThat(rangeArgs.limit().getChild(0)).isInstanceOf(PlusOpNode.class);
 
     assertEquals(1, fn.numChildren());
     MsgNode mn = ((MsgFallbackGroupNode) ((ForNode) nodes.get(0)).getChild(0)).getChild(0);
