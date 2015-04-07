@@ -40,7 +40,7 @@ public final class ExplodingErrorReporter extends ErrorReporterImpl {
   @Override
   public void report(SourceLocation sourceLocation, SoyError error, String... args) {
     throw new AssertionError(
-        String.format("unexpected SoyError %s at %s", error.format(), sourceLocation));
+        String.format("Unexpected SoyError: %s at %s", error.format(args), sourceLocation));
   }
 
   public static ErrorReporter get() {

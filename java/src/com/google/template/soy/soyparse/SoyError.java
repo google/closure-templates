@@ -48,4 +48,8 @@ public final class SoyError {
   public static SoyError of(String format) {
     return new SoyError(new MessageFormat(format));
   }
+
+  @Override public String toString() {
+    return getClass().getSimpleName() + "{" + messageFormat.toPattern() + "}";
+  }
 }
