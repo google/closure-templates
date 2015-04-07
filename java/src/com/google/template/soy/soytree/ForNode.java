@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -153,10 +152,6 @@ public final class ForNode extends AbstractBlockCommandNode
 
       // the limit is the first item if there is only one arg, otherwise it is the second arg
       ExprRootNode<?> limit = rangeArgs.get(rangeArgs.size() == 1 ? 0 : 1);
-      for (Iterator<ExprRootNode<?>> iterator = rangeArgs.iterator(); iterator.hasNext();) {
-        ExprRootNode<?> i = iterator.next();
-        System.err.println(i);
-      }
       this.rangeArgs = RangeArgs.create(
           Optional.<ExprRootNode<?>>fromNullable(start),
           limit,
