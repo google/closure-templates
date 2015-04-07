@@ -79,8 +79,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         "translator_impl.render_literal("
         + "translator_impl.prepare_literal("
           + "###, "
-          + "'Archive', "
-          + "meaning='verb'))";
+          + "'Archive'))";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -97,8 +96,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         "translator_impl.render_literal("
         + "translator_impl.prepare_literal("
           + "###, "
-          + "'archive', "
-          + "meaning='verb')) "
+          + "'archive')) "
       + "if is_msg_available(###) else translator_impl.render_literal("
         + "translator_impl.prepare_literal(###, 'ARCHIVE'))";
 
@@ -116,8 +114,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         "translator_impl.render_literal("
         + "translator_impl.prepare_literal("
           + "###, "
-          + "'Archive', "
-          + "meaning='verb'))";
+          + "'Archive'))";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -134,8 +131,7 @@ public final class GenPyExprsVisitorTest extends TestCase {
         "translator_impl.render_literal("
         + "translator_impl.prepare_literal("
           + "###, "
-          + "'{{Archive}}', "
-          + "meaning='verb'))";
+          + "'{{Archive}}'))";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }

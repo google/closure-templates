@@ -122,8 +122,6 @@ final class MsgFuncGenerator {
    */
 
   PyStringExpr getPyExpr() {
-    addMsgAttributesToPrepare();
-
     if (this.msgNode.isPlrselMsg()) {
       return this.msgNode.isPluralMsg() ? pyFuncForPluralMsg() : pyFuncForSelectMsg();
     } else {
@@ -193,12 +191,6 @@ final class MsgFuncGenerator {
     return renderFunc.addArg(prepareFunc.asPyExpr())
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
         .asPyStringExpr();
-  }
-
-  private void addMsgAttributesToPrepare() {
-    if (this.msgNode.getMeaning() != null) {
-      prepareFunc.addKwarg("meaning", this.msgNode.getMeaning());
-    }
   }
 
   /**
