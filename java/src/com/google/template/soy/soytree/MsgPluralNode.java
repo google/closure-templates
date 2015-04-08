@@ -74,11 +74,12 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
   private MsgPluralNode(
       int id,
+      SourceLocation sourceLocation,
       String commandText,
       int offset,
       ExprRootNode<?> pluralExpr,
       String basePluralVarName) {
-    super(id, "plural", commandText);
+    super(id, sourceLocation, "plural", commandText);
     this.offset = offset;
     this.pluralExpr = pluralExpr;
     this.basePluralVarName = basePluralVarName;
@@ -209,9 +210,8 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         return ERROR;
       }
 
-      MsgPluralNode node
-          = new MsgPluralNode(id, commandText, offset, pluralExpr, basePluralVarName);
-      node.setSourceLocation(sourceLocation);
+      MsgPluralNode node = new MsgPluralNode(
+          id, sourceLocation, commandText, offset, pluralExpr, basePluralVarName);
       return node;
     }
 

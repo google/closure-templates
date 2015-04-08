@@ -268,15 +268,14 @@ final class Inferences {
       if (tn instanceof TemplateBasicNode) {
         String derivedPartialName = (tn.getPartialTemplateName() != null) ?
             derivedName.substring(soyFileHeaderInfo.namespace.length()) : null;
-        clone =
-            (new TemplateBasicNodeBuilder(soyFileHeaderInfo))
-                .setId(cloneId)
-                .setCmdTextInfo(
-                    derivedName, derivedPartialName, useAttrStyleForName,
-                    tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
-                    tn.getRequiredCssNamespaces())
-                .setSoyDoc(tn.getSoyDoc())
-                .build();
+        clone = new TemplateBasicNodeBuilder(soyFileHeaderInfo, tn.getSourceLocation())
+            .setId(cloneId)
+            .setCmdTextInfo(
+                derivedName, derivedPartialName, useAttrStyleForName,
+                tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
+                tn.getRequiredCssNamespaces())
+            .setSoyDoc(tn.getSoyDoc())
+            .build();
 
         if (! (derivedName.equals(clone.getTemplateName()) &&
             Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
@@ -285,14 +284,13 @@ final class Inferences {
 
       } else if (tn instanceof TemplateDelegateNode) {
         TemplateDelegateNode tdn = (TemplateDelegateNode) tn;
-        clone =
-            (new TemplateDelegateNodeBuilder(soyFileHeaderInfo))
-                .setId(cloneId)
-                .setCmdTextInfo(
-                    derivedName, tdn.getDelTemplateVariant(), tdn.getDelPriority(),
-                    tn.getAutoescapeMode(), tn.getContentKind(), tn.getRequiredCssNamespaces())
-                .setSoyDoc(tn.getSoyDoc())
-                .build();
+        clone = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, tn.getSourceLocation())
+            .setId(cloneId)
+            .setCmdTextInfo(
+                derivedName, tdn.getDelTemplateVariant(), tdn.getDelPriority(),
+                tn.getAutoescapeMode(), tn.getContentKind(), tn.getRequiredCssNamespaces())
+            .setSoyDoc(tn.getSoyDoc())
+            .build();
         if (! (derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
           throw new AssertionError();
         }
@@ -307,7 +305,6 @@ final class Inferences {
       while (tnIterator.hasNext()) {
         cloneIterator.next().setLocalVariableIndex(tnIterator.next().localVariableIndex());
       }
-      clone.setSourceLocation(tn.getSourceLocation());
 
       for (StandaloneNode child : tn.getChildren()) {
         clone.addChild(SoytreeUtils.cloneWithNewIds(child, idGen));

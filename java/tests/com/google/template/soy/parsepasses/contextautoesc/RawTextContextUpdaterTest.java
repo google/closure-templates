@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.RawTextNode;
 
 import junit.framework.TestCase;
@@ -539,7 +540,7 @@ public class RawTextContextUpdaterTest extends TestCase {
 
   private static void assertTransition(String from, String rawText, String to) throws Exception {
     Context after = RawTextContextUpdater.processRawText(
-        new RawTextNode(0, rawText), parseContext(from)).getEndContext();
+        new RawTextNode(0, rawText, SourceLocation.UNKNOWN), parseContext(from)).getEndContext();
     // Assert against the toString() for simpler test authoring -- if a developer misspells the
     // "to" context, they'll see a useful string-based diff.
     assertWithMessage(rawText).that(after.toString()).isEqualTo("(Context " + to + ")");

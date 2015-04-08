@@ -163,7 +163,8 @@ class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Replace this node with a RawTextNode.
-    parent.replaceChild(node, new RawTextNode(nodeIdGen.genId(), rawText));
+    parent.replaceChild(
+        node, new RawTextNode(nodeIdGen.genId(), rawText, node.getSourceLocation()));
     madeReplacement = true;
   }
 

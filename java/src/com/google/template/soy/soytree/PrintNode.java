@@ -66,8 +66,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       ExprUnion exprUnion,
       SourceLocation sourceLocation,
       @Nullable String userSuppliedPlaceholderName) {
-    super(id, "print", "");
-    setSourceLocation(sourceLocation);
+    super(id, sourceLocation, "print", "");
     this.isImplicit = isImplicit;
     this.exprUnion = exprUnion;
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;

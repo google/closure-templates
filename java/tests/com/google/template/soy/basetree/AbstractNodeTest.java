@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basetree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -26,7 +27,7 @@ import junit.framework.*;
  * Unit tests for AbstractNode.
  *
  */
-public class AbstractNodeTest extends TestCase {
+public final class AbstractNodeTest extends TestCase {
 
 
   public void testAncestorMethods() {
@@ -60,28 +61,28 @@ public class AbstractNodeTest extends TestCase {
   private static interface DummyNode extends SoyNode {}
 
   private static final class DummyNodeAlpha extends AbstractParentSoyNode<SoyNode> implements DummyNode {
-    DummyNodeAlpha() { super(1); }
+    DummyNodeAlpha() { super(1, SourceLocation.UNKNOWN); }
     @Override public String toSourceString() { return null; }
     @Override public DummyNodeAlpha clone() { throw new UnsupportedOperationException(); }
     @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
   private static final class DummyNodeBeta extends AbstractParentSoyNode<SoyNode> implements DummyNode {
-    DummyNodeBeta() { super(2); }
+    DummyNodeBeta() { super(2, SourceLocation.UNKNOWN); }
     @Override public String toSourceString() { return null; }
     @Override public DummyNodeBeta clone() { throw new UnsupportedOperationException(); }
     @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
   private static final class SillyNode extends AbstractParentSoyNode<SoyNode> {
-    SillyNode() { super(3); }
+    SillyNode() { super(3, SourceLocation.UNKNOWN); }
     @Override public String toSourceString() { return null; }
     @Override public SillyNode clone() { throw new UnsupportedOperationException(); }
     @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
   }
 
   private static final class DopeyNode extends AbstractParentSoyNode<SoyNode> {
-    DopeyNode() { super(4); }
+    DopeyNode() { super(4, SourceLocation.UNKNOWN); }
     @Override public String toSourceString() { return null; }
     @Override public DopeyNode clone() { throw new UnsupportedOperationException(); }
     @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }

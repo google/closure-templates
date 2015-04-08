@@ -221,9 +221,12 @@ public final class ContentSecurityPolicyPass {
     @Override
     void addNodesToInject(
         IdGenerator idGenerator, ImmutableList.Builder<? super SoyNode.StandaloneNode> out) {
-      out.add(new RawTextNode(idGenerator.genId(), NONCE_ATTR_BEFORE_VALUE));
+      out.add(
+          new RawTextNode(
+              idGenerator.genId(), NONCE_ATTR_BEFORE_VALUE, rawTextNode.getSourceLocation()));
       out.add(makeInjectedCspNoncePrintNode(idGenerator));
-      out.add(new RawTextNode(idGenerator.genId(), ATTR_AFTER_VALUE));
+      out.add(
+          new RawTextNode(idGenerator.genId(), ATTR_AFTER_VALUE, rawTextNode.getSourceLocation()));
     }
 
   }
@@ -264,11 +267,11 @@ public final class ContentSecurityPolicyPass {
     void addNodesToInject(
         IdGenerator idGenerator, ImmutableList.Builder<? super SoyNode.StandaloneNode> out) {
       // We re-use the CSP nonce as the inline-event-handler secret.
-      out.add(new RawTextNode(idGenerator.genId(), "/*"));
+      out.add(new RawTextNode(idGenerator.genId(), "/*", rawTextNode.getSourceLocation()));
       out.add(makeInjectedCspNoncePrintNode(idGenerator));
       // Nonces may contain '/' but not '*' so the nonce will not be truncated as long as the nonce
       // generator produces valid nonces instead of arbitrary ASCII.
-      out.add(new RawTextNode(idGenerator.genId(), "*/"));
+      out.add(new RawTextNode(idGenerator.genId(), "*/", rawTextNode.getSourceLocation()));
     }
   }
 
@@ -494,7 +497,9 @@ public final class ContentSecurityPolicyPass {
         int offset = generator.offset;
         if (offset != textStart) {
           RawTextNode textBefore = new RawTextNode(
-              idGenerator.genId(), rawText.substring(textStart, offset));
+              idGenerator.genId(),
+              rawText.substring(textStart, offset),
+              rawTextNode.getSourceLocation());
           parent.addChild(childIndex, textBefore);
           ++childIndex;
           textStart = offset;
@@ -502,9 +507,11 @@ public final class ContentSecurityPolicyPass {
 
         // Step 7: add an {if $ij.csp_nonce}...{/if} to prevent generation of CSP nonce when the
         // template is applied without a secret.
-        IfNode ifNode = new IfNode(idGenerator.genId());
+        IfNode ifNode = new IfNode(idGenerator.genId(), rawTextNode.getSourceLocation());
         IfCondNode ifCondNode = new IfCondNode(
-            idGenerator.genId(), "if",
+            idGenerator.genId(),
+            rawTextNode.getSourceLocation(),
+            "if",
             new ExprUnion(new ExprRootNode<ExprNode>(makeReferenceToInjectedCspNonce())));
         parent.addChild(childIndex, ifNode);
         ++childIndex;
@@ -517,7 +524,10 @@ public final class ContentSecurityPolicyPass {
       }
 
       if (textStart != rawText.length()) {
-        RawTextNode textTail = new RawTextNode(idGenerator.genId(), rawText.substring(textStart));
+        RawTextNode textTail = new RawTextNode(
+            idGenerator.genId(),
+            rawText.substring(textStart),
+            rawTextNode.getSourceLocation());
         parent.addChild(childIndex, textTail);
       }
     }

@@ -55,8 +55,8 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
    * @param id The id for this node.
    * @param commandText The command text.
    */
-  public XidNode(int id, String commandText) {
-    super(id, "xid", commandText);
+  public XidNode(int id, SourceLocation sourceLocation, String commandText) {
+    super(id, sourceLocation, "xid", commandText);
     text = commandText;
   }
 
@@ -117,7 +117,7 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
    */
   public static final class Builder {
 
-    public static final XidNode ERROR = new XidNode(-1, "error");
+    public static final XidNode ERROR = new XidNode(-1, SourceLocation.UNKNOWN, "error");
 
     private final int id;
     private final String commandText;
@@ -149,8 +149,7 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
         return ERROR;
       }
 
-      XidNode node = new XidNode(id, commandText);
-      node.setSourceLocation(sourceLocation);
+      XidNode node = new XidNode(id, sourceLocation, commandText);
       return node;
     }
   }

@@ -80,17 +80,22 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   * @param sourceLocation The template's source location.
    */
-  public TemplateDelegateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo) {
-    super(soyFileHeaderInfo, null);
+  public TemplateDelegateNodeBuilder(
+      SoyFileHeaderInfo soyFileHeaderInfo, SourceLocation sourceLocation) {
+    super(soyFileHeaderInfo, sourceLocation, null /* typeRegistry */);
   }
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   * @param sourceLocation The template's source location.
    */
   public TemplateDelegateNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo, SoyTypeRegistry typeRegistry) {
-    super(soyFileHeaderInfo, typeRegistry);
+      SoyFileHeaderInfo soyFileHeaderInfo,
+      SourceLocation sourceLocation,
+      SoyTypeRegistry typeRegistry) {
+    super(soyFileHeaderInfo, sourceLocation, typeRegistry);
   }
 
   @Override public TemplateDelegateNodeBuilder setId(int id) {

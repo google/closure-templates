@@ -73,12 +73,11 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
       ImmutableList<ExprRootNode<?>> args,
       String argsText,
       SourceLocation sourceLocation) {
-    super(id);
+    super(id, sourceLocation);
     this.name = name;
     this.srcName = srcName;
     this.args = args;
     this.argsText = argsText;
-    setSourceLocation(sourceLocation);
     // If this name is part of the V1 syntax, then maybe set the syntax version.
     if (V1_DIRECTIVE_NAMES.contains(srcName)) {
       maybeSetSyntaxVersionBound(new SyntaxVersionBound(

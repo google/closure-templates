@@ -93,13 +93,14 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
   private MsgHtmlTagNode(
       int id,
+      SourceLocation sourceLocation,
       String userSuppliedPlaceholderName,
       String lcTagName,
       boolean isSelfEnding,
       boolean isOnlyRawText,
       String fullTagText,
       List<StandaloneNode> children) {
-    super(id);
+    super(id, sourceLocation);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
     this.lcTagName = lcTagName;
     this.isSelfEnding = isSelfEnding;
@@ -224,7 +225,8 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
     public static final MsgHtmlTagNode ERROR = new Builder(
         -1,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>")), SourceLocation.UNKNOWN)
+        ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>", SourceLocation.UNKNOWN)),
+        SourceLocation.UNKNOWN)
         .buildAndThrowIfInvalid(); // guaranteed to be valid
 
     private final int id;
@@ -261,13 +263,13 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
       MsgHtmlTagNode node = new MsgHtmlTagNode(
           id,
+          sourceLocation,
           userSuppliedPlaceholderName,
           lcTagName,
           selfEnding,
           isOnlyRawText,
           fullTagText,
           children);
-      node.setSourceLocation(sourceLocation);
       return node;
     }
 
@@ -339,7 +341,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
           matcher.appendReplacement(sb, "");
         } while (matcher.find());
         String replacementText = matcher.appendTail(sb).toString();
-        return new RawTextNode(node.getId(), replacementText);
+        return new RawTextNode(node.getId(), replacementText, node.getSourceLocation());
       }
       return node;
     }

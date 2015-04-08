@@ -155,7 +155,8 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Replace this node with a RawTextNode.
-    parent.replaceChild(node, new RawTextNode(nodeIdGen.genId(), prerenderOutputSb.toString()));
+    parent.replaceChild(node,
+        new RawTextNode(nodeIdGen.genId(), prerenderOutputSb.toString(), node.getSourceLocation()));
   }
 
 
@@ -186,7 +187,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
             node.removeChild(i);
           }
           // Replace this child with a new IfElseNode.
-          IfElseNode newElseNode = new IfElseNode(nodeIdGen.genId());
+          IfElseNode newElseNode = new IfElseNode(nodeIdGen.genId(), condNode.getSourceLocation());
           newElseNode.addChildren(condNode.getChildren());
           node.replaceChild(condIndex, newElseNode);
           // Stop processing.
@@ -253,7 +254,8 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
             node.removeChild(i);
           }
           // Replace this child with a new SwitchDefaultNode.
-          SwitchDefaultNode newDefaultNode = new SwitchDefaultNode(nodeIdGen.genId());
+          SwitchDefaultNode newDefaultNode
+              = new SwitchDefaultNode(nodeIdGen.genId(), caseNode.getSourceLocation());
           newDefaultNode.addChildren(caseNode.getChildren());
           node.replaceChild(caseIndex, newDefaultNode);
           // Stop processing.
@@ -387,7 +389,8 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
       for (RawTextNode rtn : consecutiveRawTextNodes) {
         rawText.append(rtn.getRawText());
       }
-      parent.addChild(new RawTextNode(nodeIdGen.genId(), rawText.toString()));
+      parent.addChild(
+          new RawTextNode(nodeIdGen.genId(), rawText.toString(), parent.getSourceLocation()));
     }
   }
 

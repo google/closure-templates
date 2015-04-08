@@ -48,8 +48,13 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   private final ExprRootNode<?> valueExpr;
 
 
-  private LetValueNode(int id, String localVarName, String commandText, ExprRootNode<?> valueExpr) {
-    super(id, localVarName, commandText);
+  private LetValueNode(
+      int id,
+      SourceLocation sourceLocation,
+      String localVarName,
+      String commandText,
+      ExprRootNode<?> valueExpr) {
+    super(id, sourceLocation, localVarName, commandText);
     this.valueExpr = valueExpr;
   }
 
@@ -138,9 +143,8 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
         return ERROR;
       }
 
-      LetValueNode node
-          = new LetValueNode(id, parseResult.localVarName, commandText, parseResult.valueExpr);
-      node.setSourceLocation(sourceLocation);
+      LetValueNode node = new LetValueNode(
+          id, sourceLocation, parseResult.localVarName, commandText, parseResult.valueExpr);
       return node;
     }
 

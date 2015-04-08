@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -43,10 +43,11 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
    * @param id The id for this node.
    * @param expr The loop collection expression
    * @param commandText The command text.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @param sourceLocation The node's source location.
    */
-  public ForeachNode(int id, ExprRootNode<?> expr, String commandText) {
-    super(id, "foreach", commandText);
+  public ForeachNode(
+      int id, ExprRootNode<?> expr, String commandText, SourceLocation sourceLocation) {
+    super(id, sourceLocation, "foreach", commandText);
     this.expr = expr;
   }
 

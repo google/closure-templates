@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
@@ -23,18 +24,17 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 /**
  * Abstract implementation of a BlockNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public abstract class AbstractBlockNode extends AbstractParentSoyNode<StandaloneNode>
+abstract class AbstractBlockNode extends AbstractParentSoyNode<StandaloneNode>
     implements BlockNode {
 
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  public AbstractBlockNode(int id) {
-    super(id);
+  public AbstractBlockNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation);
   }
 
 

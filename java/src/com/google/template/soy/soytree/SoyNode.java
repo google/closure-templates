@@ -120,14 +120,6 @@ public interface SoyNode extends Node {
    */
   public int getId();
 
-
-  /**
-   * Sets the source location (file path and line number) for this node.
-   * @param srcLoc The source location for this node.
-   */
-  public void setSourceLocation(SourceLocation srcLoc);
-
-
   /**
    * Returns the source location (file path and line number) for this node.
    */

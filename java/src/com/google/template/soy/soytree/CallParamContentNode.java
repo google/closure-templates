@@ -53,10 +53,16 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param commandText The command text.
    */
-  private CallParamContentNode(int id, String key, ContentKind contentKind, String commandText) {
-    super(id, commandText);
+  private CallParamContentNode(
+      int id,
+      SourceLocation sourceLocation,
+      String key,
+      ContentKind contentKind,
+      String commandText) {
+    super(id, sourceLocation, commandText);
     parentMixin = new MixinParentNode<>(this);
 
     this.key = key;
@@ -195,9 +201,8 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
         return ERROR;
       }
 
-      CallParamContentNode node
-          = new CallParamContentNode(id, parseResult.key, parseResult.contentKind, commandText);
-      node.setSourceLocation(sourceLocation);
+      CallParamContentNode node = new CallParamContentNode(
+          id, sourceLocation, parseResult.key, parseResult.contentKind, commandText);
       return node;
     }
 

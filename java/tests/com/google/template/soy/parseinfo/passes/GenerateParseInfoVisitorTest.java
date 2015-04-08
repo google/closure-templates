@@ -33,44 +33,40 @@ import junit.framework.TestCase;
  * <p> Note: Testing of the actual code generation happens in {@code SoyFileSetTest}.
  *
  */
-public class GenerateParseInfoVisitorTest extends TestCase {
-
+public final class GenerateParseInfoVisitorTest extends TestCase {
 
   public void testJavaClassNameSource() {
-
-    SoyFileNode soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "aaa.bbb.cccDdd", null);
-    try {
-      SOY_FILE_NAME.generateBaseClassName(soyFileNode);
-      fail();
-    } catch (IllegalArgumentException iae) {
-      // Test passes.
-    }
-
-    soyFileNode.setFilePath("BooFoo.soy");
-    assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
-    soyFileNode.setFilePath("blah/bleh/boo_foo.soy");
-    assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
-    soyFileNode.setFilePath("boo-FOO.soy");
-    assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
-    soyFileNode.setFilePath("\\BLAH\\BOO_FOO.SOY");
+    SoyFileNode soyFileNode = forFilePathAndNamespace("BooFoo.soy", "aaa.bbb.cccDdd");
     assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
 
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "cccDdd", null);
-    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "aaa.bbb.cccDdd", null);
-    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "aaa_bbb.ccc_ddd", null);
-    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "CccDdd", null);
-    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "aaa.bbb.ccc_DDD", null);
+    soyFileNode = forFilePathAndNamespace("blah/bleh/boo_foo.soy", "aaa.bbb.cccDdd");
+    assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("boo-FOO.soy", "aaa.bbb.cccDdd");
+    assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("\\BLAH\\BOO_FOO.SOY", "aaa.bbb.cccDdd");
+    assertEquals("BooFoo", SOY_FILE_NAME.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("", "cccDdd");
     assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
 
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "aaa.bbb.cccDdd", null);
-    soyFileNode.setFilePath("BooFoo.soy");
+    soyFileNode = forFilePathAndNamespace("", "aaa.bbb.cccDdd");
+    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("", "aaa_bbb.ccc_ddd");
+    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("", "CccDdd");
+    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("", "aaa.bbb.ccc_DDD");
+    assertEquals("CccDdd", SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode));
+
+    soyFileNode = forFilePathAndNamespace("BooFoo.soy", "aaa.bbb.cccDdd");
     assertEquals("File", GENERIC.generateBaseClassName(soyFileNode));
-    soyFileNode = new SoyFileNode(0, SoyFileKind.SRC, null, "ccc_ddd", null);
-    soyFileNode.setFilePath("blah/bleh/boo-foo.soy");
+
+    soyFileNode = forFilePathAndNamespace("blah/bleh/boo-foo.soy", "ccc_ddd");
     assertEquals("File", GENERIC.generateBaseClassName(soyFileNode));
   }
 
@@ -95,4 +91,7 @@ public class GenerateParseInfoVisitorTest extends TestCase {
     assertEquals(expectedJavadoc, ilb.toString());
   }
 
+  private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
+    return new SoyFileNode(0, filePath, SoyFileKind.SRC, null, namespace, null);
+  }
 }

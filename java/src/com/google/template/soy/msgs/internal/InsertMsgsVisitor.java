@@ -174,7 +174,8 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
       if (msgPart instanceof SoyMsgRawTextPart) {
         // Append a new RawTextNode to the currReplacementNodes list.
         String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
-        currReplacementNodes.add(new RawTextNode(nodeIdGen.genId(), rawText));
+        currReplacementNodes.add(
+            new RawTextNode(nodeIdGen.genId(), rawText, msg.getSourceLocation()));
 
       } else if (msgPart instanceof SoyMsgPlaceholderPart) {
         // Get the representative placeholder node and iterate through its contents.

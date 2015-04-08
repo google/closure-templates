@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.Map;
@@ -51,9 +52,10 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   /**
    * @param id The id for this node.
    * @param rawText The raw text string.
+   * @param sourceLocation The node's source location.
    */
-  public RawTextNode(int id, String rawText) {
-    super(id);
+  public RawTextNode(int id, String rawText, SourceLocation sourceLocation) {
+    super(id, sourceLocation);
     this.rawText = rawText;
   }
 

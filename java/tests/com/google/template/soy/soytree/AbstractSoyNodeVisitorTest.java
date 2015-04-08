@@ -31,7 +31,7 @@ import junit.framework.TestCase;
  * Unit tests for AbstractSoyNodeVisitor.
  *
  */
-public class AbstractSoyNodeVisitorTest extends TestCase {
+public final class AbstractSoyNodeVisitorTest extends TestCase {
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
@@ -39,13 +39,13 @@ public class AbstractSoyNodeVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = new SoyFileSetNode(0, null);
 
-    SoyFileNode soyFile = new SoyFileNode(0, SoyFileKind.SRC, null, "boo", null);
+    SoyFileNode soyFile = new SoyFileNode(0, "", SoyFileKind.SRC, null, "boo", null);
     soyTree.addChild(soyFile);
 
     SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");
 
     TemplateNode template1 =
-        (new TemplateBasicNodeBuilder(testSoyFileHeaderInfo))
+        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN)
             .setId(0).setCmdText("name=\".foo\"").setSoyDoc("/** @param goo */").build();
     soyFile.addChild(template1);
     template1.addChild(
@@ -58,7 +58,7 @@ public class AbstractSoyNodeVisitorTest extends TestCase {
             .build(FAIL));
 
     TemplateNode template2 =
-        (new TemplateBasicNodeBuilder(testSoyFileHeaderInfo))
+        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN)
             .setId(0).setCmdText("name=\".moo\"").setSoyDoc(null).build();
     soyFile.addChild(template2);
     template2.addChild(

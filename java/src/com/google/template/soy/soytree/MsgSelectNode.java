@@ -56,8 +56,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
       String commandText,
       ExprRootNode<?> selectExpr,
       SourceLocation sourceLocation) {
-    super(id, "select", commandText);
-    setSourceLocation(sourceLocation);
+    super(id, sourceLocation, "select", commandText);
 
     this.selectExpr = selectExpr;
 
@@ -75,13 +74,17 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param selectExpr The expression for the value to select on.
    * @param baseSelectVarName The base select var name to use (what the translator sees), or null if
    *     it should be generated from the select expression.
    */
-  public MsgSelectNode(int id, ExprRootNode<?> selectExpr, @Nullable String baseSelectVarName) {
-    super(
-        id, "select",
+  public MsgSelectNode(
+      int id,
+      SourceLocation sourceLocation,
+      ExprRootNode<?> selectExpr,
+      @Nullable String baseSelectVarName) {
+    super(id, sourceLocation, "select",
         selectExpr.toSourceString() +
             ((baseSelectVarName != null) ? " phname=\"" + baseSelectVarName + "\"" : ""));
     this.selectExpr = selectExpr;

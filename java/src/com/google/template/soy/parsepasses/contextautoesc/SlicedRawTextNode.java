@@ -135,8 +135,8 @@ public final class SlicedRawTextNode {
       String originalText = rawTextNode.getRawText();
       String replacementText =
         originalText.substring(0, insertionOffset) + text + originalText.substring(insertionOffset);
-      RawTextNode replacementNode = new RawTextNode(rawTextNode.getId(), replacementText);
-      replacementNode.setSourceLocation(rawTextNode.getSourceLocation());
+      RawTextNode replacementNode = new RawTextNode(
+          rawTextNode.getId(), replacementText, rawTextNode.getSourceLocation());
 
       // Rerun the context update algo so that we can figure out the context of the inserted slices
       // and ensure that the inserted text does not invalidate any of the security assumptions made

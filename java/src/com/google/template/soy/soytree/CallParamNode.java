@@ -90,10 +90,11 @@ public abstract class CallParamNode extends AbstractCommandNode {
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param commandText The command text.
    */
-  protected CallParamNode(int id, String commandText) {
-    super(id, "param", commandText);
+  protected CallParamNode(int id, SourceLocation sourceLocation, String commandText) {
+    super(id, sourceLocation, "param", commandText);
   }
 
 

@@ -49,17 +49,15 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   /** The parsed expression for the param value. */
   private final ExprUnion valueExprUnion;
 
-
-  /**
-   * @param id The id for this node.
-   */
-  private CallParamValueNode(int id, String key, ExprUnion valueExprUnion, String commandText) {
-    super(id, commandText);
-
+  private CallParamValueNode(
+      int id,
+      SourceLocation sourceLocation,
+      String key,
+      ExprUnion valueExprUnion,
+      String commandText) {
+    super(id, sourceLocation, commandText);
     this.key = Preconditions.checkNotNull(key);
     this.valueExprUnion = Preconditions.checkNotNull(valueExprUnion);
-
-
   }
 
 
@@ -136,9 +134,8 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
         return ERROR;
       }
 
-      CallParamValueNode node
-          = new CallParamValueNode(id, parseResult.key, parseResult.valueExprUnion, commandText);
-      node.setSourceLocation(sourceLocation);
+      CallParamValueNode node = new CallParamValueNode(
+          id, sourceLocation, parseResult.key, parseResult.valueExprUnion, commandText);
       return node;
     }
 

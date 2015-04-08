@@ -19,7 +19,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
@@ -126,9 +125,8 @@ final class Rewriter {
             inferences.getIdGenerator().genId(),
             escapingMode.directiveName,
             "",
-            SourceLocation.UNKNOWN)
+            printNode.getSourceLocation())
             .build(errorReporter);
-        newPrintDirective.setSourceLocation(printNode.getSourceLocation());
 
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
@@ -218,7 +216,6 @@ final class Rewriter {
               .buildAndThrowIfInvalid();
         }
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
-          newCallNode.setSourceLocation(callNode.getSourceLocation());
           moveChildrenTo(callNode, newCallNode);
           replaceChild(callNode, newCallNode);
         }

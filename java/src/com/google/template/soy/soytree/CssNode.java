@@ -88,8 +88,7 @@ public final class CssNode extends AbstractCommandNode
       @Nullable ExprRootNode<?> componentNameExpr,
       String selectorText,
       SourceLocation sourceLocation) {
-    super(id, "css", commandText);
-    setSourceLocation(sourceLocation);
+    super(id, sourceLocation, "css", commandText);
     this.componentNameExpr = componentNameExpr;
     this.selectorText = selectorText;
 

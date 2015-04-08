@@ -103,6 +103,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /**
    * @param id The id for this node.
+   * @param filePath The path to the Soy source file.
    * @param soyFileKind The kind of this Soy file.
    * @param delpackageCmdText This Soy file's delegate package, or null if none.
    * @param namespaceCmdText This Soy file's namespace and attributes. Nullable for backwards
@@ -111,10 +112,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
    * @throws SoySyntaxException If a syntax error is found.
    */
   public SoyFileNode(
-      int id, SoyFileKind soyFileKind, @Nullable String delpackageCmdText,
-      @Nullable String namespaceCmdText, @Nullable List<String> aliasCmdTexts)
+      int id,
+      String filePath,
+      SoyFileKind soyFileKind,
+      @Nullable String delpackageCmdText,
+      @Nullable String namespaceCmdText,
+      @Nullable List<String> aliasCmdTexts)
       throws SoySyntaxException {
-    super(id);
+    super(id, new SourceLocation(filePath));
 
     this.soyFileKind = soyFileKind;
 
@@ -268,17 +273,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Returns the map from aliases to namespaces for this file. */
   public ImmutableMap<String, String> getAliasToNamespaceMap() {
     return aliasToNamespaceMap;
-  }
-
-
-  @Override public void setSourceLocation(SourceLocation srcLoc) {
-    super.setSourceLocation(srcLoc);
-  }
-
-
-  /** @param filePath The path to the source Soy file. */
-  public void setFilePath(String filePath) {
-    setSourceLocation(new SourceLocation(filePath));
   }
 
 

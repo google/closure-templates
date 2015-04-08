@@ -103,7 +103,8 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
       StandaloneNode newNode;
 
       if (cssHandlingScheme == CssHandlingScheme.LITERAL) {
-        newNode = new RawTextNode(nodeIdGen.genId(), cssNode.getCommandText());
+        newNode = new RawTextNode(
+            nodeIdGen.genId(), cssNode.getCommandText(), cssNode.getSourceLocation());
 
       } else if (cssHandlingScheme == CssHandlingScheme.REFERENCE) {
         TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();

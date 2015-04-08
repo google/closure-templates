@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -62,18 +63,23 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   * @param sourceLocation The template's source location.
    */
-  public TemplateBasicNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo) {
-    super(soyFileHeaderInfo, null);
+  public TemplateBasicNodeBuilder(
+      SoyFileHeaderInfo soyFileHeaderInfo, SourceLocation sourceLocation) {
+    super(soyFileHeaderInfo, sourceLocation, null);
   }
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
+   * @param sourceLocation The template's source location.
    * @param typeRegistry Type registry used for parsing type expressions.
    */
   public TemplateBasicNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo, SoyTypeRegistry typeRegistry) {
-    super(soyFileHeaderInfo, typeRegistry);
+      SoyFileHeaderInfo soyFileHeaderInfo,
+      SourceLocation sourceLocation,
+      SoyTypeRegistry typeRegistry) {
+    super(soyFileHeaderInfo, sourceLocation, typeRegistry);
   }
 
   @Override public TemplateBasicNodeBuilder setId(int id) {

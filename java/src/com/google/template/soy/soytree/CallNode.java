@@ -106,16 +106,19 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Protected constructor for use by subclasses.
    *
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param commandTextInfo All the info derived from the command text.
    * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
    *     This is inferred by the autoescaper and not part of the syntax, and thus is not in the
    *     CommandTextInfo.
    */
-  protected CallNode(int id, String commandName, CommandTextInfo commandTextInfo,
+  protected CallNode(
+      int id,
+      SourceLocation sourceLocation,
+      String commandName,
+      CommandTextInfo commandTextInfo,
       ImmutableList<String> escapingDirectiveNames) {
-
-    super(id, commandName, commandTextInfo.commandText);
-
+    super(id, sourceLocation, commandName, commandTextInfo.commandText);
     this.isPassingData = commandTextInfo.isPassingData;
     this.isPassingAllData = commandTextInfo.isPassingData && commandTextInfo.dataExpr == null;
     this.dataExpr = commandTextInfo.dataExpr;

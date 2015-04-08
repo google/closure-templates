@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -37,10 +38,11 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  public AbstractParentSoyNode(int id) {
-    super(id);
-    parentMixin = new MixinParentNode<N>(this);
+  public AbstractParentSoyNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation);
+    parentMixin = new MixinParentNode<>(this);
   }
 
 

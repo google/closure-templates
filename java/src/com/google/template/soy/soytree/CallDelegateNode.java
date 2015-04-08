@@ -199,8 +199,7 @@ public final class CallDelegateNode extends CallNode {
         return ERROR;
       }
       CallDelegateNode callDelegateNode
-          = new CallDelegateNode(id, commandTextInfo, escapingDirectiveNames);
-      callDelegateNode.setSourceLocation(sourceLocation);
+          = new CallDelegateNode(id, sourceLocation, commandTextInfo, escapingDirectiveNames);
       return callDelegateNode;
     }
 
@@ -300,8 +299,11 @@ public final class CallDelegateNode extends CallNode {
   }
 
   private CallDelegateNode(
-      int id, CommandTextInfo commandTextInfo, ImmutableList<String> escapingDirectiveNames) {
-    super(id, "delcall", commandTextInfo, escapingDirectiveNames);
+      int id,
+      SourceLocation sourceLocation,
+      CommandTextInfo commandTextInfo,
+      ImmutableList<String> escapingDirectiveNames) {
+    super(id, sourceLocation, "delcall", commandTextInfo, escapingDirectiveNames);
     this.delCalleeName = commandTextInfo.delCalleeName;
     this.delCalleeVariantExpr = commandTextInfo.delCalleeVariantExpr;
     this.allowsEmptyDefault = commandTextInfo.allowsEmptyDefault;

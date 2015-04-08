@@ -45,7 +45,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    *     because it may be modified/replaced later by compiler passes.
    */
   public MsgPlaceholderNode(int id, MsgPlaceholderInitialNode initialNode) {
-    super(id);
+    super(id, initialNode.getSourceLocation());
     this.basePhName = initialNode.genBasePhName();
     this.initialNodeKind = initialNode.getKind();
     this.samenessKey = initialNode.genSamenessKey();

@@ -649,8 +649,12 @@ private SoyFileNode SoyFile() :
   )*
 
   { SoyFileNode soyFileNode = new SoyFileNode(
-        nodeIdGen.genId(), soyFileKind, delpackageCmdText, namespaceCmdText, aliasCmdTexts);
-    soyFileNode.setFilePath(filePath);
+        nodeIdGen.genId(),
+        filePath,
+        soyFileKind,
+        delpackageCmdText,
+        namespaceCmdText,
+        aliasCmdTexts);
     SoyFileHeaderInfo soyFileHeaderInfo = new SoyFileHeaderInfo(soyFileNode);
   }
 
@@ -676,12 +680,20 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
 }
 {
   templateTag = <ANY_TEMPLATE_TAG>
+  templateContent = <TEMPLATE_CONTENT>
 
   { boolean isBasicTemplate = templateTag.image.startsWith("{template");
 
-    TemplateNodeBuilder templateNodeBuilder = isBasicTemplate ?
-        new TemplateBasicNodeBuilder(soyFileHeaderInfo, typeRegistry) :
-        new TemplateDelegateNodeBuilder(soyFileHeaderInfo, typeRegistry);
+    SourceLocation srcLocation = new SourceLocation(
+        filePath,
+        templateTag.beginLine,
+        templateTag.beginColumn,
+        templateContent.endLine,
+        templateContent.endColumn);
+
+    TemplateNodeBuilder templateNodeBuilder = isBasicTemplate
+        ? new TemplateBasicNodeBuilder(soyFileHeaderInfo, srcLocation, typeRegistry)
+        : new TemplateDelegateNodeBuilder(soyFileHeaderInfo, srcLocation, typeRegistry);
 
     templateNodeBuilder.setId(nodeIdGen.genId());
 
@@ -713,7 +725,6 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     templateNodeBuilder.setSoyDoc(soyDoc);
   }
 
-  templateContent = <TEMPLATE_CONTENT>
   {
     List<DeclInfo> templateHeaderDecls = null;
     List<StandaloneNode> templateBodyNodes = null;
@@ -757,12 +768,6 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       templateNodeBuilder.setHeaderDecls(templateHeaderDecls);
     }
     TemplateNode templateNode = templateNodeBuilder.build();
-    templateNode.setSourceLocation(new SourceLocation(
-        filePath,
-        templateTag.beginLine,
-        templateTag.beginColumn,
-        templateContent.endLine,
-        templateContent.endColumn));
     if (templateBodyNodes != null) {
         templateNode.addChildren(templateBodyNodes);
     }

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
+
 import junit.framework.TestCase;
 
 
@@ -45,7 +47,7 @@ public class AbstractSoyCommandNodeTest extends TestCase {
   private static class DummyNode extends AbstractCommandNode {
 
     public DummyNode(int id, String commandText) {
-      super(id, "dummy", commandText);
+      super(id, SourceLocation.UNKNOWN, "dummy", commandText);
     }
 
     @Override public Kind getKind() {

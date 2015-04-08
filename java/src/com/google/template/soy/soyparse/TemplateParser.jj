@@ -78,7 +78,6 @@ import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -359,16 +358,6 @@ public class TemplateParser {
 
   private SourceLocation createSrcLoc(Token token) {
     return newSourceItemInfo(null, token).srcLocation();
-  }
-
-  private <T extends SoyNode> T setSrcLoc(T node, SourceItemInfo info) {
-    node.setSourceLocation(info.srcLocation());
-    return node;
-  }
-
-  private <T extends SoyNode> T setSrcLoc(T node, Token token) {
-    node.setSourceLocation(createSrcLoc(token));
-    return node;
   }
 }
 
@@ -2483,13 +2472,12 @@ private RawTextNode ContiguousRawTextAsNode() :
 }
 {
   contiguousRawText = ContiguousRawText()
-  { return (contiguousRawText.parsedContent().length() > 0
-
-  ) ?
-        setSrcLoc(
-            new RawTextNode(nodeIdGen.genId(), contiguousRawText.parsedContent()),
-            contiguousRawText) :
-        null;
+  {
+    if (contiguousRawText.parsedContent().isEmpty()) {
+      return null;
+    }
+    return new RawTextNode(
+        nodeIdGen.genId(), contiguousRawText.parsedContent(), contiguousRawText.srcLocation());
   }
 }
 
@@ -2603,8 +2591,8 @@ private MsgFallbackGroupNode MsgStmt() :
 
   cmdText = MsgTag()
   {
-    MsgFallbackGroupNode msgFbGrpNode = setSrcLoc(
-        new MsgFallbackGroupNode(nodeIdGen.genId()), cmdText);
+    MsgFallbackGroupNode msgFbGrpNode = new MsgFallbackGroupNode(
+        nodeIdGen.genId(), cmdText.srcLocation());
     msgNode = MsgNode.msg(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
         .build(errorReporter);
     msgFbGrpNode.addChild(msgNode);
@@ -2745,8 +2733,8 @@ private MsgPluralNode MsgPlural() :
 
   defaultTagInfo = DefaultTag()
   {
-    MsgPluralDefaultNode msgPluralDefaultNode = setSrcLoc(
-        new MsgPluralDefaultNode(nodeIdGen.genId()), defaultTagInfo);
+    MsgPluralDefaultNode msgPluralDefaultNode = new MsgPluralDefaultNode(
+        nodeIdGen.genId(), defaultTagInfo.srcLocation());
     msgPluralNode.addChild(msgPluralDefaultNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2801,8 +2789,8 @@ private MsgSelectNode MsgSelect() :
 
   defaultTagInfo = DefaultTag()
   {
-    MsgSelectDefaultNode msgSelectDefaultNode = setSrcLoc(
-        new MsgSelectDefaultNode(nodeIdGen.genId()), defaultTagInfo);
+    MsgSelectDefaultNode msgSelectDefaultNode
+        = new MsgSelectDefaultNode(nodeIdGen.genId(), defaultTagInfo.srcLocation());
     msgSelectNode.addChild(msgSelectDefaultNode);
   }
   templateBlockForMsg = TemplateBlockForMsg()
@@ -2828,22 +2816,24 @@ private MsgHtmlTagNode MsgHtmlTag() :
   <MSG_HTML_TAG_CLOSE>
 
   {
+    SourceLocation srcLoc = createSrcLoc(htmlTagOpen);
     // First, we add back the HTML tag's opening and closing angle brackets.
     // Minor note: If there's only one RawTextNode, we'll replace it twice. No big deal.
     if (templateBlock.get(0) instanceof RawTextNode) {
       RawTextNode firstNode = (RawTextNode) templateBlock.get(0);
-      RawTextNode newNode = new RawTextNode(nodeIdGen.genId(), "<" + firstNode.getRawText());
-      templateBlock.set(0, setSrcLoc(newNode, htmlTagOpen));
+      RawTextNode newNode = new RawTextNode(
+          nodeIdGen.genId(), "<" + firstNode.getRawText(), srcLoc);
+      templateBlock.set(0, newNode);
     } else {
-      templateBlock.add(0, setSrcLoc(new RawTextNode(nodeIdGen.genId(), "<"), htmlTagOpen));
+      templateBlock.add(0, new RawTextNode(nodeIdGen.genId(), "<", srcLoc));
     }
     int lastNodeIndex = templateBlock.size() - 1;
     if (templateBlock.get(lastNodeIndex) instanceof RawTextNode) {
       RawTextNode lastNode = (RawTextNode) templateBlock.get(lastNodeIndex);
-      RawTextNode newNode = new RawTextNode(nodeIdGen.genId(), lastNode.getRawText() + ">");
-      templateBlock.set(lastNodeIndex, setSrcLoc(newNode, htmlTagOpen));
+      RawTextNode newNode = new RawTextNode(nodeIdGen.genId(), lastNode.getRawText() + ">", srcLoc);
+      templateBlock.set(lastNodeIndex, newNode);
     } else {
-      templateBlock.add(setSrcLoc(new RawTextNode(nodeIdGen.genId(), ">"), htmlTagOpen));
+      templateBlock.add(new RawTextNode(nodeIdGen.genId(), ">", srcLoc));
     }
     return new MsgHtmlTagNode.Builder(
         nodeIdGen.genId(),
@@ -3067,7 +3057,7 @@ private IfNode IfStmt() :
 
   cmdText = IfTag()
   {
-    IfNode ifNode = setSrcLoc(new IfNode(nodeIdGen.genId()), cmdText);
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), cmdText.srcLocation());
     ifCondNode = IfCondNode.ifBuilder(
         nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
         .build(errorReporter);
@@ -3094,7 +3084,7 @@ private IfNode IfStmt() :
 
     elseTagInfo = ElseTag()
     {
-      IfElseNode ifElseNode = setSrcLoc(new IfElseNode(nodeIdGen.genId()), elseTagInfo);
+      IfElseNode ifElseNode = new IfElseNode(nodeIdGen.genId(), elseTagInfo.srcLocation());
       ifNode.addChild(ifElseNode);
     }
     templateBlock = TemplateBlock()
@@ -3147,8 +3137,8 @@ private SwitchNode SwitchStmt() :
 
     defaultTagInfo = DefaultTag()
     {
-      SwitchDefaultNode switchDefaultNode = setSrcLoc(
-          new SwitchDefaultNode(nodeIdGen.genId()), defaultTagInfo);
+      SwitchDefaultNode switchDefaultNode = new SwitchDefaultNode(
+          nodeIdGen.genId(), defaultTagInfo.srcLocation());
       switchNode.addChild(switchDefaultNode);
     }
     templateBlock = TemplateBlock()
@@ -3319,7 +3309,6 @@ private CallNode CallStmt() :
           .userSuppliedPlaceholderName(userSuppliedPhName)
           .build(errorReporter);
     }
-    callNode = setSrcLoc(callNode, callTagInfo);
     callNode.addChildren(callParams);
 
     return callNode;
@@ -3380,7 +3369,7 @@ private LogNode LogStmt() :
 {
   logTagInfo = LogTag()
   {
-    LogNode logNode = setSrcLoc(new LogNode(nodeIdGen.genId()), logTagInfo);
+    LogNode logNode = new LogNode(nodeIdGen.genId(), logTagInfo.srcLocation());
   }
 
   templateBlock = TemplateBlock()
@@ -3402,6 +3391,6 @@ private DebuggerNode DebuggerStmt() :
 {
   debuggerTagInfo = DebuggerTag()
   {
-    return setSrcLoc(new DebuggerNode(nodeIdGen.genId()), debuggerTagInfo);
+    return new DebuggerNode(nodeIdGen.genId(), debuggerTagInfo.srcLocation());
   }
 }

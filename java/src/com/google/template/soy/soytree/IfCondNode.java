@@ -62,22 +62,15 @@ public final class IfCondNode extends AbstractBlockCommandNode
     return new Builder(id, "elseif", commandText, sourceLocation);
   }
 
-  private IfCondNode(
-      int id, String commandName, ExprUnion condition, SourceLocation sourceLocation) {
-    this(id, commandName, condition);
-    setSourceLocation(sourceLocation);
-  }
-
   /**
    * @param id The id for this node.
    * @param commandName The command name -- either 'if' or 'elseif'.
    * @param condition Determines when the body is performed.
    */
-  public IfCondNode(int id, String commandName, ExprUnion condition) {
-
-    super(id, commandName, condition.getExprText());
+  public IfCondNode(
+      int id, SourceLocation sourceLocation, String commandName, ExprUnion condition) {
+    super(id, sourceLocation, commandName, condition.getExprText());
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
-
     this.exprUnion = condition;
   }
 
@@ -164,7 +157,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
      */
     public IfCondNode build(ErrorReporter unusedForNow) {
       ExprUnion condition = buildExprUnion();
-      return new IfCondNode(id, commandName, condition, sourceLocation);
+      return new IfCondNode(id, sourceLocation, commandName, condition);
     }
 
     private ExprUnion buildExprUnion() {

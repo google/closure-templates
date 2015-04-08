@@ -525,7 +525,8 @@ final class InferenceEngine {
         } else {
           // If we are not in an autoescaping template, assume that the author knows what they're
           // doing and simulate an innocuous value.
-          context = RawTextContextUpdater.processRawText(new RawTextNode(-1, "z"), context)
+          context = RawTextContextUpdater.processRawText(
+              new RawTextNode(-1, "z", printNode.getSourceLocation()), context)
               .getEndContext();
         }
       } catch (SoyAutoescapeException ex) {

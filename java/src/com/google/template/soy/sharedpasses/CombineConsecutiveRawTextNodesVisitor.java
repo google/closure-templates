@@ -16,7 +16,7 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -27,6 +27,7 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,7 +38,6 @@ import java.util.List;
  *
  */
 public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisitor<Void> {
-
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
@@ -82,10 +82,10 @@ public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNode
     }
 
     // Rebuild the list of children, combining consecutive RawTextNodes into one.
-    List<StandaloneNode> copyOfOrigChildren = Lists.newArrayList(nodeAsBlock.getChildren());
+    List<StandaloneNode> copyOfOrigChildren = new ArrayList<>(nodeAsBlock.getChildren());
     nodeAsBlock.clearChildren();
 
-    List<RawTextNode> consecutiveRawTextNodes = Lists.newArrayList();
+    List<RawTextNode> consecutiveRawTextNodes = new ArrayList<>();
     for (StandaloneNode origChild : copyOfOrigChildren) {
 
       if (origChild instanceof RawTextNode) {
@@ -120,19 +120,28 @@ public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNode
    */
   private void addConsecutiveRawTextNodesAsOneNodeHelper(
       BlockNode parent, List<RawTextNode> consecutiveRawTextNodes) {
+    // Nothing to do.
     if (consecutiveRawTextNodes.isEmpty()) {
       return;
-    } else if (consecutiveRawTextNodes.size() == 1) {
-      // Simply add the one RawTextNode.
-      parent.addChild(consecutiveRawTextNodes.get(0));
-    } else {
-      // Create a new combined RawTextNode.
-      StringBuilder rawText = new StringBuilder();
-      for (RawTextNode rtn : consecutiveRawTextNodes) {
-        rawText.append(rtn.getRawText());
-      }
-      parent.addChild(new RawTextNode(nodeIdGen.genId(), rawText.toString()));
     }
+
+    // Simply add the one RawTextNode.
+    if (consecutiveRawTextNodes.size() == 1) {
+      parent.addChild(consecutiveRawTextNodes.get(0));
+      return;
+    }
+
+    // Create a new combined RawTextNode.
+    StringBuilder rawText = new StringBuilder();
+    SourceLocation sourceLocation = null;
+    for (RawTextNode rtn : consecutiveRawTextNodes) {
+      rawText.append(rtn.getRawText());
+      sourceLocation = (sourceLocation == null)
+          ? rtn.getSourceLocation()
+          : sourceLocation.extend(rtn.getSourceLocation());
+    }
+    parent.addChild(
+        new RawTextNode(nodeIdGen.genId(), rawText.toString(), sourceLocation));
   }
 
 }

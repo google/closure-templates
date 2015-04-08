@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
@@ -30,6 +30,13 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     implements SplitLevelTopNode<SoyFileNode> {
 
+  /**
+   * SoyFileSetNode is the only {@link SoyNode} that doesn't have a meaningful notion of
+   * source location (since it represents the entire compilation unit).
+   * Instead of changing the class hierarchy, just use a throwaway source location.
+   */
+  private static final SourceLocation IRRELEVANT = SourceLocation.UNKNOWN;
+
 
   /** The node id generator for this parse tree. */
   private final IdGenerator nodeIdGen;
@@ -38,10 +45,9 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   /**
    * @param id The id for this node.
    * @param nodeIdGen The node id generator for this parse tree.
-   * @throws SoySyntaxException If a syntax error is found.
    */
-  public SoyFileSetNode(int id, IdGenerator nodeIdGen) throws SoySyntaxException {
-    super(id);
+  public SoyFileSetNode(int id, IdGenerator nodeIdGen) {
+    super(id, IRRELEVANT);
     this.nodeIdGen = nodeIdGen;
   }
 

@@ -108,12 +108,17 @@ public final class CallBasicNode extends CallNode {
    * Private constructor. {@link Builder} is the public API.
    *
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param commandTextInfo All the info derived from the command text.
    * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
    */
-  private CallBasicNode(int id, CommandTextInfo commandTextInfo,
-      ImmutableList<String> escapingDirectiveNames, @Nullable String calleeName) {
-    super(id, "call", commandTextInfo, escapingDirectiveNames);
+  private CallBasicNode(
+      int id,
+      SourceLocation sourceLocation,
+      CommandTextInfo commandTextInfo,
+      ImmutableList<String> escapingDirectiveNames,
+      @Nullable String calleeName) {
+    super(id, sourceLocation, "call", commandTextInfo, escapingDirectiveNames);
     this.sourceCalleeName = commandTextInfo.srcCalleeName;
     this.calleeName = calleeName;
   }
@@ -268,8 +273,7 @@ public final class CallBasicNode extends CallNode {
         return ERROR;
       }
       CallBasicNode callBasicNode = new CallBasicNode(
-          id, commandTextInfo, escapingDirectiveNames, calleeName);
-      callBasicNode.setSourceLocation(sourceLocation);
+          id, sourceLocation, commandTextInfo, escapingDirectiveNames, calleeName);
       return callBasicNode;
     }
 

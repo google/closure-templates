@@ -48,8 +48,13 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Nullable private final ContentKind contentKind;
 
 
-  private LetContentNode(int id, String localVarName, String commandText, ContentKind contentKind) {
-    super(id, localVarName, commandText);
+  private LetContentNode(
+      int id,
+      SourceLocation sourceLocation,
+      String localVarName,
+      String commandText,
+      ContentKind contentKind) {
+    super(id, sourceLocation, localVarName, commandText);
     this.contentKind = contentKind;
     parentMixin = new MixinParentNode<>(this);
   }
@@ -208,9 +213,8 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
         return ERROR;
       }
 
-      LetContentNode node
-          = new LetContentNode(id, parseResult.localVarName, commandText, parseResult.contentKind);
-      node.setSourceLocation(sourceLocation);
+      LetContentNode node = new LetContentNode(
+          id, sourceLocation, parseResult.localVarName, commandText, parseResult.contentKind);
       return node;
     }
 

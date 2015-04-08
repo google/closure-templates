@@ -152,10 +152,12 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
         = new MsgSelectCaseNode.Builder(nodeIdGen.genId(), "'male'", msg.getSourceLocation())
             .buildAndThrowIfInvalid();
     maleCase.addChildren(SoytreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
-    MsgSelectDefaultNode defaultCase = new MsgSelectDefaultNode(nodeIdGen.genId());
+    MsgSelectDefaultNode defaultCase
+        = new MsgSelectDefaultNode(nodeIdGen.genId(), msg.getSourceLocation());
     defaultCase.addChildren(SoytreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
 
-    MsgSelectNode selectNode = new MsgSelectNode(nodeIdGen.genId(), genderExpr, baseSelectVarName);
+    MsgSelectNode selectNode = new MsgSelectNode(
+        nodeIdGen.genId(), msg.getSourceLocation(), genderExpr, baseSelectVarName);
     selectNode.addChild(femaleCase);
     selectNode.addChild(maleCase);
     selectNode.addChild(defaultCase);

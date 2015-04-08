@@ -108,7 +108,8 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
     // If the new raw text string is nonempty, then create a new RawTextNode to replace this node,
     // else simply remove this node.
     if (newRawText.length() > 0) {
-      RawTextNode newRawTextNode = new RawTextNode(nodeIdGen.genId(), newRawText.toString());
+      RawTextNode newRawTextNode
+          = new RawTextNode(nodeIdGen.genId(), newRawText.toString(), node.getSourceLocation());
       node.getParent().replaceChild(node, newRawTextNode);
 
     } else {

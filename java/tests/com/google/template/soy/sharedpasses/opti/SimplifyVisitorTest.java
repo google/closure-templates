@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.ForNode;
@@ -50,10 +51,10 @@ public class SimplifyVisitorTest extends TestCase {
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     ForNode forNode = (ForNode) template.getChild(3);
-    forNode.addChild(new RawTextNode(0, "bleh"));
-    forNode.addChild(new RawTextNode(0, "bluh"));
-    template.addChild(0, new RawTextNode(0, "bleh"));
-    template.addChild(0, new RawTextNode(0, "bluh"));
+    forNode.addChild(new RawTextNode(0, "bleh", SourceLocation.UNKNOWN));
+    forNode.addChild(new RawTextNode(0, "bluh", SourceLocation.UNKNOWN));
+    template.addChild(0, new RawTextNode(0, "bleh", SourceLocation.UNKNOWN));
+    template.addChild(0, new RawTextNode(0, "bluh", SourceLocation.UNKNOWN));
 
     assertEquals(6, template.numChildren());
     assertEquals(5, forNode.numChildren());

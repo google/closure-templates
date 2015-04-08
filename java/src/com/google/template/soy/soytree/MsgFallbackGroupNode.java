@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -44,9 +45,10 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  public MsgFallbackGroupNode(int id) {
-    super(id);
+  public MsgFallbackGroupNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation);
   }
 
 

@@ -20,8 +20,10 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporterImpl;
+import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -33,93 +35,75 @@ import junit.framework.TestCase;
  */
 public final class MsgHtmlTagNodeTest extends TestCase {
 
+  private static final SourceLocation X = SourceLocation.UNKNOWN;
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
   public void testPlaceholderBold() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-
     MsgHtmlTagNode mhtn = new MsgHtmlTagNode.Builder(
-        0, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<b>")), SourceLocation.UNKNOWN)
-        .build(errorReporter);
+        0, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<b>", X)), X)
+        .build(FAIL);
     assertThat(mhtn.genBasePhName()).isEqualTo("START_BOLD");
     assertThat(mhtn.genSamenessKey()).isEqualTo(new MsgHtmlTagNode.Builder(
-        4,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<b>")),
-        SourceLocation.UNKNOWN)
-        .build(errorReporter)
+        4, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<b>", X)), X)
+        .build(FAIL)
         .genSamenessKey());
     assertThat(mhtn.genSamenessKey()).isNotEqualTo(new MsgHtmlTagNode.Builder(
-        4,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(0, "</b>")),
-        SourceLocation.UNKNOWN)
-        .build(errorReporter)
+        4, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "</b>", X)), X)
+        .build(FAIL)
         .genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<b>");
-    errorReporter.throwIfErrorsPresent();
   }
 
   public void testPlaceholderBreak() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-
     MsgHtmlTagNode mhtn = new MsgHtmlTagNode.Builder(
-        0, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<br />")), SourceLocation.UNKNOWN)
-        .build(errorReporter);
+        0, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<br />", X)), X)
+        .build(FAIL);
     assertThat(mhtn.genBasePhName()).isEqualTo("BREAK");
     assertThat(mhtn.genSamenessKey()).isNotEqualTo(new MsgHtmlTagNode.Builder(
-        4,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<br/>")),
-        SourceLocation.UNKNOWN)
-        .build(errorReporter)
+        4, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<br/>", X)), X)
+        .build(FAIL)
         .genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<br />");
-    errorReporter.throwIfErrorsPresent();
   }
 
   public void testPlaceholderDiv() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
     MsgHtmlTagNode mhtn = new MsgHtmlTagNode.Builder(
         1,
         ImmutableList.<StandaloneNode>of(
-            new RawTextNode(0, "<div class=\""),
-            new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            new RawTextNode(0, "<div class=\"", X),
+            new PrintNode.Builder(0, true /* isImplicit */, X)
                 .exprText("$cssClass")
-                .build(errorReporter),
-            new RawTextNode(0, "\">")),
-        SourceLocation.UNKNOWN)
-        .build(errorReporter);
+                .build(FAIL),
+            new RawTextNode(0, "\">", X)),
+        X)
+        .build(FAIL);
     assertThat(mhtn.genBasePhName()).isEqualTo("START_DIV");
     assertThat(mhtn.genSamenessKey()).isNotEqualTo(new MsgHtmlTagNode.Builder(
         2,
         ImmutableList.<StandaloneNode>of(
-            new RawTextNode(0, "<div class=\""),
-            new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
+            new RawTextNode(0, "<div class=\"", X),
+            new PrintNode.Builder(0, true /* isImplicit */, X)
                 .exprText("$cssClass")
-                .build(errorReporter),
-            new RawTextNode(0, "\">")),
-        SourceLocation.UNKNOWN)
-        .build(errorReporter)
+                .build(FAIL),
+            new RawTextNode(0, "\">", X)),
+        X)
+        .build(FAIL)
         .genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<div class=\"{$cssClass}\">");
-    errorReporter.throwIfErrorsPresent();
   }
 
   public void testUserSuppliedPlaceholderName() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
     MsgHtmlTagNode mhtn = new MsgHtmlTagNode.Builder(
-        1,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<div phname=\"foo\" />")),
-        SourceLocation.UNKNOWN)
-        .build(errorReporter);
+        1, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<div phname=\"foo\" />", X)), X)
+        .build(FAIL);
     assertThat(mhtn.getUserSuppliedPhName()).isEqualTo("foo");
-    errorReporter.throwIfErrorsPresent();
   }
 
   public void testErrorNodeReturnedWhenPhNameAttrIsMalformed() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
     Checkpoint checkpoint = errorReporter.checkpoint();
     MsgHtmlTagNode mhtn = new MsgHtmlTagNode.Builder(
-        1,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<div phname=\".+\" />")),
-        SourceLocation.UNKNOWN)
+        1, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<div phname=\".+\" />", X)), X)
         .build(errorReporter);
     assertThat(mhtn.getUserSuppliedPhName()).isNull();
     assertThat(errorReporter.errorsSince(checkpoint)).isTrue();

@@ -118,7 +118,9 @@ public final class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
     if (componentNameExpr != null) {
       selectorText = "-" + selectorText;
     }
-    parent.addChild(indexInParent, new RawTextNode(nodeIdGen.genId(), selectorText));
+    parent.addChild(
+        indexInParent,
+        new RawTextNode(nodeIdGen.genId(), selectorText, parent.getSourceLocation()));
   }
 
 

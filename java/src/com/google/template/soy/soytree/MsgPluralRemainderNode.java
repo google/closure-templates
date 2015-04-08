@@ -36,7 +36,7 @@ public final class MsgPluralRemainderNode extends AbstractSoyNode implements Msg
    * @param origPrintNode The print node containing "remainder".
    */
   public MsgPluralRemainderNode(PrintNode origPrintNode) {
-    super(origPrintNode.getId());
+    super(origPrintNode.getId(), origPrintNode.getSourceLocation());
     this.sourceString = origPrintNode.toSourceString();
   }
 

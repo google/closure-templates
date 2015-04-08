@@ -18,16 +18,15 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.CommandNode;
 
 
 /**
  * Abstract implementation of a CommandNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public abstract class AbstractCommandNode extends AbstractSoyNode implements CommandNode {
+abstract class AbstractCommandNode extends AbstractSoyNode implements CommandNode {
 
 
   /** The name of the Soy command. */
@@ -39,11 +38,13 @@ public abstract class AbstractCommandNode extends AbstractSoyNode implements Com
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param commandName The name of the Soy command.
    * @param commandText The command text, or empty string if none.
    */
-  public AbstractCommandNode(int id, String commandName, String commandText) {
-    super(id);
+  public AbstractCommandNode(
+      int id, SourceLocation sourceLocation, String commandName, String commandText) {
+    super(id, sourceLocation);
     this.commandName = commandName;
     this.commandText = commandText.trim();
   }

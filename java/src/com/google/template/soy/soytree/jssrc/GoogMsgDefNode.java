@@ -62,8 +62,11 @@ public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
    * @param childMsgIds The list of child msg ids (must correspond to children of origMsgFbGrpNode
    *     by index).
    */
-  public GoogMsgDefNode(int id, MsgFallbackGroupNode origMsgFbGrpNode, List<Long> childMsgIds) {
-    super(id);
+  public GoogMsgDefNode(
+      int id,
+      MsgFallbackGroupNode origMsgFbGrpNode,
+      List<Long> childMsgIds) {
+    super(id, origMsgFbGrpNode.getSourceLocation());
 
     int numChildren = origMsgFbGrpNode.numChildren();
     Preconditions.checkArgument(childMsgIds.size() == numChildren);

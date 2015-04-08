@@ -45,10 +45,9 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
 
   private SwitchCaseNode(
       int id, String commandText, List<ExprRootNode<?>> exprList, SourceLocation sourceLocation) {
-    super(id, "case", commandText);
+    super(id, sourceLocation, "case", commandText);
     this.exprList = exprList;
     this.exprListText = commandText;
-    setSourceLocation(sourceLocation);
   }
 
 

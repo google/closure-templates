@@ -22,6 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ExplodingErrorReporter;
@@ -163,7 +164,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
     // Char    H e l l o ,   < W o r l d > !
     // Slice   0 0 0 0 1 1 1 2 2 2 2 3 5 5 6
     // Context a a a a a a a b b b b b b b a
-    RawTextNode rawTextNode = new RawTextNode(0, "Hello, <World>!");
+    RawTextNode rawTextNode = new RawTextNode(0, "Hello, <World>!", SourceLocation.UNKNOWN);
     Context a = Context.HTML_PCDATA;
     Context b = Context.HTML_PCDATA.derive(Context.State.HTML_TAG_NAME);
     SlicedRawTextNode slicedNode = new SlicedRawTextNode(rawTextNode, a);

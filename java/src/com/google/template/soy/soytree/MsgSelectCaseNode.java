@@ -42,8 +42,9 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
   /** The value for this case. */
   private final String caseValue;
 
-  private MsgSelectCaseNode(int id, String commandText, String caseValue) {
-    super(id, "case", commandText);
+  private MsgSelectCaseNode(
+      int id, SourceLocation sourceLocation, String commandText, String caseValue) {
+    super(id, sourceLocation, "case", commandText);
     this.caseValue = caseValue;
   }
 
@@ -76,7 +77,8 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
    * Builder for {@link MsgSelectCaseNode}.
    */
   public static final class Builder {
-    public static final MsgSelectCaseNode ERROR = new MsgSelectCaseNode(-1, "error", "error");
+    public static final MsgSelectCaseNode ERROR
+        = new MsgSelectCaseNode(-1, SourceLocation.UNKNOWN, "error", "error");
 
     private final int id;
     private final String commandText;
@@ -114,9 +116,7 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
       }
 
       String caseValue = ((StringNode) (strLit.getChild(0))).getValue();
-      MsgSelectCaseNode node = new MsgSelectCaseNode(id, commandText, caseValue);
-      node.setSourceLocation(sourceLocation);
-      return node;
+      return new MsgSelectCaseNode(id, sourceLocation, commandText, caseValue);
     }
 
     /**

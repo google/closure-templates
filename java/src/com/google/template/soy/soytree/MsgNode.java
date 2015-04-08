@@ -130,13 +130,14 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   private MsgNode(
       int id,
+      SourceLocation sourceLocation,
       @Nullable List<ExprRootNode<?>> genderExprs,
       String commandName,
       String commandText,
       String meaning,
       String desc,
       boolean isHidden) {
-    super(id, commandName, commandText);
+    super(id, sourceLocation, commandName, commandText);
     this.genderExprs = genderExprs;
     this.meaning = meaning;
     this.desc = desc;
@@ -540,7 +541,8 @@ public final class MsgNode extends AbstractBlockCommandNode
       String meaning = attributes.get("meaning");
       String desc = attributes.get("desc");
       boolean isHidden = attributes.get("hidden").equals("true");
-      return new MsgNode(id, genderExprs, commandName, commandText, meaning, desc, isHidden);
+      return new MsgNode(
+          id, sourceLocation, genderExprs, commandName, commandText, meaning, desc, isHidden);
     }
   }
 }

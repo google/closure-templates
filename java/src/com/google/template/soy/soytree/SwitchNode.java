@@ -44,8 +44,7 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
 
   private SwitchNode(
       int id, String commandText, ExprRootNode<?> expr, SourceLocation sourceLocation) {
-    super(id, "switch", commandText);
-    setSourceLocation(sourceLocation);
+    super(id, sourceLocation, "switch", commandText);
     this.expr = expr;
   }
 

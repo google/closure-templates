@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.jssrc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
@@ -44,11 +45,15 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param renderedGoogMsgVarName The JS var name of the rendered goog msg.
    */
   public GoogMsgRefNode(
-       int id, String renderedGoogMsgVarName, ImmutableList<String> escapingDirectiveNames) {
-    super(id);
+      int id,
+      SourceLocation sourceLocation,
+      String renderedGoogMsgVarName,
+      ImmutableList<String> escapingDirectiveNames) {
+    super(id, sourceLocation);
     this.renderedGoogMsgVarName = renderedGoogMsgVarName;
     this.escapingDirectiveNames = escapingDirectiveNames;
   }

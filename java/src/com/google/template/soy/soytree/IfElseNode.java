@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 
 
@@ -30,9 +31,10 @@ public final class IfElseNode extends AbstractBlockCommandNode implements Condit
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  public IfElseNode(int id) {
-    super(id, "else", "");
+  public IfElseNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation, "else", "");
   }
 
 

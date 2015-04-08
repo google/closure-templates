@@ -124,8 +124,7 @@ public final class ForNode extends AbstractBlockCommandNode
       String commandText,
       SourceLocation sourceLocation,
       ErrorReporter errorReporter) {
-    super(id, "for", commandText);
-    setSourceLocation(sourceLocation);
+    super(id, sourceLocation, "for", commandText);
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {

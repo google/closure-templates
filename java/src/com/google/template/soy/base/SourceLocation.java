@@ -16,8 +16,10 @@
 
 package com.google.template.soy.base;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Preconditions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,10 +64,10 @@ public class SourceLocation {
    */
   public SourceLocation(
       String filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
-    Preconditions.checkArgument(beginLine > 0 || beginLine == -1);
-    Preconditions.checkArgument(beginColumn > 0 || beginColumn == -1);
-    Preconditions.checkArgument(endLine > 0 || endLine == -1);
-    Preconditions.checkArgument(endColumn > 0 || endColumn == -1);
+    checkArgument(beginLine > 0 || beginLine == -1);
+    checkArgument(beginColumn > 0 || beginColumn == -1);
+    checkArgument(endLine > 0 || endLine == -1);
+    checkArgument(endColumn > 0 || endColumn == -1);
 
     int lastBangIndex = filePath.lastIndexOf('!');
     if (lastBangIndex != -1) {
@@ -169,5 +171,14 @@ public class SourceLocation {
     return beginLine != -1
         ? (filePath + ":" + beginLine + ":" + beginColumn)
         : filePath;
+  }
+
+  /**
+   * Returns a new SourceLocation that starts where this SourceLocation starts
+   * and ends where {@code other} ends.
+   */
+  public SourceLocation extend(SourceLocation other) {
+    checkState(filePath.equals(other.filePath));
+    return new SourceLocation(filePath, beginLine, beginColumn, other.endLine, other.endColumn);
   }
 }

@@ -29,22 +29,20 @@ import com.google.template.soy.basetree.AbstractNode;
  */
 public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
-
   /** The id for this node. */
   private int id;
 
-  /** The first line in the file from which this node was parsed or derived. */
-  private SourceLocation srcLoc;
-
+  /** The location in the file from which this node was parsed or derived. */
+  private final SourceLocation srcLoc;
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  protected AbstractSoyNode(int id) {
+  protected AbstractSoyNode(int id, SourceLocation sourceLocation) {
     this.id = id;
-    srcLoc = SourceLocation.UNKNOWN;
+    srcLoc = Preconditions.checkNotNull(sourceLocation);
   }
-
 
   /**
    * Copy constructor.
@@ -56,33 +54,22 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
     this.srcLoc = orig.srcLoc;
   }
 
-
   @Override public void setId(int id) {
     this.id = id;
   }
-
 
   @Override public int getId() {
     return id;
   }
 
-
-  /** The location in the file from which it was parsed or derived. */
+  /** The location in the file from which this node was parsed or derived. */
   @Override public SourceLocation getSourceLocation() {
     return srcLoc;
   }
 
-
-  @Override public void setSourceLocation(SourceLocation srcLoc) {
-    Preconditions.checkNotNull(srcLoc);
-    this.srcLoc = srcLoc;
-  }
-
-
   @Override public ParentSoyNode<?> getParent() {
     return (ParentSoyNode<?>) super.getParent();
   }
-
 
   @Override public abstract SoyNode clone();
 

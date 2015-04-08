@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 
@@ -30,9 +31,10 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  public MsgPluralDefaultNode(int id) {
-    super(id, "default", "");
+  public MsgPluralDefaultNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation, "default", "");
   }
 
 

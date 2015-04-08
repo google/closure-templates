@@ -70,7 +70,6 @@ final class ForeachBuilder {
 
   ForeachBuilder setCommandText(String cmdText) {
     this.cmdText = cmdText;
-    
     return this;
   }
   
@@ -105,15 +104,13 @@ final class ForeachBuilder {
           .parseExpression();
     }
     
-    ForeachNode foreach = new ForeachNode(nodeIdGen.genId(), expr, cmdText);
-    foreach.setSourceLocation(commandLocation);
-    ForeachNonemptyNode nonEmpty = new ForeachNonemptyNode(nodeIdGen.genId(), varName);
-    nonEmpty.setSourceLocation(commandLocation);
+    ForeachNode foreach = new ForeachNode(nodeIdGen.genId(), expr, cmdText, commandLocation);
+    ForeachNonemptyNode nonEmpty
+        = new ForeachNonemptyNode(nodeIdGen.genId(), varName, commandLocation);
     nonEmpty.addChildren(templateBlock);
     foreach.addChild(nonEmpty);
     if (ifEmptyBlock != null) {
-      ForeachIfemptyNode ifEmpty = new ForeachIfemptyNode(nodeIdGen.genId());
-      ifEmpty.setSourceLocation(ifEmptyLocation);
+      ForeachIfemptyNode ifEmpty = new ForeachIfemptyNode(nodeIdGen.genId(), ifEmptyLocation);
       ifEmpty.addChildren(ifEmptyBlock);
       foreach.addChild(ifEmpty);
     }

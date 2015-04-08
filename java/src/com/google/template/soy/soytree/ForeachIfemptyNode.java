@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 
 
@@ -31,9 +32,10 @@ public final class ForeachIfemptyNode extends AbstractBlockCommandNode
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    */
-  public ForeachIfemptyNode(int id) {
-    super(id, "ifempty", "");
+  public ForeachIfemptyNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation, "ifempty", "");
   }
 
 

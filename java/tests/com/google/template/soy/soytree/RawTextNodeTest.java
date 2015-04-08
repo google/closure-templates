@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
+
 import junit.framework.*;
 
 
@@ -23,13 +25,10 @@ import junit.framework.*;
  * Unit tests for RawTextNode.
  *
  */
-public class RawTextNodeTest extends TestCase {
-
+public final class RawTextNodeTest extends TestCase {
 
   public void testToSourceString() {
-
-    RawTextNode rtn = new RawTextNode(0, "Aa`! \n \r \t { }");
+    RawTextNode rtn = new RawTextNode(0, "Aa`! \n \r \t { }", SourceLocation.UNKNOWN);
     assertEquals("Aa`! {\\n} {\\r} {\\t} {lb} {rb}", rtn.toSourceString());
   }
-
 }

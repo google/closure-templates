@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -27,7 +28,7 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class AbstractParentCommandNode<N extends SoyNode>
+abstract class AbstractParentCommandNode<N extends SoyNode>
     extends AbstractCommandNode implements ParentSoyNode<N> {
 
 
@@ -37,12 +38,14 @@ public abstract class AbstractParentCommandNode<N extends SoyNode>
 
   /**
    * @param id The id for this node.
+   * @param sourceLocation The node's source location.
    * @param commandName The name of the Soy command.
    * @param commandText The command text, or empty string if none.
    */
-  public AbstractParentCommandNode(int id, String commandName, String commandText) {
-    super(id, commandName, commandText);
-    parentMixin = new MixinParentNode<N>(this);
+  public AbstractParentCommandNode(
+      int id, SourceLocation sourceLocation, String commandName, String commandText) {
+    super(id, sourceLocation, commandName, commandText);
+    parentMixin = new MixinParentNode<>(this);
   }
 
 
@@ -52,7 +55,7 @@ public abstract class AbstractParentCommandNode<N extends SoyNode>
    */
   protected AbstractParentCommandNode(AbstractParentCommandNode<N> orig) {
     super(orig);
-    this.parentMixin = new MixinParentNode<N>(orig.parentMixin, this);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
   }
 
 

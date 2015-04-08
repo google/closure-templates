@@ -34,9 +34,7 @@ import junit.framework.TestCase;
  */
 public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
 
-
   public void testCombineConsecutiveRawTextNodes() {
-
     String testFileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -50,8 +48,8 @@ public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
         .errorReporter(boom)
         .parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
-    template.addChild(new RawTextNode(0, "bleh"));
-    template.addChild(new RawTextNode(0, "bluh"));
+    template.addChild(new RawTextNode(0, "bleh", template.getSourceLocation()));
+    template.addChild(new RawTextNode(0, "bluh", template.getSourceLocation()));
 
     assertThat(template.numChildren()).isEqualTo(5);
 

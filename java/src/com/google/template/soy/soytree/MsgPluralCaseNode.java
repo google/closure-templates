@@ -39,8 +39,9 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
   /** The number for this case */
   private final int caseNumber;
 
-  private MsgPluralCaseNode(int id, String commandText, int caseNumber) {
-    super(id, "case", commandText);
+  private MsgPluralCaseNode(
+      int id, SourceLocation sourceLocation, String commandText, int caseNumber) {
+    super(id, sourceLocation, "case", commandText);
     this.caseNumber = caseNumber;
   }
 
@@ -75,7 +76,8 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
    */
   public static final class Builder {
 
-    public static final MsgPluralCaseNode ERROR = new MsgPluralCaseNode(-1, "error", 1);
+    public static final MsgPluralCaseNode ERROR
+        = new MsgPluralCaseNode(-1, SourceLocation.UNKNOWN, "error", 1);
 
     private final int id;
     private final String commandText;
@@ -114,8 +116,7 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
         return ERROR;
       }
 
-      MsgPluralCaseNode node = new MsgPluralCaseNode(id, commandText, caseNumber);
-      node.setSourceLocation(sourceLocation);
+      MsgPluralCaseNode node = new MsgPluralCaseNode(id, sourceLocation, commandText, caseNumber);
       return node;
     }
   }

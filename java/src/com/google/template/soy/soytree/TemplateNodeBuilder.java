@@ -23,6 +23,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -136,13 +137,18 @@ public abstract class TemplateNodeBuilder {
   /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
   @Nullable protected ImmutableList<TemplateParam> params;
 
+  final SourceLocation sourceLocation;
+
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param typeRegistry Type registry used in parsing type declarations.
    */
   protected TemplateNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo, @Nullable SoyTypeRegistry typeRegistry) {
+      SoyFileHeaderInfo soyFileHeaderInfo,
+      SourceLocation sourceLocation,
+      @Nullable SoyTypeRegistry typeRegistry) {
     this.soyFileHeaderInfo = soyFileHeaderInfo;
+    this.sourceLocation = sourceLocation;
     this.typeRegistry = typeRegistry;
     this.syntaxVersionBound = null;
     this.isSoyDocSet = false;

@@ -29,15 +29,15 @@ import junit.framework.TestCase;
 import org.easymock.EasyMock;
 
 /**
- * Unit tests for SoyAstCache.
+ * Unit tests for {@link SoyAstCache}.
  *
  */
-public class SoyAstCacheTest extends TestCase {
+public final class SoyAstCacheTest extends TestCase {
   private SoyAstCache cache = new SoyAstCache();
   private Version version1 = EasyMock.createMock(Version.class);
   private Version version2 = EasyMock.createMock(Version.class);
-  private SoyFileNode fileNode1 =
-      new SoyFileNode(0xdeadbeef, SoyFileKind.SRC, null, null, null);
+  private SoyFileNode fileNode1
+      = new SoyFileNode(0xdeadbeef, "test.soy", SoyFileKind.SRC, null, null, null);
   private SoyFileSupplier supplier1 = EasyMock.createMock(SoyFileSupplier.class);
   private SoyFileSupplier supplier2 = EasyMock.createMock(SoyFileSupplier.class);
 

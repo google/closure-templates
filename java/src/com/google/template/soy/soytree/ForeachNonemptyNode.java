@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
@@ -36,9 +37,10 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
   /**
    * @param id The id for this node.
    * @param varName The variable name of the loop index variable
+   * @param sourceLocation The node's source location.
    */
-  public ForeachNonemptyNode(int id, String varName) {
-    super(id);
+  public ForeachNonemptyNode(int id, String varName, SourceLocation sourceLocation) {
+    super(id, sourceLocation);
     this.var = new LoopVar(varName, this, null);
   }
 

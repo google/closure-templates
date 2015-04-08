@@ -132,11 +132,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    * @param visibility Visibility of this template.
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
-  TemplateNode(TemplateNodeBuilder nodeBuilder, String cmdName,
-      SoyFileHeaderInfo soyFileHeaderInfo, Visibility visibility,
+  TemplateNode(
+      TemplateNodeBuilder nodeBuilder,
+      String cmdName,
+      SoyFileHeaderInfo soyFileHeaderInfo,
+      Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params) {
-
-    super(nodeBuilder.getId(), cmdName, nodeBuilder.getCmdText());
+    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName, nodeBuilder.getCmdText());
     maybeSetSyntaxVersionBound(nodeBuilder.getSyntaxVersionBound());
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();

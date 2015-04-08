@@ -105,8 +105,10 @@ final class ReplaceMsgsWithGoogMsgsVisitor extends AbstractSoyNodeVisitor<Void> 
     }
     GoogMsgDefNode googMsgDefNode =
         new GoogMsgDefNode(nodeIdGen.genId(), msgFbGrpNode, childMsgIds);
-    GoogMsgRefNode googMsgRefNode =
-        new GoogMsgRefNode(nodeIdGen.genId(), googMsgDefNode.getRenderedGoogMsgVarName(),
+    GoogMsgRefNode googMsgRefNode = new GoogMsgRefNode(
+        nodeIdGen.genId(),
+        msgFbGrpNode.getSourceLocation(),
+        googMsgDefNode.getRenderedGoogMsgVarName(),
         msgFbGrpNode.getEscapingDirectiveNames());
 
     BlockNode parent = msgFbGrpNode.getParent();
