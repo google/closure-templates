@@ -293,6 +293,10 @@ public final class SoyValueHelper implements SoyValueConverter {
         @Override protected SoyValue compute() {
           return convert(obj).resolve();
         }
+
+        @Override @Nonnull public ResolveStatus status() {
+          return ResolveStatus.ready();
+        }
       };
     }
   }

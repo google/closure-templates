@@ -44,6 +44,10 @@ public class SoyAbstractCachingValueProviderTest extends TestCase {
       computedAlready = true;
       return IntegerData.forValue(number);
     }
+
+    @Override public ResolveStatus status() {
+      return ResolveStatus.ready();
+    }
   }
 
   public void testRepeatedCalls() {

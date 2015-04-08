@@ -16,6 +16,11 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
+
+import java.io.IOException;
+
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -35,6 +40,9 @@ public abstract class SoyAbstractValue implements SoyValue {
     return this;
   }
 
+  @Override @Nonnull public ResolveStatus status() {
+    return ResolveStatus.ready();
+  }
 
   /**
    * Note: Even though we provide a default implementation for equals(SoyValueProvider), subclasses
@@ -87,4 +95,10 @@ public abstract class SoyAbstractValue implements SoyValue {
         "Expecting string value but instead encountered type " + getClass().getSimpleName());
   }
 
+  @Override public RenderResult render(AdvisingAppendable appendable, boolean isLast)
+      throws IOException {
+    // Default implementation, just render.
+    render(appendable);
+    return RenderResult.done();
+  }
 }

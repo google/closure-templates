@@ -17,6 +17,8 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.data.internal.RenderableThunk;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import java.io.IOException;
 
@@ -206,8 +208,7 @@ public abstract class SanitizedContent extends SoyData {
     // N.B. This is nearly identical to StringData.LazyString.  When changing this you
     // probably need to change that also.
 
-    RenderableThunk thunk;
-    String content;
+    final RenderableThunk thunk;
 
     LazyContent(RenderableThunk thunk, ContentKind contentKind, @Nullable Dir contentDir) {
       super(contentKind, contentDir);
@@ -216,25 +217,17 @@ public abstract class SanitizedContent extends SoyData {
 
     @Override
     public void render(Appendable appendable) throws IOException {
-      if (content == null) {
-        // TODO(lukes): in some cases we know that this will be the only time render is called on
-        // this value.  Consider modifying the render api to accept a 'single-shot' boolean so we
-        // can just call render() instead of renderAndSave().  Then we could save a potentially
-        // large amount of buffering.
-        content = thunk.renderAndSave(appendable);
-        thunk = null;  // allow the thunk to be collected
-      } else {
-        appendable.append(content);
-      }
+      thunk.render(appendable);
+    }
+
+    @Override
+    public RenderResult render(AdvisingAppendable appendable, boolean isLast) throws IOException {
+      return thunk.render(appendable, isLast);
     }
 
     @Override
     public String getContent() {
-      if (content == null) {
-        content = thunk.renderAsString();
-        thunk = null;  // allow the thunk to be collected
-      }
-      return content;
+      return thunk.renderAsString();
     }
   }
 }

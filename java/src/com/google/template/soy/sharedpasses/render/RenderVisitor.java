@@ -735,7 +735,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private SoyValue renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
     RenderableThunk thunk = new RenderableThunk() {
-      @Override public void render(Appendable appendable) throws IOException {
+      @Override protected void doRender(Appendable appendable) throws IOException {
         renderBlock(renderUnitNode, appendable);
       }
     };
@@ -785,6 +785,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return new SoyAbstractCachingValueProvider() {
       @Override protected SoyValue compute() {
         return eval(expr, node);
+      }
+
+      @Override public ResolveStatus status() {
+        return ResolveStatus.ready();
       }
     };
   }

@@ -72,6 +72,9 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
     this.future = future;
   }
 
+  @Override public ResolveStatus status() {
+    return future.isDone() ? ResolveStatus.ready() : ResolveStatus.resolveAfter(future);
+  }
 
   /**
    * Calls Future.get() and then converts the result to SoyValue. Note that

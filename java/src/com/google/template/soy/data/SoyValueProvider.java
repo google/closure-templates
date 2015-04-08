@@ -16,6 +16,10 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.concurrent.Future;
+
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -34,6 +38,58 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public interface SoyValueProvider {
 
+  /**
+   * A value that indicates whether {@link SoyValueProvider#resolve()} can be called without
+   * blocking.
+   */
+  abstract class ResolveStatus {
+    private static final ResolveStatus RESOLVABLE = new ResolveStatus() {
+      @Override public boolean isReady() {
+        return true;
+      }
+
+      @Override public Future<?> future() {
+        throw new IllegalStateException("Result.future() can only be called if isDone() is false.");
+      }
+    };
+
+    /**
+     * Returns a {@link ResolveStatus} that indicates that {@link SoyValueProvider#resolve()} can be
+     * called without blocking.
+     */
+    public static ResolveStatus ready() {
+      return RESOLVABLE;
+    }
+
+    /**
+     * Returns a {@link ResolveStatus} that indicates that {@link SoyValueProvider#resolve()} cannot
+     * be called until the given future is {@link Future#isDone() done}.
+     */
+    public static ResolveStatus resolveAfter(final Future<?> future) {
+      checkNotNull(future);
+      return new ResolveStatus() {
+        @Override public boolean isReady() {
+          return false;
+        }
+
+        @Override public Future<?> future() {
+          return future;
+        }
+      };
+    }
+
+    private ResolveStatus() {}  // prevent other subclasses
+
+    /**
+     * Returns the future that must be done prior to calling resolve.
+     *
+     * @throws IllegalStateException if {@link #isReady()} returns {@code true}
+     */
+    public abstract Future<?> future();
+
+    /** Returns {@code true} if the {@link SoyValueProvider} can be resolved without blocking. */
+    public abstract boolean isReady();
+  }
 
   /**
    * Usually, this method is a no-op that simply returns this object. However, if this value needs
@@ -42,6 +98,15 @@ public interface SoyValueProvider {
    */
   @Nonnull public SoyValue resolve();
 
+  /**
+   * Returns {@link ResolveStatus#isReady()} if the value provider can be
+   * {@link #resolve() resolved} without blocking on a future.  Otherwise, returns a
+   * {@link ResolveStatus} that holds the future.
+   *
+   * <p>Note, once this method returns {@link ResolveStatus#isReady()} all future calls must also
+   * return {@link ResolveStatus#isReady()}.
+   */
+  @Nonnull public ResolveStatus status();
 
   /**
    * Compares this value against another for equality for the purposes of Soy.
