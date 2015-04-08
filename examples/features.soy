@@ -328,9 +328,6 @@
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
   // private templates (template that should never be called from hand-written code).
 
-  // Note: All parameters to this template are optional. Therefore, below, we must check for
-  // "not (hasData() and $name)" rather than simply "not $name" because if absolutely no data is
-  // passed, then evaluating "$name" will cause an exception.
   {if not $name}
     // Note: The message below demonstrates that the 'desc' attribute can be left empty. However,
     // this is not recommended except for the simplest messages, otherwise you risk confusing some
