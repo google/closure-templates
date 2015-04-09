@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.NullType;
 
@@ -28,9 +29,9 @@ import com.google.template.soy.types.primitive.NullType;
  */
 public final class NullNode extends AbstractPrimitiveNode {
 
-
-  public NullNode() {}
-
+  public NullNode(SourceLocation sourceLocation) {
+    super(sourceLocation);
+  }
 
   /**
    * Copy constructor.

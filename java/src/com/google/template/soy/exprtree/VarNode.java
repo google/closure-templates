@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 
 
@@ -31,7 +32,7 @@ import com.google.template.soy.types.SoyType;
  */
 public final class VarNode extends AbstractExprNode {
 
-  public static final VarNode ERROR = new VarNode("error");
+  public static final VarNode ERROR = new VarNode("error", SourceLocation.UNKNOWN);
 
 
   /** The variable name (without the dollar sign). */
@@ -40,8 +41,10 @@ public final class VarNode extends AbstractExprNode {
 
   /**
    * @param name The variable name (without the dollar sign).
+   * @param sourceLocation The node's source location.
    */
-  public VarNode(String name) {
+  public VarNode(String name, SourceLocation sourceLocation) {
+    super(sourceLocation);
     this.name = name;
   }
 

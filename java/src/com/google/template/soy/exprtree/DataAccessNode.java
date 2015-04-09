@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 
 /**
  * Base class which represents access to a field or element of an aggregate value,
@@ -31,10 +32,12 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
   /**
    * @param base The base expression, that is a reference to the object
    *     containing the named field.
+   * @param sourceLocation The node's source location.
    * @param isNullSafe If true, checks during evaluation whether the base expression is null
    *     and returns null instead of causing an invalid dereference.
    */
-  public DataAccessNode(ExprNode base, boolean isNullSafe) {
+  protected DataAccessNode(ExprNode base, SourceLocation sourceLocation, boolean isNullSafe) {
+    super(sourceLocation);
     Preconditions.checkArgument(base != null);
     addChild(base);
     this.isNullSafe = isNullSafe;

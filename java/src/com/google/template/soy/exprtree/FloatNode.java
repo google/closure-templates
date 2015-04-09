@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.FloatType;
 
@@ -28,15 +29,15 @@ import com.google.template.soy.types.primitive.FloatType;
  */
 public final class FloatNode extends AbstractPrimitiveNode {
 
-
   /** The float value */
   private final double value;
 
-
   /**
    * @param value The float value.
+   * @param sourceLocation The node's source location.
    */
-  public FloatNode(double value) {
+  public FloatNode(double value, SourceLocation sourceLocation) {
+    super(sourceLocation);
     this.value = value;
   }
 

@@ -36,7 +36,7 @@ public final class FieldAccessNode extends DataAccessNode {
    *     and returns null instead of causing an invalid dereference.
    */
   public FieldAccessNode(ExprNode base, String fieldName, boolean isNullSafe) {
-    super(base, isNullSafe);
+    super(base, base.getSourceLocation(), isNullSafe);
     Preconditions.checkArgument(fieldName != null);
     this.fieldName = fieldName;
   }

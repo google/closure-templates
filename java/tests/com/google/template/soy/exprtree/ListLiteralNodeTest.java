@@ -16,28 +16,32 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 
 import junit.framework.TestCase;
 
 
 /**
- * Unit tests for ListLiteralNode.
+ * Unit tests for {@code ListLiteralNode}.
  *
  */
-public class ListLiteralNodeTest extends TestCase {
+public final class ListLiteralNodeTest extends TestCase {
 
+  private static final SourceLocation X = SourceLocation.UNKNOWN;
 
   public void testToSourceString() {
 
-    VarRefNode dataRef = new VarRefNode("foo", false, false, null);
+    VarRefNode dataRef = new VarRefNode("foo", X, false, false, null);
 
     ListLiteralNode listLit = new ListLiteralNode(
-        Lists.<ExprNode>newArrayList(new StringNode("blah"), new IntegerNode(123), dataRef));
+        ImmutableList.<ExprNode>of(
+            new StringNode("blah", X),
+            new IntegerNode(123, X),
+            dataRef), X);
     assertEquals("['blah', 123, $foo]", listLit.toSourceString());
 
-    ListLiteralNode emptyListLit = new ListLiteralNode(Lists.<ExprNode>newArrayList());
+    ListLiteralNode emptyListLit = new ListLiteralNode(ImmutableList.<ExprNode>of(), X);
     assertEquals("[]", emptyListLit.toSourceString());
   }
-
 }

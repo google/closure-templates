@@ -16,6 +16,8 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
+
 import junit.framework.*;
 
 
@@ -23,17 +25,14 @@ import junit.framework.*;
  * Unit tests for StringNode.
  *
  */
-public class StringNodeTest extends TestCase {
-
+public final class StringNodeTest extends TestCase {
 
   public void testToSourceString() {
-
-    StringNode sn = new StringNode("Aa`! \n \r \t \\ \' \"");
+    StringNode sn = new StringNode("Aa`! \n \r \t \\ \' \"", SourceLocation.UNKNOWN);
     assertEquals("'Aa`! \\n \\r \\t \\\\ \\\' \"'", sn.toSourceString());
 
-    sn = new StringNode("\u2222 \uEEEE \u9EC4 \u607A");
+    sn = new StringNode("\u2222 \uEEEE \u9EC4 \u607A", SourceLocation.UNKNOWN);
     assertEquals("'\u2222 \uEEEE \u9EC4 \u607A'", sn.toSourceString());
     assertEquals("'\\u2222 \\uEEEE \\u9EC4 \\u607A'", sn.toSourceString(true));
   }
-
 }

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -119,11 +118,6 @@ public interface SoyNode extends Node {
    * Returns this node's id.
    */
   public int getId();
-
-  /**
-   * Returns the source location (file path and line number) for this node.
-   */
-  public SourceLocation getSourceLocation();
 
 
   @Override public ParentSoyNode<?> getParent();

@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 
 import java.util.Objects;
@@ -29,7 +30,8 @@ import javax.annotation.Nullable;
  */
 public final class VarRefNode extends AbstractExprNode {
 
-  public static final VarRefNode ERROR = new VarRefNode("error", false, false, null);
+  public static final VarRefNode ERROR
+      = new VarRefNode("error", SourceLocation.UNKNOWN, false, false, null);
 
   /** The name of the variable. */
   private final String name;
@@ -51,12 +53,18 @@ public final class VarRefNode extends AbstractExprNode {
 
   /**
    * @param name The name of the variable.
+   * @param sourceLocation The node's source location.
    * @param injected Whether this is an injected variable.
    * @param nullSafeInjected Whether this a null-safe access to an injected parameter.
    * @param defn (optional) The variable declaration for this variable.
    */
   public VarRefNode(
-      String name, boolean injected, boolean nullSafeInjected, @Nullable VarDefn defn) {
+      String name,
+      SourceLocation sourceLocation,
+      boolean injected,
+      boolean nullSafeInjected,
+      @Nullable VarDefn defn) {
+    super(sourceLocation);
     Preconditions.checkArgument(name != null);
     this.name = name;
     this.isInjected = injected;

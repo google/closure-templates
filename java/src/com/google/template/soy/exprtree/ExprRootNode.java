@@ -30,12 +30,12 @@ import com.google.common.base.Preconditions;
  */
 public final class ExprRootNode<N extends ExprNode> extends AbstractParentExprNode {
 
-
   /**
    * Creates a new instance with the given node as the child.
    * @param child The child to add to the new node.
    */
   public ExprRootNode(N child) {
+    super(child.getSourceLocation());
     this.addChild(child);
   }
 

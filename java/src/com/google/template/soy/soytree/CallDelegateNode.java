@@ -259,7 +259,7 @@ public final class CallDelegateNode extends CallNode {
       }
 
       Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), errorReporter);
+          parseDataAttributeHelper(attributes.get("data"), sourceLocation, errorReporter);
 
       String allowemptydefaultAttr = attributes.get("allowemptydefault");
       Boolean allowsEmptyDefault =

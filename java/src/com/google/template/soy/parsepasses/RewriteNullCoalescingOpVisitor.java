@@ -70,10 +70,10 @@ public final class RewriteNullCoalescingOpVisitor {
       ExprNode operand0b = operand0a.clone();
       ExprNode operand1 = node.getChild(1);
 
-      FunctionNode isNonnullFnNode = new FunctionNode("isNonnull");
+      FunctionNode isNonnullFnNode = new FunctionNode("isNonnull", node.getSourceLocation());
       isNonnullFnNode.addChild(operand0a);
 
-      ConditionalOpNode condOpNode = new ConditionalOpNode();
+      ConditionalOpNode condOpNode = new ConditionalOpNode(node.getSourceLocation());
       condOpNode.addChild(isNonnullFnNode);
       condOpNode.addChild(operand0b);
       condOpNode.addChild(operand1);

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
+
 import junit.framework.TestCase;
 
 
@@ -23,15 +25,12 @@ import junit.framework.TestCase;
  * Unit tests for FunctionNode.
  *
  */
-public class FunctionNodeTest extends TestCase {
-
+public final class FunctionNodeTest extends TestCase {
 
   public void testToSourceString() {
-
-    FunctionNode fn = new FunctionNode("round");
-    fn.addChild(new FloatNode(3.14159));
-    fn.addChild(new IntegerNode(2));
+    FunctionNode fn = new FunctionNode("round", SourceLocation.UNKNOWN);
+    fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
+    fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
     assertEquals("round(3.14159, 2)", fn.toSourceString());
   }
-
 }

@@ -297,14 +297,16 @@ public final class ExpressionParser {
     }
   }
 
-
   /**
    * Private helper to create an operator node.
    */
-  private static final OperatorNode createOperatorNode(String op, int numOperands) {
-
+  private static final OperatorNode createOperatorNode(
+      String op, int numOperands, SourceLocation sourceLocation) {
     try {
-      return Operator.of(op, numOperands).getNodeClass().getConstructor().newInstance();
+      return Operator.of(op, numOperands)
+          .getNodeClass()
+          .getConstructor(SourceLocation.class)
+          .newInstance(sourceLocation);
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
@@ -317,8 +319,8 @@ public final class ExpressionParser {
         token.image,
         Math.max(1, parentSourceLocation.getLineNumber()),
         Math.max(1, parentSourceLocation.getBeginColumn() + token.beginColumn),
-        parentSourceLocation.getLineNumber(),
-        parentSourceLocation.getBeginColumn() + token.endColumn);
+        Math.max(1, parentSourceLocation.getLineNumber()),
+        Math.max(1, parentSourceLocation.getBeginColumn() + token.endColumn));
   }
 }
 
@@ -424,25 +426,25 @@ private PrimitiveNode Primitive() :
 
   (
     <NULL>
-    { primitive = new NullNode(); }
+    { primitive = new NullNode(SourceLocation.UNKNOWN /* TODO(brndn) */); }
   |
     b = <BOOLEAN>
-    { primitive = new BooleanNode(b.image.equals("true")); }
+    { primitive = new BooleanNode(b.image.equals("true"), createSrcLoc(b)); }
   |
     i = <INTEGER>
     { if (i.image.startsWith("0x")) {
-        primitive = new IntegerNode(Integer.parseInt(i.image.substring(2), 16));
+        primitive = new IntegerNode(Integer.parseInt(i.image.substring(2), 16), createSrcLoc(i));
       } else {
-        primitive = new IntegerNode(Integer.parseInt(i.image, 10));
+        primitive = new IntegerNode(Integer.parseInt(i.image, 10), createSrcLoc(i));
       }
     }
   |
     f = <FLOAT>
-    { primitive = new FloatNode(Double.parseDouble(f.image)); }
+    { primitive = new FloatNode(Double.parseDouble(f.image), createSrcLoc(f)); }
   |
     str = <STRING>
     { String strNoQuotes = str.image.substring(1, str.image.length() - 1);
-      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes));
+      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes), createSrcLoc(str));
     }
   )
 
@@ -632,7 +634,7 @@ private ExprNode PrecExpr1() :
       "?:"
       expr1 = PrecExpr1()
 
-      { NullCoalescingOpNode nullCoal = new OperatorNodes.NullCoalescingOpNode();
+      { NullCoalescingOpNode nullCoal = new OperatorNodes.NullCoalescingOpNode(expr.getSourceLocation());
         nullCoal.addChild(expr);
         nullCoal.addChild(expr1);
         expr = nullCoal;
@@ -643,7 +645,7 @@ private ExprNode PrecExpr1() :
       ":"
       expr2 = PrecExpr1()
 
-      { ConditionalOpNode cond = new OperatorNodes.ConditionalOpNode();
+      { ConditionalOpNode cond = new OperatorNodes.ConditionalOpNode(expr.getSourceLocation());
         cond.addChild(expr);
         cond.addChild(expr1);
         cond.addChild(expr2);
@@ -692,7 +694,7 @@ private ExprNode PrecExpr(int minPrec) :
     binaryOp = BinaryOp()
     rightOperand = PrecExpr(Operator.of(binaryOp, 2).getPrecedence() + 1)
 
-    { OperatorNode opNode = createOperatorNode(binaryOp, 2);
+    { OperatorNode opNode = createOperatorNode(binaryOp, 2, expr.getSourceLocation());
       opNode.addChild(expr);  // expr is the current left operand
       opNode.addChild(rightOperand);
       expr = opNode;
@@ -723,7 +725,7 @@ private ExprNode Primary() :
   |
     unaryOp = UnaryOp()
     operand = PrecExpr(Operator.of(unaryOp, 1).getPrecedence())
-    { OperatorNode opNode = createOperatorNode(unaryOp, 1);
+    { OperatorNode opNode = createOperatorNode(unaryOp, 1, SourceLocation.UNKNOWN);
       opNode.addChild(operand);
       primary = opNode;
     }
@@ -763,7 +765,7 @@ private VarNode Var():
     if (identStr.equals("ij")) {
       errorReporter.report(createSrcLoc(dollarIdent), INVALID_VAR_NAME_IJ);
     }
-    return new VarNode(identStr);
+    return new VarNode(identStr, createSrcLoc(dollarIdent));
   }
 }
 
@@ -787,18 +789,18 @@ private ExprNode DataRef() :
   (
     "$ij."
     ident = <IDENT>
-    { dataRef = new VarRefNode(ident.image, true, false, null); }
+    { dataRef = new VarRefNode(ident.image, createSrcLoc(ident), true, false, null); }
   |
     "$ij?."
     ident = <IDENT>
-    { dataRef = new VarRefNode(ident.image, true, true, null); }
+    { dataRef = new VarRefNode(ident.image, createSrcLoc(ident), true, true, null); }
   |
     dollarIdent = <DOLLAR_IDENT>
     { String identStr = dollarIdent.image.substring(1);
       if (identStr.equals("ij")) {
         errorReporter.report(createSrcLoc(dollarIdent), INVALID_PARAM_NAME_IJ);
       }
-      dataRef = new VarRefNode(identStr, false, false, null);
+      dataRef = new VarRefNode(identStr, createSrcLoc(dollarIdent), false, false, null);
     }
   )
 
@@ -810,13 +812,23 @@ private ExprNode DataRef() :
     { dataRef = new FieldAccessNode(dataRef, questionDotIdent.image.substring(2), true); }
   |
     dotIndex = <DOT_INDEX>
-    { dataRef = new ItemAccessNode(dataRef,
-          new IntegerNode(Integer.parseInt(dotIndex.image.substring(1))), false, true);
+    { dataRef = new ItemAccessNode(
+          dataRef,
+          new IntegerNode(
+              Integer.parseInt(dotIndex.image.substring(1)),
+              createSrcLoc(dotIndex)),
+          false,
+          true);
     }
   |
     questionDotIndex = <QUESTION_DOT_INDEX>
-    { dataRef = new ItemAccessNode(dataRef,
-          new IntegerNode(Integer.parseInt(questionDotIndex.image.substring(2))), true, true);
+    { dataRef = new ItemAccessNode(
+          dataRef,
+          new IntegerNode(
+              Integer.parseInt(questionDotIndex.image.substring(2)),
+              createSrcLoc(questionDotIndex)),
+          true,
+          true);
     }
   |
     "["
@@ -852,7 +864,7 @@ private GlobalNode Global() :
     { globalNameSb.append(dotIdent.image); }
   )*
 
-  { return new GlobalNode(globalNameSb.toString()); }
+  { return new GlobalNode(globalNameSb.toString(), createSrcLoc(ident)); }
 }
 
 
@@ -873,7 +885,7 @@ private FunctionNode FunctionCall() :
   ]
   ")"
 
-  { FunctionNode fnNode = new FunctionNode(ident.image);
+  { FunctionNode fnNode = new FunctionNode(ident.image, createSrcLoc(ident));
     if (exprList != null) {
       fnNode.addChildren(exprList);
     }
@@ -912,7 +924,7 @@ private ListLiteralNode ListLiteral() :
   ]
   "]"
 
-  { return new ListLiteralNode(items); }
+  { return new ListLiteralNode(items, SourceLocation.UNKNOWN /* TODO(brndn) */); }
 }
 
 
@@ -926,6 +938,7 @@ private MapLiteralNode MapLiteral() :
 {
   Token ident;
   ExprNode keyExpr, valueExpr;
+  SourceLocation begin, end;
 }
 {
   { List<ExprNode> alternatingKeysAndValues = Lists.newArrayList(); }
@@ -974,5 +987,5 @@ private MapLiteralNode MapLiteral() :
   )
   "]"
 
-  { return new MapLiteralNode(alternatingKeysAndValues); }
+  { return new MapLiteralNode(alternatingKeysAndValues, SourceLocation.UNKNOWN /* TODO(brndn) */); }
 }

@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internalutils;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -73,20 +74,24 @@ public class InternalValueUtilsTest extends TestCase {
 
 
   public void testConvertPrimitiveExprToData() {
-
-    assertTrue(InternalValueUtils.convertPrimitiveExprToData(new NullNode()) instanceof NullData);
+    assertTrue(InternalValueUtils.convertPrimitiveExprToData(
+        new NullNode(SourceLocation.UNKNOWN)) instanceof NullData);
     assertEquals(
         true,
-        InternalValueUtils.convertPrimitiveExprToData(new BooleanNode(true)).booleanValue());
+        InternalValueUtils.convertPrimitiveExprToData(
+            new BooleanNode(true, SourceLocation.UNKNOWN)).booleanValue());
     assertEquals(
         -1,
-        InternalValueUtils.convertPrimitiveExprToData(new IntegerNode(-1)).integerValue());
+        InternalValueUtils.convertPrimitiveExprToData(
+            new IntegerNode(-1, SourceLocation.UNKNOWN)).integerValue());
     assertEquals(
         6.02e23,
-        InternalValueUtils.convertPrimitiveExprToData(new FloatNode(6.02e23)).floatValue());
+        InternalValueUtils.convertPrimitiveExprToData(
+            new FloatNode(6.02e23, SourceLocation.UNKNOWN)).floatValue());
     assertEquals(
         "foo",
-        InternalValueUtils.convertPrimitiveExprToData(new StringNode("foo")).stringValue());
+        InternalValueUtils.convertPrimitiveExprToData(
+            new StringNode("foo", SourceLocation.UNKNOWN)).stringValue());
   }
 
 

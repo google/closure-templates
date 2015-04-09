@@ -406,7 +406,9 @@ public class TemplateNodeTest extends TestCase {
     assertEquals(1, exprUnion.getExpr().numChildren());
     assertTrue(exprUnion.getExpr().getChild(0) instanceof GlobalNode);
     // Substitute the global expression.
-    exprUnion.getExpr().replaceChild(0, new IntegerNode(123));
+    exprUnion.getExpr().replaceChild(
+        0,
+        new IntegerNode(123, exprUnion.getExpr().getChild(0).getSourceLocation()));
     // Check the new values.
     assertEquals("123", node.getDelTemplateVariant());
     assertEquals("123", node.getDelTemplateKey().variant);
@@ -417,7 +419,10 @@ public class TemplateNodeTest extends TestCase {
         .setCmdText("namespace.boo variant=\"test.GLOBAL_CONSTANT\"")
         .setSoyDoc("/** Boo. */")
         .build();
-    node.getAllExprUnions().get(0).getExpr().replaceChild(0, new StringNode("variant"));
+    node.getAllExprUnions()
+        .get(0)
+        .getExpr()
+        .replaceChild(0, new StringNode("variant", node.getSourceLocation()));
     assertEquals("variant", node.getDelTemplateVariant());
     assertEquals("variant", node.getDelTemplateKey().variant);
   }
@@ -430,7 +435,10 @@ public class TemplateNodeTest extends TestCase {
             .setCmdText("namespace.boo variant=\"test.GLOBAL_CONSTANT\"")
             .setSoyDoc("/** Boo. */")
             .build();
-    node.getAllExprUnions().get(0).getExpr().replaceChild(0, new BooleanNode(true));
+    node.getAllExprUnions()
+        .get(0)
+        .getExpr()
+        .replaceChild(0, new BooleanNode(true, node.getSourceLocation()));
     try {
       node.getDelTemplateVariant();
       fail("An error is expected when an invalid node type is used.");
@@ -444,7 +452,10 @@ public class TemplateNodeTest extends TestCase {
         .setCmdText("namespace.boo variant=\"test.GLOBAL_CONSTANT\"")
         .setSoyDoc("/** Boo. */")
         .build();
-    node.getAllExprUnions().get(0).getExpr().replaceChild(0, new StringNode("Not and Identifier!"));
+    node.getAllExprUnions()
+        .get(0)
+        .getExpr()
+        .replaceChild(0, new StringNode("Not and Identifier!", node.getSourceLocation()));
     try {
       node.getDelTemplateVariant();
       fail("An error is expected when a global string value is not an identifier.");

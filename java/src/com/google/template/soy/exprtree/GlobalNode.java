@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
 
@@ -28,17 +29,18 @@ import com.google.template.soy.types.primitive.UnknownType;
  */
 public final class GlobalNode extends AbstractExprNode {
 
-  public static final GlobalNode ERROR = new GlobalNode("error");
-
+  public static final GlobalNode ERROR = new GlobalNode("error", SourceLocation.UNKNOWN);
 
   /** The name of the global. */
   private final String name;
 
-
   /**
    * @param name The name of the global.
+   * @param sourceLocation The node's source location.
+   *
    */
-  public GlobalNode(String name) {
+  public GlobalNode(String name, SourceLocation sourceLocation) {
+    super(sourceLocation);
     this.name = name;
   }
 

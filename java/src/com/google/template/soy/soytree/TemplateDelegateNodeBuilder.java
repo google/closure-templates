@@ -126,7 +126,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     } else {
       TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
       ExprRootNode<?> variantExpr
-          = new ExpressionParser(variantExprText, SourceLocation.UNKNOWN, errorReporter)
+          = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
               .parseExpression();
       errorReporter.throwIfErrorsPresent();
       ExprNode child = variantExpr.getChild(0);

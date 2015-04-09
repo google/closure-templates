@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -50,17 +51,18 @@ public class JsExprTranslatorTest extends TestCase {
     JsSrcTestUtils.simulateNewApiCall(INJECTOR);
     JsExprTranslator jsExprTranslator = INJECTOR.getInstance(JsExprTranslator.class);
 
-    TimesOpNode expr = new TimesOpNode();
-    expr.addChild(new IntegerNode(3));
-    expr.addChild(new NullNode());  // will be replaced with one of the functions below
+    TimesOpNode expr = new TimesOpNode(SourceLocation.UNKNOWN);
+    expr.addChild(new IntegerNode(3, SourceLocation.UNKNOWN));
+    // will be replaced with one of the functions below
+    expr.addChild(new NullNode(SourceLocation.UNKNOWN));
 
-    FunctionNode userFnNode = new FunctionNode("userFn");
-    userFnNode.addChild(new IntegerNode(5));
+    FunctionNode userFnNode = new FunctionNode("userFn", SourceLocation.UNKNOWN);
+    userFnNode.addChild(new IntegerNode(5, SourceLocation.UNKNOWN));
 
-    FunctionNode randomIntFnNode = new FunctionNode("randomInt");
-    randomIntFnNode.addChild(new IntegerNode(4));
+    FunctionNode randomIntFnNode = new FunctionNode("randomInt", SourceLocation.UNKNOWN);
+    randomIntFnNode.addChild(new IntegerNode(4, SourceLocation.UNKNOWN));
 
-    Deque<Map<String, JsExpr>> localVarTranslations = new ArrayDeque<Map<String, JsExpr>>();
+    Deque<Map<String, JsExpr>> localVarTranslations = new ArrayDeque<>();
 
     // Test unsupported function (Soy V1 syntax).
     expr.replaceChild(1, userFnNode);

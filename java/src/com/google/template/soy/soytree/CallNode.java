@@ -132,11 +132,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Private helper function for subclass constructors to parse the 'data' attribute.
    *
    * @param dataAttr The 'data' attribute in a call.
+   * @param sourceLocation The 'data' attribute's source location.
    * @param errorReporter For reporting syntax errors.
    * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
   protected static Pair<Boolean, ExprRootNode<?>> parseDataAttributeHelper(
-      String dataAttr, ErrorReporter errorReporter) {
+      String dataAttr, SourceLocation sourceLocation, ErrorReporter errorReporter) {
 
     boolean isPassingData;
     ExprRootNode<?> dataExpr;
@@ -148,7 +149,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       dataExpr = null;
     } else {
       isPassingData = true;
-      dataExpr = new ExpressionParser(dataAttr, SourceLocation.UNKNOWN, errorReporter)
+      dataExpr = new ExpressionParser(dataAttr, sourceLocation, errorReporter)
           .parseExpression();
     }
 

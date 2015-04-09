@@ -16,6 +16,8 @@
 
 package com.google.template.soy.basetree;
 
+import com.google.template.soy.base.SourceLocation;
+
 import javax.annotation.Nullable;
 
 
@@ -57,6 +59,12 @@ public interface Node {
    * @param syntaxVersionCutoff The syntax version cutoff to check.
    */
   public boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff);
+
+
+  /**
+   * Returns the source location (file path and line number) for this node.
+   */
+  public SourceLocation getSourceLocation();
 
 
   /**

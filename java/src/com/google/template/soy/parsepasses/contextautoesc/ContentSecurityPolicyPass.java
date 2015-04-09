@@ -543,7 +543,11 @@ public final class ContentSecurityPolicyPass {
    */
   private static VarRefNode makeReferenceToInjectedCspNonce() {
     return new VarRefNode(
-        CSP_NONCE_VARIABLE_NAME, true /*injected*/, false, ImplicitCspNonceDefn.SINGLETON);
+        CSP_NONCE_VARIABLE_NAME,
+        SourceLocation.UNKNOWN,
+        true /*injected*/,
+        false /* nullSafeInjected */,
+        ImplicitCspNonceDefn.SINGLETON);
   }
 
 

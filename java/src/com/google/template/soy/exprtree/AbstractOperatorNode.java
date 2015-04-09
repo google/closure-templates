@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.exprtree.Operator.Operand;
@@ -39,7 +40,8 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
   private final Operator operator;
 
 
-  public AbstractOperatorNode(Operator operator) {
+  public AbstractOperatorNode(Operator operator, SourceLocation sourceLocation) {
+    super(sourceLocation);
     this.operator = operator;
   }
 

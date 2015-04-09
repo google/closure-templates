@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internalutils;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
@@ -56,17 +57,17 @@ public class InternalValueUtils {
   public static PrimitiveNode convertPrimitiveDataToExpr(PrimitiveData primitiveData) {
 
     if (primitiveData instanceof StringData) {
-      return new StringNode(primitiveData.stringValue());
+      return new StringNode(primitiveData.stringValue(), SourceLocation.UNKNOWN);
     } else if (primitiveData instanceof BooleanData) {
-      return new BooleanNode(primitiveData.booleanValue());
+      return new BooleanNode(primitiveData.booleanValue(), SourceLocation.UNKNOWN);
     } else if (primitiveData instanceof IntegerData) {
       // NOTE: We don't support longs here, since this needs to work both across all target
       // languages, and Javascript doesn't support longs.
-      return new IntegerNode(primitiveData.integerValue());
+      return new IntegerNode(primitiveData.integerValue(), SourceLocation.UNKNOWN);
     } else if (primitiveData instanceof FloatData) {
-      return new FloatNode(primitiveData.floatValue());
+      return new FloatNode(primitiveData.floatValue(), SourceLocation.UNKNOWN);
     } else if (primitiveData instanceof NullData) {
-      return new NullNode();
+      return new NullNode(SourceLocation.UNKNOWN);
     } else {
       throw new IllegalArgumentException();
     }

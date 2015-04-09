@@ -90,7 +90,7 @@ public class ReplaceHasDataFunctionVisitor extends AbstractSoyNodeVisitor<Void> 
       if (node.getFunctionName().equals("hasData")) {
         // Function hasData() is only allowed for syntax version 2.1 and below.
         if (declaredSyntaxVersion.num < SyntaxVersion.V2_2.num) {
-          node.getParent().replaceChild(node, new BooleanNode(true));
+          node.getParent().replaceChild(node, new BooleanNode(true, node.getSourceLocation()));
         }
         // Always set the bound, regardless of declaredSyntaxVersion, because we might later
         // determine a higher required syntax version for the Soy file containing this node, due to

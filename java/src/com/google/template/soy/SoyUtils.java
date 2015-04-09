@@ -155,7 +155,7 @@ public final class SoyUtils {
         String name = matcher.group(1);
         String valueText = matcher.group(2).trim();
 
-        ExprNode valueExpr = new ExpressionParser(valueText, SourceLocation.UNKNOWN, errorReporter)
+        ExprNode valueExpr = new ExpressionParser(valueText, sourceLocation, errorReporter)
             .parseExpression()
             .getChild(0);
 

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 
 
@@ -25,10 +26,11 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {
+abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {
 
-
-  public AbstractPrimitiveNode() {}
+  protected AbstractPrimitiveNode(SourceLocation sourceLocation) {
+    super(sourceLocation);
+  }
 
 
   /**

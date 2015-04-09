@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.IntType;
 
@@ -29,15 +30,15 @@ import java.util.Objects;
  */
 public final class IntegerNode extends AbstractPrimitiveNode {
 
-
   /** The integer value. */
   private final int value;
 
-
   /**
    * @param value The integer value.
+   * @param sourceLocation The node's source location.
    */
-  public IntegerNode(int value) {
+  public IntegerNode(int value, SourceLocation sourceLocation) {
+    super(sourceLocation);
     this.value = value;
   }
 

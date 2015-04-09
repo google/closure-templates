@@ -17,6 +17,8 @@
 package com.google.template.soy.exprtree;
 
 
+import com.google.template.soy.base.SourceLocation;
+
 /**
  * Container of nodes representing operators.
  *
@@ -33,7 +35,9 @@ public class OperatorNodes {
    */
   public final static class NegativeOpNode extends AbstractOperatorNode {
 
-    public NegativeOpNode() { super(Operator.NEGATIVE); }
+    public NegativeOpNode(SourceLocation sourceLocation) {
+      super(Operator.NEGATIVE, sourceLocation);
+    }
 
     private NegativeOpNode(NegativeOpNode orig) { super(orig); }
 
@@ -48,7 +52,9 @@ public class OperatorNodes {
    */
   public final static class NotOpNode extends AbstractOperatorNode {
 
-    public NotOpNode() { super(Operator.NOT); }
+    public NotOpNode(SourceLocation sourceLocation) {
+      super(Operator.NOT, sourceLocation);
+    }
 
     private NotOpNode(NotOpNode orig) { super(orig); }
 
@@ -63,7 +69,9 @@ public class OperatorNodes {
    */
   public final static class TimesOpNode extends AbstractOperatorNode {
 
-    public TimesOpNode() { super(Operator.TIMES); }
+    public TimesOpNode(SourceLocation sourceLocation) {
+      super(Operator.TIMES, sourceLocation);
+    }
 
     private TimesOpNode(TimesOpNode orig) { super(orig); }
 
@@ -78,7 +86,9 @@ public class OperatorNodes {
    */
   public final static class DivideByOpNode extends AbstractOperatorNode {
 
-    public DivideByOpNode() { super(Operator.DIVIDE_BY); }
+    public DivideByOpNode(SourceLocation sourceLocation) {
+      super(Operator.DIVIDE_BY, sourceLocation);
+    }
 
     private DivideByOpNode(DivideByOpNode orig) { super(orig); }
 
@@ -93,7 +103,9 @@ public class OperatorNodes {
    */
   public final static class ModOpNode extends AbstractOperatorNode {
 
-    public ModOpNode() { super(Operator.MOD); }
+    public ModOpNode(SourceLocation sourceLocation) {
+      super(Operator.MOD, sourceLocation);
+    }
 
     private ModOpNode(ModOpNode orig) { super(orig); }
 
@@ -108,7 +120,9 @@ public class OperatorNodes {
    */
   public final static class PlusOpNode extends AbstractOperatorNode {
 
-    public PlusOpNode() { super(Operator.PLUS); }
+    public PlusOpNode(SourceLocation sourceLocation) {
+      super(Operator.PLUS, sourceLocation);
+    }
 
     private PlusOpNode(PlusOpNode orig) { super(orig); }
 
@@ -123,7 +137,9 @@ public class OperatorNodes {
    */
   public final static class MinusOpNode extends AbstractOperatorNode {
 
-    public MinusOpNode() { super(Operator.MINUS); }
+    public MinusOpNode(SourceLocation sourceLocation) {
+      super(Operator.MINUS, sourceLocation);
+    }
 
     private MinusOpNode(MinusOpNode orig) { super(orig); }
 
@@ -138,7 +154,9 @@ public class OperatorNodes {
    */
   public final static class LessThanOpNode extends AbstractOperatorNode {
 
-    public LessThanOpNode() { super(Operator.LESS_THAN); }
+    public LessThanOpNode(SourceLocation sourceLocation) {
+      super(Operator.LESS_THAN, sourceLocation);
+    }
 
     private LessThanOpNode(LessThanOpNode orig) { super(orig); }
 
@@ -153,7 +171,9 @@ public class OperatorNodes {
    */
   public final static class GreaterThanOpNode extends AbstractOperatorNode {
 
-    public GreaterThanOpNode() { super(Operator.GREATER_THAN); }
+    public GreaterThanOpNode(SourceLocation sourceLocation) {
+      super(Operator.GREATER_THAN, sourceLocation);
+    }
 
     private GreaterThanOpNode(GreaterThanOpNode orig) { super(orig); }
 
@@ -168,7 +188,9 @@ public class OperatorNodes {
    */
   public final static class LessThanOrEqualOpNode extends AbstractOperatorNode {
 
-    public LessThanOrEqualOpNode() { super(Operator.LESS_THAN_OR_EQUAL); }
+    public LessThanOrEqualOpNode(SourceLocation sourceLocation) {
+      super(Operator.LESS_THAN_OR_EQUAL, sourceLocation);
+    }
 
     private LessThanOrEqualOpNode(LessThanOrEqualOpNode orig) { super(orig); }
 
@@ -183,7 +205,9 @@ public class OperatorNodes {
    */
   public final static class GreaterThanOrEqualOpNode extends AbstractOperatorNode {
 
-    public GreaterThanOrEqualOpNode() { super(Operator.GREATER_THAN_OR_EQUAL); }
+    public GreaterThanOrEqualOpNode(SourceLocation sourceLocation) {
+      super(Operator.GREATER_THAN_OR_EQUAL, sourceLocation);
+    }
 
     private GreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode orig) { super(orig); }
 
@@ -198,7 +222,9 @@ public class OperatorNodes {
    */
   public final static class EqualOpNode extends AbstractOperatorNode {
 
-    public EqualOpNode() { super(Operator.EQUAL); }
+    public EqualOpNode(SourceLocation sourceLocation) {
+      super(Operator.EQUAL, sourceLocation);
+    }
 
     private EqualOpNode(EqualOpNode orig) { super(orig); }
 
@@ -213,7 +239,9 @@ public class OperatorNodes {
    */
   public final static class NotEqualOpNode extends AbstractOperatorNode {
 
-    public NotEqualOpNode() { super(Operator.NOT_EQUAL); }
+    public NotEqualOpNode(SourceLocation sourceLocation) {
+      super(Operator.NOT_EQUAL, sourceLocation);
+    }
 
     private NotEqualOpNode(NotEqualOpNode orig) { super(orig); }
 
@@ -228,7 +256,9 @@ public class OperatorNodes {
    */
   public final static class AndOpNode extends AbstractOperatorNode {
 
-    public AndOpNode() { super(Operator.AND); }
+    public AndOpNode(SourceLocation sourceLocation) {
+      super(Operator.AND, sourceLocation);
+    }
 
     private AndOpNode(AndOpNode orig) { super(orig); }
 
@@ -243,7 +273,9 @@ public class OperatorNodes {
    */
   public final static class OrOpNode extends AbstractOperatorNode {
 
-    public OrOpNode() { super(Operator.OR); }
+    public OrOpNode(SourceLocation sourceLocation) {
+      super(Operator.OR, sourceLocation);
+    }
 
     private OrOpNode(OrOpNode orig) { super(orig); }
 
@@ -258,7 +290,9 @@ public class OperatorNodes {
    */
   public final static class NullCoalescingOpNode extends AbstractOperatorNode {
 
-    public NullCoalescingOpNode() { super(Operator.NULL_COALESCING); }
+    public NullCoalescingOpNode(SourceLocation sourceLocation) {
+      super(Operator.NULL_COALESCING, sourceLocation);
+    }
 
     private NullCoalescingOpNode(NullCoalescingOpNode orig) { super(orig); }
 
@@ -273,7 +307,9 @@ public class OperatorNodes {
    */
   public final static class ConditionalOpNode extends AbstractOperatorNode {
 
-    public ConditionalOpNode() { super(Operator.CONDITIONAL); }
+    public ConditionalOpNode(SourceLocation sourceLocation) {
+      super(Operator.CONDITIONAL, sourceLocation);
+    }
 
     private ConditionalOpNode(ConditionalOpNode orig) { super(orig); }
 

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
+
 import java.util.List;
 
 
@@ -27,11 +29,11 @@ import java.util.List;
  */
 public final class MapLiteralNode extends AbstractParentExprNode {
 
-
   /**
    * @param alternatingKeysAndValues The keys and values (alternating) in this map.
    */
-  public MapLiteralNode(List<ExprNode> alternatingKeysAndValues) {
+  public MapLiteralNode(List<ExprNode> alternatingKeysAndValues, SourceLocation sourceLocation) {
+    super(sourceLocation);
     addChildren(alternatingKeysAndValues);
   }
 

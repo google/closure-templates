@@ -19,6 +19,7 @@ package com.google.template.soy.exprparse;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.exprparse.ExpressionSubject.assertThatExpression;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -269,15 +270,18 @@ public class ExpressionParserTest extends TestCase {
 
 
   public void testParseDataReference() throws Exception {
+
+    SourceLocation loc = SourceLocation.UNKNOWN;
+
     ExprNode dataRef = assertThatExpression("$boo").isValidDataRef();
     assertNodeEquals(
-        new VarRefNode("boo", false, false, null),
+        new VarRefNode("boo", loc, false, false, null),
         dataRef);
 
     dataRef = assertThatExpression("$boo.foo").isValidDataRef();
     assertNodeEquals(
         new FieldAccessNode(
-            new VarRefNode("boo", false, false, null),
+            new VarRefNode("boo", loc, false, false, null),
             "foo",
             false),
         dataRef);
@@ -286,10 +290,10 @@ public class ExpressionParserTest extends TestCase {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", false, false, null),
-                new IntegerNode(0),
+                new VarRefNode("boo", loc, false, false, null),
+                new IntegerNode(0, loc),
                 false, true),
-            new VarRefNode("foo", false, false, null),
+            new VarRefNode("foo", loc, false, false, null),
             false,
             false),
         dataRef);
@@ -298,10 +302,10 @@ public class ExpressionParserTest extends TestCase {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", false, false, null),
-                new IntegerNode(0),
+                new VarRefNode("boo", loc, false, false, null),
+                new IntegerNode(0, loc),
                 true, true),
-            new VarRefNode("foo", false, false, null),
+            new VarRefNode("foo", loc, false, false, null),
             true,
             false),
         dataRef);
@@ -310,10 +314,10 @@ public class ExpressionParserTest extends TestCase {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", true, true, null),
-                new IntegerNode(0),
+                new VarRefNode("boo", loc, true, true, null),
+                new IntegerNode(0, loc),
                 true, true),
-            new VarRefNode("foo", true, false, null),
+            new VarRefNode("foo", loc, true, false, null),
             false,
             false),
         dataRef);
