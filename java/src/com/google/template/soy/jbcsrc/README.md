@@ -743,3 +743,15 @@ to introduce (and do not have pretty failures).
 
 A good resource for figuring out what each jvm opcode does is from the
 [java spec](http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html)
+
+### ASM Tips
+
+The asm library has a lot of benefits. It is small, blazing fast, and well
+supported.  However, it can be very error prone to generate bytecode.  In 
+particular, asm has no error checking, so when you make a mistake the errors
+produced can be inscrutable.  Here is what I know:
+
+ * NegativeArraySizeException is thrown from MethodWriter.visitMaxes.  The most
+   likely explanation is that you have accidentally popped too many items off
+   the runtime stack.  Look for stray POP instructions, or using the wrong
+   branch instruction (IF_IEQ pops two ints, IFEQ pops one).

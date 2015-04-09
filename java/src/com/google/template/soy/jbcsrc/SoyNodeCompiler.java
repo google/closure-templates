@@ -60,20 +60,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Comiles {@link SoyNode soy nodes} into {@link Statement statements}.
+ * Compiles {@link SoyNode soy nodes} into {@link Statement statements}.
+ * 
+ * <p>The normal contract for {@link Statement statements} is that they leave the state of the 
+ * runtime stack unchanged before and after execution.  The SoyNodeCompiler requires that the 
+ * runtime stack be <em>empty</em> prior to any of the code produced.
  */
 final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
-  // TODO(lukes): Add support for calling the softLimitReached method (and detaching) after writing
-  // to the appendable
+  private final DetachState detachState;
   private final VariableSet variables;
   private final Expression appendableExpression;
   private final Expression contextExpression;
   private final ExpressionCompiler exprCompiler;
 
-  SoyNodeCompiler(VariableSet variables, Expression appendableExpression, 
-      Expression contextExpression, ExpressionCompiler exprCompiler) {
-    appendableExpression.checkType(Type.getType(AdvisingAppendable.class));
-    contextExpression.checkType(Type.getType(RenderContext.class));
+  SoyNodeCompiler(
+      DetachState detachState,
+      VariableSet variables, 
+      Expression appendableExpression, 
+      Expression contextExpression, 
+      ExpressionCompiler exprCompiler) {
+    appendableExpression.checkAssignableTo(Type.getType(AdvisingAppendable.class));
+    contextExpression.checkAssignableTo(Type.getType(RenderContext.class));
+    this.detachState = detachState;
     this.variables = variables;
     this.appendableExpression = appendableExpression;
     this.contextExpression = contextExpression;
@@ -81,11 +89,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   Statement compile(TemplateBasicNode node) {
-    return visit(node);
+    Statement templateBody = visit(node);
+    Statement jumpTable = detachState.generateReattachTable();
+    return Statement.concat(jumpTable, templateBody);
   }
 
   @Override protected Statement visitTemplateBasicNode(TemplateNode node) {
-    // TODO(lukes): the start of a template should include a jump table for reattaching
     return childrenAsStatement(node);
   }
 
@@ -269,16 +278,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     SoyExpression printExpr = exprCompiler.compile(node.getExprUnion().getExpr());
     // TODO(lukes): we should specialize the print operator for our primitives to avoid this box 
     // operator.  would only work if there were no print directives
-    return MethodRef.SOY_VALUE_RENDER
-        .invokeVoid(printExpr.box(), appendableExpression)
+    Statement renderSoyValue = MethodRef.SOY_VALUE_RENDER
+        .invokeVoid(printExpr.box(), appendableExpression);
+    return Statement.concat(renderSoyValue, detachState.detachLimited(appendableExpression))
         .withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitRawTextNode(RawTextNode node) {
-    return MethodRef.ADVISING_APPENDABLE_APPEND
-        .invoke(appendableExpression, constant(node.getRawText()))
-        .toStatement()
-        .withSourceLocation(node.getSourceLocation());
+    Expression render = MethodRef.ADVISING_APPENDABLE_APPEND
+        .invoke(appendableExpression, constant(node.getRawText()));
+    
+    return detachState.detachLimited(render).withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitDebuggerNode(DebuggerNode node) {
@@ -286,6 +296,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // number.  Which may be useful for debugging :)
     return NULL_STATEMENT.withSourceLocation(node.getSourceLocation());
   }
+
+  // Note: xid and css translations are expected to be very short, so we do _not_ generate detaches
+  // for them, even though they write to the output.
 
   @Override protected Statement visitXidNode(XidNode node) {
     Expression rename = MethodRef.RENDER_CONTEXT_RENAME_XID
@@ -325,12 +338,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitLogNode(LogNode node) {
-    SoyNodeCompiler loggerCompiler =
-        new SoyNodeCompiler(variables, 
+    return new SoyNodeCompiler(
+            detachState,
+            variables,
             MethodRef.RUNTIME_LOGGER.invoke(),
             contextExpression, 
-            exprCompiler);
-    return concat(loggerCompiler.visitChildren(node)).withSourceLocation(node.getSourceLocation());
+            exprCompiler).childrenAsStatement(node);
   }
 
   @Override protected Statement visitSoyNode(SoyNode node) {

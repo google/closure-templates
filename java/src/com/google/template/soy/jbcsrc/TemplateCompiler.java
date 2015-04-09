@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_MET
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -57,12 +58,14 @@ final class TemplateCompiler {
   private static final String[] INTERFACES = { Type.getInternalName(CompiledTemplate.class) };
 
   private final FieldRef paramsField;
+  private final FieldRef stateField;
   private final CompiledTemplateMetadata template;
   private ClassWriter writer;
 
   TemplateCompiler(CompiledTemplateMetadata template) {
     this.template = template;
-    this.paramsField = FieldRef.createFinalField(template.typeInfo(), "params", SoyRecord.class);
+    this.paramsField = FieldRef.createFinalField(template.typeInfo(), "$params", SoyRecord.class);
+    this.stateField = FieldRef.createField(template.typeInfo(), "$state", Type.INT_TYPE);
   }
 
   /**
@@ -70,7 +73,7 @@ final class TemplateCompiler {
    *
    * <p>For each template, we generate:
    * <ul>
-   *     <li>A {@link CompiledTemplate.Factory}
+   *     <li>A {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory}
    *     <li>A {@link CompiledTemplate}
    *     <li>A SoyAbstractCachingProvider subclass for each {@link LetValueNode} and 
    *         {@link CallParamValueNode}
@@ -109,6 +112,7 @@ final class TemplateCompiler {
         // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
         null);
 
+    stateField.defineField(writer);
     paramsField.defineField(writer);
 
     generateConstructor();
@@ -120,39 +124,51 @@ final class TemplateCompiler {
   }
 
   private void generateRenderMethod() {
-    Label start = new Label();
-    Label end = new Label();
-    LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
-    LocalVariable appendableVar = 
+    final Label start = new Label();
+    final Label end = new Label();
+    final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
+    final LocalVariable appendableVar = 
         createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
-    LocalVariable contextVar = 
+    final LocalVariable contextVar = 
         createLocal("context", 2, Type.getType(RenderContext.class), start, end);
+    final VariableSet variables = new VariableSet(template.typeInfo(), thisVar, RENDER_METHOD, 
+        ImmutableList.of(paramsField.name(), stateField.name()));
+    final Statement nodeBody = 
+        new SoyNodeCompiler(
+            new DetachState(variables, thisVar, stateField),
+            variables,
+            appendableVar,
+            contextVar,
+            new ExprCompiler(variables)).compile(template.node());
+    final Expression done = MethodRef.RENDER_RESULT_DONE.invoke();
+    Statement fullMethodBody = new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        adapter.mark(start);
+        nodeBody.gen(adapter);
+        done.gen(adapter);
+        adapter.mark(end);
+        adapter.returnValue();
 
+        thisVar.tableEntry(adapter);
+        appendableVar.tableEntry(adapter);
+        contextVar.tableEntry(adapter);
+        variables.generateTableEntries(adapter);
+      }
+    };
     GeneratorAdapter ga = new GeneratorAdapter(
         Opcodes.ACC_PUBLIC,
         RENDER_METHOD,
         null /* no generic signature */,
         new Type[] { Type.getType(IOException.class) },
         writer);
-    ga.mark(start);
-    VariableSet variables = new VariableSet(template.typeInfo(), thisVar, RENDER_METHOD);
-    SoyNodeCompiler nodeCompiler = new SoyNodeCompiler(
-        variables,
-        appendableVar,
-        contextVar,
-        new ExprCompiler(variables));
-    Statement statement = nodeCompiler.compile(template.node());
-    statement.gen(ga);
-    // TODO(lukes): add detach/reattach, all this does is hardcode it to
-    // 'return RenderResult.done();'
-    MethodRef.RENDER_RESULT_DONE.invoke().gen(ga);
-    ga.mark(end);
-    ga.returnValue();
-    thisVar.tableEntry(ga);
-    appendableVar.tableEntry(ga);
-    contextVar.tableEntry(ga);
-    variables.generateTableEntries(ga);
-    ga.endMethod();
+    fullMethodBody.gen(ga);
+    try {
+      ga.endMethod();
+    } catch (Throwable t) {
+      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the 
+      // exception.
+      throw new RuntimeException("Failed to generate method:\n" + fullMethodBody, t);
+    }
     variables.defineFields(writer);
   }
 

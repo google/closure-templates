@@ -36,7 +36,7 @@ final class ControlFlow {
 
   @AutoValue abstract static class IfBlock {
     static IfBlock create(Expression cond, Statement block) {
-      cond.checkType(Type.BOOLEAN_TYPE);
+      cond.checkAssignableTo(Type.BOOLEAN_TYPE);
       return new AutoValue_ControlFlow_IfBlock(cond, block);
     }
     abstract Expression condition();

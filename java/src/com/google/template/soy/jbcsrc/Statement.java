@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.Arrays;
@@ -37,6 +38,39 @@ abstract class Statement extends BytecodeProducer {
   static final Statement NULL_STATEMENT = new Statement() {
     @Override void doGen(GeneratorAdapter adapter) {}
   };
+
+  /**
+   * Generates a statement that returns the value produced by the given expression.
+   * 
+   * <p>This does not validate that the return type is appropriate.  It is our callers 
+   * responsibility to do that.
+   */
+  static Statement returnExpression(final Expression expression) {
+    // TODO(lukes): it would be nice to do a checkType operation here to make sure that expression
+    // is compatible with the return type of the method, but i don't know how to get that
+    // information here (reasonably).  So it is the caller's responsibility.
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        expression.gen(adapter);
+        adapter.returnValue();
+      }
+    };
+  }
+
+ /**
+  * Generates a statement that throws the throwable produced by the given expression.
+  * 
+  * <p>This does not validate that the throwable is compatible with the methods throws clause. 
+  */
+  static Statement throwExpression(final Expression expression) {
+    expression.checkAssignableTo(Type.getType(Throwable.class));
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        expression.gen(adapter);
+        adapter.throwException();
+      }
+    };
+  }
 
   /** Returns a statement that concatenates all the provided statements. */
   static Statement concat(Statement ...statements) {

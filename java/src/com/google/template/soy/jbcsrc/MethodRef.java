@@ -83,11 +83,14 @@ import java.util.Map;
       create(SharedRuntime.class, "negative", SoyValue.class);
   static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER = 
       create(Runtime.class, "stringEqualsAsNumber", String.class, double.class);
+  static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR = 
+      create(Runtime.class, "unexpectedStateError", int.class);
   static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN = 
       create(Runtime.class, "coerceToBoolean", double.class);
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
+  static final MethodRef RENDER_RESULT_LIMITED = create(RenderResult.class, "limited");
   static final MethodRef RUNTIME_CHECK_REQUIRED_PARAM = 
       create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
   static final MethodRef RUNTIME_LOGGER = create(Runtime.class, "logger");
@@ -118,6 +121,8 @@ import java.util.Map;
       create(AdvisingAppendable.class, "append", CharSequence.class);
   static final MethodRef ADVISING_APPENDABLE_APPEND_CHAR = 
       create(AdvisingAppendable.class, "append", char.class);
+  static final MethodRef ADVISING_APPENDABLE_SOFT_LIMITED = 
+      create(AdvisingAppendable.class, "softLimitReached");
   static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR = 
       create(RenderContext.class, "renameCssSelector", String.class);
   static final MethodRef RENDER_CONTEXT_RENAME_XID = 

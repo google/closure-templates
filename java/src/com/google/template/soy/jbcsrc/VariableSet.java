@@ -32,6 +32,7 @@ import org.objectweb.asm.commons.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -138,18 +139,18 @@ final class VariableSet {
       return expression;
     }
 
-    Statement save() {
+    private Statement save() {
       return getField().putInstanceField(thisVar, local);
     }
 
-    Statement restore() {
+    private Statement restore() {
       Expression fieldValue = getField().accessor(thisVar);
       return local.store(fieldValue);
     }
 
     private FieldRef getField() {
       if (fieldRef == null) {
-        fieldRef = FieldRef.createField(owner, local.name(), local.resultType());
+        fieldRef = FieldRef.createField(owner, local.variableName(), local.resultType());
       }
       return fieldRef;
     }
@@ -167,13 +168,20 @@ final class VariableSet {
 
   private final List<Variable> allVariables = new ArrayList<>();
   private final Deque<Map<VarKey, Variable>> frames = new ArrayDeque<>();
-  private final Set<String> activeLocalNames = new HashSet<>();
   private final Set<String> fieldNames = new HashSet<>();
   private final BitSet availableSlots = new BitSet();
   private final TypeInfo owner;
   private final LocalVariable thisVar;
 
-  VariableSet(TypeInfo owner, LocalVariable thisVar, Method method) {
+  /**
+   * @param owner The type that is the owner of the method being generated 
+   * @param thisVar An expression returning the current 'this' reference
+   * @param method The method being generated
+   * @param claimedFieldNames A set of reserved field names.
+   */
+  VariableSet(TypeInfo owner, LocalVariable thisVar, Method method, 
+      Collection<String> claimedFieldNames) {
+    this.fieldNames.addAll(claimedFieldNames);
     this.owner = owner;
     this.thisVar = thisVar;
     availableSlots.set(0);   // for 'this'
@@ -213,7 +221,6 @@ final class VariableSet {
         final Set<Label> endLabels = Sets.newSetFromMap(new IdentityHashMap<Label, Boolean>());
         for (Variable var : currentFrame.values()) {
           endLabels.add(var.local.end());
-          activeLocalNames.remove(var.local.name());
           availableSlots.clear(var.local.index(),
               var.local.index() + var.local.resultType().getSize());
         }
@@ -273,6 +280,26 @@ final class VariableSet {
     throw new IllegalArgumentException("No variable named: '" + name + "' is bound");
   }
   
+  /** Statements for saving and restoring local variables in class fields. */
+  @AutoValue abstract static class SaveRestoreState {
+    abstract Statement save();
+    abstract Statement restore();
+  }
+
+  /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
+  SaveRestoreState saveRestoreState() {
+    List<Statement> saves = new ArrayList<>();
+    List<Statement> restores = new ArrayList<>();
+    for (Map<VarKey, Variable> frame : frames) {
+      for (Variable var : frame.values()) {
+        saves.add(var.save());
+        restores.add(var.restore());
+      }
+    }
+    return new AutoValue_VariableSet_SaveRestoreState(
+        Statement.concat(saves), Statement.concat(restores));
+  }
+
   private int reserveSlotFor(Type type) {
     int size = type.getSize();
     checkArgument(size != 0);

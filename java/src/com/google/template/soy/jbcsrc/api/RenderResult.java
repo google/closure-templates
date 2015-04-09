@@ -99,4 +99,8 @@ public final class RenderResult {
     }
     return f;
   }
+  
+  @Override public String toString() {
+    return "RenderResult{ " + type + "}";
+  }
 }

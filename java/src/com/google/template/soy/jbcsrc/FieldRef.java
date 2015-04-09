@@ -145,8 +145,8 @@ import java.lang.reflect.Modifier;
    */
   Statement putInstanceField(final Expression instance, final Expression value) {
     checkState(!isStatic(), "This field is static!");
-    instance.checkType(owner().type());
-    value.checkType(type());
+    instance.checkAssignableTo(owner().type());
+    value.checkAssignableTo(type());
     return new Statement() {
       @Override void doGen(GeneratorAdapter adapter) {
         instance.gen(adapter);

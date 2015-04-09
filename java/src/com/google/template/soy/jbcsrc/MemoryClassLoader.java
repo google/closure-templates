@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.base.Throwables;
 import com.google.common.primitives.Longs;
 
 import java.util.LinkedHashMap;
@@ -83,6 +84,13 @@ final class MemoryClassLoader extends ClassLoader {
     } else if (classDef == TOMBSTONE) {
       throw new IllegalStateException("class already defined: " + name);
     }
-    return super.defineClass(name, classDef.data(), 0, classDef.data().length);
+    try {
+      return super.defineClass(name, classDef.data(), 0, classDef.data().length);
+    } catch (Throwable t) {
+      // Attach additional information in a suppressed exception to make debugging easier.
+      t.addSuppressed(new RuntimeException("Failed to load generated class:\n" + classDef));
+      Throwables.propagateIfInstanceOf(t, ClassNotFoundException.class);
+      throw Throwables.propagate(t);
+    }
   }
 }

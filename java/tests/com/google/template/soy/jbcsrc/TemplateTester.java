@@ -48,7 +48,7 @@ import javax.annotation.Nonnull;
  * Utilities for testing compiled soy templates.
  */
 public final class TemplateTester {
-  private static final RenderContext EMPTY_CONTEXT = new RenderContext(
+  static final RenderContext EMPTY_CONTEXT = new RenderContext(
       EMPTY_DICT, SoyCssRenamingMap.IDENTITY, SoyCssRenamingMap.IDENTITY);
 
   private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =
@@ -65,6 +65,17 @@ public final class TemplateTester {
    */
   public static CompiledTemplateSubject assertThatTemplateBody(String ...body) {
     return Truth.assertAbout(FACTORY).that(toTemplate(body));
+  }
+
+  /**
+   * Returns a {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory} for the given 
+   * template body.
+   */
+  public static CompiledTemplate.Factory compileTemplateBody(String ...body) {
+    // a little hacky to use the subject to do this...
+    CompiledTemplateSubject that = Truth.assertAbout(FACTORY).that(toTemplate(body));
+    that.compile();
+    return that.factory;
   }
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {

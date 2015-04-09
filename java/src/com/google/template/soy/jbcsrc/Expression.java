@@ -51,7 +51,7 @@ abstract class Expression extends BytecodeProducer {
         types.size(),
         exprs.length);
     for (int i = 0; i < exprs.length; i++) {
-      exprs[i].checkType(types.get(i), "Parameter %s", i);
+      exprs[i].checkAssignableTo(types.get(i), "Parameter %s", i);
     }
   }
 
@@ -74,11 +74,17 @@ abstract class Expression extends BytecodeProducer {
     return false;
   }
 
-  final void checkType(Type expected) {
-    checkType(expected, "");
+  /**
+   * Check that this expression is assignable to {@code expected}. 
+   */
+  final void checkAssignableTo(Type expected) {
+    checkAssignableTo(expected, "");
   }
 
-  final void checkType(Type expected, String fmt, Object ...args) {
+  /**
+   * Check that this expression is assignable to {@code expected}. 
+   */
+  final void checkAssignableTo(Type expected, String fmt, Object ...args) {
     if (resultType().equals(expected)) {
       return;
     }
@@ -88,7 +94,7 @@ abstract class Expression extends BytecodeProducer {
       // This test is mostly optimistic so we just assume that they match. The verifier will tell
       // us ultimately if we screw up.
       // TODO(lukes): see if we can do something better here,  special case the SoyValue 
-      // hierarchy?
+      // hierarchy?  We could use BytecodeUtils.classFromAsmType, but that might be overly expensive
       return;
     }
     String message = String.format(
@@ -138,7 +144,7 @@ abstract class Expression extends BytecodeProducer {
   /**
    * A simple name for the expression, used as part of {@link #toString()}.
    */
-  String name() {
+  private String name() {
     if (isConstant()) {
       return "ConstantExpression";
     }

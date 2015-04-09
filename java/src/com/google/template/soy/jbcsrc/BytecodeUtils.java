@@ -305,7 +305,7 @@ final class BytecodeUtils {
    * expression.
    */
   static Expression logicalNot(final Expression baseExpr) {
-    baseExpr.checkType(Type.BOOLEAN_TYPE);
+    baseExpr.checkAssignableTo(Type.BOOLEAN_TYPE);
     checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
     return new SimpleExpression(Type.BOOLEAN_TYPE, baseExpr.isConstant()) {
       @Override void doGen(GeneratorAdapter mv) {
@@ -399,7 +399,7 @@ final class BytecodeUtils {
       final ImmutableList<? extends Expression> expressions, final boolean isOrOperator) {
     checkArgument(!expressions.isEmpty());
     for (Expression expr : expressions) {
-      expr.checkType(Type.BOOLEAN_TYPE);
+      expr.checkAssignableTo(Type.BOOLEAN_TYPE);
     }
     if (expressions.size() == 1) {
       return expressions.get(0);

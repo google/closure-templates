@@ -108,7 +108,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 
   /** Writes the value at the top of the stack to the local variable. */
   private Statement store(final Expression expr, final Optional<Label> firstVarInstruction) {
-    expr.checkType(resultType());
+    expr.checkAssignableTo(resultType());
     return new Statement() {
       @Override void doGen(GeneratorAdapter adapter) {
         expr.gen(adapter);
