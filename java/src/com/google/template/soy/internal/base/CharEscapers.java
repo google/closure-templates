@@ -16,6 +16,10 @@
 
 package com.google.template.soy.internal.base;
 
+import com.google.common.escape.CharEscaper;
+import com.google.common.escape.CharEscaperBuilder;
+import com.google.common.escape.Escaper;
+import com.google.common.net.PercentEscaper;
 
 /**
  * Utility functions for dealing with {@code CharEscaper}s, and some commonly
@@ -25,55 +29,6 @@ package com.google.template.soy.internal.base;
 public final class CharEscapers {
 
   private CharEscapers() {}
-
-  /**
-   * Returns a {@link CharEscaper} instance that escapes special characters in a
-   * string so it can safely be included in an XML document in either element
-   * content or attribute values.
-   *
-   * <p><b>Note</b></p>: silently removes null-characters and control
-   * characters, as there is no way to represent them in XML.
-   */
-  public static CharEscaper xmlEscaper() {
-    return XML_ESCAPER;
-  }
-
-  /**
-   * Escapes special characters from a string so it can safely be included in an
-   * XML document in either element content or attribute values.  Also removes
-   * null-characters and control characters, as there is no way to represent
-   * them in XML.
-   */
-  private static final CharEscaper XML_ESCAPER = newBasicXmlEscapeBuilder()
-      .addEscape('"', "&quot;")
-      .addEscape('\'', "&apos;")
-      .toEscaper();
-
-  /**
-   * Returns a {@link CharEscaper} instance that escapes special characters in a
-   * string so it can safely be included in an XML document in element content.
-   *
-   * <p><b>Note</b></p>: double and single quotes are not escaped, so it is not
-   * safe to use this escaper to escape attribute values. Use the
-   * {@link #xmlEscaper()} escaper to escape attribute values or if you are
-   * unsure. Also silently removes non-whitespace control characters, as there
-   * is no way to represent them in XML.
-   */
-  public static CharEscaper xmlContentEscaper() {
-    return XML_CONTENT_ESCAPER;
-  }
-
-  /**
-   * Escapes special characters from a string so it can safely be included in an
-   * XML document in element content.  Note that quotes are <em>not</em>
-   * escaped, so <em>this is not safe for use in attribute values</em>. Use
-   * {@link #XML_ESCAPER} for attribute values, or if you are unsure.  Also
-   * removes non-whitespace control characters, as there is no way to represent
-   * them in XML.
-   */
-  private static final CharEscaper XML_CONTENT_ESCAPER =
-      newBasicXmlEscapeBuilder().toEscaper();
-
   /**
    * Returns a {@link CharEscaper} instance that escapes special characters in a
    * string so it can safely be included in an HTML document in either element
@@ -357,7 +312,7 @@ public final class CharEscapers {
    *
    * <p><b>Note</b></p>: does not alter non-ASCII and control characters.
    */
-  public static CharEscaper asciiHtmlEscaper() {
+  public static Escaper asciiHtmlEscaper() {
     return ASCII_HTML_ESCAPER;
   }
 
@@ -366,7 +321,7 @@ public final class CharEscapers {
    * HTML document in either element content or attribute values. Does
    * <em>not</em> alter non-ASCII characters or control characters.
    */
-  private static final CharEscaper ASCII_HTML_ESCAPER = new CharEscaperBuilder()
+  private static final Escaper ASCII_HTML_ESCAPER = new CharEscaperBuilder()
       .addEscape('"', "&quot;")
       .addEscape('\'', "&#39;")
       .addEscape('&', "&amp;")
@@ -411,56 +366,19 @@ public final class CharEscapers {
     return plusForSpace ? URI_ESCAPER : URI_ESCAPER_NO_PLUS;
   }
 
+  /**
+   * A string of safe characters that mimics the behavior of
+   * {@link java.net.URLEncoder}.
+   *
+   * <p>TODO: Fix escapers to be compliant with RFC 3986
+   */
+  public static final String SAFECHARS_URLENCODER = "-_.*";
   private static final Escaper URI_ESCAPER =
-      new PercentEscaper(PercentEscaper.SAFECHARS_URLENCODER, true);
+      new PercentEscaper(SAFECHARS_URLENCODER, true);
 
   private static final Escaper URI_ESCAPER_NO_PLUS =
-      new PercentEscaper(PercentEscaper.SAFECHARS_URLENCODER, false);
+      new PercentEscaper(SAFECHARS_URLENCODER, false);
 
-  /**
-   * Returns a {@link CharEscaper} instance that escapes special characters in a
-   * string so it can safely be included in a Java string literal.
-   *
-   * <p><b>Note</b></p>: does not escape single quotes, so use the escaper
-   * returned by {@link #javaCharEscaper()} if you are generating char
-   * literals or if you are unsure.
-   */
-  public static CharEscaper javaStringEscaper() {
-    return JAVA_STRING_ESCAPER;
-  }
-
-  /**
-   * Escapes special characters from a string so it can safely be included in a
-   * Java string literal. Does <em>not</em> escape single-quotes, so use
-   * JAVA_CHAR_ESCAPE if you are generating char literals, or if you are unsure.
-   *
-   * <p>Note that non-ASCII characters will be octal or Unicode escaped.
-   */
-  private static final CharEscaper JAVA_STRING_ESCAPER
-      = new JavaCharEscaper(new CharEscaperBuilder()
-          .addEscape('\b', "\\b")
-          .addEscape('\f', "\\f")
-          .addEscape('\n', "\\n")
-          .addEscape('\r', "\\r")
-          .addEscape('\t', "\\t")
-          .addEscape('\"', "\\\"")
-          .addEscape('\\', "\\\\")
-          .toArray());
-
-
-  private static CharEscaperBuilder newBasicXmlEscapeBuilder() {
-    return new CharEscaperBuilder()
-        .addEscape('&', "&amp;")
-        .addEscape('<', "&lt;")
-        .addEscape('>', "&gt;")
-        .addEscapes(new char[] {
-            '\000', '\001', '\002', '\003', '\004',
-            '\005', '\006', '\007', '\010', '\013',
-            '\014', '\016', '\017', '\020', '\021',
-            '\022', '\023', '\024', '\025', '\026',
-            '\027', '\030', '\031', '\032', '\033',
-            '\034', '\035', '\036', '\037'}, "");
-  }
 
   /**
    * A fast {@link CharEscaper} that uses an array of replacement characters and
@@ -494,60 +412,6 @@ public final class CharEscapers {
         }
       }
       return s;
-    }
-  }
-
-  /**
-   * Escaper for Java character escaping, contains both an array and a
-   * backup function.  We're not overriding the array decorator because we
-   * want to keep this as fast as possible, so no calls to super.escape first.
-   */
-  private static class JavaCharEscaper extends FastCharEscaper {
-
-    public JavaCharEscaper(char[][] replacements) {
-      super(replacements, ' ', '~');
-    }
-
-    @Override protected char[] escape(char c) {
-      // First check if our array has a valid escaping.
-      if (c < replacementLength) {
-        char[] r = replacements[c];
-        if (r != null) {
-          return r;
-        }
-      }
-
-      // This range is un-escaped.
-      if (safeMin <= c && c <= safeMax) {
-        return null;
-      }
-
-      if (c <= 0xFF) {
-        // Convert c to an octal-escaped string.
-        // Equivalent to String.format("\\%03o", (int)c);
-        char[] r = new char[4];
-        r[0] = '\\';
-        r[3] = HEX_DIGITS[c & 7];
-        c = (char) (c >>> 3);
-        r[2] = HEX_DIGITS[c & 7];
-        c = (char) (c >>> 3);
-        r[1] = HEX_DIGITS[c & 7];
-        return r;
-      }
-
-      // Convert c to a hex-escaped string.
-      // Equivalent to String.format("\\u%04x", (int)c);
-      char[] r = new char[6];
-      r[0] = '\\';
-      r[1] = 'u';
-      r[5] = HEX_DIGITS[c & 15];
-      c = (char) (c >>> 4);
-      r[4] = HEX_DIGITS[c & 15];
-      c = (char) (c >>> 4);
-      r[3] = HEX_DIGITS[c & 15];
-      c = (char) (c >>> 4);
-      r[2] = HEX_DIGITS[c & 15];
-      return r;
     }
   }
 

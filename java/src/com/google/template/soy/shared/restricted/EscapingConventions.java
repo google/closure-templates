@@ -20,7 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.internal.base.Escaper;
+import com.google.common.escape.Escaper;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -126,7 +126,7 @@ public final class EscapingConventions {
    *     value like {@code zzz}.</dd>
    * </dl>
    */
-  public static abstract class CrossLanguageStringXform implements Escaper {
+  public static abstract class CrossLanguageStringXform extends Escaper {
     private final String directiveName;
     private final @Nullable Pattern valueFilter;
     private final ImmutableList<Escape> escapes;
@@ -261,7 +261,7 @@ public final class EscapingConventions {
       return sb != null ? sb.toString() : string;
     }
 
-    @Override
+    // TODO(lukes): consider eliminating this method, it was removed from the Escaper interface.
     public final Appendable escape(final Appendable out) {
       return new Appendable() {
         @Override public Appendable append(CharSequence csq) throws IOException {

@@ -17,9 +17,9 @@
 package com.google.template.soy.xliffmsgplugin;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.escape.Escaper;
+import com.google.common.xml.XmlEscapers;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.internal.base.CharEscaper;
-import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -69,8 +69,8 @@ class XliffGenerator {
   static CharSequence generateXliff(
       SoyMsgBundle msgBundle, String sourceLocaleString, @Nullable String targetLocaleString) {
 
-    CharEscaper attributeEscaper = CharEscapers.xmlEscaper();
-    CharEscaper contentEscaper = CharEscapers.xmlContentEscaper();
+    Escaper attributeEscaper = XmlEscapers.xmlAttributeEscaper();
+    Escaper contentEscaper = XmlEscapers.xmlContentEscaper();
 
     boolean hasTarget = targetLocaleString != null && targetLocaleString.length() > 0;
 
