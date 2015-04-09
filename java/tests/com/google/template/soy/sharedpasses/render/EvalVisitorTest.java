@@ -105,7 +105,7 @@ public class EvalVisitorTest extends TestCase {
             .getChild(0)
             .getChild(0)
             .getChild(0);
-    ExprRootNode<?> expr = code.getExprUnion().getExpr();
+    ExprRootNode expr = code.getExprUnion().getExpr();
 
     EvalVisitor evalVisitor =
         INJECTOR.getInstance(EvalVisitorFactory.class)

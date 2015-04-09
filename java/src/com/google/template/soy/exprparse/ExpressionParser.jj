@@ -47,7 +47,6 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -210,7 +209,7 @@ public final class ExpressionParser {
    * <p>Maintains the following invariant: an empty list is returned if and only if
    * an error is reported to the parser's {@link ErrorReporter}.
    */
-  public List<ExprRootNode<? extends ExprNode>> parseExpressionList() {
+  public List<ExprNode> parseExpressionList() {
     try {
       return ExprListInput();
     } catch (TokenMgrError e) {
@@ -229,15 +228,15 @@ public final class ExpressionParser {
    * <p>Maintains the following invariant: an error node is returned if and only if an error
    * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<? extends ExprNode> parseExpression() {
+  public ExprNode parseExpression() {
     try {
       return ExprInput();
     } catch (ParseException e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+      return VarRefNode.ERROR;
     } catch (TokenMgrError e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+      return VarRefNode.ERROR;
     }
   }
 
@@ -248,15 +247,15 @@ public final class ExpressionParser {
    * <p>Maintains the following invariant: an error node is returned if and only if an error
    * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<VarNode> parseVariable() {
+  public VarNode parseVariable() {
     try {
       return VarInput();
     } catch (ParseException e) {
       errorReporter.report(parentSourceLocation, INVALID_VAR_NAME, input);
-      return new ExprRootNode<VarNode>(VarNode.ERROR);
+      return VarNode.ERROR;
     } catch (TokenMgrError e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<VarNode>(VarNode.ERROR);
+      return VarNode.ERROR;
     }
   }
 
@@ -267,15 +266,15 @@ public final class ExpressionParser {
    * <p>Maintains the following invariant: an error node is returned if and only if an error
    * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<? extends ExprNode> parseDataReference() {
+  public ExprNode parseDataReference() {
     try {
       return DataRefInput();
     } catch (ParseException e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+      return VarRefNode.ERROR;
     } catch (TokenMgrError e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<VarRefNode>(VarRefNode.ERROR);
+      return VarRefNode.ERROR;
     }
   }
 
@@ -285,15 +284,15 @@ public final class ExpressionParser {
    * <p>Maintains the following invariant: an error node is returned if and only if am error
    * is reported to the parser's {@link ErrorReporter}.
    */
-  public ExprRootNode<GlobalNode> parseGlobal() {
+  public GlobalNode parseGlobal() {
     try {
       return GlobalInput();
     } catch (ParseException e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<GlobalNode>(GlobalNode.ERROR);
+      return GlobalNode.ERROR;
     } catch (TokenMgrError e) {
       errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return new ExprRootNode<GlobalNode>(GlobalNode.ERROR);
+      return GlobalNode.ERROR;
     }
   }
 
@@ -494,15 +493,15 @@ private String BinaryOp() :
  *
  * ExprListInput -> ExprList EOF
  */
-private List<ExprRootNode<?>> ExprListInput() :
+private List<ExprNode> ExprListInput() :
 {
   List<ExprNode> exprList;
 }
 {
   exprList = ExprList()
-  { List<ExprRootNode<?>> rootedExprList = Lists.newArrayList();
+  { List<ExprNode> rootedExprList = Lists.newArrayList();
     for (ExprNode expr : exprList) {
-      rootedExprList.add(new ExprRootNode<ExprNode>(expr));
+      rootedExprList.add(expr);
     }
   }
   <EOF>
@@ -515,14 +514,14 @@ private List<ExprRootNode<?>> ExprListInput() :
  *
  * ExprInput -> Expr EOF
  */
-private ExprRootNode<?> ExprInput() :
+private ExprNode ExprInput() :
 {
   ExprNode expr;
 }
 {
   expr = Expr()
   <EOF>
-  { return new ExprRootNode<ExprNode>(expr); }
+  { return expr; }
 }
 
 
@@ -531,14 +530,14 @@ private ExprRootNode<?> ExprInput() :
  *
  * VarInput -> Var EOF
  */
-private ExprRootNode<VarNode> VarInput() :
+private VarNode VarInput() :
 {
   VarNode var;
 }
 {
   var = Var()
   <EOF>
-  { return new ExprRootNode<VarNode>(var); }
+  { return var; }
 }
 
 
@@ -547,14 +546,14 @@ private ExprRootNode<VarNode> VarInput() :
  *
  * DataRefInput -> DataRef EOF
  */
-private ExprRootNode<ExprNode> DataRefInput():
+private ExprNode DataRefInput():
 {
   ExprNode dataRef;
 }
 {
   dataRef = DataRef()
   <EOF>
-  { return new ExprRootNode<ExprNode>(dataRef); }
+  { return dataRef; }
 }
 
 
@@ -563,14 +562,14 @@ private ExprRootNode<ExprNode> DataRefInput():
  *
  * GlobalInput -> Global EOF
  */
-private ExprRootNode<GlobalNode> GlobalInput():
+private GlobalNode GlobalInput():
 {
   GlobalNode global;
 }
 {
   global = Global()
   <EOF>
-  { return new ExprRootNode<GlobalNode>(global); }
+  { return global; }
 }
 
 

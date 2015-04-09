@@ -38,7 +38,6 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.List;
 
-
 /**
  * Visitor for asserting that all the nodes in a parse tree or subtree conform to the user-declared
  * syntax version.
@@ -207,7 +206,7 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
     private final ExprHolderNode exprHolder;
 
     /** The root of the expression that we're traversing (during a pass). */
-    private ExprRootNode<?> exprRoot;
+    private ExprRootNode exprRoot;
 
 
     ReportSyntaxVersionErrorsExprVisitor(ExprHolderNode exprHolder) {
@@ -218,7 +217,7 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
 
     @Override public Void exec(ExprNode node) {
 
-      Preconditions.checkArgument(node instanceof ExprRootNode<?>);
+      Preconditions.checkArgument(node instanceof ExprRootNode);
       exprRoot = (ExprRootNode) node;
       visit(node);
       exprRoot = null;

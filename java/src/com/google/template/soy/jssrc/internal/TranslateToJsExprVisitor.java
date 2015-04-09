@@ -54,7 +54,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.UnknownType;
 
-
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +161,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   // -----------------------------------------------------------------------------------------------
   // Implementation for a dummy root node.
 
-  @Override protected JsExpr visitExprRootNode(ExprRootNode<?> node) {
+  @Override protected JsExpr visitExprRootNode(ExprRootNode node) {
     return visit(node.getChild(0));
   }
 

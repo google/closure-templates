@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -28,7 +29,6 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Node representing a 'select' block.
@@ -45,7 +45,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
 
   /** The expression for the value to select on. */
-  private final ExprRootNode<?> selectExpr;
+  private final ExprRootNode selectExpr;
 
   /** The base select var name (what the translator sees). */
   private final String baseSelectVarName;
@@ -54,7 +54,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   private MsgSelectNode(
       int id,
       String commandText,
-      ExprRootNode<?> selectExpr,
+      ExprRootNode selectExpr,
       SourceLocation sourceLocation) {
     super(id, sourceLocation, "select", commandText);
 
@@ -68,7 +68,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     // really be parsed in CallNode.
     baseSelectVarName =
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr, FALLBACK_BASE_SELECT_VAR_NAME);
+            selectExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
 
@@ -82,7 +82,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   public MsgSelectNode(
       int id,
       SourceLocation sourceLocation,
-      ExprRootNode<?> selectExpr,
+      ExprRootNode selectExpr,
       @Nullable String baseSelectVarName) {
     super(id, sourceLocation, "select",
         selectExpr.toSourceString() +
@@ -90,7 +90,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     this.selectExpr = selectExpr;
     this.baseSelectVarName = (baseSelectVarName != null) ? baseSelectVarName :
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr, FALLBACK_BASE_SELECT_VAR_NAME);
+            selectExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
 
@@ -111,7 +111,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
 
   /** Returns the expression for the value to select on. */
-  public ExprRootNode<?> getExpr() {
+  public ExprRootNode getExpr() {
     return selectExpr;
   }
 
@@ -166,9 +166,9 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
      * to the given {@link ErrorReporter}.
      */
     public MsgSelectNode build(ErrorReporter errorReporter) {
-      ExprRootNode<?> selectExpr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+      ExprNode selectExpr = new ExpressionParser(commandText, sourceLocation, errorReporter)
           .parseExpression();
-      return new MsgSelectNode(id, commandText, selectExpr, sourceLocation);
+      return new MsgSelectNode(id, commandText, new ExprRootNode(selectExpr), sourceLocation);
     }
   }
 

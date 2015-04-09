@@ -248,7 +248,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
       }
 
       // Get directive args.
-      List<ExprRootNode<?>> args = directiveNode.getArgs();
+      List<ExprRootNode> args = directiveNode.getArgs();
       if (! directive.getValidArgsSizes().contains(args.size())) {
         throw SoySyntaxExceptionUtils.createWithNode(
             "Print directive '" + directiveNode.getName() + "' used with the wrong number of" +
@@ -258,7 +258,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
 
       // Translate directive args.
       List<JsExpr> argsJsExprs = Lists.newArrayListWithCapacity(args.size());
-      for (ExprRootNode<?> arg : args) {
+      for (ExprRootNode arg : args) {
         argsJsExprs.add(jsExprTranslator.translateToJsExpr(arg, null, localVarTranslations));
       }
 
@@ -306,7 +306,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
     StringBuilder sb = new StringBuilder();
     sb.append("goog.getCssName(");
 
-    ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
+    ExprRootNode componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
       JsExpr baseJsExpr = jsExprTranslator.translateToJsExpr(
           componentNameExpr, node.getComponentNameText(), localVarTranslations);

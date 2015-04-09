@@ -114,7 +114,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
 
   /** The list of expressions for gender values. Null after rewriting. */
-  @Nullable private List<ExprRootNode<?>> genderExprs;
+  @Nullable private List<ExprRootNode> genderExprs;
 
   /** The meaning string if set, otherwise null (usually null). */
   private final String meaning;
@@ -131,7 +131,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   private MsgNode(
       int id,
       SourceLocation sourceLocation,
-      @Nullable List<ExprRootNode<?>> genderExprs,
+      @Nullable List<ExprRootNode> genderExprs,
       String commandName,
       String commandText,
       String meaning,
@@ -152,8 +152,8 @@ public final class MsgNode extends AbstractBlockCommandNode
   private MsgNode(MsgNode orig) {
     super(orig);
     if (orig.genderExprs != null) {
-      ImmutableList.Builder<ExprRootNode<?>> builder = ImmutableList.builder();
-      for (ExprRootNode<?> node : orig.genderExprs) {
+      ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
+      for (ExprRootNode node : orig.genderExprs) {
         builder.add(node.clone());
       }
       this.genderExprs = builder.build();
@@ -181,8 +181,8 @@ public final class MsgNode extends AbstractBlockCommandNode
    * this is okay since the command text is only used for reporting errors (in fact, it might be
    * good as a reminder of how the msg was originally written).
    */
-  @Nullable public List<ExprRootNode<?>> getAndRemoveGenderExprs() {
-    List<ExprRootNode<?>> genderExprs = this.genderExprs;
+  @Nullable public List<ExprRootNode> getAndRemoveGenderExprs() {
+    List<ExprRootNode> genderExprs = this.genderExprs;
     this.genderExprs = null;
     return genderExprs;
   }
@@ -528,11 +528,11 @@ public final class MsgNode extends AbstractBlockCommandNode
       Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
 
       String gendersAttr = attributes.get("genders");
-      List<ExprRootNode<?>> genderExprs = null;
+      List<ExprRootNode> genderExprs = null;
       if (gendersAttr != null) {
-        genderExprs = new ExpressionParser(
-            gendersAttr, sourceLocation, errorReporter)
-            .parseExpressionList();
+        genderExprs = ExprRootNode.wrap(
+            new ExpressionParser(gendersAttr, sourceLocation, errorReporter)
+                .parseExpressionList());
         if (genderExprs.isEmpty() || genderExprs.size() > 3) {
           errorReporter.report(sourceLocation, WRONG_NUMBER_OF_GENDER_EXPRS);
         }

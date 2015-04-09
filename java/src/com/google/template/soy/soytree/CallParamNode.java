@@ -22,7 +22,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
@@ -35,7 +34,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Abstract node representing a 'param'.
@@ -173,8 +171,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
 
       // Check the validity of the key name.
       ExprNode dataRef = new ExpressionParser("$" + key, sourceLocation, errorReporter)
-          .parseDataReference()
-          .getChild(0);
+          .parseDataReference();
 
       if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
         errorReporter.report(sourceLocation, KEY_IS_NOT_TOP_LEVEL, commandText);
@@ -194,7 +191,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
       // Use the real error manager once any currently broken templates are migrated.
       ErrorReporter throwaway = new ErrorReporterImpl();
       Checkpoint checkpoint = throwaway.checkpoint();
-      ExprRootNode<?> valueExpr
+      ExprNode valueExpr
           = new ExpressionParser(valueExprText, sourceLocation, throwaway).parseExpression();
       ExprUnion valueExprUnion = throwaway.errorsSince(checkpoint)
           ? new ExprUnion(valueExprText)

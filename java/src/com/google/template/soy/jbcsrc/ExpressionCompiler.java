@@ -90,7 +90,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     return visit(checkNotNull(node));
   }
 
-  @Override protected final SoyExpression visitExprRootNode(ExprRootNode<?> node) {
+  @Override protected final SoyExpression visitExprRootNode(ExprRootNode node) {
     return visit(node.getChild(0));
   }
 

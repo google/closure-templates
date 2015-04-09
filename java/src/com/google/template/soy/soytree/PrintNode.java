@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
@@ -34,7 +35,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Node representing a 'print' statement.
@@ -119,13 +119,13 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
     }
 
-    ExprRootNode<?> exprRoot = exprUnion.getExpr();
+    ExprRootNode exprRoot = exprUnion.getExpr();
     if (exprRoot == null) {
       return FALLBACK_BASE_PLACEHOLDER_NAME;
     }
 
     return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-        exprRoot, FALLBACK_BASE_PLACEHOLDER_NAME);
+        exprRoot.getChild(0), FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
 
@@ -254,7 +254,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       Preconditions.checkNotNull(exprText);
       ErrorReporter internal = new ErrorReporterImpl();
       Checkpoint checkpoint = internal.checkpoint();
-      ExprRootNode<?> expr = new ExpressionParser(exprText, sourceLocation, internal)
+      ExprNode expr = new ExpressionParser(exprText, sourceLocation, internal)
           .parseExpression();
       return internal.errorsSince(checkpoint)
           ? new ExprUnion(exprText)

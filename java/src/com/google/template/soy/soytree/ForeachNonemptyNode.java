@@ -82,7 +82,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
 
 
   /** Returns the expression we're iterating over. */
-  public ExprRootNode<?> getExpr() {
+  public ExprRootNode getExpr() {
     return getParent().getExpr();
   }
 

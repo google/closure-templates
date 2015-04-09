@@ -138,7 +138,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     for (PrintDirectiveNode directive : node.getChildren()) {
-      for (ExprRootNode<?> arg : directive.getArgs()) {
+      for (ExprRootNode arg : directive.getArgs()) {
         if (! isConstant(arg)) {
           return;  // don't prerender
         }
@@ -174,7 +174,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
       if (child instanceof IfCondNode) {
         IfCondNode condNode = (IfCondNode) child;
 
-        ExprRootNode<?> condExpr = condNode.getExprUnion().getExpr();
+        ExprRootNode condExpr = condNode.getExprUnion().getExpr();
         if (! isConstant(condExpr)) {
           continue;  // cannot simplify this child
         }
@@ -235,7 +235,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
         boolean hasMatchingConstant = false;
         boolean hasAllNonmatchingConstants = true;
-        for (ExprRootNode<?> caseExpr : caseNode.getExprList()) {
+        for (ExprRootNode caseExpr : caseNode.getExprList()) {
           SoyValue caseExprValue = getConstantOrNull(caseExpr);
           if (caseExprValue == null) {
             hasAllNonmatchingConstants = false;
@@ -341,12 +341,12 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
   // Helpers.
 
 
-  private static boolean isConstant(ExprRootNode<?> exprRoot) {
+  private static boolean isConstant(ExprRootNode exprRoot) {
     return exprRoot != null && exprRoot.getChild(0) instanceof ConstantNode;
   }
 
 
-  private static SoyValue getConstantOrNull(ExprRootNode<?> exprRoot) {
+  private static SoyValue getConstantOrNull(ExprRootNode exprRoot) {
 
     if (exprRoot == null) {
       return null;

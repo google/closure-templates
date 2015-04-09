@@ -125,7 +125,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
   @Override protected void visitPrintNode(PrintNode node) {
     visitSoyNode(node);
 
-    ExprRootNode<?> expr = node.getExprUnion().getExpr();
+    ExprRootNode expr = node.getExprUnion().getExpr();
     if (expr != null && expr.getType().equals(BoolType.getInstance())) {
       String errorMsg = "Bool values can no longer be printed";
       // Append some possibly helpful info in the case that the expr's top level is the 'or'
@@ -326,7 +326,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     private final ExprHolderNode owningSoyNode;
 
     /** The root node of the current expression being visited (during an exec call). */
-    private ExprRootNode<?> currExprRootNode;
+    private ExprRootNode currExprRootNode;
 
     /**
      * Construct a new ResolveNamesExprVisitor.
@@ -339,8 +339,8 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override public Void exec(ExprNode node) {
-      Preconditions.checkArgument(node instanceof ExprRootNode<?>);
-      this.currExprRootNode = (ExprRootNode<?>) node;
+      Preconditions.checkArgument(node instanceof ExprRootNode);
+      this.currExprRootNode = (ExprRootNode) node;
       visit(node);
       this.currExprRootNode = null;
       return null;
@@ -351,7 +351,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       requireNodeType(node);
     }
 
-    @Override protected void visitExprRootNode(ExprRootNode<?> node) {
+    @Override protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
       ExprNode expr = node.getChild(0);
       node.setType(expr.getType());
@@ -818,7 +818,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       return null;
     }
 
-    @Override protected void visitExprRootNode(ExprRootNode<?> node) {
+    @Override protected void visitExprRootNode(ExprRootNode node) {
       visitAndImplicitlyCastToBoolean(node.getChild(0));
     }
 

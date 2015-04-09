@@ -322,7 +322,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     private final ExprHolderNode owningSoyNode;
 
     /** The root node of the current expression being visited (during an exec call). */
-    private ExprRootNode<?> currExprRootNode;
+    private ExprRootNode currExprRootNode;
 
     /**
      * Construct a new ResolveNamesExprVisitor.
@@ -335,8 +335,8 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     @Override public Void exec(ExprNode node) {
-      Preconditions.checkArgument(node instanceof ExprRootNode<?>);
-      this.currExprRootNode = (ExprRootNode<?>) node;
+      Preconditions.checkArgument(node instanceof ExprRootNode);
+      this.currExprRootNode = (ExprRootNode) node;
       visit(node);
       this.currExprRootNode = null;
       return null;
@@ -346,7 +346,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       super.visit(node);
     }
 
-    @Override protected void visitExprRootNode(ExprRootNode<?> node) {
+    @Override protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
     }
 

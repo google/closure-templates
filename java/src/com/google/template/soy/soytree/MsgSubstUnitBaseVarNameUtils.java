@@ -26,7 +26,6 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -60,14 +59,12 @@ public class MsgSubstUnitBaseVarNameUtils {
    * aaa.BBB -> BBB;    $aaa.0 -> fallback;    $aaa[0] -> fallback;    $aaa[0].bbb -> BBB;
    * length($aaa) -> fallback;    $aaa + 1 -> fallback
    *
-   * @param exprRoot The root node for an expression.
+   * @param exprNode The root node for an expression.
    * @param fallbackBaseName The fallback base name.
+   *
    * @return The base placeholder (or plural/select var) name for the given expression.
    */
-  public static String genNaiveBaseNameForExpr(ExprRootNode<?> exprRoot, String fallbackBaseName) {
-
-    ExprNode exprNode = exprRoot.getChild(0);
-
+  public static String genNaiveBaseNameForExpr(ExprNode exprNode, String fallbackBaseName) {
     if (exprNode instanceof VarRefNode) {
       return BaseUtils.convertToUpperUnderscore(((VarRefNode) exprNode).getName());
     } else if (exprNode instanceof FieldAccessNode) {
@@ -89,15 +86,14 @@ public class MsgSubstUnitBaseVarNameUtils {
    * aaa.BBB -> BBB;    $aaa.0 -> AAA_0;    $aaa[0] -> AAA_0;    $aaa[0].bbb -> BBB; length($aaa) ->
    * fallback;    $aaa + 1 -> fallback
    *
-   * @param exprRoot The expr root of the expression to generate the shortest base name for.
+   * @param exprNode The expr root of the expression to generate the shortest base name for.
    * @param fallbackBaseName The fallback base name to use if the given expression doesn't generate
    *     any base names.
    * @return The generated base name.
    */
-  public static String genShortestBaseNameForExpr(
-      ExprRootNode<?> exprRoot, String fallbackBaseName) {
+  public static String genShortestBaseNameForExpr(ExprNode exprNode, String fallbackBaseName) {
 
-    List<String> candidateBaseNames = genCandidateBaseNamesForExpr(exprRoot);
+    List<String> candidateBaseNames = genCandidateBaseNamesForExpr(exprNode);
     return Iterables.getFirst(candidateBaseNames, fallbackBaseName);
   }
 
@@ -121,28 +117,28 @@ public class MsgSubstUnitBaseVarNameUtils {
    * $data.actionTargets[0].personInfo.gender -> $userData.actionTargets[0].personInfo.gender
    * should not change the placeholder name.
    *
-   * @param exprRoots The expr roots of the expressions to generate noncolliding base names for.
+   * @param exprNodes The expr nodes of the expressions to generate noncolliding base names for.
    * @param fallbackBaseName The fallback base name.
    * @return The list of generated noncolliding base names.
    * @throws SoySyntaxException If it is impossible to generate noncolliding base names.
    */
   public static List<String> genNoncollidingBaseNamesForExprs(
-      List<ExprRootNode<?>> exprRoots, String fallbackBaseName) throws SoySyntaxException {
+      List<ExprNode> exprNodes, String fallbackBaseName) throws SoySyntaxException {
 
-    int numExprs = exprRoots.size();
+    int numExprs = exprNodes.size();
 
     // --- Compute candidate base names for each expression. ---
     List<List<String>> candidateBaseNameLists = Lists.newArrayListWithCapacity(numExprs);
-    for (ExprRootNode<?> exprRoot : exprRoots) {
+    for (ExprNode exprRoot : exprNodes) {
       candidateBaseNameLists.add(genCandidateBaseNamesForExpr(exprRoot));
     }
 
     // --- Build a multiset of collision strings (if key has > 1 values, then it's a collision). ---
     // Note: We could combine this loop with the previous loop, but it's more readable this way.
-    Multimap<String, ExprRootNode<?>> collisionStrToLongestCandidatesMultimap =
+    Multimap<String, ExprNode> collisionStrToLongestCandidatesMultimap =
         HashMultimap.create();
     for (int i = 0; i < numExprs; i++) {
-      ExprRootNode<?> exprRoot = exprRoots.get(i);
+      ExprNode exprRoot = exprNodes.get(i);
       List<String> candidateBaseNameList = candidateBaseNameLists.get(i);
       if (candidateBaseNameList.isEmpty()) {
         continue;
@@ -177,10 +173,10 @@ public class MsgSubstUnitBaseVarNameUtils {
         }
 
         // Did not find any candidate with no collision.
-        ExprRootNode<?> exprRoot = exprRoots.get(i);
+        ExprNode exprRoot = exprNodes.get(i);
         String longestCandidate = candidateBaseNameList.get(candidateBaseNameList.size() - 1);
-        ExprRootNode<?> collidingExprRoot = null;
-        for (ExprRootNode<?> er : collisionStrToLongestCandidatesMultimap.get(longestCandidate)) {
+        ExprNode collidingExprRoot = null;
+        for (ExprNode er : collisionStrToLongestCandidatesMultimap.get(longestCandidate)) {
           if (er != exprRoot) {
             collidingExprRoot = er;
             break;
@@ -217,14 +213,11 @@ public class MsgSubstUnitBaseVarNameUtils {
    * "AAA_0_BBB_CCC_DDD"]. One the other hand, given $aaa['xxx'], generates the empty list (because
    * ['xxx'] parses to a DataRefAccessExprNode).
    *
-   * @param exprRoot The expr root of the expression to generate all candidate base names for.
+   * @param exprNode The expr root of the expression to generate all candidate base names for.
    * @return The list of all candidate base names, from shortest to longest.
    */
   @VisibleForTesting
-  static List<String> genCandidateBaseNamesForExpr(ExprRootNode<?> exprRoot) {
-
-    ExprNode exprNode = exprRoot.getChild(0);
-
+  static List<String> genCandidateBaseNamesForExpr(ExprNode exprNode) {
     if (exprNode instanceof VarRefNode || exprNode instanceof DataAccessNode) {
       List<String> baseNames = Lists.newArrayList();
       String baseName = null;

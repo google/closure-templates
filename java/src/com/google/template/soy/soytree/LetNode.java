@@ -55,12 +55,12 @@ public abstract class LetNode extends AbstractCommandNode
     /** The parsed local var name (without '$'). */
     final String localVarName;
     /** The parsed value expr, or null if none. */
-    @Nullable final ExprRootNode<?> valueExpr;
+    @Nullable final ExprRootNode valueExpr;
     /** The parsed param's content kind, or null if none. */
     @Nullable final ContentKind contentKind;
 
     private CommandTextParseResult(
-        String localVarName, @Nullable ExprRootNode<?> valueExpr,
+        String localVarName, @Nullable ExprRootNode valueExpr,
         @Nullable ContentKind contentKind) {
       this.localVarName = localVarName;
       this.valueExpr = valueExpr;
@@ -126,12 +126,12 @@ public abstract class LetNode extends AbstractCommandNode
     String localVarName = new ExpressionParser(
         matcher.group(1), sourceLocation, errorReporter)
         .parseVariable()
-        .getChild(0)
         .getName();
 
     String valueExprString = matcher.group(2);
-    ExprRootNode<?> valueExpr = valueExprString != null
-        ? new ExpressionParser(valueExprString, sourceLocation, errorReporter).parseExpression()
+    ExprRootNode valueExpr = valueExprString != null
+        ? new ExprRootNode(
+            new ExpressionParser(valueExprString, sourceLocation, errorReporter).parseExpression())
         : null;
 
     ContentKind contentKind;

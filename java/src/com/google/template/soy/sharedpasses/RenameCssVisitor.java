@@ -35,7 +35,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for renaming CSS selector text in a Soy parse tree. This pass replaces the CssNodes
  * in the parse tree with RawTextNodes and PrintNodes (PrintNodes needed iff some CssNodes contain
@@ -91,7 +90,7 @@ public final class RenameCssVisitor extends AbstractSoyNodeVisitor<Void> {
     parent.removeChild(indexInParent);
 
     // If this CssNode has componentName, add a PrintNode (with '|id' directive) to print it.
-    ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
+    ExprRootNode componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
       PrintNode pn
           = new PrintNode.Builder(nodeIdGen.genId(), false /* isImplicit */, SourceLocation.UNKNOWN)

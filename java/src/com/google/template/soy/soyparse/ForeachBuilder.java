@@ -91,17 +91,17 @@ final class ForeachBuilder {
     checkState(templateBlock != null, "You must call .setLoopBody()");
 
     String varName = "__error__";
-    ExprRootNode<?> expr = null;
+    ExprRootNode expr = null;
     Matcher matcher = FOR_EACH_COMMAND_TEXT_PATTERN.matcher(cmdText);
     if (!matcher.matches()) {
       errorReporter.report(commandLocation, INVALID_COMMAND_TEXT, cmdText);
     } else {
       varName = new ExpressionParser(matcher.group(1), commandLocation, errorReporter)
           .parseVariable()
-          .getChild(0)
           .getName();
-      expr = new ExpressionParser(matcher.group(2), commandLocation, errorReporter)
-          .parseExpression();
+      expr = new ExprRootNode(
+          new ExpressionParser(matcher.group(2), commandLocation, errorReporter)
+              .parseExpression());
     }
     
     ForeachNode foreach = new ForeachNode(nodeIdGen.genId(), expr, cmdText, commandLocation);

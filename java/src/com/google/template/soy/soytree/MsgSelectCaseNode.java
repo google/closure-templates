@@ -27,7 +27,6 @@ import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
-
 /**
  * Node representing a 'case' block in a 'select' block.
  *
@@ -103,8 +102,9 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
     public MsgSelectCaseNode build(ErrorReporter errorReporter) {
       Checkpoint checkpoint = errorReporter.checkpoint();
 
-      ExprRootNode<?> strLit = new ExpressionParser(commandText, sourceLocation, errorReporter)
-          .parseExpression();
+      ExprRootNode strLit = new ExprRootNode(
+          new ExpressionParser(commandText, sourceLocation, errorReporter)
+              .parseExpression());
 
       // Make sure the expression is a string.
       if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {

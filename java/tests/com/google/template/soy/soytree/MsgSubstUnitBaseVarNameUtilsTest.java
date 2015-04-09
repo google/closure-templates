@@ -16,17 +16,18 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
 
 import java.util.List;
-
 
 /**
  * Unit tests for MsgSubstUnitBaseVarNameUtils.
@@ -97,7 +98,7 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    */
   private void assertNaiveBaseNameForExpr(String expected, String exprText) {
     TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprRootNode<?> exprRoot = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
+    ExprNode exprRoot = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
         .parseExpression();
     errorReporter.throwIfErrorsPresent();
     String actual = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(exprRoot, "FALLBACK");
@@ -110,10 +111,11 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    */
   private void assertShortestBaseNameForExpr(String expected, String exprText) {
     TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprRootNode<?> exprRoot = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
+    ExprNode exprRoot = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
         .parseExpression();
     errorReporter.throwIfErrorsPresent();
-    String actual = MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(exprRoot, "FALLBACK");
+    String actual = MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
+        exprRoot, "FALLBACK");
     MsgNodeTest.assertEquals(expected, actual);
   }
 
@@ -123,10 +125,11 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    */
   private void assertCandidateBaseNamesForExpr(List<String> expected, String exprText) {
     TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprRootNode<?> exprRoot = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
+    ExprNode exprRoot = new ExpressionParser(exprText, SourceLocation.UNKNOWN, errorReporter)
         .parseExpression();
     errorReporter.throwIfErrorsPresent();
-    List<String> actual = MsgSubstUnitBaseVarNameUtils.genCandidateBaseNamesForExpr(exprRoot);
+    List<String> actual = MsgSubstUnitBaseVarNameUtils.genCandidateBaseNamesForExpr(
+        exprRoot);
     MsgNodeTest.assertEquals(expected, actual);
   }
 
@@ -166,9 +169,9 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
    */
   private void assertNoncollidingBaseNamesForExprs(List<String> expected, String exprListText) {
     TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    List<ExprRootNode<?>> exprRoots = new ExpressionParser(
-        exprListText, SourceLocation.UNKNOWN, errorReporter)
-        .parseExpressionList();
+    List<ExprNode> exprRoots =
+        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, errorReporter)
+            .parseExpressionList();
     errorReporter.throwIfErrorsPresent();
     List<String> actual =
         MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
@@ -183,15 +186,15 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
       String expectedErrorMsg, String exprListText) {
 
     TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    List<ExprRootNode<?>> exprRoots = new ExpressionParser(
-        exprListText, SourceLocation.UNKNOWN, errorReporter)
-        .parseExpressionList();
+    List<ExprNode> exprRoots =
+        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, errorReporter)
+            .parseExpressionList();
     errorReporter.throwIfErrorsPresent();
     try {
       MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
       MsgNodeTest.fail();
     } catch (SoySyntaxException sse) {
-      MsgNodeTest.assertTrue(sse.getMessage().contains(expectedErrorMsg));
+      assertThat(sse.getMessage()).contains(expectedErrorMsg);
     }
   }
 

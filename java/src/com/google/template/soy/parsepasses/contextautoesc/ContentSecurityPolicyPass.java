@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.ExprUnion;
@@ -512,7 +510,7 @@ public final class ContentSecurityPolicyPass {
             idGenerator.genId(),
             rawTextNode.getSourceLocation(),
             "if",
-            new ExprUnion(new ExprRootNode<ExprNode>(makeReferenceToInjectedCspNonce())));
+            new ExprUnion(makeReferenceToInjectedCspNonce()));
         parent.addChild(childIndex, ifNode);
         ++childIndex;
         ifNode.addChild(ifCondNode);
@@ -559,7 +557,7 @@ public final class ContentSecurityPolicyPass {
         idGenerator.genId(),
         true,  // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
         SourceLocation.UNKNOWN)
-        .exprUnion(new ExprUnion(new ExprRootNode<ExprNode>(makeReferenceToInjectedCspNonce())))
+        .exprUnion(new ExprUnion(makeReferenceToInjectedCspNonce()))
         .build(null);
   }
 

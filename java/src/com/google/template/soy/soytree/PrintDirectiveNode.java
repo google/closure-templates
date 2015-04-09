@@ -24,6 +24,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -31,7 +32,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * Node representing a 'print' directive.
@@ -64,13 +64,13 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   private final String argsText;
 
   /** The parsed args. */
-  private final ImmutableList<ExprRootNode<?>> args;
+  private final ImmutableList<ExprRootNode> args;
 
   private PrintDirectiveNode(
       int id,
       String name,
       String srcName,
-      ImmutableList<ExprRootNode<?>> args,
+      ImmutableList<ExprRootNode> args,
       String argsText,
       SourceLocation sourceLocation) {
     super(id, sourceLocation);
@@ -95,8 +95,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     this.srcName = orig.srcName;
     this.name = orig.name;
     this.argsText = orig.argsText;
-    List<ExprRootNode<?>> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
-    for (ExprRootNode<?> origArg : orig.args) {
+    List<ExprRootNode> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
+    for (ExprRootNode origArg : orig.args) {
       tempArgs.add(origArg.clone());
     }
     this.args = ImmutableList.copyOf(tempArgs);
@@ -115,7 +115,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
 
   /** The parsed args. */
-  public List<ExprRootNode<?>> getArgs() {
+  public List<ExprRootNode> getArgs() {
     return args;
   }
 
@@ -162,7 +162,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
      */
     public PrintDirectiveNode build(ErrorReporter errorReporter) {
       String name = parseName();
-      ImmutableList<ExprRootNode<?>> args = parseArgs(errorReporter);
+      ImmutableList<ExprRootNode> args = parseArgs(errorReporter);
       return new PrintDirectiveNode(id, name, srcName, args, argsText, sourceLocation);
     }
 
@@ -178,13 +178,16 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
       }
     }
 
-    private ImmutableList<ExprRootNode<?>> parseArgs(ErrorReporter errorReporter) {
+    private ImmutableList<ExprRootNode> parseArgs(ErrorReporter errorReporter) {
       if (this.argsText.isEmpty()) {
         return ImmutableList.of();
       }
-      return ImmutableList.copyOf(
-          new ExpressionParser(argsText, sourceLocation, errorReporter)
-              .parseExpressionList());
+      ImmutableList.Builder<ExprRootNode> args = ImmutableList.builder();
+      for (ExprNode expr : new ExpressionParser(argsText, sourceLocation, errorReporter)
+          .parseExpressionList()) {
+        args.add(new ExprRootNode(expr));
+      }
+      return args.build();
     }
   }
 

@@ -325,9 +325,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
 
       // Evaluate directive args.
-      List<ExprRootNode<?>> argsExprs = directiveNode.getArgs();
+      List<ExprRootNode> argsExprs = directiveNode.getArgs();
       List<SoyValue> argsSoyDatas = Lists.newArrayListWithCapacity(argsExprs.size());
-      for (ExprRootNode<?> argExpr : argsExprs) {
+      for (ExprRootNode argExpr : argsExprs) {
         argsSoyDatas.add(eval(argExpr, directiveNode));
       }
 
@@ -346,7 +346,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitCssNode(CssNode node) {
-    ExprRootNode<?> componentNameExpr = node.getComponentNameExpr();
+    ExprRootNode componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
       append(currOutputBuf, eval(componentNameExpr, node), node);
       append(currOutputBuf, "-");
@@ -483,7 +483,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private int evalRangeArg(ForNode node, ExprRootNode<?> rangeArg) {
+  private int evalRangeArg(ForNode node, ExprRootNode rangeArg) {
     SoyValue rangeArgValue = eval(rangeArg, node);
     if (!(rangeArgValue instanceof IntegerData)) {
       throw RenderException.createWithSource(
@@ -509,7 +509,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
 
-    ExprRootNode<?> variantExpr = node.getDelCalleeVariantExpr();
+    ExprRootNode variantExpr = node.getDelCalleeVariantExpr();
     String variant;
     if (variantExpr == null) {
       variant = "";

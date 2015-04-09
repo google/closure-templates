@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
  * Builder for TemplateDelegateNode.
  *
@@ -70,7 +69,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   private String delTemplateVariant = null;
 
   /** Expression that will evaluate to the value of a delegate template variant. */
-  private ExprRootNode<?> delTemplateVariantExpr = null;
+  private ExprRootNode delTemplateVariantExpr = null;
 
   /** The delegate template key (name and variant). */
   private DelTemplateKey delTemplateKey;
@@ -125,21 +124,21 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       this.delTemplateVariant = "";
     } else {
       TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-      ExprRootNode<?> variantExpr
+      ExprNode variantExpr
           = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
               .parseExpression();
       errorReporter.throwIfErrorsPresent();
-      ExprNode child = variantExpr.getChild(0);
-      if (child instanceof StringNode) {
+      if (variantExpr instanceof StringNode) {
         // A string literal is being used as template variant, so the expression value can
         // immediately be evaluated.
-        this.delTemplateVariant = ((StringNode) child).getValue();
+        this.delTemplateVariant = ((StringNode) variantExpr).getValue();
         TemplateDelegateNode.verifyVariantName(delTemplateVariant);
-      } else if (child instanceof GlobalNode) {
+      } else if (variantExpr instanceof GlobalNode) {
         // A global expression was used as template variant. The expression will be stored and later
         // resolved into a value when the global expressions are resolved.
-        delTemplateVariantExpr = variantExpr;
-        this.templateNameForUserMsgs = delTemplateName + ":" + (((GlobalNode) child).getName());
+        delTemplateVariantExpr = new ExprRootNode(variantExpr);
+        this.templateNameForUserMsgs = delTemplateName + ":"
+            + (((GlobalNode) variantExpr).getName());
       } else {
         throw SoySyntaxException.createWithoutMetaInfo(
             "Invalid variant expression \"" + variantExprText + "\" in 'deltemplate'" +

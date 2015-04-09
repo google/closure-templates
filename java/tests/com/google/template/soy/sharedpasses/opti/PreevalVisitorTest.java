@@ -119,7 +119,7 @@ public class PreevalVisitorTest extends TestCase {
             .getChild(0)
             .getChild(0)
             .getChild(0);
-    ExprRootNode<?> expr = code.getExprUnion().getExpr();
+    ExprRootNode expr = code.getExprUnion().getExpr();
     PreevalVisitor preevalVisitor =
         INJECTOR.getInstance(PreevalVisitorFactory.class).create(
             null,

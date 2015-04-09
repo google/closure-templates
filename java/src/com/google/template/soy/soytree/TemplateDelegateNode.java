@@ -95,7 +95,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   private String delTemplateVariant;
 
   /** An expression that defines a delegate template variant. */
-  private final ExprRootNode<?> delTemplateVariantExpr;
+  private final ExprRootNode delTemplateVariantExpr;
 
   /** The delegate template key (name and variant). */
   private DelTemplateKey delTemplateKey;
@@ -119,7 +119,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   TemplateDelegateNode(
       TemplateDelegateNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo, String delTemplateName, String delTemplateVariant,
-      ExprRootNode<?> delTemplateVariantExpr, DelTemplateKey delTemplateKey, int delPriority,
+      ExprRootNode delTemplateVariantExpr, DelTemplateKey delTemplateKey, int delPriority,
       ImmutableList<TemplateParam> params) {
 
     super(nodeBuilder, "deltemplate", soyFileHeaderInfo,

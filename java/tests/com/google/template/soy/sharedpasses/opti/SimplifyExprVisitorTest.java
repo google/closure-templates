@@ -149,12 +149,13 @@ public class SimplifyExprVisitorTest extends TestCase {
 
   private static ExprNode simplifyExpr(String expression) throws Exception {
     TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprRootNode<?> exprRoot
-        = new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    ExprRootNode exprRoot = new ExprRootNode(
+        new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter)
+          .parseExpression());
     errorReporter.throwIfErrorsPresent();
     SimplifyExprVisitor simplifyExprVisitor = INJECTOR.getInstance(SimplifyExprVisitor.class);
     simplifyExprVisitor.exec(exprRoot);
-    return exprRoot.getChild(0);
+    return exprRoot;
   }
 
 }

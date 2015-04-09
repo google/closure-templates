@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
 
-
 /**
  * Node representing a 'case' block in a 'switch' block.
  *
@@ -41,10 +40,10 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
   private final String exprListText;
 
   /** The parsed expression list. */
-  private final List<ExprRootNode<?>> exprList;
+  private final List<ExprRootNode> exprList;
 
   private SwitchCaseNode(
-      int id, String commandText, List<ExprRootNode<?>> exprList, SourceLocation sourceLocation) {
+      int id, String commandText, List<ExprRootNode> exprList, SourceLocation sourceLocation) {
     super(id, sourceLocation, "case", commandText);
     this.exprList = exprList;
     this.exprListText = commandText;
@@ -59,7 +58,7 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
     super(orig);
     this.exprListText = orig.exprListText;
     this.exprList = Lists.newArrayListWithCapacity(orig.exprList.size());
-    for (ExprRootNode<?> origExpr : orig.exprList) {
+    for (ExprRootNode origExpr : orig.exprList) {
       this.exprList.add(origExpr.clone());
     }
   }
@@ -77,7 +76,7 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
 
 
   /** Returns the parsed expression list, or null if the expression list is not in V2 syntax. */
-  public List<ExprRootNode<?>> getExprList() {
+  public List<ExprRootNode> getExprList() {
     return exprList;
   }
 
@@ -115,9 +114,9 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
      * to the given {@link ErrorReporter}.
      */
     public SwitchCaseNode build(ErrorReporter errorReporter) {
-      List<ExprRootNode<?>> exprList = new ExpressionParser(
-          commandText, sourceLocation, errorReporter)
-          .parseExpressionList();
+      List<ExprRootNode> exprList = ExprRootNode.wrap(
+          new ExpressionParser(commandText, sourceLocation, errorReporter)
+              .parseExpressionList());
       return new SwitchCaseNode(id, commandText, exprList, sourceLocation);
     }
   }

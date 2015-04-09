@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.ErrorReporter;
@@ -53,12 +54,12 @@ public final class ForNode extends AbstractBlockCommandNode
    */
   @AutoValue public abstract static class RangeArgs {
     static final RangeArgs ERROR = create(
-        Optional.<ExprRootNode<?>>absent(),
-        new ExprRootNode<>(VarRefNode.ERROR),
-        Optional.<ExprRootNode<?>>absent());
+        Optional.<ExprRootNode>absent(),
+        new ExprRootNode(VarRefNode.ERROR),
+        Optional.<ExprRootNode>absent());
 
-    static RangeArgs create(Optional<ExprRootNode<?>> start,
-        ExprRootNode<?> limit, Optional<ExprRootNode<?>> increment) {
+    static RangeArgs create(Optional<ExprRootNode> start,
+        ExprRootNode limit, Optional<ExprRootNode> increment) {
       return new AutoValue_ForNode_RangeArgs(start, limit, increment);
     }
 
@@ -69,29 +70,29 @@ public final class ForNode extends AbstractBlockCommandNode
      *
      * <p>This is optional, the default beginning of iteration is {@code 0} if this is not set.
      */
-    public abstract Optional<ExprRootNode<?>> start();
+    public abstract Optional<ExprRootNode> start();
 
     /**
      * The expression for the iteration end point.  This is interpreted as an exclusive limit.
      */
-    public abstract ExprRootNode<?> limit();
+    public abstract ExprRootNode limit();
 
     /**
      * The expression for the iteration increment.
      *
      * <p>This is optional, the default increment {@code 1} if this is not set.
      */
-    public abstract Optional<ExprRootNode<?>> increment();
+    public abstract Optional<ExprRootNode> increment();
 
     private RangeArgs copy() {
       return create(
           start().isPresent()
-              ? Optional.<ExprRootNode<?>>of(start().get().clone())
-              : Optional.<ExprRootNode<?>>absent(),
+              ? Optional.of(start().get().clone())
+              : Optional.<ExprRootNode>absent(),
           limit().clone(),
           increment().isPresent()
-              ? Optional.<ExprRootNode<?>>of(increment().get().clone())
-              : Optional.<ExprRootNode<?>>absent());
+              ? Optional.of(increment().get().clone())
+              : Optional.<ExprRootNode>absent());
     }
   }
 
@@ -133,7 +134,7 @@ public final class ForNode extends AbstractBlockCommandNode
 
     String varName = parseVarName(
         matcher.group(1), sourceLocation, errorReporter);
-    List<ExprRootNode<?>> rangeArgs = parseRangeArgs(
+    List<ExprNode> rangeArgs = parseRangeArgs(
         matcher.group(2), sourceLocation, errorReporter);
 
     if (rangeArgs.size() > 3) {
@@ -144,17 +145,21 @@ public final class ForNode extends AbstractBlockCommandNode
     } else {
       // OK, now interpret the args
       // If there are 2 or more args, then the first is the 'start' value
-      ExprRootNode<?> start = rangeArgs.size() >= 2 ? rangeArgs.get(0) : null;
+      ExprNode start = rangeArgs.size() >= 2 ? rangeArgs.get(0) : null;
 
       // If there are 3 args, then the last one is the increment.
-      ExprRootNode<?> increment = rangeArgs.size() == 3 ? rangeArgs.get(2) : null;
+      ExprNode increment = rangeArgs.size() == 3 ? rangeArgs.get(2) : null;
 
       // the limit is the first item if there is only one arg, otherwise it is the second arg
-      ExprRootNode<?> limit = rangeArgs.get(rangeArgs.size() == 1 ? 0 : 1);
+      ExprNode limit = rangeArgs.get(rangeArgs.size() == 1 ? 0 : 1);
       this.rangeArgs = RangeArgs.create(
-          Optional.<ExprRootNode<?>>fromNullable(start),
-          limit,
-          Optional.<ExprRootNode<?>>fromNullable(increment));
+          start == null
+              ? Optional.<ExprRootNode>absent()
+              : Optional.of(new ExprRootNode(start)),
+          new ExprRootNode(limit),
+          increment == null
+              ? Optional.<ExprRootNode>absent()
+              : Optional.of(new ExprRootNode(increment)));
     }
 
     var = new LocalVar(varName, this, null);
@@ -164,11 +169,10 @@ public final class ForNode extends AbstractBlockCommandNode
       String input, SourceLocation sourceLocation, ErrorReporter errorReporter) {
     return new ExpressionParser(input, sourceLocation, errorReporter)
         .parseVariable()
-        .getChild(0)
         .getName();
   }
 
-  private static List<ExprRootNode<?>> parseRangeArgs(
+  private static List<ExprNode> parseRangeArgs(
       String input, SourceLocation sourceLocation, ErrorReporter errorReporter) {
     return new ExpressionParser(input, sourceLocation, errorReporter)
         .parseExpressionList();

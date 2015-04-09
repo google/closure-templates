@@ -22,7 +22,6 @@ import static com.google.template.soy.exprparse.ExpressionSubject.assertThatExpr
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -332,61 +331,61 @@ public class ExpressionParserTest extends TestCase {
 
   public void testParsePrimitives() throws Exception {
 
-    ExprRootNode<?> expr = assertThatExpression("null").isValidExpression();
-    assertThat(expr.getChild(0)).isInstanceOf(NullNode.class);
+    ExprNode expr = assertThatExpression("null").isValidExpression();
+    assertThat(expr).isInstanceOf(NullNode.class);
 
     expr = assertThatExpression("true").isValidExpression();
-    assertThat(((BooleanNode) expr.getChild(0)).getValue()).isEqualTo(true);
+    assertThat(((BooleanNode) expr).getValue()).isEqualTo(true);
 
     expr = assertThatExpression("false").isValidExpression();
-    assertThat(((BooleanNode) expr.getChild(0)).getValue()).isEqualTo(false);
+    assertThat(((BooleanNode) expr).getValue()).isFalse();
 
     expr = assertThatExpression("26").isValidExpression();
-    assertThat(((IntegerNode) expr.getChild(0)).getValue()).isEqualTo(26);
+    assertThat(((IntegerNode) expr).getValue()).isEqualTo(26);
 
     expr = assertThatExpression("0xCAFE").isValidExpression();
-    assertThat(((IntegerNode) expr.getChild(0)).getValue()).isEqualTo(0xCAFE);
+    assertThat(((IntegerNode) expr).getValue()).isEqualTo(0xCAFE);
 
     expr = assertThatExpression("3.14").isValidExpression();
-    assertThat(((FloatNode) expr.getChild(0)).getValue()).isEqualTo(3.14);
+    assertThat(((FloatNode) expr).getValue()).isEqualTo(3.14);
 
     expr = assertThatExpression("3e-3").isValidExpression();
-    assertThat(((FloatNode) expr.getChild(0)).getValue()).isEqualTo(3e-3);
+    assertThat(((FloatNode) expr).getValue()).isEqualTo(3e-3);
 
     expr = assertThatExpression("'Aa`! \\n \\r \\t \\\\ \\\' \"'").isValidExpression();
-    assertThat(((StringNode) expr.getChild(0)).getValue()).isEqualTo("Aa`! \n \r \t \\ \' \"");
+    assertThat(((StringNode) expr).getValue()).isEqualTo("Aa`! \n \r \t \\ \' \"");
 
     expr = assertThatExpression("'\\u2222 \\uEEEE \\u9EC4 \\u607A'").isValidExpression();
-    assertThat(((StringNode) expr.getChild(0)).getValue()).isEqualTo("\u2222 \uEEEE \u9EC4 \u607A");
+    assertThat(((StringNode) expr).getValue()).isEqualTo("\u2222 \uEEEE \u9EC4 \u607A");
 
     expr = assertThatExpression("'\u2222 \uEEEE \u9EC4 \u607A'").isValidExpression();
-    assertThat(((StringNode) expr.getChild(0)).getValue()).isEqualTo("\u2222 \uEEEE \u9EC4 \u607A");
+    assertThat(((StringNode) expr).getValue()).isEqualTo("\u2222 \uEEEE \u9EC4 \u607A");
   }
 
 
   public void testParseListsAndMaps() throws Exception {
 
-    ExprRootNode<?> expr = assertThatExpression("[]").isValidExpression();
-    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(0);
+    ExprNode expr = assertThatExpression("[]").isValidExpression();
+    assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("[55]").isValidExpression();
-    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(1);
+    assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(1);
     expr = assertThatExpression("[55,]").isValidExpression();
-    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(1);
+    assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(1);
     expr = assertThatExpression("['blah', 123, $boo]").isValidExpression();
-    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(3);
+    assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(3);
     expr = assertThatExpression("['blah', 123, $boo,]").isValidExpression();
-    assertThat(((ListLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(3);
+    assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(3);
 
     expr = assertThatExpression("[:]").isValidExpression();
-    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(0);
+    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("['aa': 55]").isValidExpression();
-    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(2);
+    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(2);
     expr = assertThatExpression("['aa': 55,]").isValidExpression();
-    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(2);
+    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(2);
     expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
-    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(6);
+    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(6);
     expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
-    assertThat(((MapLiteralNode) expr.getChild(0)).numChildren()).isEqualTo(6);
+    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(6);
   }
 
 
@@ -402,14 +401,14 @@ public class ExpressionParserTest extends TestCase {
 
   public void testParseFunctionCall() throws Exception {
 
-    ExprRootNode<?> expr = assertThatExpression("isFirst($x)").isValidExpression();
-    FunctionNode isFirstFn = (FunctionNode) expr.getChild(0);
+    ExprNode expr = assertThatExpression("isFirst($x)").isValidExpression();
+    FunctionNode isFirstFn = (FunctionNode) expr;
     assertThat(isFirstFn.getFunctionName()).isEqualTo("isFirst");
     assertThat(isFirstFn.numChildren()).isEqualTo(1);
     assertThat(isFirstFn.getChild(0).toSourceString()).isEqualTo("$x");
 
     expr = assertThatExpression("round(3.14159, 2)").isValidExpression();
-    FunctionNode roundFn = (FunctionNode) expr.getChild(0);
+    FunctionNode roundFn = (FunctionNode) expr;
     assertThat(roundFn.getFunctionName()).isEqualTo("round");
     assertThat(roundFn.numChildren()).isEqualTo(2);
     assertThat(((FloatNode) roundFn.getChild(0)).getValue()).isEqualTo(3.14159);
@@ -418,33 +417,33 @@ public class ExpressionParserTest extends TestCase {
 
 
   public void testParseOperators() throws Exception {
-    ExprRootNode<?> expr = assertThatExpression("-11").isValidExpression();
-    NegativeOpNode negOp = (NegativeOpNode) expr.getChild(0);
+    ExprNode expr = assertThatExpression("-11").isValidExpression();
+    NegativeOpNode negOp = (NegativeOpNode) expr;
     assertThat(((IntegerNode) negOp.getChild(0)).getValue()).isEqualTo(11);
 
     expr = assertThatExpression("not false").isValidExpression();
-    NotOpNode notOp = (NotOpNode) expr.getChild(0);
+    NotOpNode notOp = (NotOpNode) expr;
     assertThat(((BooleanNode) notOp.getChild(0)).getValue()).isEqualTo(false);
 
     expr = assertThatExpression("90 -14.75").isValidExpression();
-    MinusOpNode minusOp = (MinusOpNode) expr.getChild(0);
+    MinusOpNode minusOp = (MinusOpNode) expr;
     assertThat(((IntegerNode) minusOp.getChild(0)).getValue()).isEqualTo(90);
     assertThat(((FloatNode) minusOp.getChild(1)).getValue()).isEqualTo(14.75);
 
     expr = assertThatExpression("$a or true").isValidExpression();
-    OrOpNode orOp = (OrOpNode) expr.getChild(0);
+    OrOpNode orOp = (OrOpNode) expr;
     assertThat(orOp.getChild(0).toSourceString()).isEqualTo("$a");
     assertThat(((BooleanNode) orOp.getChild(1)).getValue()).isEqualTo(true);
 
     expr = assertThatExpression("$a ?: $b ?: $c").isValidExpression();
-    NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) expr.getChild(0);
+    NullCoalescingOpNode nullCoalOp0 = (NullCoalescingOpNode) expr;
     assertThat(nullCoalOp0.getChild(0).toSourceString()).isEqualTo("$a");
     NullCoalescingOpNode nullCoalOp1 = (NullCoalescingOpNode) nullCoalOp0.getChild(1);
     assertThat(nullCoalOp1.getChild(0).toSourceString()).isEqualTo("$b");
     assertThat(nullCoalOp1.getChild(1).toSourceString()).isEqualTo("$c");
 
     expr = assertThatExpression("$a?:$b==null?0*1:0x1").isValidExpression();
-    NullCoalescingOpNode nullCoalOp = (NullCoalescingOpNode) expr.getChild(0);
+    NullCoalescingOpNode nullCoalOp = (NullCoalescingOpNode) expr;
     assertThat(nullCoalOp.getChild(0).toSourceString()).isEqualTo("$a");
     ConditionalOpNode condOp = (ConditionalOpNode) nullCoalOp.getChild(1);
     assertThat(condOp.getChild(0)).isInstanceOf(EqualOpNode.class);
@@ -454,11 +453,11 @@ public class ExpressionParserTest extends TestCase {
 
 
   public void testParseExpressionList() throws Exception {
-    List<ExprRootNode<?>> exprList
+    List<ExprNode> exprList
         = assertThatExpression("$aaa, $bbb.ccc + 1, index($ddd)").isValidExpressionList();
-    assertTrue(exprList.get(0).getChild(0) instanceof VarRefNode);
-    assertTrue(exprList.get(1).getChild(0) instanceof PlusOpNode);
-    assertTrue(exprList.get(2).getChild(0) instanceof FunctionNode);
+    assertTrue(exprList.get(0) instanceof VarRefNode);
+    assertThat(exprList.get(1)).isInstanceOf(PlusOpNode.class);
+    assertThat(exprList.get(2)).isInstanceOf(FunctionNode.class);
   }
 
 

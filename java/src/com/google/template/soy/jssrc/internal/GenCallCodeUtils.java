@@ -202,7 +202,7 @@ class GenCallCodeUtils {
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
       String calleeIdExprText =
           "soy.$$getDelTemplateId('" + callDelegateNode.getDelCalleeName() + "')";
-      ExprRootNode<?> variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
+      ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
       String variantJsExprText;
       if (variantSoyExpr == null) {
         // Case 2a: Delegate call with empty variant.

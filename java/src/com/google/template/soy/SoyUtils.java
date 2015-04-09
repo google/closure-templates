@@ -156,8 +156,7 @@ public final class SoyUtils {
         String valueText = matcher.group(2).trim();
 
         ExprNode valueExpr = new ExpressionParser(valueText, sourceLocation, errorReporter)
-            .parseExpression()
-            .getChild(0);
+            .parseExpression();
 
         // Handle negative numbers as a special case.
         // TODO: Consider changing parser to actually parse negative numbers as primitives.

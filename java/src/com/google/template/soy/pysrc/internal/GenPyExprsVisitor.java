@@ -49,7 +49,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * Visitor for generating Python expressions for parse tree nodes.
  *
@@ -184,7 +183,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       }
 
       // Get directive args.
-      List<ExprRootNode<?>> args = directiveNode.getArgs();
+      List<ExprRootNode> args = directiveNode.getArgs();
       if (!directive.getValidArgsSizes().contains(args.size())) {
         throw SoySyntaxExceptionUtils.createWithNode(
             "Print directive '" + directiveNode.getName() + "' used with the wrong number of"
@@ -194,7 +193,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
       // Translate directive args.
       List<PyExpr> argsPyExprs = new ArrayList<>(args.size());
-      for (ExprRootNode<?> arg : args) {
+      for (ExprRootNode arg : args) {
         argsPyExprs.add(translator.exec(arg));
       }
 

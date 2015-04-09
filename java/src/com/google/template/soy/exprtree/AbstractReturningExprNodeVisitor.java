@@ -41,7 +41,6 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 
 import java.util.List;
 
-
 /**
  * Abstract base class for all ExprNode visitors. A visitor is basically a function implemented for
  * some or all ExprNodes, where the implementation can be different for each specific node class.
@@ -77,7 +76,7 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
     switch (node.getKind()) {
 
-      case EXPR_ROOT_NODE: return visitExprRootNode((ExprRootNode<?>) node);
+      case EXPR_ROOT_NODE: return visitExprRootNode((ExprRootNode) node);
 
       case NULL_NODE: return visitNullNode((NullNode) node);
       case BOOLEAN_NODE: return visitBooleanNode((BooleanNode) node);
@@ -136,7 +135,7 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   // Implementations for misc nodes.
 
 
-  protected R visitExprRootNode(ExprRootNode<?> node) {
+  protected R visitExprRootNode(ExprRootNode node) {
     return visitExprNode(node);
   }
 

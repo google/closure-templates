@@ -36,7 +36,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Node representing a 'css' statement.
  *
@@ -63,7 +62,7 @@ public final class CssNode extends AbstractCommandNode
    * In the example <code>{css $componentName, SUFFIX}</code>, this would be
    * $componentName.
    */
-  @Nullable private final ExprRootNode<?> componentNameExpr;
+  @Nullable private final ExprRootNode componentNameExpr;
 
   /**
    * The selector text.  Either the entire command text of the CSS command, or
@@ -85,7 +84,7 @@ public final class CssNode extends AbstractCommandNode
   private CssNode(
       int id,
       String commandText,
-      @Nullable ExprRootNode<?> componentNameExpr,
+      @Nullable ExprRootNode componentNameExpr,
       String selectorText,
       SourceLocation sourceLocation) {
     super(id, sourceLocation, "css", commandText);
@@ -130,7 +129,7 @@ public final class CssNode extends AbstractCommandNode
 
 
   /** Returns the parsed component name expression, or null if this node has no expression. */
-  @Nullable public ExprRootNode<?> getComponentNameExpr() {
+  @Nullable public ExprRootNode getComponentNameExpr() {
     return componentNameExpr;
   }
 
@@ -207,15 +206,17 @@ public final class CssNode extends AbstractCommandNode
      */
     public CssNode build(ErrorReporter errorReporter) {
       int delimPos = commandText.lastIndexOf(',');
-      ExprRootNode<?> componentNameExpr = null;
+      ExprRootNode componentNameExpr = null;
       String selectorText = commandText;
       if (delimPos != -1) {
         String componentNameText = commandText.substring(0, delimPos).trim();
-        componentNameExpr = new ExpressionParser(componentNameText, sourceLocation, errorReporter)
-            .parseExpression();
+        componentNameExpr = new ExprRootNode(
+            new ExpressionParser(componentNameText, sourceLocation, errorReporter)
+                .parseExpression());
         selectorText = commandText.substring(delimPos + 1).trim();
       }
-      return new CssNode(id, commandText, componentNameExpr, selectorText, sourceLocation);
+      return new CssNode(id, commandText, componentNameExpr, selectorText,
+          sourceLocation);
     }
   }
 }

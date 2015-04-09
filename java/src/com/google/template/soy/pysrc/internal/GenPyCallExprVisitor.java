@@ -153,7 +153,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * @return The call Python expression.
    */
   @Override protected PyExpr visitCallDelegateNode(CallDelegateNode node) {
-    ExprRootNode<?> variantSoyExpr = node.getDelCalleeVariantExpr();
+    ExprRootNode variantSoyExpr = node.getDelCalleeVariantExpr();
     PyExpr variantPyExpr;
     if (variantSoyExpr == null) {
       // Case 1: Delegate call with empty variant.

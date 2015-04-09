@@ -24,6 +24,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.Pair;
@@ -43,7 +44,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-
 
 /**
  * Node representing a call to a delegate template.
@@ -70,12 +70,12 @@ public final class CallDelegateNode extends CallNode {
   private static class CommandTextInfo extends CallNode.CommandTextInfo {
 
     public final String delCalleeName;
-    @Nullable public final ExprRootNode<?> delCalleeVariantExpr;
+    @Nullable public final ExprRootNode delCalleeVariantExpr;
     public final Boolean allowsEmptyDefault;
 
     public CommandTextInfo(
-        String commandText, String delCalleeName, @Nullable ExprRootNode<?> delCalleeVariantExpr,
-        Boolean allowsEmptyDefault, boolean isPassingData, @Nullable ExprRootNode<?> dataExpr,
+        String commandText, String delCalleeName, @Nullable ExprRootNode delCalleeVariantExpr,
+        Boolean allowsEmptyDefault, boolean isPassingData, @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
       super(commandText, isPassingData, dataExpr, userSuppliedPlaceholderName, null);
       this.delCalleeName = delCalleeName;
@@ -101,7 +101,7 @@ public final class CallDelegateNode extends CallNode {
   private final String delCalleeName;
 
   /** The variant expression for the delegate being called, or null. */
-  @Nullable private final ExprRootNode<?> delCalleeVariantExpr;
+  @Nullable private final ExprRootNode delCalleeVariantExpr;
 
   /** User-specified value of whether this delegate call defaults to empty string if there's no
    *  active implementation, or null if the attribute is not specified. */
@@ -136,8 +136,8 @@ public final class CallDelegateNode extends CallNode {
 
     @Nullable private String commandText;
     @Nullable private String delCalleeName;
-    @Nullable private ExprRootNode<?> delCalleeVariantExpr;
-    @Nullable private ExprRootNode<?> dataExpr;
+    @Nullable private ExprRootNode delCalleeVariantExpr;
+    @Nullable private ExprRootNode dataExpr;
     @Nullable private String userSuppliedPlaceholderName;
 
     public Builder(int id, SourceLocation sourceLocation) {
@@ -155,7 +155,7 @@ public final class CallDelegateNode extends CallNode {
       return this;
     }
 
-    public Builder dataExpr(ExprRootNode<?> dataExpr) {
+    public Builder dataExpr(ExprRootNode dataExpr) {
       this.dataExpr = dataExpr;
       return this;
     }
@@ -165,7 +165,7 @@ public final class CallDelegateNode extends CallNode {
       return this;
     }
 
-    public Builder delCalleeVariantExpr(ExprRootNode<?> delCalleeVariantExpr) {
+    public Builder delCalleeVariantExpr(ExprRootNode delCalleeVariantExpr) {
       this.delCalleeVariantExpr = delCalleeVariantExpr;
       return this;
     }
@@ -243,22 +243,23 @@ public final class CallDelegateNode extends CallNode {
       }
 
       String variantExprText = attributes.get("variant");
-      ExprRootNode<?> delCalleeVariantExpr;
+      ExprRootNode delCalleeVariantExpr;
       if (variantExprText == null) {
         delCalleeVariantExpr = null;
       } else {
-        delCalleeVariantExpr = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
+        ExprNode expr = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
             .parseExpression();
         // If the variant is a fixed string, do a sanity check.
-        if (delCalleeVariantExpr.getChild(0) instanceof StringNode) {
-          String fixedVariantStr = ((StringNode) delCalleeVariantExpr.getChild(0)).getValue();
+        if (expr instanceof StringNode) {
+          String fixedVariantStr = ((StringNode) expr).getValue();
           if (!BaseUtils.isIdentifier(fixedVariantStr)) {
             errorReporter.report(sourceLocation, INVALID_VARIANT_EXPRESSION, variantExprText);
           }
         }
+        delCalleeVariantExpr = new ExprRootNode(expr);
       }
 
-      Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
+      Pair<Boolean, ExprRootNode> dataAttrInfo =
           parseDataAttributeHelper(attributes.get("data"), sourceLocation, errorReporter);
 
       String allowemptydefaultAttr = attributes.get("allowemptydefault");
@@ -337,7 +338,7 @@ public final class CallDelegateNode extends CallNode {
 
 
   /** Returns the variant expression for the delegate being called, or null if it's a string. */
-  @Nullable public ExprRootNode<?> getDelCalleeVariantExpr() {
+  @Nullable public ExprRootNode getDelCalleeVariantExpr() {
     return delCalleeVariantExpr;
   }
 

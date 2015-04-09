@@ -27,7 +27,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
@@ -45,7 +45,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Unit tests for SubstituteGlobalsVisitor.
  *
@@ -55,10 +54,10 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
   public void testSubstituteGlobals() {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    ExprRootNode<?> expr
+    ExprNode expr
         = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
-    PlusOpNode plus0 = (PlusOpNode) expr.getChild(0);
+    PlusOpNode plus0 = (PlusOpNode) expr;
     PlusOpNode plus1 = (PlusOpNode) plus0.getChild(0);
 
     assertThat(((GlobalNode) plus1.getChild(0)).getName()).isEqualTo("BOO");
@@ -83,10 +82,10 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
   public void testSubstituteGlobalsFromType() throws Exception {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    ExprRootNode<?> expr
+    ExprNode expr
         = new ExpressionParser("foo.BOO + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
-    PlusOpNode plus0 = (PlusOpNode) expr.getChild(0);
+    PlusOpNode plus0 = (PlusOpNode) expr;
 
     assertThat(((GlobalNode) plus0.getChild(0)).getName()).isEqualTo("foo.BOO");
     assertThat(((GlobalNode) plus0.getChild(1)).getName()).isEqualTo("foo.GOO");
@@ -153,7 +152,7 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
 
   public void testAssertNoUnboundGlobals() throws Exception {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    ExprRootNode<?> expr
+    ExprNode expr
         = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
 

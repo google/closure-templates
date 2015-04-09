@@ -37,7 +37,7 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
     implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode, ExprHolderNode {
 
   /** The parsed expression for the list that we're iterating over. */
-  private final ExprRootNode<?> expr;
+  private final ExprRootNode expr;
 
   /**
    * @param id The id for this node.
@@ -46,7 +46,7 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
    * @param sourceLocation The node's source location.
    */
   public ForeachNode(
-      int id, ExprRootNode<?> expr, String commandText, SourceLocation sourceLocation) {
+      int id, ExprRootNode expr, String commandText, SourceLocation sourceLocation) {
     super(id, sourceLocation, "foreach", commandText);
     this.expr = expr;
   }
@@ -74,7 +74,7 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
 
 
   /** Returns the parsed expression. */
-  public ExprRootNode<?> getExpr() {
+  public ExprRootNode getExpr() {
     return expr;
   }
 

@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
-
 /**
  * Visitor for finding 'print' nodes that are actually 'remainder' nodes, and replacing them with
  * the appropriate expression.
@@ -57,7 +56,7 @@ public final class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<V
 
   @Override protected void visitPrintNode(PrintNode node) {
 
-    ExprRootNode<?> exprRootNode = node.getExprUnion().getExpr();
+    ExprRootNode exprRootNode = node.getExprUnion().getExpr();
     if (exprRootNode == null) {
       return;
     }

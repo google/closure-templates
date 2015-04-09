@@ -142,7 +142,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   // Implementation for a dummy root node.
 
 
-  @Override protected SoyValue visitExprRootNode(ExprRootNode<?> node) {
+  @Override protected SoyValue visitExprRootNode(ExprRootNode node) {
     return visit(node.getChild(0));
   }
 

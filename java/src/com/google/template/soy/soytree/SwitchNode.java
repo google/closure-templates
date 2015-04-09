@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -27,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 import java.util.List;
-
 
 /**
  * Node representing a 'switch' statement.
@@ -40,10 +40,10 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
 
 
   /** The parsed expression. */
-  private final ExprRootNode<?> expr;
+  private final ExprRootNode expr;
 
   private SwitchNode(
-      int id, String commandText, ExprRootNode<?> expr, SourceLocation sourceLocation) {
+      int id, String commandText, ExprRootNode expr, SourceLocation sourceLocation) {
     super(id, sourceLocation, "switch", commandText);
     this.expr = expr;
   }
@@ -71,7 +71,7 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
 
 
   /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
-  public ExprRootNode<?> getExpr() {
+  public ExprRootNode getExpr() {
     return expr;
   }
 
@@ -119,9 +119,9 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
      * to the given {@link ErrorReporter}.
      */
     public SwitchNode build(ErrorReporter errorReporter) {
-      ExprRootNode<?> expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+      ExprNode expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
           .parseExpression();
-      return new SwitchNode(id, commandText, expr, sourceLocation);
+      return new SwitchNode(id, commandText, new ExprRootNode(expr), sourceLocation);
     }
   }
 }

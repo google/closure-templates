@@ -40,7 +40,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Visitor for rewriting 'msg' nodes with 'genders' attribute into 'msg' nodes with one or more
  * levels of 'select'.
@@ -74,7 +73,7 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
 
   @Override protected void visitMsgNode(MsgNode msg) {
 
-    List<ExprRootNode<?>> genderExprs = msg.getAndRemoveGenderExprs();
+    List<ExprRootNode> genderExprs = msg.getAndRemoveGenderExprs();
     if (genderExprs == null) {
       return;  // not a msg that this pass should rewrite
     }
@@ -105,22 +104,22 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
     try {
       baseSelectVarNames =
           MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
-              genderExprs, FALLBACK_BASE_SELECT_VAR_NAME);
+              ExprRootNode.unwrap(genderExprs), FALLBACK_BASE_SELECT_VAR_NAME);
     } catch (SoySyntaxException sse) {
       throw SoySyntaxExceptionUtils.associateNode(sse, msg);
     }
 
     for (int i = 0; i < genderExprs.size(); i++) {
-      ExprRootNode<?> genderExpr = genderExprs.get(i);
+      ExprRootNode genderExpr = genderExprs.get(i);
       String baseSelectVarName = baseSelectVarNames.get(i);
 
       // Check whether the generated base name would be the same (both for the old naive algorithm
       // and the new algorithm). If so, then there's no need to specify the baseSelectVarName.
       if (MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-              genderExpr, FALLBACK_BASE_SELECT_VAR_NAME)
-              .equals(baseSelectVarName) &&
-          MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
-              genderExpr, FALLBACK_BASE_SELECT_VAR_NAME)
+          genderExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME)
+              .equals(baseSelectVarName)
+          && MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
+              genderExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)) {
         baseSelectVarName = null;
       }
@@ -139,7 +138,7 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
    *     from the gender expression.
    */
   private void splitMsgForGender(
-      MsgNode msg, ExprRootNode<?> genderExpr, @Nullable String baseSelectVarName) {
+      MsgNode msg, ExprRootNode genderExpr, @Nullable String baseSelectVarName) {
 
     List<StandaloneNode> origChildren = ImmutableList.copyOf(msg.getChildren());
     msg.clearChildren();

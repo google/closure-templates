@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
 
-
 /**
  * Node representing a 'let' statement with a value expression.
  *
@@ -45,7 +44,7 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
 
 
   /** The value expression that the variable is set to. */
-  private final ExprRootNode<?> valueExpr;
+  private final ExprRootNode valueExpr;
 
 
   private LetValueNode(
@@ -53,7 +52,7 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
       SourceLocation sourceLocation,
       String localVarName,
       String commandText,
-      ExprRootNode<?> valueExpr) {
+      ExprRootNode valueExpr) {
     super(id, sourceLocation, localVarName, commandText);
     this.valueExpr = valueExpr;
   }
@@ -85,7 +84,7 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   /**
    * Returns the value expression that the variable is set to.
    */
-  public ExprRootNode<?> getValueExpr() {
+  public ExprRootNode getValueExpr() {
     return valueExpr;
   }
 

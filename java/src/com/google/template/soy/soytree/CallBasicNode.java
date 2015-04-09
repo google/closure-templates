@@ -19,9 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -29,7 +26,10 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
 import com.google.template.soy.soyparse.SoyError;
+import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -69,7 +69,7 @@ public final class CallBasicNode extends CallNode {
 
     CommandTextInfo(
         String commandText, String srcCalleeName, boolean isPassingData,
-        @Nullable ExprRootNode<?> dataExpr, @Nullable String userSuppliedPlaceholderName,
+        @Nullable ExprRootNode dataExpr, @Nullable String userSuppliedPlaceholderName,
         @Nullable SyntaxVersionBound syntaxVersionBound) {
       super(commandText, isPassingData, dataExpr, userSuppliedPlaceholderName, syntaxVersionBound);
       this.srcCalleeName = srcCalleeName;
@@ -190,7 +190,7 @@ public final class CallBasicNode extends CallNode {
     private boolean useV1FunctionAttrForCalleeName;
 
     @Nullable private String commandText;
-    @Nullable private ExprRootNode<?> dataExpr;
+    @Nullable private ExprRootNode dataExpr;
     @Nullable private String userSuppliedPlaceholderName;
     @Nullable private String calleeName;
     @Nullable private String sourceCalleeName;
@@ -211,7 +211,7 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
-    public Builder dataExpr(ExprRootNode<?> dataExpr) {
+    public Builder dataExpr(ExprRootNode dataExpr) {
       this.dataExpr = dataExpr;
       return this;
     }
@@ -333,7 +333,7 @@ public final class CallBasicNode extends CallNode {
             sourceLocation, MULTIPLE_CALLEE_NAMES, srcCalleeNames.get(0), srcCalleeNames.get(1));
       }
 
-      Pair<Boolean, ExprRootNode<?>> dataAttrInfo =
+      Pair<Boolean, ExprRootNode> dataAttrInfo =
           parseDataAttributeHelper(attributes.get("data"), sourceLocation, errorReporter);
 
       return new CommandTextInfo(

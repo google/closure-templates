@@ -71,7 +71,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // Implementation for root node.
 
 
-  @Override protected void visitExprRootNode(ExprRootNode<?> node) {
+  @Override protected void visitExprRootNode(ExprRootNode node) {
     visit(node.getChild(0));
   }
 

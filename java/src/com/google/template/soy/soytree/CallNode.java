@@ -39,7 +39,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-
 /**
  * Node representing a call.
  *
@@ -60,12 +59,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
     private final String commandText;
     private final boolean isPassingData;
-    @Nullable private final ExprRootNode<?> dataExpr;
+    @Nullable private final ExprRootNode dataExpr;
     @Nullable private final String userSuppliedPlaceholderName;
     @Nullable protected final SyntaxVersionBound syntaxVersionBound;
 
     public CommandTextInfo(
-        String commandText, boolean isPassingData, @Nullable ExprRootNode<?> dataExpr,
+        String commandText, boolean isPassingData, @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName,
         @Nullable SyntaxVersionBound syntaxVersionBound) {
       Preconditions.checkArgument(isPassingData || dataExpr == null);
@@ -89,7 +88,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   private final boolean isPassingAllData;
 
   /** The expression for the data to pass, or null if not applicable. */
-  @Nullable private final ExprRootNode<?> dataExpr;
+  @Nullable private final ExprRootNode dataExpr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -136,11 +135,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * @param errorReporter For reporting syntax errors.
    * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
-  protected static Pair<Boolean, ExprRootNode<?>> parseDataAttributeHelper(
+  protected static Pair<Boolean, ExprRootNode> parseDataAttributeHelper(
       String dataAttr, SourceLocation sourceLocation, ErrorReporter errorReporter) {
 
     boolean isPassingData;
-    ExprRootNode<?> dataExpr;
+    ExprRootNode dataExpr;
     if (dataAttr == null) {
       isPassingData = false;
       dataExpr = null;
@@ -149,11 +148,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       dataExpr = null;
     } else {
       isPassingData = true;
-      dataExpr = new ExpressionParser(dataAttr, sourceLocation, errorReporter)
-          .parseExpression();
+      dataExpr = new ExprRootNode(
+          new ExpressionParser(dataAttr, sourceLocation, errorReporter)
+              .parseExpression());
     }
 
-    return Pair.<Boolean, ExprRootNode<?>>of(isPassingData, dataExpr);
+    return Pair.of(isPassingData, dataExpr);
   }
 
 
@@ -186,7 +186,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
 
   /** Returns the expression for the data to pass, or null if not applicable. */
-  @Nullable public ExprRootNode<?> getDataExpr() {
+  @Nullable public ExprRootNode getDataExpr() {
     return dataExpr;
   }
 

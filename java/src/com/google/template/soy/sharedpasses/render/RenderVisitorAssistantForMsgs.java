@@ -172,7 +172,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitMsgPluralNode(MsgPluralNode node) {
-    ExprRootNode<?> pluralExpr = node.getExpr();
+    ExprRootNode pluralExpr = node.getExpr();
     double pluralValue;
     try {
       pluralValue = master.evalForUseByAssistants(pluralExpr, node).numberValue();
@@ -213,7 +213,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitMsgSelectNode(MsgSelectNode node) {
-    ExprRootNode<?> selectExpr = node.getExpr();
+    ExprRootNode selectExpr = node.getExpr();
     String selectValue;
     try {
       selectValue = master.evalForUseByAssistants(selectExpr, node).stringValue();
@@ -303,7 +303,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
       // Associate the select variable with the value.
       String correctSelectValue;
-      ExprRootNode<?> selectExpr = repSelectNode.getExpr();
+      ExprRootNode selectExpr = repSelectNode.getExpr();
       try {
         correctSelectValue = master.evalForUseByAssistants(selectExpr, repSelectNode).stringValue();
       } catch (SoyDataException e) {
@@ -371,7 +371,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
       MsgPluralNode repPluralNode = msgNode.getRepPluralNode(pluralPart.getPluralVarName());
       double correctPluralValue;
-      ExprRootNode<?> pluralExpr = repPluralNode.getExpr();
+      ExprRootNode pluralExpr = repPluralNode.getExpr();
       try {
         correctPluralValue =
             master.evalForUseByAssistants(pluralExpr, repPluralNode).numberValue();

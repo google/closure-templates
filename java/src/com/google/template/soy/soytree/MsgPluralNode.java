@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Node representing a 'plural' block.
@@ -67,7 +67,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   private final int offset;
 
   /** The parsed expression. */
-  private final ExprRootNode<?> pluralExpr;
+  private final ExprRootNode pluralExpr;
 
   /** The base plural var name (what the translator sees). */
   private final String basePluralVarName;
@@ -77,7 +77,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
       SourceLocation sourceLocation,
       String commandText,
       int offset,
-      ExprRootNode<?> pluralExpr,
+      ExprRootNode pluralExpr,
       String basePluralVarName) {
     super(id, sourceLocation, "plural", commandText);
     this.offset = offset;
@@ -116,7 +116,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
 
   /** Returns the parsed expression. */
-  public ExprRootNode<?> getExpr() {
+  public ExprRootNode getExpr() {
     return pluralExpr;
   }
 
@@ -183,8 +183,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         errorReporter.report(sourceLocation, INVALID_PLURAL_COMMAND_TEXT, commandText);
       }
 
-      ExprRootNode<?> pluralExpr
-          = new ExpressionParser(matcher.group(1), sourceLocation, errorReporter)
+      ExprNode pluralExpr = new ExpressionParser(matcher.group(1), sourceLocation, errorReporter)
           .parseExpression();
 
       int offset = 0;
@@ -204,14 +203,14 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
       }
 
       String basePluralVarName = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-              pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
+          pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
 
       if (errorReporter.errorsSince(checkpoint)) {
         return ERROR;
       }
 
       MsgPluralNode node = new MsgPluralNode(
-          id, sourceLocation, commandText, offset, pluralExpr, basePluralVarName);
+          id, sourceLocation, commandText, offset, new ExprRootNode(pluralExpr), basePluralVarName);
       return node;
     }
 

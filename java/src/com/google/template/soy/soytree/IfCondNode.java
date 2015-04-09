@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
 import com.google.template.soy.soyparse.ErrorReporterImpl;
@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
-
 
 /**
  * Node representing a block within an 'if' statement that has a conditional expression (i.e.
@@ -163,7 +162,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
     private ExprUnion buildExprUnion() {
       ErrorReporter errorReporter = new ErrorReporterImpl();
       Checkpoint checkpoint = errorReporter.checkpoint();
-      ExprRootNode<?> expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+      ExprNode expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
           .parseExpression();
       return errorReporter.errorsSince(checkpoint)
           ? new ExprUnion(commandText)

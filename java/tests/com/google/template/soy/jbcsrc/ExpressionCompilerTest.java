@@ -304,7 +304,7 @@ public class ExpressionCompilerTest extends TestCase {
         .getChild(0)
         .getChild(0)
         .getChild(0);
-    ExprRootNode<?> expr = code.getExprUnion().getExpr();
+    ExprRootNode expr = code.getExprUnion().getExpr();
     SoyExpression compile = testExpressionCompiler.compile(expr);
     return compile;
   }

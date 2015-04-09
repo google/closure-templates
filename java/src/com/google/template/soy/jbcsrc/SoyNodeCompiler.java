@@ -136,7 +136,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode caseNode = (SwitchCaseNode) child;
         List<Expression> comparisons = new ArrayList<>();
-        for (ExprRootNode<?> caseExpr : caseNode.getExprList()) {
+        for (ExprRootNode caseExpr : caseNode.getExprList()) {
           comparisons.add(compareSoyEquals(expression, exprCompiler.compile(caseExpr)));
         }
         Statement block = childrenAsStatement(caseNode);
