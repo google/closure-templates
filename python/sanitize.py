@@ -185,10 +185,9 @@ def filter_html_attributes(value):
     # attributes, unless the interpretation is unambiguous (ending with quotes
     # or a space).
     return _AMBIGUOUS_ATTR_END_RE.sub(r'\1 ', value.content)
-  else:
-    raise RuntimeError(
-        'Expected %s to be SanitizedContentKind.Attributes, but is %s.' %
-        (value, _get_content_kind(value)))
+
+  # TODO(gboyer): Replace this with a runtime exception along with other
+  return generated_sanitize.filter_html_attributes_helper(value)
 
 
 def filter_html_element_name(value):
