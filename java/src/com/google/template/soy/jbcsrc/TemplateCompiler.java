@@ -22,7 +22,6 @@ import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_MET
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -59,6 +58,7 @@ final class TemplateCompiler {
 
   private final FieldRef paramsField;
   private final FieldRef stateField;
+  private final UniqueNameGenerator fieldNames = UniqueNameGenerator.forFieldNames();
   private final CompiledTemplateMetadata template;
   private ClassWriter writer;
 
@@ -66,6 +66,8 @@ final class TemplateCompiler {
     this.template = template;
     this.paramsField = FieldRef.createFinalField(template.typeInfo(), "$params", SoyRecord.class);
     this.stateField = FieldRef.createField(template.typeInfo(), "$state", Type.INT_TYPE);
+    fieldNames.claimName("$params");
+    fieldNames.claimName("$state");
   }
 
   /**
@@ -131,8 +133,8 @@ final class TemplateCompiler {
         createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
     final LocalVariable contextVar = 
         createLocal("context", 2, Type.getType(RenderContext.class), start, end);
-    final VariableSet variables = new VariableSet(template.typeInfo(), thisVar, RENDER_METHOD, 
-        ImmutableList.of(paramsField.name(), stateField.name()));
+    final VariableSet variables = 
+        new VariableSet(fieldNames, template.typeInfo(), thisVar, RENDER_METHOD);
     final Statement nodeBody = 
         new SoyNodeCompiler(
             new DetachState(variables, thisVar, stateField),

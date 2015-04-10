@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
@@ -32,9 +31,7 @@ import org.objectweb.asm.commons.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -168,20 +165,20 @@ final class VariableSet {
 
   private final List<Variable> allVariables = new ArrayList<>();
   private final Deque<Map<VarKey, Variable>> frames = new ArrayDeque<>();
-  private final Set<String> fieldNames = new HashSet<>();
+  private final UniqueNameGenerator fieldNames;
   private final BitSet availableSlots = new BitSet();
   private final TypeInfo owner;
   private final LocalVariable thisVar;
 
   /**
-   * @param owner The type that is the owner of the method being generated 
+   * @param owner The type that is the owner of the method being generated
    * @param thisVar An expression returning the current 'this' reference
    * @param method The method being generated
-   * @param claimedFieldNames A set of reserved field names.
+   * @param fieldNames The field name set for the current class.
    */
-  VariableSet(TypeInfo owner, LocalVariable thisVar, Method method, 
-      Collection<String> claimedFieldNames) {
-    this.fieldNames.addAll(claimedFieldNames);
+  VariableSet(UniqueNameGenerator fieldNames, TypeInfo owner, LocalVariable thisVar,
+      Method method) {
+    this.fieldNames = fieldNames;
     this.owner = owner;
     this.thisVar = thisVar;
     availableSlots.set(0);   // for 'this'
@@ -204,13 +201,13 @@ final class VariableSet {
           String proposedName, SoyExpression initExpr, Label start, Label end) {
         VarKey key = VarKey.create(Kind.SYNTHETIC, proposedName);
         // synthetics are prefixed by $ by convention
-        String name = getAvailableFieldName("$" + proposedName);
+        String name = fieldNames.generateName("$" + proposedName);
         return doCreate(name, start, end, initExpr, key);
       }
 
       @Override Variable create(String name, SoyExpression initExpr, Label start, Label end) {
         VarKey key = VarKey.create(Kind.USER_DEFINED, name);
-        checkState(fieldNames.add(name), "A variable with the name %s already exists!", name);
+        fieldNames.claimName(name);
         return doCreate(name, start, end, initExpr, key);
       }
 
@@ -313,14 +310,5 @@ final class VariableSet {
       return nextClear;
     }
   }
-
-  private String getAvailableFieldName(String name) {
-    String proposal = name;
-    int counter = 0;
-    while (!fieldNames.add(proposal)) {
-      counter++;
-      proposal = name + "_" + counter;
-    }
-    return proposal;
-  }
 }
+
