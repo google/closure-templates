@@ -46,7 +46,8 @@ import org.objectweb.asm.commons.Method;
    * classes.
    */
   static final Method GENERATED_CONSTRUCTOR = new Method("<init>",
-      Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(SoyRecord.class)));
+      Type.getMethodDescriptor(Type.VOID_TYPE, 
+          Type.getType(SoyRecord.class), Type.getType(SoyRecord.class)));
 
   /** 
    * The {@link Method} signature of the 

@@ -61,7 +61,7 @@ public final class DetachStateTest extends TestCase {
 
   public void testDetach_singleRawTextNode() throws IOException {
     CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody("hello world");
-    CompiledTemplate template = factory.create(EMPTY_DICT);
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
@@ -83,7 +83,7 @@ public final class DetachStateTest extends TestCase {
         // merged
         "{' '}",
         "world");
-    CompiledTemplate template = factory.create(EMPTY_DICT);
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
@@ -108,7 +108,7 @@ public final class DetachStateTest extends TestCase {
         "{for $i in range(10)}",
         "  {$i}",
         "{/for}");
-    CompiledTemplate template = factory.create(EMPTY_DICT);
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));

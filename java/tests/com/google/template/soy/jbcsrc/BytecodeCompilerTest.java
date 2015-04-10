@@ -16,15 +16,22 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.internal.EasyDictImpl;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 
 import junit.framework.TestCase;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
@@ -172,7 +179,7 @@ public class BytecodeCompilerTest extends TestCase {
   }
 
   public void testCssNode() {
-    RenderContext ctx = new RenderContext(EMPTY_DICT,
+    RenderContext ctx = new RenderContext(
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
         SoyCssRenamingMap.IDENTITY);
     assertThatTemplateBody("{css foo}").rendersAs("bar", ctx);
@@ -181,11 +188,60 @@ public class BytecodeCompilerTest extends TestCase {
   }
 
   public void testXidNode() {
-    RenderContext ctx = new RenderContext(EMPTY_DICT,
+    RenderContext ctx = new RenderContext(
         SoyCssRenamingMap.IDENTITY,
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")));
     assertThatTemplateBody("{xid foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{xid foo2}").rendersAs("foo2_", ctx);
+  }
+
+  public void testParamValidation() {
+    CompiledTemplate.Factory singleParam = 
+        TemplateTester.compileTemplateBody("{@param foo : int}");
+    EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    params.setField("foo", IntegerData.forValue(1));
+    singleParam.create(params, SoyValueHelper.EMPTY_DICT);
+    params.delField("foo");
+    try {
+      singleParam.create(params, SoyValueHelper.EMPTY_DICT);
+      fail();
+    } catch (SoyDataException sde) {
+      assertThat(sde).hasMessage("Required @param: 'foo' is undefined.");
+    }
+
+    CompiledTemplate.Factory singleIj = 
+        TemplateTester.compileTemplateBody("{@inject foo : int}");
+    params.setField("foo", IntegerData.forValue(1));
+    singleIj.create(SoyValueHelper.EMPTY_DICT, params);
+    params.delField("foo");
+    try {
+      singleIj.create(params, SoyValueHelper.EMPTY_DICT);
+      fail();
+    } catch (SoyDataException sde) {
+      assertThat(sde).hasMessage("Required @inject: 'foo' is undefined.");
+    }
+  }
+
+  public void testParamFields() throws Exception {
+    CompiledTemplate.Factory multipleParams = 
+        TemplateTester.compileTemplateBody(
+            "{@param foo : string}",
+            "{@param baz : string}",
+            "{@inject bar : string}");
+    EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    params.setField("foo", StringData.forValue("foo"));
+    params.setField("bar", StringData.forValue("bar"));
+    params.setField("baz", StringData.forValue("baz"));
+    CompiledTemplate template = multipleParams.create(params, params);
+    assertEquals(StringData.forValue("foo"), getField("foo", template));
+    assertEquals(StringData.forValue("bar"), getField("bar", template));
+    assertEquals(StringData.forValue("baz"), getField("baz", template));
+  }
+
+  private Object getField(String name, CompiledTemplate template) throws Exception {
+    Field declaredField = template.getClass().getDeclaredField(name);
+    declaredField.setAccessible(true);
+    return declaredField.get(template);
   }
 
   public void testBasicFunctionality() {

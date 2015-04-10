@@ -17,17 +17,22 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_METHOD;
+import static com.google.template.soy.jbcsrc.FieldRef.createField;
+import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -57,17 +62,28 @@ final class TemplateCompiler {
   private static final String[] INTERFACES = { Type.getInternalName(CompiledTemplate.class) };
 
   private final FieldRef paramsField;
+  private final FieldRef ijField;
   private final FieldRef stateField;
   private final UniqueNameGenerator fieldNames = UniqueNameGenerator.forFieldNames();
+  private final ImmutableMap<String, FieldRef> paramFields;
   private final CompiledTemplateMetadata template;
   private ClassWriter writer;
 
   TemplateCompiler(CompiledTemplateMetadata template) {
     this.template = template;
-    this.paramsField = FieldRef.createFinalField(template.typeInfo(), "$params", SoyRecord.class);
-    this.stateField = FieldRef.createField(template.typeInfo(), "$state", Type.INT_TYPE);
+    this.paramsField = createFinalField(template.typeInfo(), "$params", SoyRecord.class);
+    this.ijField = createFinalField(template.typeInfo(), "$ij", SoyRecord.class);
+    this.stateField = createField(template.typeInfo(), "$state", Type.INT_TYPE);
     fieldNames.claimName("$params");
+    fieldNames.claimName("$ij");
     fieldNames.claimName("$state");
+    ImmutableMap.Builder<String, FieldRef> builder = ImmutableMap.builder();
+    for (TemplateParam param : template.node().getAllParams()) {
+      String name = param.name();
+      fieldNames.claimName(name);
+      builder.put(name, createFinalField(template.typeInfo(), name, SoyValueProvider.class));
+    }
+    this.paramFields = builder.build();
   }
 
   /**
@@ -116,6 +132,10 @@ final class TemplateCompiler {
 
     stateField.defineField(writer);
     paramsField.defineField(writer);
+    ijField.defineField(writer);
+    for (FieldRef field : paramFields.values()) {
+      field.defineField(writer);
+    }
 
     generateConstructor();
     generateRenderMethod();
@@ -181,43 +201,81 @@ final class TemplateCompiler {
    * <p>This constructor is called by the generate factory classes.
    */
   private void generateConstructor() {
-    Label start = new Label();
-    Label end = new Label();
-    LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
-    LocalVariable paramsVar = createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
+    final Label start = new Label();
+    final Label end = new Label();
+    final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
+    final LocalVariable paramsVar = 
+        createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
+    final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
+    final List<Statement> assignments = new ArrayList<>();
+    assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
+    assignments.add(ijField.putInstanceField(thisVar, ijVar));
+    for (final TemplateParam param : template.node().getAllParams()) {
+      Expression paramProvider = getAndCheckParam(paramsVar, ijVar, param);
+      assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
+    }
+    Statement constructorBody = new Statement() {
+      @Override void doGen(GeneratorAdapter ga) {
+        ga.mark(start);
+        // call super()
+        thisVar.gen(ga);
+        ga.invokeConstructor(Type.getType(Object.class), BytecodeUtils.NULLARY_INIT);
+        for (Statement assignment : assignments) {
+          assignment.gen(ga);
+        }
+        ga.visitInsn(Opcodes.RETURN);
+        ga.visitLabel(end);
+        thisVar.tableEntry(ga);
+        paramsVar.tableEntry(ga);
+        ijVar.tableEntry(ga);
+      }
+    };
     GeneratorAdapter ga = new GeneratorAdapter(
         Opcodes.ACC_PUBLIC, 
         CompiledTemplateMetadata.GENERATED_CONSTRUCTOR, 
         null, // no generic signature
         null, // no checked exception
         writer);
-    ga.mark(start);
-    // call super()
-    thisVar.gen(ga);
-    ga.invokeConstructor(Type.getType(Object.class), BytecodeUtils.NULLARY_INIT);
-
-    // now we need to check that all our required parameters are present
-    // TODO(lukes): this would be an obvious place to perform type checking and even aggressively
-    // unpacking the SoyRecord into fields to save on repeated hash oriented lookups into the
-    // SoyRecord.  Wait until we have a more fleshed out implementation before experimenting with
-    // this idea.
-    for (TemplateParam param : template.node().getAllParams()) {
-      if (!param.isInjected() && param.isRequired()) {
-        // In Tofu, a missing param is defaulted to 'null' and then if it is required and not
-        // nullable, it will fail a strict type check... leading to much confusion notably on the
-        // difference between optional params and required nullable params.  For now, i will enforce
-        // that required means you have to pass it.
-        MethodRef.RUNTIME_CHECK_REQUIRED_PARAM.invoke(
-            paramsVar, constant(param.name())).gen(ga);
-      }
+    constructorBody.gen(ga);
+    try {
+      ga.endMethod();
+    } catch (Throwable t) {
+      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the 
+      // exception.
+      throw new RuntimeException("Failed to generate method:\n" + constructorBody, t);
     }
-    // this.params = params;
-    paramsField.putInstanceField(thisVar, paramsVar).gen(ga);
-    ga.visitInsn(Opcodes.RETURN);
-    ga.visitLabel(end);
-    thisVar.tableEntry(ga);
-    paramsVar.tableEntry(ga);
-    ga.endMethod();
+  }
+
+  /**
+   * Returns an expression that fetches the given param from the params record or the ij record and
+   * enforces the {@link TemplateParam#isRequired()} flag, throwing SoyDataException if a required
+   * parameter is missing. 
+   */
+  private Expression getAndCheckParam(final LocalVariable paramsVar, final LocalVariable ijVar,
+      final TemplateParam param) {
+    Expression record = param.isInjected() ? ijVar : paramsVar;
+    final Expression provider = MethodRef.SOY_RECORD_GET_FIELD_PROVIDER
+        .invoke(record, BytecodeUtils.constant(param.name()));
+    final Expression nullData = FieldRef.NULL_DATA_INSTANCE.accessor();
+    return new SimpleExpression(Type.getType(SoyValueProvider.class), false) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        provider.gen(adapter);
+        adapter.dup();
+        Label nonNull = new Label();
+        adapter.ifNonNull(nonNull);
+        if (param.isRequired()) {
+          adapter.throwException(Type.getType(SoyDataException.class), 
+              "Required " + (param.isInjected() ? "@inject" : "@param") + ": '" 
+                  + param.name() + "' is undefined.");
+        } else {
+          // non required params default to null
+          adapter.pop();  // pop the extra copy of provider that we dup()'d above
+          nullData.gen(adapter);
+        }
+        adapter.mark(nonNull);
+        // At the end there should be a single SoyValueProvider on the stack.
+      }
+    };
   }
 
   // TODO(lukes): support these expressions, most likely by extracting sufficient data structures 

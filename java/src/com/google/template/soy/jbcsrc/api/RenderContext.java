@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 
@@ -27,19 +26,12 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
  * single instance of this object and it will be propagated throughout the render tree.
  */
 public final class RenderContext {
-  private final SoyRecord ij;
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
 
-  public RenderContext(
-      SoyRecord ij, SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap) {
-    this.ij = checkNotNull(ij);
+  public RenderContext(SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap) {
     this.cssRenamingMap = checkNotNull(cssRenamingMap);
     this.xidRenamingMap = checkNotNull(xidRenamingMap);
-  }
-
-  public SoyRecord ijParams() {
-    return ij;
   }
 
   public String renameCssSelector(String selector) {

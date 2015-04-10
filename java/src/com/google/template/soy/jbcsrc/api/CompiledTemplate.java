@@ -25,7 +25,7 @@ public interface CompiledTemplate {
   /** A factory interface for constructing a {@link CompiledTemplate}. */
   interface Factory {
     /** Returns a new {@link CompiledTemplate} with the given {@link SoyRecord params}. */
-    CompiledTemplate create(SoyRecord params);
+    CompiledTemplate create(SoyRecord params, SoyRecord ij);
   }
 
   /**

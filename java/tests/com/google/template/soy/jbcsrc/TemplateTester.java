@@ -49,7 +49,7 @@ import javax.annotation.Nonnull;
  */
 public final class TemplateTester {
   static final RenderContext EMPTY_CONTEXT = new RenderContext(
-      EMPTY_DICT, SoyCssRenamingMap.IDENTITY, SoyCssRenamingMap.IDENTITY);
+      SoyCssRenamingMap.IDENTITY, SoyCssRenamingMap.IDENTITY);
 
   private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =
       new SubjectFactory<CompiledTemplateSubject, String>() {
@@ -105,7 +105,7 @@ public final class TemplateTester {
     private CompiledTemplateSubject rendersAndLogs(String expectedOutput, String expectedLogged, 
         SoyRecord params, RenderContext context) {
       compile();
-      CompiledTemplate template = factory.create(params);
+      CompiledTemplate template = factory.create(params, EMPTY_DICT);
       AdvisingStringBuilder builder = new AdvisingStringBuilder();
       LogCapturer logOutput = new LogCapturer();
       RenderResult result;
@@ -151,7 +151,7 @@ public final class TemplateTester {
         @Override public void setField(String name, @Nonnull SoyValueProvider valueProvider) {
           throw new UnsupportedOperationException();
         }
-      });
+      }, null);
       if (!template.getClass().getName().equals(expectedClassName)) {
         fail("hasCompileTemplateClassName", expectedClassName);
       }

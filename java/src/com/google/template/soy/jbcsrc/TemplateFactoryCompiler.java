@@ -53,9 +53,10 @@ final class TemplateFactoryCompiler {
   static {
     try {
       CREATE_METHOD = Method.getMethod(
-          CompiledTemplate.Factory.class.getDeclaredMethod("create", SoyRecord.class));
+          CompiledTemplate.Factory.class.getDeclaredMethod(
+              "create", SoyRecord.class, SoyRecord.class));
     } catch (NoSuchMethodException | SecurityException e) {
-      throw new RuntimeException(e);
+      throw new AssertionError(e);
     }
   }
 
@@ -114,25 +115,34 @@ final class TemplateFactoryCompiler {
    * constructor of the {@link #template}.
    */
   private void generateCreateMethod(ClassWriter cw) {
-    Label start = new Label();
-    Label end = new Label();
-    LocalVariable thisVar = createThisVar(template.factory(), start, end);
-    LocalVariable paramsVar = createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
+    final Label start = new Label();
+    final Label end = new Label();
+    final LocalVariable thisVar = createThisVar(template.factory(), start, end);
+    final LocalVariable paramsVar = 
+        createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
+    final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
+    Statement constructorBody = new Statement() {
+      @Override void doGen(GeneratorAdapter ga) {
+        ga.mark(start);
+        ga.newInstance(template.typeInfo().type());
+        ga.dup();
+        paramsVar.gen(ga);
+        ijVar.gen(ga);
+        ga.invokeConstructor(template.typeInfo().type(), GENERATED_CONSTRUCTOR);
+        ga.returnValue();
+        ga.mark(end);
+        thisVar.tableEntry(ga);
+        paramsVar.tableEntry(ga);
+        ijVar.tableEntry(ga);
+      }
+    };
     GeneratorAdapter ga = new GeneratorAdapter(
         Opcodes.ACC_PUBLIC,
         CREATE_METHOD,
         null /* no generic signature */,
         null /* no checked exceptions */,
         cw);
-    ga.mark(start);
-    ga.newInstance(template.typeInfo().type());
-    ga.dup();
-    paramsVar.gen(ga);
-    ga.invokeConstructor(template.typeInfo().type(), GENERATED_CONSTRUCTOR);
-    ga.returnValue();
-    ga.mark(end);
-    thisVar.tableEntry(ga);
-    paramsVar.tableEntry(ga);
+    constructorBody.gen(ga);
     ga.endMethod();
   }
 }
