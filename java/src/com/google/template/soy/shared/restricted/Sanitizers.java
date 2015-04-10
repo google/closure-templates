@@ -21,6 +21,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.escape.Escaper;
+import com.google.common.net.PercentEscaper;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -30,7 +32,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.internal.base.CharEscapers;
 import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
 
 import java.io.IOException;
@@ -365,7 +366,7 @@ public final class Sanitizers {
    * Converts plain text to a piece of a URI by percent encoding assuming a UTF-8 encoding.
    */
   public static String escapeUri(String value) {
-    return CharEscapers.uriEscaper(false).escape(value);
+    return uriEscaper().escape(value);
   }
 
 
@@ -695,4 +696,45 @@ public final class Sanitizers {
         + space + "*"
         + "(" + attributeValue + ")");  // Group 2: Optionally-quoted attributed value.
   }
+
+  /**
+   * Returns a {@link Escaper} instance that escapes Java characters so they can
+   * be safely included in URIs. For details on escaping URIs, see section 2.4
+   * of <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>.
+   *
+   * <p>When encoding a String, the following rules apply:
+   * <ul>
+   * <li>The alphanumeric characters "a" through "z", "A" through "Z" and "0"
+   *     through "9" remain the same.
+   * <li>The special characters ".", "-", "*", and "_" remain the same.
+   * <li>If {@code plusForSpace} was specified, the space character " " is
+   *     converted into a plus sign "+". Otherwise it is converted into "%20".
+   * <li>All other characters are converted into one or more bytes using UTF-8
+   *     encoding and each byte is then represented by the 3-character string
+   *     "%XY", where "XY" is the two-digit, uppercase, hexadecimal
+   *     representation of the byte value.
+   * </ul>
+   *
+   * <p><b>Note</b>: Unlike other escapers, URI escapers produce uppercase
+   * hexadecimal sequences. From <a href="http://www.ietf.org/rfc/rfc3986.txt">
+   * RFC 3986</a>:<br>
+   * <i>"URI producers and normalizers should use uppercase hexadecimal digits
+   * for all percent-encodings."</i>
+   *
+   * @see #uriEscaper()
+   */
+  private static Escaper uriEscaper() {
+    return URI_ESCAPER_NO_PLUS;
+  }
+
+  /**
+   * A string of safe characters that mimics the behavior of
+   * {@link java.net.URLEncoder}.
+   *
+   * <p>TODO: Fix escapers to be compliant with RFC 3986
+   */
+  private static final String SAFECHARS_URLENCODER = "-_.*";
+
+  private static final Escaper URI_ESCAPER_NO_PLUS =
+      new PercentEscaper(SAFECHARS_URLENCODER, false);
 }

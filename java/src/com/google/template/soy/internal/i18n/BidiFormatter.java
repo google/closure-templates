@@ -17,8 +17,8 @@
 package com.google.template.soy.internal.i18n;
 
 import com.google.common.base.Preconditions;
+import com.google.common.html.HtmlEscapers;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.internal.base.CharEscapers;
 
 import com.ibm.icu.util.ULocale;
 
@@ -440,7 +440,7 @@ public class BidiFormatter {
     }
     String origStr = str;
     if (!isHtml) {
-      str = CharEscapers.asciiHtmlEscaper().escape(str);
+      str = HtmlEscapers.htmlEscaper().escape(str);
     }
 
     StringBuilder result = new StringBuilder();
