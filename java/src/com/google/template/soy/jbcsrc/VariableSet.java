@@ -22,7 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
 import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
 
-import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -152,7 +152,7 @@ final class VariableSet {
       return fieldRef;
     }
 
-    private void maybeDefineField(ClassWriter writer) {
+    private void maybeDefineField(ClassVisitor writer) {
       if (fieldRef != null) {
         fieldRef.defineField(writer);
       }
@@ -207,7 +207,7 @@ final class VariableSet {
 
       @Override Variable create(String name, SoyExpression initExpr, Label start, Label end) {
         VarKey key = VarKey.create(Kind.USER_DEFINED, name);
-        fieldNames.claimName(name);
+        name = fieldNames.generateName(name);
         return doCreate(name, start, end, initExpr, key);
       }
 
@@ -256,7 +256,7 @@ final class VariableSet {
   }
 
   /** Defines all the fields necessary for the registered variables. */
-  void defineFields(ClassWriter writer) {
+  void defineFields(ClassVisitor writer) {
     for (Variable var : allVariables) {
       var.maybeDefineField(writer);
     }

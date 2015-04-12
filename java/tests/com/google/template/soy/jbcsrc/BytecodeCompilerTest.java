@@ -195,6 +195,24 @@ public class BytecodeCompilerTest extends TestCase {
     assertThatTemplateBody("{xid foo2}").rendersAs("foo2_", ctx);
   }
 
+  public void testParam() {
+    assertThatTemplateBody(
+        "{@param foo : int }",
+        "{$foo + 1}")
+        .rendersAs("2", ImmutableMap.of("foo", 1))
+        .rendersAs("3", ImmutableMap.of("foo", 2))
+        .rendersAs("4", ImmutableMap.of("foo", 3));
+  }
+
+  public void testInjectParam() {
+    assertThatTemplateBody(
+        "{@inject foo : int }",
+        "{$foo + 1}")
+        .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
+        .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
+        .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
+  }
+
   public void testParamValidation() {
     CompiledTemplate.Factory singleParam = 
         TemplateTester.compileTemplateBody("{@param foo : int}");

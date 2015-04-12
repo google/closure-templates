@@ -26,6 +26,7 @@ import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 
@@ -77,6 +79,10 @@ public final class TemplateTester {
     that.compile();
     return that.factory;
   }
+  
+  static SoyRecord asRecord(Map<String, ?> params) {
+    return (SoyRecord) SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(params);
+  }
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
     private Iterable<ClassData> classData;
@@ -87,25 +93,29 @@ public final class TemplateTester {
     }
     
     CompiledTemplateSubject logsOutput(String expected) {
-      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_CONTEXT);
+      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_DICT, EMPTY_CONTEXT);
     }
 
     CompiledTemplateSubject rendersAs(String expected) {
-      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_CONTEXT);
+      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, EMPTY_CONTEXT);
     }
-
-    CompiledTemplateSubject rendersAs(String expected, SoyRecord params) {
-      return rendersAndLogs(expected, "", params, EMPTY_CONTEXT);
+    
+    CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
+      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, EMPTY_CONTEXT);
+    }
+    
+    CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params,  Map<String, ?> ij) {
+      return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), EMPTY_CONTEXT);
     }
     
     CompiledTemplateSubject rendersAs(String expected, RenderContext context) {
-      return rendersAndLogs(expected, "", EMPTY_DICT, context);
+      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, context);
     }
 
     private CompiledTemplateSubject rendersAndLogs(String expectedOutput, String expectedLogged, 
-        SoyRecord params, RenderContext context) {
+        SoyRecord params, SoyRecord ij, RenderContext context) {
       compile();
-      CompiledTemplate template = factory.create(params, EMPTY_DICT);
+      CompiledTemplate template = factory.create(params, ij);
       AdvisingStringBuilder builder = new AdvisingStringBuilder();
       LogCapturer logOutput = new LogCapturer();
       RenderResult result;
@@ -190,6 +200,7 @@ public final class TemplateTester {
   private interface SystemOutRestorer extends AutoCloseable {
     @Override public void close();
   }
+
   private static final class LogCapturer {
     private final ByteArrayOutputStream logOutput;
     private final PrintStream stream;

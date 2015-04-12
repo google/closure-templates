@@ -136,6 +136,20 @@ abstract class Expression extends BytecodeProducer {
     }
     return new ConstantExpression(this);
   }
+  
+  /**
+   * Returns an expression that performs a checked cast from the current type to the target type.
+   *
+   * @throws IllegalArgumentException if either type is not a reference type.
+   */
+  Expression cast(final Type target) {
+    checkArgument(target.getSort() == Type.OBJECT, "cast targets must be reference types.");
+    checkArgument(resultType().getSort() == Type.OBJECT, "you may only cast from reference types.");
+    if (target.equals(resultType())) {
+      return this;
+    }
+    return new CastExpression(this, target);
+  }
 
   @Override public String toString() {
     return name() + "<" + resultType() + ">:\n" + trace();
@@ -150,6 +164,20 @@ abstract class Expression extends BytecodeProducer {
     }
     String simpleName = this.getClass().getSimpleName();
     return simpleName.isEmpty() ? "Expression" : simpleName;
+  }
+
+  private static final class CastExpression extends SimpleExpression {
+    final Expression delegate;
+
+    CastExpression(Expression delegate, Type resultType) {
+      super(resultType, delegate.isConstant());
+      this.delegate = delegate;
+    }
+
+    @Override void doGen(GeneratorAdapter adapter) {
+      delegate.gen(adapter);
+      adapter.checkCast(resultType());
+    }
   }
 
   /**

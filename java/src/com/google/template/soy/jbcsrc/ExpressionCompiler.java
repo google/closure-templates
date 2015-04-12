@@ -87,6 +87,10 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
    * {@code node.getType().javaType()}.
    */
   SoyExpression compile(ExprNode node) {
+    return exec(node);
+  }
+
+  @Override public final SoyExpression exec(ExprNode node) {
     return visit(checkNotNull(node));
   }
 

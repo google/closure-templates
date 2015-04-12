@@ -18,8 +18,12 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
+import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 
@@ -123,5 +127,31 @@ public final class DetachStateTest extends TestCase {
     }
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
     assertEquals("", output.toString());  // last render was empty
+  }
+
+  public void testDetachOnUnResolvedProvider() throws IOException {
+    SettableFuture<String> future = SettableFuture.create();
+    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
+        "{@param foo : string}",
+        "prefix{sp}{$foo}{sp}suffix");
+    CompiledTemplate template = factory.create(
+        asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
+    
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertEquals(future, result.future());
+    assertEquals("prefix ", output.toString());
+
+    // No progress is made, our caller is an idiot and didn't wait for the future
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertEquals(future, result.future());
+    assertEquals("prefix ", output.toString());
+
+    future.set("future");
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.done(), result);
+    assertEquals("prefix future suffix", output.toString());
   }
 }

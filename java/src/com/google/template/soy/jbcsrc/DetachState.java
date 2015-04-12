@@ -20,6 +20,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.SaveRestoreState;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 
@@ -107,6 +110,98 @@ final class DetachState {
     // indices  e.g. reattach.get(2) is the reattach for state 2.  Because 0 is a special case for
     // 'initial call'.
     reattaches.add(null);
+  }
+
+  /**
+   * A utility for generating detach blocks for expressions.
+   */
+  static final class ExpressionDetacher {
+    private final Label reattachPoint;
+    private final Label detachPoint = new Label();
+    private final Statement saveOperation;
+
+    private ExpressionDetacher(Label reattachPoint, Statement save) {
+      this.reattachPoint = reattachPoint;
+      this.saveOperation = save;
+    }
+
+    /**
+     * Returns a new {@link Expression} that has the same behavior as {@code exp} but adds a prefix
+     * and suffix to implement detach logic.
+     */
+    final Expression makeDetachable(final Expression exp) {
+      return new SimpleExpression(exp.resultType(), exp.isConstant()) {
+        @Override void doGen(GeneratorAdapter adapter) {
+          // Note, the reattach point is _before_ the expression.  This means that on reattaches
+          // we rerun the entire expression rather than jumping to right before the detach point.
+          // This is neccesary because we are not saving intermediate expression results which are
+          // currently stored on the runtime stack.  saving the stack is believed to not be worth
+          // the effort.
+          adapter.mark(reattachPoint);
+          exp.gen(adapter);
+          // If the delegate completes normally, it should skip over the detach logic.
+          Label skip = new Label();
+          adapter.goTo(skip);
+          // This is the branch target for detach operations created by the expressions returned
+          // from resolveSoyValueProvider. When control reaches here, there will be a ResolveStatus
+          // object on top of the runtime stack.
+          // Technically, this logic could go anywhere,  we could put it after the final return of
+          // the current method.  Maybe worth considering since it would allow us to save the skip
+          // operation.
+          adapter.mark(detachPoint);
+          saveOperation.gen(adapter);  // save locals and state field
+          // Convert the resolve result to a render result and detach.
+          MethodRef.RESOLVE_STATUS_FUTURE.invokeUnchecked(adapter);
+          MethodRef.RENDER_RESULT_CONTINUE_AFTER.invokeUnchecked(adapter);
+          adapter.returnValue();
+
+          adapter.mark(skip);  // continue normal operation
+        }
+      };
+    }
+
+    /**
+     * Returns an expression for the SoyValue that is resolved by the given SoyValueProvider, 
+     * potentially detaching if it is not {@link SoyValueProvider#status() resolvable}.
+     * 
+     * @param soyValueProvider an expression yielding a SoyValueProvider
+     */
+    final Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
+      return new SimpleExpression(Type.getType(SoyValue.class), false) {
+        @Override void doGen(GeneratorAdapter adapter) {
+          // We use a bunch of dup() operations in order to save extra field reads and method
+          // invocations.  This makes the expression api difficult/confusing to use.  So instead 
+          // call a bunch of unchecked invocations.
+          // Legend: SVP = SoyValueProvider, RS = ResolveStatus, Z = boolean, SV = SoyValue
+          soyValueProvider.gen(adapter);                                  // Stack: SVP
+          adapter.dup();                                                  // Stack: SVP, SVP
+          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter);   // Stack: SVP, RS
+          adapter.dup();                                                  // Stack: SVP, RS, RS
+          MethodRef.RESOLVE_STATUS_IS_READY.invokeUnchecked(adapter);     // Stack: SVP, RS, Z
+          // if !isReady goto detachPoint
+          adapter.ifZCmp(Opcodes.IFEQ, detachPoint);                      // Stack: SVP, RS  
+          adapter.pop();                                                  // Stack: SVP
+          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter);  // Stack: SV
+        }
+      };
+    }
+  }
+
+  /**
+   * Returns a {@link ExpressionDetacher} that can be used to instrument an expression with detach
+   * reattach logic.
+   */
+  ExpressionDetacher generateExpressionDetacher() {
+    Label reattachPoint = new Label();
+    int state = reattaches.size();
+    SaveRestoreState saveRestoreState = variables.saveRestoreState();
+    Statement restore = saveRestoreState.restore();
+    reattaches.add(ReattachState.create(reattachPoint, restore));
+    Statement saveState = stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+    return new ExpressionDetacher(
+        reattachPoint, 
+        Statement.concat(saveRestoreState.save(), saveState));
   }
 
   /**
