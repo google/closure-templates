@@ -18,8 +18,6 @@ package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.internal.RenderableThunk;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import java.io.IOException;
 
@@ -123,11 +121,6 @@ public abstract class StringData extends PrimitiveData {
 
     @Override public void render(Appendable appendable) throws IOException {
       thunk.render(appendable);
-    }
-
-    @Override public RenderResult render(AdvisingAppendable appendable, boolean isLast)
-        throws IOException {
-      return thunk.render(appendable, isLast);
     }
 
     @Override public String getValue() {

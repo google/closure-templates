@@ -151,8 +151,6 @@ final class DetachState {
           adapter.mark(detachPoint);
           saveOperation.gen(adapter);  // save locals and state field
           // Convert the resolve result to a render result and detach.
-          MethodRef.RESOLVE_STATUS_FUTURE.invokeUnchecked(adapter);
-          MethodRef.RENDER_RESULT_CONTINUE_AFTER.invokeUnchecked(adapter);
           adapter.returnValue();
 
           adapter.mark(skip);  // continue normal operation
@@ -178,7 +176,7 @@ final class DetachState {
           adapter.dup();                                                  // Stack: SVP, SVP
           MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter);   // Stack: SVP, RS
           adapter.dup();                                                  // Stack: SVP, RS, RS
-          MethodRef.RESOLVE_STATUS_IS_READY.invokeUnchecked(adapter);     // Stack: SVP, RS, Z
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);     // Stack: SVP, RS, Z
           // if !isReady goto detachPoint
           adapter.ifZCmp(Opcodes.IFEQ, detachPoint);                      // Stack: SVP, RS  
           adapter.pop();                                                  // Stack: SVP

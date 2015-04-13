@@ -16,9 +16,10 @@
 
 package com.google.template.soy.data;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
-import java.util.concurrent.Future;
+import java.io.IOException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -39,59 +40,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public interface SoyValueProvider {
 
   /**
-   * A value that indicates whether {@link SoyValueProvider#resolve()} can be called without
-   * blocking.
-   */
-  abstract class ResolveStatus {
-    private static final ResolveStatus RESOLVABLE = new ResolveStatus() {
-      @Override public boolean isReady() {
-        return true;
-      }
-
-      @Override public Future<?> future() {
-        throw new IllegalStateException("Result.future() can only be called if isDone() is false.");
-      }
-    };
-
-    /**
-     * Returns a {@link ResolveStatus} that indicates that {@link SoyValueProvider#resolve()} can be
-     * called without blocking.
-     */
-    public static ResolveStatus ready() {
-      return RESOLVABLE;
-    }
-
-    /**
-     * Returns a {@link ResolveStatus} that indicates that {@link SoyValueProvider#resolve()} cannot
-     * be called until the given future is {@link Future#isDone() done}.
-     */
-    public static ResolveStatus resolveAfter(final Future<?> future) {
-      checkNotNull(future);
-      return new ResolveStatus() {
-        @Override public boolean isReady() {
-          return false;
-        }
-
-        @Override public Future<?> future() {
-          return future;
-        }
-      };
-    }
-
-    private ResolveStatus() {}  // prevent other subclasses
-
-    /**
-     * Returns the future that must be done prior to calling resolve.
-     *
-     * @throws IllegalStateException if {@link #isReady()} returns {@code true}
-     */
-    public abstract Future<?> future();
-
-    /** Returns {@code true} if the {@link SoyValueProvider} can be resolved without blocking. */
-    public abstract boolean isReady();
-  }
-
-  /**
    * Usually, this method is a no-op that simply returns this object. However, if this value needs
    * to be resolved at usage time, then this method resolves and returns the resolved value.
    * @return The resolved value.
@@ -99,14 +47,39 @@ public interface SoyValueProvider {
   @Nonnull public SoyValue resolve();
 
   /**
-   * Returns {@link ResolveStatus#isReady()} if the value provider can be
+   * Returns {@link RenderResult#done()} if the value provider can be
    * {@link #resolve() resolved} without blocking on a future.  Otherwise, returns a
-   * {@link ResolveStatus} that holds the future.
+   * {@link RenderResult} that holds the future.
    *
-   * <p>Note, once this method returns {@link ResolveStatus#isReady()} all future calls must also
-   * return {@link ResolveStatus#isReady()}.
+   * <p>Note, once this method returns {@link RenderResult#done()} all future calls must also
+   * return {@link RenderResult#done()}.
+   *
+   * <p>This method will <em>never</em> return a
+   * {@link com.google.template.soy.jbcsrc.api.RenderResult.Type#LIMITED limited}
+   * {@link RenderResult}
    */
-  @Nonnull public ResolveStatus status();
+  @Nonnull public RenderResult status();
+
+  /**
+   * Renders this value to the given {@link AdvisingAppendable}, possibly partially.
+   *
+   * <p>This should render the exact same content as {@code resolve().render(Appendable)} but may
+   * optionally detach part of the way through rendering.  Note, this means that this method is
+   * <em>stateful</em> and if it returns something besides {@link RenderResult#done()} then the
+   * next call to this method will resume rendering from the previous point.
+   *
+   * @param appendable The appendable to render to.
+   * @param isLast True if this is <em>definitely</em> the last time this value will be rendered.
+   *     Used as a hint to implementations to not optimize for later calls (for example, by storing
+   *     render results in a buffer for faster re-renders).  The value of this parameter should not
+   *     affect behavior of this method, only performance.
+   * @return A {@link RenderResult} that describes whether or not rendering completed.  If the
+   *     returned result is not {@link RenderResult#done() done}, then to complete rendering you
+   *     must call this method again.
+   * @throws IOException If the appendable throws an IOException
+   */
+  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+      throws IOException;
 
   /**
    * Compares this value against another for equality for the purposes of Soy.

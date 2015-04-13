@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.jbcsrc.api.RenderResult;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -72,8 +74,8 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
     this.future = future;
   }
 
-  @Override public ResolveStatus status() {
-    return future.isDone() ? ResolveStatus.ready() : ResolveStatus.resolveAfter(future);
+  @Override public RenderResult status() {
+    return future.isDone() ? RenderResult.done() : RenderResult.continueAfter(future);
   }
 
   /**

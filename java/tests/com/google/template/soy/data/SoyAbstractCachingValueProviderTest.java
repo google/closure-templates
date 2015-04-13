@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import junit.framework.TestCase;
 
@@ -45,8 +46,8 @@ public class SoyAbstractCachingValueProviderTest extends TestCase {
       return IntegerData.forValue(number);
     }
 
-    @Override public ResolveStatus status() {
-      return ResolveStatus.ready();
+    @Override public RenderResult status() {
+      return RenderResult.done();
     }
   }
 

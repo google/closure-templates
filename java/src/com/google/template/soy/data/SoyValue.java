@@ -16,9 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.io.IOException;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -65,29 +62,6 @@ public interface SoyValue extends SoyValueProvider {
    * @throws IOException
    */
   public void render(Appendable appendable) throws IOException;
-
-  /**
-   * Renders this value to the given {@link AdvisingAppendable}, possibly partially.
-   *
-   * <p>This should render the exact same content as {@link #render(Appendable)} but may optionally
-   * detach part of the way through rendering.  Note, this means that this method is
-   * <em>stateful</em> and if it returns something besides {@link RenderResult#done()} then the
-   * next call to this method will resume rendering from the previous point.
-   *
-   * <p>It is expected that most implementations will simply delegate to
-   * {@link #render(Appendable)}, since the renderable content is small/trivial.
-   *
-   * @param appendable The appendable to render to.
-   * @param isLast True if this is <em>definitely</em> the last time this value will be rendered.
-   *     Used as a hint to implementations to not optimize for later calls (for example, by storing
-   *     render results in a buffer for faster re-renders).  The value of this parameter should not
-   *     affect behavior of this method, only performance.
-   * @returns A {@link RenderResult} that describes whether or not rendering completed.  If the
-   *     returned result is not {@link RenderResult#done() done}, then to complete rendering you
-   *     must call this method again.
-   * @throws IOException If the appendable throws an IOException
-   */
-  public RenderResult render(AdvisingAppendable appendable, boolean isLast) throws IOException;
 
   // -----------------------------------------------------------------------------------------------
   // Convenience methods for retrieving a known primitive type.

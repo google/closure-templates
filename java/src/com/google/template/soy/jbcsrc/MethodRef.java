@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.SoyValueProvider.ResolveStatus;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -51,7 +50,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  * A reference to a method that can be called at runtime.
@@ -92,9 +90,8 @@ import java.util.concurrent.Future;
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
+  static final MethodRef RENDER_RESULT_IS_DONE = create(RenderResult.class, "isDone");
   static final MethodRef RENDER_RESULT_LIMITED = create(RenderResult.class, "limited");
-  static final MethodRef RENDER_RESULT_CONTINUE_AFTER =
-      create(RenderResult.class, "continueAfter", Future.class);
   static final MethodRef RUNTIME_CHECK_REQUIRED_PARAM = 
       create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
   static final MethodRef RUNTIME_LOGGER = create(Runtime.class, "logger");
@@ -132,8 +129,6 @@ import java.util.concurrent.Future;
       create(RenderContext.class, "renameCssSelector", String.class);
   static final MethodRef RENDER_CONTEXT_RENAME_XID = 
       create(RenderContext.class, "renameXid", String.class);
-  static final MethodRef RESOLVE_STATUS_IS_READY = create(ResolveStatus.class, "isReady");
-  static final MethodRef RESOLVE_STATUS_FUTURE = create(ResolveStatus.class, "future");
 
   private static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     Method m;

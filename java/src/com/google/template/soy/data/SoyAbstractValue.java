@@ -40,8 +40,14 @@ public abstract class SoyAbstractValue implements SoyValue {
     return this;
   }
 
-  @Override @Nonnull public ResolveStatus status() {
-    return ResolveStatus.ready();
+  @Override @Nonnull public RenderResult status() {
+    return RenderResult.done();
+  }
+
+  @Override public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+      throws IOException {
+    render(appendable);
+    return RenderResult.done();
   }
 
   /**
@@ -93,12 +99,5 @@ public abstract class SoyAbstractValue implements SoyValue {
   @Override public String stringValue() {
     throw new SoyDataException(
         "Expecting string value but instead encountered type " + getClass().getSimpleName());
-  }
-
-  @Override public RenderResult render(AdvisingAppendable appendable, boolean isLast)
-      throws IOException {
-    // Default implementation, just render.
-    render(appendable);
-    return RenderResult.done();
   }
 }

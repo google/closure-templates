@@ -31,6 +31,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -294,8 +295,8 @@ public final class SoyValueHelper implements SoyValueConverter {
           return convert(obj).resolve();
         }
 
-        @Override @Nonnull public ResolveStatus status() {
-          return ResolveStatus.ready();
+        @Override public RenderResult status() {
+          return RenderResult.done();
         }
       };
     }

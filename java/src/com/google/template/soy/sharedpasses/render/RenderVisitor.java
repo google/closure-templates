@@ -41,6 +41,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -787,8 +788,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         return eval(expr, node);
       }
 
-      @Override public ResolveStatus status() {
-        return ResolveStatus.ready();
+      @Override public RenderResult status() {
+        return RenderResult.done();
       }
     };
   }

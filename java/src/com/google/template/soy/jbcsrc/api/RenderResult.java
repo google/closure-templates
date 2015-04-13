@@ -86,6 +86,11 @@ public final class RenderResult {
     return type;
   }
 
+  /** Returns {@code true} if the result is done. */
+  public boolean isDone() {
+    return type == Type.DONE;
+  }
+
   /**
    * Returns the future that soy is waiting for.
    * 
