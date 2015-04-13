@@ -20,8 +20,8 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;

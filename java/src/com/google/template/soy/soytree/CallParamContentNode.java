@@ -19,10 +19,10 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
-import com.google.template.soy.soyparse.SoyError;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;

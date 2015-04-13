@@ -20,12 +20,11 @@ import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplate
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for MsgNode.

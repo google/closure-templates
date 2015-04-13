@@ -16,7 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 
 /**
  * Visitor performing escaping sanity checks over all input -- not just input affected by the

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.parsepasses;
 
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -25,7 +25,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
-
 
 /**
  * Visitor to verify that all occurrences of the 'phname' attribute are on message placeholders.

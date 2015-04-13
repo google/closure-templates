@@ -18,14 +18,13 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
-import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 
 /**
  * Node representing an 'xid' statement.

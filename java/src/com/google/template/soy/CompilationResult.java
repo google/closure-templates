@@ -20,8 +20,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.ErrorPrettyPrinter;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorPrettyPrinter;
 
 import java.io.PrintStream;
 

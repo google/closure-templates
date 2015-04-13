@@ -17,12 +17,11 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
 
 /**
  * Visitor for searching for nodes of any of the given types within a template file.

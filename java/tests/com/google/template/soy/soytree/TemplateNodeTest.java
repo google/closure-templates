@@ -20,11 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -41,7 +41,6 @@ import com.google.template.soy.types.primitive.StringType;
 import junit.framework.TestCase;
 
 import java.util.List;
-
 
 /**
  * Unit tests for TemplateNode.

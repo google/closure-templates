@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.error;
 
 import com.google.template.soy.base.SourceLocation;
 
@@ -46,7 +46,10 @@ public interface ErrorReporter {
    */
   boolean errorsSince(Checkpoint checkpoint);
 
-  static final class Checkpoint {
+  /**
+   * Opaque token, used by {@link ErrorReporter#checkpoint} and {@link ErrorReporter#errorsSince}.
+   */
+  public static final class Checkpoint {
     final int numErrors;
 
     Checkpoint(int numErrors) {

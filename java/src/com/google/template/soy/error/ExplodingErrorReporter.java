@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.error;
 
 import com.google.template.soy.base.SourceLocation;
 
 /**
  * {@link ErrorReporter} implementation that throws an {@link AssertionError} whenever an error
- * is reported to it. This is never desirable in production code (which is why it is under
- * javatests), but often desirable in tests, which should fail in the presence of any errors
- * that are not specifically checked for.
+ * is reported to it. This is seldom desirable in production code, but often desirable in tests,
+ * which should fail in the presence of any errors that are not specifically checked for.
  *
  * <p>To write a test that does not have this exploding behavior (for example, a test that needs
  * to check the full list of errors encountered during compilation), pass a non-exploding

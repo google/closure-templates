@@ -21,9 +21,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -35,8 +35,8 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Map;
-import javax.inject.Inject;
 
+import javax.inject.Inject;
 
 /**
  * Visitor for performing autoescape (for templates that have autoescape turned on, ensure there is

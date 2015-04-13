@@ -21,10 +21,9 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for PrintNode.

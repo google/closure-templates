@@ -21,8 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soyparse.ErrorReporterImpl;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;

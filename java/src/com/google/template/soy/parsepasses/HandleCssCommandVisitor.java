@@ -19,13 +19,13 @@ package com.google.template.soy.parsepasses;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -38,7 +38,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.List;
-
 
 /**
  * Visitor for handling 'css' commands.

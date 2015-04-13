@@ -26,9 +26,9 @@ import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
-import com.google.template.soy.soyparse.ErrorReporterImpl;
+import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soyparse.ParseException;
-import com.google.template.soy.soyparse.SoyError;
 import com.google.template.soy.soyparse.TemplateParser;
 
 import java.util.ArrayList;

@@ -16,12 +16,12 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
 import com.google.template.soy.soytree.TemplateNode;

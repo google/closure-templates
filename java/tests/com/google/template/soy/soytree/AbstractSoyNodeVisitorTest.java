@@ -19,13 +19,12 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for AbstractSoyNodeVisitor.

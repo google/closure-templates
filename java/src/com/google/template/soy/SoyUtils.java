@@ -27,6 +27,8 @@ import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -35,8 +37,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soyparse.SoyError;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

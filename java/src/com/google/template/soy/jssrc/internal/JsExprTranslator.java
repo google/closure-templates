@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -25,7 +26,6 @@ import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.Translate
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.NonpluginFunction;
-import com.google.template.soy.soyparse.ErrorReporter;
 
 import java.util.Deque;
 import java.util.Map;

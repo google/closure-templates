@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Lists;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.sharedpasses.BuildAllDependeesMapVisitor;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Visitor for moving {@code GoogMsgDefNode}s to earlier locations in the template. This allows for

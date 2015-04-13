@@ -19,11 +19,11 @@ package com.google.template.soy.parsepasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor.RewriteNullCoalescingOpInExprVisitor;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
 

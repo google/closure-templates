@@ -19,14 +19,13 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporter.Checkpoint;
-import com.google.template.soy.soyparse.SoyError;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
-
 
 /**
  * Node representing a 'param' with a value expression.

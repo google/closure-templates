@@ -17,16 +17,15 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
-
 
 /**
  * Visitor for rewriting the binary '?:' (null-coalescing) operator.

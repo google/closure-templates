@@ -21,10 +21,10 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;

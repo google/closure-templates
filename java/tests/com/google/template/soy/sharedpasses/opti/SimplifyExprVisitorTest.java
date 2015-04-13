@@ -20,11 +20,11 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
 
 import junit.framework.TestCase;
 

@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses;
 
 
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;

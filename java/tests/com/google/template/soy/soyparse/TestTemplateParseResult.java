@@ -26,8 +26,8 @@ import java.util.List;
 /**
  * Test-only variant of {@link TemplateParseResult} that contains the errors associated with parsing
  * a template as a convenience. (In non-test code, all errors are reported to an
- * {@link ErrorReporter}, and it's unnecessary to know the errors associated with a particular
- * template.)
+ * {@link com.google.template.soy.error.ErrorReporter}, and it's unnecessary to know
+ * the errors associated with a particular template.)
  *
  * @author brndn@google.com (Brendan Linn)
  */

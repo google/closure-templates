@@ -18,7 +18,7 @@ package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.Map;
-
 
 /**
  * Visitor for setting the full callee name on each CallBasicNode whose callee name in the source

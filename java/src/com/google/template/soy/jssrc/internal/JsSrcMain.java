@@ -25,6 +25,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import com.google.inject.Key;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -38,7 +39,6 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.sharedpasses.IsUsingIjDataVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;

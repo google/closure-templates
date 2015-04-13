@@ -18,7 +18,7 @@ package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Set;
 import java.util.SortedSet;
-
 
 /**
  * Visitor for finding the templates called in a file that are not defined in the file.

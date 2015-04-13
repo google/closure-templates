@@ -17,8 +17,8 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.SoyError;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;

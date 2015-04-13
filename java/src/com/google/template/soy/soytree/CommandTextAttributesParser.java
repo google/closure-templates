@@ -21,16 +21,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.SoyError;
-import com.google.template.soy.soyparse.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * A class for parsing attributes out of command text.

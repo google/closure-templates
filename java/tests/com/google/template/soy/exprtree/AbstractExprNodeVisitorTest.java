@@ -19,16 +19,15 @@ package com.google.template.soy.exprtree;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
-
 
 /**
  * Unit tests for AbstractExprNodeVisitor.

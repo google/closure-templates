@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.error;
 
 /**
  * {@link ErrorReporter} implementation that allows callers to give up and throw an exception

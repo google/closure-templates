@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.base.internal;
+package com.google.template.soy.error;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.SoyFileSupplier;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -74,7 +75,7 @@ public final class ErrorPrettyPrinter {
     // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
     // instantiations and ensure the SourceLocation is well-formed.
     int beginColumn = Math.max(e.getSourceLocation().getBeginColumn(), 1);
-    String caretLine = Strings.repeat(" ", beginColumn-1) + "^";
+    String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
     err.println(caretLine);
   }
 

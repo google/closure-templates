@@ -22,8 +22,8 @@ import static com.google.template.soy.MainClassUtils.runInternal;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.ErrorPrettyPrinter;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorPrettyPrinter;
 
 import junit.framework.TestCase;
 

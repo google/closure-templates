@@ -19,12 +19,12 @@ package com.google.template.soy.jssrc.internal;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.coredirectives.CoreDirectiveUtils;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.sharedpasses.CombineConsecutiveRawTextNodesVisitor;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -36,8 +36,8 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import java.util.Map;
-import javax.inject.Inject;
 
+import javax.inject.Inject;
 
 /**
  * Visitor for replacing any {@code PrintNode} whose expression is a single call to

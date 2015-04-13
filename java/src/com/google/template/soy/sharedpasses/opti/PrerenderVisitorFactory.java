@@ -16,9 +16,9 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Map;

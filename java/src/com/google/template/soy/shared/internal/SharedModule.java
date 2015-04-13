@@ -31,6 +31,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
@@ -42,8 +44,6 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soyparse.ErrorReporter;
-import com.google.template.soy.soyparse.ErrorReporterImpl;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -52,8 +52,8 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Singleton;
 
+import javax.inject.Singleton;
 
 /**
  * Guice module for shared classes.

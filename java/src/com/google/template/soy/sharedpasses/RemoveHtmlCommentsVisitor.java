@@ -17,7 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Visitor for removing HTML comments from raw text. Note that this is a best-effort process.

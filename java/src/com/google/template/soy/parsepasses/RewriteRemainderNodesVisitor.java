@@ -17,9 +17,9 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;

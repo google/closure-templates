@@ -27,7 +27,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.soyparse.ExplodingErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;

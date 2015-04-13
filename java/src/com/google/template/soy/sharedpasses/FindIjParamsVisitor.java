@@ -19,8 +19,8 @@ package com.google.template.soy.sharedpasses;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Visitor for finding the injected params used by a given template.

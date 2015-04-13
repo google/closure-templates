@@ -17,12 +17,12 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
-import com.google.template.soy.soyparse.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 

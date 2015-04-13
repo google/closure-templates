@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.error;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;

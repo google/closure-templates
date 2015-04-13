@@ -23,6 +23,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -72,7 +73,6 @@ import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
 import java.util.List;
-
 
 /**
  * Unit tests for the template parser.

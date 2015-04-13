@@ -16,12 +16,11 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.template.soy.soyparse.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 
 /**
  * Visitor for removing SoyDoc strings from {@code TemplateNode}s (saves memory when they're not

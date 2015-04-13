@@ -17,14 +17,13 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.Sets;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soyparse.ErrorReporter;
 
 import java.util.Set;
-
 
 /**
  * Package-private helper for FindIjParamsVisitor and IsUsingIjDataVisitor to find the set of
