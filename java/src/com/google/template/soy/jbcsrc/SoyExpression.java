@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -295,6 +296,7 @@ class SoyExpression extends Expression {
         return forBool(MethodRef.STRING_IS_EMPTY.invoke(stringExpr));
       }
     }
+
     // TODO(lukes): implement specializations for lists/maps/records/objects
 
     // SoyValue conversions, we first box ourselves and then call a SoyValue method
@@ -310,6 +312,22 @@ class SoyExpression extends Expression {
     }
     if (asType.equals(boolean.class)) {
       return forBool(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN.invoke(box()));
+    }
+
+    if (asType.equals(List.class)) {
+      ListType listType;
+      if (isKnownList()) {
+        listType = (ListType) soyType;
+      } else {
+        Kind kind = soyType.getKind();
+        if (kind == Kind.ANY || kind == Kind.UNKNOWN) {
+          listType = ListType.of(soyType);
+        } else {
+          throw new UnsupportedOperationException("Cannot convert " + soyType + " to " + asType);
+        }
+      }
+      return forList(listType,
+          MethodRef.SOY_LIST_AS_JAVA_LIST.invoke(delegate.cast(Type.getType(SoyList.class))));
     }
     throw new UnsupportedOperationException("Can't unbox " + clazz + " as " + asType);
   }

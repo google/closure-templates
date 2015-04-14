@@ -22,6 +22,9 @@ import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopItemProvider;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
@@ -43,6 +46,7 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -50,7 +54,6 @@ import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
-import com.google.template.soy.types.SoyType;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -337,8 +340,20 @@ final class TemplateCompiler {
           LocalVar local = (LocalVar) defn;
           if (local.declaringNode().getKind() == SoyNode.Kind.FOR_NODE) {
             // an index variable in a {for $index in range(...)} statement
-            // These are special because they do not need any attaching/detaching logic
-            return variables.getVariable(node.getName()).expr();
+            // These are special because they do not need any attaching/detaching logic and are
+            // always unboxed ints
+            return SoyExpression.forInt(
+                BytecodeUtils.numericConversion(
+                    variables.getVariable(node.getName()).local(),
+                    Type.LONG_TYPE));
+          }
+          if (local.declaringNode().getKind() == SoyNode.Kind.FOREACH_NONEMPTY_NODE) {
+            Expression expression = 
+                variables.getVariable(
+                    foreachLoopItemProvider((ForeachNonemptyNode) local.declaringNode())).local();
+            expression = getDetach().resolveSoyValueProvider(expression);
+            return SoyExpression.forSoyValue(node.getType(), 
+                expression.cast(Type.getType(node.getType().javaType())));
           }
           throw new UnsupportedOperationException("lets and foreach loops aren't supported yet");
         }
@@ -370,13 +385,60 @@ final class TemplateCompiler {
       // jit can handle all the dead brances effectively.
       Expression paramExpr = 
           getDetach().resolveSoyValueProvider(paramFields.get(param.name()).accessor(thisExpr));
-      SoyType type = param.type();
       // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
       // since we do not have good checking for unions (or nullability)
       // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
       // will show up here, and in the unboxing conversions performed during expression manipulation
       // And, presumably, in NullPointerExceptions.
-      return SoyExpression.forSoyValue(type, paramExpr.cast(Type.getType(type.javaType())));
+      return SoyExpression.forSoyValue(param.type(), 
+          paramExpr.cast(Type.getType(param.type().javaType())));
+    }
+
+    @Override SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode) {
+      final Expression expr = variables.getVariable(foreachLoopIndex(declaringNode)).local();
+
+      return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+        @Override void doGen(GeneratorAdapter adapter) {
+          // implements index == 0 ? true : false
+          expr.gen(adapter);
+          Label ifFirst = new Label();
+          adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
+          adapter.push(false);
+          Label end = new Label();
+          adapter.goTo(end);
+          adapter.mark(ifFirst);
+          adapter.push(true);
+          adapter.mark(end);
+        }
+      });
+    }
+
+    @Override SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode) {
+      final Expression index = variables.getVariable(foreachLoopIndex(declaringNode)).local();
+      final Expression length = variables.getVariable(foreachLoopLength(declaringNode)).local();
+      return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+        @Override void doGen(GeneratorAdapter adapter) {
+          // 'index + 1 == length ? true : false'
+          index.gen(adapter);
+          adapter.push(1);
+          adapter.visitInsn(Opcodes.IADD);
+          length.gen(adapter);
+          Label ifLast = new Label();
+          adapter.ifICmp(GeneratorAdapter.EQ, ifLast);
+          adapter.push(false);
+          Label end = new Label();
+          adapter.goTo(end);
+          adapter.mark(ifLast);
+          adapter.push(true);
+          adapter.mark(end);
+        }
+      });
+    }
+
+    @Override SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode) {
+      Expression expr = variables.getVariable(foreachLoopIndex(declaringNode)).local();
+      // '(long) index'
+      return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
     }
 
     @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
@@ -387,7 +449,7 @@ final class TemplateCompiler {
       throw new UnsupportedOperationException();
     }
 
-    @Override protected SoyExpression visitFunctionNode(FunctionNode node) {
+    @Override SoyExpression visitPluginFunction(FunctionNode node) {
       throw new UnsupportedOperationException();
     }
     

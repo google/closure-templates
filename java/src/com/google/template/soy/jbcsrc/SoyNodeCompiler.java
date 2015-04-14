@@ -21,10 +21,13 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
 import static com.google.template.soy.jbcsrc.Statement.concat;
+import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.DERIVED;
+import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.STORE;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
@@ -36,6 +39,9 @@ import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNode.RangeArgs;
+import com.google.template.soy.soytree.ForeachIfemptyNode;
+import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -122,15 +128,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   
   @Override protected Statement visitSwitchNode(SwitchNode node) {
     SoyExpression expression = exprCompiler.compile(node.getExpr());
-    Label start = new Label();
-    Label end = new Label();
     Statement init;
     List<IfBlock> cases = new ArrayList<>();
     Optional<Statement> defaultBlock = Optional.absent();
     Scope scope = variables.enterScope();
-    Variable variable = scope.createSynthetic("switchVar", expression, start, end);
+    Variable variable = scope.createSynthetic(SyntheticVarName.forSwitch(), expression, STORE);
     init = variable.initializer();
-    expression = variable.expr();
+    expression = expression.withSource(variable.local());
 
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
@@ -165,17 +169,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // {for $i in range(2, 5)} ... {/for} -> 2 3 4
     // {for $i in range(2, 8, 2)} ... {/for} -> 2 4 6
 
-    // TODO(lukes): this all works in terms of longs, but the Tofu implementation works by doing a
-    // checked downcast to int.  Should we do the same? A minor benefit would be that we can use
-    // the specialized int comparison instructions (and smaller locals).
     Scope scope = variables.enterScope();
-    final Label end = new Label();
-    final CompiledRangeArgs rangeArgs = calculateRangeArgs(end, node.getRangeArgs(), scope);
+    final CompiledRangeArgs rangeArgs = calculateRangeArgs(node, scope);
     // The currentIndex variable has a user defined name and we always need a local for it because
     // we mutate it across loop iterations.
-    Label start = new Label();
-    final Variable currentIndex = 
-        scope.create(node.getVarName(), rangeArgs.startIndex(), start, end);
+    final Variable currentIndex = scope.create(node.getVarName(), rangeArgs.startIndex());
     final Statement incrementCurrentIndex = incrementInt(currentIndex, rangeArgs.increment());
 
     final Statement loopBody = childrenAsStatement(node);
@@ -187,23 +185,25 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Statement exitScope = scope.exitScope();
     return new Statement(node.getSourceLocation()) {
       @Override void doGen(GeneratorAdapter adapter) {
-        currentIndex.initializer().gen(adapter);
         for (Statement initializer : rangeArgs.initStatements()) {
           initializer.gen(adapter);
         }
+        currentIndex.initializer().gen(adapter);
         // We need to check for an empty loop by doing an entry test
         Label loopStart = adapter.mark();
 
         // If current >= limit we are done
-        currentIndex.expr().gen(adapter);
+        currentIndex.local().gen(adapter);
         rangeArgs.limit().gen(adapter);
-        adapter.ifCmp(Type.LONG_TYPE, Opcodes.IFGE, end);
+        Label end = new Label();
+        adapter.ifCmp(Type.INT_TYPE, Opcodes.IFGE, end);
         
         loopBody.gen(adapter);
 
         // at the end of the loop we need to increment and jump back.
         incrementCurrentIndex.gen(adapter);
         adapter.goTo(loopStart);
+        adapter.mark(end);
         exitScope.gen(adapter);
       }
     };
@@ -211,13 +211,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @AutoValue abstract static class CompiledRangeArgs {
     /** How much to increment the loop index by, defaults to {@code 1}. */
-    abstract SoyExpression increment();
+    abstract Expression increment();
 
     /** Where to start loop iteration, defaults to {@code 0}. */
-    abstract SoyExpression startIndex();
+    abstract Expression startIndex();
 
     /** Where to end loop iteration, defaults to {@code 0}. */
-    abstract SoyExpression limit();
+    abstract Expression limit();
     
     /** Statements that must have been run prior to using any of the above expressions. */
     abstract ImmutableList<Statement> initStatements();
@@ -227,46 +227,107 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * Interprets the given expressions as the arguments of a {@code range(...)} expression in a
    * {@code for} loop.
    */
-  private CompiledRangeArgs calculateRangeArgs(Label end, RangeArgs rangeArgs, Scope scope) {
+  private CompiledRangeArgs calculateRangeArgs(ForNode forNode, Scope scope) {
+    RangeArgs rangeArgs = forNode.getRangeArgs();
     final ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
-    SoyExpression increment;
+    Expression increment;
     if (rangeArgs.increment().isPresent()) {
-      increment = exprCompiler.compile(rangeArgs.increment().get()).convert(long.class);
-      // If the expression is non-trivial we should cache it in a local variable
-      if (!increment.isConstant()) {
-        Variable variable = scope.createSynthetic("increment", increment, new Label(), end);
-        initStatements.add(variable.initializer());
-        increment = variable.expr();
-      }
-    } else {
-      increment = SoyExpression.forInt(constant(1L));
-    }
-    SoyExpression startIndex;
-    if (rangeArgs.start().isPresent()) {
-      startIndex = exprCompiler.compile(rangeArgs.start().get()).convert(long.class);
-    } else {
-      startIndex = SoyExpression.forInt(constant(0L));
-    }
-    SoyExpression limit = exprCompiler.compile(rangeArgs.limit()).convert(long.class);
-    // If the expression is non-trivial we should cache it in a local variable
-    if (!limit.isConstant()) {
-      Variable variable = scope.createSynthetic("limit", limit, new Label(), end);
+      increment = MethodRef.INTS_CHECKED_CAST.invoke(
+          exprCompiler.compile(rangeArgs.increment().get()).convert(long.class));
+      // If the expression is non-trivial, make sure to save it to a field.
+      Variable variable = scope.createSynthetic(
+          SyntheticVarName.forLoopIncrement(forNode),
+          increment, 
+          increment.isConstant() ? DERIVED : STORE);
       initStatements.add(variable.initializer());
-      limit = variable.expr();
+      increment = variable.local();
+    } else {
+      increment = constant(1);
     }
+    Expression startIndex;
+    if (rangeArgs.start().isPresent()) {
+      startIndex = MethodRef.INTS_CHECKED_CAST.invoke(
+          exprCompiler.compile(rangeArgs.start().get()).convert(long.class));
+    } else {
+      startIndex = constant(0);
+    }
+    Expression limit = MethodRef.INTS_CHECKED_CAST.invoke(
+        exprCompiler.compile(rangeArgs.limit()).convert(long.class));
+    // If the expression is non-trivial we should cache it in a local variable
+    Variable variable = scope.createSynthetic(
+        SyntheticVarName.forLoopLimit(forNode),
+        limit, 
+        increment.isConstant() ? DERIVED : STORE);
+    initStatements.add(variable.initializer());
+    limit = variable.local();
     return new AutoValue_SoyNodeCompiler_CompiledRangeArgs(
         increment, startIndex, limit, initStatements.build());
   }
 
-  private Statement incrementInt(final Variable variable, final SoyExpression increment) {
-    Expression nextIndex = new Expression.SimpleExpression(Type.LONG_TYPE, false) {
+  private Statement incrementInt(final Variable variable, final Expression increment) {
+    Expression nextIndex = new Expression.SimpleExpression(Type.INT_TYPE, false) {
       @Override void doGen(GeneratorAdapter adapter) {
-        variable.expr().gen(adapter);
+        variable.local().gen(adapter);
         increment.gen(adapter);
-        adapter.visitInsn(Opcodes.LADD);
+        adapter.visitInsn(Opcodes.IADD);
       }
     };
     return variable.local().store(nextIndex);
+  }
+
+  @Override protected Statement visitForeachNode(ForeachNode node) {
+    ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
+    SoyExpression expr = exprCompiler.compile(node.getExpr()).convert(List.class);
+    Scope scope = variables.enterScope();
+    final Variable listVar = 
+        scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
+    final Variable indexVar = 
+        scope.createSynthetic(SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
+    final Variable listSizeVar = 
+        scope.createSynthetic(SyntheticVarName.foreachLoopLength(nonEmptyNode), 
+            MethodRef.LIST_SIZE.invoke(listVar.local()), DERIVED);
+    final Variable itemVar = scope.createSynthetic(
+        SyntheticVarName.foreachLoopItemProvider(nonEmptyNode), 
+        MethodRef.LIST_GET.invoke(listVar.local(),
+            indexVar.local()).cast(Type.getType(SoyValueProvider.class)), DERIVED);
+    final Statement loopBody = childrenAsStatement(nonEmptyNode);
+    final Statement exitScope = scope.exitScope();
+
+    // it important for this to be generated after exitScope is called (or before enterScope)
+    final Statement emptyBlock = node.numChildren() == 2 
+        ? childrenAsStatement((ForeachIfemptyNode) node.getChild(1)) 
+            : null;
+    return new Statement() {
+      @Override void doGen(GeneratorAdapter adapter) {
+        listVar.initializer().gen(adapter);
+        listSizeVar.initializer().gen(adapter);
+        listSizeVar.local().gen(adapter);
+        Label emptyListLabel = new Label();
+        adapter.ifZCmp(Opcodes.IFEQ, emptyListLabel);
+        indexVar.initializer().gen(adapter);
+        Label loopStart = adapter.mark();
+        itemVar.initializer().gen(adapter);
+        
+        loopBody.gen(adapter);
+
+        adapter.iinc(indexVar.local().index(), 1);  // index++
+        indexVar.local().gen(adapter);
+        listSizeVar.local().gen(adapter);
+        adapter.ifICmp(GeneratorAdapter.LT, loopStart);  // if index < list.size(), goto loopstart
+        // exit the loop
+        exitScope.gen(adapter);
+
+        if (emptyBlock != null) {
+          Label skipIfEmptyBlock = new Label();
+          adapter.goTo(skipIfEmptyBlock);
+          adapter.mark(emptyListLabel);
+          emptyBlock.gen(adapter);
+          adapter.mark(skipIfEmptyBlock);
+        } else {
+          adapter.mark(emptyListLabel);
+        }
+      }
+    };
   }
 
   @Override protected Statement visitPrintNode(PrintNode node) {

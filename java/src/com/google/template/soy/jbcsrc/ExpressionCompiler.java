@@ -52,6 +52,9 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
+import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -476,13 +479,43 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
 
   @Override protected abstract SoyExpression visitItemAccessNode(ItemAccessNode node);
 
-  // TODO(lukes): for builtins (isFirst,isLast,index) we need to handcode implementations.
-  // For plugins we could simply add the Map<String, SoyJavaFunction> map to Context and pull it
-  // out of there.  However, it seems like we should be able to turn some of those calls into
-  // static method calls (maybe be stashing instances in static fields in our template
+  @Override protected final SoyExpression visitFunctionNode(FunctionNode node) {
+    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(node.getFunctionName());
+    if (nonpluginFn != null) {
+      if (nonpluginFn == NonpluginFunction.QUOTE_KEYS_IF_JS) {
+        // this function is a no-op in non JS backends, the CheckFunctionCallsVisitor ensures that
+        // there is only one child and it is a MapLiteralNode
+        return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
+      }
+      // the rest of the builtins all deal with indexing operations on foreach variables.
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      ForeachNonemptyNode declaringNode =
+          (ForeachNonemptyNode) ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      switch (nonpluginFn) {
+        case IS_FIRST:
+          return visitIsFirstFunction(declaringNode);
+        case IS_LAST:
+          return visitIsLastFunction(declaringNode);
+        case INDEX:
+          return visitIndexFunction(declaringNode);
+        case QUOTE_KEYS_IF_JS:  // handled above
+        default:
+          throw new AssertionError();
+      }
+    }
+    return visitPluginFunction(node);
+  }
+
+  abstract SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode);
+  abstract SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode);
+  abstract SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode);
+
+  // TODO(lukes): For plugins we could simply add the Map<String, SoyJavaFunction> map to Context
+  // and pull it out of there.  However, it seems like we should be able to turn some of those calls
+  // into static method calls (maybe be stashing instances in static fields in our template
   // classes?).  Or maybe we should have SoyJavaBytecode function implementations that can generate
   // bytecode for their call sites, this would be more similar to what the jssrc backend does.
-  @Override protected abstract SoyExpression visitFunctionNode(FunctionNode node);
+  abstract SoyExpression visitPluginFunction(FunctionNode node);
 
   @Override protected final SoyExpression visitExprNode(ExprNode node) {
     throw new UnsupportedOperationException(

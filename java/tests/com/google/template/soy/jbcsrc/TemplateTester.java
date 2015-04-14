@@ -35,6 +35,10 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.CheckClassAdapter;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -156,9 +160,17 @@ public final class TemplateTester {
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
         CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(templateName);
         classData = new TemplateCompiler(classInfo).compile();
+        checkClasses(classData);
         factory = BytecodeCompiler.loadFactory(
             classInfo,
             new MemoryClassLoader.Builder().addAll(classData).build());
+      }
+    }
+
+    private static void checkClasses(Iterable<ClassData> classData2) {
+      for (ClassData d : classData2) {
+        new ClassReader(d.data())
+            .accept(new CheckClassAdapter(new ClassNode(), true), ClassReader.SKIP_DEBUG);
       }
     }
   }

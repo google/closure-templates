@@ -22,6 +22,8 @@ import static com.google.template.soy.jbcsrc.Expression.areAllConstant;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -129,7 +131,11 @@ import java.util.Map;
       create(RenderContext.class, "renameCssSelector", String.class);
   static final MethodRef RENDER_CONTEXT_RENAME_XID = 
       create(RenderContext.class, "renameXid", String.class);
-
+  static final MethodRef SOY_LIST_AS_JAVA_LIST = create(SoyList.class, "asJavaList");
+  static final MethodRef LIST_SIZE = create(List.class, "size");
+  static final MethodRef LIST_GET = create(List.class, "get", int.class);
+  static final MethodRef INTS_CHECKED_CAST = create(Ints.class, "checkedCast", long.class);
+  
   private static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     Method m;
     try {

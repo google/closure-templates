@@ -16,10 +16,12 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -30,6 +32,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import junit.framework.TestCase;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Tests for {@link DetachState}.
@@ -126,7 +129,7 @@ public final class DetachStateTest extends TestCase {
       output.delegate.setLength(0);
     }
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
-    assertEquals("", output.toString());  // last render was empty
+    assertThat(output.toString()).isEmpty(); // last render was empty
   }
 
   public void testDetachOnUnResolvedProvider() throws IOException {
@@ -153,5 +156,49 @@ public final class DetachStateTest extends TestCase {
     result = template.render(output, EMPTY_CONTEXT);
     assertEquals(RenderResult.done(), result);
     assertEquals("prefix future suffix", output.toString());
+  }
+
+  public void testDetachOnEachIteration() throws IOException {
+    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
+        "{@param list : list<string>}",
+        "prefix{\\n}",
+        "{foreach $item in $list}",
+        "  loop-prefix{\\n}",
+        "  {$item}{\\n}",
+        "  loop-suffix{\\n}",
+        "{/foreach}",
+        "suffix");
+    List<SettableFuture<String>> futures = ImmutableList.of(
+        SettableFuture.<String>create(),
+        SettableFuture.<String>create(),
+        SettableFuture.<String>create());
+    CompiledTemplate template = factory.create(
+        asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
+
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertEquals(futures.get(0), result.future());
+    assertEquals("prefix\nloop-prefix\n", output.toString());
+
+    output.clear();
+    futures.get(0).set("first");
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertEquals(futures.get(1), result.future());
+    assertEquals("first\nloop-suffix\nloop-prefix\n", output.toString());
+
+    output.clear();
+    futures.get(1).set("second");
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertEquals(futures.get(2), result.future());
+    assertEquals("second\nloop-suffix\nloop-prefix\n", output.toString());
+
+    output.clear();
+    futures.get(2).set("third");
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.done(), result);
+    assertEquals("third\nloop-suffix\nsuffix", output.toString());
   }
 }

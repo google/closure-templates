@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Deque;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,13 @@ import java.util.Set;
  * </ul>
  */
 final class VariableSet {
+  enum SaveStrategy {
+    /** Means that the value of the variable should be recalculated rather than saved to a field. */
+    DERIVED,
+    /** Means that the value of the variable should saved to a field. */
+    STORE;
+  }
+
   abstract class Scope {
     private Scope() {}
 
@@ -56,13 +64,16 @@ final class VariableSet {
      * Creates a new 'synthetic' variable.  A synthetic variable is a variable that is
      * introduced by the compiler rather than a user defined name.
      *
-     * @param proposedName A proposed name for the variable, the name may be modified to ensure
-     *     uniqueness
-     * @param start The earliest location at which the variable is defined
-     * @param end The latest location at which the variable is defined
+     * @param name A proposed name for the variable, the actual variable name may be modified to 
+     *     ensure uniqueness
+     * @param initializer The expression that can be used to derive the initial value.  Note, this
+     *     expression must be save to gen() more than once if {@code isDerived} is {@code true}
+     * @param strategy Set this if the value of the variable is trivially derivable from other 
+     *     variables already defined.
      */
-    abstract Variable createSynthetic(String proposedName, SoyExpression initializer, Label start,
-        Label end);
+    abstract Variable createSynthetic(SyntheticVarName name, Expression initializer, 
+        SaveStrategy strategy);
+
     /**
      * Creates a new 'synthetic' variable.  A synthetic variable is a variable that is
      * introduced by the compiler rather than a user defined name.
@@ -70,10 +81,8 @@ final class VariableSet {
      * @param name The name of the variable, the name is assumed to be unique (enforced by the 
      *     ResolveNamesVisitor).
      * @param initializer The expression that can be used to initialize the variable
-     * @param start The earliest location at which the variable is defined
-     * @param end The latest location at which the variable is defined
      */
-    abstract Variable create(String name, SoyExpression initializer, Label start, Label end);
+    abstract Variable create(String name, Expression initializer);
 
     /**
      * Returns a statement that should be used when exiting the scope.  This is responsible for
@@ -116,31 +125,44 @@ final class VariableSet {
   /**
    * A variable that may need to be saved/restored.
    */
-  final class Variable {
-    private FieldRef fieldRef;  // lazily allocated on a save/restore operation
-    private final Statement initializer; 
-    private final LocalVariable local;
-    private final SoyExpression expression;
+  abstract class Variable {
+    protected final Expression initExpression;
+    protected final LocalVariable local;
+    private final Statement initializer;
 
-    private Variable(Statement initializer, LocalVariable local, SoyExpression expression) {
-      this.initializer = initializer;
+    private Variable(Expression initExpression, LocalVariable local) {
+      this.initExpression = initExpression;
       this.local = local;
-      this.expression = expression;
+      this.initializer = local.store(initExpression, local.start());
     }
 
-    Statement initializer() {
+    final Statement initializer() {
       return initializer;
     }
-    
-    SoyExpression expr() {
-      return expression;
+
+    abstract Statement save();
+
+    abstract Statement restore();
+
+    abstract void maybeDefineField(ClassVisitor writer);
+
+    LocalVariable local() {
+      return local;
+    }
+  }
+
+  private final class FieldSavedVariable extends Variable {
+    private FieldRef fieldRef;  // lazily allocated on a save/restore operation
+
+    private FieldSavedVariable(Expression initExpression, LocalVariable local) {
+      super(initExpression, local);
     }
 
-    private Statement save() {
+    @Override Statement save() {
       return getField().putInstanceField(thisVar, local);
     }
 
-    private Statement restore() {
+    @Override Statement restore() {
       Expression fieldValue = getField().accessor(thisVar);
       return local.store(fieldValue);
     }
@@ -152,15 +174,27 @@ final class VariableSet {
       return fieldRef;
     }
 
-    private void maybeDefineField(ClassVisitor writer) {
+    @Override void maybeDefineField(ClassVisitor writer) {
       if (fieldRef != null) {
         fieldRef.defineField(writer);
       }
     }
-
-    LocalVariable local() {
-      return local;
+  }
+  
+  private final class DerivedVariable extends Variable {
+    private DerivedVariable(Expression initExpression, LocalVariable local) {
+      super(initExpression, local);
     }
+
+    @Override Statement save() {
+      return Statement.NULL_STATEMENT;
+    }
+
+    @Override Statement restore() {
+      return local.store(initExpression);
+    }
+
+    @Override void maybeDefineField(ClassVisitor writer) {}
   }
 
   private final List<Variable> allVariables = new ArrayList<>();
@@ -195,20 +229,21 @@ final class VariableSet {
    */
   Scope enterScope() {
     final Map<VarKey, Variable> currentFrame = new LinkedHashMap<>();
+    final Label scopeExit = new Label();
     frames.push(currentFrame);
     return new Scope() {
       @Override Variable createSynthetic(
-          String proposedName, SoyExpression initExpr, Label start, Label end) {
-        VarKey key = VarKey.create(Kind.SYNTHETIC, proposedName);
+          SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
+        VarKey key = VarKey.create(Kind.SYNTHETIC, varName.name());
         // synthetics are prefixed by $ by convention
-        String name = fieldNames.generateName("$" + proposedName);
-        return doCreate(name, start, end, initExpr, key);
+        String name = fieldNames.generateName("$" + varName.name());
+        return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
       }
 
-      @Override Variable create(String name, SoyExpression initExpr, Label start, Label end) {
+      @Override Variable create(String name, Expression initExpr) {
         VarKey key = VarKey.create(Kind.USER_DEFINED, name);
         name = fieldNames.generateName(name);
-        return doCreate(name, start, end, initExpr, key);
+        return doCreate(name, new Label(), scopeExit, initExpr, key, SaveStrategy.STORE);
       }
 
       @Override Statement exitScope() {
@@ -222,7 +257,7 @@ final class VariableSet {
               var.local.index() + var.local.resultType().getSize());
         }
         return new Statement() {
-          // TODO(lukes): we could generate null writes for when object typed fields go out of 
+          // TODO(lukes): we could generate null writes for when object typed fields go out of
           // scope.  This would potentially allow intermediate results to be collected sooner.
           @Override void doGen(GeneratorAdapter adapter) {
             for (Label label : endLabels) {
@@ -232,15 +267,22 @@ final class VariableSet {
         };
       }
 
-      private Variable doCreate(
-          String name, Label start, Label end, SoyExpression initExpr, VarKey key) {
+      private Variable doCreate(String name, Label start, Label end, Expression initExpr, 
+          VarKey key, SaveStrategy strategy) {
         int index = reserveSlotFor(initExpr.resultType());
-        LocalVariable local = 
+        LocalVariable local =
             LocalVariable.createLocal(name, index, initExpr.resultType(), start, end);
-        Variable var = new Variable(
-            local.store(initExpr, start), 
-            local, 
-            initExpr.withSource(local));
+        Variable var;
+        switch (strategy) {
+          case DERIVED:
+            var = new DerivedVariable(initExpr, local);
+            break;
+          case STORE:
+            var = new FieldSavedVariable(initExpr, local);
+            break;
+          default:
+            throw new AssertionError();
+        }
         currentFrame.put(key, var);
         allVariables.add(var);
         return var;
@@ -268,15 +310,36 @@ final class VariableSet {
    */
   Variable getVariable(String name) {
     VarKey varKey = VarKey.create(Kind.USER_DEFINED, name);
+    return getVariable(varKey);
+  }
+
+  /**
+   * Looks up a synthetic variable with the given name.  The variable must have been created
+   * in a currently active scope.
+   */
+  Variable getVariable(SyntheticVarName name) {
+    VarKey varKey = VarKey.create(Kind.SYNTHETIC, name.name());
+    return getVariable(varKey);
+  }
+
+  private Variable getVariable(VarKey varKey) {
+    Variable potentialMatch = null;
     for (Map<VarKey, Variable> f : frames) {
       Variable variable = f.get(varKey);
       if (variable != null) {
-        return variable;
+        if (potentialMatch == null) {
+          potentialMatch = variable;
+        } else {
+          throw new IllegalArgumentException("Ambiguous variable: " + varKey);
+        }
       }
     }
-    throw new IllegalArgumentException("No variable named: '" + name + "' is bound");
+    if (potentialMatch != null) {
+      return potentialMatch;
+    }
+    throw new IllegalArgumentException("No variable: '" + varKey + "' is bound");
   }
-  
+
   /** Statements for saving and restoring local variables in class fields. */
   @AutoValue abstract static class SaveRestoreState {
     abstract Statement save();
@@ -287,7 +350,11 @@ final class VariableSet {
   SaveRestoreState saveRestoreState() {
     List<Statement> saves = new ArrayList<>();
     List<Statement> restores = new ArrayList<>();
-    for (Map<VarKey, Variable> frame : frames) {
+    // Iterate backwards so that we restore variables in order of definition which will ensure that
+    // derived fields work correctly.
+    for (Iterator<Map<VarKey, Variable>> iterator = frames.descendingIterator();
+        iterator.hasNext();) {
+      Map<VarKey, Variable> frame = iterator.next();
       for (Variable var : frame.values()) {
         saves.add(var.save());
         restores.add(var.restore());

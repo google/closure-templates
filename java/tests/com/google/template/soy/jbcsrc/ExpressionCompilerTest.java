@@ -33,6 +33,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.types.primitive.AnyType;
 
@@ -59,11 +60,23 @@ public class ExpressionCompilerTest extends TestCase {
       throw new UnsupportedOperationException();
     }
 
-    @Override protected SoyExpression visitFunctionNode(FunctionNode node) {
+    @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
       throw new UnsupportedOperationException();
     }
 
-    @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
+    @Override SoyExpression visitPluginFunction(FunctionNode node) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode) {
       throw new UnsupportedOperationException();
     }
   };

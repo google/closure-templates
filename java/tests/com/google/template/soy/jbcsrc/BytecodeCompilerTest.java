@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValueHelper;
@@ -61,6 +62,44 @@ public class BytecodeCompilerTest extends TestCase {
         "{for $i in range(2, 10, 2)}", 
         "  {$i}",
         "{/for}").rendersAs("2468");
+  }
+
+  public void testForEachNode() {
+    // empty loop
+//    assertThatTemplateBody(
+//        "{foreach $i in []}",
+//        "  {$i}",
+//        "{/foreach}").rendersAs("");
+
+    assertThatTemplateBody(
+        "{foreach $i in []}",
+        "  {$i}",
+        "{ifempty}",
+        "  empty",
+        "{/foreach}").rendersAs("empty");
+
+    assertThatTemplateBody(
+        "{foreach $i in [1,2,3,4,5]}",
+        "  {$i}",
+        "{/foreach}").rendersAs("12345");
+
+    assertThatTemplateBody(
+        "{foreach $i in [1,2,3,4,5]}",
+        "  {if isFirst($i)}",
+        "    first!{\\n}",
+        "  {/if}",
+        "  {$i}-{index($i)}{\\n}",
+        "  {if isLast($i)}",
+        "    last!",
+        "  {/if}",
+        "{/foreach}").rendersAs(Joiner.on('\n').join(
+            "first!",
+            "1-0",
+            "2-1",
+            "3-2",
+            "4-3",
+            "5-4",
+            "last!"));
   }
 
   public void testSwitchNode() {

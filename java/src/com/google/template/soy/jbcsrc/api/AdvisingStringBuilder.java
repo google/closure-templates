@@ -47,4 +47,9 @@ public final class AdvisingStringBuilder implements AdvisingAppendable {
   @Override public String toString() {
     return delegate.toString();
   }
+
+  /** Reset the buffer. */
+  public void clear() {
+    delegate.setLength(0);
+  }
 }
