@@ -12,7 +12,7 @@ if (typeof soy.examples.features == 'undefined') { soy.examples.features = {}; }
 
 
 soy.examples.features.demoComments = function(opt_data, opt_ignored) {
-  return 'blah blah<br>http://www.google.com<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml('blah blah<br>http://www.google.com<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoComments.soyTemplateName = 'soy.examples.features.demoComments';
@@ -20,7 +20,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoLineJoining = function(opt_data, opt_ignored) {
-  return 'First second.<br><i>First</i>second.<br>Firstsecond.<br><i>First</i> second.<br>Firstsecond.<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml('First second.<br><i>First</i>second.<br>Firstsecond.<br><i>First</i> second.<br>Firstsecond.<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoLineJoining.soyTemplateName = 'soy.examples.features.demoLineJoining';
@@ -28,7 +28,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoRawTextCommands = function(opt_data, opt_ignored) {
-  return '<pre>Space       : AA BB<br>Empty string: AABB<br>New line    : AA\nBB<br>Carriage ret: AA\rBB<br>Tab         : AA\tBB<br>Left brace  : AA{BB<br>Right brace : AA}BB<br>Literal     : AA\tBB { CC\n  DD } EE {sp}{\\n}{rb} FF</pre>';
+  return soydata.markUnsanitizedText('<pre>Space       : AA BB<br>Empty string: AABB<br>New line    : AA\nBB<br>Carriage ret: AA\rBB<br>Tab         : AA\tBB<br>Left brace  : AA{BB<br>Right brace : AA}BB<br>Literal     : AA\tBB { CC\n  DD } EE {sp}{\\n}{rb} FF</pre>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoRawTextCommands.soyTemplateName = 'soy.examples.features.demoRawTextCommands';
@@ -36,39 +36,23 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoPrint = function(opt_data, opt_ignored) {
-  return 'Boo!<br>Boo!<br>3<br>' + soy.$$escapeHtml(opt_data.boo) + '<br>' + soy.$$escapeHtml(1 + opt_data.two) + '<br>26, true.<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Boo!<br>Boo!<br>3<br>' + soy.$$escapeHtml(opt_data.boo) + '<br>' + soy.$$escapeHtml(1 + opt_data.two) + '<br>26, true.<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoPrint.soyTemplateName = 'soy.examples.features.demoPrint';
 }
 
 
-soy.examples.features.demoPrintDirectives = function(opt_data, opt_ignored) {
-  return 'insertWordBreaks:<br><div style="width:150px; border:1px solid #00CC00">' + soy.$$escapeHtml(opt_data.longVarName) + '<br>' + soy.$$insertWordBreaks(soy.$$escapeHtml(opt_data.longVarName), 5) + '<br></div>id:<br><span id="' + opt_data.elementId + '" class="' + opt_data.cssClass + '" style="border:1px solid #000000">Hello</span>';
-};
-if (goog.DEBUG) {
-  soy.examples.features.demoPrintDirectives.soyTemplateName = 'soy.examples.features.demoPrintDirectives';
-}
-
-
 soy.examples.features.demoAutoescapeTrue = function(opt_data, opt_ignored) {
-  return soy.$$escapeHtml(opt_data.italicHtml) + '<br>' + soy.$$filterNoAutoescape(opt_data.italicHtml) + '<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(opt_data.italicHtml) + '<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoAutoescapeTrue.soyTemplateName = 'soy.examples.features.demoAutoescapeTrue';
 }
 
 
-soy.examples.features.demoAutoescapeFalse = function(opt_data, opt_ignored) {
-  return opt_data.italicHtml + '<br>' + soy.$$escapeHtml(opt_data.italicHtml) + '<br>';
-};
-if (goog.DEBUG) {
-  soy.examples.features.demoAutoescapeFalse.soyTemplateName = 'soy.examples.features.demoAutoescapeFalse';
-}
-
-
 soy.examples.features.demoMsg = function(opt_data, opt_ignored) {
-  return 'Hello ' + soy.$$escapeHtml(opt_data.name) + '!<br>Click <a href="' + soy.$$escapeHtml(opt_data.labsUrl) + '">here</a> to access Labs.<br>Archive<br>Archive<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Hello ' + soy.$$escapeHtml(opt_data.name) + '!<br>Click <a href="' + soy.$$escapeHtmlAttribute(soy.$$filterNormalizeUri(opt_data.labsUrl)) + '">here</a> to access Labs.<br>Archive<br>Archive<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoMsg.soyTemplateName = 'soy.examples.features.demoMsg';
@@ -76,7 +60,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoIf = function(opt_data, opt_ignored) {
-  return ((Math.round(opt_data.pi * 100) / 100 == 3.14) ? soy.$$escapeHtml(opt_data.pi) + ' is a good approximation of pi.' : (Math.round(opt_data.pi) == 3) ? soy.$$escapeHtml(opt_data.pi) + ' is a bad approximation of pi.' : soy.$$escapeHtml(opt_data.pi) + ' is nowhere near the value of pi.') + '<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(((Math.round(opt_data.pi * 100) / 100 == 3.14) ? soy.$$escapeHtml(opt_data.pi) + ' is a good approximation of pi.' : (Math.round(opt_data.pi) == 3) ? soy.$$escapeHtml(opt_data.pi) + ' is a bad approximation of pi.' : soy.$$escapeHtml(opt_data.pi) + ' is nowhere near the value of pi.') + '<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoIf.soyTemplateName = 'soy.examples.features.demoIf';
@@ -97,7 +81,7 @@ soy.examples.features.demoSwitch = function(opt_data, opt_ignored) {
       output += 'You don\'t really believe in me, do you?';
   }
   output += '&nbsp; --Santa<br>';
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoSwitch.soyTemplateName = 'soy.examples.features.demoSwitch';
@@ -106,17 +90,17 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoForeach = function(opt_data, opt_ignored) {
   var output = '';
-  var personList163 = opt_data.persons;
-  var personListLen163 = personList163.length;
-  if (personListLen163 > 0) {
-    for (var personIndex163 = 0; personIndex163 < personListLen163; personIndex163++) {
-      var personData163 = personList163[personIndex163];
-      output += ((personIndex163 == 0) ? 'First,' : (personIndex163 == personListLen163 - 1) ? 'Finally,' : 'Then') + ' ' + ((personData163.numWaffles == 1) ? soy.$$escapeHtml(personData163.name) + ' ate 1 waffle.' : soy.$$escapeHtml(personData163.name) + ' ate ' + soy.$$escapeHtml(personData163.numWaffles) + ' waffles.') + '<br>';
+  var personList141 = opt_data.persons;
+  var personListLen141 = personList141.length;
+  if (personListLen141 > 0) {
+    for (var personIndex141 = 0; personIndex141 < personListLen141; personIndex141++) {
+      var personData141 = personList141[personIndex141];
+      output += ((personIndex141 == 0) ? 'First,' : (personIndex141 == personListLen141 - 1) ? 'Finally,' : 'Then') + ' ' + ((personData141.numWaffles == 1) ? soy.$$escapeHtml(personData141.name) + ' ate 1 waffle.' : soy.$$escapeHtml(personData141.name) + ' ate ' + soy.$$escapeHtml(personData141.numWaffles) + ' waffles.') + '<br>';
     }
   } else {
     output += 'Nobody here ate any waffles.<br>';
   }
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoForeach.soyTemplateName = 'soy.examples.features.demoForeach';
@@ -125,15 +109,15 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoFor = function(opt_data, opt_ignored) {
   var output = '';
-  var iLimit167 = opt_data.numLines;
-  for (var i167 = 0; i167 < iLimit167; i167++) {
-    output += 'Line ' + soy.$$escapeHtml(i167 + 1) + ' of ' + soy.$$escapeHtml(opt_data.numLines) + '.<br>';
+  var iLimit145 = opt_data.numLines;
+  for (var i145 = 0; i145 < iLimit145; i145++) {
+    output += 'Line ' + soy.$$escapeHtml(i145 + 1) + ' of ' + soy.$$escapeHtml(opt_data.numLines) + '.<br>';
   }
-  for (var i173 = 2; i173 < 10; i173 += 2) {
-    output += soy.$$escapeHtml(i173) + '... ';
+  for (var i151 = 2; i151 < 10; i151 += 2) {
+    output += soy.$$escapeHtml(i151) + '... ';
   }
   output += 'Who do we appreciate?<br>';
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoFor.soyTemplateName = 'soy.examples.features.demoFor';
@@ -141,7 +125,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoCallWithoutParam = function(opt_data, opt_ignored) {
-  return soy.examples.features.tripReport_(null) + '<br>' + soy.examples.features.tripReport_(opt_data) + '<br>' + soy.examples.features.tripReport_(opt_data.tripInfo) + '<br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(soy.examples.features.tripReport_(null)) + '<br>' + soy.$$escapeHtml(soy.examples.features.tripReport_(opt_data)) + '<br>' + soy.$$escapeHtml(soy.examples.features.tripReport_(opt_data.tripInfo)) + '<br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoCallWithoutParam.soyTemplateName = 'soy.examples.features.demoCallWithoutParam';
@@ -158,13 +142,13 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoCallWithParam = function(opt_data, opt_ignored) {
   var output = '';
-  var destinationList197 = opt_data.destinations;
-  var destinationListLen197 = destinationList197.length;
-  for (var destinationIndex197 = 0; destinationIndex197 < destinationListLen197; destinationIndex197++) {
-    var destinationData197 = destinationList197[destinationIndex197];
-    output += soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData197})) + '<br>' + ((destinationIndex197 % 2 == 0) ? soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData197}) + '<br>' : '');
+  var destinationList175 = opt_data.destinations;
+  var destinationListLen175 = destinationList175.length;
+  for (var destinationIndex175 = 0; destinationIndex175 < destinationListLen175; destinationIndex175++) {
+    var destinationData175 = destinationList175[destinationIndex175];
+    output += soy.$$escapeHtml(soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData175}))) + '<br>' + ((destinationIndex175 % 2 == 0) ? soy.$$escapeHtml(soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData175})) + '<br>' : '');
   }
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoCallWithParam.soyTemplateName = 'soy.examples.features.demoCallWithParam';
@@ -172,21 +156,21 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoCallWithParamBlock = function(opt_data, opt_ignored) {
-  var param201 = '';
+  var param179 = '';
   switch (Math.floor(Math.random() * 3)) {
     case 0:
-      param201 += 'Boston';
+      param179 += 'Boston';
       break;
     case 1:
-      param201 += 'Singapore';
+      param179 += 'Singapore';
       break;
     case 2:
-      param201 += 'Zurich';
+      param179 += 'Zurich';
       break;
   }
-  var output = '' + soy.examples.features.tripReport_({name: opt_data.name, destination: param201});
+  var output = '' + soy.$$escapeHtml(soy.examples.features.tripReport_({name: opt_data.name, destination: soydata.$$markUnsanitizedTextForInternalBlocks(param179)}));
   output += '<br>';
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoCallWithParamBlock.soyTemplateName = 'soy.examples.features.demoCallWithParamBlock';
@@ -195,7 +179,7 @@ if (goog.DEBUG) {
 
 soy.examples.features.tripReport_ = function(opt_data, opt_ignored) {
   opt_data = opt_data || {};
-  return '' + ((! opt_data.name) ? 'A trip was taken.' : (! opt_data.destination) ? soy.$$escapeHtml(opt_data.name) + ' took a trip.' : soy.$$escapeHtml(opt_data.name) + ' took a trip to ' + soy.$$escapeHtml(opt_data.destination) + '.');
+  return soydata.markUnsanitizedText((! opt_data.name) ? 'A trip was taken.' : (! opt_data.destination) ? '' + opt_data.name + ' took a trip.' : '' + opt_data.name + ' took a trip to ' + ('' + opt_data.destination) + '.');
 };
 if (goog.DEBUG) {
   soy.examples.features.tripReport_.soyTemplateName = 'soy.examples.features.tripReport_';
@@ -204,16 +188,16 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoParamWithKindAttribute = function(opt_data, opt_ignored) {
   var output = '<div>';
-  var param238 = '';
-  var iList242 = opt_data.list;
-  var iListLen242 = iList242.length;
-  for (var iIndex242 = 0; iIndex242 < iListLen242; iIndex242++) {
-    var iData242 = iList242[iIndex242];
-    param238 += '<li>' + soy.$$escapeHtml(iData242) + '</li>';
+  var param216 = '';
+  var iList220 = opt_data.list;
+  var iListLen220 = iList220.length;
+  for (var iIndex220 = 0; iIndex220 < iListLen220; iIndex220++) {
+    var iData220 = iList220[iIndex220];
+    param216 += '<li>' + soy.$$escapeHtml(iData220) + '</li>';
   }
-  output += soy.examples.features.demoParamWithKindAttributeCallee_({message: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('<b>' + soy.$$escapeHtml(opt_data.message) + '</b>'), listItems: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param238)});
+  output += soy.examples.features.demoParamWithKindAttributeCallee_({message: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('<b>' + soy.$$escapeHtml(opt_data.message) + '</b>'), listItems: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param216)});
   output += '</div>';
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoParamWithKindAttribute.soyTemplateName = 'soy.examples.features.demoParamWithKindAttribute';
@@ -221,7 +205,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoParamWithKindAttributeCallee_ = function(opt_data, opt_ignored) {
-  return '<div>' + soy.$$escapeHtml(opt_data.message) + '</div><ol>' + soy.$$escapeHtml(opt_data.listItems) + '</ol>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml('<div>' + soy.$$escapeHtml(opt_data.message) + '</div><ol>' + soy.$$escapeHtml(opt_data.listItems) + '</ol>');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoParamWithKindAttributeCallee_.soyTemplateName = 'soy.examples.features.demoParamWithKindAttributeCallee_';
@@ -230,13 +214,13 @@ if (goog.DEBUG) {
 
 soy.examples.features.demoExpressions = function(opt_data, opt_ignored) {
   var output = 'First student\'s major: ' + soy.$$escapeHtml(opt_data.students[0].major) + '<br>Last student\'s year: ' + soy.$$escapeHtml(opt_data.students[opt_data.students.length - 1].year) + '<br>Random student\'s major: ' + soy.$$escapeHtml(opt_data.students[Math.floor(Math.random() * opt_data.students.length)].major) + '<br>';
-  var studentList290 = opt_data.students;
-  var studentListLen290 = studentList290.length;
-  for (var studentIndex290 = 0; studentIndex290 < studentListLen290; studentIndex290++) {
-    var studentData290 = studentList290[studentIndex290];
-    output += soy.$$escapeHtml(studentData290.name) + ':' + ((studentIndex290 == 0) ? ' First.' : (studentIndex290 == studentListLen290 - 1) ? ' Last.' : (studentIndex290 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex290 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData290.major) + '.' + ((studentData290.major == 'Physics' || studentData290.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData290.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData290.year < 2000 ? Math.round((studentData290.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData290.year < 2000) ? soy.$$escapeHtml(Math.round((studentData290.year - 1905) / 10) * 10) : '00') + 's.<br>';
+  var studentList268 = opt_data.students;
+  var studentListLen268 = studentList268.length;
+  for (var studentIndex268 = 0; studentIndex268 < studentListLen268; studentIndex268++) {
+    var studentData268 = studentList268[studentIndex268];
+    output += soy.$$escapeHtml(studentData268.name) + ':' + ((studentIndex268 == 0) ? ' First.' : (studentIndex268 == studentListLen268 - 1) ? ' Last.' : (studentIndex268 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex268 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData268.major) + '.' + ((studentData268.major == 'Physics' || studentData268.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData268.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData268.year < 2000 ? Math.round((studentData268.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData268.year < 2000) ? soy.$$escapeHtml(Math.round((studentData268.year - 1905) / 10) * 10) : '00') + 's.<br>';
   }
-  return output;
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoExpressions.soyTemplateName = 'soy.examples.features.demoExpressions';
@@ -244,7 +228,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoDoubleBraces = function(opt_data, opt_ignored) {
-  return 'The set of ' + soy.$$escapeHtml(opt_data.setName) + ' is {' + soy.examples.features.buildCommaSeparatedList_({items: opt_data.setMembers}) + ', ...}.';
+  return soydata.markUnsanitizedText('The set of ' + ('' + opt_data.setName) + ' is {' + soy.examples.features.buildCommaSeparatedList_({items: opt_data.setMembers}) + ', ...}.');
 };
 if (goog.DEBUG) {
   soy.examples.features.demoDoubleBraces.soyTemplateName = 'soy.examples.features.demoDoubleBraces';
@@ -253,13 +237,13 @@ if (goog.DEBUG) {
 
 soy.examples.features.buildCommaSeparatedList_ = function(opt_data, opt_ignored) {
   var output = '';
-  var itemList308 = opt_data.items;
-  var itemListLen308 = itemList308.length;
-  for (var itemIndex308 = 0; itemIndex308 < itemListLen308; itemIndex308++) {
-    var itemData308 = itemList308[itemIndex308];
-    output += ((! (itemIndex308 == 0)) ? ', ' : '') + soy.$$escapeHtml(itemData308);
+  var itemList286 = opt_data.items;
+  var itemListLen286 = itemList286.length;
+  for (var itemIndex286 = 0; itemIndex286 < itemListLen286; itemIndex286++) {
+    var itemData286 = itemList286[itemIndex286];
+    output += ((! (itemIndex286 == 0)) ? ', ' : '') + ('' + itemData286);
   }
-  return output;
+  return soydata.markUnsanitizedText(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.buildCommaSeparatedList_.soyTemplateName = 'soy.examples.features.buildCommaSeparatedList_';
@@ -267,15 +251,15 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoBidiSupport = function(opt_data, opt_ignored) {
-  var output = '<div id="title1" style="font-variant:small-caps" ' + soy.$$escapeHtml(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>by ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Your favorite keyword: <select>';
-  var keywordList340 = opt_data.keywords;
-  var keywordListLen340 = keywordList340.length;
-  for (var keywordIndex340 = 0; keywordIndex340 < keywordListLen340; keywordIndex340++) {
-    var keywordData340 = keywordList340[keywordIndex340];
-    output += '<option value="' + soy.$$escapeHtml(keywordData340) + '">' + soy.$$bidiUnicodeWrap(1, soy.$$escapeHtml(keywordData340)) + '</option>';
+  var output = '<div id="title1" style="font-variant:small-caps" ' + soy.$$filterHtmlAttributes(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>by ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Your favorite keyword: <select>';
+  var keywordList318 = opt_data.keywords;
+  var keywordListLen318 = keywordList318.length;
+  for (var keywordIndex318 = 0; keywordIndex318 < keywordListLen318; keywordIndex318++) {
+    var keywordData318 = keywordList318[keywordIndex318];
+    output += '<option value="' + soy.$$escapeHtmlAttribute(keywordData318) + '">' + soy.$$escapeHtml(soy.$$bidiUnicodeWrap(1, keywordData318)) + '</option>';
   }
-  output += '</select></div><a href="#" style="float:right">Help</a><br>';
-  return output;
+  output += '</select></div><a href="#" style="float:' + soy.$$escapeHtmlAttribute(soy.$$filterCssValue('right')) + '">Help</a><br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {
   soy.examples.features.demoBidiSupport.soyTemplateName = 'soy.examples.features.demoBidiSupport';
@@ -283,7 +267,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.bidiGlobalDir = function(opt_data, opt_ignored) {
-  return '' + soy.$$escapeHtml(1);
+  return soydata.markUnsanitizedText('' + 1);
 };
 if (goog.DEBUG) {
   soy.examples.features.bidiGlobalDir.soyTemplateName = 'soy.examples.features.bidiGlobalDir';
@@ -291,7 +275,7 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.exampleHeader = function(opt_data, opt_ignored) {
-  return '<hr><b>' + soy.$$escapeHtml(opt_data.exampleNum) + '. ' + soy.$$escapeHtml(opt_data.exampleName) + '</b><br>';
+  return soydata.VERY_UNSAFE.ordainSanitizedHtml('<hr><b>' + soy.$$escapeHtml(opt_data.exampleNum) + '. ' + soy.$$escapeHtml(opt_data.exampleName) + '</b><br>');
 };
 if (goog.DEBUG) {
   soy.examples.features.exampleHeader.soyTemplateName = 'soy.examples.features.exampleHeader';

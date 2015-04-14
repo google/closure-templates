@@ -31,12 +31,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String DEMO_RAW_TEXT_COMMANDS = "soy.examples.features.demoRawTextCommands";
     /** The full template name of the .demoPrint template. */
     public static final String DEMO_PRINT = "soy.examples.features.demoPrint";
-    /** The full template name of the .demoPrintDirectives template. */
-    public static final String DEMO_PRINT_DIRECTIVES = "soy.examples.features.demoPrintDirectives";
     /** The full template name of the .demoAutoescapeTrue template. */
     public static final String DEMO_AUTOESCAPE_TRUE = "soy.examples.features.demoAutoescapeTrue";
-    /** The full template name of the .demoAutoescapeFalse template. */
-    public static final String DEMO_AUTOESCAPE_FALSE = "soy.examples.features.demoAutoescapeFalse";
     /** The full template name of the .demoMsg template. */
     public static final String DEMO_MSG = "soy.examples.features.demoMsg";
     /** The full template name of the .demoIf template. */
@@ -82,21 +78,17 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String BOO = "boo";
     /** Listed by .demoCallWithParam. */
     public static final String COMPANION_NAME = "companionName";
-    /** Listed by .demoPrintDirectives. */
-    public static final String CSS_CLASS = "cssClass";
     /** Listed by .demoExpressions. */
     public static final String CURRENT_YEAR = "currentYear";
     /** Listed by .tripReport_ (private). */
     public static final String DESTINATION = "destination";
     /** Listed by .demoCallWithParam. */
     public static final String DESTINATIONS = "destinations";
-    /** Listed by .demoPrintDirectives. */
-    public static final String ELEMENT_ID = "elementId";
     /** Listed by .exampleHeader. */
     public static final String EXAMPLE_NAME = "exampleName";
     /** Listed by .exampleHeader. */
     public static final String EXAMPLE_NUM = "exampleNum";
-    /** Listed by .demoAutoescapeTrue, .demoAutoescapeFalse. */
+    /** Listed by .demoAutoescapeTrue. */
     public static final String ITALIC_HTML = "italicHtml";
     /** Listed by .buildCommaSeparatedList_ (private). */
     public static final String ITEMS = "items";
@@ -108,8 +100,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String LIST = "list";
     /** Listed by .demoParamWithKindAttributeCallee_ (private). */
     public static final String LIST_ITEMS = "listItems";
-    /** Listed by .demoPrintDirectives. */
-    public static final String LONG_VAR_NAME = "longVarName";
     /** Listed by .demoParamWithKindAttribute, .demoParamWithKindAttributeCallee_ (private). */
     public static final String MESSAGE = "message";
     /**
@@ -277,49 +267,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
 
 
   /**
-   * Demo print directives.
-   */
-  public static final class DemoPrintDirectivesSoyTemplateInfo extends SoyTemplateInfo {
-
-    /** This template's full name. */
-    public static final String __NAME__ = "soy.examples.features.demoPrintDirectives";
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoPrintDirectives";
-
-    /** Some ridiculously long variable name. */
-    public static final String LONG_VAR_NAME = "longVarName";
-    /** The id for an element. */
-    public static final String ELEMENT_ID = "elementId";
-    /** A CSS class name. */
-    public static final String CSS_CLASS = "cssClass";
-
-    private DemoPrintDirectivesSoyTemplateInfo() {
-      super(
-          "soy.examples.features.demoPrintDirectives",
-          ImmutableMap.<String, ParamRequisiteness>builder()
-              .put("longVarName", ParamRequisiteness.REQUIRED)
-              .put("elementId", ParamRequisiteness.REQUIRED)
-              .put("cssClass", ParamRequisiteness.REQUIRED)
-              .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
-    }
-
-    private static final DemoPrintDirectivesSoyTemplateInfo __INSTANCE__ =
-        new DemoPrintDirectivesSoyTemplateInfo();
-
-    public static DemoPrintDirectivesSoyTemplateInfo getInstance() {
-      return __INSTANCE__;
-    }
-  }
-
-  /** Same as DemoPrintDirectivesSoyTemplateInfo.getInstance(). */
-  public static final DemoPrintDirectivesSoyTemplateInfo DEMO_PRINT_DIRECTIVES =
-      DemoPrintDirectivesSoyTemplateInfo.getInstance();
-
-
-  /**
    * Demo autoescape true.
    */
   public static final class DemoAutoescapeTrueSoyTemplateInfo extends SoyTemplateInfo {
@@ -354,43 +301,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   /** Same as DemoAutoescapeTrueSoyTemplateInfo.getInstance(). */
   public static final DemoAutoescapeTrueSoyTemplateInfo DEMO_AUTOESCAPE_TRUE =
       DemoAutoescapeTrueSoyTemplateInfo.getInstance();
-
-
-  /**
-   * Demo autoescape false.
-   */
-  public static final class DemoAutoescapeFalseSoyTemplateInfo extends SoyTemplateInfo {
-
-    /** This template's full name. */
-    public static final String __NAME__ = "soy.examples.features.demoAutoescapeFalse";
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoAutoescapeFalse";
-
-    /** A string surrounded by HTML italics tags. */
-    public static final String ITALIC_HTML = "italicHtml";
-
-    private DemoAutoescapeFalseSoyTemplateInfo() {
-      super(
-          "soy.examples.features.demoAutoescapeFalse",
-          ImmutableMap.<String, ParamRequisiteness>builder()
-              .put("italicHtml", ParamRequisiteness.REQUIRED)
-              .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
-    }
-
-    private static final DemoAutoescapeFalseSoyTemplateInfo __INSTANCE__ =
-        new DemoAutoescapeFalseSoyTemplateInfo();
-
-    public static DemoAutoescapeFalseSoyTemplateInfo getInstance() {
-      return __INSTANCE__;
-    }
-  }
-
-  /** Same as DemoAutoescapeFalseSoyTemplateInfo.getInstance(). */
-  public static final DemoAutoescapeFalseSoyTemplateInfo DEMO_AUTOESCAPE_FALSE =
-      DemoAutoescapeFalseSoyTemplateInfo.getInstance();
 
 
   /**
@@ -985,11 +895,9 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             Param.AUTHOR,
             Param.BOO,
             Param.COMPANION_NAME,
-            Param.CSS_CLASS,
             Param.CURRENT_YEAR,
             Param.DESTINATION,
             Param.DESTINATIONS,
-            Param.ELEMENT_ID,
             Param.EXAMPLE_NAME,
             Param.EXAMPLE_NUM,
             Param.ITALIC_HTML,
@@ -998,7 +906,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             Param.LABS_URL,
             Param.LIST,
             Param.LIST_ITEMS,
-            Param.LONG_VAR_NAME,
             Param.MESSAGE,
             Param.NAME,
             Param.NUM_LINES,
@@ -1016,9 +923,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_LINE_JOINING,
             DEMO_RAW_TEXT_COMMANDS,
             DEMO_PRINT,
-            DEMO_PRINT_DIRECTIVES,
             DEMO_AUTOESCAPE_TRUE,
-            DEMO_AUTOESCAPE_FALSE,
             DEMO_MSG,
             DEMO_IF,
             DEMO_SWITCH,

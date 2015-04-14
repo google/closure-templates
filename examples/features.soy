@@ -15,7 +15,7 @@
 // Features examples.
 // Author: Kai Huang
 
-{namespace soy.examples.features autoescape="deprecated-noncontextual"}
+{namespace soy.examples.features autoescape="strict"}
 
 
 /**
@@ -66,7 +66,7 @@
 /**
  * Demo raw text commands.
  */
-{template .demoRawTextCommands}
+{template .demoRawTextCommands kind="text"}
   <pre>
   // Special characters.
   Space       : AA{sp}BB<br>
@@ -102,52 +102,14 @@
 
 
 /**
- * Demo print directives.
- * @param longVarName Some ridiculously long variable name.
- * @param elementId The id for an element.
- * @param cssClass A CSS class name.
- */
-{template .demoPrintDirectives}
-  insertWordBreaks:<br>
-  <div style="width:150px; border:1px solid #00CC00">
-    {$longVarName}<br>  // will run outside the div border
-    {$longVarName |insertWordBreaks:5}<br>  // will be allowed to wrap
-  </div>
-
-  id:<br>
-  // The 'id' and 'class' attributes of this span will not be needlessly autoescaped because they
-  // are marked with the print directive '|id'.
-  // Note: Only use '|id' with identifiers like id and class (otherwise use '|noAutoescape').
-  <span id="{$elementId|id}" class="{$cssClass|id}" style="border:1px solid #000000">
-    Hello
-  </span>
-{/template}
-
-
-/**
  * Demo autoescape true.
  * @param italicHtml A string surrounded by HTML italics tags.
  */
-{template .demoAutoescapeTrue autoescape="deprecated-noncontextual"}
-  // Note: We explicitly list autoescape="true" in the 'template' tag for demonstration. Usually
-  // it's omitted because "true" is the attribute's default value.
-  // Note: The parameter name 'italicHtml' demonstrates the good practice of adding the suffix
-  // 'Html' to identify strings that may contain HTML tags and are known to be safe.
+{template .demoAutoescapeTrue autoescape="strict"}
+  // Note: We explicitly list autoescape="strict" in the 'template' tag for demonstration. Usually
+  // it's omitted because "strict" is the attribute's default value.
 
   {$italicHtml}<br>  // autoescape causes HTML tags to appear literally
-  {$italicHtml |noAutoescape}<br>  // noAutoescape directive prevents autoescaping
-{/template}
-
-
-/**
- * Demo autoescape false.
- * @param italicHtml A string surrounded by HTML italics tags.
- */
-{template .demoAutoescapeFalse autoescape="deprecated-noautoescape"}
-  // Note: Use autoescape="false" with care, as more cross-site scripting bugs may slip through.
-
-  {$italicHtml}<br>  // no autoescaping will be applied
-  {$italicHtml |escapeHtml}<br>  // escapeHtml directive applies HTML escaping
 {/template}
 
 
@@ -297,7 +259,7 @@
 /**
  * Demo a 'call' out to a template defined in another file.
  */
-{template .demoCallOtherFile autoescape="strict"}
+{template .demoCallOtherFile}
 
   // Call template defined in a different file.
   {call soy.examples.simple.helloWorld /}<br>
@@ -344,7 +306,7 @@
   // Pass 2 parameters, one of which is built using Soy code.
   {call .tripReport_}
     {param name: $name /}
-    {param destination}
+    {param destination kind="text"}
       {switch randomInt(3)}
         {case 0}Boston
         {case 1}Singapore
@@ -362,14 +324,14 @@
  * @param? name The name of the person who took a trip (optional).
  * @param? destination The destination of the trip (optional).
  */
-{template .tripReport_ private="true"}
+{template .tripReport_ private="true" kind="text"}
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
   // private templates (template that should never be called from hand-written code).
 
   // Note: All parameters to this template are optional. Therefore, below, we must check for
   // "not (hasData() and $name)" rather than simply "not $name" because if absolutely no data is
   // passed, then evaluating "$name" will cause an exception.
-  {if not (hasData() and $name)}
+  {if not $name}
     // Note: The message below demonstrates that the 'desc' attribute can be left empty. However,
     // this is not recommended except for the simplest messages, otherwise you risk confusing some
     // translators and getting poor translations.
@@ -393,7 +355,7 @@
  * @param message A message text.
  * @param list A list of things.
  */
-{template .demoParamWithKindAttribute autoescape="deprecated-contextual"}
+{template .demoParamWithKindAttribute}
   <div>
     {call .demoParamWithKindAttributeCallee_}
       // Note that the {param} blocks for the message and listItems parameter are declared to have
@@ -418,12 +380,11 @@
  * @param message A message with HTML markup.
  * @param listItems A HTML-formatted list.
  */
-{template .demoParamWithKindAttributeCallee_ private="true" autoescape="deprecated-contextual"}
+{template .demoParamWithKindAttributeCallee_ private="true"}
   // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
   // the calling template.  Since the {param} blocks are declared to have HTML content, their values
   // are wrapped as soydata.SanitizedHtml objects.  This in turn causes them to be emitted here
-  // without further escaping.  In particular, it is not necessary to use the |noAutoescape print
-  // directive to prevent double-escaping.
+  // without further escaping.
   <div>{$message}</div>
   <ol>
     {$listItems}
@@ -438,7 +399,7 @@
  */
 {template .demoExpressions}
 
-  First student's major: {$students.0.major}<br>
+  First student's major: {$students[0].major}<br>
   Last student's year: {$students[length($students) - 1].year}<br>
   Random student's major: {$students[randomInt(length($students))].major}<br>
 
@@ -476,7 +437,7 @@
  * @param setName The name of the infinite set.
  * @param setMembers List of the first few members of the set.
  */
-{template .demoDoubleBraces}
+{template .demoDoubleBraces kind="text"}
   // If a Soy tag needs to have brace characters within, use double braces to delimit the tag.
   {{msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}}
     // Note: This message also demonstrates a useful trick. Since a 'msg' block cannot contain a
@@ -499,7 +460,7 @@
  * Private helper to build a comma separated list.
  * @param items The list of items.
  */
-{template .buildCommaSeparatedList_ private="true"}
+{template .buildCommaSeparatedList_ private="true" kind="text"}
   {foreach $item in $items}
     {if not isFirst($item)}
       ,{sp}
@@ -586,7 +547,7 @@
  * Template that outputs -1 in a right-to-left page and 1 in a left-to-right page, i.e. basically
  * exposes the results of Soy's bidiGlobalDir() to scripts.
  */
-{template .bidiGlobalDir}
+{template .bidiGlobalDir kind="text"}
   {bidiGlobalDir()}
 {/template}
 

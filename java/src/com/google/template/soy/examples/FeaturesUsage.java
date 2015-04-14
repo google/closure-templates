@@ -25,7 +25,6 @@ import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
-import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_AUTOESCAPE_FALSE;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_AUTOESCAPE_TRUE;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_BIDI_SUPPORT;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_CALL_WITHOUT_PARAM;
@@ -40,7 +39,6 @@ import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_IF;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_LINE_JOINING;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_MSG;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_PRINT;
-import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_PRINT_DIRECTIVES;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_RAW_TEXT_COMMANDS;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_SWITCH;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -154,24 +152,9 @@ public class FeaturesUsage {
         .setMsgBundle(msgBundle)
         .render());
 
-    writeExampleHeader("demoPrintDirectives");
-    System.out.println(tofu.newRenderer(DEMO_PRINT_DIRECTIVES)
-        .setData(ImmutableMap.of(DEMO_PRINT_DIRECTIVES.LONG_VAR_NAME,
-                                      "thisIsSomeRidiculouslyLongVariableName",
-                                 DEMO_PRINT_DIRECTIVES.ELEMENT_ID, "my_element_id",
-                                 DEMO_PRINT_DIRECTIVES.CSS_CLASS, "my_css_class"))
-         .setMsgBundle(msgBundle)
-         .render());
-
     writeExampleHeader("demoAutoescapeTrue");
     System.out.println(tofu.newRenderer(DEMO_AUTOESCAPE_TRUE)
         .setData(new SoyMapData(DEMO_AUTOESCAPE_TRUE.ITALIC_HTML, "<i>italic</i>"))
-        .setMsgBundle(msgBundle)
-        .render());
-
-    writeExampleHeader("demoAutoescapeFalse");
-    System.out.println(tofu.newRenderer(DEMO_AUTOESCAPE_FALSE)
-        .setData(new SoyMapData(DEMO_AUTOESCAPE_FALSE.ITALIC_HTML, "<i>italic</i>"))
         .setMsgBundle(msgBundle)
         .render());
 
