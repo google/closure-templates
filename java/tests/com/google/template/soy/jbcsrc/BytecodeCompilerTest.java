@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.collect.ImmutableMap;
@@ -263,10 +264,22 @@ public class BytecodeCompilerTest extends TestCase {
   }
 
   public void testBasicFunctionality() {
-    assertThatTemplateBody("hello world")
-        .hasCompiledTemplateFactoryClassName("com.google.template.soy.jbcsrc.gen.ns$$foo_Factory")
-        .hasCompiledTemplateClassName("com.google.template.soy.jbcsrc.gen.ns$$foo")
-        .rendersAs("hello world");
+    // make sure we don't break standard reflection access
+    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody("hello world");
+    assertEquals("com.google.template.soy.jbcsrc.gen.nsⅩfoo$Factory",
+        factory.getClass().getName());
+    assertEquals("Factory", factory.getClass().getSimpleName());
+
+    Class<? extends CompiledTemplate> templateClass = 
+        factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+    assertEquals("com.google.template.soy.jbcsrc.gen.nsⅩfoo", templateClass.getName());
+    assertEquals("nsⅩfoo", templateClass.getSimpleName());
+
+    // ensure that the factory is an inner class of the template.
+    assertEquals(templateClass, factory.getClass().getEnclosingClass());
+    assertEquals(templateClass, factory.getClass().getDeclaringClass());
+
+    assertThat(templateClass.getDeclaredClasses()).asList().contains(factory.getClass());
   }
 
   private static final class FakeRenamingMap implements SoyCssRenamingMap {

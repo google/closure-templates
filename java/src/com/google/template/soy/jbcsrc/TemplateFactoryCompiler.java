@@ -26,6 +26,7 @@ import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -49,6 +50,9 @@ final class TemplateFactoryCompiler {
   private static final String[] INTERFACES =
       { Type.getInternalName(CompiledTemplate.Factory.class) };
 
+  private static final int FACTORY_ACCESS = 
+      Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL;
+
   private static final Method CREATE_METHOD;
   static {
     try {
@@ -71,11 +75,13 @@ final class TemplateFactoryCompiler {
     ClassWriter cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
 
     cw.visit(Opcodes.V1_7,
-        Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL,
-        template.factory().type().getInternalName(),
+        FACTORY_ACCESS,
+        template.factory().internalName(),
         null, // not a generic type
         Type.getInternalName(Object.class), // super class
         INTERFACES);
+
+    registerInnerClass(cw);
 
     generateStaticInitializer(cw);
     defineDefaultConstructor(cw, template.factory());
@@ -83,6 +89,22 @@ final class TemplateFactoryCompiler {
     cw.visitEnd();
     byte[] byteArray = cw.toByteArray();
     return ClassData.create(template.factory(), byteArray);
+  }
+
+  /**
+   * Registers this factory as an inner class on the given class writer.
+   * 
+   * <p>Registering an inner class is confusing.  The inner class needs to call this and so does
+   * the outer class.  Confirmed by running ASMIfier.  Also, failure to call visitInnerClass on both
+   * classes either breaks reflective apis (like class.getSimpleName()/getEnclosingClass), or 
+   * causes verifier errors (like IncompatibleClassChangeError).
+   */
+  void registerInnerClass(ClassVisitor cw) {
+    cw.visitInnerClass(
+        template.factory().internalName(), 
+        template.typeInfo().internalName(), 
+        "Factory",
+        FACTORY_ACCESS);
   }
 
   /**

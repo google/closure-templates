@@ -27,8 +27,6 @@ import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -43,8 +41,6 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
-import javax.annotation.Nonnull;
 
 /**
  * Utilities for testing compiled soy templates.
@@ -134,36 +130,6 @@ public final class TemplateTester {
       }
       if (!expectedLogged.equals(logOutput.toString())) {
         failWithBadResults("logs", expectedLogged, "logs", logOutput.toString());
-      }
-      return this;
-    }
-
-    CompiledTemplateSubject hasCompiledTemplateFactoryClassName(String expectedFactoryClassName) {
-      compile();
-      if (!factory.getClass().getName().equals(expectedFactoryClassName)) {
-        fail("hasCompiledTemplateFactoryClassName", expectedFactoryClassName);
-      }
-      return this;
-    }
-
-    CompiledTemplateSubject hasCompiledTemplateClassName(String expectedClassName) {
-      compile();
-      // Use this fake param store to make sure the constructor doesn't throw on missing parameters
-      CompiledTemplate template = factory.create(new ParamStore() {
-        @Override public boolean hasField(String name) {
-          return true;
-        }
-
-        @Override public SoyValueProvider getFieldProvider(String name) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override public void setField(String name, @Nonnull SoyValueProvider valueProvider) {
-          throw new UnsupportedOperationException();
-        }
-      }, null);
-      if (!template.getClass().getName().equals(expectedClassName)) {
-        fail("hasCompileTemplateClassName", expectedClassName);
       }
       return this;
     }

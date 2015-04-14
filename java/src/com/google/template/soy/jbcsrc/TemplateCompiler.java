@@ -122,7 +122,8 @@ final class TemplateCompiler {
     // TODO(lukes): don't generate factory if the template is private?  The factories are only
     // useful to instantiate templates for calls from java.  Soy->Soy calls should invoke 
     // constructors directly.
-    classes.add(new TemplateFactoryCompiler(template).compile());
+    TemplateFactoryCompiler templateFactoryCompiler = new TemplateFactoryCompiler(template);
+    classes.add(templateFactoryCompiler.compile());
 
     ClassWriter classWriter = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
     writer = new CheckClassAdapter(classWriter, false);
@@ -141,6 +142,7 @@ final class TemplateCompiler {
         // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
         null);
 
+    templateFactoryCompiler.registerInnerClass(writer);
     stateField.defineField(writer);
     paramsField.defineField(writer);
     ijField.defineField(writer);
