@@ -655,11 +655,19 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     String generatedVarName = node.getUniqueVarName();
 
-    // Generate the contents of the variable and mark the result as being escaped to the appropriate
-    // kind (e.g., "sanitize.SanitizedHtml").
-    PyExpr content = PyExprUtils.concatPyExprs(genPyExprsVisitor.execOnChildren(node)).toPyString();
+    // Traverse the children and push them onto the generated variable.
+    localVarExprs.pushFrame();
+    pyCodeBuilder.pushOutputVar(generatedVarName);
+
+    visitChildren(node);
+
+    PyExpr generatedContent = pyCodeBuilder.getOutputAsString();
+    pyCodeBuilder.popOutputVar();
+    localVarExprs.popFrame();
+
+    // Mark the result as being escaped to the appropriate kind (e.g., "sanitize.SanitizedHtml").
     pyCodeBuilder.appendLine(generatedVarName, " = ",
-        PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), content).getText());
+        PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), generatedContent).getText());
 
     // Add a mapping for generating future references to this local var.
     localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));

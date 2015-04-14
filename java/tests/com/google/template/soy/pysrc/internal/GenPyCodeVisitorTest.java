@@ -257,7 +257,27 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/let}\n";
 
     String expectedPyCode =
-        "foo__soy### = sanitize.SanitizedHtml(''.join(['Hello ',str(opt_data.get('boo'))]))\n";
+        "foo__soy### = ['Hello ',str(opt_data.get('boo'))]\n"
+        + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###))\n";
+
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  public void testLetContent_notComputableAsExpr() {
+    String soyCode =
+        "{let $foo kind=\"html\"}\n"
+        + "  {for $num in range(5)}\n"
+        + "    {$num}\n"
+        + "  {/for}\n"
+        + "  Hello {$boo}\n"
+        + "{/let}\n";
+
+    String expectedPyCode =
+        "foo__soy### = []\n"
+        + "for num### in xrange(5):\n"
+        + "  foo__soy###.append(str(num###))\n"
+        + "foo__soy###.extend(['Hello ',str(opt_data.get('boo'))])\n"
+        + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
