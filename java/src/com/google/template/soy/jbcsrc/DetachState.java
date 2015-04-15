@@ -95,7 +95,7 @@ import java.util.List;
  * <p>Note, in the above examples, the caller is responsible for calculating when/why to detach
  * but this class is responsible for calculating the save/restore reattach logic.
  */
-final class DetachState {
+final class DetachState implements ExpressionDetacher.Factory {
   private final VariableSet variables;
   private final List<ReattachState> reattaches = new ArrayList<>();
   private final Expression thisExpr;
@@ -115,21 +115,17 @@ final class DetachState {
   /**
    * A utility for generating detach blocks for expressions.
    */
-  static final class ExpressionDetacher {
+  private static final class ExpressionDetacherImpl implements ExpressionDetacher {
     private final Label reattachPoint;
     private final Label detachPoint = new Label();
     private final Statement saveOperation;
 
-    private ExpressionDetacher(Label reattachPoint, Statement save) {
+    private ExpressionDetacherImpl(Label reattachPoint, Statement save) {
       this.reattachPoint = reattachPoint;
       this.saveOperation = save;
     }
 
-    /**
-     * Returns a new {@link Expression} that has the same behavior as {@code exp} but adds a prefix
-     * and suffix to implement detach logic.
-     */
-    final Expression makeDetachable(final Expression exp) {
+    @Override public Expression makeDetachable(final Expression exp) {
       return new SimpleExpression(exp.resultType(), exp.isConstant()) {
         @Override void doGen(GeneratorAdapter adapter) {
           // Note, the reattach point is _before_ the expression.  This means that on reattaches
@@ -158,13 +154,7 @@ final class DetachState {
       };
     }
 
-    /**
-     * Returns an expression for the SoyValue that is resolved by the given SoyValueProvider, 
-     * potentially detaching if it is not {@link SoyValueProvider#status() resolvable}.
-     * 
-     * @param soyValueProvider an expression yielding a SoyValueProvider
-     */
-    final Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+    @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
       return new SimpleExpression(Type.getType(SoyValue.class), false) {
         @Override void doGen(GeneratorAdapter adapter) {
@@ -190,14 +180,14 @@ final class DetachState {
    * Returns a {@link ExpressionDetacher} that can be used to instrument an expression with detach
    * reattach logic.
    */
-  ExpressionDetacher generateExpressionDetacher() {
+  @Override public ExpressionDetacher createExpressionDetacher() {
     Label reattachPoint = new Label();
     int state = reattaches.size();
     SaveRestoreState saveRestoreState = variables.saveRestoreState();
     Statement restore = saveRestoreState.restore();
     reattaches.add(ReattachState.create(reattachPoint, restore));
     Statement saveState = stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
-    return new ExpressionDetacher(
+    return new ExpressionDetacherImpl(
         reattachPoint, 
         Statement.concat(saveRestoreState.save(), saveState));
   }

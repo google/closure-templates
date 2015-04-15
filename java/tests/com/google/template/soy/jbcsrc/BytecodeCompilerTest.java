@@ -22,7 +22,9 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.internal.EasyDictImpl;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -30,11 +32,14 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import junit.framework.TestCase;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A test for the template compiler, notably {@link BytecodeCompiler} and its collaborators.
@@ -66,10 +71,10 @@ public class BytecodeCompilerTest extends TestCase {
 
   public void testForEachNode() {
     // empty loop
-//    assertThatTemplateBody(
-//        "{foreach $i in []}",
-//        "  {$i}",
-//        "{/foreach}").rendersAs("");
+    assertThatTemplateBody(
+        "{foreach $i in []}",
+        "  {$i}",
+        "{/foreach}").rendersAs("");
 
     assertThatTemplateBody(
         "{foreach $i in []}",
@@ -221,7 +226,8 @@ public class BytecodeCompilerTest extends TestCase {
   public void testCssNode() {
     RenderContext ctx = new RenderContext(
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
-        SoyCssRenamingMap.IDENTITY);
+        SoyCssRenamingMap.IDENTITY,
+        ImmutableMap.<String, SoyJavaFunction>of());
     assertThatTemplateBody("{css foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{css foo2}").rendersAs("foo2", ctx);
     assertThatTemplateBody("{css 1+2, foo2}").rendersAs("3-foo2", ctx);
@@ -230,9 +236,30 @@ public class BytecodeCompilerTest extends TestCase {
   public void testXidNode() {
     RenderContext ctx = new RenderContext(
         SoyCssRenamingMap.IDENTITY,
-        new FakeRenamingMap(ImmutableMap.of("foo", "bar")));
+        new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
+        ImmutableMap.<String, SoyJavaFunction>of());
     assertThatTemplateBody("{xid foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{xid foo2}").rendersAs("foo2_", ctx);
+  }
+  
+  public void testCallCustomFunction() {
+    RenderContext ctx = new RenderContext(
+        SoyCssRenamingMap.IDENTITY,
+        new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
+        ImmutableMap.<String, SoyJavaFunction>of("plusOne", new SoyJavaFunction() {
+          @Override public Set<Integer> getValidArgsSizes() {
+            return ImmutableSet.of(1);
+          }
+
+          @Override public String getName() {
+            return "plusOne";
+          }
+
+          @Override public SoyValue computeForJava(List<SoyValue> args) {
+            return IntegerData.forValue(args.get(0).integerValue() + 1);
+          }
+        }));
+    assertThatTemplateBody("{plusOne(1)}").rendersAs("2", ctx);
   }
 
   public void testParam() {

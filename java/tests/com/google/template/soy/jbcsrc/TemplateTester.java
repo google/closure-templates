@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
@@ -32,6 +33,7 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -51,7 +53,8 @@ import java.util.Map;
  */
 public final class TemplateTester {
   static final RenderContext EMPTY_CONTEXT = new RenderContext(
-      SoyCssRenamingMap.IDENTITY, SoyCssRenamingMap.IDENTITY);
+      SoyCssRenamingMap.IDENTITY, SoyCssRenamingMap.IDENTITY, 
+      ImmutableMap.<String, SoyJavaFunction>of());
 
   private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =
       new SubjectFactory<CompiledTemplateSubject, String>() {

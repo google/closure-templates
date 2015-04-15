@@ -19,6 +19,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopItemProvider;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 
 import com.google.common.primitives.Ints;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -50,15 +53,20 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
+import com.google.template.soy.types.primitive.AnyType;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -72,14 +80,19 @@ import java.util.Map;
 
 /**
  * Compiles a {@link ExprNode} to a {@link SoyExpression}.
- *
- * <p>This is an abstract class that supports all expressions except var refs, data access and
- * function calls.
- *
- * <p>TODO(lukes): move all expression subtypes from here to another class (most likely as static
- * methods on Expression)
  */
-abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpression> {
+final class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpression> {
+  private final ExpressionDetacher.Factory detacherFactory;
+  private final Expression contextExpr;
+  private final VariableLookup variables;
+  private ExpressionDetacher currentDetacher;
+
+  ExpressionCompiler(ExpressionDetacher.Factory detacherFactory, Expression contextExpr,
+      VariableLookup variables) {
+    this.detacherFactory = detacherFactory;
+    this.contextExpr = contextExpr;
+    this.variables = variables;
+  }
 
   /**
    * Compiles the given expression tree to a sequence of bytecode in the current method visitor.
@@ -94,7 +107,14 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
   }
 
   @Override public final SoyExpression exec(ExprNode node) {
-    return visit(checkNotNull(node));
+    final SoyExpression exec = super.visit(checkNotNull(node));
+    final ExpressionDetacher local = currentDetacher;
+    if (local != null) {
+      // If any compiled expressions required detaching, add the detach block.
+      currentDetacher = null;  // clear
+      return exec.withSource(local.makeDetachable(exec));
+    }
+    return exec;
   }
 
   @Override protected final SoyExpression visitExprRootNode(ExprRootNode node) {
@@ -126,33 +146,7 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
   // Collection literals
 
   @Override protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
-    // First we construct an ArrayList of the appropriate size
-    final int numChildren = node.getChildren().size();
-    ListType listType = (ListType) node.getType();
-    if (numChildren == 0) {
-      return SoyExpression.forList(listType, MethodRef.IMMUTABLE_LIST_OF.invoke().asConstant());
-    }
-    List<Statement> adds = new ArrayList<>(numChildren);
-    // Now evaluate each child, which should result in the value being at the top of the stack
-    // and then add it to the list.
-    Expression dupExpr = BytecodeUtils.dupExpr(Type.getType(ArrayList.class));
-    boolean isConstant = true;
-    for (ExprNode child : node.getChildren()) {
-      // All children must be soy values
-      SoyExpression childExpr = visit(child).box();
-      isConstant = isConstant && childExpr.isConstant();
-      adds.add(MethodRef.ARRAY_LIST_ADD.invoke(dupExpr, childExpr).toStatement());
-    }
-    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
-        .construct(BytecodeUtils.constant(numChildren));
-    final Statement addAll = Statement.concat(adds);
-    return SoyExpression.forList(listType,
-        new SimpleExpression(Type.getType(List.class), isConstant) {
-          @Override void doGen(GeneratorAdapter mv) {
-            construct.gen(mv);
-            addAll.gen(mv);
-          }
-        });
+    return SoyExpression.forList((ListType) node.getType(), childrenAsList(node.getChildren()));
   }
 
   @Override protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
@@ -472,12 +466,69 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     mv.visitLabel(end);
   }
 
-  // Left unimplemented for our subclasses which need to specialize how to reference variables.
-  @Override protected abstract SoyExpression visitVarRefNode(VarRefNode node);
+  @Override protected SoyExpression visitVarRefNode(VarRefNode node) {
+    // Sing muse, of the various data access patterns
+    // and how we don't support them yet
 
-  @Override protected abstract SoyExpression visitFieldAccessNode(FieldAccessNode node);
+    VarDefn defn = node.getDefnDecl();
+    switch (defn.kind()) {
+      case LOCAL_VAR:
+        LocalVar local = (LocalVar) defn;
+        if (local.declaringNode().getKind() == SoyNode.Kind.FOR_NODE) {
+          // an index variable in a {for $index in range(...)} statement
+          // These are special because they do not need any attaching/detaching logic and are
+          // always unboxed ints
+          return SoyExpression.forInt(
+              BytecodeUtils.numericConversion(variables.getLocal(node.getName()), Type.LONG_TYPE));
+        }
+        if (local.declaringNode().getKind() == SoyNode.Kind.FOREACH_NONEMPTY_NODE) {
+          Expression expression = variables.getLocal(
+              foreachLoopItemProvider((ForeachNonemptyNode) local.declaringNode()));
+          expression = getDetacher().resolveSoyValueProvider(expression);
+          return SoyExpression.forSoyValue(node.getType(),
+              expression.cast(Type.getType(node.getType().javaType())));
+        }
+        throw new UnsupportedOperationException("lets and foreach loops aren't supported yet");
 
-  @Override protected abstract SoyExpression visitItemAccessNode(ItemAccessNode node);
+      case PARAM:
+        TemplateParam param = (TemplateParam) defn;
+        if (param.declLoc() != DeclLoc.HEADER) {
+          throw new RuntimeException(
+              "header doc params are not supported by jbcsrc, use {@param..} instead");
+        }
+        // TODO(lukes): It would be nice not to generate a detach for every param access, since
+        // after the first successful 'resolve()' we know that all later ones will also resolve
+        // successfully. This means that we will generate a potentially large amount of dead
+        // branches/states/calls to SoyValueProvider.status(). We could eliminate these by doing
+        // some kind of definite assignment analysis to know whether or not a particular varref is
+        // _not_ the first one. This would be super awesome and would save bytecode/branches/states
+        // and technically be useful for all varrefs. For the time being we do the naive thing and
+        // just assume that the jit can handle all the dead branches effectively.
+        Expression paramExpr =
+            getDetacher().resolveSoyValueProvider(variables.getParam(param.name()));
+        // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
+        // since we do not have good checking for unions (or nullability)
+        // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
+        // will show up here, and in the unboxing conversions performed during expression
+        // manipulation. And, presumably, in NullPointerExceptions.
+        return SoyExpression.forSoyValue(param.type(),
+            paramExpr.cast(Type.getType(param.type().javaType())));
+      case IJ_PARAM:
+        throw new RuntimeException("$ij are not supported by jbcsrc, use {@inject..} instead");
+      case UNDECLARED:
+        throw new RuntimeException("undeclared params are not supported by jbcsrc");
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override protected SoyExpression visitItemAccessNode(ItemAccessNode node) {
+    throw new UnsupportedOperationException();
+  }
 
   @Override protected final SoyExpression visitFunctionNode(FunctionNode node) {
     NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(node.getFunctionName());
@@ -506,20 +557,74 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
     return visitPluginFunction(node);
   }
 
-  abstract SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode);
-  abstract SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode);
-  abstract SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode);
+  SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode) {
+    final Expression expr = variables.getLocal(foreachLoopIndex(declaringNode));
 
-  // TODO(lukes): For plugins we could simply add the Map<String, SoyJavaFunction> map to Context
+    return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        // implements index == 0 ? true : false
+        expr.gen(adapter);
+        Label ifFirst = new Label();
+        adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
+        adapter.push(false);
+        Label end = new Label();
+        adapter.goTo(end);
+        adapter.mark(ifFirst);
+        adapter.push(true);
+        adapter.mark(end);
+      }
+    });
+  }
+
+  SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode) {
+    final Expression index = variables.getLocal(foreachLoopIndex(declaringNode));
+    final Expression length = variables.getLocal(foreachLoopLength(declaringNode));
+    // basically 'index + 1 == length'
+    return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+      @Override void doGen(GeneratorAdapter adapter) {
+        // 'index + 1 == length ? true : false'
+        index.gen(adapter);
+        adapter.push(1);
+        adapter.visitInsn(Opcodes.IADD);
+        length.gen(adapter);
+        Label ifLast = new Label();
+        adapter.ifICmp(GeneratorAdapter.EQ, ifLast);
+        adapter.push(false);
+        Label end = new Label();
+        adapter.goTo(end);
+        adapter.mark(ifLast);
+        adapter.push(true);
+        adapter.mark(end);
+      }
+    });
+  }
+
+  SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode) {
+    Expression expr = variables.getLocal(foreachLoopIndex(declaringNode));
+    // '(long) index'
+    return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
+  }
+
+  // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext
   // and pull it out of there.  However, it seems like we should be able to turn some of those calls
-  // into static method calls (maybe be stashing instances in static fields in our template
-  // classes?).  Or maybe we should have SoyJavaBytecode function implementations that can generate
-  // bytecode for their call sites, this would be more similar to what the jssrc backend does.
-  abstract SoyExpression visitPluginFunction(FunctionNode node);
+  // into static method calls (maybe be stashing instances in static fields in our template). We
+  // would probably need to introduce a new mechanism for registering functions.
+  SoyExpression visitPluginFunction(FunctionNode node) {
+    Expression soyJavaFunctionExpr =
+        MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(contextExpr, constant(node.getFunctionName()));
+    Expression list = childrenAsList(node.getChildren());
+    return SoyExpression.forSoyValue(AnyType.getInstance(),
+        MethodRef.SOY_JAVA_FUNCTION_COMPUTE.invoke(soyJavaFunctionExpr, list));
+  }
 
   @Override protected final SoyExpression visitExprNode(ExprNode node) {
     throw new UnsupportedOperationException(
         "Support for " + node.getKind() + " has node been added yet");
+  }
+
+  private ExpressionDetacher getDetacher() {
+    ExpressionDetacher local = currentDetacher;
+    return local == null ? currentDetacher = detacherFactory.createExpressionDetacher() : local;
   }
 
   private int hashMapCapacity(int expectedSize) {
@@ -533,5 +638,36 @@ abstract class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyEx
       return (int) (expectedSize / 0.75F + 1.0F);
     }
     return Integer.MAX_VALUE; // any large value
+  }
+
+  /**
+   * Returns an Expression that evaluates to a list containing all the child expressions.
+   */
+  private Expression childrenAsList(List<ExprNode> children) {
+    int numChildren = children.size();
+    if (numChildren == 0) {
+      return MethodRef.IMMUTABLE_LIST_OF.invoke().asConstant();
+    }
+    final List<Expression> childExprs = new ArrayList<>(numChildren);
+    boolean isConstant = true;
+    for (ExprNode child : children) {
+      // All children must be soy values
+      SoyExpression childExpr = visit(child).box();
+      isConstant = isConstant && childExpr.isConstant();
+      childExprs.add(childExpr);
+    }
+    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
+        .construct(BytecodeUtils.constant(numChildren));
+    return new SimpleExpression(Type.getType(List.class), isConstant) {
+      @Override void doGen(GeneratorAdapter mv) {
+        construct.gen(mv);
+        for (Expression child : childExprs) {
+          mv.dup();
+          child.gen(mv);
+          MethodRef.ARRAY_LIST_ADD.invokeUnchecked(mv);
+          mv.pop();  // pop the bool result of arraylist.add
+        }
+      }
+    };
   }
 }

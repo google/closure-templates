@@ -18,8 +18,10 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 /** 
  * A collection of contextual rendering data.  Each top level rendering operation will obtain a
@@ -28,10 +30,13 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 public final class RenderContext {
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
+  private final ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap;
 
-  public RenderContext(SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap) {
+  public RenderContext(SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap, 
+      ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap) {
     this.cssRenamingMap = checkNotNull(cssRenamingMap);
     this.xidRenamingMap = checkNotNull(xidRenamingMap);
+    this.soyJavaFunctionsMap = checkNotNull(soyJavaFunctionsMap);
   }
 
   public String renameCssSelector(String selector) {
@@ -42,5 +47,13 @@ public final class RenderContext {
   public String renameXid(String id) {
     String string = xidRenamingMap.get(id);
     return string == null ? id + "_" : string;
+  }
+  
+  public SoyJavaFunction getFunction(String name) {
+    SoyJavaFunction fn = soyJavaFunctionsMap.get(name);
+    if (fn == null) {
+      throw new IllegalStateException("Failed to find Soy function with name '" + name + "'");
+    }
+    return fn;
   }
 }

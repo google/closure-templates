@@ -21,65 +21,72 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.types.primitive.AnyType;
 
 import junit.framework.TestCase;
 
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
+
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tests for {@link ExpressionCompiler}
  */
 public class ExpressionCompilerTest extends TestCase {
   private final Map<String, SoyExpression> variables = new HashMap<>();
-  private ExpressionCompiler testExpressionCompiler = new ExpressionCompiler() {
-    @Override protected SoyExpression visitVarRefNode(VarRefNode node) {
-      SoyExpression expr = variables.get(node.getName());
-      if (expr == null) {
-        throw new UnsupportedOperationException();
-      }
-      return expr;
-    }
+  private ExpressionCompiler testExpressionCompiler = new ExpressionCompiler(
+      new ExpressionDetacher.Factory() {
+        @Override public ExpressionDetacher createExpressionDetacher() {
+          return new ExpressionDetacher() {
+            @Override public Expression makeDetachable(Expression expr) {
+              return expr;
+            }
 
-    @Override protected SoyExpression visitItemAccessNode(ItemAccessNode node) {
-      throw new UnsupportedOperationException();
-    }
+            @Override public Expression resolveSoyValueProvider(Expression soyValueProvider) {
+              return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
+            }
+          };
+        }
+      },
+      new Expression.SimpleExpression(Type.getType(RenderContext.class), false) {
+        @Override void doGen(GeneratorAdapter adapter) {
+          adapter.visitInsn(Opcodes.ACONST_NULL);
+        }
+      },
+      new VariableLookup() {
+        @Override public Expression getParam(String paramName) {
+          return variables.get(paramName);
+        }
 
-    @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
-      throw new UnsupportedOperationException();
-    }
+        @Override public Expression getLocal(SyntheticVarName varName) {
+          throw new UnsupportedOperationException();
+        }
 
-    @Override SoyExpression visitPluginFunction(FunctionNode node) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode) {
-      throw new UnsupportedOperationException();
-    }
-  };
+        @Override public Expression getLocal(String localName) {
+          throw new UnsupportedOperationException();
+        }
+      });
 
   public void testConstants() {
     assertExpression("1").evaluatesTo(1L);
@@ -312,14 +319,42 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   private SoyExpression compileExpression(String soyExpr) {
-    PrintNode code = (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + soyExpr + "}")
+    String createTemplateBody = createTemplateBody(soyExpr);
+    PrintNode code = (PrintNode) SoyFileSetParserBuilder.forTemplateContents(
+        createTemplateBody)
         .parse()
         .getChild(0)
         .getChild(0)
         .getChild(0);
-    ExprRootNode expr = code.getExprUnion().getExpr();
-    SoyExpression compile = testExpressionCompiler.compile(expr);
-    return compile;
+    return testExpressionCompiler.compile(code.getExprUnion().getExpr());
+  }
+
+  private String createTemplateBody(String soyExpr) {
+    // collect all varrefs and apply them as template parameters.  This way all varrefs have a valid
+    // vardef
+    // TODO(lukes): this logic would be useful in a lot of tests and potentially unblock efforts to
+    // eliminate UNDECLARED vars
+    ExprNode expr =
+        new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+            .parseExpression();
+    final StringBuilder templateBody = new StringBuilder();
+    new AbstractExprNodeVisitor<Void>(ExplodingErrorReporter.get()) {
+      final Set<String> names = new HashSet<>();
+      @Override protected void visitVarRefNode(VarRefNode node) {
+        if (names.add(node.getName())) {
+          templateBody.append("{@param " + node.getName() + ": any}\n");
+        }
+      }
+
+      @Override protected void visitExprNode(ExprNode node) {
+        if (node instanceof ParentExprNode) {
+          visitChildren((ParentExprNode) node);
+        }
+      }
+
+    }.exec(expr);
+    templateBody.append("{" + soyExpr + "}\n");
+    return templateBody.toString();
   }
 
   /**

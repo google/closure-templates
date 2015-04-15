@@ -16,15 +16,11 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_METHOD;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopItemProvider;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
@@ -32,13 +28,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.DetachState.ExpressionDetacher;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -46,14 +35,9 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -169,17 +153,14 @@ final class TemplateCompiler {
         createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
     final LocalVariable contextVar = 
         createLocal("context", 2, Type.getType(RenderContext.class), start, end);
-    final VariableSet variables = 
+    final VariableSet variableSet = 
         new VariableSet(fieldNames, template.typeInfo(), thisVar, RENDER_METHOD);
-    Scope rootScope = variables.enterScope();
-    DetachState detachState = new DetachState(variables, thisVar, stateField);
+    Scope rootScope = variableSet.enterScope();
+    DetachState detachState = new DetachState(variableSet, thisVar, stateField);
+    TemplateVariables variables = new TemplateVariables(variableSet, thisVar, paramFields);
+    ExpressionCompiler exprCompiler = new ExpressionCompiler(detachState, contextVar, variables);
     final Statement nodeBody = 
-        new SoyNodeCompiler(
-            detachState,
-            variables,
-            appendableVar,
-            contextVar,
-            new ExprCompiler(detachState, variables, thisVar, paramFields))
+        new SoyNodeCompiler(detachState, variableSet, appendableVar, contextVar, exprCompiler)
             .compile(template.node());
     final Statement exitScope = rootScope.exitScope();
     final Expression done = MethodRef.RENDER_RESULT_DONE.invoke();
@@ -195,7 +176,7 @@ final class TemplateCompiler {
         thisVar.tableEntry(adapter);
         appendableVar.tableEntry(adapter);
         contextVar.tableEntry(adapter);
-        variables.generateTableEntries(adapter);
+        variableSet.generateTableEntries(adapter);
       }
     };
     GeneratorAdapter ga = new GeneratorAdapter(
@@ -213,7 +194,7 @@ final class TemplateCompiler {
       // exception.
       throw new RuntimeException("Failed to generate method:\n" + fullMethodBody, t);
     }
-    variables.defineFields(writer);
+    variableSet.defineFields(writer);
   }
 
   /** 
@@ -301,161 +282,28 @@ final class TemplateCompiler {
     };
   }
 
-  private static final class ExprCompiler extends ExpressionCompiler {
-    private final DetachState detachState;
-    private final VariableSet variables;
-    private final Expression thisExpr;
+  private static final class TemplateVariables implements VariableLookup {
+    private final VariableSet variableSet;
+    private final Expression thisRef;
     private final ImmutableMap<String, FieldRef> paramFields;
-    private ExpressionDetacher currentDetacher;
 
-    ExprCompiler(
-        DetachState detachState,
-        VariableSet variables,
-        Expression thisExpr,
+    TemplateVariables(VariableSet variableSet, Expression thisRef, 
         ImmutableMap<String, FieldRef> paramFields) {
-      this.detachState = detachState;
-      this.variables = checkNotNull(variables);
-      this.thisExpr = checkNotNull(thisExpr);
-      this.paramFields = checkNotNull(paramFields);
+      this.variableSet = variableSet;
+      this.thisRef = thisRef;
+      this.paramFields = paramFields;
     }
 
-    @Override public SoyExpression compile(ExprNode node) {
-      final SoyExpression exec = super.compile(node);
-      final ExpressionDetacher local = currentDetacher;
-      if (local != null) {
-        // If any compiled expressions required detaching, add the detach block.
-        currentDetacher = null;  // clear
-        return exec.withSource(local.makeDetachable(exec));
-      }
-      return exec;
+    @Override public Expression getParam(String paramName) {
+      return paramFields.get(paramName).accessor(thisRef);
     }
 
-    @Override protected SoyExpression visitVarRefNode(VarRefNode node) {
-      // Sing muse, of the various data access patterns
-      // and how we don't support them yet
-
-      VarDefn defn = node.getDefnDecl();
-      switch (defn.kind()) {
-        case LOCAL_VAR: {
-          LocalVar local = (LocalVar) defn;
-          if (local.declaringNode().getKind() == SoyNode.Kind.FOR_NODE) {
-            // an index variable in a {for $index in range(...)} statement
-            // These are special because they do not need any attaching/detaching logic and are
-            // always unboxed ints
-            return SoyExpression.forInt(
-                BytecodeUtils.numericConversion(
-                    variables.getVariable(node.getName()).local(),
-                    Type.LONG_TYPE));
-          }
-          if (local.declaringNode().getKind() == SoyNode.Kind.FOREACH_NONEMPTY_NODE) {
-            Expression expression = 
-                variables.getVariable(
-                    foreachLoopItemProvider((ForeachNonemptyNode) local.declaringNode())).local();
-            expression = getDetach().resolveSoyValueProvider(expression);
-            return SoyExpression.forSoyValue(node.getType(), 
-                expression.cast(Type.getType(node.getType().javaType())));
-          }
-          throw new UnsupportedOperationException("lets and foreach loops aren't supported yet");
-        }
-        case PARAM: {
-          TemplateParam param = (TemplateParam) defn;
-          if (param.declLoc() != DeclLoc.HEADER) {
-            throw new RuntimeException(
-                "header doc params are not supported by jbcsrc, use {@param..} instead");
-          }
-          return handleParam((HeaderParam) param);
-        }
-        case IJ_PARAM:
-          throw new RuntimeException("$ij are not supported by jbcsrc, use {@inject..} instead");
-        case UNDECLARED:
-          throw new RuntimeException("undeclared params are not supported by jbcsrc");
-        default:
-          throw new AssertionError();
-      }
+    @Override public Expression getLocal(String localName) {
+      return variableSet.getVariable(localName).local();
     }
 
-    private SoyExpression handleParam(HeaderParam param) {
-      // TODO(lukes): It would be nice not to generate a detach for every param access, since after
-      // the first successful 'resolve()' we know that all later ones will also resolve successfully
-      // This means that we will generate a potentially large amount of dead branches/states/calls 
-      // to SoyValueProvider.status().  We could eliminate these by doing some kind of definite 
-      // assignment analysis to know whether or not a particular varref is _not_ the first one.  
-      // This would be super awesome and would save bytecode/branches/states and technically be 
-      // useful for all varrefs.  For the time being we do the naive thing and just assume that the 
-      // jit can handle all the dead brances effectively.
-      Expression paramExpr = 
-          getDetach().resolveSoyValueProvider(paramFields.get(param.name()).accessor(thisExpr));
-      // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
-      // since we do not have good checking for unions (or nullability)
-      // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
-      // will show up here, and in the unboxing conversions performed during expression manipulation
-      // And, presumably, in NullPointerExceptions.
-      return SoyExpression.forSoyValue(param.type(), 
-          paramExpr.cast(Type.getType(param.type().javaType())));
-    }
-
-    @Override SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode) {
-      final Expression expr = variables.getVariable(foreachLoopIndex(declaringNode)).local();
-
-      return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
-        @Override void doGen(GeneratorAdapter adapter) {
-          // implements index == 0 ? true : false
-          expr.gen(adapter);
-          Label ifFirst = new Label();
-          adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
-          adapter.push(false);
-          Label end = new Label();
-          adapter.goTo(end);
-          adapter.mark(ifFirst);
-          adapter.push(true);
-          adapter.mark(end);
-        }
-      });
-    }
-
-    @Override SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode) {
-      final Expression index = variables.getVariable(foreachLoopIndex(declaringNode)).local();
-      final Expression length = variables.getVariable(foreachLoopLength(declaringNode)).local();
-      return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
-        @Override void doGen(GeneratorAdapter adapter) {
-          // 'index + 1 == length ? true : false'
-          index.gen(adapter);
-          adapter.push(1);
-          adapter.visitInsn(Opcodes.IADD);
-          length.gen(adapter);
-          Label ifLast = new Label();
-          adapter.ifICmp(GeneratorAdapter.EQ, ifLast);
-          adapter.push(false);
-          Label end = new Label();
-          adapter.goTo(end);
-          adapter.mark(ifLast);
-          adapter.push(true);
-          adapter.mark(end);
-        }
-      });
-    }
-
-    @Override SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode) {
-      Expression expr = variables.getVariable(foreachLoopIndex(declaringNode)).local();
-      // '(long) index'
-      return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
-    }
-
-    @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override protected SoyExpression visitItemAccessNode(ItemAccessNode node) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override SoyExpression visitPluginFunction(FunctionNode node) {
-      throw new UnsupportedOperationException();
-    }
-    
-    private ExpressionDetacher getDetach() {
-      ExpressionDetacher local = currentDetacher;
-      return local == null ? currentDetacher = detachState.generateExpressionDetacher() : local;
+    @Override public Expression getLocal(SyntheticVarName varName) {
+      return variableSet.getVariable(varName).local();
     }
   }
 }

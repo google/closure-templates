@@ -39,6 +39,7 @@ import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
 import com.google.template.soy.shared.internal.SharedRuntime;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -131,11 +132,15 @@ import java.util.Map;
       create(RenderContext.class, "renameCssSelector", String.class);
   static final MethodRef RENDER_CONTEXT_RENAME_XID = 
       create(RenderContext.class, "renameXid", String.class);
+  static final MethodRef RENDER_CONTEXT_GET_FUNCTION = 
+      create(RenderContext.class, "getFunction", String.class);
   static final MethodRef SOY_LIST_AS_JAVA_LIST = create(SoyList.class, "asJavaList");
   static final MethodRef LIST_SIZE = create(List.class, "size");
   static final MethodRef LIST_GET = create(List.class, "get", int.class);
   static final MethodRef INTS_CHECKED_CAST = create(Ints.class, "checkedCast", long.class);
-  
+  static final MethodRef SOY_JAVA_FUNCTION_COMPUTE = 
+      create(SoyJavaFunction.class, "computeForJava", List.class);
+
   private static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     Method m;
     try {
