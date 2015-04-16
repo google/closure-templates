@@ -19,12 +19,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopItemProvider;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 
 import com.google.common.primitives.Ints;
-import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -53,15 +50,11 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
-import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -81,7 +74,7 @@ import java.util.Map;
 /**
  * Compiles a {@link ExprNode} to a {@link SoyExpression}.
  */
-final class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpression> {
+final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
   private final ExpressionDetacher.Factory detacherFactory;
   private final Expression contextExpr;
   private final VariableLookup variables;
@@ -466,60 +459,40 @@ final class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpre
     mv.visitLabel(end);
   }
 
-  @Override protected SoyExpression visitVarRefNode(VarRefNode node) {
-    // Sing muse, of the various data access patterns
-    // and how we don't support them yet
+  @Override SoyExpression visitForLoopIndex(VarRefNode varRef, LocalVar local) {
+    // an index variable in a {for $index in range(...)} statement
+    // These are special because they do not need any attaching/detaching logic and are
+    // always unboxed ints
+    return SoyExpression.forInt(
+        BytecodeUtils.numericConversion(variables.getLocal(varRef.getName()), Type.LONG_TYPE));
+  }
 
-    VarDefn defn = node.getDefnDecl();
-    switch (defn.kind()) {
-      case LOCAL_VAR:
-        LocalVar local = (LocalVar) defn;
-        if (local.declaringNode().getKind() == SoyNode.Kind.FOR_NODE) {
-          // an index variable in a {for $index in range(...)} statement
-          // These are special because they do not need any attaching/detaching logic and are
-          // always unboxed ints
-          return SoyExpression.forInt(
-              BytecodeUtils.numericConversion(variables.getLocal(node.getName()), Type.LONG_TYPE));
-        }
-        if (local.declaringNode().getKind() == SoyNode.Kind.FOREACH_NONEMPTY_NODE) {
-          Expression expression = variables.getLocal(
-              foreachLoopItemProvider((ForeachNonemptyNode) local.declaringNode()));
-          expression = getDetacher().resolveSoyValueProvider(expression);
-          return SoyExpression.forSoyValue(node.getType(),
-              expression.cast(Type.getType(node.getType().javaType())));
-        }
-        throw new UnsupportedOperationException("lets and foreach loops aren't supported yet");
+  @Override SoyExpression visitForeachLoopIndex(VarRefNode varRef, LocalVar local) {
+    Expression expression = variables.getLocal(
+        foreachLoopItemProvider((ForeachNonemptyNode) local.declaringNode()));
+    expression = getDetacher().resolveSoyValueProvider(expression);
+    return SoyExpression.forSoyValue(varRef.getType(),
+        expression.cast(Type.getType(varRef.getType().javaType())));
+  }
 
-      case PARAM:
-        TemplateParam param = (TemplateParam) defn;
-        if (param.declLoc() != DeclLoc.HEADER) {
-          throw new RuntimeException(
-              "header doc params are not supported by jbcsrc, use {@param..} instead");
-        }
-        // TODO(lukes): It would be nice not to generate a detach for every param access, since
-        // after the first successful 'resolve()' we know that all later ones will also resolve
-        // successfully. This means that we will generate a potentially large amount of dead
-        // branches/states/calls to SoyValueProvider.status(). We could eliminate these by doing
-        // some kind of definite assignment analysis to know whether or not a particular varref is
-        // _not_ the first one. This would be super awesome and would save bytecode/branches/states
-        // and technically be useful for all varrefs. For the time being we do the naive thing and
-        // just assume that the jit can handle all the dead branches effectively.
-        Expression paramExpr =
-            getDetacher().resolveSoyValueProvider(variables.getParam(param.name()));
-        // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
-        // since we do not have good checking for unions (or nullability)
-        // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
-        // will show up here, and in the unboxing conversions performed during expression
-        // manipulation. And, presumably, in NullPointerExceptions.
-        return SoyExpression.forSoyValue(param.type(),
-            paramExpr.cast(Type.getType(param.type().javaType())));
-      case IJ_PARAM:
-        throw new RuntimeException("$ij are not supported by jbcsrc, use {@inject..} instead");
-      case UNDECLARED:
-        throw new RuntimeException("undeclared params are not supported by jbcsrc");
-      default:
-        throw new AssertionError();
-    }
+  @Override SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
+    // TODO(lukes): It would be nice not to generate a detach for every param access, since
+    // after the first successful 'resolve()' we know that all later ones will also resolve
+    // successfully. This means that we will generate a potentially large amount of dead
+    // branches/states/calls to SoyValueProvider.status(). We could eliminate these by doing
+    // some kind of definite assignment analysis to know whether or not a particular varref is
+    // _not_ the first one. This would be super awesome and would save bytecode/branches/states
+    // and technically be useful for all varrefs. For the time being we do the naive thing and
+    // just assume that the jit can handle all the dead branches effectively.
+    Expression paramExpr =
+        getDetacher().resolveSoyValueProvider(variables.getParam(param.name()));
+    // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
+    // since we do not have good checking for unions (or nullability)
+    // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
+    // will show up here, and in the unboxing conversions performed during expression
+    // manipulation. And, presumably, in NullPointerExceptions.
+    return SoyExpression.forSoyValue(varRef.getType(),
+        paramExpr.cast(Type.getType(varRef.getType().javaType())));
   }
 
   @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
@@ -530,35 +503,8 @@ final class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpre
     throw new UnsupportedOperationException();
   }
 
-  @Override protected final SoyExpression visitFunctionNode(FunctionNode node) {
-    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(node.getFunctionName());
-    if (nonpluginFn != null) {
-      if (nonpluginFn == NonpluginFunction.QUOTE_KEYS_IF_JS) {
-        // this function is a no-op in non JS backends, the CheckFunctionCallsVisitor ensures that
-        // there is only one child and it is a MapLiteralNode
-        return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
-      }
-      // the rest of the builtins all deal with indexing operations on foreach variables.
-      VarRefNode varRef = (VarRefNode) node.getChild(0);
-      ForeachNonemptyNode declaringNode =
-          (ForeachNonemptyNode) ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      switch (nonpluginFn) {
-        case IS_FIRST:
-          return visitIsFirstFunction(declaringNode);
-        case IS_LAST:
-          return visitIsLastFunction(declaringNode);
-        case INDEX:
-          return visitIndexFunction(declaringNode);
-        case QUOTE_KEYS_IF_JS:  // handled above
-        default:
-          throw new AssertionError();
-      }
-    }
-    return visitPluginFunction(node);
-  }
-
-  SoyExpression visitIsFirstFunction(ForeachNonemptyNode declaringNode) {
-    final Expression expr = variables.getLocal(foreachLoopIndex(declaringNode));
+  @Override SoyExpression visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar) {
+    final Expression expr = variables.getLocal(indexVar);
 
     return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
       @Override void doGen(GeneratorAdapter adapter) {
@@ -576,9 +522,10 @@ final class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpre
     });
   }
 
-  SoyExpression visitIsLastFunction(ForeachNonemptyNode declaringNode) {
-    final Expression index = variables.getLocal(foreachLoopIndex(declaringNode));
-    final Expression length = variables.getLocal(foreachLoopLength(declaringNode));
+  @Override SoyExpression visitIsLastFunction(
+      FunctionNode node, SyntheticVarName indexVar, SyntheticVarName lengthVar) {
+    final Expression index = variables.getLocal(indexVar);
+    final Expression length = variables.getLocal(lengthVar);
     // basically 'index + 1 == length'
     return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
       @Override void doGen(GeneratorAdapter adapter) {
@@ -599,17 +546,17 @@ final class ExpressionCompiler extends AbstractReturningExprNodeVisitor<SoyExpre
     });
   }
 
-  SoyExpression visitIndexFunction(ForeachNonemptyNode declaringNode) {
-    Expression expr = variables.getLocal(foreachLoopIndex(declaringNode));
+  SoyExpression visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
     // '(long) index'
-    return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
+    return SoyExpression.forInt(
+        BytecodeUtils.numericConversion(variables.getLocal(indexVar), Type.LONG_TYPE));
   }
 
   // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext
   // and pull it out of there.  However, it seems like we should be able to turn some of those calls
   // into static method calls (maybe be stashing instances in static fields in our template). We
   // would probably need to introduce a new mechanism for registering functions.
-  SoyExpression visitPluginFunction(FunctionNode node) {
+  @Override SoyExpression visitPluginFunction(FunctionNode node) {
     Expression soyJavaFunctionExpr =
         MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(contextExpr, constant(node.getFunctionName()));
     Expression list = childrenAsList(node.getChildren());
