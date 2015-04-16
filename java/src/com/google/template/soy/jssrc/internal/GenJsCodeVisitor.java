@@ -85,7 +85,6 @@ import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.SoyProtoType;
@@ -1372,8 +1371,8 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       String paramName = param.name();
       SoyType paramType = param.type();
-      String paramVal = (param.isInjected() ? "opt_ijData" : "opt_data") +
-          TranslateToJsExprVisitor.genCodeForKeyAccess(AnyType.getInstance(), paramType, paramName);
+      String paramVal = TranslateToJsExprVisitor.genCodeForParamAccess(
+          paramName, param.isInjected(), paramType);
       String paramAlias = genParamAlias(paramName);
       boolean isAliasedLocalVar = false;
       switch (paramType.getKind()) {

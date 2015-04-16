@@ -39,6 +39,7 @@ public interface SoyObjectType extends SoyType {
 
   /**
    * Return the fully-qualified name of this type for a given output context.
+   *
    * @param backend Which backend we're generating code for.
    */
   String getNameForBackend(SoyBackendKind backend);
@@ -46,19 +47,23 @@ public interface SoyObjectType extends SoyType {
   /**
    * Return the data type of the field with the given name; If there's no such
    * field, then return {@code null}.
+   *
    * @param fieldName The name of the field.
    * @return The field type, or null.
    */
   SoyType getFieldType(String fieldName);
 
   /**
-   * Return the expression (including the leading '.' or '[') used to access
-   * the value of the field, for a given output context.
+   * Return the expression used to access the value of the field, for a given output context.
+   * @param fieldContainerExpr An expression that evaluates to the container of the named field.
+   *     This expression may have any operator precedence that binds more tightly than unary
+   *     operators.
+   *
    * @param fieldName Name of the field.
    * @param backend Which backend we're generating code for.
    * @return Expression used to access the field data.
    */
-  String getFieldAccessor(String fieldName, SoyBackendKind backend);
+  String getFieldAccessExpr(String fieldContainerExpr, String fieldName, SoyBackendKind backend);
 
   /**
    * In some cases, accessing a field requires importing a symbol into the

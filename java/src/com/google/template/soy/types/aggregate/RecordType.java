@@ -99,9 +99,10 @@ public final class RecordType implements SoyObjectType {
   }
 
 
-  @Override public String getFieldAccessor(String fieldName, SoyBackendKind backendKind) {
+  @Override public String getFieldAccessExpr(
+      String fieldContainerExpr, String fieldName, SoyBackendKind backendKind) {
     if (backendKind == SoyBackendKind.JS_SRC) {
-      return "." + fieldName;
+      return fieldContainerExpr + "." + fieldName;
     } else {
       throw new UnsupportedOperationException();
     }

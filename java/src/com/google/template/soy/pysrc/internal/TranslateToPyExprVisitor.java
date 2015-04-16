@@ -193,7 +193,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
           if (varRef.isNullSafeInjected()) {
             nullSafetyPrefix.append("None if opt_ijData is None else ");
           }
-          return "opt_ijData" + genCodeForLiteralKeyAccess(varRef.getName());
+          return genCodeForLiteralKeyAccess("opt_ijData", varRef.getName());
         } else {
           PyExpr translation = localVarExprs.getVariableExpression(varRef.getName());
           if (translation != null) {
@@ -201,7 +201,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
             return translation.getText();
           } else {
             // Case 3: Data reference.
-            return "opt_data" + genCodeForLiteralKeyAccess(varRef.getName());
+            return genCodeForLiteralKeyAccess("opt_data", varRef.getName());
           }
         }
       }
@@ -220,8 +220,8 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
         // Generate access to field
         if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
           FieldAccessNode fieldAccess = (FieldAccessNode) node;
-          return refText + genCodeForFieldAccess(
-              fieldAccess.getBaseExprChild().getType(), fieldAccess.getFieldName());
+          return genCodeForFieldAccess(
+              fieldAccess.getBaseExprChild().getType(), refText, fieldAccess.getFieldName());
         } else {
           // NOTE: Item access assumes existence. Trying to access a missing field will result in a
           // Python runtime error.
@@ -376,8 +376,8 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
    *
    * @param key The String literal value to be used as a key.
    */
-  private static String genCodeForLiteralKeyAccess(String key) {
-    return genCodeForKeyAccess("'" + key + "'");
+  private static String genCodeForLiteralKeyAccess(String containerExpr, String key) {
+    return genCodeForKeyAccess(containerExpr, "'" + key + "'");
   }
 
   /**
@@ -386,8 +386,8 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
    *
    * @param keyName The variable name to be used as a key.
    */
-  private static String genCodeForKeyAccess(String keyName) {
-    return ".get(" + keyName + ")";
+  private static String genCodeForKeyAccess(String containerExpr, String keyName) {
+    return containerExpr + ".get(" + keyName + ")";
   }
 
   /**
@@ -396,17 +396,22 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
    * the generation of the Python code to the type object.
    *
    * @param baseType The type of the object that contains the field.
+   * @param containerExpr An expression that evaluates to the container of the named field.
+   *     This expression may have any operator precedence that binds more tightly than
+   *     exponentiation.
    * @param fieldName The field name.
    */
-  private static String genCodeForFieldAccess(SoyType baseType, String fieldName) {
+  private static String genCodeForFieldAccess(
+      SoyType baseType, String containerExpr, String fieldName) {
     if (baseType != null && baseType.getKind() == SoyType.Kind.OBJECT) {
       SoyObjectType objType = (SoyObjectType) baseType;
-      String accessExpr = objType.getFieldAccessor(fieldName, SoyBackendKind.PYTHON_SRC);
+      String accessExpr = objType.getFieldAccessExpr(
+          containerExpr, fieldName, SoyBackendKind.PYTHON_SRC);
       if (accessExpr != null) {
         return accessExpr;
       }
     }
-    return genCodeForLiteralKeyAccess(fieldName);
+    return genCodeForLiteralKeyAccess(containerExpr, fieldName);
   }
 
   /**

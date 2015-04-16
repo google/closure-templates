@@ -154,8 +154,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * @return The code to access the value of that parameter.
    */
   static String genCodeForParamAccess(String paramName, boolean isInjected, SoyType type) {
-    return (isInjected ? "opt_ijData" : "opt_data")
-        + genCodeForKeyAccess(UnknownType.getInstance(), type, paramName);
+    return genCodeForKeyAccess(
+        UnknownType.getInstance(), type,
+        isInjected ? "opt_ijData" : "opt_data", paramName);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -325,8 +326,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
             nullSafetyPrefix.append("(opt_ijData == null) ? null : ");
           }
           SoyType type = node.getType();
-          return "opt_ijData" +
-              genCodeForKeyAccess(UnknownType.getInstance(), type, varRef.getName());
+          return genCodeForKeyAccess(
+              UnknownType.getInstance(), type, "opt_ijData", varRef.getName());
         } else {
           JsExpr translation = getLocalVarTranslation(varRef.getName());
           if (translation != null) {
@@ -340,7 +341,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
             }
             // Case 3: Data reference.
             SoyType type = node.getType();
-            return scope + genCodeForKeyAccess(UnknownType.getInstance(), type, varRef.getName());
+            return genCodeForKeyAccess(UnknownType.getInstance(), type, scope, varRef.getName());
           }
         }
       }
@@ -360,8 +361,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         // Generate access to field
         if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
           FieldAccessNode fieldAccess = (FieldAccessNode) node;
-          return refText + genCodeForFieldAccess(
-              fieldAccess.getBaseExprChild().getType(), node.getType(), fieldAccess.getFieldName());
+          return genCodeForFieldAccess(
+              fieldAccess.getBaseExprChild().getType(), node.getType(),
+              refText, fieldAccess.getFieldName());
         } else {
           // Generate access to item.
           ItemAccessNode itemAccess = (ItemAccessNode) node;
@@ -387,12 +389,16 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * ".foo" or "['class']". Handles JS reserved words.
    * @param containerType the type of the container whose key is being accessed.
    * @param memberType the type of the value of the property being mentioned.
+   * @param containerExpr An expression that evaluates to the container of the named field.
+   *     This expression may have any operator precedence that binds more tightly than unary
+   *     operators.
    * @param key The key.
    */
-  static String genCodeForKeyAccess(SoyType containerType, SoyType memberType, String key) {
+  static String genCodeForKeyAccess(
+      SoyType containerType, SoyType memberType, String containerExpr, String key) {
     Preconditions.checkNotNull(containerType);
     Preconditions.checkNotNull(memberType);
-    return JsSrcUtils.isReservedWord(key) ? "['" + key + "']" : "." + key;
+    return containerExpr + (JsSrcUtils.isReservedWord(key) ? "['" + key + "']" : "." + key);
   }
 
   /**
@@ -402,10 +408,13 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    * object.
    * @param baseType The type of the object that contains the field.
    * @param fieldType The type of the field.
+   * @param containerExpr An expression that evaluates to the container of the named field.
+   *     This expression may have any operator precedence that binds more tightly than unary
+   *     operators.
    * @param fieldName The field name.
    */
   private static String genCodeForFieldAccess(
-      SoyType baseType, SoyType fieldType, String fieldName) {
+      SoyType baseType, SoyType fieldType, String containerExpr, String fieldName) {
     Preconditions.checkNotNull(baseType);
     Preconditions.checkNotNull(fieldType);
     // For unions, attempt to generate the field access code for each member
@@ -416,7 +425,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
       String fieldAccessCode = null;
       for (SoyType memberType : unionType.getMembers()) {
         if (memberType.getKind() != SoyType.Kind.NULL) {
-          String fieldAccessForType = genCodeForFieldAccess(memberType, fieldType, fieldName);
+          String fieldAccessForType = genCodeForFieldAccess(
+              memberType, fieldType, containerExpr, fieldName);
           if (fieldAccessCode == null) {
             fieldAccessCode = fieldAccessForType;
           } else if (!fieldAccessCode.equals(fieldAccessForType)) {
@@ -431,13 +441,14 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
     if (baseType.getKind() == SoyType.Kind.OBJECT) {
       SoyObjectType objType = (SoyObjectType) baseType;
-      String accessExpr = objType.getFieldAccessor(fieldName, SoyBackendKind.JS_SRC);
+      String accessExpr = objType.getFieldAccessExpr(
+          containerExpr, fieldName, SoyBackendKind.JS_SRC);
       if (accessExpr != null) {
         return accessExpr;
       }
     }
 
-    return genCodeForKeyAccess(baseType, fieldType, fieldName);
+    return genCodeForKeyAccess(baseType, fieldType, containerExpr, fieldName);
   }
 
   @Override protected JsExpr visitGlobalNode(GlobalNode node) {
