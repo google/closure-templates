@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 
 /**
  * An immutable, semantic-free ordered pair of nullable values. These can be
- * accessed using the {@link #getFirst} and {@link #getSecond} methods. Equality
+ * accessed using the {@link #first} and {@link #second} fields. Equality
  * and hashing are defined in the natural way.
  *
  * <p>This type is devoid of semantics, best used for simple mechanical
@@ -37,13 +37,12 @@ import javax.annotation.Nullable;
  *   Range<T> findRange(List<T> list) {...}</xmp>
  *
  * This usually involves creating a new custom value-object type. This is
- * difficult to do "by hand" in Java, but avoid the temptation to extend {@code
- * Pair} to accomplish this; consider using the utilities {@link
- * com.google.common.labs.collect.ComparisonKeys} or {@link
- * com.google.common.labs.reflect.ValueType} to help you with this instead.
+ * difficult to do "by hand" in Java, but avoid the temptation to extend {@code Pair}
+ * to accomplish this; consider using the utilities {@link com.google.common.auto.AutoValue}
+ * to help you with this instead.
  *
  */
-public class Pair<A, B> {
+public final class Pair<A, B> {
 
   /**
    * Creates a new pair containing the given elements in order.
@@ -53,35 +52,18 @@ public class Pair<A, B> {
   }
 
   /**
-   * The first element of the pair; see also {@link #getFirst}.
+   * The first element of the pair.
    */
   public final A first;
 
   /**
-   * The second element of the pair; see also {@link #getSecond}.
+   * The second element of the pair.
    */
   public final B second;
 
-  /**
-   * Constructor. It is usually easier to call {@link #of}.
-   */
-  public Pair(@Nullable A first, @Nullable B second) {
+  private Pair(@Nullable A first, @Nullable B second) {
     this.first = first;
     this.second = second;
-  }
-
-  /**
-   * Returns the first element of this pair; see also {@link #first}.
-   */
-  public A getFirst() {
-    return first;
-  }
-
-  /**
-   * Returns the second element of this pair; see also {@link #second}.
-   */
-  public B getSecond() {
-    return second;
   }
 
   @Override public boolean equals(@Nullable Object object) {

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -24,7 +24,6 @@ import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -58,19 +57,16 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   protected static class CommandTextInfo {
 
     private final String commandText;
-    private final boolean isPassingData;
-    @Nullable private final ExprRootNode dataExpr;
+    private final DataAttribute dataAttribute;
     @Nullable private final String userSuppliedPlaceholderName;
     @Nullable protected final SyntaxVersionBound syntaxVersionBound;
 
     public CommandTextInfo(
-        String commandText, boolean isPassingData, @Nullable ExprRootNode dataExpr,
+        String commandText, DataAttribute dataAttribute,
         @Nullable String userSuppliedPlaceholderName,
         @Nullable SyntaxVersionBound syntaxVersionBound) {
-      Preconditions.checkArgument(isPassingData || dataExpr == null);
       this.commandText = commandText;
-      this.isPassingData = isPassingData;
-      this.dataExpr = dataExpr;
+      this.dataAttribute = dataAttribute;
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
       this.syntaxVersionBound = syntaxVersionBound;
     }
@@ -81,14 +77,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
 
-  /** Whether we're passing any part of the data (i.e. has 'data' attribute). */
-  private final boolean isPassingData;
-
-  /** Whether we're passing all of the data (i.e. data="all"). */
-  private final boolean isPassingAllData;
-
-  /** The expression for the data to pass, or null if not applicable. */
-  @Nullable private final ExprRootNode dataExpr;
+  /** Parsed metadata from the 'data' attribute. */
+  private final DataAttribute dataAttr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -118,14 +108,41 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       CommandTextInfo commandTextInfo,
       ImmutableList<String> escapingDirectiveNames) {
     super(id, sourceLocation, commandName, commandTextInfo.commandText);
-    this.isPassingData = commandTextInfo.isPassingData;
-    this.isPassingAllData = commandTextInfo.isPassingData && commandTextInfo.dataExpr == null;
-    this.dataExpr = commandTextInfo.dataExpr;
+    this.dataAttr = commandTextInfo.dataAttribute;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = escapingDirectiveNames;
     maybeSetSyntaxVersionBound(commandTextInfo.syntaxVersionBound);
   }
 
+  /** A Parsed {@code data} attribute. */
+  @AutoValue public abstract static class DataAttribute {
+    public static DataAttribute none() {
+      return new AutoValue_CallNode_DataAttribute(false, null);
+    }
+    public static DataAttribute all() {
+      return new AutoValue_CallNode_DataAttribute(true, null);
+    }
+    public static DataAttribute expr(ExprRootNode expr) {
+      return new AutoValue_CallNode_DataAttribute(true, expr);
+    }
+
+    DataAttribute() {}
+
+    public abstract boolean isPassingData();
+
+    public final boolean isPassingAllData() {
+      return isPassingData() && dataExpr() == null;
+    }
+
+    @Nullable public abstract ExprRootNode dataExpr();
+
+    DataAttribute copy() {
+      if (dataExpr() == null) {
+        return this;
+      }
+      return new AutoValue_CallNode_DataAttribute(true, dataExpr().clone());
+    }
+  }
 
   /**
    * Private helper function for subclass constructors to parse the 'data' attribute.
@@ -135,25 +152,18 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * @param errorReporter For reporting syntax errors.
    * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
-  protected static Pair<Boolean, ExprRootNode> parseDataAttributeHelper(
+  protected static DataAttribute parseDataAttributeHelper(
       String dataAttr, SourceLocation sourceLocation, ErrorReporter errorReporter) {
 
-    boolean isPassingData;
-    ExprRootNode dataExpr;
     if (dataAttr == null) {
-      isPassingData = false;
-      dataExpr = null;
+      return DataAttribute.none();
     } else if (dataAttr.equals("all")) {
-      isPassingData = true;
-      dataExpr = null;
+      return DataAttribute.all();
     } else {
-      isPassingData = true;
-      dataExpr = new ExprRootNode(
-          new ExpressionParser(dataAttr, sourceLocation, errorReporter)
-              .parseExpression());
+      return DataAttribute.expr(
+          new ExprRootNode(new ExpressionParser(dataAttr, sourceLocation, errorReporter)
+              .parseExpression()));
     }
-
-    return Pair.of(isPassingData, dataExpr);
   }
 
 
@@ -164,32 +174,15 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @SuppressWarnings("ConstantConditions")  // for IntelliJ
   protected CallNode(CallNode orig) {
     super(orig);
-    this.isPassingData = orig.isPassingData;
-    this.isPassingAllData = orig.isPassingAllData;
-    this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.clone() : null;
+    this.dataAttr = orig.dataAttr.copy();
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }
 
-
-  /** Returns whether we're passing any part of the data (i.e. has 'data' attribute). */
-  public boolean isPassingData() {
-    return isPassingData;
+  /** The parsed 'data' attribute. */
+  public DataAttribute dataAttribute() {
+    return dataAttr;
   }
-
-
-  /** Returns whether we're passing all of the data (i.e. data="all"). */
-  public boolean isPassingAllData() {
-    return isPassingAllData;
-
-  }
-
-
-  /** Returns the expression for the data to pass, or null if not applicable. */
-  @Nullable public ExprRootNode getDataExpr() {
-    return dataExpr;
-  }
-
 
   @Override public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
@@ -207,8 +200,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
 
   @Override public List<ExprUnion> getAllExprUnions() {
-    return (dataExpr != null) ?
-        ImmutableList.of(new ExprUnion(dataExpr)) : Collections.<ExprUnion>emptyList();
+    return (dataAttr.dataExpr() != null) ?
+        ImmutableList.of(new ExprUnion(dataAttr.dataExpr())) : Collections.<ExprUnion>emptyList();
   }
 
 

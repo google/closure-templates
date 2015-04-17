@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_16;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
@@ -53,14 +52,14 @@ public class SoyMsgIdComputerTest extends TestCase {
   private static final ImmutableList<SoyMsgPart> PLURAL_MSG_PARTS =
       ImmutableList.<SoyMsgPart>of(
           new SoyMsgPluralPart("NUM_0", 0, ImmutableList.of(
-              Pair.<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>of(
+              SoyMsgPluralPart.Case.create(
                   new SoyMsgPluralCaseSpec(1),
                   ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
-              Pair.<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>of(
+              SoyMsgPluralPart.Case.create(
                   new SoyMsgPluralCaseSpec("few"),
                   ImmutableList.<SoyMsgPart>of(
                       new SoyMsgPlaceholderPart("NUM_1"), SoyMsgRawTextPart.of(" times"))),
-              Pair.<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>of(
+              SoyMsgPluralPart.Case.create(
                   new SoyMsgPluralCaseSpec("other"),
                   ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
 

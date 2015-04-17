@@ -287,11 +287,11 @@ class GenCallCodeUtils {
 
     // ------ Generate the expression for the original data to pass ------
     JsExpr dataToPass;
-    if (callNode.isPassingAllData()) {
+    if (callNode.dataAttribute().isPassingAllData()) {
       dataToPass = new JsExpr("opt_data", Integer.MAX_VALUE);
-    } else if (callNode.isPassingData()) {
+    } else if (callNode.dataAttribute().isPassingData()) {
       dataToPass = jsExprTranslator.translateToJsExpr(
-          callNode.getDataExpr(), null, localVarTranslations);
+          callNode.dataAttribute().dataExpr(), null /* exprText */, localVarTranslations);
     } else {
       dataToPass = new JsExpr("null", Integer.MAX_VALUE);
     }
@@ -356,7 +356,7 @@ class GenCallCodeUtils {
     paramsObjSb.append('}');
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
-    if (callNode.isPassingData()) {
+    if (callNode.dataAttribute().isPassingData()) {
       return new JsExpr(
           "soy.$$augmentMap(" + dataToPass.getText() + ", " + paramsObjSb + ")", Integer.MAX_VALUE);
     } else {

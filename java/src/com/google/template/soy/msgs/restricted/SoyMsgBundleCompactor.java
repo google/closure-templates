@@ -17,8 +17,8 @@
 package com.google.template.soy.msgs.restricted;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 
 import java.util.Objects;
 
@@ -120,33 +120,32 @@ public final class SoyMsgBundleCompactor {
    * @param cases Mapping (as pairs) from case spec to the message parts for that case.
    * @param defaultCaseSpec The default or "other" case specification value.
    */
-  private <T> ImmutableList<Pair<T, ImmutableList<SoyMsgPart>>> compactCases(
-      ImmutableList<Pair<T, ImmutableList<SoyMsgPart>>> cases, T defaultCaseSpec) {
+  private <T> ImmutableList<Case<T>> compactCases(ImmutableList<Case<T>> cases, T defaultCaseSpec) {
     // Determine the fallback/other case value.
     ImmutableList<SoyMsgPart> defaultValue = null;
-    for (Pair<T, ImmutableList<SoyMsgPart>> caseAndValue : cases) {
-      if (Objects.equals(caseAndValue.first, defaultCaseSpec)) {
-        defaultValue = caseAndValue.second;
+    for (Case<T> caseAndValue : cases) {
+      if (Objects.equals(caseAndValue.spec(), defaultCaseSpec)) {
+        defaultValue = caseAndValue.parts();
         break;
       }
     }
 
-    ImmutableList.Builder<Pair<T, ImmutableList<SoyMsgPart>>> builder = ImmutableList.builder();
-    for (Pair<T, ImmutableList<SoyMsgPart>> caseAndValue : cases) {
+    ImmutableList.Builder<Case<T>> builder = ImmutableList.builder();
+    for (Case<T> caseAndValue : cases) {
 
       // See if this case is the same as the default/other case, but isn't itself the default/other
       // case, and can be pruned.
-      if (defaultValue != null && !Objects.equals(caseAndValue.first, defaultCaseSpec)
-          && defaultValue.equals(caseAndValue.second)) {
+      if (defaultValue != null && !Objects.equals(caseAndValue.spec(), defaultCaseSpec)
+          && defaultValue.equals(caseAndValue.parts())) {
         continue;
       }
 
       // Intern the case value, since they tend to be very common among templates. For select,
       // they tend to be strings like "male" or "female", and for plurals, it tends to be one
       // of the few in the enum.
-      builder.add(Pair.of(
-          caseAndValue.first != null ? intern(caseAndValue.first) : null,
-          compactParts(caseAndValue.second)));
+      builder.add(Case.create(
+          caseAndValue.spec() != null ? intern(caseAndValue.spec()) : null,
+          compactParts(caseAndValue.parts())));
     }
     return builder.build();
   }

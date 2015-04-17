@@ -169,7 +169,7 @@ public final class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitCallNode(CallNode node) {
 
-    if (node.isPassingAllData()) {
+    if (node.dataAttribute().isPassingAllData()) {
       // Nothing to do here, because we now use FindIndirectParamsVisitor to find all the
       // transitive callees that we pass all data to (and also to find out whether there are any
       // external transitive callees).

@@ -26,7 +26,6 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parsepasses.CheckCallsVisitor;
 import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
@@ -38,6 +37,7 @@ import com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaul
 import com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor;
 import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
 import com.google.template.soy.shared.SoyAstCache;
+import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor;
 import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.sharedpasses.CheckTemplateVisibility;
@@ -150,8 +150,9 @@ public final class SoyFileSetParser {
   private static void verifyUniquePaths(Iterable<SoyFileSupplier> soyFileSuppliers) {
     Set<String> paths = Sets.newHashSet();
     for (SoyFileSupplier supplier : soyFileSuppliers) {
-      Preconditions.checkArgument(!paths.contains(supplier.getFilePath()),
-          "Two file suppliers have the same path: " + supplier.getFilePath());
+      Preconditions.checkArgument(
+          !paths.contains(supplier.getFilePath()), "Two file suppliers have the same path: %s",
+          supplier.getFilePath());
       paths.add(supplier.getFilePath());
     }
   }
@@ -169,8 +170,7 @@ public final class SoyFileSetParser {
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
 
     for (SoyFileSupplier soyFileSupplier : soyFileSuppliers) {
-      Pair<SoyFileNode, SoyFileSupplier.Version> fileAndVersion =
-          (cache != null) ? cache.get(soyFileSupplier) : null;
+      VersionedFile fileAndVersion = (cache != null) ? cache.get(soyFileSupplier) : null;
       if (fileAndVersion == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
         synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
@@ -178,24 +178,24 @@ public final class SoyFileSetParser {
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
-          if (fileAndVersion.first == null) {
+          if (fileAndVersion.file() == null) {
             return soyTree;
           }
           if (doRunInitialParsingPasses) {
             // Run passes that are considered part of initial parsing.
-            runSingleFileParsingPasses(fileAndVersion.getFirst(), nodeIdGen);
+            runSingleFileParsingPasses(fileAndVersion.file(), nodeIdGen);
           }
         }
         if (doRunCheckingPasses) {
           // Run passes that check the tree.
-          runSingleFileCheckingPasses(fileAndVersion.first);
+          runSingleFileCheckingPasses(fileAndVersion.file());
         }
         if (cache != null) {
-          cache.put(soyFileSupplier, fileAndVersion.second, fileAndVersion.first);
+          cache.put(soyFileSupplier, fileAndVersion);
         }
       }
-      if (fileAndVersion.first != null) {
-        soyTree.addChild(fileAndVersion.first);
+      if (fileAndVersion.file() != null) {
+        soyTree.addChild(fileAndVersion.file());
       }
     }
 
@@ -215,7 +215,7 @@ public final class SoyFileSetParser {
    * @param nodeIdGen The generator of node ids.
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
    */
-  private Pair<SoyFileNode, SoyFileSupplier.Version> parseSoyFileHelper(
+  private VersionedFile parseSoyFileHelper(
       SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry) {
 
     String filePath = soyFileSupplier.getFilePath();
@@ -234,7 +234,7 @@ public final class SoyFileSetParser {
         errorReporter.report(
             new SourceLocation(filePath, -1, -1, -1, -1), VERSION_SKEW_IN_SOY_FILE, filePath);
       }
-      return Pair.of(soyFileNode, version);
+      return VersionedFile.of(soyFileNode, version);
     } catch (IOException e) {
       throw SoySyntaxException.createCausedWithoutMetaInfo(
           "Error opening/closing Soy file " + soyFileSupplier.getFilePath(), e);

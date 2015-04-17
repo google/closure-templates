@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
@@ -248,11 +247,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
                 "NUM_FRIENDS_1",
                 0,
                 ImmutableList.of(
-                    Pair.of(
+                    SoyMsgPluralPart.Case.create(
                         new SoyMsgPluralCaseSpec(1),
                         ImmutableList.<SoyMsgPart>of(
                             SoyMsgRawTextPart.of("Zcircle zyour zto zfriend za zadded."))),
-                    Pair.of(
+                    SoyMsgPluralPart.Case.create(
                         new SoyMsgPluralCaseSpec("other"),
                         ImmutableList.<SoyMsgPart>of(
                             SoyMsgRawTextPart.of("Zcircle zyour zto zfriends "),
@@ -270,11 +269,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
             new SoyMsgSelectPart(
                 "GENDER",
                 ImmutableList.of(
-                    Pair.of(
+                    SoyMsgPart.Case.create(
                         "female",
                         ImmutableList.<SoyMsgPart>of(
                             SoyMsgRawTextPart.of("Zcircles zyour zin zis zshe."))),
-                    Pair.of(
+                    SoyMsgPart.Case.create(
                         (String) null,
                         ImmutableList.<SoyMsgPart>of(
                             SoyMsgRawTextPart.of("Zcircles zyour zin zis zhe."))))))));

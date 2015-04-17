@@ -17,7 +17,6 @@
 package com.google.template.soy.msgs.restricted;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.internal.base.Pair;
 
 import java.util.Objects;
 
@@ -27,7 +26,6 @@ import java.util.Objects;
  */
 public final class SoyMsgPluralPart extends SoyMsgPart {
 
-
   /** The plural variable name. */
   private final String pluralVarName;
 
@@ -35,7 +33,7 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
   private final int offset;
 
   /** The various cases for this plural statement. The default statement has a null key. */
-  private final ImmutableList<Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>> cases;
+  private final ImmutableList<Case<SoyMsgPluralCaseSpec>> cases;
 
 
   /**
@@ -44,7 +42,7 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
    * @param cases The list of cases for this plural statement.
    */
   public SoyMsgPluralPart(String pluralVarName, int offset,
-      ImmutableList<Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>> cases) {
+      ImmutableList<Case<SoyMsgPluralCaseSpec>> cases) {
 
     this.pluralVarName = pluralVarName;
     this.offset = offset;
@@ -65,7 +63,7 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
 
 
   /** Returns the cases. */
-  public ImmutableList<Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>>> getCases() {
+  public ImmutableList<Case<SoyMsgPluralCaseSpec>> getCases() {
     return cases;
   }
 

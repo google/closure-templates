@@ -133,8 +133,8 @@ public abstract class CodeBuilder<E extends TargetExpr> {
     outputVars.pop();
     Pair<String, Boolean> topPair = outputVars.peek();  // null if outputVars is now empty
     if (topPair != null) {
-      currOutputVarName = topPair.getFirst();
-      currOutputVarIsInited = topPair.getSecond();
+      currOutputVarName = topPair.first;
+      currOutputVarIsInited = topPair.second;
     } else {
       currOutputVarName = null;
       currOutputVarIsInited = false;

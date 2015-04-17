@@ -30,6 +30,7 @@ import com.google.template.soy.shared.internal.NonpluginFunction;
 import java.util.Deque;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -76,7 +77,8 @@ class JsExprTranslator {
    * @return The built JS expression.
    */
   public JsExpr translateToJsExpr(
-      ExprNode expr, String exprText, Deque<Map<String, JsExpr>> localVarTranslations) {
+      @Nullable ExprNode expr, @Nullable String exprText,
+      Deque<Map<String, JsExpr>> localVarTranslations) {
 
     if (expr != null &&
         (exprText == null ||

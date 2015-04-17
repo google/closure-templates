@@ -190,8 +190,8 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
 
     // If the caller is passing data via data="all" then we look for matching static param
     // declarations in the callers template and see if there are type errors there.
-    if (call.isPassingData()) {
-      if (call.isPassingAllData() && callerTemplate.getParams() != null) {
+    if (call.dataAttribute().isPassingData()) {
+      if (call.dataAttribute().isPassingAllData() && callerTemplate.getParams() != null) {
         // Check indirect params that are passed via data="all".
         // We only need to check explicit params of calling template here.
         for (TemplateParam callerParam : callerTemplate.getParams()) {

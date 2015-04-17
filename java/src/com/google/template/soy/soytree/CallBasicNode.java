@@ -28,8 +28,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.TransitionalThrowingErrorReporter;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -68,10 +66,10 @@ public final class CallBasicNode extends CallNode {
     private final String srcCalleeName;
 
     CommandTextInfo(
-        String commandText, String srcCalleeName, boolean isPassingData,
-        @Nullable ExprRootNode dataExpr, @Nullable String userSuppliedPlaceholderName,
+        String commandText, String srcCalleeName, DataAttribute dataAttr,
+        @Nullable String userSuppliedPlaceholderName,
         @Nullable SyntaxVersionBound syntaxVersionBound) {
-      super(commandText, isPassingData, dataExpr, userSuppliedPlaceholderName, syntaxVersionBound);
+      super(commandText, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
       this.srcCalleeName = srcCalleeName;
     }
   }
@@ -185,12 +183,10 @@ public final class CallBasicNode extends CallNode {
     private final SourceLocation sourceLocation;
 
     private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
-    private boolean isPassingData;
-    private boolean isPassingAllData;
+    private DataAttribute dataAttr = DataAttribute.none();
     private boolean useV1FunctionAttrForCalleeName;
 
     @Nullable private String commandText;
-    @Nullable private ExprRootNode dataExpr;
     @Nullable private String userSuppliedPlaceholderName;
     @Nullable private String calleeName;
     @Nullable private String sourceCalleeName;
@@ -211,23 +207,13 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
-    public Builder dataExpr(ExprRootNode dataExpr) {
-      this.dataExpr = dataExpr;
-      return this;
-    }
-
     public Builder escapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
       this.escapingDirectiveNames = escapingDirectiveNames;
       return this;
     }
 
-    public Builder isPassingData(boolean isPassingData) {
-      this.isPassingData = isPassingData;
-      return this;
-    }
-
-    public Builder isPassingAllData(boolean isPassingAllData) {
-      this.isPassingAllData = isPassingAllData;
+    public Builder dataAttribute(DataAttribute dataAttr) {
+      this.dataAttr = dataAttr;
       return this;
     }
 
@@ -333,23 +319,15 @@ public final class CallBasicNode extends CallNode {
             sourceLocation, MULTIPLE_CALLEE_NAMES, srcCalleeNames.get(0), srcCalleeNames.get(1));
       }
 
-      Pair<Boolean, ExprRootNode> dataAttrInfo =
+      DataAttribute dataAttrInfo =
           parseDataAttributeHelper(attributes.get("data"), sourceLocation, errorReporter);
 
       return new CommandTextInfo(
-          cmdText, sourceCalleeName, dataAttrInfo.first, dataAttrInfo.second,
-          userSuppliedPlaceholderName, syntaxVersionBound);
+          cmdText, sourceCalleeName, dataAttrInfo, userSuppliedPlaceholderName, syntaxVersionBound);
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
     private CommandTextInfo buildCommandText() {
-      if (isPassingAllData) {
-        Preconditions.checkArgument(isPassingData);
-      }
-      if (dataExpr != null) {
-        Preconditions.checkArgument(isPassingData && !isPassingAllData);
-      }
-
       String commandText = "";
       if (useV1FunctionAttrForCalleeName) {
         Preconditions.checkArgument(
@@ -358,19 +336,18 @@ public final class CallBasicNode extends CallNode {
       } else {
         commandText += sourceCalleeName;
       }
-      if (isPassingAllData) {
+      if (dataAttr.isPassingAllData()) {
         commandText += " data=\"all\"";
-      } else if (isPassingData) {
-        assert dataExpr != null;  // suppress warnings
-        commandText += " data=\"" + dataExpr.toSourceString() + '"';
+      } else if (dataAttr.isPassingData()) {
+        assert dataAttr.dataExpr() != null;  // suppress warnings
+        commandText += " data=\"" + dataAttr.dataExpr().toSourceString() + '"';
       }
       if (userSuppliedPlaceholderName != null) {
         commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
       }
 
       return new CommandTextInfo(
-          commandText, sourceCalleeName, isPassingData, dataExpr, userSuppliedPlaceholderName,
-          syntaxVersionBound);
+          commandText, sourceCalleeName, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
     }
   }
 }

@@ -75,7 +75,7 @@ public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>
 
     // If all the data keys being passed are listed using 'param' commands, then check that all
     // required params of the callee are included.
-    if (! node.isPassingData()) {
+    if (! node.dataAttribute().isPassingData()) {
 
       // Get the callee node (basic or delegate).
       TemplateNode callee;

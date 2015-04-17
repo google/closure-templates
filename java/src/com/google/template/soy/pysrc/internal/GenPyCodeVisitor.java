@@ -809,7 +809,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       namespace = moduleName.substring(0, lastDotIndex);
       name = moduleName.substring(lastDotIndex + 1);
     }
-    return new Pair<>(namespace, name);
+    return Pair.of(namespace, name);
   }
 
   /**

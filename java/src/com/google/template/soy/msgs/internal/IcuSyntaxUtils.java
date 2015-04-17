@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.restricted.MsgPartUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -160,11 +160,10 @@ public class IcuSyntaxUtils {
     currRawTextSb.append(
         getPluralOpenString(origPluralPart.getPluralVarName(), origPluralPart.getOffset()));
 
-    for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> pluralCase :
-        origPluralPart.getCases()) {
-      currRawTextSb.append(getPluralCaseOpenString(pluralCase.first));
+    for (Case<SoyMsgPluralCaseSpec> pluralCase : origPluralPart.getCases()) {
+      currRawTextSb.append(getPluralCaseOpenString(pluralCase.spec()));
       convertMsgPartsHelper(
-          newMsgPartsBuilder, currRawTextSb, pluralCase.second, true, allowIcuEscapingInRawText);
+          newMsgPartsBuilder, currRawTextSb, pluralCase.parts(), true, allowIcuEscapingInRawText);
       currRawTextSb.append(getPluralCaseCloseString());
     }
 
@@ -189,10 +188,14 @@ public class IcuSyntaxUtils {
 
     currRawTextSb.append(getSelectOpenString(origSelectPart.getSelectVarName()));
 
-    for (Pair<String, ImmutableList<SoyMsgPart>> selectCase : origSelectPart.getCases()) {
-      currRawTextSb.append(getSelectCaseOpenString(selectCase.first));
+    for (Case<String> selectCase : origSelectPart.getCases()) {
+      currRawTextSb.append(getSelectCaseOpenString(selectCase.spec()));
       convertMsgPartsHelper(
-          newMsgPartsBuilder, currRawTextSb, selectCase.second, true, allowIcuEscapingInRawText);
+          newMsgPartsBuilder,
+          currRawTextSb,
+          selectCase.parts(),
+          true /* isInPlrselPart */,
+          allowIcuEscapingInRawText);
       currRawTextSb.append(getSelectCaseCloseString());
     }
 

@@ -69,7 +69,7 @@ public final class EasyDictImpl extends AbstractDict implements SoyEasyDict {
   // SoyEasyDict.
 
 
-  public void setField(String name, SoyValueProvider valueProvider) {
+  @Override public void setField(String name, SoyValueProvider valueProvider) {
     // TODO: Maybe eventually transition to a state where we can enforce that field names are
     // always identifiers. Currently, we can't do this because some existing usages use
     // non-identifier keys.

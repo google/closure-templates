@@ -21,11 +21,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -157,10 +157,10 @@ final class MsgFuncGenerator {
     Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
     Map<PyExpr, PyExpr> caseSpecStrToMsgTexts = new LinkedHashMap<>();
 
-    for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> pluralCase : pluralPart.getCases()) {
+    for (Case<SoyMsgPluralCaseSpec> pluralCase : pluralPart.getCases()) {
       caseSpecStrToMsgTexts.put(
-          new PyStringExpr("'" + pluralCase.first + "'"),
-          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.second, nullEscaper) + "'"));
+          new PyStringExpr("'" + pluralCase.spec() + "'"),
+          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.parts(), nullEscaper) + "'"));
     }
 
     prepareFunc.addArg(msgId)

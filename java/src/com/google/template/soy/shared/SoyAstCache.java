@@ -17,16 +17,18 @@
 
 package com.google.template.soy.shared;
 
-import com.google.common.collect.Maps;
+import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyFileNode;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 /**
@@ -41,19 +43,32 @@ import javax.inject.Inject;
  * <p> Please treat the internals as Soy superpackage-private.
  *
  */
-public class SoyAstCache {
+public final class SoyAstCache {
+  /** A {@link SoyFileNode} with an associated {@link Version}. */
+  @AutoValue public abstract static class VersionedFile {
+    public static VersionedFile of(SoyFileNode file, Version version) {
+      return new AutoValue_SoyAstCache_VersionedFile(file, version);
+    }
+
+    VersionedFile() {}
+
+    @Nullable public abstract SoyFileNode file();
+    public abstract Version version();
+
+    /** Make a defensive copy. */
+    private VersionedFile copy() {
+      return new AutoValue_SoyAstCache_VersionedFile(file().clone(), version());
+    }
+  }
 
   /** Cache mapping file path to the result of the last parse. */
-  private final Map<String, Pair<SoyFileNode, Version>> cache;
+  @GuardedBy("this")
+  private final Map<String, VersionedFile> cache = new HashMap<>();
 
   /** An ID generator to ensure all versions of all files have unique ID's. */
-  private final IdGenerator idGenerator;
+  private final IdGenerator idGenerator = new IncrementingIdGenerator();
 
-  @Inject
-  public SoyAstCache() {
-    cache = Maps.<String, Pair<SoyFileNode, Version>>newHashMap();
-    idGenerator = new IncrementingIdGenerator();
-  }
+  @Inject public SoyAstCache() {}
 
   /**
    * Stores a cached version of the AST.
@@ -61,13 +76,11 @@ public class SoyAstCache {
    * <p> Please treat this as superpackage-private for Soy internals.
    *
    * @param supplier The supplier for the particular file to cache.
-   * @param version The version of the supplier when it was read.
-   * @param soyFileNode The compiled AST at the particular version. The node is defensively copied;
-   *     the caller is free to modify it.
+   * @param versionedFile The compiled AST at the particular version. The node is defensively
+   *     copied; the caller is free to modify it.
    */
-  public synchronized void put(
-      SoyFileSupplier supplier, Version version, SoyFileNode node) {
-    cache.put(getCacheKey(supplier), Pair.of(node.clone(), version));
+  public synchronized void put(SoyFileSupplier supplier, VersionedFile versionedFile) {
+    cache.put(getCacheKey(supplier), versionedFile.copy());
   }
 
   /**
@@ -79,15 +92,16 @@ public class SoyAstCache {
    * @return A fresh copy of the tree that may be modified by the caller, or null if no entry was
    *     found in the cache.
    */
-  public synchronized Pair<SoyFileNode, Version> get(SoyFileSupplier supplier) {
-    Pair<SoyFileNode, Version> entry = cache.get(getCacheKey(supplier));
+  public synchronized VersionedFile get(SoyFileSupplier supplier) {
+    String cacheKey = getCacheKey(supplier);
+    VersionedFile entry = cache.get(cacheKey);
     if (entry != null) {
-      if (!supplier.hasChangedSince(entry.second)) {
+      if (!supplier.hasChangedSince(entry.version())) {
         // Make a defensive copy since the caller might run further passes on it.
-        return Pair.of(entry.first.clone(), entry.second);
+        return entry.copy();
       } else {
         // Aggressively purge to save memory.
-        cache.remove(getCacheKey(supplier));
+        cache.remove(cacheKey);
       }
     }
     return null;

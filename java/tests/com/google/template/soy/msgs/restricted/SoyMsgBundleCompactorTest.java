@@ -17,7 +17,6 @@
 package com.google.template.soy.msgs.restricted;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 
 import junit.framework.TestCase;
@@ -31,8 +30,6 @@ public class SoyMsgBundleCompactorTest extends TestCase {
   public static final String LOCALE_XX = "xx";
   public static final String LOCALE_YY = "yy";
 
-
-  private ImmutableList<SoyMsg> testMessages;
 
   private SoyMsgBundle xxMsgBundle;
   private SoyMsgBundle yyMsgBundle;
@@ -52,7 +49,7 @@ public class SoyMsgBundleCompactorTest extends TestCase {
    */
   private SoyMsg createMessageWithPlaceholder(String locale, long id) {
     return new SoyMsg(id, locale, false,
-        ImmutableList.<SoyMsgPart>of(
+        ImmutableList.of(
             SoyMsgRawTextPart.of("Message "),
             new SoyMsgPlaceholderPart("ph_" + id)));
   }
@@ -62,13 +59,13 @@ public class SoyMsgBundleCompactorTest extends TestCase {
    * Creates a message that has a select with different cases.
    */
   private SoyMsg createSelectMsgDifferent(String locale, long id) {
-    return new SoyMsg(id, locale, true, ImmutableList.<SoyMsgPart>of(
+    return new SoyMsg(id, locale, true, ImmutableList.of(
         new SoyMsgSelectPart("varname", ImmutableList.of(
-            Pair.of("male", ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create("male", ImmutableList.of(
                 SoyMsgRawTextPart.of("Male message " + id))),
-            Pair.of("female", ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create("female", ImmutableList.of(
                 SoyMsgRawTextPart.of("Female message " + id))),
-            Pair.<String, ImmutableList<SoyMsgPart>>of(null, ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create((String) null, ImmutableList.of(
                 SoyMsgRawTextPart.of("Other message " + id)))))));
   }
 
@@ -77,13 +74,13 @@ public class SoyMsgBundleCompactorTest extends TestCase {
    * Creates a message that has a select with identical cases.
    */
   private SoyMsg createSelectMsgSame(String locale, long id) {
-    return new SoyMsg(id, locale, true, ImmutableList.<SoyMsgPart>of(
+    return new SoyMsg(id, locale, true, ImmutableList.of(
         new SoyMsgSelectPart("varname", ImmutableList.of(
-            Pair.of("male", ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create("male", ImmutableList.of(
                 SoyMsgRawTextPart.of("Same message " + id))),
-            Pair.of("female", ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create("female", ImmutableList.of(
                 SoyMsgRawTextPart.of("Same message " + id))),
-            Pair.<String, ImmutableList<SoyMsgPart>>of(null, ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create((String) null, ImmutableList.of(
                 SoyMsgRawTextPart.of("Same message " + id)))))));
   }
 
@@ -127,7 +124,7 @@ public class SoyMsgBundleCompactorTest extends TestCase {
     assertSame("Select var names should be interned",
         select1.getSelectVarName(), select2.getSelectVarName());
     assertSame("Case values should be interned",
-        select1.getCases().get(0).first, select2.getCases().get(0).first);
+        select1.getCases().get(0).spec(), select2.getCases().get(0).spec());
   }
 
 
@@ -138,8 +135,8 @@ public class SoyMsgBundleCompactorTest extends TestCase {
     assertEquals("Selects with different cases should not be collapsed",
         3, differentSelect.getCases().size());
     assertEquals("Selects with the same case should be collapsed",
-        ImmutableList.of(Pair.<String, ImmutableList<SoyMsgPart>>of(
-            null, ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Same message 358")))),
+        ImmutableList.of(SoyMsgPart.Case.<String>create(
+            null, ImmutableList.of(SoyMsgRawTextPart.of("Same message 358")))),
         sameSelect.getCases());
   }
 }

@@ -1285,9 +1285,9 @@ public final class TemplateParserTest extends TestCase {
     assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
-    assertEquals(false, cn0.isPassingData());
-    assertEquals(false, cn0.isPassingAllData());
-    assertEquals(null, cn0.getDataExpr());
+    assertEquals(false, cn0.dataAttribute().isPassingData());
+    assertEquals(false, cn0.dataAttribute().isPassingAllData());
+    assertEquals(null, cn0.dataAttribute().dataExpr());
     assertEquals("XXX", cn0.genBasePhName());
     assertEquals(0, cn0.numChildren());
 
@@ -1295,9 +1295,9 @@ public final class TemplateParserTest extends TestCase {
     assertFalse(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn1.getCalleeName());
     assertEquals("foo.goo.mooTemplate", cn1.getSrcCalleeName());
-    assertEquals(true, cn1.isPassingData());
-    assertEquals(true, cn1.isPassingAllData());
-    assertEquals(null, cn1.getDataExpr());
+    assertEquals(true, cn1.dataAttribute().isPassingData());
+    assertEquals(true, cn1.dataAttribute().isPassingAllData());
+    assertEquals(null, cn1.dataAttribute().dataExpr());
     assertFalse(cn1.genSamenessKey().equals(cn0.genSamenessKey()));
     assertEquals(0, cn1.numChildren());
 
@@ -1305,10 +1305,10 @@ public final class TemplateParserTest extends TestCase {
     assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn2.getCalleeName());
     assertEquals(".zooTemplate", cn2.getSrcCalleeName());
-    assertEquals(true, cn2.isPassingData());
-    assertEquals(false, cn2.isPassingAllData());
-    assertTrue(cn2.getDataExpr().getChild(0) != null);
-    assertEquals("$animals", cn2.getDataExpr().toSourceString());
+    assertEquals(true, cn2.dataAttribute().isPassingData());
+    assertEquals(false, cn2.dataAttribute().isPassingAllData());
+    assertTrue(cn2.dataAttribute().dataExpr().getChild(0) != null);
+    assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
     assertEquals(3, cn2.numChildren());
 
     {
@@ -1337,9 +1337,9 @@ public final class TemplateParserTest extends TestCase {
     assertTrue(cn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn3.getCalleeName());
     assertEquals(".booTemplate_", cn3.getSrcCalleeName());
-    assertEquals(false, cn3.isPassingData());
-    assertEquals(false, cn3.isPassingAllData());
-    assertEquals(null, cn3.getDataExpr());
+    assertEquals(false, cn3.dataAttribute().isPassingData());
+    assertEquals(false, cn3.dataAttribute().isPassingAllData());
+    assertEquals(null, cn3.dataAttribute().dataExpr());
     assertEquals("XXX", cn3.genBasePhName());
     assertEquals(0, cn3.numChildren());
 
@@ -1347,10 +1347,10 @@ public final class TemplateParserTest extends TestCase {
     assertTrue(cn4.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn4.getCalleeName());
     assertEquals(".zooTemplate", cn4.getSrcCalleeName());
-    assertEquals(true, cn4.isPassingData());
-    assertEquals(false, cn4.isPassingAllData());
-    assertTrue(cn4.getDataExpr().getChild(0) != null);
-    assertEquals("$animals", cn4.getDataExpr().toSourceString());
+    assertEquals(true, cn4.dataAttribute().isPassingData());
+    assertEquals(false, cn4.dataAttribute().isPassingAllData());
+    assertTrue(cn4.dataAttribute().dataExpr().getChild(0) != null);
+    assertEquals("$animals", cn4.dataAttribute().dataExpr().toSourceString());
     assertEquals(4, cn4.numChildren());
 
     {
@@ -1400,28 +1400,28 @@ public final class TemplateParserTest extends TestCase {
     CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
     assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("booTemplate", cn0.getDelCalleeName());
-    assertEquals(false, cn0.isPassingData());
-    assertEquals(false, cn0.isPassingAllData());
-    assertEquals(null, cn0.getDataExpr());
+    assertEquals(false, cn0.dataAttribute().isPassingData());
+    assertEquals(false, cn0.dataAttribute().isPassingAllData());
+    assertEquals(null, cn0.dataAttribute().dataExpr());
     assertEquals("XXX", cn0.genBasePhName());
     assertEquals(0, cn0.numChildren());
 
     CallDelegateNode cn1 = (CallDelegateNode) nodes.get(1);
     assertTrue(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("foo.goo.mooTemplate", cn1.getDelCalleeName());
-    assertEquals(true, cn1.isPassingData());
-    assertEquals(true, cn1.isPassingAllData());
-    assertEquals(null, cn1.getDataExpr());
+    assertEquals(true, cn1.dataAttribute().isPassingData());
+    assertEquals(true, cn1.dataAttribute().isPassingAllData());
+    assertEquals(null, cn1.dataAttribute().dataExpr());
     assertFalse(cn1.genSamenessKey().equals(cn0.genSamenessKey()));
     assertEquals(0, cn1.numChildren());
 
     CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
     assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
-    assertEquals(true, cn2.isPassingData());
-    assertEquals(false, cn2.isPassingAllData());
-    assertTrue(cn2.getDataExpr().getChild(0) != null);
-    assertEquals("$animals", cn2.getDataExpr().toSourceString());
+    assertEquals(true, cn2.dataAttribute().isPassingData());
+    assertEquals(false, cn2.dataAttribute().isPassingAllData());
+    assertTrue(cn2.dataAttribute().dataExpr().getChild(0) != null);
+    assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
     assertEquals(2, cn2.numChildren());
 
     CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
@@ -1453,9 +1453,9 @@ public final class TemplateParserTest extends TestCase {
     assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
-    assertEquals(false, cn0.isPassingData());
-    assertEquals(false, cn0.isPassingAllData());
-    assertEquals(null, cn0.getDataExpr());
+    assertEquals(false, cn0.dataAttribute().isPassingData());
+    assertEquals(false, cn0.dataAttribute().isPassingAllData());
+    assertEquals(null, cn0.dataAttribute().dataExpr());
     assertEquals(0, cn0.numChildren());
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
@@ -1464,10 +1464,10 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("SECRET_ZOO", cn2.genBasePhName());
     assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
-    assertEquals(true, cn2.isPassingData());
-    assertEquals(false, cn2.isPassingAllData());
-    assertTrue(cn2.getDataExpr().getChild(0) != null);
-    assertEquals("$animals", cn2.getDataExpr().toSourceString());
+    assertEquals(true, cn2.dataAttribute().isPassingData());
+    assertEquals(false, cn2.dataAttribute().isPassingAllData());
+    assertTrue(cn2.dataAttribute().dataExpr().getChild(0) != null);
+    assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
     assertEquals(1, cn2.numChildren());
 
     assertFalse(cn0.genSamenessKey().equals(cn1.genSamenessKey()));  // CallNodes are never same

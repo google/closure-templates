@@ -55,8 +55,8 @@ public final class CallNodeTest extends TestCase {
   public void testSetEscapingDirectiveNames() throws SoySyntaxException {
     CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(".foo")
-        .buildAndThrowIfInvalid();
-    assertEquals(ImmutableList.<String>of(), callNode.getEscapingDirectiveNames());
+            .buildAndThrowIfInvalid();
+    assertThat(callNode.getEscapingDirectiveNames()).isEmpty();
     callNode.setEscapingDirectiveNames(ImmutableList.of("hello", "world"));
     assertEquals(ImmutableList.of("hello", "world"), callNode.getEscapingDirectiveNames());
     callNode.setEscapingDirectiveNames(ImmutableList.of("bye", "world"));
@@ -85,9 +85,7 @@ public final class CallNodeTest extends TestCase {
         .calleeName(callNode.getCalleeName())
         .sourceCalleeName(callNode.getSrcCalleeName())
         .useV1FunctionAttrForCalleeName(useV1FunctionAttrForCalleeName)
-        .isPassingData(callNode.isPassingData())
-        .isPassingAllData(callNode.isPassingAllData())
-        .dataExpr(callNode.getDataExpr())
+        .dataAttribute(callNode.dataAttribute())
         .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
         .syntaxVersionBound(callNode.getSyntaxVersionBound())
         .escapingDirectiveNames(NO_ESCAPERS)
@@ -96,9 +94,7 @@ public final class CallNodeTest extends TestCase {
     assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
     assertThat(normCallNode.getSyntaxVersionBound()).isEqualTo(callNode.getSyntaxVersionBound());
     assertThat(normCallNode.getCalleeName()).isEqualTo(callNode.getCalleeName());
-    assertThat(normCallNode.isPassingData()).isEqualTo(callNode.isPassingData());
-    assertThat(normCallNode.isPassingAllData()).isEqualTo(callNode.isPassingAllData());
-    assertThat(normCallNode.getDataExpr()).isEqualTo(callNode.getDataExpr());
+    assertThat(normCallNode.dataAttribute()).isEqualTo(callNode.dataAttribute());
   }
 
 }

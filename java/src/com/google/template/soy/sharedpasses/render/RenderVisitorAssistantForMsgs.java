@@ -16,15 +16,14 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -319,11 +318,11 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       List<SoyMsgPart> defaultParts = null;
 
       // Handle cases.
-      for (Pair<String, ImmutableList<SoyMsgPart>> case0 : selectPart.getCases()) {
-        if (case0.first == null) {
-          defaultParts = case0.second;
-        } else if (case0.first.equals(correctSelectValue)) {
-          caseParts = case0.second;
+      for (Case<String> case0 : selectPart.getCases()) {
+        if (case0.spec() == null) {
+          defaultParts = case0.parts();
+        } else if (case0.spec().equals(correctSelectValue)) {
+          caseParts = case0.parts();
           break;
         }
       }
@@ -392,18 +391,18 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       // Check whether the plural value matches any explicit numeric value.
       boolean hasNonExplicitCases = false;
       List<SoyMsgPart> otherCaseParts = null;
-      for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> case0 : pluralPart.getCases()) {
+      for (Case<SoyMsgPluralCaseSpec> case0 : pluralPart.getCases()) {
 
-        SoyMsgPluralCaseSpec pluralCaseSpec = case0.first;
+        SoyMsgPluralCaseSpec pluralCaseSpec = case0.spec();
         SoyMsgPluralCaseSpec.Type caseType = pluralCaseSpec.getType();
         if (caseType == SoyMsgPluralCaseSpec.Type.EXPLICIT) {
           if (pluralCaseSpec.getExplicitValue() == correctPluralValue) {
-            caseParts = case0.second;
+            caseParts = case0.parts();
             break;
           }
 
         } else if (caseType == SoyMsgPluralCaseSpec.Type.OTHER) {
-          otherCaseParts = case0.second;
+          otherCaseParts = case0.parts();
 
         } else {
           hasNonExplicitCases = true;
@@ -419,10 +418,10 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
 
         // Iterate the cases once again for non-numeric keywords.
-        for (Pair<SoyMsgPluralCaseSpec, ImmutableList<SoyMsgPart>> case0 : pluralPart.getCases()) {
+        for (Case<SoyMsgPluralCaseSpec> case0 : pluralPart.getCases()) {
 
-          if (case0.first.getType() == correctCaseType) {
-            caseParts = case0.second;
+          if (case0.spec().getType() == correctCaseType) {
+            caseParts = case0.parts();
             break;
           }
         }

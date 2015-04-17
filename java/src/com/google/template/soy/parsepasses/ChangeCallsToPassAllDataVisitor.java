@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallNode.DataAttribute;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -72,7 +73,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     visitChildrenAllowingConcurrentModification(node);
 
     // If this call already passes data (but not all data), then this optimization doesn't apply.
-    if (node.isPassingData() && ! node.isPassingAllData()) {
+    if (node.dataAttribute().isPassingData() && !node.dataAttribute().isPassingAllData()) {
       return;
     }
 
@@ -105,8 +106,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
       newCallNode = new CallBasicNode.Builder(node.getId(), node.getSourceLocation())
           .calleeName(nodeCast.getCalleeName())
           .sourceCalleeName(nodeCast.getSrcCalleeName())
-          .isPassingData(true)
-          .isPassingAllData(true)
+          .dataAttribute(DataAttribute.all())
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
           .buildAndThrowIfInvalid();
@@ -116,8 +116,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .delCalleeName(nodeCast.getDelCalleeName())
           .delCalleeVariantExpr(nodeCast.getDelCalleeVariantExpr())
           .allowEmptyDefault(nodeCast.allowsEmptyDefault())
-          .isPassingData(true)
-          .isPassingAllData(true)
+          .dataAttribute(DataAttribute.all())
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
           .buildAndThrowIfInvalid();

@@ -19,7 +19,6 @@ package com.google.template.soy.msgs.restricted;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
 
 import junit.framework.TestCase;
@@ -46,7 +45,7 @@ public class RenderOnlySoyMsgBundleImplTest extends TestCase {
    */
   private SoyMsg createSimpleMsg(long id) {
     return new SoyMsg(id, LOCALE, false,
-        ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Message #" + id)));
+        ImmutableList.of(SoyMsgRawTextPart.of("Message #" + id)));
   }
 
 
@@ -55,7 +54,7 @@ public class RenderOnlySoyMsgBundleImplTest extends TestCase {
    */
   private SoyMsg createMessageWithPlaceholder(long id) {
     return new SoyMsg(id, LOCALE, false,
-        ImmutableList.<SoyMsgPart>of(
+        ImmutableList.of(
             SoyMsgRawTextPart.of("Message "),
             new SoyMsgPlaceholderPart("ph_" + id)));
   }
@@ -65,11 +64,11 @@ public class RenderOnlySoyMsgBundleImplTest extends TestCase {
    * Creates a message that has a select.
    */
   private SoyMsg createSelectMsg(long id) {
-    return new SoyMsg(id, LOCALE, true, ImmutableList.<SoyMsgPart>of(
+    return new SoyMsg(id, LOCALE, true, ImmutableList.of(
         new SoyMsgSelectPart("varname", ImmutableList.of(
-            Pair.of("male", ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create("male", ImmutableList.of(
                 SoyMsgRawTextPart.of("Male message " + id))),
-            Pair.of("female", ImmutableList.<SoyMsgPart>of(
+            SoyMsgPart.Case.create("female", ImmutableList.of(
                 SoyMsgRawTextPart.of("Female message " + id)))))));
   }
 
