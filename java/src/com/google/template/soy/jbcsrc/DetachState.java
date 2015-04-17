@@ -29,7 +29,6 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 
 import java.util.ArrayList;
@@ -126,7 +125,7 @@ final class DetachState implements ExpressionDetacher.Factory {
 
     @Override public Expression makeDetachable(final Expression exp) {
       return new SimpleExpression(exp.resultType(), exp.isConstant()) {
-        @Override void doGen(GeneratorAdapter adapter) {
+        @Override void doGen(CodeBuilder adapter) {
           // Note, the reattach point is _before_ the expression.  This means that on reattaches
           // we rerun the entire expression rather than jumping to right before the detach point.
           // This is neccesary because we are not saving intermediate expression results which are
@@ -141,7 +140,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
       return new SimpleExpression(Type.getType(SoyValue.class), false) {
-        @Override void doGen(GeneratorAdapter adapter) {
+        @Override void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
           // invocations.  This makes the expression api difficult/confusing to use.  So instead 
           // call a bunch of unchecked invocations.
@@ -199,7 +198,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     final Statement saveState = 
         stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         isSoftLimited.gen(adapter);
         adapter.ifZCmp(Opcodes.IFEQ, reattachPoint);  // if !softLimited
         // ok we were limited, save state and return
@@ -225,7 +224,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     final Statement defaultCase = 
         Statement.throwExpression(MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(readField));
     return new Statement() {
-      @Override void doGen(final GeneratorAdapter adapter) {
+      @Override void doGen(final CodeBuilder adapter) {
         int[] keys = new int[reattaches.size()];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = i;

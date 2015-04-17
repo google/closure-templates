@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 /**
  * An expression has a {@link #resultType()} and can {@link #gen generate} code to evaluate the
@@ -61,7 +60,7 @@ abstract class Expression extends BytecodeProducer {
    * <p>The generated code satisfies the invariant that the top of the runtime stack will contain a
    * value with this {@link #resultType()} immediately after evaluation of the code. 
    */
-  @Override abstract void doGen(GeneratorAdapter adapter);
+  @Override abstract void doGen(CodeBuilder adapter);
   
   /** The type of the expression. */
   abstract Type resultType();
@@ -114,7 +113,7 @@ abstract class Expression extends BytecodeProducer {
    */
   Statement toStatement() {
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
         switch (resultType().getSize()) {
           case 0:
@@ -174,7 +173,7 @@ abstract class Expression extends BytecodeProducer {
       this.delegate = delegate;
     }
 
-    @Override void doGen(GeneratorAdapter adapter) {
+    @Override void doGen(CodeBuilder adapter) {
       delegate.gen(adapter);
       adapter.checkCast(resultType());
     }
@@ -209,7 +208,7 @@ abstract class Expression extends BytecodeProducer {
       this.delegate = expression;
     }
 
-    @Override void doGen(GeneratorAdapter adapter) {
+    @Override void doGen(CodeBuilder adapter) {
       delegate.gen(adapter);
     }
 

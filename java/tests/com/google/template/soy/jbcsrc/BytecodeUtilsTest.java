@@ -30,7 +30,6 @@ import junit.framework.TestCase;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.List;
 
@@ -169,7 +168,7 @@ public class BytecodeUtilsTest extends TestCase {
 
   private static Expression throwingBoolExpression() {
     return new SimpleExpression(Type.BOOLEAN_TYPE, false) {
-       @Override void doGen(GeneratorAdapter adapter) {
+       @Override void doGen(CodeBuilder adapter) {
          adapter.throwException(Type.getType(IllegalStateException.class),
              "shouldn't have called me");
        }

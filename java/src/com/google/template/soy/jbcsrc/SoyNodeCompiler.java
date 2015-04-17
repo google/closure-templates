@@ -60,7 +60,6 @@ import com.google.template.soy.soytree.XidNode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -184,7 +183,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // return a statement for the whole thing at the end... would that be clearer?
     final Statement exitScope = scope.exitScope();
     return new Statement(node.getSourceLocation()) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         for (Statement initializer : rangeArgs.initStatements()) {
           initializer.gen(adapter);
         }
@@ -266,7 +265,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private Statement incrementInt(final Variable variable, final Expression increment) {
     Expression nextIndex = new Expression.SimpleExpression(Type.INT_TYPE, false) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         variable.local().gen(adapter);
         increment.gen(adapter);
         adapter.visitInsn(Opcodes.IADD);
@@ -298,7 +297,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         ? childrenAsStatement((ForeachIfemptyNode) node.getChild(1)) 
             : null;
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         listVar.initializer().gen(adapter);
         listSizeVar.initializer().gen(adapter);
         listSizeVar.local().gen(adapter);
@@ -313,7 +312,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         adapter.iinc(indexVar.local().index(), 1);  // index++
         indexVar.local().gen(adapter);
         listSizeVar.local().gen(adapter);
-        adapter.ifICmp(GeneratorAdapter.LT, loopStart);  // if index < list.size(), goto loopstart
+        adapter.ifICmp(Opcodes.IFLT, loopStart);  // if index < list.size(), goto loopstart
         // exit the loop
         exitScope.gen(adapter);
 

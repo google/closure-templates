@@ -24,7 +24,6 @@ import com.google.common.base.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.List;
 
@@ -50,7 +49,7 @@ final class ControlFlow {
   static Statement ifElseChain(final List<IfBlock> ifs, final Optional<Statement> elseBlock) {
     checkArgument(!ifs.isEmpty());
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         Label end = new Label();
         Label next;
         for (int i = 0; i < ifs.size(); i++) {

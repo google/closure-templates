@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 import java.lang.reflect.Constructor;
@@ -62,7 +61,7 @@ import java.util.LinkedHashMap;
   Expression construct(final Expression ...args) {
     Expression.checkTypes(argTypes(), args);
     return new SimpleExpression(instanceClass().type(), false) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         mv.newInstance(instanceClass().type());
         // push a second reference onto the stack so there is still a reference to the new object
         // after invoking the constructor (constructors are void methods)

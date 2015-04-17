@@ -43,7 +43,6 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.io.PrintStream;
 import java.lang.reflect.Method;
@@ -196,7 +195,7 @@ import java.util.Map;
     checkState(void.class.equals(returnType()), "Method return type is not void.");
     Expression.checkTypes(argTypes(), args);
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         doInvoke(adapter, args);
       }
     };
@@ -211,7 +210,7 @@ import java.util.Map;
     // TODO(lukes): this assumes all methods are idempotent... not really true.  how should we
     // distinguish? we could annotate each methodref?
     return new SimpleExpression(Type.getType(returnType()), isConstant) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         doInvoke(mv, args);
       }
     };
@@ -222,7 +221,7 @@ import java.util.Map;
    * is not useful for representing operations.  For example, explicit dup operations are awkward
    * in the Expression api. 
    */
-  void invokeUnchecked(GeneratorAdapter mv) {
+  void invokeUnchecked(CodeBuilder mv) {
     mv.visitMethodInsn(
         opcode(),
         owner().internalName(),
@@ -234,7 +233,7 @@ import java.util.Map;
         opcode() == Opcodes.INVOKEINTERFACE);
   }
 
-  private void doInvoke(GeneratorAdapter mv, Expression... args) {
+  private void doInvoke(CodeBuilder mv, Expression... args) {
     for (Expression arg : args) {
       arg.gen(mv);
     }

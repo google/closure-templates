@@ -44,7 +44,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.IOException;
@@ -165,7 +164,7 @@ final class TemplateCompiler {
     final Statement exitScope = rootScope.exitScope();
     final Expression done = MethodRef.RENDER_RESULT_DONE.invoke();
     Statement fullMethodBody = new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         nodeBody.gen(adapter);
         exitScope.gen(adapter);
@@ -179,7 +178,7 @@ final class TemplateCompiler {
         variableSet.generateTableEntries(adapter);
       }
     };
-    GeneratorAdapter ga = new GeneratorAdapter(
+    CodeBuilder ga = new CodeBuilder(
         Opcodes.ACC_PUBLIC,
         RENDER_METHOD,
         null /* no generic signature */,
@@ -218,7 +217,7 @@ final class TemplateCompiler {
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }
     Statement constructorBody = new Statement() {
-      @Override void doGen(GeneratorAdapter ga) {
+      @Override void doGen(CodeBuilder ga) {
         ga.mark(start);
         // call super()
         thisVar.gen(ga);
@@ -233,7 +232,7 @@ final class TemplateCompiler {
         ijVar.tableEntry(ga);
       }
     };
-    GeneratorAdapter ga = new GeneratorAdapter(
+    CodeBuilder ga = new CodeBuilder(
         Opcodes.ACC_PUBLIC, 
         CompiledTemplateMetadata.GENERATED_CONSTRUCTOR, 
         null, // no generic signature
@@ -262,7 +261,7 @@ final class TemplateCompiler {
         .invoke(record, BytecodeUtils.constant(param.name()));
     final Expression nullData = FieldRef.NULL_DATA_INSTANCE.accessor();
     return new SimpleExpression(Type.getType(SoyValueProvider.class), false) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         provider.gen(adapter);
         adapter.dup();
         Label nonNull = new Label();

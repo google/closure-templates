@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import junit.framework.TestCase;
 
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -31,13 +30,13 @@ public class BytecodeProducerTest extends TestCase {
 
   public void testGenDoesntOverlapWithCompile() {
     BytecodeProducer producer = new BytecodeProducer() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         BytecodeUtils.constant('c').gen(adapter);
       }
     };
     try {
-      GeneratorAdapter adaterAdapter = 
-          new GeneratorAdapter(Opcodes.ACC_PUBLIC, BytecodeUtils.NULLARY_INIT, new MethodNode());
+      CodeBuilder adaterAdapter = 
+          new CodeBuilder(Opcodes.ACC_PUBLIC, BytecodeUtils.NULLARY_INIT, new MethodNode());
       producer.gen(adaterAdapter);
       fail();
     } catch (IllegalStateException e) {

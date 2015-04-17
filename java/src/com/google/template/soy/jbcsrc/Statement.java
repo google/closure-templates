@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.base.SourceLocation;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.Arrays;
 
@@ -36,7 +35,7 @@ import java.util.Arrays;
  */
 abstract class Statement extends BytecodeProducer {
   static final Statement NULL_STATEMENT = new Statement() {
-    @Override void doGen(GeneratorAdapter adapter) {}
+    @Override void doGen(CodeBuilder adapter) {}
   };
 
   /**
@@ -50,7 +49,7 @@ abstract class Statement extends BytecodeProducer {
     // is compatible with the return type of the method, but i don't know how to get that
     // information here (reasonably).  So it is the caller's responsibility.
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.returnValue();
       }
@@ -65,7 +64,7 @@ abstract class Statement extends BytecodeProducer {
   static Statement throwExpression(final Expression expression) {
     expression.checkAssignableTo(Type.getType(Throwable.class));
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.throwException();
       }
@@ -81,7 +80,7 @@ abstract class Statement extends BytecodeProducer {
   static Statement concat(final Iterable<? extends Statement> statements) {
     checkNotNull(statements);
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         for (Statement statement : statements) {
           statement.gen(adapter);
         }
@@ -103,7 +102,7 @@ abstract class Statement extends BytecodeProducer {
   public final Statement withSourceLocation(SourceLocation location) {
     checkNotNull(location);
     return new Statement(location) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         Statement.this.doGen(adapter);
       }
     };

@@ -29,7 +29,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.Printer;
 
@@ -84,8 +83,8 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given 'boolean' constant. */
   static Expression constant(final boolean value) {
     return new SimpleExpression(Type.BOOLEAN_TYPE, true) {
-      @Override void doGen(GeneratorAdapter mv) {
-        mv.push(value);
+      @Override void doGen(CodeBuilder mv) {
+        mv.pushBoolean(value);
       }
     };
   }
@@ -93,8 +92,8 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given 'int' constant. */
   static Expression constant(final int value) {
     return new SimpleExpression(Type.INT_TYPE, true) {
-      @Override void doGen(GeneratorAdapter mv) {
-        mv.push(value);
+      @Override void doGen(CodeBuilder mv) {
+        mv.pushInt(value);
       }
     };
   }
@@ -102,8 +101,8 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given 'char' constant. */
   static Expression constant(final char value) {
     return new SimpleExpression(Type.CHAR_TYPE, true) {
-      @Override void doGen(GeneratorAdapter mv) {
-        mv.push(value);
+      @Override void doGen(CodeBuilder mv) {
+        mv.pushInt(value);
       }
     };
   }
@@ -111,8 +110,8 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given long constant. */
   static Expression constant(final long value) {
     return new SimpleExpression(Type.LONG_TYPE, true) {
-      @Override void doGen(GeneratorAdapter mv) {
-        mv.push(value);
+      @Override void doGen(CodeBuilder mv) {
+        mv.pushLong(value);
       }
     };
   }
@@ -120,8 +119,8 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given double constant. */
   static Expression constant(final double value) {
     return new SimpleExpression(Type.DOUBLE_TYPE, true) {
-      @Override void doGen(GeneratorAdapter mv) {
-        mv.push(value);
+      @Override void doGen(CodeBuilder mv) {
+        mv.pushDouble(value);
       }
     };
   }
@@ -130,8 +129,8 @@ final class BytecodeUtils {
   static Expression constant(final String value) {
     checkNotNull(value);
     return new SimpleExpression(Type.getType(String.class), true) {
-      @Override void doGen(GeneratorAdapter mv) {
-        mv.push(value);
+      @Override void doGen(CodeBuilder mv) {
+        mv.pushString(value);
       }
     };
   }
@@ -151,7 +150,7 @@ final class BytecodeUtils {
       throw new IllegalArgumentException("Cannot convert from " + expr.resultType() + " to " + to);
     }
     return new SimpleExpression(to, expr.isConstant()) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         expr.gen(adapter);
         adapter.cast(expr.resultType(), to);
       }
@@ -187,13 +186,13 @@ final class BytecodeUtils {
     switch (type.getSize()) {
       case 1:
         return new SimpleExpression(type, false) {
-          @Override void doGen(GeneratorAdapter mv) {
+          @Override void doGen(CodeBuilder mv) {
             mv.dup();
           }
         };
       case 2:
         return new SimpleExpression(type, false) {
-          @Override void doGen(GeneratorAdapter mv) {
+          @Override void doGen(CodeBuilder mv) {
             mv.dup2();
           }
         };
@@ -239,7 +238,7 @@ final class BytecodeUtils {
    *   }}</pre>
    */
   static void defineDefaultConstructor(ClassVisitor cv, TypeInfo ownerType) {
-    GeneratorAdapter mg = new GeneratorAdapter(Opcodes.ACC_PUBLIC, NULLARY_INIT, null, null, cv);
+    CodeBuilder mg = new CodeBuilder(Opcodes.ACC_PUBLIC, NULLARY_INIT, null, null, cv);
     Label start = mg.mark();
     Label end = mg.newLabel();
     LocalVariable thisVar = LocalVariable.createThisVar(ownerType, start, end);
@@ -267,16 +266,16 @@ final class BytecodeUtils {
         right.resultType());
     checkIntComparisonOpcode(left.resultType(), comparisonOpcode);
     return new SimpleExpression(Type.BOOLEAN_TYPE, left.isConstant() && right.isConstant()) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         left.gen(mv);
         right.gen(mv);
         Label ifTrue = mv.newLabel();
         Label end = mv.newLabel();
         mv.ifCmp(left.resultType(), comparisonOpcode, ifTrue);
-        mv.push(false);
+        mv.pushBoolean(false);
         mv.goTo(end);
         mv.mark(ifTrue);
-        mv.push(true);
+        mv.pushBoolean(true);
         mv.mark(end);
       }
     };
@@ -308,7 +307,7 @@ final class BytecodeUtils {
     baseExpr.checkAssignableTo(Type.BOOLEAN_TYPE);
     checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
     return new SimpleExpression(Type.BOOLEAN_TYPE, baseExpr.isConstant()) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         baseExpr.gen(mv);
         // Surprisingly, java bytecode uses a branch (instead of 'xor 1' or something) to implement
         // this. This is most likely useful for allowing true to be represented by any non-zero
@@ -316,10 +315,10 @@ final class BytecodeUtils {
         Label ifTrue = mv.newLabel();
         Label end = mv.newLabel();
         mv.ifZCmp(Opcodes.IFNE, ifTrue);  // if not 0 goto ifTrue
-        mv.push(true);
+        mv.pushBoolean(true);
         mv.goTo(end);
         mv.mark(ifTrue);
-        mv.push(false);
+        mv.pushBoolean(false);
         mv.mark(end);
       }
     };
@@ -406,7 +405,7 @@ final class BytecodeUtils {
     }
 
     return new SimpleExpression(Type.BOOLEAN_TYPE, Expression.areAllConstant(expressions)) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         Label end = new Label();
         Label shortCircuit = new Label();
         for (int i = 0; i < expressions.size(); i++) {
@@ -421,7 +420,7 @@ final class BytecodeUtils {
           }
         }
         adapter.mark(shortCircuit);
-        adapter.push(isOrOperator);  // default for || is true && is false
+        adapter.pushBoolean(isOrOperator);  // default for || is true && is false
         adapter.mark(end);
       }
     };

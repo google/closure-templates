@@ -24,7 +24,6 @@ import com.google.common.base.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 /**
  * A local variable representation.
@@ -38,9 +37,9 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * </ul>
  * 
  * <p>Note: This class does not attempt to make use of the convenience methods on generator adapter
- * such as {@link GeneratorAdapter#newLocal(Type)} or {@link GeneratorAdapter#loadArg(int)} that
+ * such as {@link CodeBuilder#newLocal(Type)} or {@link CodeBuilder#loadArg(int)} that
  * make it easier to work with local variables (and calculating local variable indexes).  Instead
- * we push this responsibility onto our caller.  This is because GeneratorAdapter doesn't make it
+ * we push this responsibility onto our caller.  This is because CodeBuilder doesn't make it
  * possible to generate local variable debugging tables in this case (e.g. there is no way to map
  * a method parameter index to a local variable index).
  */
@@ -75,7 +74,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
    * Write a local variable table entry for this variable.  This informs debuggers about variable
    * names, types and lifetime.
    */
-  void tableEntry(GeneratorAdapter mv) {
+  void tableEntry(CodeBuilder mv) {
     mv.visitLocalVariable(
         variableName(),
         resultType().getDescriptor(),
@@ -85,7 +84,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
         index());
   }
 
-  @Override public void doGen(GeneratorAdapter mv) {
+  @Override public void doGen(CodeBuilder mv) {
     mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
@@ -110,7 +109,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
   private Statement store(final Expression expr, final Optional<Label> firstVarInstruction) {
     expr.checkAssignableTo(resultType());
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         expr.gen(adapter);
         if (firstVarInstruction.isPresent()) {
           adapter.mark(firstVarInstruction.get());

@@ -21,7 +21,6 @@ import com.google.template.soy.base.SourceLocation;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
@@ -74,7 +73,7 @@ abstract class BytecodeProducer {
   }
 
   /** Writes the bytecode to the adapter. */
-  final void gen(GeneratorAdapter adapter) {
+  final void gen(CodeBuilder adapter) {
     boolean shouldClearIsGeneratingBit = false;
     if (!isGenerating.get()) {
       isGenerating.set(true);
@@ -108,7 +107,7 @@ abstract class BytecodeProducer {
 
   // TODO(lukes): add @ForOverride when https://github.com/google/error-prone/issues/302 is in
   // JavaBuilder
-  abstract void doGen(GeneratorAdapter adapter);
+  abstract void doGen(CodeBuilder adapter);
 
   /**
    * Returns a human readable string for the code that this {@link BytecodeProducer} generates.
@@ -128,7 +127,7 @@ abstract class BytecodeProducer {
         this.ltab = "";  // tab setting for labels
       }
     };
-    gen(new GeneratorAdapter(new TraceMethodVisitor(textifier), 0, "trace", "()V"));
+    gen(new CodeBuilder(new TraceMethodVisitor(textifier), 0, "trace", "()V"));
     StringWriter writer = new StringWriter();
     textifier.print(new PrintWriter(writer));
     return writer.toString();  // Note textifier always adds a trailing newline

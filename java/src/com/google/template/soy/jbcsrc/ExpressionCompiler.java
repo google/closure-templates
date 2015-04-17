@@ -64,7 +64,6 @@ import com.google.template.soy.types.primitive.AnyType;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -173,7 +172,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
         .construct(BytecodeUtils.constant(hashMapCapacity));
     final Statement putAll = Statement.concat(puts);
     Expression mapExpr = new SimpleExpression(Type.getType(Map.class), isConstant) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         // create a linkedhashmap with the expected size.
         construct.gen(mv);
         // call put for each key value pair.
@@ -330,7 +329,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     final SoyExpression rightInt = right.convert(long.class);
     return SoyExpression.forInt(
         new SimpleExpression(Type.LONG_TYPE, leftInt.isConstant() && rightInt.isConstant()) {
-          @Override void doGen(GeneratorAdapter mv) {
+          @Override void doGen(CodeBuilder mv) {
             leftInt.gen(mv);
             rightInt.gen(mv);
             mv.visitInsn(operator);
@@ -344,7 +343,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     final SoyExpression rightFloat = right.convert(double.class);
     return SoyExpression.forFloat(
         new SimpleExpression(Type.DOUBLE_TYPE, leftFloat.isConstant() && rightFloat.isConstant()) {
-          @Override void doGen(GeneratorAdapter mv) {
+          @Override void doGen(CodeBuilder mv) {
             leftFloat.gen(mv);
             rightFloat.gen(mv);
             mv.visitInsn(operator);
@@ -359,7 +358,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     if (child.isKnownInt()) {
       final SoyExpression intExpr = child.convert(long.class);
       return SoyExpression.forInt(new SimpleExpression(Type.LONG_TYPE, child.isConstant()) {
-        @Override void doGen(GeneratorAdapter mv) {
+        @Override void doGen(CodeBuilder mv) {
           intExpr.gen(mv);
           mv.visitInsn(Opcodes.LNEG);
         }
@@ -368,7 +367,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     if (child.isKnownNumber()) {
       final SoyExpression floatExpr = child.convert(double.class);
       return SoyExpression.forFloat(new SimpleExpression(Type.DOUBLE_TYPE, child.isConstant()) {
-        @Override void doGen(GeneratorAdapter mv) {
+        @Override void doGen(CodeBuilder mv) {
           floatExpr.gen(mv);
           mv.visitInsn(Opcodes.DNEG);
         }
@@ -409,7 +408,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
       final SoyExpression falseAsLong = falseBranch.convert(long.class);
       return SoyExpression.forInt(
           new SimpleExpression(Type.LONG_TYPE, constant) {
-            @Override void doGen(GeneratorAdapter adapter) {
+            @Override void doGen(CodeBuilder adapter) {
               doCondition(adapter, condition, trueAsLong, falseAsLong);
             }
           });
@@ -418,7 +417,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
       final SoyExpression trueAsFloat = trueBranch.convert(double.class);
       final SoyExpression falseAsFloat = falseBranch.convert(double.class);
       return SoyExpression.forFloat(new SimpleExpression(Type.DOUBLE_TYPE, constant) {
-        @Override void doGen(GeneratorAdapter adapter) {
+        @Override void doGen(CodeBuilder adapter) {
           doCondition(adapter, condition, trueAsFloat, falseAsFloat);
         }
       });
@@ -427,7 +426,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
       final SoyExpression trueAsString = trueBranch.convert(String.class);
       final SoyExpression falseAsString = falseBranch.convert(String.class);
       return SoyExpression.forString(new SimpleExpression(Type.getType(String.class), constant) {
-        @Override void doGen(GeneratorAdapter adapter) {
+        @Override void doGen(CodeBuilder adapter) {
           doCondition(adapter, condition, trueAsString, falseAsString);
         }
       });
@@ -440,13 +439,13 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     final Type type = Type.getType(node.getType().javaType());
     return SoyExpression.forSoyValue(node.getType(),
         new SimpleExpression(type, constant) {
-          @Override void doGen(GeneratorAdapter mv) {
+          @Override void doGen(CodeBuilder mv) {
             doCondition(mv, condition, trueBoxed, falseBoxed);
           }
         });
   }
 
-  private static void doCondition(GeneratorAdapter mv, Expression condition,
+  private static void doCondition(CodeBuilder mv, Expression condition,
       SoyExpression trueBranch, SoyExpression falseBranch) {
     condition.gen(mv);
     Label ifFalse = new Label();
@@ -507,16 +506,16 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     final Expression expr = variables.getLocal(indexVar);
 
     return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         // implements index == 0 ? true : false
         expr.gen(adapter);
         Label ifFirst = new Label();
         adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
-        adapter.push(false);
+        adapter.pushBoolean(false);
         Label end = new Label();
         adapter.goTo(end);
         adapter.mark(ifFirst);
-        adapter.push(true);
+        adapter.pushBoolean(true);
         adapter.mark(end);
       }
     });
@@ -528,25 +527,25 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     final Expression length = variables.getLocal(lengthVar);
     // basically 'index + 1 == length'
     return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         // 'index + 1 == length ? true : false'
         index.gen(adapter);
-        adapter.push(1);
+        adapter.pushInt(1);
         adapter.visitInsn(Opcodes.IADD);
         length.gen(adapter);
         Label ifLast = new Label();
-        adapter.ifICmp(GeneratorAdapter.EQ, ifLast);
-        adapter.push(false);
+        adapter.ifICmp(Opcodes.IFEQ, ifLast);
+        adapter.pushBoolean(false);
         Label end = new Label();
         adapter.goTo(end);
         adapter.mark(ifLast);
-        adapter.push(true);
+        adapter.pushBoolean(true);
         adapter.mark(end);
       }
     });
   }
 
-  SoyExpression visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
+  @Override SoyExpression visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
     // '(long) index'
     return SoyExpression.forInt(
         BytecodeUtils.numericConversion(variables.getLocal(indexVar), Type.LONG_TYPE));
@@ -606,7 +605,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
         .construct(BytecodeUtils.constant(numChildren));
     return new SimpleExpression(Type.getType(List.class), isConstant) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         construct.gen(mv);
         for (Expression child : childExprs) {
           mv.dup();

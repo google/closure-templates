@@ -31,7 +31,6 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.CheckClassAdapter;
 
@@ -223,7 +222,7 @@ public final class ExpressionTester {
         new String[] {Type.getInternalName(targetInterface) });
     BytecodeUtils.defineDefaultConstructor(cw, generatedType);
     Method invoke = Method.getMethod(invokeMethod);
-    GeneratorAdapter generator = new GeneratorAdapter(Opcodes.ACC_PUBLIC, invoke, null, null, cw);
+    CodeBuilder generator = new CodeBuilder(Opcodes.ACC_PUBLIC, invoke, null, null, cw);
     expr.gen(generator);
     generator.returnValue();
     generator.endMethod();
@@ -234,7 +233,7 @@ public final class ExpressionTester {
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException(e);  // this method definitely exists
     }
-    generator = new GeneratorAdapter(Opcodes.ACC_PUBLIC, voidInvoke, null, null, cw);
+    generator = new CodeBuilder(Opcodes.ACC_PUBLIC, voidInvoke, null, null, cw);
     generator.loadThis();
     generator.invokeVirtual(generatedType.type(), invoke);
     generator.visitInsn(Opcodes.RETURN);

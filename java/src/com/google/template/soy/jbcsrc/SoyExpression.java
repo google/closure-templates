@@ -36,7 +36,6 @@ import com.google.template.soy.types.primitive.StringType;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.List;
 import java.util.Map;
@@ -89,7 +88,7 @@ class SoyExpression extends Expression {
   static final SoyExpression NULL =
       new SoyExpression(NullType.getInstance(), Object.class, 
           new SimpleExpression(Type.getType(Object.class), true) {
-            @Override void doGen(GeneratorAdapter adapter) {
+            @Override void doGen(CodeBuilder adapter) {
               adapter.visitInsn(Opcodes.ACONST_NULL);
             }
           });
@@ -140,7 +139,7 @@ class SoyExpression extends Expression {
     return delegate.isConstant();
   }
 
-  @Override final void doGen(GeneratorAdapter adapter) {
+  @Override final void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
   }
 

@@ -31,7 +31,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 /**
@@ -120,13 +119,13 @@ final class TemplateFactoryCompiler {
    * loading them.
    */
   private void generateStaticInitializer(ClassWriter cw) {
-    GeneratorAdapter ga = new GeneratorAdapter(
+    CodeBuilder ga = new CodeBuilder(
         Opcodes.ACC_STATIC,
         BytecodeUtils.CLASS_INIT,
         null /* no generic signature */,
         null /* no checked exceptions */,
         cw);
-    ga.push(template.typeInfo().type());
+    ga.pushType(template.typeInfo().type());
     ga.visitVarInsn(Opcodes.ASTORE, 0);
     ga.returnValue();
     ga.endMethod();
@@ -144,7 +143,7 @@ final class TemplateFactoryCompiler {
         createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
     final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
     Statement constructorBody = new Statement() {
-      @Override void doGen(GeneratorAdapter ga) {
+      @Override void doGen(CodeBuilder ga) {
         ga.mark(start);
         ga.newInstance(template.typeInfo().type());
         ga.dup();
@@ -158,7 +157,7 @@ final class TemplateFactoryCompiler {
         ijVar.tableEntry(ga);
       }
     };
-    GeneratorAdapter ga = new GeneratorAdapter(
+    CodeBuilder ga = new CodeBuilder(
         Opcodes.ACC_PUBLIC,
         CREATE_METHOD,
         null /* no generic signature */,

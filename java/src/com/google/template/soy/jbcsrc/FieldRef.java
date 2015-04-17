@@ -30,7 +30,6 @@ import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.lang.reflect.Modifier;
 
@@ -118,7 +117,7 @@ import java.lang.reflect.Modifier;
     checkState(!isStatic());
     checkArgument(owner.resultType().equals(this.owner().type()));
     return new SimpleExpression(type(), owner.isConstant()) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         owner.gen(mv);
         mv.getField(owner().type(), FieldRef.this.name(), resultType());
       }
@@ -131,7 +130,7 @@ import java.lang.reflect.Modifier;
   Expression accessor() {
     checkState(isStatic());
     return new SimpleExpression(type(), true /* isConstant */) {
-      @Override void doGen(GeneratorAdapter mv) {
+      @Override void doGen(CodeBuilder mv) {
         mv.getStatic(owner().type(), FieldRef.this.name(), resultType());
       }
     };
@@ -148,7 +147,7 @@ import java.lang.reflect.Modifier;
     instance.checkAssignableTo(owner().type());
     value.checkAssignableTo(type());
     return new Statement() {
-      @Override void doGen(GeneratorAdapter adapter) {
+      @Override void doGen(CodeBuilder adapter) {
         instance.gen(adapter);
         value.gen(adapter);
         adapter.putField(owner().type(), name(), type());

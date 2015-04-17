@@ -25,7 +25,6 @@ import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 import java.util.ArrayDeque;
@@ -259,7 +258,7 @@ final class VariableSet {
         return new Statement() {
           // TODO(lukes): we could generate null writes for when object typed fields go out of
           // scope.  This would potentially allow intermediate results to be collected sooner.
-          @Override void doGen(GeneratorAdapter adapter) {
+          @Override void doGen(CodeBuilder adapter) {
             for (Label label : endLabels) {
               adapter.visitLabel(label);
             }
@@ -291,7 +290,7 @@ final class VariableSet {
   }
 
   /** Write a local variable table entry for every registered variable. */
-  void generateTableEntries(GeneratorAdapter ga) {
+  void generateTableEntries(CodeBuilder ga) {
     for (Variable var : allVariables) {
       var.local.tableEntry(ga);
     }

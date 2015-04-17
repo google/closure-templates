@@ -43,7 +43,6 @@ import junit.framework.TestCase;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,7 +69,7 @@ public class ExpressionCompilerTest extends TestCase {
         }
       },
       new Expression.SimpleExpression(Type.getType(RenderContext.class), false) {
-        @Override void doGen(GeneratorAdapter adapter) {
+        @Override void doGen(CodeBuilder adapter) {
           adapter.visitInsn(Opcodes.ACONST_NULL);
         }
       },
