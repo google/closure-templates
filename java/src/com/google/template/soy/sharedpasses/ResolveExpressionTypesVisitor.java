@@ -322,6 +322,16 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
    */
   private final class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
 
+    private final AbstractExprNodeVisitor<Void> checkAllTypesAssignedVisitor =
+        new AbstractExprNodeVisitor<Void>(errorReporter) {
+          @Override protected void visitExprNode(ExprNode node) {
+            if (node instanceof ParentExprNode) {
+              visitChildren((ParentExprNode) node);
+            }
+            requireNodeType(node);
+          }
+        };
+
     /** SoyNode owning the expression; Used for error reporting. */
     private final ExprHolderNode owningSoyNode;
 
@@ -342,13 +352,10 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       Preconditions.checkArgument(node instanceof ExprRootNode);
       this.currExprRootNode = (ExprRootNode) node;
       visit(node);
+      // Check that ever node in the tree had a type assigned
+      checkAllTypesAssignedVisitor.exec(currExprRootNode);
       this.currExprRootNode = null;
       return null;
-    }
-
-    @Override protected void visit(ExprNode node) {
-      super.visit(node);
-      requireNodeType(node);
     }
 
     @Override protected void visitExprRootNode(ExprRootNode node) {

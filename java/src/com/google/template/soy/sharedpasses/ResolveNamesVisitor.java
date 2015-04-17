@@ -342,10 +342,6 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       return null;
     }
 
-    @Override protected void visit(ExprNode node) {
-      super.visit(node);
-    }
-
     @Override protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
     }

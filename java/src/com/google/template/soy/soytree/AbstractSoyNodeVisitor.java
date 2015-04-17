@@ -58,7 +58,7 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     super(errorReporter);
   }
 
-  @Override protected void visit(SoyNode node) {
+  @Override protected final void visit(SoyNode node) {
 
     switch (node.getKind()) {
 

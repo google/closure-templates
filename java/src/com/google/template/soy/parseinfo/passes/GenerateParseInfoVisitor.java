@@ -1028,10 +1028,6 @@ public final class GenerateParseInfoVisitor
       this.protoTypes = protoTypes;
     }
 
-    @Override protected void visit(ExprNode node) {
-      super.visit(node);
-    }
-
     @Override protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
       ExprNode expr = node.getChild(0);

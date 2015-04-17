@@ -220,8 +220,8 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   @VisibleForTesting
-  @Override protected void visit(SoyNode node) {
-    super.visit(node);
+  void visitForTesting(SoyNode node) {
+    visit(node);
   }
 
   @Override protected void visitChildren(ParentSoyNode<?> node) {

@@ -171,7 +171,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     genPyCodeVisitor.genPyExprsVisitor =
         INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
 
-    genPyCodeVisitor.visit(node); // note: we're calling visit(), not exec()
+    genPyCodeVisitor.visitForTesting(node); // note: we're calling visit(), not exec()
 
     return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }

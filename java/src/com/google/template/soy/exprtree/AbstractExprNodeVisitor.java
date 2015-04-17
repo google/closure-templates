@@ -73,7 +73,7 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     super(errorReporter);
   }
 
-  @Override protected void visit(ExprNode node) {
+  @Override protected final void visit(ExprNode node) {
 
     switch (node.getKind()) {
 
@@ -119,7 +119,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       default: throw new UnsupportedOperationException();
     }
   }
-
 
   /**
    * Helper to visit all the children of a node, in order.

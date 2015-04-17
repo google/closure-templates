@@ -138,9 +138,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return pyFilesContents;
   }
 
-  @VisibleForTesting
-  @Override protected void visit(SoyNode node) {
-    super.visit(node);
+  @VisibleForTesting void visitForTesting(SoyNode node) {
+    visit(node);
   }
 
   /**
