@@ -35,14 +35,12 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
-import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.primitive.AnyType;
 
 import junit.framework.TestCase;
-
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,21 +66,20 @@ public class ExpressionCompilerTest extends TestCase {
           };
         }
       },
-      new Expression.SimpleExpression(Type.getType(RenderContext.class), false) {
-        @Override void doGen(CodeBuilder adapter) {
-          adapter.visitInsn(Opcodes.ACONST_NULL);
-        }
-      },
       new VariableLookup() {
-        @Override public Expression getParam(String paramName) {
-          return variables.get(paramName);
+        @Override public Expression getParam(TemplateParam paramName) {
+          return variables.get(paramName.name());
         }
 
         @Override public Expression getLocal(SyntheticVarName varName) {
           throw new UnsupportedOperationException();
         }
 
-        @Override public Expression getLocal(String localName) {
+        @Override public Expression getLocal(LocalVar localName) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override public Expression getRenderContext() {
           throw new UnsupportedOperationException();
         }
       });

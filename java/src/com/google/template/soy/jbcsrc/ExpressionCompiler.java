@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopItemProvider;
 
 import com.google.common.primitives.Ints;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -52,7 +51,6 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
@@ -75,14 +73,12 @@ import java.util.Map;
  */
 final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
   private final ExpressionDetacher.Factory detacherFactory;
-  private final Expression contextExpr;
   private final VariableLookup variables;
   private ExpressionDetacher currentDetacher;
 
-  ExpressionCompiler(ExpressionDetacher.Factory detacherFactory, Expression contextExpr,
+  ExpressionCompiler(ExpressionDetacher.Factory detacherFactory,
       VariableLookup variables) {
     this.detacherFactory = detacherFactory;
-    this.contextExpr = contextExpr;
     this.variables = variables;
   }
 
@@ -463,12 +459,11 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     // These are special because they do not need any attaching/detaching logic and are
     // always unboxed ints
     return SoyExpression.forInt(
-        BytecodeUtils.numericConversion(variables.getLocal(varRef.getName()), Type.LONG_TYPE));
+        BytecodeUtils.numericConversion(variables.getLocal(local), Type.LONG_TYPE));
   }
 
-  @Override SoyExpression visitForeachLoopIndex(VarRefNode varRef, LocalVar local) {
-    Expression expression = variables.getLocal(
-        foreachLoopItemProvider((ForeachNonemptyNode) local.declaringNode()));
+  @Override SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
+    Expression expression = variables.getLocal(local);
     expression = getDetacher().resolveSoyValueProvider(expression);
     return SoyExpression.forSoyValue(varRef.getType(),
         expression.cast(Type.getType(varRef.getType().javaType())));
@@ -483,8 +478,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     // _not_ the first one. This would be super awesome and would save bytecode/branches/states
     // and technically be useful for all varrefs. For the time being we do the naive thing and
     // just assume that the jit can handle all the dead branches effectively.
-    Expression paramExpr =
-        getDetacher().resolveSoyValueProvider(variables.getParam(param.name()));
+    Expression paramExpr = getDetacher().resolveSoyValueProvider(variables.getParam(param));
     // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
     // since we do not have good checking for unions (or nullability)
     // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
@@ -557,7 +551,8 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
   // would probably need to introduce a new mechanism for registering functions.
   @Override SoyExpression visitPluginFunction(FunctionNode node) {
     Expression soyJavaFunctionExpr =
-        MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(contextExpr, constant(node.getFunctionName()));
+        MethodRef.RENDER_CONTEXT_GET_FUNCTION
+            .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
     Expression list = childrenAsList(node.getChildren());
     return SoyExpression.forSoyValue(AnyType.getInstance(),
         MethodRef.SOY_JAVA_FUNCTION_COMPUTE.invoke(soyJavaFunctionExpr, list));

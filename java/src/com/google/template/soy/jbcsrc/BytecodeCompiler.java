@@ -59,8 +59,9 @@ final class BytecodeCompiler {
     // reflective cost isn't paid on a per render basis.
     CompiledTemplate.Factory factory;
     try {
+      String factoryName = templateInfo.typeInfo().innerClass("Factory").className();
       Class<? extends CompiledTemplate.Factory> factoryClass =
-          Class.forName(templateInfo.factory().className(), true /* run clinit */, loader)
+          Class.forName(factoryName, true /* run clinit */, loader)
               .asSubclass(CompiledTemplate.Factory.class);
       factory = factoryClass.newInstance();
     } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {

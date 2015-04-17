@@ -23,7 +23,7 @@ import junit.framework.TestCase;
 /**
  * Tests for {@link UniqueNameGenerator}
  */
-public class UniqueNameGeneratorTest extends TestCase {
+public final class UniqueNameGeneratorTest extends TestCase {
 
   public void testFieldNames() {
     UniqueNameGenerator nameSet = UniqueNameGenerator.forFieldNames();
@@ -33,6 +33,8 @@ public class UniqueNameGeneratorTest extends TestCase {
     } catch (IllegalArgumentException expected) {
       assertThat(expected.getMessage()).contains("contains dangerous characters!");
     }
+    assertThat(nameSet.hasName("foo<int>")).isFalse();
+
     nameSet.claimName("foo");
     try {
       nameSet.claimName("foo");
@@ -40,7 +42,7 @@ public class UniqueNameGeneratorTest extends TestCase {
     } catch (IllegalArgumentException expected) {
       assertThat(expected.getMessage()).contains("already claimed!");
     }
-
+    assertThat(nameSet.hasName("foo")).isTrue();
     assertEquals("foo%1", nameSet.generateName("foo"));
     assertEquals("foo%2", nameSet.generateName("foo"));
   }

@@ -63,11 +63,7 @@ import org.objectweb.asm.commons.Method;
 
   static CompiledTemplateMetadata create(String templateName, TemplateBasicNode node) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    String factoryClassName = className + "$Factory";
-    return new AutoValue_CompiledTemplateMetadata(
-        TypeInfo.create(className),
-        node,
-        TypeInfo.create(factoryClassName));
+    return new AutoValue_CompiledTemplateMetadata(TypeInfo.create(className), node);
   }
 
   /** The name of the compiled template. */
@@ -75,9 +71,4 @@ import org.objectweb.asm.commons.Method;
 
   /** The actual template. */
   abstract TemplateBasicNode node();
-
-  /** 
-   * The name of this templates {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory}.
-   */
-  abstract TypeInfo factory();
 }

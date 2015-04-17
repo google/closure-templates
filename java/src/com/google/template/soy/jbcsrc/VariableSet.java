@@ -81,7 +81,7 @@ final class VariableSet {
      *     ResolveNamesVisitor).
      * @param initializer The expression that can be used to initialize the variable
      */
-    abstract Variable create(String name, Expression initializer);
+    abstract Variable create(String name, Expression initializer, SaveStrategy strategy);
 
     /**
      * Returns a statement that should be used when exiting the scope.  This is responsible for
@@ -239,10 +239,10 @@ final class VariableSet {
         return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
       }
 
-      @Override Variable create(String name, Expression initExpr) {
+      @Override Variable create(String name, Expression initExpr, SaveStrategy strategy) {
         VarKey key = VarKey.create(Kind.USER_DEFINED, name);
         name = fieldNames.generateName(name);
-        return doCreate(name, new Label(), scopeExit, initExpr, key, SaveStrategy.STORE);
+        return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
       }
 
       @Override Statement exitScope() {

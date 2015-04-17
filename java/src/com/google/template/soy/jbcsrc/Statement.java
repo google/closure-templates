@@ -20,7 +20,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
 
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 import java.util.Arrays;
 
@@ -97,9 +99,46 @@ abstract class Statement extends BytecodeProducer {
   }
 
   /**
+   * Writes this statement to the {@link ClassVisitor} as a method.
+   * 
+   * @param access The access modifiers of the method
+   * @param method The method signature
+   * @param visitor The class visitor to write it to
+   */
+  final void writeMethod(int access, Method method, ClassVisitor visitor) {
+    writeMethodTo(new CodeBuilder(access, method, null, visitor));
+  }
+
+  /**
+   * Writes this statement to the {@link ClassVisitor} as a method.
+   * 
+   * @param access The access modifiers of the method
+   * @param method The method signature
+   * @param exception A checked exception to add to the method signature
+   * @param visitor The class visitor to write it to
+   */
+  final void writeMethod(int access, Method method, Class<? extends Throwable> exception,
+      ClassVisitor visitor) {
+    writeMethodTo(new CodeBuilder(access, method, new Type[] { Type.getType(exception) }, visitor));
+  }
+
+  /** Writes this statement as the complete method body to {@code ga}. */
+  private final void writeMethodTo(CodeBuilder builder) {
+    builder.visitCode();
+    gen(builder);
+    try {
+      builder.endMethod();
+    } catch (Throwable t) {
+      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the 
+      // exception.
+      throw new RuntimeException("Failed to generate method:\n" + this, t);
+    }
+  }
+
+  /**
    * Returns a new {@link Statement} with the source location attached.
    */
-  public final Statement withSourceLocation(SourceLocation location) {
+  final Statement withSourceLocation(SourceLocation location) {
     checkNotNull(location);
     return new Statement(location) {
       @Override void doGen(CodeBuilder adapter) {

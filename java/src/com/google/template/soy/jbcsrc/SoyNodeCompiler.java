@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
+import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -131,7 +132,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     List<IfBlock> cases = new ArrayList<>();
     Optional<Statement> defaultBlock = Optional.absent();
     Scope scope = variables.enterScope();
-    Variable variable = scope.createSynthetic(SyntheticVarName.forSwitch(), expression, STORE);
+    Variable variable = scope.createSynthetic(SyntheticVarName.forSwitch(node), expression, STORE);
     init = variable.initializer();
     expression = expression.withSource(variable.local());
 
@@ -172,7 +173,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final CompiledRangeArgs rangeArgs = calculateRangeArgs(node, scope);
     // The currentIndex variable has a user defined name and we always need a local for it because
     // we mutate it across loop iterations.
-    final Variable currentIndex = scope.create(node.getVarName(), rangeArgs.startIndex());
+    final Variable currentIndex = scope.create(node.getVarName(), rangeArgs.startIndex(), STORE);
     final Statement incrementCurrentIndex = incrementInt(currentIndex, rangeArgs.increment());
 
     final Statement loopBody = childrenAsStatement(node);
@@ -285,10 +286,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Variable listSizeVar = 
         scope.createSynthetic(SyntheticVarName.foreachLoopLength(nonEmptyNode), 
             MethodRef.LIST_SIZE.invoke(listVar.local()), DERIVED);
-    final Variable itemVar = scope.createSynthetic(
-        SyntheticVarName.foreachLoopItemProvider(nonEmptyNode), 
+    final Variable itemVar = scope.create(nonEmptyNode.getVarName(), 
         MethodRef.LIST_GET.invoke(listVar.local(),
-            indexVar.local()).cast(Type.getType(SoyValueProvider.class)), DERIVED);
+            indexVar.local()).cast(Type.getType(SoyValueProvider.class)), SaveStrategy.DERIVED);
     final Statement loopBody = childrenAsStatement(nonEmptyNode);
     final Statement exitScope = scope.exitScope();
 

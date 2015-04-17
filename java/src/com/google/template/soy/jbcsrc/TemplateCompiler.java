@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.GENERATED_CONSTRUCTOR;
 import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_METHOD;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
@@ -37,6 +38,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import org.objectweb.asm.ClassVisitor;
@@ -63,6 +65,7 @@ final class TemplateCompiler {
   private final UniqueNameGenerator fieldNames = UniqueNameGenerator.forFieldNames();
   private final ImmutableMap<String, FieldRef> paramFields;
   private final CompiledTemplateMetadata template;
+  private final InnerClasses innerClasses;
   private ClassVisitor writer;
 
   TemplateCompiler(CompiledTemplateMetadata template) {
@@ -70,6 +73,7 @@ final class TemplateCompiler {
     this.paramsField = createFinalField(template.typeInfo(), "$params", SoyRecord.class);
     this.ijField = createFinalField(template.typeInfo(), "$ij", SoyRecord.class);
     this.stateField = createField(template.typeInfo(), "$state", Type.INT_TYPE);
+    this.innerClasses = new InnerClasses(template.typeInfo());
     fieldNames.claimName("$params");
     fieldNames.claimName("$ij");
     fieldNames.claimName("$state");
@@ -108,8 +112,7 @@ final class TemplateCompiler {
     // TODO(lukes): don't generate factory if the template is private?  The factories are only
     // useful to instantiate templates for calls from java.  Soy->Soy calls should invoke 
     // constructors directly.
-    TemplateFactoryCompiler templateFactoryCompiler = new TemplateFactoryCompiler(template);
-    classes.add(templateFactoryCompiler.compile());
+    new TemplateFactoryCompiler(template, innerClasses).compile();
 
     ClassWriter classWriter = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
     writer = new CheckClassAdapter(classWriter, false);
@@ -127,8 +130,7 @@ final class TemplateCompiler {
         template.node().getSourceLocation().getFileName(),
         // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
         null);
-
-    templateFactoryCompiler.registerInnerClass(writer);
+    
     stateField.defineField(writer);
     paramsField.defineField(writer);
     ijField.defineField(writer);
@@ -139,8 +141,11 @@ final class TemplateCompiler {
     generateConstructor();
     generateRenderMethod();
     
+    innerClasses.registerAllInnerClasses(writer);
     writer.visitEnd();
+
     classes.add(ClassData.create(template.typeInfo(), classWriter.toByteArray()));
+    classes.addAll(innerClasses.getInnerClassData());
     return classes;
   }
 
@@ -156,8 +161,9 @@ final class TemplateCompiler {
         new VariableSet(fieldNames, template.typeInfo(), thisVar, RENDER_METHOD);
     Scope rootScope = variableSet.enterScope();
     DetachState detachState = new DetachState(variableSet, thisVar, stateField);
-    TemplateVariables variables = new TemplateVariables(variableSet, thisVar, paramFields);
-    ExpressionCompiler exprCompiler = new ExpressionCompiler(detachState, contextVar, variables);
+    TemplateVariables variables = 
+        new TemplateVariables(variableSet, thisVar, contextVar, paramFields);
+    ExpressionCompiler exprCompiler = new ExpressionCompiler(detachState, variables);
     final Statement nodeBody = 
         new SoyNodeCompiler(detachState, variableSet, appendableVar, contextVar, exprCompiler)
             .compile(template.node());
@@ -178,21 +184,7 @@ final class TemplateCompiler {
         variableSet.generateTableEntries(adapter);
       }
     };
-    CodeBuilder ga = new CodeBuilder(
-        Opcodes.ACC_PUBLIC,
-        RENDER_METHOD,
-        null /* no generic signature */,
-        new Type[] { Type.getType(IOException.class) },
-        writer);
-    ga.visitCode();
-    fullMethodBody.gen(ga);
-    try {
-      ga.endMethod();
-    } catch (Throwable t) {
-      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the 
-      // exception.
-      throw new RuntimeException("Failed to generate method:\n" + fullMethodBody, t);
-    }
+    fullMethodBody.writeMethod(Opcodes.ACC_PUBLIC, RENDER_METHOD, IOException.class, writer);
     variableSet.defineFields(writer);
   }
 
@@ -232,21 +224,7 @@ final class TemplateCompiler {
         ijVar.tableEntry(ga);
       }
     };
-    CodeBuilder ga = new CodeBuilder(
-        Opcodes.ACC_PUBLIC, 
-        CompiledTemplateMetadata.GENERATED_CONSTRUCTOR, 
-        null, // no generic signature
-        null, // no checked exception
-        writer);
-    ga.visitCode();
-    constructorBody.gen(ga);
-    try {
-      ga.endMethod();
-    } catch (Throwable t) {
-      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the 
-      // exception.
-      throw new RuntimeException("Failed to generate method:\n" + constructorBody, t);
-    }
+    constructorBody.writeMethod(Opcodes.ACC_PUBLIC, GENERATED_CONSTRUCTOR, writer);
   }
 
   /**
@@ -284,25 +262,31 @@ final class TemplateCompiler {
   private static final class TemplateVariables implements VariableLookup {
     private final VariableSet variableSet;
     private final Expression thisRef;
+    private final Expression renderContext;
     private final ImmutableMap<String, FieldRef> paramFields;
 
-    TemplateVariables(VariableSet variableSet, Expression thisRef, 
+    TemplateVariables(VariableSet variableSet, Expression thisRef, Expression renderContext,
         ImmutableMap<String, FieldRef> paramFields) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
+      this.renderContext = renderContext;
       this.paramFields = paramFields;
     }
 
-    @Override public Expression getParam(String paramName) {
-      return paramFields.get(paramName).accessor(thisRef);
+    @Override public Expression getParam(TemplateParam param) {
+      return paramFields.get(param.name()).accessor(thisRef);
     }
 
-    @Override public Expression getLocal(String localName) {
-      return variableSet.getVariable(localName).local();
+    @Override public Expression getLocal(LocalVar local) {
+      return variableSet.getVariable(local.name()).local();
     }
 
     @Override public Expression getLocal(SyntheticVarName varName) {
       return variableSet.getVariable(varName).local();
+    }
+
+    @Override public Expression getRenderContext() {
+      return renderContext;
     }
   }
 }

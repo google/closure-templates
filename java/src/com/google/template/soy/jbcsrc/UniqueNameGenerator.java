@@ -86,6 +86,10 @@ final class UniqueNameGenerator {
     return name + '%' + (count - 1);
   }
 
+  boolean hasName(String name) {
+    return names.contains(name);
+  }
+
   private void checkName(String name) {
     checkArgument(!bannedCharacters.matchesAnyOf(name), "%s contains dangerous characters!", 
         name);

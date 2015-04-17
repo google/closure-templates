@@ -45,7 +45,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitForLoopIndex(node, local);
         }
         if (local.declaringNode().getKind() == SoyNode.Kind.FOREACH_NONEMPTY_NODE) {
-          return visitForeachLoopIndex(node, local);
+          return visitForeachLoopVar(node, local);
         }
         throw new UnsupportedOperationException("lets and foreach loops aren't supported yet");
       case PARAM:
@@ -96,7 +96,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
-  T visitForeachLoopIndex(VarRefNode varRef, LocalVar local) {
+  T visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
     return visitExprNode(varRef);
   }
 

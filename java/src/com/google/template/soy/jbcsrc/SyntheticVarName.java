@@ -18,6 +18,8 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SwitchNode;
 
 /**
  * A simple representation of a synthetic variable name.
@@ -25,42 +27,44 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
  * <p>This class centralizes all the logic for managing and constructing synthetic names.
  */
 final class SyntheticVarName {
-  static SyntheticVarName forSwitch() {
-    return new SyntheticVarName("switch");
+  static SyntheticVarName forSwitch(SwitchNode node) {
+    return new SyntheticVarName("switch", node);
   }
 
   static SyntheticVarName forLoopIncrement(ForNode forNode) {
-    return new SyntheticVarName(forNode.getVarName() + "_increment");
+    return new SyntheticVarName(forNode.getVarName() + "_increment", forNode);
   }
 
   static SyntheticVarName forLoopLimit(ForNode forNode) {
-    return new SyntheticVarName(forNode.getVarName() + "_limit");
+    return new SyntheticVarName(forNode.getVarName() + "_limit", forNode);
   }
   
   static SyntheticVarName foreachLoopList(ForeachNonemptyNode foreachNode) {
-    return new SyntheticVarName(foreachNode.getVarName() + "_list");
+    return new SyntheticVarName(foreachNode.getVarName() + "_list", foreachNode);
   }
 
   static SyntheticVarName foreachLoopIndex(ForeachNonemptyNode foreachNode) {
-    return new SyntheticVarName(foreachNode.getVarName() + "_index");
+    return new SyntheticVarName(foreachNode.getVarName() + "_index", foreachNode);
   }
   
   static SyntheticVarName foreachLoopLength(ForeachNonemptyNode foreachNode) {
-    return new SyntheticVarName(foreachNode.getVarName() + "_length");
+    return new SyntheticVarName(foreachNode.getVarName() + "_length", foreachNode);
   }
   
-  static SyntheticVarName foreachLoopItemProvider(ForeachNonemptyNode foreachNode) {
-    return new SyntheticVarName(foreachNode.getVarName() + "_itemProvider");
-  }
-
   private final String name;
+  private final SoyNode soyNode;
 
-  private SyntheticVarName(String name) {
+  private SyntheticVarName(String name, SoyNode soyNode) {
     this.name = name;
+    this.soyNode = soyNode;
   }
   
   @Override public String toString() {
     return "SyntheticVarName{" + name() + "}";
+  }
+
+  SoyNode declaringNode() {
+    return soyNode;
   }
 
   String name() {

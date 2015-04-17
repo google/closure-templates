@@ -26,11 +26,11 @@ import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 /**
@@ -64,50 +64,35 @@ final class TemplateFactoryCompiler {
   }
 
   private final CompiledTemplateMetadata template;
+  private final InnerClasses innerClasses;
 
-  TemplateFactoryCompiler(CompiledTemplateMetadata currentClass) {
+  TemplateFactoryCompiler(CompiledTemplateMetadata currentClass, InnerClasses innerClasses) {
     this.template = currentClass;
+    this.innerClasses = innerClasses;
   }
 
   /** Compiles the factory. */
-  ClassData compile() {
+  void compile() {
     ClassWriter cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
-
+    TypeInfo factoryType = innerClasses.registerInnerClass("Factory", FACTORY_ACCESS);
     cw.visit(Opcodes.V1_7,
         FACTORY_ACCESS,
-        template.factory().internalName(),
+        factoryType.internalName(),
         null, // not a generic type
         Type.getInternalName(Object.class), // super class
         INTERFACES);
-
-    registerInnerClass(cw);
+    innerClasses.registerAsInnerClass(cw, factoryType);
 
     generateStaticInitializer(cw);
-    defineDefaultConstructor(cw, template.factory());
-    generateCreateMethod(cw);
+    defineDefaultConstructor(cw, factoryType);
+    generateCreateMethod(cw, factoryType);
     cw.visitEnd();
     byte[] byteArray = cw.toByteArray();
-    return ClassData.create(template.factory(), byteArray);
+    innerClasses.add(ClassData.create(factoryType, byteArray));
   }
 
   /**
-   * Registers this factory as an inner class on the given class writer.
-   * 
-   * <p>Registering an inner class is confusing.  The inner class needs to call this and so does
-   * the outer class.  Confirmed by running ASMIfier.  Also, failure to call visitInnerClass on both
-   * classes either breaks reflective apis (like class.getSimpleName()/getEnclosingClass), or 
-   * causes verifier errors (like IncompatibleClassChangeError).
-   */
-  void registerInnerClass(ClassVisitor cw) {
-    cw.visitInnerClass(
-        template.factory().internalName(), 
-        template.typeInfo().internalName(), 
-        "Factory",
-        FACTORY_ACCESS);
-  }
-
-  /**
-   * Generates a static inializer that references the CompiledTemplate class to force eager
+   * Generates a static initializer that references the CompiledTemplate class to force eager
    * classloading (and thus verification errors). For example, <pre>{@code
    *   static {
    *     Class<?> clz = GeneratedTemplateClass.class;
@@ -119,13 +104,13 @@ final class TemplateFactoryCompiler {
    * loading them.
    */
   private void generateStaticInitializer(ClassWriter cw) {
-    CodeBuilder ga = new CodeBuilder(
+    GeneratorAdapter ga = new GeneratorAdapter(
         Opcodes.ACC_STATIC,
         BytecodeUtils.CLASS_INIT,
         null /* no generic signature */,
         null /* no checked exceptions */,
         cw);
-    ga.pushType(template.typeInfo().type());
+    ga.push(template.typeInfo().type());
     ga.visitVarInsn(Opcodes.ASTORE, 0);
     ga.returnValue();
     ga.endMethod();
@@ -135,10 +120,10 @@ final class TemplateFactoryCompiler {
    * Writes the {@link CompiledTemplate.Factory#create} method, which directly delegates to the
    * constructor of the {@link #template}.
    */
-  private void generateCreateMethod(ClassWriter cw) {
+  private void generateCreateMethod(ClassWriter cw, TypeInfo factoryType) {
     final Label start = new Label();
     final Label end = new Label();
-    final LocalVariable thisVar = createThisVar(template.factory(), start, end);
+    final LocalVariable thisVar = createThisVar(factoryType, start, end);
     final LocalVariable paramsVar = 
         createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
     final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
@@ -157,13 +142,6 @@ final class TemplateFactoryCompiler {
         ijVar.tableEntry(ga);
       }
     };
-    CodeBuilder ga = new CodeBuilder(
-        Opcodes.ACC_PUBLIC,
-        CREATE_METHOD,
-        null /* no generic signature */,
-        null /* no checked exceptions */,
-        cw);
-    constructorBody.gen(ga);
-    ga.endMethod();
+    constructorBody.writeMethod(Opcodes.ACC_PUBLIC, CREATE_METHOD, cw);
   }
 }

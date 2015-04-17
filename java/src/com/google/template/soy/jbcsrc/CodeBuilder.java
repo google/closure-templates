@@ -26,6 +26,8 @@ import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@link MethodVisitor} that acts as a substitute for {@link GeneratorAdapter}.
  * 
@@ -46,11 +48,10 @@ final class CodeBuilder extends MethodVisitor {
     this(mv, access, method.getName(), method.getDescriptor());
   }
 
-  CodeBuilder(int access, Method method, String signature, Type[] exceptions,
-      ClassVisitor cv) {
+  CodeBuilder(int access, Method method, @Nullable Type[] exceptions, ClassVisitor cv) {
     this(access, method, 
         cv.visitMethod(access, method.getName(), method.getDescriptor(),
-            signature, getInternalNames(exceptions)));
+            null /* generic signature */, getInternalNames(exceptions)));
   }
 
   CodeBuilder(MethodVisitor mv, int access, String name, String desc) {
@@ -58,7 +59,7 @@ final class CodeBuilder extends MethodVisitor {
     this.adapter = new GeneratorAdapter(mv, access, name, desc);
   }
 
-  private static String[] getInternalNames(final Type[] types) {
+  private static String[] getInternalNames(@Nullable Type[] types) {
     if (types == null) {
         return null;
     }

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.auto.value.AutoValue;
 
 import org.objectweb.asm.Type;
@@ -29,20 +31,36 @@ import org.objectweb.asm.Type;
 @AutoValue abstract class TypeInfo {
   static TypeInfo create(Class<?> clazz) {
     Type type = Type.getType(clazz);
-    return new AutoValue_TypeInfo(clazz.getName(), type.getInternalName(), type);
+    return new AutoValue_TypeInfo(clazz.getName(), clazz.getSimpleName(), type.getInternalName(), 
+        type);
   }
 
   static TypeInfo create(String className) {
-    // translates a java class name (foo.bar.Baz$Quux) to a java 'internal' name and then translates
+    // Translates a java class name (foo.bar.Baz$Quux) to a java 'internal' name and then translates
     // that to a Type object
     Type type = Type.getObjectType(className.replace('.', '/'));
+    // This logic is specified by Class.getSimpleName()
+    String packageLessName = className.substring(className.lastIndexOf('.') + 1);
+    String simpleName = packageLessName.substring(packageLessName.lastIndexOf('$') + 1);
     return new AutoValue_TypeInfo(
         className,
+        simpleName,
         type.getInternalName(),
         type);
   }
 
   abstract String className();
+  abstract String simpleName();
   abstract String internalName();
   abstract Type type();
+
+  /** Returns a new {@link TypeInfo} for an inner class of this class. */
+  final TypeInfo innerClass(String simpleName) {
+    checkArgument(simpleName.indexOf('$') == -1, 
+        "Simple names shouldn't contain '$': %s", simpleName);
+    String className = className() + '$' + simpleName;
+    String internalName = internalName() + '$' + simpleName;
+    Type type = Type.getObjectType(internalName);
+    return new AutoValue_TypeInfo(className, simpleName, internalName, type);
+  }
 }
