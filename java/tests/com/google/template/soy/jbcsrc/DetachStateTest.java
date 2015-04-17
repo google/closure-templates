@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
@@ -200,5 +201,22 @@ public final class DetachStateTest extends TestCase {
     result = template.render(output, EMPTY_CONTEXT);
     assertEquals(RenderResult.done(), result);
     assertEquals("third\nloop-suffix\nsuffix", output.toString());
+  }
+
+  // This test is for a bug where we were generating one detach logic block for a full expressions
+  // but it caused stack merge errors because the runtime stack wasn't consistent across all detach
+  // points.  See http://mail.ow2.org/wws/arc/asm/2015-04/msg00001.html
+  public void testDetachOnMultipleParamsInOneExpression() throws IOException {
+    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
+        "{@param list : list<int>}",
+        "{@param foo : int}",
+        "{foreach $item in $list}",
+        "  {$item + $foo}",
+        "{/foreach}");
+    SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    assertEquals(RenderResult.done(), 
+        factory.create(params, EMPTY_DICT).render(output, EMPTY_CONTEXT));
+    assertEquals("2345", output.toString());
   }
 }

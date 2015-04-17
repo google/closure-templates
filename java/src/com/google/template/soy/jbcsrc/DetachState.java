@@ -117,7 +117,6 @@ final class DetachState implements ExpressionDetacher.Factory {
    */
   private static final class ExpressionDetacherImpl implements ExpressionDetacher {
     private final Label reattachPoint;
-    private final Label detachPoint = new Label();
     private final Statement saveOperation;
 
     private ExpressionDetacherImpl(Label reattachPoint, Statement save) {
@@ -135,21 +134,6 @@ final class DetachState implements ExpressionDetacher.Factory {
           // the effort.
           adapter.mark(reattachPoint);
           exp.gen(adapter);
-          // If the delegate completes normally, it should skip over the detach logic.
-          Label skip = new Label();
-          adapter.goTo(skip);
-          // This is the branch target for detach operations created by the expressions returned
-          // from resolveSoyValueProvider. When control reaches here, there will be a ResolveStatus
-          // object on top of the runtime stack.
-          // Technically, this logic could go anywhere,  we could put it after the final return of
-          // the current method.  Maybe worth considering since it would allow us to save the skip
-          // operation.
-          adapter.mark(detachPoint);
-          saveOperation.gen(adapter);  // save locals and state field
-          // Convert the resolve result to a render result and detach.
-          adapter.returnValue();
-
-          adapter.mark(skip);  // continue normal operation
         }
       };
     }
@@ -166,9 +150,15 @@ final class DetachState implements ExpressionDetacher.Factory {
           adapter.dup();                                                  // Stack: SVP, SVP
           MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter);   // Stack: SVP, RS
           adapter.dup();                                                  // Stack: SVP, RS, RS
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);     // Stack: SVP, RS, Z
-          // if !isReady goto detachPoint
-          adapter.ifZCmp(Opcodes.IFEQ, detachPoint);                      // Stack: SVP, RS  
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);       // Stack: SVP, RS, Z
+          // if isReady goto resolve
+          Label resolve = new Label();
+          adapter.ifZCmp(Opcodes.IFNE, resolve);                          // Stack: SVP, RS
+
+          saveOperation.gen(adapter);
+          adapter.returnValue();
+
+          adapter.mark(resolve);
           adapter.pop();                                                  // Stack: SVP
           MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter);  // Stack: SV
         }
