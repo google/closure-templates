@@ -16,7 +16,14 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
+import com.google.template.soy.jbcsrc.api.RenderResult;
+
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * A helper for generating detach operations in soy expressions.
@@ -44,4 +51,57 @@ interface ExpressionDetacher {
    * @return an expression yielding a SoyValue returned by {@link SoyValueProvider#resolve()}.
    */
   Expression resolveSoyValueProvider(Expression soyValueProvider);
+  
+  /**
+   * An {@link ExpressionDetacher} that simply returns the {@link RenderResult} returned from
+   * {@link SoyValueProvider#status()} if it isn't done.
+   * 
+   * <p>Generates code that looks like:<pre>    {@code
+   *   
+   *   SoyValueProvider expr = ...;
+   *   if (!expr.status().isDone()) { 
+   *     return expr.status();
+   *   }
+   *   expr.resolve();
+   * }</pre>
+   */
+  static final class BasicDetacher implements ExpressionDetacher {
+    static final Factory FACTORY = new Factory() {
+      @Override public ExpressionDetacher createExpressionDetacher() {
+        return INSTANCE;
+      }
+    };
+    private static final BasicDetacher INSTANCE = new BasicDetacher();
+
+    private BasicDetacher() {}
+
+    @Override public Expression makeDetachable(Expression expr) {
+      return expr;
+    }
+
+    @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
+      return new SimpleExpression(Type.getType(SoyValue.class), false) {
+        @Override void doGen(CodeBuilder adapter) {
+          // We use a bunch of dup() operations in order to save extra field reads and method
+          // invocations.  This makes the expression api difficult/confusing to use.  So instead 
+          // call a bunch of unchecked invocations.
+          // Legend: SVP = SoyValueProvider, RS = ResolveStatus, Z = boolean, SV = SoyValue
+          soyValueProvider.gen(adapter);                                  // Stack: SVP
+          adapter.dup();                                                  // Stack: SVP, SVP
+          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter);   // Stack: SVP, RS
+          adapter.dup();                                                  // Stack: SVP, RS, RS
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);       // Stack: SVP, RS, Z
+          Label end = new Label();
+          // if isReady goto end
+          adapter.ifZCmp(Opcodes.IFNE, end);                              // Stack: SVP, RS
+          adapter.returnValue();
+          adapter.mark(end);
+          adapter.pop();                                                  // Stack: SVP
+          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter);  // Stack: SV
+        }
+      };
+    }
+    
+  }
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import org.objectweb.asm.Type;
@@ -25,12 +26,24 @@ import org.objectweb.asm.commons.Method;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 
 /**
  * A reference to a type that can be constructed at runtime.
  */
 @AutoValue abstract class ConstructorRef {
+  /** 
+   * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
+   * given parameter types.
+   */
+  static ConstructorRef create(TypeInfo type, Iterable<Type> argTypes) {
+    return new AutoValue_ConstructorRef(
+        type,
+        new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)),
+        ImmutableList.copyOf(argTypes));
+  }
+
   private static ConstructorRef create(Class<?> clazz, Class<?> ...argTypes) {
     TypeInfo type = TypeInfo.create(clazz);
     Constructor<?> c;
@@ -59,6 +72,14 @@ import java.util.LinkedHashMap;
    * this constructor.
    */
   Expression construct(final Expression ...args) {
+    return construct(Arrays.asList(args));
+  }
+
+  /** 
+   * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
+   * this constructor.
+   */
+  Expression construct(final Iterable<? extends Expression> args) {
     Expression.checkTypes(argTypes(), args);
     return new SimpleExpression(instanceClass().type(), false) {
       @Override void doGen(CodeBuilder mv) {

@@ -50,9 +50,30 @@ import java.lang.reflect.Modifier;
   static final FieldRef SYSTEM_OUT = staticFieldReference(System.class, "out");
 
   static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
+    return createField(owner, name, Type.getType(type));
+  }
+
+  static FieldRef createFinalField(TypeInfo owner, String name, Type type) {
     return new AutoValue_FieldRef(
-        owner, name, Type.getType(type), 
+        owner, name, type,
         Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL);
+  }
+  
+  static FieldRef instanceFieldReference(Class<?> owner, String name) {
+    Class<?> fieldType;
+    int modifiers = 0;
+    try {
+      java.lang.reflect.Field declaredField = owner.getDeclaredField(name);
+      modifiers = declaredField.getModifiers();
+      if (Modifier.isStatic(modifiers)) {
+        throw new IllegalStateException("Field: " + declaredField + " is static");
+      }
+      fieldType = declaredField.getType();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return new AutoValue_FieldRef(
+        TypeInfo.create(owner), name, Type.getType(fieldType), modifiers);
   }
 
   static FieldRef staticFieldReference(Class<?> owner, String name) {

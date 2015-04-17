@@ -20,8 +20,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import org.objectweb.asm.Type;
+
+import java.util.Arrays;
 
 /**
  * An expression has a {@link #resultType()} and can {@link #gen generate} code to evaluate the
@@ -45,12 +48,22 @@ abstract class Expression extends BytecodeProducer {
    * Checks that the given expressions are compatible with the given types.
    */
   static void checkTypes(ImmutableList<Type> types, Expression ...exprs) {
-    checkArgument(exprs.length == types.size(), 
+    checkTypes(types, Arrays.asList(exprs));
+  }
+
+  /**
+   * Checks that the given expressions are compatible with the given types.
+   */
+  static void checkTypes(ImmutableList<Type> types, Iterable<? extends Expression> exprs) {
+    int size = Iterables.size(exprs);
+    checkArgument(size == types.size(), 
         "Supplied the wrong number of parameters. Expected %s, got %s",
         types.size(),
-        exprs.length);
-    for (int i = 0; i < exprs.length; i++) {
-      exprs[i].checkAssignableTo(types.get(i), "Parameter %s", i);
+        size);
+    int i = 0;
+    for (Expression expr : exprs) {
+      expr.checkAssignableTo(types.get(i), "Parameter %s", i);
+      i++;
     }
   }
 
