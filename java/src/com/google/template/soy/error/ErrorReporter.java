@@ -49,11 +49,5 @@ public interface ErrorReporter {
   /**
    * Opaque token, used by {@link ErrorReporter#checkpoint} and {@link ErrorReporter#errorsSince}.
    */
-  public static final class Checkpoint {
-    final int numErrors;
-
-    Checkpoint(int numErrors) {
-      this.numErrors = numErrors;
-    }
-  }
+  public interface Checkpoint {}
 }

@@ -20,7 +20,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -148,11 +148,9 @@ public class SimplifyExprVisitorTest extends TestCase {
 
 
   private static ExprNode simplifyExpr(String expression) throws Exception {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
     ExprRootNode exprRoot = new ExprRootNode(
-        new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter)
+        new ExpressionParser(expression, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
           .parseExpression());
-    errorReporter.throwIfErrorsPresent();
     SimplifyExprVisitor simplifyExprVisitor = INJECTOR.getInstance(SimplifyExprVisitor.class);
     simplifyExprVisitor.exec(exprRoot);
     return exprRoot;

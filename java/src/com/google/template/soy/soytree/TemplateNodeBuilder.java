@@ -30,6 +30,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.SoyDocParam;
@@ -84,6 +85,9 @@ public abstract class TemplateNodeBuilder {
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
+
+  /** For reporting parse errors. */
+  protected final ErrorReporter errorReporter;
 
   /** The registry of named types. */
   private final SoyTypeRegistry typeRegistry;
@@ -146,9 +150,11 @@ public abstract class TemplateNodeBuilder {
   protected TemplateNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo,
       SourceLocation sourceLocation,
+      ErrorReporter errorReporter,
       @Nullable SoyTypeRegistry typeRegistry) {
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.sourceLocation = sourceLocation;
+    this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
     this.syntaxVersionBound = null;
     this.isSoyDocSet = false;

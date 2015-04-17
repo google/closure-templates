@@ -22,7 +22,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -115,7 +114,6 @@ public final class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void>
     // If appropriate, apply autoescape by adding an |escapeHtml directive (should be applied first
     // because other directives may add HTML tags).
     if (currTemplateShouldAutoescape && !shouldCancelAutoescape) {
-      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
       PrintDirectiveNode newEscapeHtmlDirectiveNode = new PrintDirectiveNode.Builder(
           nodeIdGen.genId(), EscapeHtmlDirective.NAME, "", SourceLocation.UNKNOWN)
           .build(errorReporter);

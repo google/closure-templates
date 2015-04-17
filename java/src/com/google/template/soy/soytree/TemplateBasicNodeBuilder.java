@@ -26,6 +26,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -36,7 +37,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Builder for TemplateBasicNode.
@@ -66,8 +66,10 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
    * @param sourceLocation The template's source location.
    */
   public TemplateBasicNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo, SourceLocation sourceLocation) {
-    super(soyFileHeaderInfo, sourceLocation, null);
+      SoyFileHeaderInfo soyFileHeaderInfo,
+      SourceLocation sourceLocation,
+      ErrorReporter errorReporter) {
+    super(soyFileHeaderInfo, sourceLocation, errorReporter, null /* typeRegistry */);
   }
 
   /**
@@ -78,8 +80,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
   public TemplateBasicNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo,
       SourceLocation sourceLocation,
+      ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry) {
-    super(soyFileHeaderInfo, sourceLocation, typeRegistry);
+    super(soyFileHeaderInfo, sourceLocation, errorReporter, typeRegistry);
   }
 
   @Override public TemplateBasicNodeBuilder setId(int id) {
@@ -101,7 +104,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       commandTextForParsing = commandTextForParsing.substring(ntnMatcher.end()).trim();
     }
 
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandTextForParsing);
+    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
+        commandTextForParsing, errorReporter, sourceLocation);
 
     if (nameAttr == null) {
       nameAttr = attributes.get("name");

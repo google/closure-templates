@@ -22,7 +22,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -195,15 +194,17 @@ public final class SourceLocationTest extends TestCase {
     // look for a line number and break in a way that suppresses the real error
     // message.
     // JavaCC is pretty good about never using null as a token value.
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    SoyFileSetParserBuilder.forSuppliers(
+    try {
+      SoyFileSetParserBuilder.forSuppliers(
           SoyFileSupplier.Factory.create(
               "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
               SoyFileKind.SRC, "borken.soy"))
           .doRunInitialParsingPasses(false)
-          .errorReporter(errorReporter)
           .parse();
-    assertEquals(1, errorReporter.getErrors().size());
+      fail();
+    } catch (IllegalStateException e) {
+      // Expected.
+    }
   }
 
   public void testAdditionalSourceLocationInfo() throws Exception {

@@ -21,12 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -121,9 +120,11 @@ public final class CallDelegateNode extends CallNode {
 
   public static final class Builder {
 
-    public static final CallDelegateNode ERROR = new Builder(-1, SourceLocation.UNKNOWN)
-        .commandText("error.error")
-        .buildAndThrowIfInvalid(); // guaranteed to be valid
+    private static CallDelegateNode error() {
+      return new Builder(-1, SourceLocation.UNKNOWN)
+          .commandText("error.error")
+          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
+    }
 
     private final int id;
     private final SourceLocation sourceLocation;
@@ -183,24 +184,11 @@ public final class CallDelegateNode extends CallNode {
           ? parseCommandText(errorReporter)
           : buildCommandText();
       if (errorReporter.errorsSince(checkpoint)) {
-        return ERROR;
+        return error();
       }
       CallDelegateNode callDelegateNode
           = new CallDelegateNode(id, sourceLocation, commandTextInfo, escapingDirectiveNames);
       return callDelegateNode;
-    }
-
-    /**
-     * @throws SoySyntaxException if the data given to the Builder cannot be used to construct
-     *     a {@link CallBasicNode}.
-     * TODO(user): remove. The parser already has an ErrorManager. This method exists
-     *     solely for higher layers (like visitors) that do not already have ErrorManagers.
-     */
-    public CallDelegateNode buildAndThrowIfInvalid() {
-      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
-      CallDelegateNode node = build(errorManager);
-      errorManager.throwIfErrorsPresent();
-      return node;
     }
 
     private CommandTextInfo parseCommandText(ErrorReporter errorReporter) {

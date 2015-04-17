@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -106,7 +105,6 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
             nodeIdGen.genId(), cssNode.getCommandText(), cssNode.getSourceLocation());
 
       } else if (cssHandlingScheme == CssHandlingScheme.REFERENCE) {
-        TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
         PrintNode newPrintNode = new PrintNode.Builder(
             nodeIdGen.genId(),
             false /* isImplicit */,
@@ -116,7 +114,6 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
         newPrintNode.addChild(new PrintDirectiveNode.Builder(
             nodeIdGen.genId(), "|noAutoescape", "", SourceLocation.UNKNOWN)
             .build(errorReporter));
-        errorReporter.throwIfErrorsPresent();
         newNode = newPrintNode;
         // Check that the expression is a valid reference.
         boolean isInvalidExpr = false;

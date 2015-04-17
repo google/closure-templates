@@ -20,7 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -50,6 +51,7 @@ public class TemplateNodeTest extends TestCase {
 
   private static final SoyFileHeaderInfo SIMPLE_FILE_HEADER_INFO = new SoyFileHeaderInfo("testNs");
   private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
   public void testParseSoyDoc() {
     String soyDoc = "" +
@@ -60,7 +62,8 @@ public class TemplateNodeTest extends TestCase {
         " * @param? goo\n" +
         " *     Goo to print.\n" +
         " */";
-    TemplateNode tn = new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN)
+    TemplateNode tn = new TemplateBasicNodeBuilder(
+        SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, FAIL)
         .setId(0)
         .setCmdText(".boo")
         .setSoyDoc(soyDoc)
@@ -87,8 +90,12 @@ public class TemplateNodeTest extends TestCase {
         "/**\n" +
         " * @deprecated\n" +
         " */";
-    TemplateNode tn = new TemplateBasicNodeBuilder(SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN)
-        .setId(0).setCmdText(".boo").setSoyDoc(soyDoc).build();
+    TemplateNode tn = new TemplateBasicNodeBuilder(
+        SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, FAIL)
+        .setId(0)
+        .setCmdText(".boo")
+        .setSoyDoc(soyDoc)
+        .build();
 
     assertEquals("&#64;deprecated", tn.getSoyDocDesc());
   }
@@ -299,8 +306,8 @@ public class TemplateNodeTest extends TestCase {
       templateBasicNode()
           .setId(0).setCmdText("autoescape=\"true").setSoyDoc("/***/").build();
       fail();
-    } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
+    } catch (IllegalStateException e) {
+      assertTrue(e.getMessage().contains(
           "Malformed attributes in 'template' command text (autoescape=\"true)."));
     }
   }
@@ -515,7 +522,7 @@ public class TemplateNodeTest extends TestCase {
   }
 
   public void testToSourceString() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ErrorReporter boom = ExplodingErrorReporter.get();
     TemplateNode tn = templateBasicNode()
         .setId(0)
         .setCmdText("name=\".boo\"")
@@ -535,37 +542,36 @@ public class TemplateNodeTest extends TestCase {
     tn.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
             .exprText("$foo")
-            .build(errorReporter));
+            .build(boom));
     tn.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
             .exprText("$goo")
-            .build(errorReporter));
+            .build(boom));
     tn.addChild(new RawTextNode(0, "  ", SourceLocation.UNKNOWN));  // 2 spaces
 
     assertEquals("" +
-        "/**\n" +
-        " * Test template.\n" +
-        " *\n" +
-        " * @param foo Foo to print.\n" +
-        " * @param goo\n" +
-        " *     Goo to print.\n" +
-        " */\n" +
-        "{template name=\".boo\"}\n" +
-        "  {@param moo: bool}  /** Something milky. */\n" +
-        "  {@param too: string|null}\n" +
-        "{sp} {$foo}{$goo} {sp}\n" +
-        "{/template}\n",
+            "/**\n" +
+            " * Test template.\n" +
+            " *\n" +
+            " * @param foo Foo to print.\n" +
+            " * @param goo\n" +
+            " *     Goo to print.\n" +
+            " */\n" +
+            "{template name=\".boo\"}\n" +
+            "  {@param moo: bool}  /** Something milky. */\n" +
+            "  {@param too: string|null}\n" +
+            "{sp} {$foo}{$goo} {sp}\n" +
+            "{/template}\n",
         tn.toSourceString());
-    errorReporter.throwIfErrorsPresent();
   }
 
   private static TemplateBasicNodeBuilder templateBasicNode() {
     return new TemplateBasicNodeBuilder(
-        SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, TYPE_REGISTRY);
+        SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, FAIL, TYPE_REGISTRY);
   }
 
   private static TemplateDelegateNodeBuilder templateDelegateNode() {
     return new TemplateDelegateNodeBuilder(
-        SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, TYPE_REGISTRY);
+        SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, FAIL, TYPE_REGISTRY);
   }
 }

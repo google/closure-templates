@@ -21,8 +21,7 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarNode;
@@ -53,105 +52,73 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   void generatesASTWithRootOfType(Class<? extends ExprNode> clazz) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprNode root = new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter)
-        .parseExpression();
-    errorReporter.throwIfErrorsPresent();
+    ExprNode root = expressionParser().parseExpression();
     Truth.assertThat(root).isInstanceOf(clazz);
   }
 
   void isNotValidExpression() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseExpression();
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      expressionParser().parseExpression();
+    } catch (IllegalStateException e) {
       return; // passes
     }
     fail("is an invalid expression");
   }
 
   void isNotValidDataRef() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseDataReference();
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      expressionParser().parseDataReference();
+    } catch (IllegalStateException e) {
       return; // passes
     }
     fail("is an invalid data ref");
   }
 
   void isNotValidExpressionList() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseExpressionList();
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      expressionParser().parseExpressionList();
+    } catch (IllegalStateException e) {
       return; // passes
     }
     fail("is an invalid expression list");
   }
 
   void isNotValidGlobal() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseGlobal();
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      expressionParser().parseGlobal();
+    } catch (IllegalStateException e) {
       return; // passes
     }
     fail("is an invalid global");
   }
 
   void isNotValidVar() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseVariable();
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      expressionParser().parseVariable();
+    } catch (IllegalStateException e) {
       return; // passes
     }
     fail("is an invalid var");
   }
 
   ExprNode isValidExpression() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprNode rootNode = new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter)
-        .parseExpression();
-    errorReporter.throwIfErrorsPresent();
-    return rootNode;
+    return expressionParser().parseExpression();
   }
 
   ExprNode isValidDataRef() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    ExprNode exprNode = new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter)
-        .parseDataReference();
-    errorReporter.throwIfErrorsPresent();
-    return exprNode;
+    return expressionParser().parseDataReference();
   }
 
   List<ExprNode> isValidExpressionList() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    List<ExprNode> exprList = 
-        new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter)
-            .parseExpressionList();
-    errorReporter.throwIfErrorsPresent();
-    return exprList;
+    return expressionParser().parseExpressionList();
   }
 
   void isValidGlobal() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseGlobal();
-    errorReporter.throwIfErrorsPresent();
+    expressionParser().parseGlobal();
   }
 
   void isValidGlobalNamed(String name) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    GlobalNode globalNode
-        = new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter)
-        .parseGlobal();
-    errorReporter.throwIfErrorsPresent();
+    GlobalNode globalNode = expressionParser().parseGlobal();
     String actualName = globalNode.getName();
     Truth.assertWithMessage(
         "expected "
@@ -166,16 +133,11 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   void isValidVar() {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter).parseVariable();
-    errorReporter.throwIfErrorsPresent();
+    expressionParser().parseVariable();
   }
 
   void isValidVarNamed(String name) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    VarNode varNode = new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, errorReporter)
-        .parseVariable();
-    errorReporter.throwIfErrorsPresent();
+    VarNode varNode = expressionParser().parseVariable();
     String actualName = varNode.getName();
     Truth.assertWithMessage(
         "expected "
@@ -187,5 +149,9 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
         .that(actualName)
         .isEqualTo(name);
     Truth.assertThat(varNode.toSourceString()).isEqualTo("$" + name);
+  }
+
+  private ExpressionParser expressionParser() {
+    return new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, ExplodingErrorReporter.get());
   }
 }

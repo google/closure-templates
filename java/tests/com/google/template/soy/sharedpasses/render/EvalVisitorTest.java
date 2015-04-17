@@ -25,7 +25,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyDataException;
@@ -39,7 +38,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -162,31 +161,29 @@ public class EvalVisitorTest extends TestCase {
    * Asserts that evaluating the given expression causes a ParseException.
    * @param expression The expression to evaluate.
    */
-  private void assertParseException(String expression) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+  private void assertParseError(String expression) {
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      new ExpressionParser(expression, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+          .parseExpression();
+    } catch (IllegalStateException e) {
       return; // passes
     }
-    fail("expected ParseException, got none");
+    fail("expected parse error, got none");
   }
 
   /**
    * Asserts that evaluating the given expression causes a ParseException.
    * @param expression The expression to evaluate.
    */
-  private void assertParseException(String expression, String errorMsgSubstring) {
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-    new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+  private void assertParseError(String expression, String errorMsgSubstring) {
     try {
-      errorReporter.throwIfErrorsPresent();
-    } catch (SoySyntaxException e) {
+      new ExpressionParser(expression, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+          .parseExpression();
+    } catch (IllegalStateException e) {
       assertThat(e.getMessage()).contains(errorMsgSubstring);
       return;
     }
-    fail("expected ParseException, got none");
+    fail("expected parse error, got none");
   }
 
 
@@ -263,7 +260,7 @@ public class EvalVisitorTest extends TestCase {
     result = (SoyList) eval("[]");
     assertThat(result.length()).isEqualTo(0);
 
-    assertParseException("[,]");
+    assertParseError("[,]");
   }
 
 
@@ -293,14 +290,14 @@ public class EvalVisitorTest extends TestCase {
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
     assertThat(result.getField("baz").integerValue()).isEqualTo(8);
 
-    assertParseException("[:,]");
-    assertParseException("[,:]");
+    assertParseError("[:,]");
+    assertParseError("[,:]");
 
     // Test error on single-identifier key.
-    assertParseException(
+    assertParseError(
         "[aaa: 'blah',]",
         "Disallowed single-identifier key \"aaa\" in map literal");
-    assertParseException(
+    assertParseError(
         "['aaa': 'blah', bbb: 123]",
         "Disallowed single-identifier key \"bbb\" in map literal");
 

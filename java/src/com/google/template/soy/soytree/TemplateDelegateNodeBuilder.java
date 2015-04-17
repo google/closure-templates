@@ -24,7 +24,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -82,8 +82,10 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
    * @param sourceLocation The template's source location.
    */
   public TemplateDelegateNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo, SourceLocation sourceLocation) {
-    super(soyFileHeaderInfo, sourceLocation, null /* typeRegistry */);
+      SoyFileHeaderInfo soyFileHeaderInfo,
+      SourceLocation sourceLocation,
+      ErrorReporter errorReporter) {
+    super(soyFileHeaderInfo, sourceLocation, errorReporter, null /* typeRegistry */);
   }
 
   /**
@@ -93,8 +95,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   public TemplateDelegateNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo,
       SourceLocation sourceLocation,
+      ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry) {
-    super(soyFileHeaderInfo, sourceLocation, typeRegistry);
+    super(soyFileHeaderInfo, sourceLocation, errorReporter, typeRegistry);
   }
 
   @Override public TemplateDelegateNodeBuilder setId(int id) {
@@ -117,17 +120,15 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           "Invalid delegate template name \"" + delTemplateName + "\".");
     }
 
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(matcher.group(2).trim());
+    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
+        matcher.group(2).trim(), errorReporter, sourceLocation);
 
     String variantExprText = attributes.get("variant");
     if (variantExprText == null) {
       this.delTemplateVariant = "";
     } else {
-      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-      ExprNode variantExpr
-          = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
-              .parseExpression();
-      errorReporter.throwIfErrorsPresent();
+      ExprNode variantExpr = new ExpressionParser(variantExprText, sourceLocation, errorReporter)
+          .parseExpression();
       if (variantExpr instanceof StringNode) {
         // A string literal is being used as template variant, so the expression value can
         // immediately be evaluated.

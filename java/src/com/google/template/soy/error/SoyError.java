@@ -39,7 +39,7 @@ public final class SoyError {
     this.messageFormat = messageFormat;
   }
 
-  String format(String... args) {
+  public String format(String... args) {
     Preconditions.checkNotNull(args);
     Preconditions.checkState(args.length == messageFormat.getFormats().length);
     return messageFormat.format(args);

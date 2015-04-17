@@ -23,8 +23,8 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 
@@ -222,11 +222,13 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   public static final class Builder {
 
-    public static final MsgHtmlTagNode ERROR = new Builder(
-        -1,
-        ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>", SourceLocation.UNKNOWN)),
-        SourceLocation.UNKNOWN)
-        .buildAndThrowIfInvalid(); // guaranteed to be valid
+    private static MsgHtmlTagNode error() {
+      return new Builder(
+          -1,
+          ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>", SourceLocation.UNKNOWN)),
+          SourceLocation.UNKNOWN)
+          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
+    }
 
     private final int id;
     private ImmutableList<StandaloneNode> children;
@@ -245,7 +247,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
     /**
      * Returns a new {@link MsgHtmlTagNode} built from the builder's state. If the builder's state
-     * is invalid, errors are reported to the {@code errorManager} and {Builder#ERROR} is returned.
+     * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
      */
     public MsgHtmlTagNode build(ErrorReporter errorReporter) {
       Checkpoint checkpoint = errorReporter.checkpoint();
@@ -257,10 +259,10 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       String fullTagText = computeFullTagText();
 
       if (errorReporter.errorsSince(checkpoint)) {
-        return ERROR;
+        return error();
       }
 
-      MsgHtmlTagNode node = new MsgHtmlTagNode(
+      return new MsgHtmlTagNode(
           id,
           sourceLocation,
           userSuppliedPlaceholderName,
@@ -269,7 +271,6 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
           isOnlyRawText,
           fullTagText,
           children);
-      return node;
     }
 
     private boolean isSelfEnding() {
@@ -342,13 +343,6 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
         String replacementText = matcher.appendTail(sb).toString();
         return new RawTextNode(node.getId(), replacementText, node.getSourceLocation());
       }
-      return node;
-    }
-
-    private MsgHtmlTagNode buildAndThrowIfInvalid() {
-      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-      MsgHtmlTagNode node = build(errorReporter);
-      errorReporter.throwIfErrorsPresent();
       return node;
     }
   }

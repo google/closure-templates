@@ -40,7 +40,9 @@ public final class MainClassUtilsTest extends TestCase {
     assertThat(runInternal(new Main() {
       @Override
       public CompilationResult main() throws IOException {
-        return CompilationResult.success();
+        return new CompilationResult(
+            ImmutableList.<SoySyntaxException>of(),
+            new ErrorPrettyPrinter(ImmutableList.<SoyFileSupplier>of()));
       }
     })).isEqualTo(0);
   }

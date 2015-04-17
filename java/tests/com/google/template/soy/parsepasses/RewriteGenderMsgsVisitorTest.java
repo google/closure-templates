@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -82,15 +81,12 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    desc=\"...\"}\n" +
         "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n" +
         "{/msg}\n";
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .errorReporter(errorReporter)
-        .parse();
-      assertThat(errorReporter.getErrors()).hasSize(1);
-      Throwable t = errorReporter.getErrors().asList().get(0);
-      assertThat(t).isInstanceOf(SoySyntaxException.class);
-      assertThat(t.getMessage()).contains(
-          "Attribute 'genders' does not contain 1-3 expressions");
+    try {
+      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e.getMessage()).contains("Attribute 'genders' does not contain 1-3 expressions");
+    }
   }
 
 

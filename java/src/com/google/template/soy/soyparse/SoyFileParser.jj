@@ -48,7 +48,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -693,8 +693,10 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
         templateContent.endColumn);
 
     TemplateNodeBuilder templateNodeBuilder = isBasicTemplate
-        ? new TemplateBasicNodeBuilder(soyFileHeaderInfo, srcLocation, typeRegistry)
-        : new TemplateDelegateNodeBuilder(soyFileHeaderInfo, srcLocation, typeRegistry);
+        ? new TemplateBasicNodeBuilder(
+            soyFileHeaderInfo, srcLocation, errorReporter, typeRegistry)
+        : new TemplateDelegateNodeBuilder(
+            soyFileHeaderInfo, srcLocation, errorReporter, typeRegistry);
 
     templateNodeBuilder.setId(nodeIdGen.genId());
 

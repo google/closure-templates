@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.error;
+package com.google.template.soy;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Simple {@link ErrorReporter} implementation.
+ * Simple {@link com.google.template.soy.error.ErrorReporter} implementation.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public class ErrorReporterImpl implements ErrorReporter {
-  protected final List<SoySyntaxException> errors = new ArrayList<>();
+public final class ErrorReporterImpl implements ErrorReporter {
+  private final List<SoySyntaxException> errors = new ArrayList<>();
 
   @Override
   public void report(SourceLocation sourceLocation, SoyError error, String... args) {
@@ -39,20 +41,27 @@ public class ErrorReporterImpl implements ErrorReporter {
 
   @Override
   public Checkpoint checkpoint() {
-    return new Checkpoint(errors.size());
+    return new CheckpointImpl(errors.size());
   }
 
   @Override
   public boolean errorsSince(Checkpoint checkpoint) {
-    return errors.size() > checkpoint.numErrors;
+    // Throws a ClassCastException if callers try to pass in a Checkpoint instance
+    // that wasn't returned by checkpoint(). We could probably ensure this at compile time
+    // with a bunch of generics, but it's not worth the effort.
+    return errors.size() > ((CheckpointImpl) checkpoint).numErrors;
   }
 
-  /**
-   * Returns the full list of errors reported to this error reporter.
-   * TODO(user): only a couple top-level places in the codebase should be able to use this.
-   * Make package-private once the error refactoring is complete.
-   */
-  public ImmutableCollection<? extends SoySyntaxException> getErrors() {
+  /** Returns the full list of errors reported to this error reporter. */
+  ImmutableCollection<? extends SoySyntaxException> getErrors() {
     return ImmutableList.copyOf(errors);
+  }
+
+  private static final class CheckpointImpl implements Checkpoint {
+    private final int numErrors;
+
+    private CheckpointImpl(int numErrors) {
+      this.numErrors = numErrors;
+    }
   }
 }

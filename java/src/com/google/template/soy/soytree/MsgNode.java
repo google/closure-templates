@@ -525,7 +525,8 @@ public final class MsgNode extends AbstractBlockCommandNode
      */
     public MsgNode build(ErrorReporter errorReporter) {
 
-      Map<String, String> attributes = ATTRIBUTES_PARSER.parse(commandText);
+      Map<String, String> attributes
+          = ATTRIBUTES_PARSER.parse(commandText, errorReporter, sourceLocation);
 
       String gendersAttr = attributes.get("genders");
       List<ExprRootNode> genderExprs = null;

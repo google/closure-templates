@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
@@ -109,9 +109,10 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
 
   public static final class Builder extends CallParamNode.Builder {
 
-    public static final CallParamValueNode ERROR
-        = new Builder(-1, "error: error", SourceLocation.UNKNOWN)
-        .buildAndThrowIfInvalid(); // guaranteed to build
+    private static CallParamValueNode error() {
+      return new Builder(-1, "error: error", SourceLocation.UNKNOWN)
+          .build(ExplodingErrorReporter.get()); // guaranteed to build
+    }
 
     public Builder(int id, String commandText, SourceLocation sourceLocation) {
       super(id, commandText, sourceLocation);
@@ -130,18 +131,11 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
       }
 
       if (errorReporter.errorsSince(checkpoint)) {
-        return ERROR;
+        return error();
       }
 
       CallParamValueNode node = new CallParamValueNode(
           id, sourceLocation, parseResult.key, parseResult.valueExprUnion, commandText);
-      return node;
-    }
-
-    private CallParamValueNode buildAndThrowIfInvalid() {
-      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
-      CallParamValueNode node = build(errorManager);
-      errorManager.throwIfErrorsPresent();
       return node;
     }
   }

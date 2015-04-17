@@ -109,7 +109,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .dataAttribute(DataAttribute.all())
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
-          .buildAndThrowIfInvalid();
+          .build(errorReporter);
     } else {
       CallDelegateNode nodeCast = (CallDelegateNode) node;
       newCallNode = new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
@@ -119,7 +119,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .dataAttribute(DataAttribute.all())
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
-          .buildAndThrowIfInvalid();
+          .build(errorReporter);
     }
     node.getParent().replaceChild(node, newCallNode);
   }

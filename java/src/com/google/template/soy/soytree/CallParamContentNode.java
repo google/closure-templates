@@ -21,8 +21,8 @@ import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
@@ -182,9 +182,10 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
 
   public static final class Builder extends CallParamNode.Builder {
 
-    public static final CallParamContentNode ERROR
-        = new Builder(-1, "error", SourceLocation.UNKNOWN)
-        .buildAndThrowIfInvalid(); // guaranteed to build
+    private static CallParamContentNode error() {
+      return new Builder(-1, "error", SourceLocation.UNKNOWN)
+          .build(ExplodingErrorReporter.get()); // guaranteed to build
+    }
 
     public Builder(int id, String commandText, SourceLocation sourceLocation) {
       super(id, commandText, sourceLocation);
@@ -198,19 +199,11 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
       }
 
       if (errorReporter.errorsSince(checkpoint)) {
-        return ERROR;
+        return error();
       }
 
-      CallParamContentNode node = new CallParamContentNode(
+      return new CallParamContentNode(
           id, sourceLocation, parseResult.key, parseResult.contentKind, commandText);
-      return node;
-    }
-
-    private CallParamContentNode buildAndThrowIfInvalid() {
-      TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
-      CallParamContentNode node = build(errorManager);
-      errorManager.throwIfErrorsPresent();
-      return node;
     }
   }
 

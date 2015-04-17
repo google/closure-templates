@@ -27,8 +27,9 @@ import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -130,12 +131,12 @@ public final class SoyUtils {
    * @param inputSource A source that returns a reader for the globals file.
    * @return The parsed globals map.
    * @throws IOException If an error occurs while reading the globals file.
-   * @throws SoySyntaxException If the globals file is not in the correct format.
+   * @throws java.lang.IllegalStateException If the globals file is not in the correct format.
    */
-  public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(
-      CharSource inputSource) throws IOException, SoySyntaxException {
+  public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(CharSource inputSource)
+      throws IOException {
     ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
-    TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
+    ErrorReporter errorReporter = ExplodingErrorReporter.get();
 
     try (BufferedReader reader = new BufferedReader(inputSource.openStream())) {
       int lineNum = 1;
@@ -191,8 +192,6 @@ public final class SoyUtils {
             name, InternalValueUtils.convertPrimitiveExprToData((PrimitiveNode) valueExpr));
       }
     }
-    // TODO(user): Remove once callers have access to an error reporter.
-    errorReporter.throwIfErrorsPresent();
     return compileTimeGlobalsBuilder.build();
   }
 }

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.ExprUnion;
@@ -558,7 +559,7 @@ public final class ContentSecurityPolicyPass {
         true,  // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
         SourceLocation.UNKNOWN)
         .exprUnion(new ExprUnion(makeReferenceToInjectedCspNonce()))
-        .build(null);
+        .build(ExplodingErrorReporter.get());
   }
 
 

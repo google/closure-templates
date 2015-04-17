@@ -21,7 +21,7 @@ import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplate
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -34,17 +34,7 @@ public class MsgNodeTest extends TestCase {
 
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
-  private TransitionalThrowingErrorReporter errorReporter;
-
-  @Override
-  protected void setUp() throws Exception {
-    errorReporter = new TransitionalThrowingErrorReporter();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    errorReporter.throwIfErrorsPresent();
-  }
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
   public void testGenPlaceholderNames() throws Exception {
 
@@ -73,7 +63,7 @@ public class MsgNodeTest extends TestCase {
     // 2. To differentiate {$foo.goo} and {$goo}, normally the new names would be GOO_1 and GOO_2.
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     // Link 1 start tag.
     MsgHtmlTagNode link1Start = new MsgHtmlTagNode.Builder(
         1,
@@ -81,40 +71,40 @@ public class MsgNodeTest extends TestCase {
             new RawTextNode(0, "<a href=\"", X),
             new PrintNode.Builder(0, true /* isImplicit */, X)
                 .exprText("$url1")
-                .build(errorReporter),
+                .build(FAIL),
             new RawTextNode(0, "\">", X)),
         X)
-        .build(errorReporter);
+        .build(FAIL);
     msg.addChild(new MsgPlaceholderNode(0, link1Start));
     // Link 1 contents.
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$boo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$foo.goo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("1 + 1")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("2 + 2")
-            .build(errorReporter)));
+            .build(FAIL)));
     // Link 1 end tag.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", FAIL)));
     // Intervening 'br' tags.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", errorReporter)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br/>", errorReporter)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", errorReporter)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", errorReporter)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br/>", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", FAIL)));
     // Link 2 start tag.
     MsgHtmlTagNode link2Start = new MsgHtmlTagNode.Builder(
         2,
@@ -122,72 +112,70 @@ public class MsgNodeTest extends TestCase {
             new RawTextNode(0, "<a href=\"", X),
             new PrintNode.Builder(0, true /* isImplicit */, X)
                 .exprText("$url2")
-                .build(errorReporter),
+                .build(FAIL),
             new RawTextNode(0, "\">", X)),
         X)
-        .build(errorReporter);
+        .build(FAIL);
     msg.addChild(new MsgPlaceholderNode(0, link2Start));
     // Link 2 contents.
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$boo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$goo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$goo2")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("2 + 2")
-            .build(errorReporter)));
+            .build(FAIL)));
     // Link 2 end tag.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", errorReporter)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", FAIL)));
     // All the parts with base placeholder name ZOO.
     msg.addChild(
-        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", errorReporter)));
+        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", FAIL)));
     msg.addChild(
-        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", errorReporter)));
+        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$zoo")
             .userSuppliedPlaceholderName("zoo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$zoo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
             .exprText("$foo.zoo")
             .userSuppliedPlaceholderName("zoo")
-            .build(errorReporter)));
+            .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
         .exprText("$foo.zoo")
         .userSuppliedPlaceholderName("zoo")
-        .build(errorReporter)));
+        .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(3, X)
         .commandText(".helper")
         .userSuppliedPlaceholderName("zoo")
-        .build(errorReporter)));
+        .build(FAIL)));
     msg.addChild(new MsgPlaceholderNode(0, new CallBasicNode.Builder(4, X)
         .commandText(".helper")
         .userSuppliedPlaceholderName("zoo")
-        .build(errorReporter)));
-
-    errorReporter.throwIfErrorsPresent();
+        .build(FAIL)));
 
     assertEquals("START_LINK_1", msg.getPlaceholderName((MsgPlaceholderNode) msg.getChild(0)));
     assertEquals("BOO", msg.getPlaceholderName((MsgPlaceholderNode) msg.getChild(1)));
@@ -276,27 +264,27 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
         = new MsgSelectCaseNode.Builder(0, "'female'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode1
         = new MsgPluralNode.Builder(0, "$values.people[0] offset=\"1\"", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0,
             new PrintNode.Builder(0, false /* isImplicit */, X)
                 .exprText("$person")
-                .build(errorReporter));
+                .build(FAIL));
     pluralCaseNode11.addChild(placeholderNode111);
     RawTextNode rawTextNode111
         = new RawTextNode(0, " added one person to her circle.", X);
@@ -309,7 +297,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode12.addChild(placeholderNode121);
     RawTextNode rawTextNode121
         = new RawTextNode(0, " added many people to her circle.", X);
@@ -324,19 +312,19 @@ public class MsgNodeTest extends TestCase {
     // case 'male'
     MsgSelectCaseNode maleNode
         = new MsgSelectCaseNode.Builder(0, "'male'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode2
         = new MsgPluralNode.Builder(0, "$values.people[1]", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode21
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode211 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode21.addChild(placeholderNode211);
     RawTextNode rawTextNode211
         = new RawTextNode(0, " added one person to his circle.", X);
@@ -349,7 +337,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode22.addChild(placeholderNode221);
     RawTextNode rawTextNode221
         = new RawTextNode(0, " added many people to his circle.", X);
@@ -366,15 +354,15 @@ public class MsgNodeTest extends TestCase {
 
     MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
         0, "$values.people[1]", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode31.addChild(placeholderNode311);
     RawTextNode rawTextNode311
         = new RawTextNode(0, " added one person to his/her circle.", X);
@@ -387,7 +375,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode32.addChild(placeholderNode321);
     RawTextNode rawTextNode321
         = new RawTextNode(0, " added many people to his/her circle.", X);
@@ -453,26 +441,26 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender[5]", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
         = new MsgSelectCaseNode.Builder(0, "'female'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(
         0, "$woman.num_friends", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode11.addChild(placeholderNode111);
     RawTextNode rawTextNode111
         = new RawTextNode(0, " added one person to her circle.", X);
@@ -485,7 +473,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode12.addChild(placeholderNode121);
     RawTextNode rawTextNode121
         = new RawTextNode(0, " added many people to her circle.", X);
@@ -500,19 +488,19 @@ public class MsgNodeTest extends TestCase {
     // case 'male'
     MsgSelectCaseNode maleNode
         = new MsgSelectCaseNode.Builder(0, "'male'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode2
         = new MsgPluralNode.Builder(0, "$man.num_friends", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode21
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode211 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode21.addChild(placeholderNode211);
     RawTextNode rawTextNode211
         = new RawTextNode(0, " added one person to his circle.", X);
@@ -525,7 +513,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode22.addChild(placeholderNode221);
     RawTextNode rawTextNode221
         = new RawTextNode(0, " added many people to his circle.", X);
@@ -542,15 +530,15 @@ public class MsgNodeTest extends TestCase {
 
     MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
         0, "$thing.nEntities", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode31.addChild(placeholderNode311);
     RawTextNode rawTextNode311
         = new RawTextNode(0, " added one person to his/her circle.", X);
@@ -563,7 +551,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode32.addChild(placeholderNode321);
     RawTextNode rawTextNode321
         = new RawTextNode(0, " added many people to his/her circle.", X);
@@ -618,27 +606,27 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     MsgSelectNode selectNode
         = new MsgSelectNode.Builder(0, "$gender.person", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
         = new MsgSelectCaseNode.Builder(0, "'female'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode1
         = new MsgPluralNode.Builder(0, "$woman.num_friends.person", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode11.addChild(placeholderNode111);
     RawTextNode rawTextNode111
         = new RawTextNode(0, " added one person to her circle.", X);
@@ -651,7 +639,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person2")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode12.addChild(placeholderNode121);
     RawTextNode rawTextNode121
         = new RawTextNode(0, " added many people to her circle.", X);
@@ -668,15 +656,15 @@ public class MsgNodeTest extends TestCase {
 
     MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
         0, "$man.num_friends.person", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode31.addChild(placeholderNode311);
     RawTextNode rawTextNode311
         = new RawTextNode(0, " added one person to his/her circle.", X);
@@ -689,7 +677,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person2")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode32.addChild(placeholderNode321);
     RawTextNode rawTextNode321
         = new RawTextNode(0, " added many people to his/her circle.", X);
@@ -763,26 +751,26 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
         = new MsgSelectCaseNode.Builder(0, "'female'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode1
         = new MsgPluralNode.Builder(0, "$woman.num", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode11.addChild(placeholderNode111);
     RawTextNode rawTextNode111
         = new RawTextNode(0, " added one person to her circle.", X);
@@ -795,7 +783,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode12.addChild(placeholderNode121);
     RawTextNode rawTextNode121
         = new RawTextNode(0, " added many people to her circle.", X);
@@ -809,18 +797,18 @@ public class MsgNodeTest extends TestCase {
 
     // case 'male'
     MsgSelectCaseNode maleNode = new MsgSelectCaseNode.Builder(0, "'male'", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralNode pluralNode2 = new MsgPluralNode.Builder(0, "$man.num", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode21
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode211 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode21.addChild(placeholderNode211);
     RawTextNode rawTextNode211
         = new RawTextNode(0, " added one person to his circle.", X);
@@ -833,7 +821,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode22.addChild(placeholderNode221);
     RawTextNode rawTextNode221
         = new RawTextNode(0, " added many people to his circle.", X);
@@ -850,15 +838,15 @@ public class MsgNodeTest extends TestCase {
 
     MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(
         0, "max($woman.num, $man.num)", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode31.addChild(placeholderNode311);
     RawTextNode rawTextNode311
         = new RawTextNode(0, " added one person to his/her circle.", X);
@@ -871,7 +859,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralDefaultNode32.addChild(placeholderNode321);
     RawTextNode rawTextNode321
         = new RawTextNode(0, " added many people to his/her circle.", X);
@@ -919,15 +907,15 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     MsgSelectNode selectNode
         = new MsgSelectNode.Builder(0, "$gender.person", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     // case 'female'
     MsgSelectCaseNode femaleNode
         = new MsgSelectCaseNode.Builder(0, "'female'", X)
-        .build(errorReporter);
+        .build(FAIL);
     RawTextNode femaleTextNode = new RawTextNode(0, "female", X);
     femaleNode.addChild(femaleTextNode);
     selectNode.addChild(femaleNode);
@@ -956,19 +944,19 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
 
     MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(
         0, "$woman.num", X)
-        .build(errorReporter);
+        .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(errorReporter);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter));
+            .build(FAIL));
     pluralCaseNode11.addChild(placeholderNode111);
     RawTextNode rawTextNode111
         = new RawTextNode(0, " added one person to her circle.", X);
@@ -981,7 +969,7 @@ public class MsgNodeTest extends TestCase {
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
             .exprText("$person")
-            .build(errorReporter)
+            .build(FAIL)
     );
     pluralDefaultNode12.addChild(placeholderNode121);
     RawTextNode rawTextNode121
@@ -1003,7 +991,7 @@ public class MsgNodeTest extends TestCase {
     */
 
     // Build the message.
-    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(errorReporter);
+    MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
     RawTextNode rawTextNode = new RawTextNode(0, "raw text", X);
     msg.addChild(rawTextNode);
 

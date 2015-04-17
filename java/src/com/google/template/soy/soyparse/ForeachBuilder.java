@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  */
 final class ForeachBuilder {
 
-  private static final SoyError INVALID_COMMAND_TEXT
+  static final SoyError INVALID_COMMAND_TEXT
       = SoyError.of("Invalid ''foreach'' command text \"{0}\".");
 
   /** Regex pattern for the command text. */

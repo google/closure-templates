@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
@@ -145,7 +146,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
         String attributeText = nctMatcher.group(2);
         if (attributeText != null) {
           attributeText = attributeText.trim();
-          Map<String, String> attributes = ATTRIBUTES_PARSER.parse(attributeText);
+          Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
+              attributeText, ExplodingErrorReporter.get(), getSourceLocation());
           if (attributes.containsKey("autoescape")) {
             defaultAutoescapeMode = AutoescapeMode.forAttributeValue(attributes.get("autoescape"));
           }

@@ -18,9 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 
 import java.io.PrintStream;
@@ -54,11 +52,5 @@ final class CompilationResult {
     for (SoySyntaxException e : errors) {
       prettyPrinter.print(e, out);
     }
-  }
-
-  static CompilationResult success() {
-    return new CompilationResult(
-        ImmutableList.<SoySyntaxException>of(),
-        new ErrorPrettyPrinter(ImmutableList.<SoyFileSupplier>of()));
   }
 }

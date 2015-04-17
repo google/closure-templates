@@ -44,8 +44,11 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
     SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");
 
     TemplateNode template1 =
-        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN)
-            .setId(0).setCmdText("name=\".foo\"").setSoyDoc("/** @param goo */").build();
+        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
+            .setId(0)
+            .setCmdText("name=\".foo\"")
+            .setSoyDoc("/** @param goo */")
+            .build();
     soyFile.addChild(template1);
     template1.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
@@ -57,8 +60,11 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
             .build(FAIL));
 
     TemplateNode template2 =
-        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN)
-            .setId(0).setCmdText("name=\".moo\"").setSoyDoc(null).build();
+        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
+            .setId(0)
+            .setCmdText("name=\".moo\"")
+            .setSoyDoc(null)
+            .build();
     soyFile.addChild(template2);
     template2.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)

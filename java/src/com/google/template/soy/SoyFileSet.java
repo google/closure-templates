@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -38,7 +37,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.CheckConformance;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -950,11 +949,19 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
+    Checkpoint checkpoint = errorReporter.checkpoint();
     SoyFileSetNode soyTree = new SoyFileSetParser(
         typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
+    if (errorReporter.errorsSince(checkpoint)) {
+      return failure();
+    }
 
+    checkpoint = errorReporter.checkpoint();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
+    if (errorReporter.errorsSince(checkpoint)) {
+      return failure();
+    }
 
     if (locales.isEmpty()) {
       // Not generating localized JS.
@@ -985,7 +992,7 @@ public final class SoyFileSet {
             soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
       }
     }
-    return compilationResult();
+    return result();
   }
 
   /**
@@ -1007,26 +1014,36 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
 
+    Checkpoint checkpoint = errorReporter.checkpoint();
     SoyFileSetNode soyTree = new SoyFileSetParser(
         typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
         .parse();
+    if (errorReporter.errorsSince(checkpoint)) {
+      return failure();
+    }
 
+    checkpoint = errorReporter.checkpoint();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
+    if (errorReporter.errorsSince(checkpoint)) {
+      return failure();
+    }
 
     pySrcMainProvider.get().genPyFiles(
         soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
 
-    return compilationResult();
+    return result();
   }
 
-  private CompilationResult compilationResult() {
-    ImmutableCollection<? extends SoySyntaxException> errors =
-        errorReporter instanceof ErrorReporterImpl
-            ? ((ErrorReporterImpl) errorReporter).getErrors()
-            : ImmutableList.<SoySyntaxException>of();
-    return new CompilationResult(errors, new ErrorPrettyPrinter(soyFileSuppliers));
+  private CompilationResult result() {
+    ErrorReporterImpl impl = (ErrorReporterImpl) errorReporter;
+    return new CompilationResult(impl.getErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
   }
 
+  private CompilationResult failure() {
+    ErrorReporterImpl impl = (ErrorReporterImpl) errorReporter;
+    Preconditions.checkState(!impl.getErrors().isEmpty());
+    return new CompilationResult(impl.getErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
+  }
 
   /**
    * Runs middleend passes on the given Soy tree.

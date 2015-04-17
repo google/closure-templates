@@ -30,15 +30,29 @@ import com.google.template.soy.base.SourceLocation;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ExplodingErrorReporter extends ErrorReporterImpl {
+public final class ExplodingErrorReporter implements ErrorReporter {
 
   private static final ErrorReporter INSTANCE = new ExplodingErrorReporter();
 
   private ExplodingErrorReporter() {}
 
   @Override
+  public Checkpoint checkpoint() {
+    // It's okay to return null here, because the only possible user of the return value
+    // is errorsSince, which doesn't actually use it.
+    return null;
+  }
+
+  @Override
+  public boolean errorsSince(Checkpoint checkpoint) {
+    // If we are here, either no error has been reported, or a caller inappropriately swallowed
+    // the IllegalStateException that arose from an error (which is not this class' fault).
+    return false;
+  }
+
+  @Override
   public void report(SourceLocation sourceLocation, SoyError error, String... args) {
-    throw new AssertionError(
+    throw new IllegalStateException(
         String.format("Unexpected SoyError: %s at %s", error.format(args), sourceLocation));
   }
 

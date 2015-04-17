@@ -20,11 +20,10 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.error.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
-
 
 /**
  * Unit tests for CallNode.
@@ -36,7 +35,7 @@ public final class CallNodeTest extends TestCase {
   /** Escaping list of directive names. */
   private static final ImmutableList<String> NO_ESCAPERS = ImmutableList.of();
 
-  public void testCommandText() throws SoySyntaxException {
+  public void testCommandText() {
 
     checkCommandText("function=\"bar.foo\"");
     checkCommandText("foo");
@@ -46,16 +45,16 @@ public final class CallNodeTest extends TestCase {
     try {
       checkCommandText(".foo.bar data=\"$x\"");
       fail();
-    } catch (SoySyntaxException e) {
+    } catch (IllegalStateException e) {
       // Test passes.
     }
   }
 
 
-  public void testSetEscapingDirectiveNames() throws SoySyntaxException {
+  public void testSetEscapingDirectiveNames() {
     CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(".foo")
-            .buildAndThrowIfInvalid();
+        .build(ExplodingErrorReporter.get());
     assertThat(callNode.getEscapingDirectiveNames()).isEmpty();
     callNode.setEscapingDirectiveNames(ImmutableList.of("hello", "world"));
     assertEquals(ImmutableList.of("hello", "world"), callNode.getEscapingDirectiveNames());
@@ -73,7 +72,7 @@ public final class CallNodeTest extends TestCase {
 
     CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(commandText)
-        .buildAndThrowIfInvalid();
+        .build(ExplodingErrorReporter.get());
     if (callNode.getCalleeName() == null) {
       callNode.setCalleeName("testNamespace" + callNode.getSrcCalleeName());
     }
@@ -89,7 +88,7 @@ public final class CallNodeTest extends TestCase {
         .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
         .syntaxVersionBound(callNode.getSyntaxVersionBound())
         .escapingDirectiveNames(NO_ESCAPERS)
-        .buildAndThrowIfInvalid();
+        .build(ExplodingErrorReporter.get());
 
     assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
     assertThat(normCallNode.getSyntaxVersionBound()).isEqualTo(callNode.getSyntaxVersionBound());

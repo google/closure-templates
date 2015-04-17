@@ -20,8 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -102,9 +102,10 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
    * Builder for {@link LetValueNode}.
    */
   public static final class Builder {
-    public static final LetValueNode ERROR
-        = new Builder(-1, "$error: 1", SourceLocation.UNKNOWN)
-        .buildAndThrowIfInvalid(); // guaranteed to be valid
+    private static LetValueNode error() {
+      return new Builder(-1, "$error: 1", SourceLocation.UNKNOWN)
+          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
+    }
 
     private final int id;
     private final String commandText;
@@ -123,7 +124,7 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
 
     /**
      * Returns a new {@link LetValueNode} built from the builder's state. If the builder's state
-     * is invalid, errors are reported to the {@code errorManager} and {Builder#ERROR} is returned.
+     * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
      */
     public LetValueNode build(ErrorReporter errorReporter) {
       Checkpoint checkpoint = errorReporter.checkpoint();
@@ -139,20 +140,11 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
       }
 
       if (errorReporter.errorsSince(checkpoint)) {
-        return ERROR;
+        return error();
       }
 
-      LetValueNode node = new LetValueNode(
+      return new LetValueNode(
           id, sourceLocation, parseResult.localVarName, commandText, parseResult.valueExpr);
-      return node;
-    }
-
-    private LetValueNode buildAndThrowIfInvalid() {
-      TransitionalThrowingErrorReporter errorReporter = new TransitionalThrowingErrorReporter();
-      LetValueNode node = build(errorReporter);
-      errorReporter.throwIfErrorsPresent();
-      return node;
     }
   }
-
 }

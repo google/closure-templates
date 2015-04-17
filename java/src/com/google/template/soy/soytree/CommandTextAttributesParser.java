@@ -20,10 +20,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.TransitionalThrowingErrorReporter;
 
 import java.util.Collection;
 import java.util.Map;
@@ -87,22 +85,6 @@ public final class CommandTextAttributesParser {
       Preconditions.checkArgument(attribute.allowedValues.contains(attribute.defaultValue));
     }
     supportedAttributeNames = supportedAttributeNamesBuilder.build();
-  }
-
-
-  /**
-   * Parses a command text string into a map of attributes names to values. The command text is
-   * assumed to be for the Soy command that this parser handles.
-   *
-   * @param commandText The command text to parse.
-   * @return A map from attribute names to values.
-   * @throws SoySyntaxException If a syntax error is encountered.
-   */
-  Map<String, String> parse(String commandText) throws SoySyntaxException {
-    TransitionalThrowingErrorReporter errorManager = new TransitionalThrowingErrorReporter();
-    Map<String, String> result = parse(commandText, errorManager, SourceLocation.UNKNOWN);
-    errorManager.throwIfErrorsPresent();
-    return result;
   }
 
   /**

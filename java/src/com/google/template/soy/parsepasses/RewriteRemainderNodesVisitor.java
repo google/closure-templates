@@ -109,7 +109,7 @@ public final class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<V
         PrintNode newPrintNode
             = new PrintNode.Builder(node.getId(), node.isImplicit(), SourceLocation.UNKNOWN)
                 .exprText(newExprText)
-                .build(null);
+                .build(errorReporter);
         newPrintNode.addChildren(node.getChildren());
         node.getParent().replaceChild(node, newPrintNode);
       }

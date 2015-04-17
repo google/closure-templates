@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -268,7 +269,8 @@ final class Inferences {
       if (tn instanceof TemplateBasicNode) {
         String derivedPartialName = (tn.getPartialTemplateName() != null) ?
             derivedName.substring(soyFileHeaderInfo.namespace.length()) : null;
-        clone = new TemplateBasicNodeBuilder(soyFileHeaderInfo, tn.getSourceLocation())
+        clone = new TemplateBasicNodeBuilder(
+            soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
             .setId(cloneId)
             .setCmdTextInfo(
                 derivedName, derivedPartialName, useAttrStyleForName,
@@ -284,7 +286,8 @@ final class Inferences {
 
       } else if (tn instanceof TemplateDelegateNode) {
         TemplateDelegateNode tdn = (TemplateDelegateNode) tn;
-        clone = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, tn.getSourceLocation())
+        clone = new TemplateDelegateNodeBuilder(
+            soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
             .setId(cloneId)
             .setCmdTextInfo(
                 derivedName, tdn.getDelTemplateVariant(), tdn.getDelPriority(),

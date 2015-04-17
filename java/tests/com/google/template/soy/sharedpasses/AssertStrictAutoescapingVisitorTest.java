@@ -16,12 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
-import static com.google.common.truth.Truth.assertThat;
-
-import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -38,16 +34,13 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
         + "{template name=\"foo\" autoescape=\"strict\"}\n"
         + "  {$boo}\n"
         + "{/template}\n";
-
-    assertThat(executeStrictCheck(soyCode)).isNull();
-
+    assertFalse(causesStrictException(soyCode));
 
     soyCode = "{namespace foo.bar}\n"
         + "{template name=\"foo\"}\n"
         + "  {$boo}\n"
         + "{/template}\n";
-
-    assertThat(executeStrictCheck(soyCode)).isNull();
+    assertFalse(causesStrictException(soyCode));
   }
 
   public void testNonStrictNamespace() {
@@ -55,8 +48,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
         + "{template name=\"foo\" autoescape=\"strict\"}\n"
         + "  {$boo}\n"
         + "{/template}\n";
-
-    assertThat(executeStrictCheck(soyCode)).isNotNull();
+    assertTrue(causesStrictException(soyCode));
   }
 
   public void testNonStrictTemplate() {
@@ -64,8 +56,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
         + "{template name=\"foo\" autoescape=\"deprecated-contextual\"}\n"
         + "  {$boo}\n"
         + "{/template}\n";
-
-    assertThat(executeStrictCheck(soyCode)).isNotNull();
+    assertTrue(causesStrictException(soyCode));
   }
 
   public void testNonDeclaredTemplate() {
@@ -73,23 +64,26 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
         + "{template name=\"foo\"}\n"
         + "  {$boo}\n"
         + "{/template}\n";
-
-    assertThat(executeStrictCheck(soyCode)).isNotNull();
+    assertTrue(causesStrictException(soyCode));
   }
 
   /**
    * Parse soyCode and execute the AssertStrictAutoescapingVisitor check on the output.
    *
    * @param soyCode The input code.
-   * @return A SoySyntaxException if thrown by the visitor.
+   * @return Whether {@link AssertStrictAutoescapingVisitor} found a problem with {@code soyCode}.
    */
-  private SoySyntaxException executeStrictCheck(String soyCode) {
+  private boolean causesStrictException(String soyCode) {
+    ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyCode)
         .doRunInitialParsingPasses(false)
-        .errorReporter(ExplodingErrorReporter.get())
+        .errorReporter(boom)
         .parse();
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    new AssertStrictAutoescapingVisitor(errorReporter).exec(soyTree);
-    return Iterables.getFirst(errorReporter.getErrors(), null);
+    try {
+      new AssertStrictAutoescapingVisitor(boom).exec(soyTree);
+    } catch (IllegalStateException e) {
+      return true;
+    }
+    return false;
   }
 }
