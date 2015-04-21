@@ -488,6 +488,13 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
         paramExpr.cast(Type.getType(varRef.getType().javaType())));
   }
 
+  @Override SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
+    Expression expression = variables.getLocal(local);
+    expression = getDetacher().resolveSoyValueProvider(expression);
+    return SoyExpression.forSoyValue(varRef.getType(),
+        expression.cast(Type.getType(varRef.getType().javaType())));
+  }
+
   @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
     throw new UnsupportedOperationException();
   }

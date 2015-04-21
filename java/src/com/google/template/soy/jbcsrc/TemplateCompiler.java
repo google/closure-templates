@@ -164,8 +164,9 @@ final class TemplateCompiler {
     TemplateVariables variables = 
         new TemplateVariables(variableSet, thisVar, contextVar, paramFields);
     ExpressionCompiler exprCompiler = new ExpressionCompiler(detachState, variables);
+    LazyClosureCompiler lcc = new LazyClosureCompiler(innerClasses, variables);
     final Statement nodeBody = 
-        new SoyNodeCompiler(detachState, variableSet, appendableVar, contextVar, exprCompiler)
+        new SoyNodeCompiler(detachState, variableSet, variables, appendableVar, exprCompiler, lcc)
             .compile(template.node());
     final Statement exitScope = rootScope.exitScope();
     final Expression done = MethodRef.RENDER_RESULT_DONE.invoke();

@@ -34,7 +34,6 @@ import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
@@ -46,11 +45,12 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -75,23 +75,26 @@ import java.util.List;
 final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private final DetachState detachState;
   private final VariableSet variables;
+  private final VariableLookup variableLookup;
   private final Expression appendableExpression;
-  private final Expression contextExpression;
   private final ExpressionCompiler exprCompiler;
+  private final LazyClosureCompiler lazyClosureCompiler;
+  private Scope currentScope;
 
   SoyNodeCompiler(
       DetachState detachState,
       VariableSet variables, 
+      VariableLookup variableLookup, 
       Expression appendableExpression, 
-      Expression contextExpression, 
-      ExpressionCompiler exprCompiler) {
+      ExpressionCompiler exprCompiler,
+      LazyClosureCompiler lazyClosureCompiler) {
     appendableExpression.checkAssignableTo(Type.getType(AdvisingAppendable.class));
-    contextExpression.checkAssignableTo(Type.getType(RenderContext.class));
     this.detachState = detachState;
     this.variables = variables;
-    this.appendableExpression = appendableExpression;
-    this.contextExpression = contextExpression;
+    this.variableLookup = checkNotNull(variableLookup);
+    this.appendableExpression = checkNotNull(appendableExpression);
     this.exprCompiler = checkNotNull(exprCompiler);
+    this.lazyClosureCompiler = checkNotNull(lazyClosureCompiler);
   }
 
   Statement compile(TemplateBasicNode node) {
@@ -101,11 +104,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitTemplateBasicNode(TemplateNode node) {
-    return childrenAsStatement(node);
+    return visitChildrenInNewScope(node);
   }
 
-  private Statement childrenAsStatement(ParentSoyNode<? extends SoyNode> node) {
-    return Statement.concat(visitChildren(node)).withSourceLocation(node.getSourceLocation());
+  private Statement visitChildrenInNewScope(BlockNode node) {
+    Scope prev = currentScope;
+    currentScope = variables.enterScope();
+    List<Statement> children = visitChildren(node);
+    Statement leave = currentScope.exitScope();
+    children.add(leave);
+    currentScope = prev;
+    return Statement.concat(children).withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitIfNode(IfNode node) {
@@ -116,11 +125,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         IfCondNode icn = (IfCondNode) child;
         SoyExpression cond = 
             exprCompiler.compile(icn.getExprUnion().getExpr()).convert(boolean.class);
-        Statement block = childrenAsStatement(icn);
+        Statement block = visitChildrenInNewScope(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {
         IfElseNode ien = (IfElseNode) child;
-        elseBlock = Optional.of(childrenAsStatement(ien));
+        elseBlock = Optional.of(visitChildrenInNewScope(ien));
       }
     }
     return ControlFlow.ifElseChain(ifs, elseBlock).withSourceLocation(node.getSourceLocation());
@@ -143,11 +152,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           comparisons.add(compareSoyEquals(expression, exprCompiler.compile(caseExpr)));
         }
-        Statement block = childrenAsStatement(caseNode);
+        Statement block = visitChildrenInNewScope(caseNode);
         cases.add(IfBlock.create(BytecodeUtils.logicalOr(comparisons), block));
       } else {
         SwitchDefaultNode defaultNode = (SwitchDefaultNode) child;
-        defaultBlock = Optional.of(childrenAsStatement(defaultNode));
+        defaultBlock = Optional.of(visitChildrenInNewScope(defaultNode));
       }
     }
     Statement exitScope = scope.exitScope();
@@ -176,7 +185,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Variable currentIndex = scope.create(node.getVarName(), rangeArgs.startIndex(), STORE);
     final Statement incrementCurrentIndex = incrementInt(currentIndex, rangeArgs.increment());
 
-    final Statement loopBody = childrenAsStatement(node);
+    final Statement loopBody = visitChildrenInNewScope(node);
 
     // Note it is important that exitScope is called _after_ the children are visited.
     // TODO(lukes): this is somewhat error-prone... we could maybe manage it by have the scope 
@@ -289,13 +298,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Variable itemVar = scope.create(nonEmptyNode.getVarName(), 
         MethodRef.LIST_GET.invoke(listVar.local(),
             indexVar.local()).cast(Type.getType(SoyValueProvider.class)), SaveStrategy.DERIVED);
-    final Statement loopBody = childrenAsStatement(nonEmptyNode);
+    final Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
     final Statement exitScope = scope.exitScope();
 
     // it important for this to be generated after exitScope is called (or before enterScope)
     final Statement emptyBlock = node.numChildren() == 2 
-        ? childrenAsStatement((ForeachIfemptyNode) node.getChild(1)) 
-            : null;
+        ? visitChildrenInNewScope((ForeachIfemptyNode) node.getChild(1)) 
+        : null;
     return new Statement() {
       @Override void doGen(CodeBuilder adapter) {
         listVar.initializer().gen(adapter);
@@ -362,7 +371,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitXidNode(XidNode node) {
     Expression rename = MethodRef.RENDER_CONTEXT_RENAME_XID
-        .invoke(contextExpression, constant(node.getText()));
+        .invoke(variableLookup.getRenderContext(), constant(node.getText()));
     return MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, rename)
         .toStatement()
         .withSourceLocation(node.getSourceLocation());
@@ -379,7 +388,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitCssNode(CssNode node) {
     Expression renameSelector = MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR
-        .invoke(contextExpression, constant(node.getSelectorText()));
+        .invoke(variableLookup.getRenderContext(), constant(node.getSelectorText()));
     Statement selectorStatement = MethodRef.ADVISING_APPENDABLE_APPEND
         .invoke(appendableExpression, renameSelector)
         .toStatement();
@@ -401,9 +410,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return new SoyNodeCompiler(
             detachState,
             variables,
+            variableLookup, 
             MethodRef.RUNTIME_LOGGER.invoke(),
-            contextExpression, 
-            exprCompiler).childrenAsStatement(node);
+            exprCompiler,
+            lazyClosureCompiler).visitChildrenInNewScope(node);
+  }
+
+  @Override protected Statement visitLetValueNode(LetValueNode node) {
+    Expression newLetValue = 
+        lazyClosureCompiler.compileLazyExpression(node, node.getVarName(), node.getValueExpr());
+    return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 
   @Override protected Statement visitSoyNode(SoyNode node) {

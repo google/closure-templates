@@ -1,0 +1,99 @@
+/*
+ * Copyright 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.jbcsrc;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
+import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
+import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
+import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
+import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.RenderResult;
+
+import junit.framework.TestCase;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Tests for {@link LazyClosureCompiler}.
+ */
+public class LazyClosureCompilerTest extends TestCase {
+  public void testLetValueNode() {
+    assertThatTemplateBody(
+        "{let $foo : 1+2 /}",
+        "{$foo}").rendersAs("3");
+    
+    assertThatTemplateBody(
+        "{let $bar : 'a' /}",
+        "{let $foo : $bar + 'b' /}",
+        "{$foo}").rendersAs("ab");
+  }
+
+  public void testLetValueNode_captureParameter() {
+    assertThatTemplateBody(
+        "{@param param: string}",
+        "{let $foo : $param + '_suffix' /}",
+        "{$foo}").rendersAs("string_suffix", ImmutableMap.of("param", "string"));
+  }
+
+  public void testDetachOnFutureLazily() throws IOException {
+    SettableFuture<String> bar = SettableFuture.create();
+    CompiledTemplate.Factory factory = compileTemplateBody(
+        "{@param bar : string }",
+        "{let $foo : $bar + $bar /}",
+        "before use",
+        "{$foo}");
+
+    CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertSame(bar, result.future());  // we found bar!
+    assertEquals("before use", output.toString());
+    
+    // make sure no progress is made
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertSame(bar, result.future());
+    assertEquals("before use", output.toString());
+    bar.set(" bar");
+
+    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals("before use bar bar", output.toString());
+  }
+
+  public void testLetValueNodeStructure() {
+    // make sure we don't break normal reflection apis
+    CompiledTemplate.Factory factory = compileTemplateBody("{let $foo : 1 /}");
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    
+    assertThat(template.getClass().getDeclaredClasses()).asList().hasSize(2);
+    List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
+    innerClasses.remove(factory.getClass());
+    Class<?> let = Iterables.getOnlyElement(innerClasses);
+    assertEquals("LetValueNode_foo", let.getSimpleName());
+    assertEquals(template.getClass(), let.getDeclaringClass());
+  }
+}

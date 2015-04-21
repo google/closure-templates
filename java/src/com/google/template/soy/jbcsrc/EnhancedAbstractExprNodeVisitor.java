@@ -26,7 +26,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
-import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -41,13 +41,19 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     switch (defn.kind()) {
       case LOCAL_VAR:
         LocalVar local = (LocalVar) defn;
-        if (local.declaringNode().getKind() == SoyNode.Kind.FOR_NODE) {
-          return visitForLoopIndex(node, local);
+        LocalVarNode declaringNode = local.declaringNode();
+        switch (declaringNode.getKind()) {
+          case FOR_NODE:
+            return visitForLoopIndex(node, local);
+          case FOREACH_NONEMPTY_NODE:
+            return visitForeachLoopVar(node, local);
+          case LET_VALUE_NODE:
+            return visitLetNodeVar(node, local);
+          case LET_CONTENT_NODE:
+            throw new UnsupportedOperationException("let content nodes aren't supported yet");
+          default:
+            throw new AssertionError("Unexpected local variable: " + local);
         }
-        if (local.declaringNode().getKind() == SoyNode.Kind.FOREACH_NONEMPTY_NODE) {
-          return visitForeachLoopVar(node, local);
-        }
-        throw new UnsupportedOperationException("lets and foreach loops aren't supported yet");
       case PARAM:
         TemplateParam param = (TemplateParam) defn;
         if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
@@ -98,6 +104,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   T visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
     return visitExprNode(varRef);
+  }
+
+  T visitLetNodeVar(VarRefNode node, LocalVar local) {
+    return visitExprNode(node);
   }
 
   T visitParam(VarRefNode varRef, TemplateParam param) {
