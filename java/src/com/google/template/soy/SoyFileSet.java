@@ -922,7 +922,6 @@ public final class SoyFileSet {
     return jsSrcMainProvider.get().genJsSrc(soyTree, jsSrcOptions, msgBundle);
   }
 
-
   /**
    * Compiles this Soy file set into JS source code files and writes these JS files to disk.
    *
@@ -1076,11 +1075,7 @@ public final class SoyFileSet {
     }
 
     if (checkConformance != null) {
-      ImmutableList<SoySyntaxException> violations = checkConformance.getViolations(soyTree);
-      if (!violations.isEmpty()) {
-        // TODO(brndn): merge all violations into one, instead of just showing the first.
-        throw violations.get(0);
-      }
+      checkConformance.exec(soyTree);
     }
 
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.

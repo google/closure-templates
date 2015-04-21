@@ -18,13 +18,12 @@ package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -74,7 +73,6 @@ import com.google.template.soy.soytree.XidNode;
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -1787,7 +1785,7 @@ public final class TemplateParserTest extends TestCase {
             + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
             + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
             + "{let /}\n", errorReporter); // Invalid 'let' command text "".
-    List<String> errors = errorReporter.errorMessages;
+    List<String> errors = errorReporter.getErrorMessages();
     assertThat(errors).hasSize(5);
     assertThat(errors.get(0)).contains("Invalid callee name \"123\" for 'call' command.");
     assertThat(errors.get(1)).contains("Invalid delegate name \"123\" for 'delcall' command.");
@@ -1896,31 +1894,4 @@ public final class TemplateParserTest extends TestCase {
     TemplateSubject.assertThatTemplateContent(input).isNotWellFormed();
   }
 
-  private static final class FormattingErrorReporter implements ErrorReporter {
-
-    private final List<String> errorMessages = new ArrayList<>();
-
-    @Override
-    public void report(SourceLocation sourceLocation, SoyError error, String... args) {
-      errorMessages.add(error.format(args));
-    }
-
-    @Override
-    public Checkpoint checkpoint() {
-      return new CheckpointImpl(errorMessages.size());
-    }
-
-    @Override
-    public boolean errorsSince(Checkpoint checkpoint) {
-      return errorMessages.size() > ((CheckpointImpl) checkpoint).numErrors;
-    }
-
-    private static final class CheckpointImpl implements Checkpoint {
-      private final int numErrors;
-
-      private CheckpointImpl(int numErrors) {
-        this.numErrors = numErrors;
-      }
-    }
-  }
 }
