@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -29,7 +30,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
@@ -45,6 +45,8 @@ import java.util.Set;
  *
  */
 public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
+
+  private static final SoyError MISSING_PARAM = SoyError.of("Call missing required {0}.");
 
   /** A template registry built from the Soy tree. */
   private TemplateRegistry templateRegistry;
@@ -109,15 +111,10 @@ public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>
         }
         // Report errors.
         if (!missingParamKeys.isEmpty()) {
-          String errorMsgEnd =
-              (missingParamKeys.size() == 1)
+          String errorMsgEnd = (missingParamKeys.size() == 1)
                   ? "param '" + missingParamKeys.get(0) + "'"
                   : "params " + missingParamKeys;
-          throw SoySyntaxExceptionUtils.createWithNode(
-              String.format(
-                  "Call to '%s' is missing required %s.",
-                  callee.getTemplateNameForUserMsgs(), errorMsgEnd),
-              node);
+          errorReporter.report(node.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
         }
       }
     }
