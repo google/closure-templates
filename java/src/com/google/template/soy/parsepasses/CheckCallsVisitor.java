@@ -17,6 +17,7 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -80,18 +81,16 @@ public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>
     if (! node.dataAttribute().isPassingData()) {
 
       // Get the callee node (basic or delegate).
-      TemplateNode callee;
+      TemplateNode callee = null;
       if (node instanceof CallBasicNode) {
         callee = templateRegistry.getBasicTemplate(((CallBasicNode) node).getCalleeName());
       } else {
-        Set<DelegateTemplateDivision> divisions =
-            templateRegistry.getDelTemplateDivisionsForAllVariants(
-                ((CallDelegateNode) node).getDelCalleeName());
-        if (divisions != null) {
+        String delTemplateName = ((CallDelegateNode) node).getDelCalleeName();
+        ImmutableSet<DelegateTemplateDivision> divisions
+            = templateRegistry.getDelTemplateDivisionsForAllVariants(delTemplateName);
+        if (!divisions.isEmpty()) {
           callee = Iterables.get(
               Iterables.getFirst(divisions, null).delPackageNameToDelTemplateMap.values(), 0);
-        } else {
-          callee = null;
         }
       }
 

@@ -463,13 +463,11 @@ public final class FindTransitiveDepTemplatesVisitor
     currTemplateVisitInfo.hasDelCalls = true;
 
     // Visit all the possible callee templates.
-    Set<DelegateTemplateDivision> delTemplateDivisions =
+    ImmutableSet<DelegateTemplateDivision> delTemplateDivisions =
         templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
-    if (delTemplateDivisions != null) {
-      for (DelegateTemplateDivision division : delTemplateDivisions) {
-        for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
-          processCalleeHelper(delCallee);
-        }
+    for (DelegateTemplateDivision division : delTemplateDivisions) {
+      for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
+        processCalleeHelper(delCallee);
       }
     }
   }
