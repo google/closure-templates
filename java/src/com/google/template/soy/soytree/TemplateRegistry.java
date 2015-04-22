@@ -17,20 +17,17 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 
 /**
@@ -54,8 +51,8 @@ public final class TemplateRegistry {
     /** Map of all delegate templates in this division, by delegate package name. */
     public final Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap;
 
-    private DelegateTemplateDivision(
-        Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap) {
+    public DelegateTemplateDivision(
+        int delPriority, Map<String, TemplateDelegateNode> delPackageNameToDelTemplateMap) {
       this.delPackageNameToDelTemplateMap =
           Collections.unmodifiableMap(Maps.newLinkedHashMap(delPackageNameToDelTemplateMap));
     }
@@ -77,14 +74,15 @@ public final class TemplateRegistry {
 
 
   /** Map from basic template name to node. */
-  private final ImmutableMap<String, TemplateBasicNode> basicTemplatesMap;
+  private final Map<String, TemplateBasicNode> basicTemplatesMap;
 
   /** Map from delegate template name to set of keys. */
-  private final ImmutableSetMultimap<String, DelTemplateKey> delTemplateNameToKeysMap;
+  private final Map<String, Set<DelTemplateKey>> delTemplateNameToKeysMap;
 
   /** Map from delegate template key to list of DelegateTemplateDivision, where the list is in
    *  descending priority order. */
-  private final ImmutableListMultimap<DelTemplateKey, DelegateTemplateDivision> delTemplatesMap;
+  private final Map<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMap;
+
 
   /**
    * Constructor.
@@ -94,10 +92,8 @@ public final class TemplateRegistry {
 
     // ------ Iterate through all templates to collect data. ------
 
-    ImmutableMap.Builder<String, TemplateBasicNode> basicTemplateBuilder =
-        ImmutableMap.builder();
-    ImmutableSetMultimap.Builder<String, DelTemplateKey> delTemplateBuilder =
-        ImmutableSetMultimap.builder();
+    Map<String, TemplateBasicNode> tempBasicTemplatesMap = new LinkedHashMap<>();
+    Map<String, Set<DelTemplateKey>> tempDelTemplateNameToKeysMap = new LinkedHashMap<>();
     Map<DelTemplateKey, Map<Integer, Map<String, TemplateDelegateNode>>> tempDelTemplatesMap =
         new LinkedHashMap<>();
 
@@ -106,7 +102,7 @@ public final class TemplateRegistry {
 
         if (template instanceof TemplateBasicNode) {
           // Case 1: Basic template.
-          basicTemplateBuilder.put(template.getTemplateName(), (TemplateBasicNode) template);
+          tempBasicTemplatesMap.put(template.getTemplateName(), (TemplateBasicNode) template);
 
         } else {
           // Case 2: Delegate template.
@@ -115,7 +111,12 @@ public final class TemplateRegistry {
 
           // Add to tempDelTemplateNameToKeysMap.
           String delTemplateName = delTemplate.getDelTemplateName();
-          delTemplateBuilder.put(delTemplateName, delTemplateKey);
+          Set<DelTemplateKey> keys = tempDelTemplateNameToKeysMap.get(delTemplateName);
+          if (keys == null) {
+            keys = Sets.newLinkedHashSet();
+            tempDelTemplateNameToKeysMap.put(delTemplateName, keys);
+          }
+          keys.add(delTemplateKey);
 
           // Add to tempDelTemplatesMap.
           int delPriority = delTemplate.getDelPriority();
@@ -160,10 +161,10 @@ public final class TemplateRegistry {
 
     // ------ Build the final data structures. ------
 
-    basicTemplatesMap = basicTemplateBuilder.build();
+    basicTemplatesMap = Collections.unmodifiableMap(tempBasicTemplatesMap);
 
-    ImmutableListMultimap.Builder<DelTemplateKey, DelegateTemplateDivision> delTemplatesMapBuilder
-        = ImmutableListMultimap.builder();
+    ImmutableMap.Builder<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMapBuilder =
+        ImmutableMap.builder();
 
     for (DelTemplateKey delTemplateKey : tempDelTemplatesMap.keySet()) {
       Map<Integer, Map<String, TemplateDelegateNode>> tempDivisions =
@@ -173,26 +174,27 @@ public final class TemplateRegistry {
 
       // Note: List should be in decreasing priority order.
       for (int priority = TemplateNode.MAX_PRIORITY; priority >= 0; priority--) {
-        if (!tempDivisions.containsKey(priority)) {
+        if (! tempDivisions.containsKey(priority)) {
           continue;
         }
         Map<String, TemplateDelegateNode> tempDivision = tempDivisions.get(priority);
-        DelegateTemplateDivision division = new DelegateTemplateDivision(tempDivision);
+        DelegateTemplateDivision division = new DelegateTemplateDivision(priority, tempDivision);
         divisionsBuilder.add(division);
       }
 
-      delTemplatesMapBuilder.putAll(delTemplateKey, divisionsBuilder.build());
+      delTemplatesMapBuilder.put(delTemplateKey, divisionsBuilder.build());
     }
 
     delTemplatesMap = delTemplatesMapBuilder.build();
-    delTemplateNameToKeysMap = delTemplateBuilder.build();
+
+    delTemplateNameToKeysMap = Collections.unmodifiableMap(tempDelTemplateNameToKeysMap);
   }
 
 
   /**
    * Returns a map from basic template name to node.
    */
-  public ImmutableMap<String, TemplateBasicNode> getBasicTemplatesMap() {
+  public Map<String, TemplateBasicNode> getBasicTemplatesMap() {
     return basicTemplatesMap;
   }
 
@@ -202,33 +204,36 @@ public final class TemplateRegistry {
    * @param templateName The basic template name to retrieve.
    * @return The corresponding basic template, or null if the template name is not defined.
    */
-  @Nullable
   public TemplateBasicNode getBasicTemplate(String templateName) {
     return basicTemplatesMap.get(templateName);
   }
 
 
   /**
-   * Returns a multimap from delegate template name to set of keys.
+   * Returns a map from delegate template name to set of keys.
    */
-  public ImmutableSetMultimap<String, DelTemplateKey> getDelTemplateNameToKeysMap() {
+  public Map<String, Set<DelTemplateKey>> getDelTemplateNameToKeysMap() {
     return delTemplateNameToKeysMap;
   }
 
 
   /**
-   * Returns a multimap from delegate template key (name and variant)
-   * to {@code DelegateTemplateDivision}s, where the list of divisions is in
-   * descending priority order.
+   * Returns a map from delegate template key (name and variant) to list of
+   * {@code DelegateTemplateDivision}s, where each list is sorted in descending priority order.
    */
-  public ImmutableListMultimap<DelTemplateKey, DelegateTemplateDivision> getDelTemplatesMap() {
+  public Map<DelTemplateKey, List<DelegateTemplateDivision>> getDelTemplatesMap() {
     return delTemplatesMap;
   }
 
 
-  /** Returns true iff {@code delTemplateName} is registered as a delegate template. */
-  public boolean hasDelTemplateNamed(String delTemplateName) {
-    return delTemplateNameToKeysMap.containsKey(delTemplateName);
+  /**
+   * Retrieves the set of key (name and variant) strings for all variants of a given delegate
+   * template name.
+   * @param delTemplateName The delegate template name to retrieve.
+   * @return The set of keys for all variants.
+   */
+  public Set<DelTemplateKey> getDelTemplateKeysForAllVariants(String delTemplateName) {
+    return delTemplateNameToKeysMap.get(delTemplateName);
   }
 
 
@@ -238,14 +243,19 @@ public final class TemplateRegistry {
    * @param delTemplateName The delegate template name to retrieve.
    * @return The set of {@code DelegateTemplateDivision}s for all variants.
    */
-  public ImmutableSet<DelegateTemplateDivision> getDelTemplateDivisionsForAllVariants(
+  public Set<DelegateTemplateDivision> getDelTemplateDivisionsForAllVariants(
       String delTemplateName) {
-    ImmutableSet<DelTemplateKey> keysForAllVariants = delTemplateNameToKeysMap.get(delTemplateName);
-    ImmutableSet.Builder<DelegateTemplateDivision> builder = ImmutableSet.builder();
-    for (DelTemplateKey delTemplateKey : keysForAllVariants) {
-      builder.addAll(delTemplatesMap.get(delTemplateKey));
+
+    Set<DelTemplateKey> keysForAllVariants = delTemplateNameToKeysMap.get(delTemplateName);
+    if (keysForAllVariants == null) {
+      return null;
     }
-    return builder.build();
+
+    Set<DelegateTemplateDivision> divisionsForAllVariants = Sets.newLinkedHashSet();
+    for (DelTemplateKey delTemplateKey : keysForAllVariants) {
+      divisionsForAllVariants.addAll(delTemplatesMap.get(delTemplateKey));
+    }
+    return divisionsForAllVariants;
   }
 
 
@@ -260,7 +270,6 @@ public final class TemplateRegistry {
    * @throws DelegateTemplateConflictException If there are two or more active implementations with
    *     equal priority (unable to select one over the other).
    */
-  @Nullable
   public TemplateDelegateNode selectDelTemplate(
       DelTemplateKey delTemplateKey, Set<String> activeDelPackageNames)
       throws DelegateTemplateConflictException {
@@ -268,7 +277,7 @@ public final class TemplateRegistry {
     TemplateDelegateNode delTemplate = selectDelTemplateHelper(
         delTemplateKey, activeDelPackageNames);
 
-    if (delTemplate == null && !delTemplateKey.variant.isEmpty()) {
+    if (delTemplate == null && delTemplateKey.variant.length() > 0) {
       // Fall back to empty variant.
       delTemplate = selectDelTemplateHelper(
           new DelTemplateKey(delTemplateKey.name, ""), activeDelPackageNames);
@@ -292,7 +301,14 @@ public final class TemplateRegistry {
   private TemplateDelegateNode selectDelTemplateHelper(
       DelTemplateKey delTemplateKey, Set<String> activeDelPackageNames)
       throws DelegateTemplateConflictException {
-    for (DelegateTemplateDivision division : delTemplatesMap.get(delTemplateKey)) {
+
+    List<DelegateTemplateDivision> divisions = delTemplatesMap.get(delTemplateKey);
+    if (divisions == null) {
+      return null;
+    }
+
+    for (DelegateTemplateDivision division : divisions) {
+
       TemplateDelegateNode delTemplate = null;
 
       for (String delPackageName : division.delPackageNameToDelTemplateMap.keySet()) {
@@ -316,4 +332,5 @@ public final class TemplateRegistry {
 
     return null;
   }
+
 }

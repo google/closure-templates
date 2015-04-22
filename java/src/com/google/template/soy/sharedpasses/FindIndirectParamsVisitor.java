@@ -348,11 +348,13 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     mayHaveIndirectParamsInExternalDelCalls = true;
 
     // Visit all the possible callee templates.
-    ImmutableSet<DelegateTemplateDivision> delTemplateDivisions =
+    Set<DelegateTemplateDivision> delTemplateDivisions =
         templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
-    for (DelegateTemplateDivision division : delTemplateDivisions) {
-      for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
-        visitCalleeHelper(node, delCallee);
+    if (delTemplateDivisions != null) {
+      for (DelegateTemplateDivision division : delTemplateDivisions) {
+        for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
+          visitCalleeHelper(node, delCallee);
+        }
       }
     }
   }
