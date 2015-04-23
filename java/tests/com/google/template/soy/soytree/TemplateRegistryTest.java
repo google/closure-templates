@@ -115,4 +115,24 @@ public final class TemplateRegistryTest extends TestCase {
     assertThatRegistry(registry).containsDelTemplate("foo.bar")
         .definedAt(new SourceLocation("bar.soy", 4, 1, 5, 14));
   }
+
+  // TODO(user): This is obviously undesirable. Fix all offending templates,
+  // fix Soy to report these errors, and change this test to assert on the error.
+  public void testDuplicateBasicTemplatesLastOneWins() {
+    // Template uniqueness is not enforced either within a file or across files.
+    String file = "{namespace ns}\n"
+        + "/** Foo. */\n"
+        + "{template .foo}\n"
+        + "{/template}\n"
+        + "/** Foo. */\n"
+        + "{template .foo}\n"
+        + "{/template}\n";
+    TemplateRegistry registry = SoyFileSet.builder()
+        .add(file, "foo.soy")
+        .add(file, "bar.soy")
+        .build()
+        .generateTemplateRegistry();
+    assertThatRegistry(registry).containsBasicTemplate("ns.foo")
+        .definedAt(new SourceLocation("bar.soy", 6, 1, 7, 11)); // last one wins
+  }
 }
