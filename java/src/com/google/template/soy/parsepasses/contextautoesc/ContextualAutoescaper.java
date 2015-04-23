@@ -26,9 +26,15 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -186,6 +192,8 @@ public final class ContextualAutoescaper {
     // Store context boundaries so that later passes can make use of element/attribute boundaries.
     this.slicedRawTextNodes = slicedRawTextNodesBuilder.build();
 
+    new NonContextualTypedRenderUnitNodesVisitor().exec(fileSet);
+
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
     return new Rewriter(inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
   }
@@ -272,5 +280,55 @@ public final class ContextualAutoescaper {
       }
     }
     return operatorKindMapBuilder.build();
+  }
+
+  private final class NonContextualTypedRenderUnitNodesVisitor
+      extends AbstractSoyNodeVisitor<Void> {
+
+    NonContextualTypedRenderUnitNodesVisitor() {
+      super(ContextualAutoescaper.this.errorReporter);
+    }
+
+    @Override protected void visitTemplateNode(TemplateNode node) {
+      if (node.getAutoescapeMode() == AutoescapeMode.TRUE) {
+        visitChildren(node);
+      }
+    }
+
+    @Override protected void visitLetContentNode(LetContentNode node) {
+      visitRenderUnitNode(node);
+    }
+
+    @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+      visitRenderUnitNode(node);
+    }
+
+    protected void visitRenderUnitNode(RenderUnitNode node) {
+      if (node.getContentKind() != null) {
+        // Not visiting children in this block.
+        // In processing a strict block (any block with a kind), contextualAutoescaper will
+        // automatically go into the children.
+        // Secondly, CheckEscapingSanityVisitor makes sure that all the children {let} or {param}
+        // blocks of a strict {let} or {param} block are also strict.
+        ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder =
+            ImmutableList.builder();
+        InferenceEngine.inferStrictRenderUnitNode(
+            // As this visitor visits only non-contextual templates.
+            AutoescapeMode.TRUE,
+            node,
+            inferences,
+            autoescapeCancellingDirectives,
+            slicedRawTextNodesBuilder,
+            errorReporter);
+      } else {
+        visitChildren(node);
+      }
+    }
+
+    @Override protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ParentSoyNode<?>) {
+        visitChildren((ParentSoyNode<?>) node);
+      }
+    }
   }
 }

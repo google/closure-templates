@@ -115,6 +115,49 @@ final class InferenceEngine {
     return endContext;
   }
 
+  /**
+   * Checks that the end context of a strict block is compatible with its start context.
+   *
+   * @throws SoyAutoescapeException if they mismatch.
+   */
+  private static void checkStrictBlockEndContext(RenderUnitNode node, Context endContext) {
+    if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
+      throw SoyAutoescapeException.createWithNode(
+          "A strict block of kind=\"" + NodeContentKinds.toAttributeValue(node.getContentKind())
+              + "\" cannot end in context " + endContext + ". Likely cause is "
+              + endContext.getLikelyEndContextMismatchCause(node.getContentKind()) + ": "
+              + node.getTagString(),
+          node);
+    }
+  }
+
+   /**
+   * Applies strict contextual autoescaping to the given node's children.
+   *
+   * <p>The start context is the given node's declared {@link ContentKind}, and it is enforced
+   * that the block's inferred end context matches the start context.
+   *
+   * <p>This method is used to visit the content of {let} and {param} nodes with a {@code kind}
+   * attribute.
+   */
+  static void inferStrictRenderUnitNode(
+      AutoescapeMode templateAutoescapeMode,
+      RenderUnitNode node,
+      Inferences inferences,
+      Set<String> autoescapeCancellingDirectives,
+      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
+      ErrorReporter errorReporter) throws SoyAutoescapeException {
+    InferenceEngine inferenceEngine = new InferenceEngine(
+        AutoescapeMode.STRICT, templateAutoescapeMode, inferences, autoescapeCancellingDirectives,
+        slicedRawTextNodesBuilder, errorReporter);
+    // Context started off as startContext and we have propagated context through all of
+    // node's children, so now context is the node's end context.
+    Context endContext = inferenceEngine.inferChildren(node,
+        Context.getStartContextForContentKind(node.getContentKind()));
+    // Checking that start and end context is same.
+    checkStrictBlockEndContext(node, endContext);
+  }
+
   /** The autoescaping mode in this current context. */
   private final AutoescapeMode autoescapeMode;
 
@@ -304,9 +347,16 @@ final class InferenceEngine {
     /**
      * For param content nodes with a {@code kind} attribute, visit the node's content with the
      * strict contextual escaper in the start context indicated by the {@code kind} attribute.
+     *
+     * <p>If the param content nodes with a {@code kind} attribute is in non-contextual template it
+     * is handled by another visitor
+     * ({@link ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from
+     * {@link ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
      */
     @Override protected void visitCallParamContentNode(CallParamContentNode node) {
-      if (node.getContentKind() != null) {
+      if (node.getContentKind() != null
+          && (autoescapeMode == AutoescapeMode.CONTEXTUAL
+              || autoescapeMode == AutoescapeMode.STRICT)) {
         inferInStrictMode(node);
       } else if (autoescapeMode == AutoescapeMode.CONTEXTUAL) {
         inferInContextualModeForHtml(node);
@@ -343,6 +393,11 @@ final class InferenceEngine {
     /**
      * For let content nodes with a {@code kind} attribute, visit the node's content with the strict
      * contextual escaper in the start context indicated by the {@code kind} attribute.
+     *
+     * <p>If the let content nodes with a {@code kind} attribute is in non-contextual template it
+     * is handled by another visitor
+     * ({@link ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from
+     * {@link ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
      */
     @Override protected void visitLetContentNode(LetContentNode node) {
       if (node.getContentKind() == null) {
@@ -351,7 +406,10 @@ final class InferenceEngine {
         // TODO: Consider unconditionally visiting as HTML_PCDATA to be consistent with {param}.
         super.visitLetContentNode(node);
       } else {
-        inferInStrictMode(node);
+        if (autoescapeMode == AutoescapeMode.CONTEXTUAL
+            || autoescapeMode == AutoescapeMode.STRICT) {
+          inferInStrictMode(node);
+        }
       }
     }
 
@@ -813,41 +871,9 @@ final class InferenceEngine {
     }
 
 
-   /**
-     * Apply strict contextual autoescaping to the given node's children.
-     *
-     * <p>The start context is the given node's declared {@link ContentKind}, and it is enforced
-     * that the block's inferred end context matches the start context.
-     *
-     * <p>This method is used to visit the content of {let} and {param} nodes with a {@code kind}
-     * attribute.
-     */
     private void inferInStrictMode(RenderUnitNode node) {
-      // Note: CheckEscapingSanityVisitor ensures that {param} and {let} nodes with kind
-      // attribute only occur in contextually autoescaped templates. We can't ensure this here,
-      // because this visitor does not visit non-contextual templates.
-      final Context endContext = new InferenceEngine(
-          AutoescapeMode.STRICT, templateAutoescapeMode, inferences, autoescapeCancellingDirectives,
-          slicedRawTextNodesBuilder, errorReporter)
-        .inferChildren(node, Context.getStartContextForContentKind(node.getContentKind()));
-      checkStrictBlockEndContext(node, endContext);
-    }
-
-
-    /**
-     * Checks that the end context of a strict block is compatible with its start context.
-     * <p>
-     * Throws if they mismatch.
-     */
-    private void checkStrictBlockEndContext(RenderUnitNode node, Context endContext) {
-      if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
-        throw SoyAutoescapeException.createWithNode(
-            "A strict block of kind=\"" + NodeContentKinds.toAttributeValue(node.getContentKind()) +
-                "\" cannot end in context " + endContext + ". Likely cause is " +
-                endContext.getLikelyEndContextMismatchCause(node.getContentKind()) + ": " +
-                node.getTagString(),
-            node);
-      }
+      inferStrictRenderUnitNode(templateAutoescapeMode, node, inferences,
+          autoescapeCancellingDirectives, slicedRawTextNodesBuilder, errorReporter);
     }
 
 

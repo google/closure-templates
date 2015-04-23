@@ -1350,20 +1350,6 @@ public final class ContextualAutoescaperTest extends TestCase {
   }
 
 
-  public void testTypedLetBlockNotAllowedInNonContextualTemplate() {
-    assertRewriteFails(
-        "In file no-path:2:1, template t: " +
-        "{let} node with 'kind' attribute is only permitted in contextually autoescaped " +
-        "templates: {let $l kind=\"html\"}<b>{$y}</b>{/let}",
-        join(
-            "{template t autoescape=\"deprecated-noncontextual\"}\n",
-            "{let $l kind=\"html\"}",
-              "<b>{$y}</b>",
-            "{/let}\n",
-            "{/template}"));
-  }
-
-
   public void testNonTypedParamMustEndInHtmlContextButWasAttribute() throws Exception {
     assertRewriteFails(
         "In file no-path:5:5, template caller: " +
@@ -1664,24 +1650,6 @@ public final class ContextualAutoescaperTest extends TestCase {
                 "{param x kind=\"html\"}<b>{$y |customOtherDirective}</b>{/param}",
               "{/call}",
             "</div>\n",
-            "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
-            "{/template}"));
-  }
-
-
-  public void testTypedParamBlockNotAllowedInNonContextualTemplate() {
-    assertRewriteFails(
-        "In file no-path:4:19, template caller: " +
-        "{param} node with 'kind' attribute is only permitted in contextually autoescaped " +
-        "templates: {param x kind=\"html\"}<b>{$y}</b>;{/param}",
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-noncontextual\"}\n",
-              "<div>",
-                "{call callee}{param x kind=\"html\"}<b>{$y}</b>;{/param}{/call}",
-              "</div>\n",
             "{/template}\n\n",
             "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
               "<b>{$x}</b>\n",
@@ -2055,6 +2023,59 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
               "foo=\"{$x}",
             "\n{/template}"));
+  }
+
+
+  // Tests that non-contextual templates don't call strict templates with kind=text attribute.
+  public void testTypedTextStrictCallsNotAllowedInNonContextualTemplate() {
+    assertRewriteFails(
+        "In file no-path:4:6, template caller: " +
+        "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in " +
+        "non-contextually autoescaped templates: {call callee /}",
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"deprecated-noncontextual\"}\n",
+              "<div>",
+                "{call callee/}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"strict\" private=\"true\" kind=\"text\"}\n",
+              "title={$x}\n",
+            "{/template}"));
+  }
+
+
+  // Tests that noautoescape templates don't have let nodes with kind attribute.
+  public void testTypedLetBlockNotAllowedInNoAutoescapeTemplate() {
+    assertRewriteFails(
+        "In file no-path:2:1, template t: " +
+        "{let} node with 'kind' attribute is not permitted in non-autoescaped " +
+        "templates: {let $l kind=\"html\"}<b>{$y}</b>{/let}",
+        join(
+            "{template t autoescape=\"deprecated-noautoescape\"}\n",
+            "{let $l kind=\"html\"}",
+              "<b>{$y}</b>",
+            "{/let}\n",
+            "{/template}"));
+  }
+
+
+  // Tests that noautoescape templates don't have param nodes with kind attribute.
+  public void testTypedParamBlockNotAllowedInNoAutoescapeTemplate() {
+    assertRewriteFails(
+        "In file no-path:4:19, template caller: " +
+        "{param} node with 'kind' attribute is not permitted in non-autoescaped " +
+        "templates: {param x kind=\"html\"}<b>{$y}</b>;{/param}",
+        join(
+            "{namespace ns}\n\n",
+            "{template caller autoescape=\"deprecated-noautoescape\"}\n",
+              "<div>",
+                "{call callee}{param x kind=\"html\"}<b>{$y}</b>;{/param}{/call}",
+              "</div>\n",
+            "{/template}\n\n",
+            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+              "<b>{$x}</b>\n",
+            "{/template}"));
   }
 
 
