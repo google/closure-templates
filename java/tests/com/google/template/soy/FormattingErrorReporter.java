@@ -35,7 +35,7 @@ public final class FormattingErrorReporter implements ErrorReporter {
   private final List<String> errorMessages = new ArrayList<>();
 
   @Override
-  public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
+  public void report(SourceLocation sourceLocation, SoyError error, String... args) {
     errorMessages.add(error.format(args));
   }
 
