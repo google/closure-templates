@@ -28,6 +28,7 @@ import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -162,7 +163,7 @@ public final class TemplateTester {
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
         CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(templateName);
-        classData = new TemplateCompiler(classInfo).compile();
+        classData = new TemplateCompiler(classInfo, ExplodingErrorReporter.get()).compile();
         checkClasses(classData);
         factory = BytecodeCompiler.loadFactory(
             classInfo,

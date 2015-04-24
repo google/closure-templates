@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
@@ -66,7 +67,9 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       IsCalleeInFileVisitor isCalleeInFileVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
+      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.isCalleeInFileVisitor = isCalleeInFileVisitor;

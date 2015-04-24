@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.primitives.Ints;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -76,8 +77,11 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
   private final VariableLookup variables;
   private ExpressionDetacher currentDetacher;
 
-  ExpressionCompiler(ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables) {
+  ExpressionCompiler(
+      ExpressionDetacher.Factory detacherFactory,
+      VariableLookup variables,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.detacherFactory = detacherFactory;
     this.variables = variables;
   }

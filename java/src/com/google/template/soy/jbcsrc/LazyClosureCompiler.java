@@ -35,6 +35,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -143,10 +144,13 @@ final class LazyClosureCompiler {
   
   private final InnerClasses innerClasses;
   private final VariableLookup parentVariables;
+  private final ErrorReporter errorReporter;
 
-  LazyClosureCompiler(InnerClasses innerClasses, VariableLookup parentVariables) {
+  LazyClosureCompiler(
+      InnerClasses innerClasses, VariableLookup parentVariables, ErrorReporter errorReporter) {
     this.innerClasses = innerClasses;
     this.parentVariables = parentVariables;
+    this.errorReporter = errorReporter;
   }
   
   Expression compileLazyExpression(SoyNode declaringNode, String varName, ExprRootNode exprNode) {
@@ -217,7 +221,7 @@ final class LazyClosureCompiler {
       LazyClosureVariableLookup lookup = 
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
       SoyExpression expression = 
-          new ExpressionCompiler(BasicDetacher.FACTORY, lookup)
+          new ExpressionCompiler(BasicDetacher.FACTORY, lookup, errorReporter)
               .compile(exprNode)
               .box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -260,7 +264,7 @@ final class LazyClosureCompiler {
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
       final Statement nodeBody = 
           SoyNodeCompiler.create(
-              innerClasses, stateField, thisVar, appendableVar, variableSet, lookup)
+              innerClasses, stateField, thisVar, appendableVar, variableSet, lookup, errorReporter)
               .compileChildren(renderUnit);
       final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody = new Statement() {

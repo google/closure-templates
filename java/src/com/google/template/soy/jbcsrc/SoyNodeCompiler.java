@@ -28,6 +28,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
@@ -91,15 +92,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression thisVar,
       Expression appendableVar,
       VariableSet variableSet,
-      VariableLookup variables) {
+      VariableLookup variables,
+      ErrorReporter errorReporter) {
     DetachState detachState = new DetachState(variableSet, thisVar, stateField);
     return new SoyNodeCompiler(
         detachState,
         variableSet,
         variables,
         appendableVar,
-        new ExpressionCompiler(detachState, variables),
-        new LazyClosureCompiler(innerClasses, variables));
+        new ExpressionCompiler(detachState, variables, errorReporter),
+        new LazyClosureCompiler(innerClasses, variables, errorReporter),
+        errorReporter);
   }
 
   private final DetachState detachState;
@@ -116,7 +119,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       VariableLookup variableLookup, 
       Expression appendableExpression, 
       ExpressionCompiler exprCompiler,
-      LazyClosureCompiler lazyClosureCompiler) {
+      LazyClosureCompiler lazyClosureCompiler,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     appendableExpression.checkAssignableTo(Type.getType(AdvisingAppendable.class));
     this.detachState = detachState;
     this.variables = variables;
@@ -446,12 +451,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitLogNode(LogNode node) {
     return new SoyNodeCompiler(
-            detachState,
-            variables,
-            variableLookup, 
-            MethodRef.RUNTIME_LOGGER.invoke(),
-            exprCompiler,
-            lazyClosureCompiler).visitChildrenInNewScope(node);
+        detachState,
+        variables,
+        variableLookup,
+        MethodRef.RUNTIME_LOGGER.invoke(),
+        exprCompiler,
+        lazyClosureCompiler,
+        errorReporter).visitChildrenInNewScope(node);
   }
 
   @Override protected Statement visitLetValueNode(LetValueNode node) {

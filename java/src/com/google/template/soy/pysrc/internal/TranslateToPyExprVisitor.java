@@ -24,6 +24,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -86,7 +87,9 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
   @AssistedInject
   TranslateToPyExprVisitor(
       ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap,
-      @Assisted LocalVariableStack localVarExprs) {
+      @Assisted LocalVariableStack localVarExprs,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.localVarExprs = localVarExprs;
     this.soyPySrcFunctionsMap = soyPySrcFunctionsMap;
   }

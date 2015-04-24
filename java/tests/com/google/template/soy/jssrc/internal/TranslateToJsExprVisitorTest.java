@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -252,10 +253,12 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         .parse();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
-    JsExpr actualJsExpr =
-        (new TranslateToJsExprVisitor(
-            SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS))
-            .exec(exprNode);
+    JsExpr actualJsExpr = new TranslateToJsExprVisitor(
+        SOY_JS_SRC_FUNCTIONS_MAP,
+        jsSrcOptions,
+        LOCAL_VAR_TRANSLATIONS,
+        ExplodingErrorReporter.get())
+        .exec(exprNode);
     assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
     assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
   }
@@ -283,14 +286,15 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    */
   private void assertSoySyntaxException(
       String soyExpr, String expectedErrorMsgSubstring, SoyJsSrcOptions jsSrcOptions) {
-    ExprNode exprNode = new ExpressionParser(
-        soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    ExprNode exprNode = new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, boom)
         .parseExpression();
     // TODO(user): ExpressionParser has been converted to use ErrorReporter, but
     // TranslateToJsExprVisitor has not; it still throws SoySyntaxExceptions. Remove the try-catch
     // once the visitors are converted to use the ErrorReporter.
     try {
-      new TranslateToJsExprVisitor(SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS)
+      new TranslateToJsExprVisitor(
+          SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS, boom)
           .exec(exprNode);
     } catch (SoySyntaxException e) {
       assertThat(e.getMessage()).contains(expectedErrorMsgSubstring);

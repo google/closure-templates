@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.collect.Maps;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.internal.ApiCallScope;
@@ -45,7 +45,9 @@ import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
+import java.util.HashMap;
 import java.util.Map;
+
 import javax.inject.Inject;
 
 
@@ -76,11 +78,13 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
 
   /**
    * @param jsSrcOptions The options for generating JS source code.
+   * @param errorReporter For reporting errors.
    */
   @Inject
-  IsComputableAsJsExprsVisitor(SoyJsSrcOptions jsSrcOptions) {
+  IsComputableAsJsExprsVisitor(SoyJsSrcOptions jsSrcOptions, ErrorReporter errorReporter) {
+    super(errorReporter);
     this.jsSrcOptions = jsSrcOptions;
-    memoizedResults = Maps.newHashMap();
+    memoizedResults = new HashMap<>();
   }
 
 

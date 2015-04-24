@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
@@ -66,10 +67,12 @@ final class TemplateCompiler {
   private final ImmutableMap<String, FieldRef> paramFields;
   private final CompiledTemplateMetadata template;
   private final InnerClasses innerClasses;
+  private final ErrorReporter errorReporter;
   private ClassVisitor writer;
 
-  TemplateCompiler(CompiledTemplateMetadata template) {
+  TemplateCompiler(CompiledTemplateMetadata template, ErrorReporter errorReporter) {
     this.template = template;
+    this.errorReporter = errorReporter;
     this.paramsField = createFinalField(template.typeInfo(), "$params", SoyRecord.class);
     this.ijField = createFinalField(template.typeInfo(), "$ij", SoyRecord.class);
     this.stateField = createField(template.typeInfo(), "$state", Type.INT_TYPE);
@@ -169,7 +172,8 @@ final class TemplateCompiler {
             thisVar,
             appendableVar,
             variableSet,
-            variables).compile(node);
+            variables,
+            errorReporter).compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     Statement fullMethodBody = new Statement() {
       @Override void doGen(CodeBuilder adapter) {

@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Inject;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -45,10 +46,14 @@ class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
    * @param jsSrcOptions The options for generating JS source code.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
+   * @param errorReporter For reporting errors.
    */
   @Inject
-  CanInitOutputVarVisitor(SoyJsSrcOptions jsSrcOptions,
-                          IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
+  CanInitOutputVarVisitor(
+      SoyJsSrcOptions jsSrcOptions,
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.jsSrcOptions = jsSrcOptions;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
   }

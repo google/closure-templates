@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -35,14 +36,14 @@ final class BytecodeCompiler {
    * implement print directives, escaping directives, and soy functions.  Look at the jssrc compiler
    * to see how it is configured.
    */
-  static CompiledTemplates compile(TemplateRegistry registry) {
+  static CompiledTemplates compile(TemplateRegistry registry, ErrorReporter errorReporter) {
     CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
     // TODO(lukes): currently we compile all the classes, but you could easily imagine being
     // configured in such a way that we load the classes from the system class loader.  Then we
     // could add a build phase that writes the compiled templates out to a jar.  Then in the non
     // development mode case we could skip even parsing templates!
-    MemoryClassLoader loader = compileTemplates(registry, compilerRegistry);
+    MemoryClassLoader loader = compileTemplates(registry, compilerRegistry, errorReporter);
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
     // TODO(lukes): support deltemplates eventually
     for (String name : registry.getBasicTemplatesMap().keySet()) {
@@ -79,7 +80,9 @@ final class BytecodeCompiler {
    * {@link MemoryClassLoader}
    */
   private static MemoryClassLoader compileTemplates(
-      TemplateRegistry registry, CompiledTemplateRegistry compilerRegistry) {
+      TemplateRegistry registry,
+      CompiledTemplateRegistry compilerRegistry,
+      ErrorReporter errorReporter) {
     MemoryClassLoader.Builder builder = new MemoryClassLoader.Builder();
     // We generate all the classes and then start loading them.  This 2 phase process ensures that
     // we don't have to worry about ordering (where a class we have generated references a class we
@@ -88,7 +91,7 @@ final class BytecodeCompiler {
         registry.getBasicTemplatesMap().entrySet()) {
       String name = template.getKey();
       CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(name);
-      for (ClassData clazz : new TemplateCompiler(classInfo).compile()) {
+      for (ClassData clazz : new TemplateCompiler(classInfo, errorReporter).compile()) {
         builder.add(clazz);
       }
     }

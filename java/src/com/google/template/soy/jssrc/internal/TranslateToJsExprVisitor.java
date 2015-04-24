@@ -22,6 +22,7 @@ import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -139,8 +140,11 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
    */
   @AssistedInject
   TranslateToJsExprVisitor(
-      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, SoyJsSrcOptions jsSrcOptions,
-      @Assisted Deque<Map<String, JsExpr>> localVarTranslations) {
+      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
+      SoyJsSrcOptions jsSrcOptions,
+      @Assisted Deque<Map<String, JsExpr>> localVarTranslations,
+      ErrorReporter errorReporter) {
+    super(errorReporter);
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.jsSrcOptions = jsSrcOptions;
     this.localVarTranslations = localVarTranslations;

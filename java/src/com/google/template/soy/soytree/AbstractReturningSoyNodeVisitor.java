@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.AbstractReturningNodeVisitor;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
@@ -53,6 +54,9 @@ import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 public abstract class AbstractReturningSoyNodeVisitor<R>
     extends AbstractReturningNodeVisitor<SoyNode, R> {
 
+  protected AbstractReturningSoyNodeVisitor(ErrorReporter errorReporter) {
+    super(errorReporter);
+  }
 
   @Override protected R visit(SoyNode node) {
 

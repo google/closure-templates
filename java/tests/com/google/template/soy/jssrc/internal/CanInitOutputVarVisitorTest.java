@@ -119,8 +119,8 @@ public class CanInitOutputVarVisitorTest extends TestCase {
     new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(jsSrcOptions);
-    CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(jsSrcOptions, icajev);
+    IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(jsSrcOptions, boom);
+    CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(jsSrcOptions, icajev, boom);
     assertThat(ciovv.exec(node) == icajev.exec(node))
         .isEqualTo(isSameValueAsIsComputableAsJsExprsVisitor);
   }
