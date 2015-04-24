@@ -126,7 +126,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     }
 
     @Override
-    public void report(SourceLocation sourceLocation, SoyError error, String... args) {
+    public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
       soyErrors.add(error);
       locationsForError.put(error, sourceLocation);
     }
