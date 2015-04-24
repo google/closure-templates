@@ -21,7 +21,9 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -369,9 +371,11 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
             "{@param pa: unknown}",
             "{@param pi: int}",
             "{@param pf: float}",
+            "{@param? ni: int}",
             "{$pa ?: $pi}",
             "{$pi ?: $pf}",
-            "{$pa ? $pi : $pf}"))
+            "{$pa ? $pi : $pf}",
+            "{$ni ?: 0}"))
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
@@ -384,6 +388,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
     assertThat(types.get(2))
         .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
+    assertThat(types.get(3)).isEqualTo(IntType.getInstance());
   }
 
   public void testListLiteral() {
@@ -419,10 +424,32 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         .parse();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
-    List<SoyType> types = getPrintStatementTypes(soyTree);
-    assertThat(types.get(0))
+    SoyType type = Iterables.getOnlyElement(getPrintStatementTypes(soyTree));
+    assertThat(type)
         .isEqualTo(MapType.of(
             IntType.getInstance(), UnionType.of(IntType.getInstance(), FloatType.getInstance())));
+  }
+
+  public void testMapLiteralWithStringKeysAsMap() {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
+        constructTemplateSource(
+            "{@param v1: int}",
+            "{@param v2: string}",
+            "{@param k1: string}",
+            "{let $map: [$k1: $v1, 'b': $v2] /}",
+            "{$map}"))
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .doRunInitialParsingPasses(false)
+        .typeRegistry(typeRegistry)
+        .parse();
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+    SoyType type = Iterables.getOnlyElement(getPrintStatementTypes(soyTree));
+    assertThat(type)
+        .isEqualTo(
+            MapType.of(
+                StringType.getInstance(),
+                UnionType.of(StringType.getInstance(), IntType.getInstance())));
   }
 
   public void testMapLiteralAsRecord() {
@@ -442,6 +469,21 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(0))
         .isEqualTo(RecordType.of(ImmutableMap.<String, SoyType>of(
             "a", IntType.getInstance(), "b", FloatType.getInstance())));
+  }
+
+  public void testMapLiteralAsRecord_duplicateKeys() {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
+        constructTemplateSource(
+            "{let $map: ['a': 1, 'a': 2]/}"))
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .doRunInitialParsingPasses(false)
+        .typeRegistry(typeRegistry)
+        .parse();
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    FormattingErrorReporter reporter = new FormattingErrorReporter();
+    new ResolveExpressionTypesVisitor(typeRegistry, SyntaxVersion.V9_9, reporter).exec(soyTree);
+    assertThat(Iterables.getOnlyElement(reporter.getErrorMessages()))
+        .isEqualTo("Record literals with duplicate keys are not allowed.  Duplicate key: 'a'");
   }
 
   public void testDataFlowTypeNarrowing() {

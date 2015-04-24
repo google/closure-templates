@@ -38,12 +38,12 @@ public final class RecordType implements SoyObjectType {
   private final ImmutableSortedMap<String, SoyType> members;
 
 
-  private RecordType(Map<String, SoyType> members) {
+  private RecordType(Map<String, ? extends SoyType> members) {
     this.members = ImmutableSortedMap.copyOf(members);
   }
 
 
-  public static RecordType of(Map<String, SoyType> members) {
+  public static RecordType of(Map<String, ? extends SoyType> members) {
     return new RecordType(members);
   }
 

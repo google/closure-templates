@@ -57,7 +57,7 @@ public class JsSrcUtilsTest extends TestCase {
   public void testGetJsTypeName() {
     // Primitives
     assertThat(JsSrcUtils.getJsTypeExpr(AnyType.getInstance())).isEqualTo("*");
-    assertThat(JsSrcUtils.getJsTypeExpr(UnknownType.getInstance())).isEqualTo("?");
+    assertThat(JsSrcUtils.getJsTypeExpr(UnknownType.getInstance())).isEqualTo("(?)");
     assertThat(JsSrcUtils.getJsTypeExpr(IntType.getInstance())).isEqualTo("number");
 
     // Basic unions

@@ -44,6 +44,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.NullType;
@@ -178,7 +179,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
         for (SoyType formalType : declaredParamTypes) {
           staticTypeSafe &= checkArgumentAgainstParamType(
               call, paramName, argType, formalType,
-              calleeParamTypes.isIndirect(paramName));
+              calleeParamTypes);
         }
         if (staticTypeSafe) {
           paramNamesToRuntimeCheck.remove(paramName);
@@ -211,7 +212,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
           for (SoyType formalType : declaredParamTypes) {
             staticTypeSafe &= checkArgumentAgainstParamType(
                 call, paramName, callerParam.type(), formalType,
-                calleeParamTypes.isIndirect(paramName));
+                calleeParamTypes);
           }
           if (staticTypeSafe) {
             paramNamesToRuntimeCheck.remove(paramName);
@@ -247,12 +248,14 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
    * @param paramName the name of the parameter.
    * @param argType The type of the value being passed.
    * @param formalType The type of the parameter.
-   * @param isIndirect Whether the parameter is an indirect parameter.
+   * @param calleeParams metadata about the callee parameters
    * @return true if runtime type checks can be elided for this param
    */
   private boolean checkArgumentAgainstParamType(
-      CallNode call, String paramName, SoyType argType, SoyType formalType, boolean isIndirect) {
-    if (formalType.getKind() == SoyType.Kind.UNKNOWN ||
+      CallNode call, String paramName, SoyType argType, SoyType formalType,
+      TemplateParamTypes calleeParams) {
+    if (!calleeParams.isStrictlyTyped
+        && formalType.getKind() == SoyType.Kind.UNKNOWN ||
         formalType.getKind() == SoyType.Kind.ANY) {
       // Special rules for unknown / any
       if (argType instanceof SoyProtoType) {
@@ -270,9 +273,9 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
       // }
     } else {
       if (!formalType.isAssignableFrom(argType)) {
-        if (isIndirect &&
-            argType.getKind() == SoyType.Kind.UNION &&
-            ((UnionType) argType).isNullable()) {
+        if (calleeParams.isIndirect(paramName)
+            && argType.getKind() == SoyType.Kind.UNION
+            && ((UnionType) argType).isNullable()) {
           if (UnionType.of(formalType, NullType.getInstance()).isAssignableFrom(argType)) {
             // Special case for indirect params: Allow a nullable type to be assigned
             // to a non-nullable type if the non-nullable type is an indirect parameter type.
@@ -319,6 +322,9 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
       // Store all of the explicitly declared param types
       if (node.getParams() != null) {
         for (TemplateParam param : node.getParams()) {
+          if (param.declLoc() == DeclLoc.SOY_DOC) {
+            paramTypes.isStrictlyTyped = false;
+          }
           Preconditions.checkNotNull(param.type());
           paramTypes.params.put(param.name(), param.type());
         }
@@ -346,6 +352,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
 
 
   private static class TemplateParamTypes {
+    public boolean isStrictlyTyped = true;
     public final Multimap<String, SoyType> params = HashMultimap.create();
     public final Set<String> indirectParamNames = Sets.newHashSet();
 

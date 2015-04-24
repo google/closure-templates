@@ -17,16 +17,13 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -88,6 +85,8 @@ import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,6 +98,8 @@ import javax.annotation.Nullable;
  *
  */
 public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+  private static final SoyError DUPLICATE_KEY_IN_RECORD_LITERAL =
+      SoyError.of("Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
@@ -394,7 +395,8 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
       SoyType commonKeyType;
       SoyType commonValueType;
-      Multimap<String, SoyType> recordFieldTypes = HashMultimap.create();
+      Set<String> duplicateKeyErrors = new HashSet<>();
+      Map<String, SoyType> recordFieldTypes = new LinkedHashMap<>();
       if (numChildren == 0) {
         commonKeyType = UnknownType.getInstance();
         commonValueType = UnknownType.getInstance();
@@ -406,7 +408,12 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
           ExprNode value = node.getChild(i + 1);
           if (key.getKind() == ExprNode.Kind.STRING_NODE) {
             String fieldName = ((StringNode) key).getValue();
-            recordFieldTypes.put(fieldName, value.getType());
+            SoyType prev = recordFieldTypes.put(fieldName, value.getType());
+            if (prev != null && duplicateKeyErrors.add(fieldName)) {
+              errorReporter.report(
+                  owningSoyNode.getSourceLocation(),
+                  DUPLICATE_KEY_IN_RECORD_LITERAL, fieldName);
+            }
           }
           keyTypes.add(key.getType());
           valueTypes.add(value.getType());
@@ -415,13 +422,12 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         commonValueType = typeOps.computeLeastCommonType(valueTypes);
       }
 
-      if (StringType.getInstance().isAssignableFrom(commonKeyType)) {
+      if (StringType.getInstance().isAssignableFrom(commonKeyType)
+          && recordFieldTypes.size() == numChildren / 2) {
         // Case 1: Keys are all strings (or unknown). We should be creating a record for the user.
         Map<String, SoyType> leastCommonFieldTypes = Maps.newHashMap();
         for (String fieldName : recordFieldTypes.keySet()) {
-          leastCommonFieldTypes.put(
-              fieldName,
-              typeOps.computeLeastCommonType(recordFieldTypes.get(fieldName)));
+          leastCommonFieldTypes.put(fieldName, recordFieldTypes.get(fieldName));
         }
         node.setType(typeOps.getTypeRegistry().getOrCreateRecordType(leastCommonFieldTypes));
       } else {
@@ -1017,18 +1023,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
     private SoyType removeNullability(SoyType type) {
       if (type.getKind() == SoyType.Kind.UNION) {
-        // Filter out nulls from union.
-        Set<SoyType> nonNullMemberTypes = Sets.filter(
-            ((UnionType) type).getMembers(), new Predicate<SoyType> () {
-              @Override public boolean apply(@Nullable SoyType memberType) {
-                return memberType.getKind() != SoyType.Kind.NULL;
-              }
-            });
-        if (nonNullMemberTypes.size() == 1) {
-          return nonNullMemberTypes.iterator().next();
-        } else {
-          return typeOps.getTypeRegistry().getOrCreateUnionType(nonNullMemberTypes);
-        }
+        return ((UnionType) type).removeNullability();
       }
       return type;
     }

@@ -18,7 +18,12 @@ package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
@@ -33,6 +38,11 @@ import java.util.Set;
  *
  */
 public final class UnionType implements SoyType {
+  private static final Predicate<SoyType> IS_NULL = new Predicate<SoyType> () {
+    @Override public boolean apply(SoyType memberType) {
+      return memberType.getKind() == SoyType.Kind.NULL;
+    }
+  };
 
   /** Comparator that defines the ordering of types. */
   private static final Comparator<SoyType> MEMBER_ORDER = new Comparator<SoyType>() {
@@ -44,10 +54,15 @@ public final class UnionType implements SoyType {
 
   private final ImmutableSortedSet<SoyType> members;
 
-
-  private UnionType(ImmutableSortedSet<SoyType> members) {
+  private UnionType(Iterable<? extends SoyType> members) {
     this.members = ImmutableSortedSet.copyOf(MEMBER_ORDER, members);
     Preconditions.checkArgument(this.members.size() != 1);
+    for (SoyType type : this.members) {
+      if (type.getKind() == Kind.UNKNOWN) {
+        throw new IllegalArgumentException(
+            "Cannot create unions containing unknown: " + this.members);
+      }
+    }
   }
 
 
@@ -69,9 +84,9 @@ public final class UnionType implements SoyType {
    *    If there is exactly one distinct type in members, then this will not be a UnionType.
    */
   public static SoyType of(Collection<SoyType> members) {
-    ImmutableSortedSet<SoyType> flattenedMembers = flatten(members);
+    ImmutableSet<SoyType> flattenedMembers = flatten(members);
     if (flattenedMembers.size() == 1) {
-      return flattenedMembers.first();
+      return Iterables.getOnlyElement(flattenedMembers);
     }
     return new UnionType(flattenedMembers);
   }
@@ -132,12 +147,15 @@ public final class UnionType implements SoyType {
 
   /** Returns true if the union includes the null type. */
   public boolean isNullable() {
-    for (SoyType memberType : members) {
-      if (memberType.getKind() == SoyType.Kind.NULL) {
-        return true;
-      }
+    return Iterables.any(members, IS_NULL);
+  }
+
+  /** Returns a Soy type that is equivalent to this one but with 'null' removed. */
+  public SoyType removeNullability() {
+    if (isNullable()) {
+      return of(Collections2.filter(members, Predicates.not(IS_NULL)));
     }
-    return false;
+    return this;
   }
 
 
@@ -165,9 +183,12 @@ public final class UnionType implements SoyType {
    * @param members The input types.
    * @return The set of all types in the input collection.
    */
-  private static ImmutableSortedSet<SoyType> flatten(Collection<SoyType> members) {
-    ImmutableSortedSet.Builder<SoyType> builder = new ImmutableSortedSet.Builder<>(MEMBER_ORDER);
+  private static ImmutableSet<SoyType> flatten(Collection<SoyType> members) {
+    ImmutableSet.Builder<SoyType> builder = ImmutableSet.builder();
     for (SoyType type : members) {
+      if (type.getKind() == Kind.UNKNOWN) {
+        return ImmutableSet.of(type);
+      }
       if (type.getKind() == Kind.UNION) {
         builder.addAll(((UnionType) type).members);
       } else {

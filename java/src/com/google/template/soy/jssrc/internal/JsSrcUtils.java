@@ -107,7 +107,8 @@ public class JsSrcUtils {
         return "*";
 
       case UNKNOWN:
-        return "?";
+        // Add parens to avoid confusion w/ the leading ? of a nullable type
+        return "(?)";
 
       case NULL:
         return "null";
@@ -144,7 +145,7 @@ public class JsSrcUtils {
 
       case RECORD: {
         RecordType recordType = (RecordType) type;
-        if (recordType.getMembers().size() == 0) {
+        if (recordType.getMembers().isEmpty()) {
           return "!Object";
         }
         List<String> members = Lists.newArrayListWithExpectedSize(recordType.getMembers().size());
@@ -174,8 +175,7 @@ public class JsSrcUtils {
           }
           String typeExpr = getJsTypeExpr(memberType, false, !isNullable);
           if (typeExpr.equals("?")) {
-            // Add parens to avoid confusion w/ the leading ? of a nullable type
-            return "(?)";
+            throw new IllegalStateException("Type: " + unionType + " contains an unknown");
           }
           typeNames.add(typeExpr);
         }

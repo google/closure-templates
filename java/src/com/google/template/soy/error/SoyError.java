@@ -34,14 +34,17 @@ import java.text.MessageFormat;
 public final class SoyError {
 
   private final MessageFormat messageFormat;
+  private final int requiredArgs;
 
   private SoyError(MessageFormat messageFormat) {
     this.messageFormat = messageFormat;
+    this.requiredArgs = messageFormat.getFormats().length;
   }
 
   public String format(String... args) {
     Preconditions.checkNotNull(args);
-    Preconditions.checkState(args.length == messageFormat.getFormats().length);
+    Preconditions.checkState(args.length == requiredArgs, 
+        "Error format required %s parameters, %s were supplied.", requiredArgs, args.length);
     return messageFormat.format(args);
   }
 
