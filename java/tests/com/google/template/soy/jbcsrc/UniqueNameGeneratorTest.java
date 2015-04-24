@@ -57,4 +57,19 @@ public final class UniqueNameGeneratorTest extends TestCase {
     }
     nameSet.claimName("foo");
   }
+
+  public void testHasName() {
+    UniqueNameGenerator nameSet = UniqueNameGenerator.forFieldNames();
+    String foo = nameSet.generateName("foo");
+    String foo2 = nameSet.generateName("foo");
+    String foo3 = nameSet.generateName("foo");
+    assertThat(foo).isEqualTo("foo");
+    assertThat(foo).isNotEqualTo(foo2);
+    assertThat(foo).isNotEqualTo(foo3);
+    assertThat(foo2).isNotEqualTo(foo3);
+    assertTrue(nameSet.hasName("foo"));
+    assertTrue(nameSet.hasName(foo));
+    assertTrue(nameSet.hasName(foo2));
+    assertTrue(nameSet.hasName(foo3));
+  }
 }

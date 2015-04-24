@@ -47,10 +47,9 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
             return visitForLoopIndex(node, local);
           case FOREACH_NONEMPTY_NODE:
             return visitForeachLoopVar(node, local);
+          case LET_CONTENT_NODE:
           case LET_VALUE_NODE:
             return visitLetNodeVar(node, local);
-          case LET_CONTENT_NODE:
-            throw new UnsupportedOperationException("let content nodes aren't supported yet");
           default:
             throw new AssertionError("Unexpected local variable: " + local);
         }

@@ -45,16 +45,17 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
 
@@ -73,6 +74,34 @@ import java.util.List;
  * runtime stack be <em>empty</em> prior to any of the code produced.
  */
 final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
+   /**
+    * Creates a SoyNodeCompiler
+    * 
+    * @param innerClasses The current set of inner classes
+    * @param stateField The field on the current class that holds the state variable
+    * @param thisVar An expression that returns 'this'
+    * @param appendableVar An expression that returns the current AdvisingAppendable that we are 
+    *     rendering into
+    * @param variableSet The variable set for generating locals and fields
+    * @param variables The variable lookup table for reading locals.
+    */
+  static SoyNodeCompiler create(
+      InnerClasses innerClasses,
+      FieldRef stateField,
+      Expression thisVar,
+      Expression appendableVar,
+      VariableSet variableSet,
+      VariableLookup variables) {
+    DetachState detachState = new DetachState(variableSet, thisVar, stateField);
+    return new SoyNodeCompiler(
+        detachState,
+        variableSet,
+        variables,
+        appendableVar,
+        new ExpressionCompiler(detachState, variables),
+        new LazyClosureCompiler(innerClasses, variables));
+  }
+
   private final DetachState detachState;
   private final VariableSet variables;
   private final VariableLookup variableLookup;
@@ -97,12 +126,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.lazyClosureCompiler = checkNotNull(lazyClosureCompiler);
   }
 
-  Statement compile(TemplateBasicNode node) {
+  Statement compile(TemplateNode node) {
     Statement templateBody = visit(node);
     Statement jumpTable = detachState.generateReattachTable();
     return Statement.concat(jumpTable, templateBody);
   }
 
+  Statement compileChildren(RenderUnitNode node) {
+    Statement templateBody = visitChildrenInNewScope(node);
+    Statement jumpTable = detachState.generateReattachTable();
+    return Statement.concat(jumpTable, templateBody);
+  }
+  
   @Override protected Statement visitTemplateBasicNode(TemplateNode node) {
     return visitChildrenInNewScope(node);
   }
@@ -344,6 +379,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           "The jbcsrc implementation does not support print directives (yet!): "
               + node.toSourceString());
     }
+    // TODO(lukes): We need to have an alternate expression compiler that evaluate an expression to
+    // a SoyValueProvider (instead of a SoyValue) when possible.  This will allow us to generate
+    // code that calls SoyValueProvider.renderAndResolve.
     SoyExpression printExpr = exprCompiler.compile(node.getExprUnion().getExpr());
     // TODO(lukes): we should specialize the print operator for our primitives to avoid this box 
     // operator.  would only work if there were no print directives
@@ -419,6 +457,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override protected Statement visitLetValueNode(LetValueNode node) {
     Expression newLetValue = 
         lazyClosureCompiler.compileLazyExpression(node, node.getVarName(), node.getValueExpr());
+    return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
+  }
+
+  @Override protected Statement visitLetContentNode(LetContentNode node) {
+    Expression newLetValue = 
+        lazyClosureCompiler.compileLazyContent(node, node.getVarName(), node);
     return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 

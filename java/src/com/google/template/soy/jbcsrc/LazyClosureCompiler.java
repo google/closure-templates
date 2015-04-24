@@ -17,9 +17,11 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
+import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.MethodRef.RENDER_RESULT_DONE;
+import static com.google.template.soy.jbcsrc.Statement.returnExpression;
 import static com.google.template.soy.soytree.SoytreeUtils.isDescendantOf;
 
 import com.google.auto.value.AutoValue;
@@ -29,12 +31,15 @@ import com.google.common.base.Enums;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -42,6 +47,7 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -112,6 +118,8 @@ final class LazyClosureCompiler {
   // classes (or each other)
   private static final int LAZY_CLOSURE_ACCESS = Opcodes.ACC_FINAL;
   private static final Method DO_RESOLVE;
+  private static final Method DO_RENDER;
+  private static final Method DETACHABLE_CONTENT_PROVIDER_INIT;
   private static final FieldRef RESOLVED_VALUE = 
       FieldRef.instanceFieldReference(DetachableSoyValueProvider.class, "resolvedValue");
 
@@ -119,6 +127,10 @@ final class LazyClosureCompiler {
     try {
       DO_RESOLVE = Method.getMethod(
           DetachableSoyValueProvider.class.getDeclaredMethod("doResolve"));
+      DO_RENDER = Method.getMethod(
+          DetachableContentProvider.class.getDeclaredMethod("doRender", AdvisingAppendable.class));
+      DETACHABLE_CONTENT_PROVIDER_INIT = Method.getMethod(
+          DetachableContentProvider.class.getDeclaredConstructor(ContentKind.class));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new AssertionError(e);
     }
@@ -146,6 +158,23 @@ final class LazyClosureCompiler {
     Expression expr = 
         new CompilationUnit(visitor, type, DetachableSoyValueProvider.class, declaringNode)
             .compileExpression(exprNode);
+    
+    innerClasses.registerAsInnerClass(visitor, type);
+    innerClasses.add(ClassData.create(type, writer.toByteArray()));
+    visitor.visitEnd();
+    return expr;
+  }
+
+  Expression compileLazyContent(
+      SoyNode declaringNode, String varName, RenderUnitNode renderUnit) {
+    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+    ClassVisitor visitor = new CheckClassAdapter(writer, false);
+    TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
+        getProposedName(declaringNode, varName),
+        LAZY_CLOSURE_ACCESS);
+    Expression expr = 
+        new CompilationUnit(visitor, type, DetachableContentProvider.class, declaringNode)
+            .compileRenderable(renderUnit);
     
     innerClasses.registerAsInnerClass(visitor, type);
     innerClasses.add(ClassData.create(type, writer.toByteArray()));
@@ -201,9 +230,67 @@ final class LazyClosureCompiler {
           adapter.mark(end);
         }
       };
-      Expression constructExpr = generateConstructor(lookup.getCapturedFields());
+      Expression constructExpr = generateConstructor(
+          new Statement() {
+            @Override void doGen(CodeBuilder adapter) {
+              adapter.loadThis();
+              adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
+            }
+          }, 
+          lookup.getCapturedFields());
 
       doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, visitor);
+      variableSet.defineFields(visitor);
+      return constructExpr;
+    }
+
+    Expression compileRenderable(RenderUnitNode renderUnit) {
+      FieldRef stateField = createField(type, "$state", Type.INT_TYPE);
+      stateField.defineField(visitor);
+      fieldNames.claimName("$state");
+
+      final Label start = new Label();
+      final Label end = new Label();
+      final LocalVariable thisVar = createThisVar(type, start, end);
+      final LocalVariable appendableVar = 
+          createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
+
+      final VariableSet variableSet = new VariableSet(fieldNames, type, thisVar, DO_RENDER);
+      LazyClosureVariableLookup lookup = 
+          new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
+      final Statement nodeBody = 
+          SoyNodeCompiler.create(
+              innerClasses, stateField, thisVar, appendableVar, variableSet, lookup)
+              .compileChildren(renderUnit);
+      final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
+      Statement fullMethodBody = new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          adapter.mark(start);
+          nodeBody.gen(adapter);
+          adapter.mark(end);
+          returnDone.gen(adapter);
+
+          thisVar.tableEntry(adapter);
+          appendableVar.tableEntry(adapter);
+          variableSet.generateTableEntries(adapter);
+        }
+      };
+
+      final Expression contentKind = 
+          renderUnit.getContentKind() == null 
+              ? BytecodeUtils.constantNull(ContentKind.class) 
+              : FieldRef.enumReference(renderUnit.getContentKind()).accessor();
+      Statement superClassContstructor = new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          adapter.loadThis();
+          contentKind.gen(adapter);
+          adapter.invokeConstructor(baseClass.type(), DETACHABLE_CONTENT_PROVIDER_INIT);
+        }
+      };
+      Expression constructExpr = 
+          generateConstructor(superClassContstructor, lookup.getCapturedFields());
+
+      fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, visitor);
       variableSet.defineFields(visitor);
       return constructExpr;
     }
@@ -214,7 +301,8 @@ final class LazyClosureCompiler {
      * 
      * <p>This constructor is called by the generate factory classes.
      */
-    Expression generateConstructor(Iterable<ParentCapture> captures) {
+    Expression generateConstructor(final Statement superClassConstructorInvocation, 
+        Iterable<ParentCapture> captures) {
       final Label start = new Label();
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
@@ -238,8 +326,7 @@ final class LazyClosureCompiler {
         @Override void doGen(CodeBuilder ga) {
           ga.mark(start);
           // call super()
-          thisVar.gen(ga);
-          ga.invokeConstructor(baseClass.type(), NULLARY_INIT);
+          superClassConstructorInvocation.gen(ga);
           for (Statement assignment : assignments) {
             assignment.gen(ga);
           }

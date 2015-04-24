@@ -41,7 +41,7 @@ final class UniqueNameGenerator {
    * class.
    */
   static UniqueNameGenerator forFieldNames() {
-    return new UniqueNameGenerator(DANGEROUS_CHARACTERS);
+    return new UniqueNameGenerator(DANGEROUS_CHARACTERS, '%');
   }
 
   /**
@@ -51,14 +51,17 @@ final class UniqueNameGenerator {
    * <p>For example, all the inner classes of a class, or all the classes in a package.
    */
   static UniqueNameGenerator forClassNames() {
-    return new UniqueNameGenerator(DANGEROUS_CHARACTERS_WITH_DOLLARSIGN);
+    // roman numeral 10
+    return new UniqueNameGenerator(DANGEROUS_CHARACTERS_WITH_DOLLARSIGN, '\u2169');
   }
 
   private final Multiset<String> names = HashMultiset.create();
   private final CharMatcher bannedCharacters;
+  private final char collisionSeparator;
 
-  private UniqueNameGenerator(CharMatcher bannedCharacters) {
+  private UniqueNameGenerator(CharMatcher bannedCharacters, char collisionSeparator) {
     this.bannedCharacters = bannedCharacters;
+    this.collisionSeparator = collisionSeparator;
   }
 
   /**
@@ -83,11 +86,12 @@ final class UniqueNameGenerator {
     if (count == 1) {
       return name;
     }
-    return name + '%' + (count - 1);
+    return name + collisionSeparator + (count - 1);
   }
 
   boolean hasName(String name) {
-    return names.contains(name);
+    int separator = name.indexOf(collisionSeparator);
+    return names.contains(separator == -1 ? name : name.substring(0, separator));
   }
 
   private void checkName(String name) {

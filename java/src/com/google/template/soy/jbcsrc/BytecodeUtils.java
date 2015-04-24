@@ -134,6 +134,18 @@ final class BytecodeUtils {
       }
     };
   }
+  
+  /** Returns an {@link Expression} with the given type that always returns null. */
+  static Expression constantNull(final Class<?> clazz) {
+    Type type = Type.getType(clazz);
+    checkArgument(type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY, 
+        "%s is not a reference type", clazz);
+    return new SimpleExpression(type, true) {
+      @Override void doGen(CodeBuilder mv) {
+        mv.visitInsn(Opcodes.ACONST_NULL);
+      }
+    };
+  }
 
   /**
    * Returns an expression that does a numeric conversion cast from the given expression to the

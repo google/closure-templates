@@ -30,7 +30,6 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
-import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -38,6 +37,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -159,25 +159,24 @@ final class TemplateCompiler {
         createLocal("context", 2, Type.getType(RenderContext.class), start, end);
     final VariableSet variableSet = 
         new VariableSet(fieldNames, template.typeInfo(), thisVar, RENDER_METHOD);
-    Scope rootScope = variableSet.enterScope();
-    DetachState detachState = new DetachState(variableSet, thisVar, stateField);
+    TemplateBasicNode node = template.node();
     TemplateVariables variables = 
         new TemplateVariables(variableSet, thisVar, contextVar, paramFields);
-    ExpressionCompiler exprCompiler = new ExpressionCompiler(detachState, variables);
-    LazyClosureCompiler lcc = new LazyClosureCompiler(innerClasses, variables);
-    final Statement nodeBody = 
-        new SoyNodeCompiler(detachState, variableSet, variables, appendableVar, exprCompiler, lcc)
-            .compile(template.node());
-    final Statement exitScope = rootScope.exitScope();
-    final Expression done = MethodRef.RENDER_RESULT_DONE.invoke();
+    final Statement methodBody =
+        SoyNodeCompiler.create(
+            innerClasses,
+            stateField,
+            thisVar,
+            appendableVar,
+            variableSet,
+            variables).compile(node);
+    final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     Statement fullMethodBody = new Statement() {
       @Override void doGen(CodeBuilder adapter) {
         adapter.mark(start);
-        nodeBody.gen(adapter);
-        exitScope.gen(adapter);
-        done.gen(adapter);
+        methodBody.gen(adapter);
         adapter.mark(end);
-        adapter.returnValue();
+        returnDone.gen(adapter);
 
         thisVar.tableEntry(adapter);
         appendableVar.tableEntry(adapter);

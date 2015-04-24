@@ -94,6 +94,10 @@ import java.lang.reflect.Modifier;
         TypeInfo.create(owner), name, Type.getType(fieldType), Opcodes.ACC_STATIC);
   }
 
+  static <T extends Enum<T>> FieldRef enumReference(T enumInstance) {
+    return staticFieldReference(enumInstance.getDeclaringClass(), enumInstance.name());
+  }
+  
   static FieldRef createField(TypeInfo owner, String name, Class<?> type) {
     return createField(owner, name, Type.getType(type));
   }

@@ -40,6 +40,60 @@ import java.util.List;
  * Tests for {@link LazyClosureCompiler}.
  */
 public class LazyClosureCompilerTest extends TestCase {
+  public void testLetContentNode() {
+    assertThatTemplateBody(
+        "{let $foo}",
+        "  foo bar baz",
+        "{/let}",
+        "{$foo}").rendersAs("foo bar baz");
+  }
+  
+  public void testLetContentNode_typed() {
+    assertThatTemplateBody(
+        "{let $foo kind=\"html\"}",
+        "  foo bar baz",
+        "{/let}",
+        "{$foo}").rendersAs("foo bar baz");
+  }
+  
+  public void testLetNodes_nested() {
+    assertThatTemplateBody(
+        "{let $foo}",
+        "  {let $foo}foo bar baz{/let}",
+        "  {$foo}",
+        "{/let}",
+        "{$foo}").rendersAs("foo bar baz");
+  }
+
+  public void testLetContentNode_detaching() throws IOException {
+    SettableFuture<String> bar = SettableFuture.create();
+    CompiledTemplate.Factory factory = compileTemplateBody(
+        "{@param bar : string }",
+        "{let $foo}",
+        "  hello {$bar}",
+        "{/let}",
+        "{$foo}");
+    CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertSame(bar, result.future());  // we found bar!
+    // Nothing :(  This should be 'hello' but unfortunately we always force full resolution of
+    // SoyValueProviders in order to print.  There is a TODO in SoyNodeCompiler.visitPrintNode about
+    // this.
+    assertEquals("", output.toString());
+
+    // make sure no progress is made
+    result = template.render(output, EMPTY_CONTEXT);
+    assertEquals(RenderResult.Type.DETACH, result.type());
+    assertSame(bar, result.future());
+    assertEquals("", output.toString());
+    bar.set("bar");
+
+    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals("hello bar", output.toString());
+  }
+
   public void testLetValueNode() {
     assertThatTemplateBody(
         "{let $foo : 1+2 /}",
