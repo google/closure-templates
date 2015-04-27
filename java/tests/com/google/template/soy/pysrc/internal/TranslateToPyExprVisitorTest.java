@@ -97,13 +97,16 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyExpr("$boo").translatesTo(new PyExpr("opt_data.get('boo')", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo.goo").translatesTo(
         new PyExpr("opt_data.get('boo').get('goo')", Integer.MAX_VALUE));
-    assertThatSoyExpr("$boo.0.1.foo.2").translatesTo(
-        new PyExpr("opt_data.get('boo')[0][1].get('foo')[2]", Integer.MAX_VALUE));
-    assertThatSoyExpr("$boo[0].1").translatesTo(
-        new PyExpr("opt_data.get('boo')[0][1]", Integer.MAX_VALUE));
+    assertThatSoyExpr("$boo['goo']").translatesTo(
+        new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 'goo')", Integer.MAX_VALUE));
+    assertThatSoyExpr("$boo.0").translatesTo(
+        new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 0)", Integer.MAX_VALUE));
+    assertThatSoyExpr("$boo[0]").translatesTo(
+        new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 0)", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo[$foo][$foo+1]").translatesTo(
-        new PyExpr("opt_data.get('boo')[opt_data.get('foo')]"
-            + "[runtime.type_safe_add(opt_data.get('foo'), 1)]",
+        new PyExpr("runtime.key_safe_data_access("
+            + "runtime.key_safe_data_access(opt_data.get('boo'), opt_data.get('foo')), "
+            + "runtime.type_safe_add(opt_data.get('foo'), 1))",
             Integer.MAX_VALUE));
 
     assertThatSoyExpr("$boo?.goo").translatesTo(
@@ -113,7 +116,9 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyExpr("$boo?[0]?.1").translatesTo(
         new PyExpr(
             "None if opt_data.get('boo') is None else "
-            + "None if opt_data.get('boo')[0] is None else opt_data.get('boo')[0][1]",
+            + "None if runtime.key_safe_data_access(opt_data.get('boo'), 0) is None else "
+            + "runtime.key_safe_data_access("
+            + "runtime.key_safe_data_access(opt_data.get('boo'), 0), 1)",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 

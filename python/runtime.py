@@ -152,6 +152,28 @@ def namespaced_import(name, namespace=None):
     raise
 
 
+def key_safe_data_access(data, key):
+  """Safe key based data access.
+
+  Traditional bracket access in Python (foo['bar']) will throw a KeyError (or
+  IndexError if in a list) when encountering a non-existent key.
+  foo.get(key, None) is solves this problem for objects, but doesn't work with
+  lists. Thus this function serves to do safe access with a unified syntax for
+  both lists and dictionaries.
+
+  Args:
+    data: The data object to search for the key within.
+    key: The key to use for access.
+
+  Returns:
+    data[key] if key is present or None otherwise.
+  """
+  try:
+    return data[key]
+  except (KeyError, IndexError):
+    return None
+
+
 def register_delegate_fn(template_id, variant, priority, fn, fn_name):
   """Register a delegate function in the global registry.
 

@@ -51,12 +51,14 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.targetexpr.ExprUtils;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -226,10 +228,16 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
           return genCodeForFieldAccess(
               fieldAccess.getBaseExprChild().getType(), refText, fieldAccess.getFieldName());
         } else {
-          // NOTE: Item access assumes existence. Trying to access a missing field will result in a
-          // Python runtime error.
           ItemAccessNode itemAccess = (ItemAccessNode) node;
-          return refText + "[" + visit(itemAccess.getKeyExprChild()).getText() + "]";
+          Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
+          PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
+          if (baseKind == Kind.MAP || baseKind == Kind.RECORD) {
+            return genCodeForKeyAccess(refText, keyPyExpr.getText());
+          } else {
+            return new PyFunctionExprBuilder("runtime.key_safe_data_access")
+                .addArg(new PyExpr(refText, Integer.MAX_VALUE))
+                .addArg(keyPyExpr).build();
+          }
         }
       }
 
