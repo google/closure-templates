@@ -16,9 +16,6 @@
 
 package com.google.template.soy.sharedpasses;
 
-import static com.google.common.base.Preconditions.checkState;
-
-import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -29,8 +26,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
-import com.google.template.soy.exprtree.AbstractParentExprNode;
-import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -59,6 +54,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
@@ -77,12 +73,10 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
-import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.IntType;
@@ -235,21 +229,21 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
   // Given a map of type subsitutions, add all the entries to the current set of
   // active substitutions.
-  private void addTypeSubstitutions(Map<Wrapper<ExprNode>, SoyType> substitutionsToAdd) {
-    for (Map.Entry<Wrapper<ExprNode>, SoyType> entry : substitutionsToAdd.entrySet()) {
-      ExprNode expr = entry.getKey().get();
+  private void addTypeSubstitutions(Map<VarDefn, SoyType> substitutionsToAdd) {
+    for (Map.Entry<VarDefn, SoyType> entry : substitutionsToAdd.entrySet()) {
+      VarDefn defn = entry.getKey();
       // Get the existing type
-      SoyType previousType = expr.getType();
+      SoyType previousType = defn.type();
       for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
-        if (ExprEquivalence.get().equivalent(subst.expression, expr)) {
+        if (subst.defn == defn) {
           previousType = subst.type;
           break;
         }
       }
 
       // If the new type is different than the current type, then add a new type substitution.
-      if (!entry.getValue().equals(previousType)) {
-        substitutions = new TypeSubstitution(substitutions, expr, entry.getValue());
+      if (entry.getValue() != previousType) {
+        substitutions = new TypeSubstitution(substitutions, entry.getKey(), entry.getValue());
       }
     }
   }
@@ -359,7 +353,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       Preconditions.checkArgument(node instanceof ExprRootNode);
       this.currExprRootNode = (ExprRootNode) node;
       visit(node);
-      // Check that every node in the tree had a type assigned
+      // Check that ever node in the tree had a type assigned
       checkAllTypesAssignedVisitor.exec(currExprRootNode);
       this.currExprRootNode = null;
       return null;
@@ -369,7 +363,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       visitChildren(node);
       ExprNode expr = node.getChild(0);
       node.setType(expr.getType());
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitPrimitiveNode(PrimitiveNode node) {
@@ -389,7 +382,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       }
       node.setType(typeOps.getTypeRegistry().getOrCreateListType(
           typeOps.computeLeastCommonType(elementTypes)));
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitMapLiteralNode(MapLiteralNode node) {
@@ -442,16 +434,19 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         // Case 2: Keys are not all strings. We should be creating a map for the user.
         node.setType(typeOps.getTypeRegistry().getOrCreateMapType(commonKeyType, commonValueType));
       }
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitVarRefNode(VarRefNode varRef) {
       if (varRef.getType() == null) {
         throw createExceptionForInvalidExpr("Missing Soy type for variable: " + varRef.getName());
       }
-      SoyType newType = getTypeSubstitution(varRef);
-      if (newType != null) {
-        varRef.setSubstituteType(newType);
+      // If there's a type substitution in effect for this variable, then change
+      // the type of the variable reference to the substituted type.
+      for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
+        if (subst.defn == varRef.getDefnDecl()) {
+          varRef.setSubstituteType(subst.type);
+          break;
+        }
       }
     }
 
@@ -459,7 +454,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       visit(node.getBaseExprChild());
       node.setType(getFieldType(
           node.getBaseExprChild().getType(), node.getFieldName(), node.isNullSafe()));
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitItemAccessNode(ItemAccessNode node) {
@@ -467,7 +461,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       visit(node.getKeyExprChild());
       node.setType(getItemType(
           node.getBaseExprChild().getType(), node.getKeyExprChild().getType()));
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitGlobalNode(GlobalNode node) {
@@ -477,7 +470,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     @Override protected void visitNegativeOpNode(NegativeOpNode node) {
       visitChildren(node);
       node.setType(node.getChild(0).getType());
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitNotOpNode(NotOpNode node) {
@@ -525,7 +517,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       node.setType(typeOps.computeLeastCommonTypeArithmetic(
           node.getChild(0).getType(),
           node.getChild(1).getType()));
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitMinusOpNode(MinusOpNode node) {
@@ -557,8 +548,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitAndOpNode(AndOpNode node) {
-      // TODO(user): add if like logic for the right child so that exprs like $foo and $foo.bar
-      // works as expected
       visitLogicalOpNode(node);
     }
 
@@ -591,7 +580,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
       node.setType(typeOps.computeLeastCommonType(
           node.getChild(0).getType(), node.getChild(1).getType()));
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitConditionalOpNode(ConditionalOpNode node) {
@@ -623,7 +611,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       node.setType(typeOps.computeLeastCommonType(
           node.getChild(1).getType(),
           node.getChild(2).getType()));
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitFunctionNode(FunctionNode node) {
@@ -631,7 +618,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       // TODO: think about adding function type declarations.
       visitChildren(node);
       node.setType(UnknownType.getInstance());
-      tryApplySubstitution(node);
     }
 
     private void visitLogicalOpNode(AbstractOperatorNode node) {
@@ -657,7 +643,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       node.setType(typeOps.computeLeastCommonTypeArithmetic(
           node.getChild(0).getType(),
           node.getChild(1).getType()));
-      tryApplySubstitution(node);
     }
 
     /**
@@ -798,26 +783,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       }
     }
 
-    private void tryApplySubstitution(AbstractParentExprNode parentNode) {
-      SoyType newType = getTypeSubstitution(parentNode);
-      if (newType != null) {
-        checkState(parentNode.getType().isAssignableFrom(newType),
-            "Tried to override '%s' with '%s'", parentNode.getType(), newType);
-        parentNode.setType(newType);
-      }
-    }
-
-    @Nullable private SoyType getTypeSubstitution(ExprNode expr) {
-      // If there's a type substitution in effect for this expression, then change
-      // the type of the variable reference to the substituted type.
-      for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
-        if (ExprEquivalence.get().equivalent(subst.expression, expr)) {
-          return subst.type;
-        }
-      }
-      return null;
-    }
-
     /**
      * Private helper to create a SoySyntaxException whose error message incorporates both the
      * owningSoyNode and the currExprRootNode.
@@ -849,18 +814,13 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
    * comparisons with null. If we added an 'instanceof' operator to Soy, the combination
    * of instanceof + flow-based type analysis would effectively allow template authors
    * to do typecasts, without having to add a cast operator to the language.
-   *
-   * <p>TODO(lukes): A lot of the 'negative contstraints' are simply 'null', however for
-   * most conditions they should really be 'some falsy value'.  e.g. {if not $foo}{$foo}{/if}
-   * the foo inside that if is currently assigned a type of 'null' however, it should really be
-   * 'some falsy value'.
    */
   private final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
     // Type constraints that are valid if the condition is true.
-    Map<Wrapper<ExprNode>, SoyType> positiveTypeConstraints = Maps.newHashMap();
+    Map<VarDefn, SoyType> positiveTypeConstraints = Maps.newHashMap();
 
     // Type constraints that are valid if the condition is false.
-    Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = Maps.newHashMap();
+    Map<VarDefn, SoyType> negativeTypeConstraints = Maps.newHashMap();
 
     TypeNarrowingConditionVisitor() {
       super(ResolveExpressionTypesVisitor.this.errorReporter);
@@ -880,10 +840,13 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       // a reference to a variable as a comparison of that variable with null.
       // So for example an expression like {if $var} should be treated as
       // {if $var != null} but something like {if $var > 0} should not be changed.
-      visit(node);
-      Wrapper<ExprNode> wrapped = ExprEquivalence.get().wrap(node);
-      positiveTypeConstraints.put(wrapped, removeNullability(node.getType()));
-      negativeTypeConstraints.put(wrapped, NullType.getInstance());
+      if (node.getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        VarRefNode varRef = (VarRefNode) node;
+        positiveTypeConstraints.put(varRef.getDefnDecl(), removeNullability(varRef.getType()));
+        negativeTypeConstraints.put(varRef.getDefnDecl(), NullType.getInstance());
+      } else {
+        visit(node);
+      }
     }
 
     @Override protected void visitAndOpNode(AndOpNode node) {
@@ -895,11 +858,11 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       rightVisitor.visitAndImplicitlyCastToBoolean(node.getChild(1));
 
       // Both the left side and right side constraints will be valid if the condition is true.
-      positiveTypeConstraints.putAll(computeConstraintUnion(
+      positiveTypeConstraints.putAll(computeUnion(
           leftVisitor.positiveTypeConstraints, rightVisitor.positiveTypeConstraints));
       // If the condition is false, then the overall constraint is the intersection of
       // the complements of the true constraints.
-      negativeTypeConstraints.putAll(computeConstraintIntersection(
+      negativeTypeConstraints.putAll(computeIntersection(
           leftVisitor.negativeTypeConstraints, rightVisitor.negativeTypeConstraints));
     }
 
@@ -913,11 +876,11 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
       // If the condition is true, then only constraints that appear on both sides of the
       // operator will be valid.
-      positiveTypeConstraints.putAll(computeConstraintIntersection(
+      positiveTypeConstraints.putAll(computeIntersection(
           leftVisitor.positiveTypeConstraints, rightVisitor.positiveTypeConstraints));
       // If the condition is false, then both sides must be false, so the overall constraint
       // is the union of the complements of the constraints on each side.
-      negativeTypeConstraints.putAll(computeConstraintUnion(
+      negativeTypeConstraints.putAll(computeUnion(
           leftVisitor.negativeTypeConstraints, rightVisitor.negativeTypeConstraints));
     }
 
@@ -931,27 +894,35 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitEqualOpNode(EqualOpNode node) {
-      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
-      } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
-        positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
+      if (node.getChild(0).getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+          VarRefNode varRef = (VarRefNode) node.getChild(0);
+          positiveTypeConstraints.put(varRef.getDefnDecl(), NullType.getInstance());
+          negativeTypeConstraints.put(varRef.getDefnDecl(), removeNullability(varRef.getType()));
+        }
+      } else if (node.getChild(1).getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+          VarRefNode varRef = (VarRefNode) node.getChild(1);
+          positiveTypeConstraints.put(varRef.getDefnDecl(), NullType.getInstance());
+          negativeTypeConstraints.put(varRef.getDefnDecl(), removeNullability(varRef.getType()));
+        }
       }
       // Otherwise don't make any inferences (don't visit children).
     }
 
     @Override protected void visitNotEqualOpNode(NotEqualOpNode node) {
-      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
-        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
-      } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
-        positiveTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
-        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
+      if (node.getChild(0).getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+          VarRefNode varRef = (VarRefNode) node.getChild(0);
+          positiveTypeConstraints.put(varRef.getDefnDecl(), removeNullability(varRef.getType()));
+          negativeTypeConstraints.put(varRef.getDefnDecl(), NullType.getInstance());
+        }
+      } else if (node.getChild(1).getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+          VarRefNode varRef = (VarRefNode) node.getChild(1);
+          positiveTypeConstraints.put(varRef.getDefnDecl(), removeNullability(varRef.getType()));
+          negativeTypeConstraints.put(varRef.getDefnDecl(), NullType.getInstance());
+        }
       }
       // Otherwise don't make any inferences (don't visit children).
     }
@@ -969,11 +940,14 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitFunctionNode(FunctionNode node) {
-      // Handle 'isNonnull(<expr>)
+      // Handle 'isNonnull($variable)
       if (node.numChildren() == 1 && node.getFunctionName().equals("isNonnull")) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
-        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
+        ExprNode argNode = node.getChild(0);
+        if (argNode.getKind() == ExprNode.Kind.VAR_REF_NODE) {
+          VarRefNode varRef = (VarRefNode) argNode;
+          positiveTypeConstraints.put(varRef.getDefnDecl(), removeNullability(varRef.getType()));
+          negativeTypeConstraints.put(varRef.getDefnDecl(), NullType.getInstance());
+        }
       }
       // Otherwise don't make any inferences (don't visit children).
     }
@@ -992,60 +966,28 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
      * @param right Constraints from the right side.
      * @return The combined constraint.
      */
-    private <T> Map<T, SoyType> computeConstraintUnion(
-        Map<T, SoyType> left,
-        Map<T, SoyType> right) {
+    private Map<VarDefn, SoyType> computeUnion(
+        Map<VarDefn, SoyType> left, Map<VarDefn, SoyType> right) {
       if (left.isEmpty()) {
         return right;
       }
       if (right.isEmpty()) {
         return left;
       }
-      Map<T, SoyType> result = Maps.newHashMap(left);
-      for (Map.Entry<T, SoyType> entry : right.entrySet()) {
+      Map<VarDefn, SoyType> result = Maps.newHashMap(left);
+      for (Map.Entry<VarDefn, SoyType> entry : right.entrySet()) {
         // The union of two constraints is a *stricter* constraint.
         // Thus "((a instanceof any) AND (a instanceof bool)) == (a instanceof bool)"
-        result.put(entry.getKey(), unionConstraints(entry.getValue(), left.get(entry.getKey())));
-      }
-      return result;
-    }
-
-    /**
-     * Calculates the union of two type contraints.
-     *
-     * <p>The union of two constraints is a *stricter* constraint. Thus
-     * "((a instanceof any) AND (a instanceof bool)) == (a instanceof bool)"
-     */
-    private SoyType unionConstraints(SoyType leftType, @Nullable SoyType rightType) {
-      if (rightType == null) {
-        return leftType;
-      }
-      // The union of two type constraints is the intersection of their containts.  For most
-      // types it is just the more specific type which we can calculate using assignability.
-      if (leftType.isAssignableFrom(rightType)) {
-        return rightType;
-      } else if (rightType.isAssignableFrom(leftType)) {
-        return leftType;
-      } else {
-        // The types have no hierarchy relationship.  That means that either there is an error
-        // (e.g. left == string and right == int) or they are both records.
-        if (leftType.getKind() == Kind.RECORD && rightType.getKind() == Kind.RECORD) {
-          // If they are both records then we can recursively combine them by unioning the fields
-          return RecordType.of(
-              computeConstraintUnion(
-                  ((RecordType) leftType).getMembers(),
-                  ((RecordType) rightType).getMembers()));
+        if (left.containsKey(entry.getKey())) {
+          // For now, it's sufficient that the map contains an entry for the variable
+          // (since we're only testing for nullability). Once we add support for more
+          // complex type tests, we'll need to add code here that combines the two
+          // constraints.
         } else {
-          // In principal this should be reported as a bug in the users template, e.g.
-          // ((a instanceof bool) and (a instanceof int)) should either be a type error or
-          // just always evaluate to false. However, given the current limitations of the flow
-          // analysis (we only do flow analysis for nullability) this is not possible.  Instead we
-          // use the rightType as a default. To fix this we would need to use a more complete
-          // constraint system to represent our negative constraints more accurately.  See the
-          // TODO on TypeNarrowingConditionVisitor
-          return rightType;
+          result.put(entry.getKey(), entry.getValue());
         }
       }
+      return result;
     }
 
     /**
@@ -1056,17 +998,16 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
      * @param right Constraints from the right side.
      * @return The combined constraint.
      */
-    private Map<Wrapper<ExprNode>, SoyType> computeConstraintIntersection(
-        Map<Wrapper<ExprNode>, SoyType> left,
-        Map<Wrapper<ExprNode>, SoyType> right) {
+    private Map<VarDefn, SoyType> computeIntersection(
+        Map<VarDefn, SoyType> left, Map<VarDefn, SoyType> right) {
       if (left.isEmpty()) {
         return left;
       }
       if (right.isEmpty()) {
         return right;
       }
-      Map<Wrapper<ExprNode>, SoyType> result = Maps.newHashMap();
-      for (Map.Entry<Wrapper<ExprNode>, SoyType> entry : left.entrySet()) {
+      Map<VarDefn, SoyType> result = Maps.newHashMap();
+      for (Map.Entry<VarDefn, SoyType> entry : left.entrySet()) {
         // A variable must be present in both the left and right sides in order to be
         // included in the output.
         if (right.containsKey(entry.getKey())) {
@@ -1090,26 +1031,20 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
   /**
    * Class that is used to temporarily substitute the type of a variable.
-   *
-   * <p>Type substitution preferences are implemented via a custom stack in order for
-   * new substitutions to override old ones.  This means that lookups for type substitutions are
-   * linear in the number of active substitutions.  This should be fine because the stack depth is
-   * unlikely to be >10.  If we end up observing large stacks (100s of active substitutions), then
-   * we should rewrite to a hashed data structure to make it faster to do negative lookups.
    */
-  private static final class TypeSubstitution {
+  private static class TypeSubstitution {
     /** Parent substitution. */
     public final TypeSubstitution parent;
 
-    /** The expression whose type we are overriding. */
-    public final ExprNode expression;
+    /** The variable whose type we are overriding. */
+    public final VarDefn defn;
 
     /** The new type of the variable. */
     public final SoyType type;
 
-    public TypeSubstitution(@Nullable TypeSubstitution parent, ExprNode expression, SoyType type) {
+    public TypeSubstitution(@Nullable TypeSubstitution parent, VarDefn var, SoyType type) {
       this.parent = parent;
-      this.expression = expression;
+      this.defn = var;
       this.type = type;
     }
   }
