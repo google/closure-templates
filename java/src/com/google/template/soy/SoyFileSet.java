@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -837,8 +838,6 @@ public final class SoyFileSet {
    * @param tofuOptions The compilation options for the Tofu backend.
    * @return The resulting {@code SoyTofu} object.
    * @throws SoySyntaxException If a syntax error is found.
-   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
-   * can inspect.
    */
   public SoyTofu compileToTofu(SoyTofuOptions tofuOptions) throws SoySyntaxException {
 
@@ -869,6 +868,17 @@ public final class SoyFileSet {
 
     // Clear the SoyDoc strings because they use unnecessary memory.
     new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
+
+    ImmutableCollection<? extends SoySyntaxException> errors
+        = ((ErrorReporterImpl) errorReporter).getErrors();
+    if (!errors.isEmpty()) {
+      SoySyntaxException combinedException
+          = new SoySyntaxException("errors during Soy compilation");
+      for (SoySyntaxException error : errors) {
+        combinedException.addSuppressed(error);
+      }
+      throw combinedException;
+    }
 
     return baseTofuFactory.create(soyTree, tofuOptions.useCaching(), errorReporter);
   }
