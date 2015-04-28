@@ -67,7 +67,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     try {
       new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
           .parseTemplateContent();
-    }  finally {
+    } finally {
       Truth.assertThat(errorReporter.locationsForError.keySet()).contains(error);
       actualSourceLocation = Iterables.getFirst(errorReporter.locationsForError.get(error), null);
       return this;
@@ -126,7 +126,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     }
 
     @Override
-    public void report(SourceLocation sourceLocation, SoyError error, String... args) {
+    public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
       soyErrors.add(error);
       locationsForError.put(error, sourceLocation);
     }

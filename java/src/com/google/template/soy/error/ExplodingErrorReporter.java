@@ -51,7 +51,7 @@ public final class ExplodingErrorReporter implements ErrorReporter {
   }
 
   @Override
-  public void report(SourceLocation sourceLocation, SoyError error, String... args) {
+  public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
     throw new IllegalStateException(
         String.format("Unexpected SoyError: %s at %s", error.format(args), sourceLocation));
   }

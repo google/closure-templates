@@ -41,7 +41,7 @@ public final class SoyError {
     this.requiredArgs = messageFormat.getFormats().length;
   }
 
-  public String format(String... args) {
+  public String format(Object... args) {
     Preconditions.checkNotNull(args);
     Preconditions.checkState(args.length == requiredArgs, 
         "Error format required %s parameters, %s were supplied.", requiredArgs, args.length);
