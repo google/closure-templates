@@ -559,6 +559,40 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(15)).isEqualTo(NullType.getInstance());
   }
 
+  public void testDataFlowTypeNarrowing_complexExpressions() {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
+        "{@param map: map<string, int|null>}",
+        "{@param record: [a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
+        "{@param pb: bool}",
+        "{if $map['a']}",
+        "  {$map['a']}",
+        "{/if}",
+        "{if $record.a?.nullableInt}",
+        "  {$record.a?.nullableInt}",
+        "{/if}",
+        ""))
+        .parse();
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+    List<SoyType> types = getPrintStatementTypes(soyTree);
+    assertThat(types.get(0)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(1)).isEqualTo(IntType.getInstance());
+  }
+
+  public void testDataFlowTypeNarrowing_andExpressions() {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
+        "{@param record: [active : bool|null]}",
+        "{if isNonnull($record.active) and (not $record.active)}",
+        "  {$record.active}",
+        "{/if}",
+        ""))
+        .parse();
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+    List<SoyType> types = getPrintStatementTypes(soyTree);
+    assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+  }
+
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
     SoyType boolOrNullType = UnionType.of(BoolType.getInstance(), NullType.getInstance());
@@ -590,9 +624,12 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool|null}",
         "{@param pb: bool}",
+        "{@param pc: [a : int|null]}",
         "{$pa ? $pa : $pb}", // #0 must be non-null
         "{$pa != null ?: $pb}", // #1 must be non-null
-        "{$pa ?: $pb}"))
+        "{$pa ?: $pb}",
+        "{$pc.a ? $pc.a : 0}",
+        "{if not $pc.a}{$pc.a}{/if}"))
         .parse(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
@@ -600,6 +637,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(3)).isEqualTo(IntType.getInstance());
+    // This one is a little weird
+    assertThat(types.get(4)).isEqualTo(NullType.getInstance());
   }
 
   public void testInjectedParamTypes() {
