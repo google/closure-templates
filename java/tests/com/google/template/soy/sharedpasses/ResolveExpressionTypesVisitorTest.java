@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -103,9 +104,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
     assertThat(types.get(0))
-        .isEqualTo(UnionType.of(BoolType.getInstance(), NullType.getInstance()));
+        .isEqualTo(makeNullable(BoolType.getInstance()));
     assertThat(types.get(1))
-        .isEqualTo(UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()));
+        .isEqualTo(makeNullable(ListType.of(IntType.getInstance())));
   }
 
   public void testDataRefTypes() {
@@ -502,7 +503,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testDataFlowTypeNarrowing() {
-    SoyType boolOrNullType = UnionType.of(BoolType.getInstance(), NullType.getInstance());
+    SoyType boolOrNullType = makeNullable(BoolType.getInstance());
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool|null}",
         "{@param pb: bool}",
@@ -573,16 +574,14 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(8)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(9)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(10)).isEqualTo(BoolType.getInstance());
-    assertThat(types.get(11))
-        .isEqualTo(UnionType.of(BoolType.getInstance(), NullType.getInstance()));
-    assertThat(types.get(12))
-        .isEqualTo(UnionType.of(BoolType.getInstance(), NullType.getInstance()));
+    assertThat(types.get(11)).isEqualTo(makeNullable(BoolType.getInstance()));
+    assertThat(types.get(12)).isEqualTo(makeNullable(BoolType.getInstance()));
     assertThat(types.get(13)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(14)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(15)).isEqualTo(NullType.getInstance());
 
     assertThat(types.get(16))
-        .isEqualTo(UnionType.of(BoolType.getInstance(), NullType.getInstance()));
+        .isEqualTo(makeNullable(BoolType.getInstance()));
     assertThat(types.get(17)).isEqualTo(BoolType.getInstance());
   }
 
@@ -641,7 +640,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
 
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
-    SoyType boolOrNullType = UnionType.of(BoolType.getInstance(), NullType.getInstance());
+    SoyType boolOrNullType = makeNullable(BoolType.getInstance());;
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool|null}",
         "{@param pb: bool}",
@@ -684,7 +683,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(3)).isEqualTo(IntType.getInstance());
-    assertThat(types.get(4)).isEqualTo(UnionType.of(NullType.getInstance(), IntType.getInstance()));
+    assertThat(types.get(4)).isEqualTo(makeNullable(IntType.getInstance()));
   }
 
   public void testInjectedParamTypes() {
@@ -698,8 +697,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
-    assertThat(types.get(1))
-        .isEqualTo(UnionType.of(ListType.of(IntType.getInstance()), NullType.getInstance()));
+    assertThat(types.get(1)).isEqualTo(makeNullable(ListType.of(IntType.getInstance())));
   }
 
   /**

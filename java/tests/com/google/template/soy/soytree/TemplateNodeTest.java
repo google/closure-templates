@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.types.SoyTypes.makeNullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
@@ -34,9 +36,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.StringType;
 
 import junit.framework.TestCase;
@@ -135,8 +135,7 @@ public class TemplateNodeTest extends TestCase {
     HeaderParam headerParam3 = (HeaderParam) params.get(3);
     assertEquals("boo", headerParam3.name());
     assertEquals("string", headerParam3.typeSrc());
-    assertEquals(UnionType.of(StringType.getInstance(), NullType.getInstance()),
-        headerParam3.type());
+    assertEquals(makeNullable(StringType.getInstance()), headerParam3.type());
     assertFalse(headerParam3.isRequired());
     assertFalse(headerParam3.isInjected());
     assertEquals("Something scary.", headerParam3.desc());

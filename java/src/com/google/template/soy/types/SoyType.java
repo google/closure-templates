@@ -74,9 +74,6 @@ public interface SoyType {
     ENUM,       // An enumeration type.
     UNION,      // Used to indicate a parameter that can accept multiple
                 // alternatives, e.g. a|b.
-    SPECIALIZED // A specialization of a generic type, containing a reference
-                // to the generic type and a list of type arguments. (Note that
-                // maps and lists are already implicitly specialized.)
   }
 
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.types.SoyType;
@@ -25,7 +26,6 @@ import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType.HtmlType;
 import com.google.template.soy.types.primitive.SanitizedType.UriType;
 import com.google.template.soy.types.primitive.StringType;
@@ -40,10 +40,10 @@ import junit.framework.TestCase;
 public class JsSrcUtilsTest extends TestCase {
 
   private static final ListType LIST_OF_HTML = ListType.of(HtmlType.getInstance());
-  private static final SoyType NULLABLE_LIST_OF_HTML = nullable(LIST_OF_HTML);
+  private static final SoyType NULLABLE_LIST_OF_HTML = makeNullable(LIST_OF_HTML);
   private static final SoyType UNION_OF_STRING_OR_INT =
       UnionType.of(StringType.getInstance(), IntType.getInstance());
-  private static final SoyType NULLABLE_STRING = nullable(StringType.getInstance());
+  private static final SoyType NULLABLE_STRING = makeNullable(StringType.getInstance());
 
   public void testEscapeUnicodeFormatChars() {
     assertThat(
@@ -110,10 +110,5 @@ public class JsSrcUtilsTest extends TestCase {
         .isEqualTo("{bar: (Array<soydata.SanitizedHtml|string>|undefined), foo: number}");
     assertThat(JsSrcUtils.getJsTypeExpr(RecordType.of(ImmutableMap.<String, SoyType>of())))
         .isEqualTo("!Object");
-  }
-
-
-  private static final SoyType nullable(SoyType type) {
-    return UnionType.of(type, NullType.getInstance());
   }
 }

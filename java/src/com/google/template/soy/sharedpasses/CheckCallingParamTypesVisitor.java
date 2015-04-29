@@ -46,8 +46,8 @@ import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.SoyProtoType;
 
@@ -276,7 +276,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
         if (calleeParams.isIndirect(paramName)
             && argType.getKind() == SoyType.Kind.UNION
             && ((UnionType) argType).isNullable()) {
-          if (UnionType.of(formalType, NullType.getInstance()).isAssignableFrom(argType)) {
+          if (SoyTypes.makeNullable(formalType).isAssignableFrom(argType)) {
             // Special case for indirect params: Allow a nullable type to be assigned
             // to a non-nullable type if the non-nullable type is an indirect parameter type.
             // The reason is because without flow analysis, we can't know whether or not

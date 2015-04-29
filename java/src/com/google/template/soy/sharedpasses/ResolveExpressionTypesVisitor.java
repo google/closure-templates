@@ -79,6 +79,7 @@ import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.UnionType;
@@ -877,7 +878,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       // {if $var != null} but something like {if $var > 0} should not be changed.
       visit(node);
       Wrapper<ExprNode> wrapped = ExprEquivalence.get().wrap(node);
-      positiveTypeConstraints.put(wrapped, removeNullability(node.getType()));
+      positiveTypeConstraints.put(wrapped, SoyTypes.removeNull(node.getType()));
       // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
       // that the value of the expression is 'falsy' we could use that to inform later checks but
       // for now we just assume it has its normal type.
@@ -932,11 +933,11 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
       }
       // Otherwise don't make any inferences (don't visit children).
     }
@@ -944,11 +945,11 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     @Override protected void visitNotEqualOpNode(NotEqualOpNode node) {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
-        positiveTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       }
       // Otherwise don't make any inferences (don't visit children).
@@ -970,7 +971,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       // Handle 'isNonnull(<expr>)'
       if (node.numChildren() == 1 && node.getFunctionName().equals("isNonnull")) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, removeNullability(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       }
       // Otherwise don't make any inferences (don't visit children).
@@ -1045,13 +1046,6 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         }
       }
       return result;
-    }
-
-    private SoyType removeNullability(SoyType type) {
-      if (type.getKind() == SoyType.Kind.UNION) {
-        return ((UnionType) type).removeNullability();
-      }
-      return type;
     }
   }
 
