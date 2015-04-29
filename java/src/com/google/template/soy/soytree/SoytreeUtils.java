@@ -20,9 +20,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -51,7 +54,7 @@ public class SoytreeUtils {
    * @param classObject The class whose instances to search for, including subclasses.
    * @return The nodes in the order they appear.
    */
-  public static <T extends SoyNode> List<T> getAllNodesOfType(
+  public static <T extends Node> List<T> getAllNodesOfType(
       SoyNode rootSoyNode, final Class<T> classObject) {
     return getAllNodesOfType(rootSoyNode, classObject, true);
   }
@@ -67,25 +70,46 @@ public class SoytreeUtils {
    *     more nodes of the given type.
    * @return The nodes in the order they appear.
    */
-  public static <T extends SoyNode> List<T> getAllNodesOfType(
+  public static <T extends Node> List<T> getAllNodesOfType(
       SoyNode rootSoyNode, final Class<T> classObject,
       final boolean doSearchSubtreesOfMatchedNodes) {
 
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
 
+    final AbstractExprNodeVisitor<Void> exprVisitor =
+        new AbstractExprNodeVisitor<Void>(ExplodingErrorReporter.get()) {
+          @Override protected void visitExprNode(ExprNode exprNode) {
+            if (classObject.isInstance(exprNode)) {
+              matchedNodesBuilder.add(classObject.cast(exprNode));
+              if (!doSearchSubtreesOfMatchedNodes) {
+                return;
+              }
+            }
+            if (exprNode instanceof ParentExprNode) {
+              visitChildren((ParentExprNode) exprNode);
+            }
+          }
+        };
+
     AbstractSoyNodeVisitor<Void> visitor = new AbstractSoyNodeVisitor<Void>(
         ExplodingErrorReporter.get()) {
-      @SuppressWarnings("unchecked") // Casting safe after isAssignableFrom check.
       @Override
       public void visitSoyNode(SoyNode soyNode) {
-        if (classObject.isAssignableFrom(soyNode.getClass())) {
-          matchedNodesBuilder.add((T) soyNode);
+        if (classObject.isInstance(soyNode)) {
+          matchedNodesBuilder.add(classObject.cast(soyNode));
           if (!doSearchSubtreesOfMatchedNodes) {
             return;
           }
         }
         if (soyNode instanceof ParentSoyNode<?>) {
           visitChildren((ParentSoyNode<?>) soyNode);
+        }
+        if (ExprNode.class.isAssignableFrom(classObject) && soyNode instanceof ExprHolderNode) {
+          for (ExprUnion exprUnion : ((ExprHolderNode) soyNode).getAllExprUnions()) {
+            if (exprUnion.getExpr() != null) {
+              exprVisitor.exec(exprUnion.getExpr());
+            }
+          }
         }
       }
     };

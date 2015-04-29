@@ -66,6 +66,7 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
@@ -483,6 +484,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
+  @Override protected SoyValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+    SoyValue operand0 = visit(node.getChild(0));
+    // identical to the implementation of isNonnull
+    if (operand0 instanceof NullData || operand0 instanceof UndefinedData) {
+      return visit(node.getChild(1));
+    }
+    return operand0;
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for functions.

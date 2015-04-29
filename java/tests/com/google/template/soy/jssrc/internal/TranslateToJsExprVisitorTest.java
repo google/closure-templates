@@ -212,8 +212,43 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
     assertTranslation("( (8-4) + (2-1) )",
         new JsExpr("8 - 4 + (2 - 1)", Operator.PLUS.getPrecedence()));
+
+    assertTranslation("$foo ?: 0",
+        new JsExpr("($$temp = opt_data.foo) == null ? 0 : $$temp",
+            Operator.NULL_COALESCING.getPrecedence()));
   }
 
+  public void testNullCoalescingNested() throws Exception {
+    assertTranslation("$boo ?: -1", nullCoalesing("($$temp = opt_data.boo) == null ? -1 : $$temp"));
+    assertTranslation("$a ?: $b ?: $c",
+        nullCoalesing(
+            "($$temp = opt_data.a) == null "
+                + "? ($$temp = opt_data.b) == null ? opt_data.c : $$temp : $$temp"));
+    assertTranslation("$a ?: $b ? $c : $d",
+        nullCoalesing(
+            "($$temp = opt_data.a) == null ? opt_data.b ? opt_data.c : opt_data.d : $$temp"));
+    assertTranslation("$a ? $b ?: $c : $d",
+        nullCoalesing(
+            "opt_data.a ? (($$temp = opt_data.b) == null ? opt_data.c : $$temp) : opt_data.d"));
+    assertTranslation("$a ? $b : $c ?: $d",
+        nullCoalesing(
+            "opt_data.a ? opt_data.b : ($$temp = opt_data.c) == null ? opt_data.d : $$temp"));
+    assertTranslation("($a ?: $b) ?: $c",
+        nullCoalesing(
+            "($$temp = ($$temp = opt_data.a) == null ? opt_data.b : $$temp) == null "
+                + "? opt_data.c : $$temp"));
+    assertTranslation("$a ?: ($b ?: $c)",
+        nullCoalesing(
+            "($$temp = opt_data.a) == null "
+                + "? ($$temp = opt_data.b) == null ? opt_data.c : $$temp : $$temp"));
+    assertTranslation("($a ?: $b) ? $c : $d", nullCoalesing(
+        "(($$temp = opt_data.a) == null ? opt_data.b : $$temp) ? opt_data.c : opt_data.d"));
+  }
+
+
+  private JsExpr nullCoalesing(String text) {
+    return new JsExpr(text, Operator.NULL_COALESCING.getPrecedence());
+  }
 
   public void testGeneralFunctions() throws Exception {
 

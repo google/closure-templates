@@ -40,27 +40,27 @@ import java.util.Map;
  */
 public class TranslateToPyExprVisitorTest extends TestCase {
 
-  public void testNullLiteral() throws Exception {
+  public void testNullLiteral() {
     assertThatSoyExpr("null").translatesTo(new PyExpr("None", Integer.MAX_VALUE));
   }
 
-  public void testBooleanLiteral() throws Exception {
+  public void testBooleanLiteral() {
     assertThatSoyExpr("true").translatesTo(new PyExpr("True", Integer.MAX_VALUE));
     assertThatSoyExpr("false").translatesTo(new PyExpr("False", Integer.MAX_VALUE));
   }
 
-  public void testStringLiteral() throws Exception {
+  public void testStringLiteral() {
     assertThatSoyExpr("'waldo'").translatesTo(
         new PyExpr("'waldo'", Integer.MAX_VALUE), PyStringExpr.class);
   }
 
-  public void testListLiteral() throws Exception {
+  public void testListLiteral() {
     assertThatSoyExpr("[]").translatesTo(new PyExpr("[]", Integer.MAX_VALUE), PyListExpr.class);
     assertThatSoyExpr("['blah', 123, $foo]").translatesTo(
         new PyExpr("['blah', 123, opt_data.get('foo')]", Integer.MAX_VALUE), PyListExpr.class);
   }
 
-  public void testMapLiteral() throws Exception {
+  public void testMapLiteral() {
     // Unquoted keys.
     assertThatSoyExpr("[:]").translatesTo(new PyExpr("{}", Integer.MAX_VALUE));
     assertThatSoyExpr("['aaa': 123, 'bbb': 'blah']").translatesTo(
@@ -78,7 +78,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
         new PyExpr("{1: 'blah', 0: 123}", Integer.MAX_VALUE));
   }
 
-  public void testGlobals() throws Exception {
+  public void testGlobals() {
     ImmutableMap<String, PrimitiveData> globals = ImmutableMap.<String, PrimitiveData>builder()
         .put("STR", StringData.forValue("Hello World"))
         .put("NUM", IntegerData.forValue(55))
@@ -93,7 +93,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
         new PyExpr("True", Integer.MAX_VALUE));
   }
 
-  public void testDataRef() throws Exception {
+  public void testDataRef() {
     assertThatSoyExpr("$boo").translatesTo(new PyExpr("opt_data.get('boo')", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo.goo").translatesTo(
         new PyExpr("opt_data.get('boo').get('goo')", Integer.MAX_VALUE));
@@ -131,31 +131,37 @@ public class TranslateToPyExprVisitorTest extends TestCase {
         new PyExpr("zooData8.get('boo')", Integer.MAX_VALUE));
   }
 
-  public void testBasicOperators() throws Exception {
+  public void testBasicOperators() {
     assertThatSoyExpr("not $boo or true and $foo").translatesTo(
         new PyExpr("not opt_data.get('boo') or True and opt_data.get('foo')",
             PyExprUtils.pyPrecedenceForOperator(Operator.OR)));
   }
 
-  public void testEqualOperator() throws Exception {
+  public void testEqualOperator() {
     assertThatSoyExpr("'5' == 5").translatesTo(
         new PyExpr("runtime.type_safe_eq('5', 5)", Integer.MAX_VALUE));
     assertThatSoyExpr("'5' == $boo").translatesTo(
         new PyExpr("runtime.type_safe_eq('5', opt_data.get('boo'))", Integer.MAX_VALUE));
   }
 
-  public void testNotEqualOperator() throws Exception {
+  public void testNotEqualOperator() {
     assertThatSoyExpr("'5' != 5").translatesTo(
         new PyExpr("not runtime.type_safe_eq('5', 5)",
             PyExprUtils.pyPrecedenceForOperator(Operator.NOT)));
   }
 
-  public void testPlusOperator() throws Exception {
+  public void testPlusOperator() {
     assertThatSoyExpr("( (8-4) + (2-1) )").translatesTo(
         new PyExpr("runtime.type_safe_add(8 - 4, 2 - 1)", Integer.MAX_VALUE));
   }
 
-  public void testConditionalOperator() throws Exception {
+  public void testNullCoalescingOperator() {
+    assertThatSoyExpr("$boo ?: 5").translatesTo(
+        new PyExpr("opt_data.get('boo') if opt_data.get('boo') is not None else 5",
+            PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  public void testConditionalOperator() {
     assertThatSoyExpr("$boo ? 5 : 6").translatesTo(
         new PyExpr("5 if opt_data.get('boo') else 6",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));

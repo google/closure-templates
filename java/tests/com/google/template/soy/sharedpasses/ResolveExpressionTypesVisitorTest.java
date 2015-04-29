@@ -391,6 +391,21 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(3)).isEqualTo(IntType.getInstance());
   }
 
+  public void testNullCoalescingAndConditionalOps_complexCondition() {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
+        constructTemplateSource(
+            "{@param? l: [a :int]}",
+            "{$l?.a ?: 0}"))
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .doRunInitialParsingPasses(false)
+        .typeRegistry(typeRegistry)
+        .parse();
+    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+    List<SoyType> types = getPrintStatementTypes(soyTree);
+    assertThat(types.get(0)).isEqualTo(IntType.getInstance());
+  }
+
   public void testListLiteral() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
         constructTemplateSource(

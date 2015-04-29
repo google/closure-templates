@@ -45,6 +45,7 @@ import com.google.template.soy.exprtree.Operator.SyntaxElement;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -259,6 +260,34 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
   @Override protected PyExpr visitOperatorNode(OperatorNode node) {
     return genPyExprUsingSoySyntax(node);
+  }
+
+  @Override protected PyExpr visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+    Operator op = Operator.CONDITIONAL;
+    int conditionalPrecedence = PyExprUtils.pyPrecedenceForOperator(op);
+    List<PyExpr> children = visitChildren(node);
+
+    PyExpr conditionalExpr = PyExprUtils.genPyNotNullCheck(children.get(0));
+    PyExpr trueExpr = children.get(0);
+    PyExpr falseExpr = children.get(1);
+    // TODO(dcphillips): unlike jssrc,Tofu and jbcsrc pysrc evaluates the condition twice.  It would
+    // be nice to avoid that. Obvious solutions include.
+    // 1. Introduce a local variable:
+    // tmp = <left hand side>
+    // if tmp is None:
+    //   tmp = <right hand side>
+    //
+    // 2. Use a lambda to defer evaluation of the right hand side.
+    // lambda x=<left hand side> : <right hand side> if x is None else x
+
+    StringBuilder exprSb = new StringBuilder();
+    exprSb.append(PyExprUtils.maybeProtect(trueExpr, conditionalPrecedence).getText());
+    exprSb.append(" if ");
+    exprSb.append(PyExprUtils.maybeProtect(conditionalExpr, conditionalPrecedence).getText());
+    exprSb.append(" else ");
+    exprSb.append(PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText());
+
+    return new PyExpr(exprSb.toString(), conditionalPrecedence);
   }
 
   @Override protected PyExpr visitEqualOpNode(EqualOpNode node) {

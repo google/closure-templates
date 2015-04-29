@@ -33,6 +33,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
@@ -598,6 +599,11 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         (isCodeStyleStringbuilder ? ", opt_sb" : ", opt_ignored"),
         (isUsingIjData ? ", opt_ijData" : ""), ") {");
     jsCodeBuilder.increaseIndent();
+    // If there are any null coalescing operators then we need to generate an additional temporary
+    // variable.
+    if (!SoytreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()) {
+      jsCodeBuilder.appendLine("var $$temp;");
+    }
 
     // ------ Generate function body. ------
     generateFunctionBody(node);

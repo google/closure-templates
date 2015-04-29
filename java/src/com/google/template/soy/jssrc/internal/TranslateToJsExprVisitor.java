@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -475,6 +476,14 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
 
   @Override protected JsExpr visitOrOpNode(OrOpNode node) {
     return genJsExprUsingSoySyntaxWithNewToken(node, "||");
+  }
+
+  @Override protected JsExpr visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+    List<JsExpr> operandJsExprs = visitChildren(node);
+    return new JsExpr(
+        "($$temp = " + operandJsExprs.get(0).getText() + ") == null ? "
+            + operandJsExprs.get(1).getText() + " : $$temp",
+        Operator.CONDITIONAL.getPrecedence());
   }
 
   @Override protected JsExpr visitOperatorNode(OperatorNode node) {
