@@ -30,8 +30,7 @@ import java.util.Objects;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class ListType implements SoyType {
-
+public final class ListType implements SoyType {
 
   private final SoyType elementType;
 

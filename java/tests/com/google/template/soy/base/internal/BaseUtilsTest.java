@@ -23,7 +23,7 @@ import junit.framework.TestCase;
  * Unit tests for BaseUtils.
  *
  */
-public class BaseUtilsTest extends TestCase {
+public final class BaseUtilsTest extends TestCase {
 
 
   public void testIsIdentifier() {

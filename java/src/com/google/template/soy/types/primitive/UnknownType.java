@@ -24,7 +24,7 @@ import com.google.template.soy.types.SoyType;
  * be inferred. Variables with unknown type are considered to be dynamically-typed,
  * and all operations are allowed (but may fail at runtime).
  */
-public class UnknownType extends PrimitiveType {
+public final class UnknownType extends PrimitiveType {
 
 
   private static final UnknownType INSTANCE = new UnknownType();

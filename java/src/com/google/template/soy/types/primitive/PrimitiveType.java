@@ -21,7 +21,7 @@ import com.google.template.soy.types.SoyType;
 /**
  * Base class for primitive types.
  */
-public abstract class PrimitiveType implements SoyType {
+abstract class PrimitiveType implements SoyType {
 
 
   @Override public boolean isAssignableFrom(SoyType srcType) {

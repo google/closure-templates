@@ -29,8 +29,7 @@ import java.util.Objects;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MapType implements SoyType {
-
+public final class MapType implements SoyType {
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;

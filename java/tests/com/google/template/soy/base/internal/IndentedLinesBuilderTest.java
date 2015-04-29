@@ -23,7 +23,7 @@ import junit.framework.TestCase;
  * Unit tests for IndentedLinesBuilder.
  *
  */
-public class IndentedLinesBuilderTest extends TestCase {
+public final class IndentedLinesBuilderTest extends TestCase {
 
 
   public void testIndentedLinesBuilder() {
