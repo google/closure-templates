@@ -29,7 +29,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ConstantNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -342,7 +342,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   private static boolean isConstant(ExprRootNode exprRoot) {
-    return exprRoot != null && exprRoot.getChild(0) instanceof ConstantNode;
+    return exprRoot != null && exprRoot.getChild(0) instanceof PrimitiveNode;
   }
 
 

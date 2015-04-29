@@ -28,8 +28,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ConstantNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -197,7 +197,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // If all children are constants, we attempt to preevaluate this node and replace it with a
     // constant.
     for (ExprNode child : nodeAsParent.getChildren()) {
-      if (! (child instanceof ConstantNode)) {
+      if (! (child instanceof PrimitiveNode)) {
         return;  // cannot preevaluate
       }
     }
@@ -228,7 +228,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       return;  // failed to preevaluate
     }
 
-    ConstantNode newNode =
+    PrimitiveNode newNode =
         InternalValueUtils.convertPrimitiveDataToExpr((PrimitiveData) preevalResult);
     node.getParent().replaceChild(node, newNode);
   }
