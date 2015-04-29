@@ -1049,9 +1049,10 @@ public final class SoyFileSet {
   }
 
   private CompilationResult failure() {
-    ErrorReporterImpl impl = (ErrorReporterImpl) errorReporter;
-    Preconditions.checkState(!impl.getErrors().isEmpty());
-    return new CompilationResult(impl.getErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
+    ImmutableCollection<? extends SoySyntaxException> errors
+        = ((ErrorReporterImpl) errorReporter).getErrors();
+    Preconditions.checkState(!errors.isEmpty());
+    return new CompilationResult(errors, new ErrorPrettyPrinter(soyFileSuppliers));
   }
 
   /**

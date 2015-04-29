@@ -54,7 +54,16 @@ public final class ErrorReporterImpl implements ErrorReporter {
 
   /** Returns the full list of errors reported to this error reporter. */
   ImmutableCollection<? extends SoySyntaxException> getErrors() {
-    return ImmutableList.copyOf(errors);
+    ImmutableCollection<? extends SoySyntaxException> copy = ImmutableList.copyOf(errors);
+    // TODO(user): remove. ErrorReporter is currently injected as a singleton in SharedModule.
+    // This is not a problem for JS and Python compilations, which are traditional short-lived
+    // binaries, but it is very bad for local development servers that can compile Tofu multiple
+    // times. Every non-initial call to compileToTofu returns all the errors reported by all
+    // previous calls.
+    // The right solution is to provide an appropriate custom scope for the error reporter,
+    // or even better, remove the Guice binding entirely. For now, just clear the error list.
+    errors.clear();
+    return copy;
   }
 
   private static final class CheckpointImpl implements Checkpoint {
