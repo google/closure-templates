@@ -288,6 +288,10 @@ public class ExpressionCompilerTest extends TestCase {
     assertExprEquals("$floatStr", "'12'");
     assertExprEquals("$floatStr", "12");
     assertExprNotEquals("$floatStr", "'bar'");
+
+    assertExprEquals("null", "null");
+    assertExprNotEquals("'a'", "null");
+    assertExprNotEquals("null", "'a'");
   }
 
   public void testConditionalOpNode() {

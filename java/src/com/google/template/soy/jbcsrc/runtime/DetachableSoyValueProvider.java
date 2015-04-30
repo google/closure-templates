@@ -32,16 +32,18 @@ import java.io.IOException;
  * {@code CallParamValueNode} implementations.
  */
 public abstract class DetachableSoyValueProvider implements SoyValueProvider {
-  protected SoyValue resolvedValue;
+  // TOMBSTONE marks this field as uninitialized which allows it to accept 'null' as a valid value.
+  protected SoyValue resolvedValue = TombstoneValue.INSTANCE;
 
   @Override public final SoyValue resolve() {
     SoyValue local = resolvedValue;
-    checkState(local != null, "called resolve() before status() returned ready.");
+    checkState(local != TombstoneValue.INSTANCE, 
+        "called resolve() before status() returned ready.");
     return local;
   }
 
   @Override public final RenderResult status() {
-    if (resolvedValue != null) {
+    if (resolvedValue != TombstoneValue.INSTANCE) {
       return RenderResult.done();
     }
     return doResolve();

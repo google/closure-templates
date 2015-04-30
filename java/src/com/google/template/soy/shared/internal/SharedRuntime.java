@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.internal;
 
+import com.google.common.base.Objects;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
@@ -41,7 +42,7 @@ public final class SharedRuntime {
     if (operand1 instanceof StringData) {
       return compareString((StringData) operand1, operand0);
     }
-    return operand0.equals(operand1);
+    return Objects.equal(operand0, operand1);
   }
 
   /**

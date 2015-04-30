@@ -23,7 +23,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -55,7 +54,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   @Override public final SoyValue resolve() {
     SoyValue local = resolvedValue;
     checkState(local != null, "called resolve() before status() returned ready.");
-    checkState(local != UndefinedData.INSTANCE,
+    checkState(local != TombstoneValue.INSTANCE,
         "called resolve() after calling renderAndResolve with isLast == true");
     return local;
   }
@@ -81,7 +80,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (isLast) {
       RenderResult result = doRender(appendable);
       if (result.isDone()) {
-        resolvedValue = UndefinedData.INSTANCE;
+        resolvedValue = TombstoneValue.INSTANCE;
       }
       return result;
     }

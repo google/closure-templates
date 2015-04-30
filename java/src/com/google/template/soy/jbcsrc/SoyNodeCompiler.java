@@ -33,6 +33,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
+import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
@@ -405,13 +406,31 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // TODO(lukes): We need to have an alternate expression compiler that evaluate an expression to
     // a SoyValueProvider (instead of a SoyValue) when possible.  This will allow us to generate
     // code that calls SoyValueProvider.renderAndResolve.
-    SoyExpression printExpr = exprCompiler.compile(node.getExprUnion().getExpr());
-    // TODO(lukes): we should specialize the print operator for our primitives to avoid this box 
-    // operator.  would only work if there were no print directives
-    Statement renderSoyValue = MethodRef.SOY_VALUE_RENDER
-        .invokeVoid(printExpr.box(), appendableExpression);
-    return Statement.concat(renderSoyValue, detachState.detachLimited(appendableExpression))
-        .withSourceLocation(node.getSourceLocation());
+    final SoyExpression printExpr = exprCompiler.compile(node.getExprUnion().getExpr())
+        .convert(String.class);
+    // We want to call appendable.append(value-expr).  However this means that value-expr will be
+    // evaluated with appendable on the stack and so the reattach point (if any) will not be at a
+    // stack depth of 0 (which is a documented precondition of the expression compiler).  There are 
+    // a few ways we could work around this:
+    // 1. generate code like  'String tmp = <value-expr>; appendable.append(tmp);' which will use a
+    //    temporary to reorder evaluation
+    // 2. use a SWAP opcode to eval in the wrong order and then fix it
+    // 3. extract a helper method that reorders the stack requirements for appendable.append
+    //    e.g. 'AdvisingAppendable doAppend(String, appendable)'
+    // 4. move the 'reattach point' (if any) to before where we push the appendable onto the stack.
+    //
+    // All of these are unfortunate, (callBasicNode has a similar issue).  For now we go with #2
+    // TODO(lukes): consider changing the way reattach points are generated so that we can do #4
+
+    Expression renderSoyValue = new SimpleExpression(appendableExpression.resultType(), false) {
+      @Override void doGen(CodeBuilder adapter) {
+        printExpr.gen(adapter);
+        appendableExpression.gen(adapter);
+        adapter.swap();
+        MethodRef.ADVISING_APPENDABLE_APPEND.invokeUnchecked(adapter);
+      }
+    };
+    return detachState.detachLimited(renderSoyValue).withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitRawTextNode(RawTextNode node) {

@@ -34,6 +34,7 @@ import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.StringType;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
@@ -135,6 +136,11 @@ class SoyExpression extends Expression {
     return delegate.resultType();
   }
 
+  /** Returns the {@link SoyType} of the expression. */
+  final SoyType soyType() {
+    return soyType;
+  }
+
   @Override final boolean isConstant() {
     return delegate.isConstant();
   }
@@ -234,7 +240,7 @@ class SoyExpression extends Expression {
       return asBoxed(MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(delegate));
     }
     if (soyType.getKind() == Kind.NULL) {
-      return asBoxed(FieldRef.NULL_DATA_INSTANCE.accessor());
+      return this;
     }
     throw new IllegalStateException("cannot box expression of type " + clazz);
   }
@@ -314,10 +320,26 @@ class SoyExpression extends Expression {
     }
     if (asType.equals(String.class)) {
       // string coercion is performed via the toString method
-      return forString(MethodRef.TO_STRING.invoke(box()));
+      return forString(MethodRef.STRING_VALUE_OF.invoke(box()));
     }
     if (asType.equals(boolean.class)) {
-      return forBool(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN.invoke(box()));
+      final SoyExpression boxedDelegate = box();
+      // Handle null soy values
+      return forBool(new SimpleExpression(Type.BOOLEAN_TYPE, delegate.isConstant()) {
+        @Override void doGen(CodeBuilder adapter) {
+          boxedDelegate.gen(adapter);
+          adapter.dup();
+          Label falseLabel = new Label();
+          adapter.ifNull(falseLabel);
+          MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN.invokeUnchecked(adapter);
+          Label end = new Label();
+          adapter.goTo(end);
+          adapter.mark(falseLabel);
+          adapter.pop();
+          adapter.pushBoolean(false);
+          adapter.mark(end);
+        }
+      });
     }
 
     if (asType.equals(List.class)) {

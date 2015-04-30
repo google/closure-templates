@@ -18,24 +18,81 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Runtime utilities uniquely for the {@code jbcsrc} backend.
  */
 public final class Runtime {
+  public static final SoyValueProvider NULL_PROVIDER = new SoyValueProvider() {
+    @Override public RenderResult status() {
+      return RenderResult.done();
+    }
+
+    @Override public SoyValue resolve() {
+      return null;
+    }
+
+    @Override public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+        throws IOException {
+      appendable.append("null");
+      return RenderResult.done();
+    }
+
+    @Override public boolean equals(SoyValueProvider other) {
+      return other == this;
+    }
+    @Override public String toString() {
+      return "NULL_PROVIDER";
+    }
+  };
+
   public static AssertionError unexpectedStateError(int state) {
     return new AssertionError("Unexpected state requested: " + state);
   }
-  
+
   public static boolean stringEqualsAsNumber(String expr, double number) {
     try {
       return Double.parseDouble(expr) == number;
     } catch (NumberFormatException nfe) {
       return false;
     }
+  }
+
+  /**
+   * Helper function to translate NullData -> null when resolving a SoyValueProvider that may
+   * have come from SoyValueProvider.
+   */
+  public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
+    SoyValue value = provider.resolve();
+    if (value == NullData.INSTANCE) {
+      return null;
+    }
+    return value;
+  }
+
+  /**
+   * Helper function to translate null -> NullData when calling SoyJavaFunctions that may expect it.
+   * 
+   * <p>In the long run we should either fix ToFu (and all SoyJavaFunctions) to not use NullData or
+   * we should introduce custom SoyFunction implementations for 
+   * have come from SoyValueProvider.
+   */
+  public static SoyValue callSoyFunction(SoyJavaFunction function, List<SoyValue> args) {
+    for (int i = 0; i < args.size(); i++) {
+      if (args.get(i) == null) {
+        args.set(i, NullData.INSTANCE);
+      }
+    }
+    return function.computeForJava(args);
   }
   
   public void checkRequiredParam(SoyRecord params, String paramName) {

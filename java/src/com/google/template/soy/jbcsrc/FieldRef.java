@@ -23,10 +23,9 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
+import com.google.template.soy.jbcsrc.runtime.Runtime;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -44,9 +43,7 @@ import java.lang.reflect.Modifier;
   static final FieldRef INTEGER_DATA_ONE = staticFieldReference(IntegerData.class, "ONE");
   static final FieldRef INTEGER_DATA_MINUS_ONE = 
       staticFieldReference(IntegerData.class, "MINUS_ONE");
-  static final FieldRef NULL_DATA_INSTANCE = staticFieldReference(NullData.class, "INSTANCE");
-  static final FieldRef UNDEFINED_DATA_INSTANCE = 
-      staticFieldReference(UndefinedData.class, "INSTANCE");
+  static final FieldRef NULL_PROVIDER = staticFieldReference(Runtime.class, "NULL_PROVIDER");
   static final FieldRef STRING_DATA_EMPTY = staticFieldReference(StringData.class, "EMPTY_STRING");
   static final FieldRef SYSTEM_OUT = staticFieldReference(System.class, "out");
   static final FieldRef EMPTY_DICT = staticFieldReference(SoyValueHelper.class, "EMPTY_DICT");
@@ -84,9 +81,6 @@ import java.lang.reflect.Modifier;
       java.lang.reflect.Field declaredField = owner.getDeclaredField(name);
       if (!Modifier.isStatic(declaredField.getModifiers())) {
         throw new IllegalStateException("Field: " + declaredField + " is not static");
-      }
-      if (!Modifier.isFinal(declaredField.getModifiers())) {
-        throw new IllegalStateException("Field: " + declaredField + " is not final");
       }
       fieldType = declaredField.getType();
     } catch (Exception e) {

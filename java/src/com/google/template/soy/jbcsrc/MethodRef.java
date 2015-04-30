@@ -104,7 +104,7 @@ import java.util.Map;
   // Instance methods
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
   static final MethodRef EQUALS = create(Object.class, "equals", Object.class);
-  static final MethodRef TO_STRING = create(Object.class, "toString");
+  static final MethodRef STRING_VALUE_OF = create(String.class, "valueOf", Object.class);
   static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
   static final MethodRef LINKED_HASH_MAP_PUT = 
       create(LinkedHashMap.class, "put", Object.class, Object.class);
@@ -113,7 +113,8 @@ import java.util.Map;
   static final MethodRef SOY_VALUE_LONG_VALUE = create(SoyValue.class, "longValue");
   static final MethodRef SOY_VALUE_FLOAT_VALUE = create(SoyValue.class, "floatValue");
   static final MethodRef SOY_VALUE_STRING_VALUE = create(SoyValue.class, "stringValue");
-  static final MethodRef SOY_VALUE_PROVIDER_RESOLVE = create(SoyValueProvider.class, "resolve");
+  static final MethodRef SOY_VALUE_PROVIDER_RESOLVE = 
+      create(Runtime.class, "resolveSoyValueProvider", SoyValueProvider.class);
   static final MethodRef SOY_VALUE_PROVIDER_STATUS = create(SoyValueProvider.class, "status");
   static final MethodRef SOY_RECORD_HAS_FIELD = create(SoyRecord.class, "hasField", String.class);
   static final MethodRef SOY_RECORD_GET_FIELD_PROVIDER = 
@@ -138,8 +139,8 @@ import java.util.Map;
   static final MethodRef LIST_SIZE = create(List.class, "size");
   static final MethodRef LIST_GET = create(List.class, "get", int.class);
   static final MethodRef INTS_CHECKED_CAST = create(Ints.class, "checkedCast", long.class);
-  static final MethodRef SOY_JAVA_FUNCTION_COMPUTE = 
-      create(SoyJavaFunction.class, "computeForJava", List.class);
+  static final MethodRef RUNTIME_CALL_SOY_FUNCTION = 
+      create(Runtime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
   static final MethodRef PARAM_STORE_SET_FIELD = 
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
 
@@ -203,8 +204,11 @@ import java.util.Map;
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are 
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
-
   Statement invokeVoid(final Expression ...args) {
+    return invokeVoid(Arrays.asList(args));
+  }
+
+  Statement invokeVoid(final Iterable<? extends Expression> args) {
     checkState(Type.VOID_TYPE.equals(returnType()), "Method return type is not void.");
     Expression.checkTypes(argTypes(), args);
     return new Statement() {
@@ -215,11 +219,15 @@ import java.util.Map;
   }
   
   Expression invoke(final Expression ...args) {
+    return invoke(Arrays.asList(args));
+  }
+
+  Expression invoke(final Iterable<? extends Expression> args) {
     // void methods violate the expression contract of pushing a result onto the runtime stack.
     checkState(!Type.VOID_TYPE.equals(returnType()), 
         "Cannot produce an expression from a void method.");
     Expression.checkTypes(argTypes(), args);
-    boolean isConstant = areAllConstant(Arrays.asList(args));
+    boolean isConstant = areAllConstant(args);
     // TODO(lukes): this assumes all methods are idempotent... not really true.  how should we
     // distinguish? we could annotate each methodref?
     return new SimpleExpression(returnType(), isConstant) {
@@ -246,7 +254,7 @@ import java.util.Map;
         opcode() == Opcodes.INVOKEINTERFACE);
   }
 
-  private void doInvoke(CodeBuilder mv, Expression... args) {
+  private void doInvoke(CodeBuilder mv, Iterable<? extends Expression> args) {
     for (Expression arg : args) {
       arg.gen(mv);
     }

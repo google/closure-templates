@@ -22,7 +22,6 @@ import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpressi
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 
 import junit.framework.TestCase;
 
@@ -73,7 +72,7 @@ public class SoyExpressionTest extends TestCase {
 
   public void testNullExpression() {
     assertThatExpression(SoyExpression.NULL).evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box()).evaluatesTo(NullData.INSTANCE);
+    assertThatExpression(SoyExpression.NULL.box()).evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.box().convert(Object.class)).evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.convert(boolean.class)).evaluatesTo(false);
     assertThatExpression(SoyExpression.NULL.convert(String.class)).evaluatesTo("null");

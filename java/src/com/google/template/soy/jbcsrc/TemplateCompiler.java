@@ -245,7 +245,7 @@ final class TemplateCompiler {
     Expression record = param.isInjected() ? ijVar : paramsVar;
     final Expression provider = MethodRef.SOY_RECORD_GET_FIELD_PROVIDER
         .invoke(record, BytecodeUtils.constant(param.name()));
-    final Expression nullData = FieldRef.NULL_DATA_INSTANCE.accessor();
+    final Expression nullProvider = FieldRef.NULL_PROVIDER.accessor();
     return new SimpleExpression(Type.getType(SoyValueProvider.class), false) {
       @Override void doGen(CodeBuilder adapter) {
         provider.gen(adapter);
@@ -259,7 +259,7 @@ final class TemplateCompiler {
         } else {
           // non required params default to null
           adapter.pop();  // pop the extra copy of provider that we dup()'d above
-          nullData.gen(adapter);
+          nullProvider.gen(adapter);
         }
         adapter.mark(nonNull);
         // At the end there should be a single SoyValueProvider on the stack.

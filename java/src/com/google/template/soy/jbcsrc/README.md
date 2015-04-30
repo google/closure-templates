@@ -708,6 +708,15 @@ not limited to:
   * strict autoescaping is mandatory
   * ...more to come...
 
+Additionally, there are some runtime differences around error behavior when
+migrating from ToFu:
+
+  * Missing non-optional template params are flagged as an error at call-time,
+    ToFu only flags this error when you access the param.
+  * ToFu throws SoyDataException for runtime errors in templates.  JbcSrc will
+    throw standard java exceptions (NullPointerException, ClassCastException)
+    as appropriate. 
+
 A Bytecode Primer
 -----------------
 

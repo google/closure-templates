@@ -96,7 +96,13 @@ public final class ExpressionTester {
     
     ExpressionSubject evaluatesTo(boolean expected) {
       compile();
-      boolean actual = ((BooleanInvoker) invoker).invoke();
+      boolean actual;
+      try {
+        actual = ((BooleanInvoker) invoker).invoke();
+      } catch (Throwable t) {
+        failWithBadResults("evalutes to", expected, "fails with", t);
+        return this;
+      }
       if (actual != expected) {
         failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
@@ -105,7 +111,13 @@ public final class ExpressionTester {
 
     ExpressionSubject evaluatesTo(double expected) {
       compile();
-      double actual = ((DoubleInvoker) invoker).invoke();
+      double actual;
+      try {
+        actual = ((DoubleInvoker) invoker).invoke();
+      } catch (Throwable t) {
+        failWithBadResults("evalutes to", expected, "fails with", t);
+        return this;
+      }
       if (actual != expected) {
         failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
@@ -114,7 +126,13 @@ public final class ExpressionTester {
 
     ExpressionSubject evaluatesTo(long expected) {
       compile();
-      long actual = ((LongInvoker) invoker).invoke();
+      long actual;
+      try {
+        actual = ((LongInvoker) invoker).invoke();
+      } catch (Throwable t) {
+        failWithBadResults("evalutes to", expected, "fails with", t);
+        return this;
+      }
       if (actual != expected) {
         failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
@@ -123,7 +141,13 @@ public final class ExpressionTester {
 
     ExpressionSubject evaluatesTo(char expected) {
       compile();
-      char actual = ((CharInvoker) invoker).invoke();
+      char actual;
+      try {
+        actual = ((CharInvoker) invoker).invoke();
+      } catch (Throwable t) {
+        failWithBadResults("evalutes to", expected, "fails with", t);
+        return this;
+      }
       if (actual != expected) {
         failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }
@@ -132,7 +156,13 @@ public final class ExpressionTester {
 
     ExpressionSubject evaluatesTo(Object expected) {
       compile();
-      Object actual = ((ObjectInvoker) invoker).invoke();
+      Object actual;
+      try {
+        actual = ((ObjectInvoker) invoker).invoke();
+      } catch (Throwable t) {
+        failWithBadResults("evalutes to", expected, "fails with", t);
+        return this;
+      }
       if (!Objects.equal(actual, expected)) {
         failWithBadResults("evaluates to", expected, "evaluates to", actual);
       }

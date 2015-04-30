@@ -138,6 +138,8 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
   // Collection literals
 
   @Override protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
+    // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
+    // anyway and could additionally delay detach generation.  Ditto for MapLiteralNode.
     return SoyExpression.forList((ListType) node.getType(), childrenAsList(node.getChildren()));
   }
 
@@ -156,12 +158,9 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     boolean isConstant = true;
     for (int i = 0; i < numItems; i++) {
       // Keys are strings and values are boxed SoyValues
-      SoyExpression key = visit(node.getChild(2 * i));
-      if (isRecord) {
-        key = key.convert(String.class);
-      } else {
-        key = key.box();
-      }
+      // Note: The soy grammar and type system both allow for maps to have arbitrary keys for types
+      // but none of the implementations support this.  So we don't support it either.  b/20468013
+      SoyExpression key = visit(node.getChild(2 * i)).convert(String.class);
       SoyExpression value = visit(node.getChild(2 * i + 1)).box();
       isConstant = isConstant && key.isConstant() && value.isConstant();
       // TODO(user): Assert that the return value of put() is null? The current impl doesn't
@@ -566,7 +565,7 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
             .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
     Expression list = childrenAsList(node.getChildren());
     return SoyExpression.forSoyValue(AnyType.getInstance(),
-        MethodRef.SOY_JAVA_FUNCTION_COMPUTE.invoke(soyJavaFunctionExpr, list));
+        MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
   }
 
   @Override protected final SoyExpression visitExprNode(ExprNode node) {

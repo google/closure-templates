@@ -100,6 +100,10 @@ public class LazyClosureCompilerTest extends TestCase {
         "{$foo}").rendersAs("3");
     
     assertThatTemplateBody(
+        "{let $null : null /}",
+        "{$null}").rendersAs("null");
+    
+    assertThatTemplateBody(
         "{let $bar : 'a' /}",
         "{let $foo : $bar + 'b' /}",
         "{$foo}").rendersAs("ab");

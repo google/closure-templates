@@ -53,7 +53,7 @@ public final class UnknownType extends PrimitiveType {
   }
 
   @Override public String toString() {
-    return "unknown";
+    return "?";
   }
 
 
