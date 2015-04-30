@@ -189,6 +189,10 @@ class SoyExpression extends Expression {
     return soyType.getKind() == Kind.RECORD;
   }
 
+  boolean isKnownBool() {
+    return soyType.getKind() == Kind.BOOL;
+  }
+
   private boolean isBoxed() {
     return SoyValue.class.isAssignableFrom(clazz);
   }
@@ -208,6 +212,9 @@ class SoyExpression extends Expression {
   SoyExpression box() {
     if (isBoxed()) {
       return this;
+    }
+    if (isKnownBool()) {
+      return asBoxed(MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(delegate));
     }
     if (isKnownInt()) {
       return asBoxed(MethodRef.INTEGER_DATA_FOR_VALUE.invoke(delegate));
