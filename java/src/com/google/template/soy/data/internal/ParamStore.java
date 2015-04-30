@@ -39,7 +39,7 @@ public abstract class ParamStore extends SoyAbstractRecord {
    * @param name The field name to set.
    * @param valueProvider A provider of the field value.
    */
-  public abstract void setField(String name, @Nonnull SoyValueProvider valueProvider);
+  public abstract ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider);
 
 
   @Override public boolean coerceToBoolean() {
@@ -66,7 +66,7 @@ public abstract class ParamStore extends SoyAbstractRecord {
 
   public static final ParamStore EMPTY_INSTANCE = new ParamStore() {
 
-    @Override public void setField(String name, @Nonnull SoyValueProvider valueProvider) {
+    @Override public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
       throw new UnsupportedOperationException();
     }
 

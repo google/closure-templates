@@ -82,6 +82,14 @@ public class ExpressionCompilerTest extends TestCase {
         @Override public Expression getRenderContext() {
           throw new UnsupportedOperationException();
         }
+
+        @Override public Expression getParamsRecord() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override public Expression getIjRecord() {
+          throw new UnsupportedOperationException();
+        }
       }, ExplodingErrorReporter.get());
 
   public void testConstants() {

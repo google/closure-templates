@@ -16,9 +16,14 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.internal.AugmentedParamStore;
+import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import org.objectweb.asm.Type;
@@ -37,11 +42,23 @@ import java.util.LinkedHashMap;
    * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
    * given parameter types.
    */
-  static ConstructorRef create(TypeInfo type, Iterable<Type> argTypes) {
+  static ConstructorRef create(TypeInfo type, Method init) {
+    checkArgument(init.getName().equals("<init>")  && init.getReturnType().equals(Type.VOID_TYPE),
+        "'%s' is not a valid constructor", init);
     return new AutoValue_ConstructorRef(
+        type, 
+        init, 
+        ImmutableList.copyOf(init.getArgumentTypes()));
+  }
+
+  /** 
+   * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
+   * given parameter types.
+   */
+  static ConstructorRef create(TypeInfo type, Iterable<Type> argTypes) {
+    return create(
         type,
-        new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)),
-        ImmutableList.copyOf(argTypes));
+        new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)));
   }
 
   private static ConstructorRef create(Class<?> clazz, Class<?> ...argTypes) {
@@ -62,6 +79,9 @@ import java.util.LinkedHashMap;
 
   static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
   static final ConstructorRef LINKED_HASH_MAP_SIZE = create(LinkedHashMap.class, int.class);
+  static final ConstructorRef AUGMENTED_PARAM_STORE = 
+      create(AugmentedParamStore.class, SoyRecord.class, int.class);
+  static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
 
   abstract TypeInfo instanceClass();
   abstract Method method();

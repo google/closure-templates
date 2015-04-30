@@ -29,6 +29,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -43,9 +44,9 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 import java.io.PrintStream;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -139,9 +140,11 @@ import java.util.Map;
   static final MethodRef INTS_CHECKED_CAST = create(Ints.class, "checkedCast", long.class);
   static final MethodRef SOY_JAVA_FUNCTION_COMPUTE = 
       create(SoyJavaFunction.class, "computeForJava", List.class);
+  static final MethodRef PARAM_STORE_SET_FIELD = 
+      create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
 
   private static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
-    Method m;
+    java.lang.reflect.Method m;
     try {
       // Ensure that the method exists and is public.
       m = clazz.getMethod(methodName, params);
@@ -166,11 +169,22 @@ import java.util.Map;
             : isStatic 
                 ? Opcodes.INVOKESTATIC 
                 : Opcodes.INVOKEVIRTUAL, 
-        ownerType, 
-        methodName, 
-        Type.getMethodDescriptor(m),
-        m.getReturnType(),
+        ownerType,
+        org.objectweb.asm.commons.Method.getMethod(m),
+        Type.getType(m.getReturnType()),
         argTypes);
+  }
+
+  static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
+    return new AutoValue_MethodRef(
+        Opcodes.INVOKEVIRTUAL, 
+        owner,
+        method,
+        method.getReturnType(),
+        ImmutableList.<Type>builder()
+            .add(owner.type())
+            .add(method.getArgumentTypes())
+            .build());
   }
 
   /**
@@ -182,17 +196,16 @@ import java.util.Map;
   /** The 'internal name' of the type that owns the method. */
   abstract TypeInfo owner();
   
-  abstract String methodName();
-  abstract String methodDescriptor();
-  abstract Class<?> returnType();
+  abstract org.objectweb.asm.commons.Method method();
+  abstract Type returnType();
   abstract ImmutableList<Type> argTypes();
-
+  
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are 
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
 
   Statement invokeVoid(final Expression ...args) {
-    checkState(void.class.equals(returnType()), "Method return type is not void.");
+    checkState(Type.VOID_TYPE.equals(returnType()), "Method return type is not void.");
     Expression.checkTypes(argTypes(), args);
     return new Statement() {
       @Override void doGen(CodeBuilder adapter) {
@@ -203,13 +216,13 @@ import java.util.Map;
   
   Expression invoke(final Expression ...args) {
     // void methods violate the expression contract of pushing a result onto the runtime stack.
-    checkState(!void.class.equals(returnType()), 
+    checkState(!Type.VOID_TYPE.equals(returnType()), 
         "Cannot produce an expression from a void method.");
     Expression.checkTypes(argTypes(), args);
     boolean isConstant = areAllConstant(Arrays.asList(args));
     // TODO(lukes): this assumes all methods are idempotent... not really true.  how should we
     // distinguish? we could annotate each methodref?
-    return new SimpleExpression(Type.getType(returnType()), isConstant) {
+    return new SimpleExpression(returnType(), isConstant) {
       @Override void doGen(CodeBuilder mv) {
         doInvoke(mv, args);
       }
@@ -225,8 +238,8 @@ import java.util.Map;
     mv.visitMethodInsn(
         opcode(),
         owner().internalName(),
-        methodName(),
-        methodDescriptor(),
+        method().getName(),
+        method().getDescriptor(),
         // This is for whether the methods owner is an interface.  This is mostly to handle java8
         // default methods on interfaces.  We don't care about those currently, but ASM requires 
         // this.

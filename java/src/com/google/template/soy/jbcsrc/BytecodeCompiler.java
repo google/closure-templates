@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
@@ -60,7 +62,7 @@ final class BytecodeCompiler {
     // reflective cost isn't paid on a per render basis.
     CompiledTemplate.Factory factory;
     try {
-      String factoryName = templateInfo.typeInfo().innerClass("Factory").className();
+      String factoryName = templateInfo.typeInfo().innerClass(FACTORY_CLASS).className();
       Class<? extends CompiledTemplate.Factory> factoryClass =
           Class.forName(factoryName, true /* run clinit */, loader)
               .asSubclass(CompiledTemplate.Factory.class);
@@ -91,7 +93,10 @@ final class BytecodeCompiler {
         registry.getBasicTemplatesMap().entrySet()) {
       String name = template.getKey();
       CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(name);
-      for (ClassData clazz : new TemplateCompiler(classInfo, errorReporter).compile()) {
+      TemplateCompiler templateCompiler = 
+          new TemplateCompiler(compilerRegistry, classInfo, errorReporter);
+      for (ClassData clazz : templateCompiler.compile()) {
+        clazz.checkClass();
         builder.add(clazz);
       }
     }

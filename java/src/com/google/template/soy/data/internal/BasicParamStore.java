@@ -38,14 +38,15 @@ public class BasicParamStore extends ParamStore {
   private final Map<String, SoyValueProvider> localStore;
 
 
-  public BasicParamStore() {
-    this.localStore = Maps.newHashMap();
+  public BasicParamStore(int size) {
+    this.localStore = Maps.newHashMapWithExpectedSize(size);
   }
 
 
-  @Override public void setField(String name, @Nonnull SoyValueProvider valueProvider) {
+  @Override public BasicParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     localStore.put(name, valueProvider);
+    return this;
   }
 
 

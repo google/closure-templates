@@ -580,7 +580,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     SoyRecord callData;
 
-    if (node.numChildren() == 0) {
+    int numChildren = node.numChildren();
+    if (numChildren == 0) {
       // --- Cases 1 and 2: Not passing params. ---
       if (dataToPass == null) {
         // Case 1: Not passing data and not passing params.
@@ -596,10 +597,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
       if (dataToPass == null) {
         // Case 3: Not passing data and passing params.
-        mutableCallData = new BasicParamStore();
+        mutableCallData = new BasicParamStore(numChildren);
       } else {
         // Case 4: Passing data and passing params.
-        mutableCallData = new AugmentedParamStore(dataToPass);
+        mutableCallData = new AugmentedParamStore(dataToPass, numChildren);
       }
 
       for (CallParamNode child : node.getChildren()) {

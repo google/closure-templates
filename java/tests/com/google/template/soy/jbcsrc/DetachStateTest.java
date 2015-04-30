@@ -219,4 +219,34 @@ public final class DetachStateTest extends TestCase {
         factory.create(params, EMPTY_DICT).render(output, EMPTY_CONTEXT));
     assertEquals("2345", output.toString());
   }
+
+  public void testDetachOnCall() throws IOException {
+    CompiledTemplate.Factory factory = TemplateTester.compileFile(
+        "{namespace ns autoescape=\"strict\"}",
+        "",
+        "/** */",
+        "{template .caller}",
+        "  {@param callerParam : string}",
+        "  {call .callee data=\"all\"}",
+        "    {param calleeParam: $callerParam /}",
+        "  {/call}",
+        "{/template}",
+        "",
+        "/** */",
+        "{template .callee}",
+        "  {@param calleeParam : string}",
+        "  prefix {$calleeParam} suffix",
+        "{/template}",
+        ""
+        ).getTemplateFactory("ns.caller");
+    SettableFuture<String> param = SettableFuture.create();
+    SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
+    CompiledTemplate template = factory.create(params, EMPTY_DICT);
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    assertEquals(RenderResult.continueAfter(param), template.render(output, EMPTY_CONTEXT));
+    assertEquals("prefix ", output.toString());
+    param.set("foo");
+    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals("prefix foo suffix", output.toString());
+  }
 }

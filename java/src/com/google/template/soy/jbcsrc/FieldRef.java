@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -48,6 +49,7 @@ import java.lang.reflect.Modifier;
       staticFieldReference(UndefinedData.class, "INSTANCE");
   static final FieldRef STRING_DATA_EMPTY = staticFieldReference(StringData.class, "EMPTY_STRING");
   static final FieldRef SYSTEM_OUT = staticFieldReference(System.class, "out");
+  static final FieldRef EMPTY_DICT = staticFieldReference(SoyValueHelper.class, "EMPTY_DICT");
 
   static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
     return createField(owner, name, Type.getType(type));
@@ -175,8 +177,19 @@ import java.lang.reflect.Modifier;
       @Override void doGen(CodeBuilder adapter) {
         instance.gen(adapter);
         value.gen(adapter);
-        adapter.putField(owner().type(), name(), type());
+        putUnchecked(adapter);
       }
+
     };
+  }
+  
+  /**
+   * Adds code to place the top item of the stack into this field.
+   * 
+   * @throws IllegalStateException if this is a static field
+   */
+  void putUnchecked(CodeBuilder adapter) {
+    checkState(!isStatic(), "This field is static!");
+    adapter.putField(owner().type(), name(), type());
   }
 }

@@ -18,24 +18,31 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
+import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.EasyDictImpl;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 
 import junit.framework.TestCase;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +52,79 @@ import java.util.Set;
  * A test for the template compiler, notably {@link BytecodeCompiler} and its collaborators.
  */
 public class BytecodeCompilerTest extends TestCase {
+
+  public void testCallBasicNode() throws IOException {
+    CompiledTemplates templates = TemplateTester.compileFile(
+        "{namespace ns autoescape=\"strict\"}",
+        "",
+        "/** */",
+        "{template .callerDataAll}",
+        "  {@param foo : string}",
+        "  {call .callee data=\"all\" /}",
+        "{/template}",
+        "",
+        "/** */",
+        "{template .callerDataExpr}",
+        "  {@param rec : [foo : string]}",
+        "  {call .callee data=\"$rec\" /}",
+        "{/template}",
+        "",
+        "/** */",
+        "{template .callerParams}",
+        "  {@param p1 : string}",
+        "  {call .callee}",
+        "    {param foo : $p1 /}",
+        "    {param boo : 'a' + 1 + 'b' /}",
+        "  {/call}",
+        "{/template}",
+        "",
+        "/** */",
+        "{template .callerParamsAndData}",
+        "  {@param p1 : string}",
+        "  {call .callee data=\"all\"}",
+        "    {param foo : $p1 /}",
+        "  {/call}",
+        "{/template}",
+        "",
+        "/** */",
+        "{template .callee}",
+        "  {@param foo : string}",
+        "  {@param? boo : string}",
+        "Foo: {$foo}{\\n}",
+        "Boo: {$boo}{\\n}",
+        "{/template}",
+        "");
+    ParamStore params = new BasicParamStore(2);
+    params.setField("foo", StringData.forValue("foo"));
+    assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: null\n");
+    params.setField("boo", StringData.forValue("boo"));
+    assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: boo\n");
+    
+    params = new BasicParamStore(2);
+    params.setField("rec", new BasicParamStore(2).setField("foo", StringData.forValue("foo")));
+    assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
+    ((ParamStore) params.getField("rec")).setField("boo", StringData.forValue("boo"));
+    assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: boo\n");
+    
+    params = new BasicParamStore(2);
+    params.setField("p1", StringData.forValue("foo"));
+    assertThat(render(templates, params, "ns.callerParams")).isEqualTo("Foo: foo\nBoo: a1b\n");
+    
+    params = new BasicParamStore(2);
+    params.setField("p1", StringData.forValue("foo"));
+    params.setField("boo", StringData.forValue("boo"));
+    assertThat(render(templates, params, "ns.callerParamsAndData"))
+        .isEqualTo("Foo: foo\nBoo: boo\n");
+  }
+
+  private String render(CompiledTemplates templates, SoyRecord params, String name)
+      throws IOException {
+    CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
+    AdvisingStringBuilder sb = new AdvisingStringBuilder();
+    assertEquals(RenderResult.done(), caller.render(sb, EMPTY_CONTEXT));
+    String output = sb.toString();
+    return output;
+  }
 
   public void testForNode() {
     // empty loop

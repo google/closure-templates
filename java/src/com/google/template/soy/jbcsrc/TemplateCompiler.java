@@ -16,12 +16,13 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.GENERATED_CONSTRUCTOR;
-import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.RENDER_METHOD;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
+import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
+import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
+import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
@@ -60,6 +61,7 @@ import java.util.List;
 final class TemplateCompiler {
   private static final String[] INTERFACES = { Type.getInternalName(CompiledTemplate.class) };
 
+  private final CompiledTemplateRegistry registry;
   private final FieldRef paramsField;
   private final FieldRef ijField;
   private final FieldRef stateField;
@@ -70,16 +72,18 @@ final class TemplateCompiler {
   private final ErrorReporter errorReporter;
   private ClassVisitor writer;
 
-  TemplateCompiler(CompiledTemplateMetadata template, ErrorReporter errorReporter) {
+  TemplateCompiler(CompiledTemplateRegistry registry, CompiledTemplateMetadata template,
+      ErrorReporter errorReporter) {
+    this.registry = registry;
     this.template = template;
     this.errorReporter = errorReporter;
-    this.paramsField = createFinalField(template.typeInfo(), "$params", SoyRecord.class);
-    this.ijField = createFinalField(template.typeInfo(), "$ij", SoyRecord.class);
-    this.stateField = createField(template.typeInfo(), "$state", Type.INT_TYPE);
+    this.paramsField = createFinalField(template.typeInfo(), PARAMS_FIELD, SoyRecord.class);
+    this.ijField = createFinalField(template.typeInfo(), IJ_FIELD, SoyRecord.class);
+    this.stateField = createField(template.typeInfo(), STATE_FIELD, Type.INT_TYPE);
     this.innerClasses = new InnerClasses(template.typeInfo());
-    fieldNames.claimName("$params");
-    fieldNames.claimName("$ij");
-    fieldNames.claimName("$state");
+    fieldNames.claimName(PARAMS_FIELD);
+    fieldNames.claimName(IJ_FIELD);
+    fieldNames.claimName(STATE_FIELD);
     ImmutableMap.Builder<String, FieldRef> builder = ImmutableMap.builder();
     for (TemplateParam param : template.node().getAllParams()) {
       String name = param.name();
@@ -161,12 +165,13 @@ final class TemplateCompiler {
     final LocalVariable contextVar = 
         createLocal("context", 2, Type.getType(RenderContext.class), start, end);
     final VariableSet variableSet = 
-        new VariableSet(fieldNames, template.typeInfo(), thisVar, RENDER_METHOD);
+        new VariableSet(fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateBasicNode node = template.node();
     TemplateVariables variables = 
-        new TemplateVariables(variableSet, thisVar, contextVar, paramFields);
+        new TemplateVariables(variableSet, thisVar, contextVar);
     final Statement methodBody =
         SoyNodeCompiler.create(
+            registry,
             innerClasses,
             stateField,
             thisVar,
@@ -175,7 +180,7 @@ final class TemplateCompiler {
             variables,
             errorReporter).compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
-    Statement fullMethodBody = new Statement() {
+    new Statement() {
       @Override void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         methodBody.gen(adapter);
@@ -187,8 +192,7 @@ final class TemplateCompiler {
         contextVar.tableEntry(adapter);
         variableSet.generateTableEntries(adapter);
       }
-    };
-    fullMethodBody.writeMethod(Opcodes.ACC_PUBLIC, RENDER_METHOD, IOException.class, writer);
+    }.writeMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), IOException.class, writer);
     variableSet.defineFields(writer);
   }
 
@@ -228,7 +232,7 @@ final class TemplateCompiler {
         ijVar.tableEntry(ga);
       }
     };
-    constructorBody.writeMethod(Opcodes.ACC_PUBLIC, GENERATED_CONSTRUCTOR, writer);
+    constructorBody.writeMethod(Opcodes.ACC_PUBLIC, template.constructor().method(), writer);
   }
 
   /**
@@ -263,18 +267,15 @@ final class TemplateCompiler {
     };
   }
 
-  private static final class TemplateVariables implements VariableLookup {
+  private final class TemplateVariables implements VariableLookup {
     private final VariableSet variableSet;
     private final Expression thisRef;
     private final Expression renderContext;
-    private final ImmutableMap<String, FieldRef> paramFields;
 
-    TemplateVariables(VariableSet variableSet, Expression thisRef, Expression renderContext,
-        ImmutableMap<String, FieldRef> paramFields) {
+    TemplateVariables(VariableSet variableSet, Expression thisRef, Expression renderContext) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
       this.renderContext = renderContext;
-      this.paramFields = paramFields;
     }
 
     @Override public Expression getParam(TemplateParam param) {
@@ -291,6 +292,14 @@ final class TemplateCompiler {
 
     @Override public Expression getRenderContext() {
       return renderContext;
+    }
+
+    @Override public Expression getParamsRecord() {
+      return paramsField.accessor(thisRef);
+    }
+
+    @Override public Expression getIjRecord() {
+      return ijField.accessor(thisRef);
     }
   }
 }

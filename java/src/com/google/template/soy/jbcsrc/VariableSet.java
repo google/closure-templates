@@ -17,10 +17,12 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
 import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -37,6 +39,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 /**
  * A variable in this set is a SoyValue that must be saved/restored.  This means each variable has:
@@ -202,6 +206,8 @@ final class VariableSet {
   private final BitSet availableSlots = new BitSet();
   private final TypeInfo owner;
   private final LocalVariable thisVar;
+  // Allocated lazily
+  @Nullable private FieldRef currentCalleeField; 
 
   /**
    * @param owner The type that is the owner of the method being generated
@@ -212,6 +218,7 @@ final class VariableSet {
   VariableSet(UniqueNameGenerator fieldNames, TypeInfo owner, LocalVariable thisVar,
       Method method) {
     this.fieldNames = fieldNames;
+    this.fieldNames.claimName(CURRENT_CALLEE_FIELD);
     this.owner = owner;
     this.thisVar = thisVar;
     availableSlots.set(0);   // for 'this'
@@ -301,6 +308,24 @@ final class VariableSet {
     for (Variable var : allVariables) {
       var.maybeDefineField(writer);
     }
+    if (currentCalleeField != null) {
+      currentCalleeField.defineField(writer);
+    }
+  }
+
+  /**
+   * Returns the field that holds the current callee template (if any).
+   * 
+   * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
+   * restoring the current callee to a local.
+   */
+  FieldRef getCurrentCalleeField() {
+    FieldRef local = currentCalleeField;
+    if (local == null) {
+      local = currentCalleeField = 
+          FieldRef.createField(owner, CURRENT_CALLEE_FIELD, CompiledTemplate.class);
+    }
+    return local;
   }
 
   /**

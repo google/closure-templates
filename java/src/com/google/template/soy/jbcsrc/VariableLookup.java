@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -50,4 +51,15 @@ interface VariableLookup {
    * {@link com.google.template.soy.jbcsrc.api.RenderContext}. 
    */
   Expression getRenderContext();
+
+  /**
+   * Returns the current template's parameter dictionary.  The returned expression will have a
+   * {@link Expression#resultType()} of {@link SoyRecord}.
+   */
+  Expression getParamsRecord();
+  /**
+   * Returns the current template's ij dictionary.  The returned expression will have a
+   * {@link Expression#resultType()} of {@link SoyRecord}.
+   */
+  Expression getIjRecord();
 }

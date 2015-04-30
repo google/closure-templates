@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.SaveRestoreState;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -210,6 +211,81 @@ final class DetachState implements ExpressionDetacher.Factory {
         // will print more before checking again.  This is fine, because our caller is breaking the
         // contract.
         adapter.mark(reattachPoint);
+      }
+    };
+  }
+
+  /**
+   * Generate detach logic for calls.
+   * 
+   * <p>Calls are a little different due to a desire to minimize the cost of detaches. We assume 
+   * that if a given call site detaches once, it is more likely to detach multiple times. So we
+   * generate code that looks like:   <pre>{@code
+   * 
+   * RenderResult initialResult = template.render(appendable, renderContext);
+   * if (!initialResult.isDone()) {
+   *   // save all fields
+   *   state = REATTACH_RENDER;
+   *   return initialResult;
+   * } else {
+   *   goto END;
+   * }
+   * REATTACH_RENDER:
+   * // restore nothing!
+   * RenderResult secondResult = template.render(appendable, renderContext);
+   * if (!secondResult.isDone()) {
+   *   // saveFields
+   *   state = REATTACH_RENDER;
+   *   return secondResult;
+   * } else {
+   *   // restore all fields
+   *   goto END;
+   * }
+   * END:
+   * }</pre>
+   * 
+   * <p>With this technique we save re-running the save-restore logic for multiple detaches from
+   * the same call site.  This should be especially useful for top level templates.
+   * 
+   * @param callRender an Expression that can generate code to call the render method, should be
+   *     safe to generate more than once. 
+   */
+  Statement detachForCall(final Expression callRender) {
+    checkArgument(callRender.resultType().equals(Type.getType(RenderResult.class)));
+    final Label reattachRender = new Label();
+    final SaveRestoreState saveRestoreState = variables.saveRestoreState();
+    int state = reattaches.size();
+    // We pass NULL statement for the restore logic since we handle that ourselves below
+    reattaches.add(ReattachState.create(reattachRender, Statement.NULL_STATEMENT));
+    final Statement saveState = 
+        stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+    return new Statement() {
+      @Override void doGen(CodeBuilder adapter) {
+        // Legend: RR = RenderResult, Z = boolean
+        callRender.gen(adapter);                                        // Stack: RR
+        adapter.dup();                                                  // Stack: RR, RR
+        MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);       // Stack: RR, Z
+        // if isDone goto Done
+        Label end = new Label();
+        adapter.ifZCmp(Opcodes.IFNE, end);                              // Stack: RR
+
+        saveRestoreState.save().gen(adapter);
+        saveState.gen(adapter);
+        adapter.returnValue();
+
+        adapter.mark(reattachRender);
+        callRender.gen(adapter);                                        // Stack: RR
+        adapter.dup();                                                  // Stack: RR, RR
+        MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);       // Stack: RR, Z
+        // if isDone goto restore
+        Label restore = new Label();
+        adapter.ifZCmp(Opcodes.IFNE, restore);                          // Stack: RR
+        // no need to save or restore anything
+        adapter.returnValue(); 
+        adapter.mark(restore);                                          // Stack: RR
+        saveRestoreState.restore().gen(adapter);
+        adapter.mark(end);                                              // Stack: RR
+        adapter.pop();                                                  // Stack:
       }
     };
   }

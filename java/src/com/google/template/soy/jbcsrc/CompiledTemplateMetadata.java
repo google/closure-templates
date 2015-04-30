@@ -39,7 +39,7 @@ import org.objectweb.asm.commons.Method;
    * The {@link Method} signature of all generated constructors for the {@link CompiledTemplate}
    * classes.
    */
-  static final Method GENERATED_CONSTRUCTOR = new Method("<init>",
+  private static final Method GENERATED_CONSTRUCTOR = new Method("<init>",
       Type.getMethodDescriptor(Type.VOID_TYPE, 
           Type.getType(SoyRecord.class), Type.getType(SoyRecord.class)));
 
@@ -48,7 +48,7 @@ import org.objectweb.asm.commons.Method;
    * {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)}  
    * method. 
    */
-  static final Method RENDER_METHOD;
+  private static final Method RENDER_METHOD;
 
   static {
     try {
@@ -63,8 +63,24 @@ import org.objectweb.asm.commons.Method;
 
   static CompiledTemplateMetadata create(String templateName, TemplateBasicNode node) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    return new AutoValue_CompiledTemplateMetadata(TypeInfo.create(className), node);
+    TypeInfo type = TypeInfo.create(className);
+    return new AutoValue_CompiledTemplateMetadata(
+        ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
+        MethodRef.createInstanceMethod(type, RENDER_METHOD),
+        type, 
+        node);
   }
+
+  /** 
+   * The template constructor.
+   * 
+   * <p>The constructor has the same interface as 
+   * {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory#create}
+   */
+  abstract ConstructorRef constructor();
+  
+  /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
+  abstract MethodRef renderMethod();
 
   /** The name of the compiled template. */
   abstract TypeInfo typeInfo();

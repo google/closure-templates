@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Objects;
 import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
@@ -107,5 +108,18 @@ public final class RenderResult {
   
   @Override public String toString() {
     return "RenderResult{ " + type + "}";
+  }
+  
+  @Override public int hashCode() {
+    return Objects.hash(type, future);
+  }
+
+  @Override public boolean equals(Object obj) {
+    if (obj instanceof RenderResult) {
+      RenderResult other = (RenderResult) obj;
+      // Use identity matching for the future.
+      return other.type.equals(type) && other.future == future;
+    }
+    return false;
   }
 }

@@ -27,7 +27,9 @@ import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.STORE;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
@@ -35,7 +37,14 @@ import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallNode.DataAttribute;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
@@ -87,6 +96,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     * @param variables The variable lookup table for reading locals.
     */
   static SoyNodeCompiler create(
+      CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       FieldRef stateField,
       Expression thisVar,
@@ -96,15 +106,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ErrorReporter errorReporter) {
     DetachState detachState = new DetachState(variableSet, thisVar, stateField);
     return new SoyNodeCompiler(
+        thisVar,
+        registry,
         detachState,
         variableSet,
         variables,
         appendableVar,
         new ExpressionCompiler(detachState, variables, errorReporter),
-        new LazyClosureCompiler(innerClasses, variables, errorReporter),
+        new LazyClosureCompiler(registry, innerClasses, variables, errorReporter),
         errorReporter);
   }
 
+  private final Expression thisVar;
+  private final CompiledTemplateRegistry registry;
   private final DetachState detachState;
   private final VariableSet variables;
   private final VariableLookup variableLookup;
@@ -114,6 +128,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Scope currentScope;
 
   SoyNodeCompiler(
+      Expression thisVar,
+      CompiledTemplateRegistry registry,
       DetachState detachState,
       VariableSet variables, 
       VariableLookup variableLookup, 
@@ -123,6 +139,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ErrorReporter errorReporter) {
     super(errorReporter);
     appendableExpression.checkAssignableTo(Type.getType(AdvisingAppendable.class));
+    this.thisVar = checkNotNull(thisVar);
+    this.registry = checkNotNull(registry);
     this.detachState = detachState;
     this.variables = variables;
     this.variableLookup = checkNotNull(variableLookup);
@@ -449,8 +467,116 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return selectorStatement;
   }
 
+  @Override protected Statement visitCallBasicNode(CallBasicNode node) {
+    // Basic nodes are basic! We can just call the node directly.
+    final CompiledTemplateMetadata callee = registry.getTemplateInfo(node.getCalleeName());
+    final Expression paramsRecord = prepareParamsHelper(node);
+    final Expression ijParams = variableLookup.getIjRecord();
+    // If we have an expression in the data attribute we need to be tricky about how we construct
+    // the template.  This is because the normal flow for constructing an object is
+    // NEW foo
+    // DUP
+    // ...push all parameters onto the stack
+    // INVOKESPECIAL foo.<init>
+    // The problem is that if one of our parameters needs to detach, then we have an inconsistent
+    // stack depth when we reattach (because out uninitialized foo isn't on the stack).
+    // So instead we need to do some stack reordering to make sure we detach on the expression
+    // prior to pushing anything onto the stack
+    final FieldRef currentCalleeField = variables.getCurrentCalleeField();
+    Statement initCallee = new Statement() {
+      @Override void doGen(CodeBuilder adapter) {
+        Type type = callee.typeInfo().type();
+        // Legend: D = SoyDict, C = callee, T = this
+        paramsRecord.gen(adapter);                                       // Stack: D
+        adapter.newInstance(type);                                       // Stack: C, D
+        adapter.dupX1();                                                 // Stack: C, D, C
+        adapter.swap();                                                  // Stack: D, C, C
+        ijParams.gen(adapter);                                           // Stack: D, D, C, C
+        adapter.invokeConstructor(type, callee.constructor().method());  // Stack: C
+        thisVar.gen(adapter);                                            // Stack: T, C
+        adapter.swap();                                                  // Stack: C, T
+        currentCalleeField.putUnchecked(adapter);                        // Stack:
+      }
+    };
+    
+    // This cast will always succeed.
+    Expression typedCallee = currentCalleeField.accessor(thisVar).cast(callee.typeInfo().type());
+    Expression callRender = callee.renderMethod()
+        .invoke(typedCallee, 
+            appendableExpression, 
+            variableLookup.getRenderContext());
+    Statement callCallee = detachState.detachForCall(callRender);
+    Statement clearCallee = currentCalleeField.putInstanceField(thisVar, 
+        BytecodeUtils.constantNull(CompiledTemplate.class));
+    return Statement.concat(initCallee, callCallee, clearCallee)
+        .withSourceLocation(node.getSourceLocation());
+  }
+
+  private Expression prepareParamsHelper(CallNode node) {
+    DataAttribute dataAttribute = node.dataAttribute();
+    if (node.numChildren() == 0) {
+      // Easy, just use the data attribute
+      return getDataExpression(dataAttribute);
+    } else {
+      // Otherwise we need to build a dictionary from {param} statements.
+      Expression paramStoreExpression = getParamStoreExpression(node, dataAttribute);
+      for (CallParamNode child : node.getChildren()) {
+        String paramKey = child.getKey();
+        Expression valueExpr;
+        // TODO(lukes): a trivial optimization would be to identify trivial params and skip 
+        // generating the SoyValueProvider subclass.  This should be able to reuse logic that we 
+        // will write for compiling expressions to SoyValueProviders when possible (needed for
+        // incremental printing in visitPrintNode).  Also, many params are constants, so we could
+        // provisionally compile params to expressions, see if they are constants and then just box
+        // them directly. The latter optimization would additionally require knowledge that there
+        // are no detaches.
+        if (child instanceof CallParamContentNode) {
+          valueExpr = lazyClosureCompiler.compileLazyContent(
+              (CallParamContentNode) child, paramKey); 
+        } else {
+          valueExpr = lazyClosureCompiler.compileLazyExpression(
+              child, paramKey, ((CallParamValueNode) child).getValueExprUnion().getExpr());
+        }
+        // ParamStore.setField return 'this' so we can just chain the invocations together.
+        paramStoreExpression = 
+            MethodRef.PARAM_STORE_SET_FIELD
+                .invoke(paramStoreExpression, BytecodeUtils.constant(paramKey), valueExpr);
+      }
+      return paramStoreExpression;
+    }
+  }
+
+  /**
+   * Returns an expression that creates a new {@link ParamStore} suitable for holding all the 
+   */
+  private Expression getParamStoreExpression(CallNode node, DataAttribute dataAttribute) {
+    Expression paramStoreExpression;
+    if (dataAttribute.isPassingData()) {
+      paramStoreExpression = ConstructorRef.AUGMENTED_PARAM_STORE.construct(
+          getDataExpression(dataAttribute), BytecodeUtils.constant(node.numChildren()));
+    } else {
+      paramStoreExpression = ConstructorRef.BASIC_PARAM_STORE.construct(
+          BytecodeUtils.constant(node.numChildren()));
+    }
+    return paramStoreExpression;
+  }
+
+  private Expression getDataExpression(DataAttribute dataAttribute) {
+    if (dataAttribute.isPassingData()) {
+      if (dataAttribute.isPassingAllData()) {
+        return variableLookup.getParamsRecord();
+      } else {
+        return exprCompiler.compile(dataAttribute.dataExpr()).box().cast(SoyRecord.class);
+      }
+    } else {
+      return FieldRef.EMPTY_DICT.accessor();
+    }
+  }
+
   @Override protected Statement visitLogNode(LogNode node) {
     return new SoyNodeCompiler(
+        thisVar,
+        registry,
         detachState,
         variables,
         variableLookup,
@@ -468,7 +594,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitLetContentNode(LetContentNode node) {
     Expression newLetValue = 
-        lazyClosureCompiler.compileLazyContent(node, node.getVarName(), node);
+        lazyClosureCompiler.compileLazyContent(node, node.getVarName());
     return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 

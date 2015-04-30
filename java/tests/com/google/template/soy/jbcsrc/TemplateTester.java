@@ -38,10 +38,6 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.util.CheckClassAdapter;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -163,7 +159,8 @@ public final class TemplateTester {
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
         CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(templateName);
-        classData = new TemplateCompiler(classInfo, ExplodingErrorReporter.get()).compile();
+        classData = new TemplateCompiler(compilerRegistry, classInfo, ExplodingErrorReporter.get())
+            .compile();
         checkClasses(classData);
         factory = BytecodeCompiler.loadFactory(
             classInfo,
@@ -173,8 +170,7 @@ public final class TemplateTester {
 
     private static void checkClasses(Iterable<ClassData> classData2) {
       for (ClassData d : classData2) {
-        new ClassReader(d.data())
-            .accept(new CheckClassAdapter(new ClassNode(), true), ClassReader.SKIP_DEBUG);
+        d.checkClass();
       }
     }
   }
@@ -218,6 +214,13 @@ public final class TemplateTester {
     Joiner.on("\n").appendTo(builder, body);
     builder.append("\n{/template}\n");
     return builder.toString();
+  }
+
+  static CompiledTemplates compileFile(String ...fileBody) {
+    String file = Joiner.on('\n').join(fileBody);
+    return BytecodeCompiler.compile(
+        new TemplateRegistry(SoyFileSetParserBuilder.forFileContents(file).parse()), 
+        ExplodingErrorReporter.get());
   }
 
 }

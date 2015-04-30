@@ -163,6 +163,15 @@ abstract class Expression extends BytecodeProducer {
     return new CastExpression(this, target);
   }
 
+  /**
+   * Returns an expression that performs a checked cast from the current type to the target type.
+   *
+   * @throws IllegalArgumentException if either type is not a reference type.
+   */
+  Expression cast(Class<?> target) {
+    return cast(Type.getType(target));
+  }
+
   @Override public String toString() {
     return name() + "<" + resultType() + ">:\n" + trace();
   }

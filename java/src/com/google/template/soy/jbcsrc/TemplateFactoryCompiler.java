@@ -17,9 +17,9 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.defineDefaultConstructor;
-import static com.google.template.soy.jbcsrc.CompiledTemplateMetadata.GENERATED_CONSTRUCTOR;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
+import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
@@ -74,7 +74,7 @@ final class TemplateFactoryCompiler {
   /** Compiles the factory. */
   void compile() {
     ClassWriter cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
-    TypeInfo factoryType = innerClasses.registerInnerClass("Factory", FACTORY_ACCESS);
+    TypeInfo factoryType = innerClasses.registerInnerClass(FACTORY_CLASS, FACTORY_ACCESS);
     cw.visit(Opcodes.V1_7,
         FACTORY_ACCESS,
         factoryType.internalName(),
@@ -127,21 +127,17 @@ final class TemplateFactoryCompiler {
     final LocalVariable paramsVar = 
         createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
     final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
-    Statement constructorBody = new Statement() {
+    final Statement returnTemplate = 
+        Statement.returnExpression(template.constructor().construct(paramsVar, ijVar));
+    new Statement() {
       @Override void doGen(CodeBuilder ga) {
         ga.mark(start);
-        ga.newInstance(template.typeInfo().type());
-        ga.dup();
-        paramsVar.gen(ga);
-        ijVar.gen(ga);
-        ga.invokeConstructor(template.typeInfo().type(), GENERATED_CONSTRUCTOR);
-        ga.returnValue();
+        returnTemplate.gen(ga);
         ga.mark(end);
         thisVar.tableEntry(ga);
         paramsVar.tableEntry(ga);
         ijVar.tableEntry(ga);
       }
-    };
-    constructorBody.writeMethod(Opcodes.ACC_PUBLIC, CREATE_METHOD, cw);
+    }.writeMethod(Opcodes.ACC_PUBLIC, CREATE_METHOD, cw);
   }
 }

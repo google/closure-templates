@@ -129,10 +129,30 @@ final class CodeBuilder extends MethodVisitor {
   public void dup() {
     adapter.dup();
   }
+  
+  /** See {@link GeneratorAdapter#dupX1()} */
+  public void dupX1() {
+    adapter.dupX1();
+  }
+
+  /** See {@link GeneratorAdapter#dupX2()} */
+  public void dupX2() {
+    adapter.dupX2();
+  }
 
   /** See {@link GeneratorAdapter#dup2()} */
   public void dup2() {
     adapter.dup2();
+  }
+  
+  /** See {@link GeneratorAdapter#dup2X1()} */
+  public void dup2X1() {
+    adapter.dup2X1();
+  }
+  
+  /** See {@link GeneratorAdapter#dup2X2()} */
+  public void dup2X2() {
+    adapter.dup2X2();
   }
 
   /** See {@link GeneratorAdapter#iinc(int, int)} */
@@ -278,5 +298,10 @@ final class CodeBuilder extends MethodVisitor {
   /** See {@link GeneratorAdapter#endMethod()} */
   public void endMethod() {
     adapter.endMethod();
+  }
+
+  /** See {@link GeneratorAdapter#swap()} */
+  public void swap() {
+    adapter.swap();
   }
 }

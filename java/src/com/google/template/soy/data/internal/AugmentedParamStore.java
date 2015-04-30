@@ -43,15 +43,17 @@ public class AugmentedParamStore extends ParamStore {
   private final Map<String, SoyValueProvider> localStore;
 
 
-  public AugmentedParamStore(@Nullable SoyRecord backingStore) {
+  public AugmentedParamStore(@Nullable SoyRecord backingStore, int expectedKeys) {
     this.backingStore = backingStore;
-    this.localStore = Maps.newHashMap();
+    this.localStore = Maps.newHashMapWithExpectedSize(expectedKeys);
   }
 
 
-  @Override public void setField(String name, @Nonnull SoyValueProvider valueProvider) {
+  @Override public AugmentedParamStore setField(String name,
+      @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     localStore.put(name, valueProvider);
+    return this;
   }
 
 
