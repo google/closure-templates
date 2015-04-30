@@ -171,11 +171,11 @@ public final class ExpressionParser {
   public static final SoyError INVALID_EXPRESSION_LIST
       = SoyError.of("Invalid expression list");
   private static final SoyError INVALID_PARAM_NAME_IJ
-      = SoyError.of("Invalid param name ''ij'' ('ij'' is for injected data ref).");
+      = SoyError.of("Invalid param name ''ij'' (''ij'' is for injected data ref).");
   public static final SoyError INVALID_VAR_NAME
       = SoyError.of("Invalid var name ''{0}''");
   private static final SoyError INVALID_VAR_NAME_IJ
-      = SoyError.of("Invalid var name ''ij'' ('ij'' is for injected data ref).");
+      = SoyError.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
 
   private static final SoyError SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL
       = SoyError.of("Disallowed single-identifier key \"{0}\" in map literal "

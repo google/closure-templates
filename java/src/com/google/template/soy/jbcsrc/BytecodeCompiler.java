@@ -21,10 +21,14 @@ import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,20 +42,38 @@ final class BytecodeCompiler {
    * implement print directives, escaping directives, and soy functions.  Look at the jssrc compiler
    * to see how it is configured.
    */
-  static CompiledTemplates compile(TemplateRegistry registry, ErrorReporter errorReporter) {
+  static CompiledTemplates compile(TemplateRegistry registry) {
+    checkForUnsupportedFeatures(registry);
     CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
     // TODO(lukes): currently we compile all the classes, but you could easily imagine being
     // configured in such a way that we load the classes from the system class loader.  Then we
     // could add a build phase that writes the compiled templates out to a jar.  Then in the non
     // development mode case we could skip even parsing templates!
-    MemoryClassLoader loader = compileTemplates(registry, compilerRegistry, errorReporter);
+    MemoryClassLoader loader = 
+        compileTemplates(registry, compilerRegistry, ExplodingErrorReporter.get());
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
     // TODO(lukes): support deltemplates eventually
     for (String name : registry.getBasicTemplatesMap().keySet()) {
       factories.put(name, loadFactory(compilerRegistry.getTemplateInfo(name), loader));
     }
     return new CompiledTemplates(factories.build());
+  }
+
+  private static void checkForUnsupportedFeatures(TemplateRegistry registry) {
+    // TODO(lukes): use a real error reporter
+    UnsupportedFeatureReporter reporter = 
+        new UnsupportedFeatureReporter(ExplodingErrorReporter.get());
+    for (TemplateBasicNode node : registry.getBasicTemplatesMap().values()) {
+      reporter.check(node);
+    }
+    for (List<DelegateTemplateDivision> divisions : registry.getDelTemplatesMap().values()) {
+      for (DelegateTemplateDivision division : divisions) {
+        for (TemplateDelegateNode node : division.delPackageNameToDelTemplateMap.values()) {
+          reporter.check(node);
+        }
+      }
+    }
   }
 
   @VisibleForTesting static CompiledTemplate.Factory loadFactory(
