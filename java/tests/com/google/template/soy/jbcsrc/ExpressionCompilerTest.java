@@ -311,6 +311,13 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("true ? 'a' : 2").evaluatesTo(StringData.forValue("a"));
   }
 
+  public void testNullCoalescingOpNode() {
+    assertExpression("1 ?: 2").evaluatesTo(IntegerData.forValue(1));
+    // force the type checker to interpret the left hand side as a nullable string, the literal null
+    // is rejected by the type checker.
+    assertExpression("(true ? null : 'a') ?: 2").evaluatesTo(IntegerData.forValue(2));
+  }
+
   private void assertExprEquals(String left, String right) {
     assertExpression(left + " == " + right).evaluatesTo(true);
     assertExpression(left + " != " + right).evaluatesTo(false);

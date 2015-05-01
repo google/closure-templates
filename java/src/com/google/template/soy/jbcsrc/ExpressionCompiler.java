@@ -46,6 +46,7 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
@@ -394,6 +395,27 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
     SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
     SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
     return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
+  }
+
+  @Override protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+    // TODO(lukes): we should be able to avoid boxing the right hand side at least some of the time
+    // but it is tricky.  Consider adding specific primitive optimizations ( $foo ?: 0 is not
+    // uncommon).
+    final SoyExpression left = visit(node.getLeftChild()).box();
+    final SoyExpression right = visit(node.getRightChild()).box();
+    return SoyExpression.forSoyValue(node.getType(),
+        new SimpleExpression(Type.getType(node.getType().javaType()),
+            left.isConstant() && right.isConstant()) {
+          @Override void doGen(CodeBuilder cb) {
+            left.gen(cb);
+            cb.dup();
+            Label success = new Label();
+            cb.ifNonNull(success);
+            cb.pop();  // pop the extra copy of left
+            right.gen(cb);
+            cb.mark(success);
+          }
+        });
   }
 
   @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {

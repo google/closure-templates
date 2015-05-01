@@ -296,6 +296,14 @@ public class OperatorNodes {
 
     private NullCoalescingOpNode(NullCoalescingOpNode orig) { super(orig); }
 
+    public ExprNode getLeftChild() {
+      return getChild(0);
+    }
+
+    public ExprNode getRightChild() {
+      return getChild(1);
+    }
+
     @Override public Kind getKind() { return Kind.NULL_COALESCING_OP_NODE; }
 
     @Override public NullCoalescingOpNode clone() { return new NullCoalescingOpNode(this); }
