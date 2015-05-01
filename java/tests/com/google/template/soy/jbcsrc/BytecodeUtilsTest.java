@@ -158,7 +158,7 @@ public class BytecodeUtilsTest extends TestCase {
   // Use an expression that only ever throws for branches that are supposed to be skipped.
   public void testShortCircuitingLogicalOperators_shortCircuits() {
     assertThatExpression(throwingBoolExpression())
-        .throwsExceptionOfType(IllegalStateException.class);
+        .throwsException(IllegalStateException.class);
 
     assertThatExpression(logicalOr(ImmutableList.of(constant(true), throwingBoolExpression())))
         .evaluatesTo(true);

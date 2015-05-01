@@ -34,7 +34,8 @@ public enum NonpluginFunction {
   IS_FIRST(1),
   IS_LAST(1),
   INDEX(1),
-  QUOTE_KEYS_IF_JS(1);
+  QUOTE_KEYS_IF_JS(1),
+  CHECK_NOT_NULL(1);
 
 
   /** Map of NonpluginFunctions by function name. */
