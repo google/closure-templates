@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.base.Joiner;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -74,45 +73,6 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "  {@param p1: int}\n" +
             "  {$p1}\n" +
             "{/template}\n");
-  }
-
-  public void testArgumentTypeMismatch_fixWithCheckNotNull() {
-    assertInvalidSoyFiles(
-        "Argument type mismatch",
-        Joiner.on('\n').join(
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}",
-            "",
-            "/** */",
-            "{template .boo}",
-            "  {@param? h1 : html}",
-            "  {call .foo}",
-            "    {param h1 : $h1 /}",
-            "  {/call}",
-            "{/template}",
-            "",
-            "/** */",
-            "{template .foo}",
-            "  {@param h1: html}",
-            "  {$h1}",
-            "{/template}"));
-    // This should be a type error but we can checkNotNull it away
-    assertValidSoyFiles(
-        Joiner.on('\n').join(
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}",
-            "",
-            "/** */",
-            "{template .boo}",
-            "  {@param? h1 : html}",
-            "  {call .foo}",
-            "    {param h1 : checkNotNull($h1) /}",
-            "  {/call}",
-            "{/template}",
-            "",
-            "/** */",
-            "{template .foo}",
-            "  {@param h1: html}",
-            "  {$h1}",
-            "{/template}"));
   }
 
   public void testArgumentTypeMismatchInDelcall() {

@@ -646,20 +646,6 @@ soy.$$getMapKeys = function(map) {
 
 
 /**
- * Returns the argument if it is not null.
- *
- * @param {T} val The value to check
- * @return {T} val if is isn't null
- */
-soy.$$checkNotNull = function(val) {
-  if (val == null) {
-    throw Error('unexpected null value');
-  }
-  return val;
-};
-
-
-/**
  * Gets a consistent unique id for the given delegate template name. Two calls
  * to this function will return the same id if and only if the input names are
  * the same.

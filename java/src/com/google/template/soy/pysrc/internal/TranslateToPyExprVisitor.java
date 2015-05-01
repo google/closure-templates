@@ -372,8 +372,6 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
         case QUOTE_KEYS_IF_JS:
           // 'quoteKeysIfJs' is ignored in Python.
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
-        case CHECK_NOT_NULL:
-          return visitCheckNotNull(node);
         default:
           throw new AssertionError();
       }
@@ -400,11 +398,6 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
     throw SoySyntaxException.createWithoutMetaInfo(
         "Failed to find function with name '" + fnName + "'" +
             " (function call \"" + node.toSourceString() + "\").");
-  }
-
-  private PyExpr visitCheckNotNull(FunctionNode node) {
-    PyExpr childExpr = visit(node.getChild(0));
-    return new PyFunctionExprBuilder("runtime.check_not_null").addArg(childExpr).asPyExpr();
   }
 
   private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
