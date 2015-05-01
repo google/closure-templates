@@ -66,7 +66,7 @@ public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Voi
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node);
+    templateRegistry = new TemplateRegistry(node, errorReporter);
     visitChildren(node);
     templateRegistry = null;
   }
@@ -110,11 +110,12 @@ public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Voi
       TemplateNode callee;
       Set<DelegateTemplateDivision> divisions =
           templateRegistry.getDelTemplateDivisionsForAllVariants((node).getDelCalleeName());
-      if (divisions != null) {
+      if (divisions != null && !divisions.isEmpty()) {
         // As the callee is required only to know the kind of the content and as all templates in
         // delPackage are of the same kind it is sufficient to choose only the first template.
+        DelegateTemplateDivision division = Iterables.getFirst(divisions, null);
         callee = Iterables.get(
-            Iterables.getFirst(divisions, null).delPackageNameToDelTemplateMap.values(), 0);
+            division.delPackageNameToDelTemplateMap.values(), 0);
         if (callee.getContentKind() == SanitizedContent.ContentKind.TEXT) {
           throw SoyAutoescapeException.createWithNode(
               "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in "

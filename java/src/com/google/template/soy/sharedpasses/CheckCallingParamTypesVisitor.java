@@ -92,7 +92,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node);
+    templateRegistry = new TemplateRegistry(node, errorReporter);
     visitChildren(node);
     templateRegistry = null;
   }
@@ -107,21 +107,16 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
   }
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
-    Set<DelegateTemplateDivision> divisions =
-        templateRegistry.getDelTemplateDivisionsForAllVariants(
-            node.getDelCalleeName());
-    if (divisions != null) {
-      ImmutableMap.Builder<TemplateDelegateNode, ImmutableList<TemplateParam>>
-      paramsToCheckByTemplate = ImmutableMap.builder();
-      for (DelegateTemplateDivision division : divisions) {
-        for (TemplateDelegateNode delTemplate :
-          division.delPackageNameToDelTemplateMap.values()) {
-          Set<TemplateParam> params = checkCallParamTypes(node, delTemplate);
-          paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
-        }
+    ImmutableMap.Builder<TemplateDelegateNode, ImmutableList<TemplateParam>>
+        paramsToCheckByTemplate = ImmutableMap.builder();
+    for (DelegateTemplateDivision division : templateRegistry.getDelTemplateDivisionsForAllVariants(
+        node.getDelCalleeName())) {
+      for (TemplateDelegateNode delTemplate : division.delPackageNameToDelTemplateMap.values()) {
+        Set<TemplateParam> params = checkCallParamTypes(node, delTemplate);
+        paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
       }
-      node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
     }
+    node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
 
     visitChildren(node);
   }

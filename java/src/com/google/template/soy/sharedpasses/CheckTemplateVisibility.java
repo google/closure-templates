@@ -49,7 +49,7 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
   }
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-    templateRegistry = new TemplateRegistry(node);
+    templateRegistry = new TemplateRegistry(node, errorReporter);
     visitChildren(node);
     templateRegistry = null;
   }

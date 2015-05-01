@@ -724,7 +724,7 @@ public final class SoyFileSet {
     SoyFileSetNode soyTree = new SoyFileSetParser(
         typeRegistry, cache, version, soyFileSuppliers, errorReporter)
         .parse();
-    return new TemplateRegistry(soyTree);
+    return new TemplateRegistry(soyTree, errorReporter);
   }
 
   /**

@@ -89,7 +89,7 @@ public final class CheckSoyDocVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node);
+    templateRegistry = new TemplateRegistry(node, errorReporter);
 
     // Run pass only on the Soy files that are all in V2 syntax.
     for (SoyFileNode soyFile : node.getChildren()) {

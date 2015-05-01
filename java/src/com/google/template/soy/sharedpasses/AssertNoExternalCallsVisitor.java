@@ -56,7 +56,8 @@ public final class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<V
         soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
 
     errorBuffer = new StringBuilder();
-    templateRegistry = new TemplateRegistry(soyNode.getNearestAncestor(SoyFileSetNode.class));
+    templateRegistry = new TemplateRegistry(
+        soyNode.getNearestAncestor(SoyFileSetNode.class), errorReporter);
 
     super.exec(soyNode);
 

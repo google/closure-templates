@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -62,16 +61,14 @@ final class BytecodeCompiler {
 
   private static void checkForUnsupportedFeatures(TemplateRegistry registry) {
     // TODO(lukes): use a real error reporter
-    UnsupportedFeatureReporter reporter = 
+    UnsupportedFeatureReporter reporter =
         new UnsupportedFeatureReporter(ExplodingErrorReporter.get());
     for (TemplateBasicNode node : registry.getBasicTemplatesMap().values()) {
       reporter.check(node);
     }
-    for (List<DelegateTemplateDivision> divisions : registry.getDelTemplatesMap().values()) {
-      for (DelegateTemplateDivision division : divisions) {
-        for (TemplateDelegateNode node : division.delPackageNameToDelTemplateMap.values()) {
-          reporter.check(node);
-        }
+    for (DelegateTemplateDivision division : registry.getDelTemplatesMap().values()) {
+      for (TemplateDelegateNode node : division.delPackageNameToDelTemplateMap.values()) {
+        reporter.check(node);
       }
     }
   }

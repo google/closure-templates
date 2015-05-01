@@ -155,12 +155,12 @@ public final class TemplateTester {
         SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
-        TemplateRegistry registry = new TemplateRegistry(fileSet);
+        TemplateRegistry registry = new TemplateRegistry(fileSet, ExplodingErrorReporter.get());
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
         CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(templateName);
-        classData = new TemplateCompiler(compilerRegistry, classInfo, ExplodingErrorReporter.get())
-            .compile();
+        classData = new TemplateCompiler(compilerRegistry, classInfo,
+            ExplodingErrorReporter.get()).compile();
         checkClasses(classData);
         factory = BytecodeCompiler.loadFactory(
             classInfo,
@@ -219,7 +219,7 @@ public final class TemplateTester {
   static CompiledTemplates compileFile(String ...fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     return BytecodeCompiler.compile(
-        new TemplateRegistry(SoyFileSetParserBuilder.forFileContents(file).parse()));
+        new TemplateRegistry(SoyFileSetParserBuilder.forFileContents(file).parse(),
+            ExplodingErrorReporter.get()));
   }
-
 }

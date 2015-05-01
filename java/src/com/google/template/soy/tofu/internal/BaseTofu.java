@@ -233,7 +233,7 @@ public class BaseTofu implements SoyTofu {
    * @return The newly built template registry.
    */
   private TemplateRegistry buildTemplateRegistry(SoyFileSetNode soyTree) {
-    return new TemplateRegistry(soyTree);
+    return new TemplateRegistry(soyTree, errorReporter);
   }
 
 

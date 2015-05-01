@@ -326,7 +326,7 @@ public final class FindTransitiveDepTemplatesVisitor
     // Build templateRegistry and initialize templateToFinishedInfoMap if necessary.
     if (templateRegistry == null) {
       SoyFileSetNode soyTree = rootTemplateCast.getParent().getParent();
-      templateRegistry = new TemplateRegistry(soyTree);
+      templateRegistry = new TemplateRegistry(soyTree, errorReporter);
     }
 
     // If finished in a previous pass (previous call to exec), just return the finished info.
@@ -463,13 +463,11 @@ public final class FindTransitiveDepTemplatesVisitor
     currTemplateVisitInfo.hasDelCalls = true;
 
     // Visit all the possible callee templates.
-    Set<DelegateTemplateDivision> delTemplateDivisions =
+    ImmutableSet<DelegateTemplateDivision> delTemplateDivisions =
         templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
-    if (delTemplateDivisions != null) {
-      for (DelegateTemplateDivision division : delTemplateDivisions) {
-        for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
-          processCalleeHelper(delCallee);
-        }
+    for (DelegateTemplateDivision division : delTemplateDivisions) {
+      for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
+        processCalleeHelper(delCallee);
       }
     }
   }

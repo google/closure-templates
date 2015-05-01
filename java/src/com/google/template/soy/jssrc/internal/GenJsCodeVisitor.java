@@ -268,7 +268,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node);
+    templateRegistry = new TemplateRegistry(node, errorReporter);
 
     for (SoyFileNode soyFile : node.getChildren()) {
       try {

@@ -101,7 +101,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Setup.
     nodeIdGen = nodeAsRoot.getNodeIdGenerator();
-    templateRegistry = new TemplateRegistry(nodeAsRoot);
+    templateRegistry = new TemplateRegistry(nodeAsRoot, errorReporter);
 
     // Simpify the subtree.
     super.exec(nodeAsRoot);

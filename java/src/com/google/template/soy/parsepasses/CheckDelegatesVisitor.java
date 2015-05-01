@@ -17,6 +17,8 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -36,7 +38,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,7 +84,7 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override public Void exec(SoyNode soyNode) {
 
     Preconditions.checkArgument(soyNode instanceof SoyFileSetNode);
-    templateRegistry = new TemplateRegistry((SoyFileSetNode) soyNode);
+    templateRegistry = new TemplateRegistry((SoyFileSetNode) soyNode, errorReporter);
 
     // Perform checks that only involve templates (uses templateRegistry only, no traversal).
     checkTemplates();
@@ -101,9 +102,9 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   private void checkTemplates() {
 
     Map<String, TemplateBasicNode> basicTemplatesMap = templateRegistry.getBasicTemplatesMap();
-    Map<DelTemplateKey, List<DelegateTemplateDivision>> delTemplatesMap =
+    ImmutableListMultimap<DelTemplateKey, DelegateTemplateDivision> delTemplatesMap =
         templateRegistry.getDelTemplatesMap();
-    Map<String, Set<DelTemplateKey>> delTemplateNameToKeysMap =
+    ImmutableSetMultimap<String, DelTemplateKey> delTemplateNameToKeysMap =
         templateRegistry.getDelTemplateNameToKeysMap();
 
     // Check that no name is reused for both basic and delegate templates.
@@ -117,8 +118,8 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Check that all delegate templates with the same name have the same declared params and
-    // content kind. First, we iterate over template names:
-    for (Set<DelTemplateKey> delTemplateKeys : delTemplateNameToKeysMap.values()) {
+    // content kind.
+    for (Iterable<DelTemplateKey> delTemplateKeys : delTemplateNameToKeysMap.asMap().values()) {
 
       TemplateDelegateNode firstDelTemplate = null;
       Set<TemplateParam> firstParamSet = null;
@@ -136,7 +137,6 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
               firstDelTemplate = delTemplate;
               firstParamSet = Sets.newHashSet(delTemplate.getParams());
               firstContentKind = delTemplate.getContentKind();
-
             } else {
               // Not first template encountered.
               Set<TemplateParam> currParamSet = Sets.newHashSet(delTemplate.getParams());
@@ -187,7 +187,7 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     String calleeName = node.getCalleeName();
 
     // Check that the callee name is not a delegate template name.
-    if (templateRegistry.getDelTemplateKeysForAllVariants(calleeName) != null) {
+    if (templateRegistry.hasDelTemplateNamed(calleeName)) {
       errorReporter.report(node.getSourceLocation(), CALL_TO_DELTEMPLATE, calleeName);
     }
 

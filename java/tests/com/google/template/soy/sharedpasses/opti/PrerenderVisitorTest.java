@@ -22,6 +22,7 @@ import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -165,7 +166,7 @@ public class PrerenderVisitorTest extends TestCase {
     PrerenderVisitor prerenderVisitor =
         INJECTOR.getInstance(PrerenderVisitorFactory.class).create(
             outputSb,
-            new TemplateRegistry(fileSet));
+            new TemplateRegistry(fileSet, ExplodingErrorReporter.get()));
     prerenderVisitor.exec(fileSet.getChild(0).getChild(0));
     return outputSb.toString();
   }

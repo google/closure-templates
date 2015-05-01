@@ -275,7 +275,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     // Build templateRegistry if necessary.
     if (templateRegistry == null) {
       SoyFileSetNode soyTree = node.getParent().getParent();
-      templateRegistry = new TemplateRegistry(soyTree);
+      templateRegistry = new TemplateRegistry(soyTree, errorReporter);
     }
 
     if (isStartOfPass) {
@@ -348,13 +348,11 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     mayHaveIndirectParamsInExternalDelCalls = true;
 
     // Visit all the possible callee templates.
-    Set<DelegateTemplateDivision> delTemplateDivisions =
+    ImmutableSet<DelegateTemplateDivision> delTemplateDivisions =
         templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
-    if (delTemplateDivisions != null) {
-      for (DelegateTemplateDivision division : delTemplateDivisions) {
-        for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
-          visitCalleeHelper(node, delCallee);
-        }
+    for (DelegateTemplateDivision division : delTemplateDivisions) {
+      for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
+        visitCalleeHelper(node, delCallee);
       }
     }
   }

@@ -283,7 +283,7 @@ public final class GenerateParseInfoVisitor
     }
 
     // Build template registry.
-    templateRegistry = new TemplateRegistry(node);
+    templateRegistry = new TemplateRegistry(node, errorReporter);
 
     // Run the pass.
     for (SoyFileNode soyFile : node.getChildren()) {
