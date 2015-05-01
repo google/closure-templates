@@ -16,7 +16,6 @@
 
 package com.google.template.soy.shared.internal;
 
-import com.google.common.base.Objects;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
@@ -42,7 +41,11 @@ public final class SharedRuntime {
     if (operand1 instanceof StringData) {
       return compareString((StringData) operand1, operand0);
     }
-    return Objects.equal(operand0, operand1);
+    // Identical to Objects.equal but calling the correct .equals overload on SoyValue.
+    // TODO(lukes): get rid of SoyValue.equals(SoyValue) (and SoyValue.equals(SoyValueProvider) and
+    // SoyValueProvider.equals(SoyValueProvider)) all these 'convenience' overloads just introduce
+    // overload selection ambiguity (and likely also make .hashCode inconsistent with .equals)
+    return operand0 == operand1 || (operand0 != null && operand0.equals(operand1));
   }
 
   /**
