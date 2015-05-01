@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.types.SoyTypes.removeNull;
 
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
@@ -60,6 +61,7 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
@@ -628,10 +630,43 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitFunctionNode(FunctionNode node) {
-      // We have no way of knowing the return type of a function.
-      // TODO: think about adding function type declarations.
       visitChildren(node);
-      node.setType(UnknownType.getInstance());
+      NonpluginFunction knownFunction = NonpluginFunction.forFunctionName(node.getFunctionName());
+      if (knownFunction != null) {
+        switch (knownFunction) {
+          case CHECK_NOT_NULL:
+            SoyType type = node.getChild(0).getType();
+            if (type.equals(NullType.getInstance())) {
+              throw createExceptionForInvalidExpr(
+                  "Cannot call checkNotNull on a parameter with a static type of 'null'");
+            } else {
+              // Same type as its child but with nulls removed
+              node.setType(removeNull(type));
+            }
+            break;
+          case INDEX:
+            node.setType(IntType.getInstance());
+            break;
+          case IS_FIRST:
+            node.setType(BoolType.getInstance());
+            break;
+          case IS_LAST:
+            node.setType(BoolType.getInstance());
+            break;
+          case QUOTE_KEYS_IF_JS:
+            // same type as its child
+            node.setType(node.getChild(0).getType());
+            break;
+          default:
+            throw new AssertionError();
+        }
+      } else {
+        // We have no way of knowing the return type of a function.
+        // TODO: think about adding function type declarations.
+        // TODO(lukes): at the very least we could hard code types for standard functions for
+        // example, everything in the BasicFunctionsModule.
+        node.setType(UnknownType.getInstance());
+      }
       tryApplySubstitution(node);
     }
 

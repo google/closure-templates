@@ -296,6 +296,23 @@ def type_safe_eq(first, second):
   return first == second
 
 
+def check_not_null(val):
+  """A helper to implement the Soy Function checkNotNull.
+
+  Args:
+    val: The value to test.
+
+  Returns:
+    val if it was not None.
+
+  Raises:
+    RuntimeError: If val is None.
+  """
+  if val is None:
+    raise RuntimeError('Unexpected null value')
+  return val
+
+
 ######################
 # Utility functions. #
 ######################

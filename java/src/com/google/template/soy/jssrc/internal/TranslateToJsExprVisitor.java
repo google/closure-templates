@@ -514,6 +514,8 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
+        case CHECK_NOT_NULL:
+          return visitCheckNotNullFunction(node.getChild(0));
         default:
           throw new AssertionError();
       }
@@ -542,6 +544,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
             " (function call \"" + node.toSourceString() + "\").");
   }
 
+  private JsExpr visitCheckNotNullFunction(ExprNode child) {
+    return new JsExpr("soy.$$checkNotNull(" + visit(child).getText() + ")", Integer.MAX_VALUE);
+  }
 
   private JsExpr visitIsFirstFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
