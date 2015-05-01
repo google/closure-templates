@@ -156,7 +156,7 @@ public class ExpressionCompilerTest extends TestCase {
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
-    assertExpression("$foo % $bar").throwsException(SoyDataException.class);
+    assertExpression("$foo % $bar").throwsExceptionOfType(SoyDataException.class);
   }
 
   public void testDivideByOpNode() {
@@ -316,12 +316,6 @@ public class ExpressionCompilerTest extends TestCase {
     // force the type checker to interpret the left hand side as a nullable string, the literal null
     // is rejected by the type checker.
     assertExpression("(true ? null : 'a') ?: 2").evaluatesTo(IntegerData.forValue(2));
-  }
-
-  public void testCheckNotNull() {
-    assertExpression("checkNotNull(1 < 2 ? null : 'a')")
-        .throwsException(NullPointerException.class, "'1 < 2 ? null : 'a'' evaluates to null");
-    assertExpression("checkNotNull('a')").evaluatesTo("a");
   }
 
   private void assertExprEquals(String left, String right) {

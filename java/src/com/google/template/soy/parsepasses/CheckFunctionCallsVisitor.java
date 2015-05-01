@@ -180,9 +180,6 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
                 node.getChild(0).getType().toString());
           }
           break;
-        case CHECK_NOT_NULL:
-          // Do nothing.  All types are valid.
-          break;
         default:
           throw new AssertionError("Unrecognized nonplugin fn " + fnName);
       }
