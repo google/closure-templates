@@ -20,6 +20,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -577,10 +578,29 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
         BytecodeUtils.numericConversion(variables.getLocal(indexVar), Type.LONG_TYPE));
   }
 
+  @Override SoyExpression visitCheckNotNullFunction(FunctionNode node) {
+    // there is only ever a single child
+    final ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
+    final SoyExpression childExpr = visit(childNode);
+    return SoyExpression.forSoyValue(node.getType(),
+        new SimpleExpression(Type.getType(node.getType().javaType()), childExpr.isConstant()) {
+          @Override void doGen(CodeBuilder adapter) {
+            childExpr.gen(adapter);
+            adapter.dup();
+            Label end = new Label();
+            adapter.ifNonNull(end);
+            adapter.throwException(Type.getType(NullPointerException.class),
+                "'" + childNode.toSourceString() + "' evaluates to null");
+            adapter.mark(end);
+          }
+        });
+  }
+
   // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext
   // and pull it out of there.  However, it seems like we should be able to turn some of those calls
   // into static method calls (maybe be stashing instances in static fields in our template). We
   // would probably need to introduce a new mechanism for registering functions.
+  // Or we should just 'intrinsify' a number of extra function (isNonnull for example)
   @Override SoyExpression visitPluginFunction(FunctionNode node) {
     Expression soyJavaFunctionExpr =
         MethodRef.RENDER_CONTEXT_GET_FUNCTION

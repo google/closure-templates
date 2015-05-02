@@ -82,6 +82,9 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         // there is only one child and it is a MapLiteralNode
         return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
       }
+      if (nonpluginFn == NonpluginFunction.CHECK_NOT_NULL) {
+        return visitCheckNotNullFunction(node);
+      }
       // the rest of the builtins all deal with indexing operations on foreach variables.
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       ForeachNonemptyNode declaringNode =
@@ -94,7 +97,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
               node, foreachLoopIndex(declaringNode), foreachLoopLength(declaringNode));
         case INDEX:
           return visitIndexFunction(node, foreachLoopIndex(declaringNode));
-        case QUOTE_KEYS_IF_JS:  // handled before the switch above
+        case CHECK_NOT_NULL:  // handled before the switch above
+        case QUOTE_KEYS_IF_JS:  
         default:
           throw new AssertionError();
       }
@@ -133,5 +137,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   T visitPluginFunction(FunctionNode node) {
     return visitExprNode(node);
   }
-
+  
+  T visitCheckNotNullFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
 }

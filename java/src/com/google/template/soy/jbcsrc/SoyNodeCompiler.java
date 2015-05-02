@@ -85,6 +85,8 @@ import java.util.List;
  * runtime stack be <em>empty</em> prior to any of the code produced.
  */
 final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
+   // TODO(lukes): consider introducing a Builder or a non-static Factory.
+
    /**
     * Creates a SoyNodeCompiler
     * 

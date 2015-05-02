@@ -28,6 +28,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyAbstractValue;
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -513,6 +514,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
+        case CHECK_NOT_NULL:
+          return visitCheckNotNull(node.getChild(0));
         default:
           throw new AssertionError();
       }
@@ -527,6 +530,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     // Note: Arity has already been checked by CheckFunctionCallsVisitor.
     return computeFunctionHelper(fn, args, node);
+  }
+
+  private SoyValue visitCheckNotNull(ExprNode child) {
+    SoyValue childValue = visit(child);
+    if (childValue instanceof NullData || childValue instanceof UndefinedData) {
+      throw new SoyDataException(child.toSourceString() + " is null");
+    }
+    return childValue;
   }
 
 

@@ -169,13 +169,20 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject throwsExceptionOfType(Class<? extends Throwable> clazz) {
+    ExpressionSubject throwsException(Class<? extends Throwable> clazz) {
+      return throwsException(clazz, null);
+    }
+
+    ExpressionSubject throwsException(Class<? extends Throwable> clazz, String message) {
       compile();
       try {
         invoker.voidInvoke();
       } catch (Throwable t) {
         if (!clazz.isInstance(t)) {
           failWithBadResults("throws an exception of type", clazz, "fails with", t);
+        }
+        if (message != null && !t.getMessage().equals(message)) {
+          failWithBadResults("throws an exception with message", message, "fails with", t);
         }
         return this;
       }
