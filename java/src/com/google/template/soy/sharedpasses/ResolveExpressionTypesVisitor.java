@@ -558,15 +558,45 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitAndOpNode(AndOpNode node) {
-      // TODO(user): add if like logic for the right child so that exprs like $foo and $foo.bar
-      // works as expected
-      visitLogicalOpNode(node);
+      visit(node.getChild(0));   // Assign normal types to left child
+
+      // Save the state of substitutions.
+      TypeSubstitution savedSubstitutionState = substitutions;
+
+      // Visit the left hand side to help narrow types used on the right hand side.
+      TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+      visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
+
+      // For 'and' the second child only gets evaluated if node 0 is truthy.  So apply the positive
+      // assertions.
+      addTypeSubstitutions(visitor.positiveTypeConstraints);
+      visit(node.getChild(1));
+
+      // Restore substitutions to previous state
+      substitutions = savedSubstitutionState;
+
+      markLogicalOpType(node);
     }
 
     @Override protected void visitOrOpNode(OrOpNode node) {
-      // TODO(user): add if like logic for the right child so that exprs like !$foo or $foo.bar
-      // works as expected
-      visitLogicalOpNode(node);
+      visit(node.getChild(0));   // Assign normal types to left child
+
+      // Save the state of substitutions.
+      TypeSubstitution savedSubstitutionState = substitutions;
+
+      // Visit the left hand side to help narrow types used on the right hand side.
+      TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+      visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
+
+      // For 'or' the second child only gets evaluated if node 0 is falsy.  So apply the negative
+      // assertions.
+      addTypeSubstitutions(visitor.negativeTypeConstraints);
+      visit(node.getChild(1));
+
+      // Restore substitutions to previous state
+      substitutions = savedSubstitutionState;
+
+      markLogicalOpType(node);
     }
 
     @Override protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
@@ -670,9 +700,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       tryApplySubstitution(node);
     }
 
-    private void visitLogicalOpNode(AbstractOperatorNode node) {
-      visitChildren(node);
-
+    private void markLogicalOpType(AbstractOperatorNode node) {
       if (declaredSyntaxVersion.num >= SyntaxVersion.V2_3.num) {
         node.setType(BoolType.getInstance());
       } else {

@@ -624,9 +624,12 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(1)).isEqualTo(UnknownType.getInstance());
   }
 
-  public void testDataFlowTypeNarrowing_andExpressions() {
+  public void testDataFlowTypeNarrowing_logicalExpressions() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param record: [active : bool|null]}",
+        "{@param? record: [active : bool|null]}",
+        "{@param? selected: map<string,bool>}",
+        "{$selected and $selected['a']}",
+        "{$selected == null or $selected['a']}",
         "{if isNonnull($record.active) and (not $record.active)}",
         "  {$record.active}",
         "{/if}",
@@ -636,6 +639,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
   }
 
   public void testDataFlowTypeNarrowingFailure() {
