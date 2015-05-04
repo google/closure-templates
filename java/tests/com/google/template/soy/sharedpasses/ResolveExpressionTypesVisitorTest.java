@@ -686,8 +686,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(4)).isEqualTo(makeNullable(IntType.getInstance()));
   }
 
-  // TODO(lukes): reenable when function typing is reenabled
-  public void ignoreTestFunctionTyping() {
+  public void testFunctionTyping() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@inject list: list<int|null>}",
         "{foreach $item in $list}",

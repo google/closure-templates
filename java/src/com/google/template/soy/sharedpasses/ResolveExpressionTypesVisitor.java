@@ -645,8 +645,12 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
             }
             break;
           case INDEX:
+            node.setType(IntType.getInstance());
+            break;
           case IS_FIRST:
           case IS_LAST:
+            node.setType(BoolType.getInstance());
+            break;
           case QUOTE_KEYS_IF_JS:
             // TODO(lukes): it would be easy to add type information here, but doing so would
             // introduce compile errors into user templates.  So doing so will require a global
