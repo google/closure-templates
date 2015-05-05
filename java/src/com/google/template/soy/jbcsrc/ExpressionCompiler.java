@@ -22,8 +22,10 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -57,6 +59,7 @@ import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
@@ -521,12 +524,12 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
         expression.cast(Type.getType(varRef.getType().javaType())));
   }
 
-  @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
-    throw new UnsupportedOperationException();
+  @Override protected SoyExpression visitDataAccessNode(DataAccessNode node) {
+    return new NullSafeAccessVisitor().visit(node);
   }
 
-  @Override protected SoyExpression visitItemAccessNode(ItemAccessNode node) {
-    throw new UnsupportedOperationException();
+  @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
+    return new NullSafeAccessVisitor().visit(node);
   }
 
   @Override SoyExpression visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar) {
@@ -662,5 +665,100 @@ final class ExpressionCompiler extends EnhancedAbstractExprNodeVisitor<SoyExpres
         }
       }
     };
+  }
+
+  /**
+   * A helper for generating code for null safe access expressions.
+   *
+   * <p>A null safe access {@code $foo?.bar?.baz} is syntactic sugar for
+   * {@code $foo == null ? null : ($foo.bar == null ? null : $foo.bar.baz)}.  So to generate code
+   * for it we need to have a way to 'exit' the full access chain as soon as we observe a failed
+   * null safety check.
+   */
+  private final class NullSafeAccessVisitor {
+    Label nullSafeExit;
+
+    Label getNullSafeExit() {
+      Label local = nullSafeExit;
+      return local == null ? nullSafeExit = new Label() : local;
+    }
+
+    SoyExpression visit(DataAccessNode node) {
+      final SoyExpression dataAccess = visitNullSafeNodeRecurse(node);
+      if (nullSafeExit == null) {
+        return dataAccess;
+      }
+      return dataAccess.withSource(
+          new SimpleExpression(dataAccess.resultType(), dataAccess.isConstant()) {
+            @Override void doGen(CodeBuilder adapter) {
+              dataAccess.gen(adapter);
+              // At this point either 'orig' will be on the top of stack, or it will be a null
+              // value (if a null safety check failed).
+              adapter.mark(nullSafeExit);
+            }
+          });
+    }
+
+    SoyExpression addNullSafetyCheck(SoyExpression baseExpr) {
+      // need to check if baseExpr == null
+      final SoyExpression orig = baseExpr;
+      final Label nullSafeExit = getNullSafeExit();
+      return SoyExpression.forSoyValue(SoyTypes.removeNull(orig.soyType()),
+          new SimpleExpression(orig.resultType(), false) {
+            @Override void doGen(CodeBuilder adapter) {
+              orig.gen(adapter);                                       // S
+              adapter.dup();                                           // S, S
+              adapter.ifNull(nullSafeExit);                            // S
+              // Note. When we jump to nullSafeExit there is still an instance of 'orig' on the
+              // stack but we know it is == null.
+          }
+        });
+    }
+
+    SoyExpression visitNullSafeNodeRecurse(ExprNode node) {
+      switch (node.getKind()) {
+        // Note: unlike the other backends we don't support nullsafe injected data (i.e. $ij?.foo)
+        // because we generally don't support $ij!
+        case FIELD_ACCESS_NODE:
+          return visitNullSafeFieldAccess((FieldAccessNode) node);
+        case ITEM_ACCESS_NODE:
+          return visitNullSafeItemAccess((ItemAccessNode) node);
+
+        default:
+          return ExpressionCompiler.this.visit(node);
+      }
+    }
+
+    SoyExpression visitNullSafeFieldAccess(FieldAccessNode node) {
+      throw new UnsupportedOperationException(
+          "Support for " + node.getKind() + " has node been added yet");
+    }
+
+    SoyExpression visitNullSafeItemAccess(ItemAccessNode node) {
+      SoyExpression baseExpr = visitNullSafeNodeRecurse(node.getBaseExprChild());
+      if (node.isNullSafe()) {
+        baseExpr = addNullSafetyCheck(baseExpr);
+      }
+      // KeyExprs never participate in the current null access chain.
+      SoyExpression keyExpr = ExpressionCompiler.this.visit(node.getKeyExprChild());
+
+      Expression soyValueProvider;
+      // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be optimized
+      // the same way because there is no real way to 'unbox' a SoyMap.
+      if (baseExpr.isKnownList()) {
+        soyValueProvider = MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
+            baseExpr.convert(List.class),
+            keyExpr.convert(long.class));
+      } else {
+        // Box and do a map style lookup.
+        soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
+            baseExpr.box().cast(SoyMap.class),
+            keyExpr.box());
+      }
+      Expression soyValue = getDetacher().resolveSoyValueProvider(soyValueProvider)
+          // Just like javac, we insert cast operations when removing from a collection.
+          .cast(node.getType().javaType());
+      return SoyExpression.forSoyValue(node.getType(), soyValue);
+    }
   }
 }

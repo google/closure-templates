@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -91,7 +92,21 @@ public final class Runtime {
     }
     return function.computeForJava(args);
   }
-  
+
+  public static SoyValueProvider getSoyListItem(List<SoyValueProvider> list, long index) {
+    int size = list.size();
+    if (index < size & index >= 0) {
+      SoyValueProvider soyValueProvider = list.get((int) index);
+      return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
+    }
+    return NULL_PROVIDER;
+  }
+
+  public static SoyValueProvider getSoyMapItem(SoyMap soyMap, SoyValue key) {
+    SoyValueProvider soyValueProvider = soyMap.getItemProvider(key);
+    return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
+  }
+
   public void checkRequiredParam(SoyRecord params, String paramName) {
     if (!params.hasField(paramName)) {
       throw new SoyDataException("required param '$" + paramName + "' is undefined");

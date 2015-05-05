@@ -17,12 +17,15 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -35,10 +38,16 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
+import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.primitive.AnyType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.primitive.UnknownType;
 
 import junit.framework.TestCase;
 
@@ -51,6 +60,8 @@ import java.util.Set;
  * Tests for {@link ExpressionCompiler}
  */
 public class ExpressionCompilerTest extends TestCase {
+  public static RenderContext currentRenderContext;
+
   private final Map<String, SoyExpression> variables = new HashMap<>();
   private ExpressionCompiler testExpressionCompiler = new ExpressionCompiler(
       new ExpressionDetacher.Factory() {
@@ -61,6 +72,13 @@ public class ExpressionCompilerTest extends TestCase {
             }
 
             @Override public Expression resolveSoyValueProvider(Expression soyValueProvider) {
+              if (variables.containsValue(soyValueProvider)) {
+                // This is hacky, but our variables are not SVPs, just SoyValues.  This is
+                // inconsistent with reality but makes the tests easier to write.
+                // A better solution may be to have the variables map just hold expressions for
+                // SoyValueProviders, but that is annoying.
+                return soyValueProvider;
+              }
               return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
             }
           };
@@ -80,7 +98,7 @@ public class ExpressionCompilerTest extends TestCase {
         }
 
         @Override public Expression getRenderContext() {
-          throw new UnsupportedOperationException();
+          return staticFieldReference(ExpressionCompiler.class, "currentRenderContext").accessor();
         }
 
         @Override public Expression getParamsRecord() {
@@ -324,6 +342,60 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("checkNotNull('a')").evaluatesTo("a");
   }
 
+  public void testItemAccess_lists() {
+    variables.put("list", compileExpression("[0, 1, 2]").box());
+    // By default all values are boxed
+    assertExpression("$list[0]").evaluatesTo(IntegerData.forValue(0));
+    assertExpression("$list[1]").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("$list[2]").evaluatesTo(IntegerData.forValue(2));
+
+    // However, they will be unboxed if possible
+    assertExpression("$list[0] + 1").evaluatesTo(1L);
+
+    // null, not IndexOutOfBoundsException
+    assertExpression("$list[3]").evaluatesTo(null);
+    assertExpression("$list[3] + 1").throwsException(NullPointerException.class);
+
+    // even if the index type is not known, it still works
+    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
+    assertExpression("$list[$anInt]").evaluatesTo(IntegerData.forValue(1));
+    // And we can still unbox the return value
+    assertExpression("$list[$anInt] + 1").evaluatesTo(2L);
+    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
+    assertExpression("$list[$anInt]").evaluatesTo(null);
+  }
+
+  public void testItemAccess_maps() {
+    // String literal keys trigger a heuristic that makes MapLiteral mean RecordLiteral and you
+    // can't use 'item access' to read it. We use string concatention to force a map interpretation.
+    variables.put("map", compileExpression("['a' + '' : 0, 'b': 1, 'c' : 2]").box());
+    // By default all values are boxed
+    assertExpression("$map['a']").evaluatesTo(IntegerData.forValue(0));
+    assertExpression("$map['b']").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("$map['c']").evaluatesTo(IntegerData.forValue(2));
+    assertExpression("$map['not valid']").evaluatesTo(null);
+  }
+
+  public void testNullSafeItemAccess_map() {
+    // Note: due to bugs in the type resolver (b/20537225) we can't properly type this variable
+    // so instead we have to lie about the nullability of this map.
+    variables.put("nullMap",
+        SoyExpression.forSoyValue(
+            MapType.of(StringType.getInstance(), IntType.getInstance()),
+            BytecodeUtils.constantNull(SoyMap.class)));
+    assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
+    assertExpression("$nullMap?['a']").evaluatesTo(null);
+  }
+
+  public void testNullSafeItemAccess_list() {
+    variables.put("nullList",
+        SoyExpression.forSoyValue(
+            ListType.of(StringType.getInstance()),
+            BytecodeUtils.constantNull(SoyList.class)));
+    assertExpression("$nullList[1]").throwsException(NullPointerException.class);
+    assertExpression("$nullList?[1]").evaluatesTo(null);
+  }
+
   private void assertExprEquals(String left, String right) {
     assertExpression(left + " == " + right).evaluatesTo(true);
     assertExpression(left + " != " + right).evaluatesTo(false);
@@ -363,7 +435,8 @@ public class ExpressionCompilerTest extends TestCase {
       final Set<String> names = new HashSet<>();
       @Override protected void visitVarRefNode(VarRefNode node) {
         if (names.add(node.getName())) {
-          templateBody.append("{@param " + node.getName() + ": any}\n");
+              SoyType type = variables.get(node.getName()).soyType();
+              templateBody.append("{@param " + node.getName() + ": " + type + "}\n");
         }
       }
 
@@ -383,6 +456,6 @@ public class ExpressionCompilerTest extends TestCase {
    * useful for testing fallback implementations in the compiler.
    */
   private SoyExpression untypedBoxedSoyExpression(final SoyExpression expr) {
-    return SoyExpression.forSoyValue(AnyType.getInstance(), expr.box());
+    return SoyExpression.forSoyValue(UnknownType.getInstance(), expr.box());
   }
 }

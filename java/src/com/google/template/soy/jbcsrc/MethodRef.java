@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -138,6 +139,10 @@ import java.util.Map;
   static final MethodRef SOY_LIST_AS_JAVA_LIST = create(SoyList.class, "asJavaList");
   static final MethodRef LIST_SIZE = create(List.class, "size");
   static final MethodRef LIST_GET = create(List.class, "get", int.class);
+  static final MethodRef RUNTIME_GET_LIST_ITEM = 
+      create(Runtime.class, "getSoyListItem", List.class, long.class);
+  static final MethodRef RUNTIME_GET_MAP_ITEM = 
+      create(Runtime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
   static final MethodRef INTS_CHECKED_CAST = create(Ints.class, "checkedCast", long.class);
   static final MethodRef RUNTIME_CALL_SOY_FUNCTION = 
       create(Runtime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
