@@ -1603,8 +1603,10 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String paramAccessVal = TranslateToJsExprVisitor.genCodeForParamAccess(
         paramName, isInjected, paramType);
     jsCodeBuilder.appendLine(
-        "goog.asserts.assert(" + MessageFormat.format(typePredicate, paramAccessVal) +
-        ", \"expected param '" + paramName + "' of type " + jsDocTypeExpr + ".\");");
+        "soy.asserts.assertType(" + MessageFormat.format(typePredicate, paramAccessVal) +
+        ", '" + paramName + "', " + paramAccessVal + ", " +
+        "'" + jsDocTypeExpr + "');");
+
     // The type-cast expression.
     jsCodeBuilder.appendLine(
         "var " + paramAlias + " = /** @type {" + jsDocTypeExpr + "} */ (" + paramVal + ");");

@@ -34,6 +34,7 @@
 
 goog.provide('soy');
 goog.provide('soy.StringBuilder');
+goog.provide('soy.asserts');
 goog.provide('soy.esc');
 goog.provide('soydata');
 goog.provide('soydata.SanitizedHtml');
@@ -45,6 +46,7 @@ goog.provide('soydata.VERY_UNSAFE');
 
 goog.require('goog.array');
 goog.require('goog.asserts');
+goog.require('goog.debug');
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
@@ -1838,6 +1840,30 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   // The input was not SanitizedContent, so our output isn't SanitizedContent
   // either.
   return wrappedText;
+};
+
+// -----------------------------------------------------------------------------
+// Assertion methods used by runtime.
+
+/**
+ * Checks if the type assertion is true if goog.asserts.ENABLE_ASSERTS is
+ * true. Report errors on runtime types if goog.DEBUG is true.
+ * @template T
+ * @param {T} typeCheck An condition for type checks.
+ * @param {string} paramName The Soy name of the parameter.
+ * @param {?Object} param The resolved JS object for the parameter.
+ * @param {!string} jsDocTypeStr JSDoc type str to cast the value to if the
+ *     type test succeeds
+ * @param {...*} var_args The items to substitute into the failure message.
+ * @return {T} The value of the condition.
+ * @throws {goog.asserts.AssertionError} When the condition evaluates to false.
+ */
+soy.asserts.assertType = function(typeCheck, paramName,
+    param, jsDocTypeStr, var_args) {
+  var msg = 'expected param ' + paramName + ' of type ' + jsDocTypeStr +
+      (goog.DEBUG ? (', but got ' + goog.debug.runtimeType(param)) : '') +
+      '.';
+  return goog.asserts.assert(typeCheck, msg, var_args);
 };
 
 
