@@ -42,7 +42,6 @@ import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
@@ -231,7 +230,7 @@ final class LazyClosureCompiler {
       LazyClosureVariableLookup lookup = 
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
       SoyExpression expression = 
-          new ExpressionCompiler(BasicDetacher.FACTORY, lookup, errorReporter)
+          ExpressionCompiler.createBasicCompiler(lookup, errorReporter)
               .compile(exprNode)
               .box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);

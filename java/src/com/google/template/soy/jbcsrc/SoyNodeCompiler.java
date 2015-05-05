@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
-import static com.google.template.soy.jbcsrc.Statement.concat;
 import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.STORE;
 
@@ -33,7 +32,6 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
-import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
@@ -115,7 +113,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         variableSet,
         variables,
         appendableVar,
-        new ExpressionCompiler(detachState, variables, errorReporter),
+        ExpressionCompiler.create(detachState, variables, errorReporter),
         new LazyClosureCompiler(registry, innerClasses, variables, errorReporter),
         errorReporter);
   }
@@ -209,12 +207,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode caseNode = (SwitchCaseNode) child;
+        Label reattachPoint = new Label();
         List<Expression> comparisons = new ArrayList<>();
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
-          comparisons.add(compareSoyEquals(expression, exprCompiler.compile(caseExpr)));
+          comparisons.add(compareSoyEquals(expression, 
+              exprCompiler.compile(caseExpr, reattachPoint)));
         }
+        Expression condition = BytecodeUtils.logicalOr(comparisons).labelStart(reattachPoint);
         Statement block = visitChildrenInNewScope(caseNode);
-        cases.add(IfBlock.create(BytecodeUtils.logicalOr(comparisons), block));
+        cases.add(IfBlock.create(condition, block));
       } else {
         SwitchDefaultNode defaultNode = (SwitchDefaultNode) child;
         defaultBlock = Optional.of(visitChildrenInNewScope(defaultNode));
@@ -302,14 +303,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
     Expression increment;
     if (rangeArgs.increment().isPresent()) {
+      Label detachPoint = new Label();
       increment = MethodRef.INTS_CHECKED_CAST.invoke(
-          exprCompiler.compile(rangeArgs.increment().get()).convert(long.class));
+          exprCompiler.compile(rangeArgs.increment().get(), detachPoint).convert(long.class));
       // If the expression is non-trivial, make sure to save it to a field.
       Variable variable = scope.createSynthetic(
           SyntheticVarName.forLoopIncrement(forNode),
           increment, 
           increment.isConstant() ? DERIVED : STORE);
-      initStatements.add(variable.initializer());
+      initStatements.add(variable.initializer().labelStart(detachPoint));
       increment = variable.local();
     } else {
       increment = constant(1);
@@ -321,14 +323,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     } else {
       startIndex = constant(0);
     }
+    Label detachPoint = new Label();
     Expression limit = MethodRef.INTS_CHECKED_CAST.invoke(
-        exprCompiler.compile(rangeArgs.limit()).convert(long.class));
+        exprCompiler.compile(rangeArgs.limit(), detachPoint).convert(long.class));
     // If the expression is non-trivial we should cache it in a local variable
     Variable variable = scope.createSynthetic(
         SyntheticVarName.forLoopLimit(forNode),
         limit, 
-        increment.isConstant() ? DERIVED : STORE);
-    initStatements.add(variable.initializer());
+        limit.isConstant() ? DERIVED : STORE);
+    initStatements.add(variable.initializer().labelStart(detachPoint));
     limit = variable.local();
     return new AutoValue_SoyNodeCompiler_CompiledRangeArgs(
         increment, startIndex, limit, initStatements.build());
@@ -408,30 +411,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // TODO(lukes): We need to have an alternate expression compiler that evaluate an expression to
     // a SoyValueProvider (instead of a SoyValue) when possible.  This will allow us to generate
     // code that calls SoyValueProvider.renderAndResolve.
-    final SoyExpression printExpr = exprCompiler.compile(node.getExprUnion().getExpr())
-        .convert(String.class);
-    // We want to call appendable.append(value-expr).  However this means that value-expr will be
-    // evaluated with appendable on the stack and so the reattach point (if any) will not be at a
-    // stack depth of 0 (which is a documented precondition of the expression compiler).  There are 
-    // a few ways we could work around this:
-    // 1. generate code like  'String tmp = <value-expr>; appendable.append(tmp);' which will use a
-    //    temporary to reorder evaluation
-    // 2. use a SWAP opcode to eval in the wrong order and then fix it
-    // 3. extract a helper method that reorders the stack requirements for appendable.append
-    //    e.g. 'AdvisingAppendable doAppend(String, appendable)'
-    // 4. move the 'reattach point' (if any) to before where we push the appendable onto the stack.
-    //
-    // All of these are unfortunate, (callBasicNode has a similar issue).  For now we go with #2
-    // TODO(lukes): consider changing the way reattach points are generated so that we can do #4
+    Label reattachPoint = new Label();
+    final SoyExpression printExpr = 
+        exprCompiler.compile(node.getExprUnion().getExpr(), reattachPoint)
+            .convert(String.class);
 
-    Expression renderSoyValue = new SimpleExpression(appendableExpression.resultType(), false) {
-      @Override void doGen(CodeBuilder adapter) {
-        printExpr.gen(adapter);
-        appendableExpression.gen(adapter);
-        adapter.swap();
-        MethodRef.ADVISING_APPENDABLE_APPEND.invokeUnchecked(adapter);
-      }
-    };
+    Expression renderSoyValue = 
+        MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, printExpr)
+            .labelStart(reattachPoint);
     return detachState.detachLimited(renderSoyValue).withSourceLocation(node.getSourceLocation());
   }
 
@@ -469,57 +456,37 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   // assigned at startup.
 
   @Override protected Statement visitCssNode(CssNode node) {
-    Expression renameSelector = MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR
+    Expression renamedSelector = MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR
         .invoke(variableLookup.getRenderContext(), constant(node.getSelectorText()));
-    Statement selectorStatement = MethodRef.ADVISING_APPENDABLE_APPEND
-        .invoke(appendableExpression, renameSelector)
-        .toStatement();
 
     if (node.getComponentNameExpr() != null) {
-      return concat(
-          MethodRef.SOY_VALUE_RENDER.invokeVoid(
-              exprCompiler.compile(node.getComponentNameExpr()).box(), 
-              appendableExpression), 
-         MethodRef.ADVISING_APPENDABLE_APPEND_CHAR
-            .invoke(appendableExpression, constant('-'))
-            .toStatement(), 
-         selectorStatement);
+      Label reattachPoint = new Label();
+      SoyExpression compiledComponent =
+          exprCompiler.compile(node.getComponentNameExpr(), reattachPoint).convert(String.class);
+      return appendableExpression.invoke(MethodRef.ADVISING_APPENDABLE_APPEND, compiledComponent)
+          .invoke(MethodRef.ADVISING_APPENDABLE_APPEND_CHAR, constant('-'))
+          .invoke(MethodRef.ADVISING_APPENDABLE_APPEND, renamedSelector)
+          .labelStart(reattachPoint)
+          .toStatement()
+          .withSourceLocation(node.getSourceLocation());
     }
-    return selectorStatement;
+    return appendableExpression.invoke(MethodRef.ADVISING_APPENDABLE_APPEND, renamedSelector)
+        .toStatement()
+        .withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitCallBasicNode(CallBasicNode node) {
     // Basic nodes are basic! We can just call the node directly.
-    final CompiledTemplateMetadata callee = registry.getTemplateInfo(node.getCalleeName());
-    final Expression paramsRecord = prepareParamsHelper(node);
-    final Expression ijParams = variableLookup.getIjRecord();
-    // If we have an expression in the data attribute we need to be tricky about how we construct
-    // the template.  This is because the normal flow for constructing an object is
-    // NEW foo
-    // DUP
-    // ...push all parameters onto the stack
-    // INVOKESPECIAL foo.<init>
-    // The problem is that if one of our parameters needs to detach, then we have an inconsistent
-    // stack depth when we reattach (because out uninitialized foo isn't on the stack).
-    // So instead we need to do some stack reordering to make sure we detach on the expression
-    // prior to pushing anything onto the stack
-    final FieldRef currentCalleeField = variables.getCurrentCalleeField();
-    Statement initCallee = new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
-        Type type = callee.typeInfo().type();
-        // Legend: D = SoyDict, C = callee, T = this
-        paramsRecord.gen(adapter);                                       // Stack: D
-        adapter.newInstance(type);                                       // Stack: C, D
-        adapter.dupX1();                                                 // Stack: C, D, C
-        adapter.swap();                                                  // Stack: D, C, C
-        ijParams.gen(adapter);                                           // Stack: D, D, C, C
-        adapter.invokeConstructor(type, callee.constructor().method());  // Stack: C
-        thisVar.gen(adapter);                                            // Stack: T, C
-        adapter.swap();                                                  // Stack: C, T
-        currentCalleeField.putUnchecked(adapter);                        // Stack:
-      }
-    };
-    
+    CompiledTemplateMetadata callee = registry.getTemplateInfo(node.getCalleeName());
+    Label reattachPoint = new Label();
+    FieldRef currentCalleeField = variables.getCurrentCalleeField();
+    Statement initCallee = currentCalleeField.putInstanceField(thisVar, 
+        callee.constructor()
+            .construct(
+                prepareParamsHelper(node, reattachPoint), 
+                variableLookup.getIjRecord()))
+            .labelStart(reattachPoint);
+
     // This cast will always succeed.
     Expression typedCallee = currentCalleeField.accessor(thisVar).cast(callee.typeInfo().type());
     Expression callRender = callee.renderMethod()
@@ -533,14 +500,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         .withSourceLocation(node.getSourceLocation());
   }
 
-  private Expression prepareParamsHelper(CallNode node) {
+  private Expression prepareParamsHelper(CallNode node, Label reattachPoint) {
     DataAttribute dataAttribute = node.dataAttribute();
     if (node.numChildren() == 0) {
       // Easy, just use the data attribute
-      return getDataExpression(dataAttribute);
+      return getDataExpression(dataAttribute, reattachPoint);
     } else {
       // Otherwise we need to build a dictionary from {param} statements.
-      Expression paramStoreExpression = getParamStoreExpression(node, dataAttribute);
+      Expression paramStoreExpression = getParamStoreExpression(node, dataAttribute, reattachPoint);
       for (CallParamNode child : node.getChildren()) {
         String paramKey = child.getKey();
         Expression valueExpr;
@@ -570,24 +537,26 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /**
    * Returns an expression that creates a new {@link ParamStore} suitable for holding all the 
    */
-  private Expression getParamStoreExpression(CallNode node, DataAttribute dataAttribute) {
+  private Expression getParamStoreExpression(CallNode node, DataAttribute dataAttribute,
+      Label reattachPoint) {
     Expression paramStoreExpression;
     if (dataAttribute.isPassingData()) {
       paramStoreExpression = ConstructorRef.AUGMENTED_PARAM_STORE.construct(
-          getDataExpression(dataAttribute), BytecodeUtils.constant(node.numChildren()));
+          getDataExpression(dataAttribute, reattachPoint), constant(node.numChildren()));
     } else {
       paramStoreExpression = ConstructorRef.BASIC_PARAM_STORE.construct(
-          BytecodeUtils.constant(node.numChildren()));
+          constant(node.numChildren()));
     }
     return paramStoreExpression;
   }
 
-  private Expression getDataExpression(DataAttribute dataAttribute) {
+  private Expression getDataExpression(DataAttribute dataAttribute, Label reattachPoint) {
     if (dataAttribute.isPassingData()) {
       if (dataAttribute.isPassingAllData()) {
         return variableLookup.getParamsRecord();
       } else {
-        return exprCompiler.compile(dataAttribute.dataExpr()).box().cast(SoyRecord.class);
+        return exprCompiler.compile(dataAttribute.dataExpr(), reattachPoint).box()
+            .cast(SoyRecord.class);
       }
     } else {
       return FieldRef.EMPTY_DICT.accessor();

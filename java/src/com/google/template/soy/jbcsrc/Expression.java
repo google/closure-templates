@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 import java.util.Arrays;
@@ -170,6 +171,27 @@ abstract class Expression extends BytecodeProducer {
    */
   Expression cast(Class<?> target) {
     return cast(Type.getType(target));
+  }
+
+  /**
+   * A simple helper that calls through to {@link MethodRef#invoke(Expression...)}, but allows a
+   * more natural fluent call style.
+   */
+  Expression invoke(MethodRef method, Expression ...args) {
+    return method.invoke(ImmutableList.<Expression>builder().add(this).add(args).build());
+  }
+  
+  /**
+   * Returns a new expression identical to this one but with the given label applied at the start
+   * of the expression.
+   */
+  Expression labelStart(final Label label) {
+    return new SimpleExpression(resultType(), isConstant()) {
+      @Override void doGen(CodeBuilder adapter) {
+        adapter.mark(label);
+        Expression.this.gen(adapter);
+      }
+    };
   }
 
   @Override public String toString() {

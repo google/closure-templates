@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static org.objectweb.asm.ClassReader.SKIP_DEBUG;
-
 import com.google.auto.value.AutoValue;
 
 import org.objectweb.asm.ClassReader;
@@ -50,7 +48,7 @@ import java.io.StringWriter;
    * presents. 
    */
   void checkClass() {
-    new ClassReader(data()).accept(new CheckClassAdapter(new ClassNode(), true), SKIP_DEBUG);
+    new ClassReader(data()).accept(new CheckClassAdapter(new ClassNode(), true), 0);
   }
 
   @Override public String toString() {

@@ -116,26 +116,10 @@ final class DetachState implements ExpressionDetacher.Factory {
    * A utility for generating detach blocks for expressions.
    */
   private static final class ExpressionDetacherImpl implements ExpressionDetacher {
-    private final Label reattachPoint;
     private final Statement saveOperation;
 
-    private ExpressionDetacherImpl(Label reattachPoint, Statement save) {
-      this.reattachPoint = reattachPoint;
+    private ExpressionDetacherImpl(Statement save) {
       this.saveOperation = save;
-    }
-
-    @Override public Expression makeDetachable(final Expression exp) {
-      return new SimpleExpression(exp.resultType(), exp.isConstant()) {
-        @Override void doGen(CodeBuilder adapter) {
-          // Note, the reattach point is _before_ the expression.  This means that on reattaches
-          // we rerun the entire expression rather than jumping to right before the detach point.
-          // This is neccesary because we are not saving intermediate expression results which are
-          // currently stored on the runtime stack.  saving the stack is believed to not be worth
-          // the effort.
-          adapter.mark(reattachPoint);
-          exp.gen(adapter);
-        }
-      };
     }
 
     @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
@@ -170,16 +154,12 @@ final class DetachState implements ExpressionDetacher.Factory {
    * Returns a {@link ExpressionDetacher} that can be used to instrument an expression with detach
    * reattach logic.
    */
-  @Override public ExpressionDetacher createExpressionDetacher() {
-    Label reattachPoint = new Label();
-    int state = reattaches.size();
+  @Override public ExpressionDetacher createExpressionDetacher(Label reattachPoint) {
     SaveRestoreState saveRestoreState = variables.saveRestoreState();
     Statement restore = saveRestoreState.restore();
-    reattaches.add(ReattachState.create(reattachPoint, restore));
+    int state = addState(reattachPoint, restore);
     Statement saveState = stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
-    return new ExpressionDetacherImpl(
-        reattachPoint, 
-        Statement.concat(saveRestoreState.save(), saveState));
+    return new ExpressionDetacherImpl(Statement.concat(saveRestoreState.save(), saveState));
   }
 
   /**
@@ -189,11 +169,10 @@ final class DetachState implements ExpressionDetacher.Factory {
   Statement detachLimited(Expression appendable) {
     checkArgument(appendable.resultType().equals(Type.getType(AdvisingAppendable.class)));
     final Label reattachPoint = new Label();
-    int state = reattaches.size();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
     
     Statement restore = saveRestoreState.restore();
-    reattaches.add(ReattachState.create(reattachPoint, restore));
+    int state = addState(reattachPoint, restore);
     final Expression isSoftLimited = MethodRef.ADVISING_APPENDABLE_SOFT_LIMITED.invoke(appendable);
     final Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
     final Statement saveState = 
@@ -254,9 +233,8 @@ final class DetachState implements ExpressionDetacher.Factory {
     checkArgument(callRender.resultType().equals(Type.getType(RenderResult.class)));
     final Label reattachRender = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
-    int state = reattaches.size();
     // We pass NULL statement for the restore logic since we handle that ourselves below
-    reattaches.add(ReattachState.create(reattachRender, Statement.NULL_STATEMENT));
+    int state = addState(reattachRender, Statement.NULL_STATEMENT);
     final Statement saveState = 
         stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
@@ -334,6 +312,16 @@ final class DetachState implements ExpressionDetacher.Factory {
         true);
       }
     };
+  }
+
+  /**
+   * Add a new state item and return the state.
+   */
+  private int addState(Label reattachPoint, Statement restore) {
+    ReattachState create = ReattachState.create(reattachPoint, restore);
+    reattaches.add(create);
+    int state = reattaches.size() - 1;  // the index of the ReattachState in the list
+    return state;
   }
 
   @AutoValue abstract static class ReattachState {

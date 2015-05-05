@@ -34,15 +34,9 @@ interface ExpressionDetacher {
      * Returns a new {@link ExpressionDetacher}.  Any given soy expression requires at most one
      * detacher.
      */
-    ExpressionDetacher createExpressionDetacher();
+    ExpressionDetacher createExpressionDetacher(Label reattachPoint);
   }
 
-  /**
-   * Returns a new {@link Expression} that has the same behavior as {@code expr} but adds a prologue
-   * and epilogue to implement detach logic.
-   */
-  Expression makeDetachable(Expression expr);
-  
   /**
    * Returns an expression for the SoyValue that is resolved by the given SoyValueProvider, 
    * potentially detaching if it is not {@link SoyValueProvider#status() resolvable}.
@@ -66,18 +60,9 @@ interface ExpressionDetacher {
    * }</pre>
    */
   static final class BasicDetacher implements ExpressionDetacher {
-    static final Factory FACTORY = new Factory() {
-      @Override public ExpressionDetacher createExpressionDetacher() {
-        return INSTANCE;
-      }
-    };
-    private static final BasicDetacher INSTANCE = new BasicDetacher();
+    static final BasicDetacher INSTANCE = new BasicDetacher();
 
     private BasicDetacher() {}
-
-    @Override public Expression makeDetachable(Expression expr) {
-      return expr;
-    }
 
     @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));

@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.base.SourceLocation;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -133,6 +134,18 @@ abstract class Statement extends BytecodeProducer {
       // exception.
       throw new RuntimeException("Failed to generate method:\n" + this, t);
     }
+  }
+  /**
+   * Returns a new statement identical to this one but with the given label applied at the start
+   * of the statement.
+   */
+  final Statement labelStart(final Label label) {
+    return new Statement() {
+      @Override void doGen(CodeBuilder adapter) {
+        adapter.mark(label);
+        Statement.this.gen(adapter);
+      }
+    };
   }
 
   /**

@@ -51,6 +51,8 @@ import com.google.template.soy.types.primitive.UnknownType;
 
 import junit.framework.TestCase;
 
+import org.objectweb.asm.Label;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -63,14 +65,10 @@ public class ExpressionCompilerTest extends TestCase {
   public static RenderContext currentRenderContext;
 
   private final Map<String, SoyExpression> variables = new HashMap<>();
-  private ExpressionCompiler testExpressionCompiler = new ExpressionCompiler(
+  private ExpressionCompiler testExpressionCompiler = ExpressionCompiler.create(
       new ExpressionDetacher.Factory() {
-        @Override public ExpressionDetacher createExpressionDetacher() {
+        @Override public ExpressionDetacher createExpressionDetacher(Label label) {
           return new ExpressionDetacher() {
-            @Override public Expression makeDetachable(Expression expr) {
-              return expr;
-            }
-
             @Override public Expression resolveSoyValueProvider(Expression soyValueProvider) {
               if (variables.containsValue(soyValueProvider)) {
                 // This is hacky, but our variables are not SVPs, just SoyValues.  This is
