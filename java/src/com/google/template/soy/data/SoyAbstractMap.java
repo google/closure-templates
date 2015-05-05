@@ -69,7 +69,7 @@ public abstract class SoyAbstractMap extends SoyAbstractValue implements SoyMap 
     appendable.append('}');
   }
 
-  @Override public final boolean equals(SoyValue other) {
+  @Override public final boolean equals(Object other) {
     // Instance equality, to match Javascript behavior.
     return this == other;
   }

@@ -61,7 +61,4 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
   protected abstract RenderResult doResolve();
 
-  @Override public final boolean equals(SoyValueProvider other) {
-    return other == this;
-  }
 }

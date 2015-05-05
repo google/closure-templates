@@ -80,12 +80,4 @@ public interface SoyValueProvider {
    */
   public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
       throws IOException;
-
-  /**
-   * Compares this value against another for equality for the purposes of Soy.
-   * @param other The other value to compare against.
-   * @return True if the two values are equal.
-   */
-  public boolean equals(SoyValueProvider other);
-
 }

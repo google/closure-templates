@@ -23,6 +23,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 
+import java.util.Objects;
+
 /**
  * Runtime implementation of common expression operators to be shared between the {@code jbcsrc} and
  * {@code Tofu} backends.
@@ -41,11 +43,7 @@ public final class SharedRuntime {
     if (operand1 instanceof StringData) {
       return compareString((StringData) operand1, operand0);
     }
-    // Identical to Objects.equal but calling the correct .equals overload on SoyValue.
-    // TODO(lukes): get rid of SoyValue.equals(SoyValue) (and SoyValue.equals(SoyValueProvider) and
-    // SoyValueProvider.equals(SoyValueProvider)) all these 'convenience' overloads just introduce
-    // overload selection ambiguity (and likely also make .hashCode inconsistent with .equals)
-    return operand0 == operand1 || (operand0 != null && operand0.equals(operand1));
+    return Objects.equals(operand0, operand1);
   }
 
   /**

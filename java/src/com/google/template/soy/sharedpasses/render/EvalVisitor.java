@@ -656,7 +656,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     private NullSafetySentinel() {}
 
-    @Override public boolean equals(SoyValue other) {
+    @Override public boolean equals(Object other) {
       return other == INSTANCE;
     }
 

@@ -60,13 +60,6 @@ public class SoyAbstractCachingValueProviderTest extends TestCase {
     assertEquals(1, value.resolve().integerValue());
   }
 
-  public void testEquals() {
-    assertTrue(new TestValueProvider(1).equals(new TestValueProvider(1)));
-    assertFalse(new TestValueProvider(1).equals(new TestValueProvider(2)));
-    assertFalse(new TestValueProvider(1).equals(null));
-    assertFalse(new TestValueProvider(1).equals(new Object()));
-  }
-
   public void testValueAssertions() {
     final AtomicInteger counter = new AtomicInteger();
     ValueAssertion assertion = new ValueAssertion() {

@@ -36,7 +36,7 @@ public interface SoyValue extends SoyValueProvider {
    * @param other The other value to compare against.
    * @return True if this value is equal to the other in the sense of Soy.
    */
-  public boolean equals(SoyValue other);
+  @Override public boolean equals(Object other);
 
 
   /**

@@ -18,7 +18,6 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.SoyValue;
 
 import java.io.IOException;
 
@@ -33,9 +32,10 @@ final class TombstoneValue extends SoyAbstractValue {
   @Override public void render(Appendable appendable) throws IOException {
     throw new UnsupportedOperationException();
   }
-  @Override public boolean equals(SoyValue other) {
+  @Override public boolean equals(Object other) {
     throw new UnsupportedOperationException();
   }
+
   @Override public String coerceToString() {
     throw new UnsupportedOperationException();
   }

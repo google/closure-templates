@@ -138,7 +138,7 @@ public abstract class SoyAbstractList extends SoyAbstractValue implements SoyLis
    *
    * Note: Users will eventually be able to create their own implementations if they desire.
    */
-  @Override public final boolean equals(SoyValue other) {
+  @Override public final boolean equals(Object other) {
     return this == other;
   }
 

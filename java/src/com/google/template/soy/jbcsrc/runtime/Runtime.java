@@ -47,9 +47,6 @@ public final class Runtime {
       return RenderResult.done();
     }
 
-    @Override public boolean equals(SoyValueProvider other) {
-      return other == this;
-    }
     @Override public String toString() {
       return "NULL_PROVIDER";
     }

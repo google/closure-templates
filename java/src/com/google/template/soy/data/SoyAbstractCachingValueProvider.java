@@ -75,14 +75,6 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
     return localResolvedValue;
   }
 
-
-  @Override public boolean equals(SoyValueProvider other) {
-    // NOTE: The identity check is essential. If the underlying SoyValue type requires instance
-    // equality, and resolve() is called by two different threads, it's possible that resolve()
-    // will return two different instances.
-    return this == other || (other != null && resolve().equals(other.resolve()));
-  }
-
   @Override public RenderResult renderAndResolve(
       AdvisingAppendable appendable, boolean isLast) throws IOException {
     // Gives a reasonable default implementation, if subclasses can do better they can override.
@@ -92,15 +84,6 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
     }
     return result;
   }
-
-  @Override public boolean equals(Object other) {
-    if (other instanceof SoyValueProvider) {
-      return equals((SoyValueProvider) other);
-    } else {
-      return false;
-    }
-  }
-
 
   @Override public int hashCode() {
     throw new UnsupportedOperationException(

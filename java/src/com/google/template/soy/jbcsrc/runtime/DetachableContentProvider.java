@@ -106,10 +106,6 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
   protected abstract RenderResult doRender(AdvisingAppendable appendable);
 
-  @Override public final boolean equals(SoyValueProvider other) {
-    return other == this;
-  }
-  
   /**
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the
    * same forwarded content into a buffer.

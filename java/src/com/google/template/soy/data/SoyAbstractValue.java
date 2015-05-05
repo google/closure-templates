@@ -50,21 +50,8 @@ public abstract class SoyAbstractValue implements SoyValue {
     return RenderResult.done();
   }
 
-  /**
-   * Note: Even though we provide a default implementation for equals(SoyValueProvider), subclasses
-   * must still implement equals(SoyValue).
-   *
-   * {@inheritDoc}
-   */
-  @Override public boolean equals(SoyValueProvider other) {
-    if (other instanceof SoyValue) {
-      return this.equals((SoyValue) other);
-    } else {
-      // Since 'other' is an unresolved SoyValueProvider, we let it decide how to handle equals(),
-      // e.g. it may decide to resolve itself before doing the comparison.
-      return other.equals(this);
-    }
-  }
+  // Force subtypes to implement equals
+  @Override public abstract boolean equals(Object other);
 
 
   @Override public boolean booleanValue() {

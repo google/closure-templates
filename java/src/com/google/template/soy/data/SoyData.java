@@ -116,28 +116,6 @@ public abstract class SoyData extends SoyAbstractValue {
   // Adapting old implementations to the new interface.
 
 
-  // The old SoyData has method equal(Object), while the new SoyValue has method equal(SoyValue).
-  // This adapts old implementations to the new interface.
-  @SuppressWarnings("deprecation")
-  @Override public boolean equals(SoyValue other) {
-    return equals((Object) other);
-  }
-
-
-  /**
-   * This was a required method in the old SoyData interface. For new data classes, please use
-   * interface SoyValue, which has the method equals(SoyValue).
-   *
-   * Compares this data object against another for equality in the sense of the operator '==' for
-   * Soy expressions.
-   *
-   * @param other The other data object to compare against.
-   * @return True if the two objects are equal.
-   */
-  // TODO: Maybe deprecate this method (even though it's a standard method).
-  @Override public abstract boolean equals(Object other);
-
-
   // The old SoyData has method toBoolean(), while the new SoyValue has method coerceToBoolean().
   // This adapts old implementations to the new interface.
   @SuppressWarnings("deprecation")
