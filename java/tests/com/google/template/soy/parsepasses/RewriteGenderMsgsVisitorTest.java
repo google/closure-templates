@@ -18,6 +18,8 @@ package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.Iterables;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
@@ -33,11 +35,9 @@ import junit.framework.TestCase;
  * Unit tests for RewriteGenderMsgsVisitor.
  *
  */
-public class RewriteGenderMsgsVisitorTest extends TestCase {
-
+public final class RewriteGenderMsgsVisitorTest extends TestCase {
 
   public void testCannotMixGendersAndSelect() {
-
     String soyCode = "" +
         "{msg genders=\"$userGender\" desc=\"Button text.\"}\n" +
         "  {select $targetGender}\n" +
@@ -46,15 +46,13 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    {default}Reply to them\n" +
         "  {/select}\n" +
         "{/msg}\n";
-    try {
-      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains(
-              "Cannot mix 'genders' attribute with 'select' command in the same message. Please use"
-              + " one or the other only.");
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+        .contains("Cannot mix 'genders' attribute with 'select' command in the same message.");
   }
 
 
@@ -91,7 +89,6 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
 
 
   public void testMaxTwoGendersWithPlural() {
-
     String soyCode = "" +
         "{msg genders=\"$userGender, $gender1, $gender2\" desc=\"\"}\n" +
         "  {plural $numPhotos}\n" +
@@ -99,15 +96,14 @@ public class RewriteGenderMsgsVisitorTest extends TestCase {
         "    {default}Find {$name1}'s face in {$name2}'s photos\n" +
         "  {/plural}\n" +
         "{/msg}\n";
-    try {
-      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains(
-              "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions"
-              + " (otherwise, combinatorial explosion would cause a gigantic generated message).");
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
+        "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions"
+            + " (otherwise, combinatorial explosion would cause a gigantic generated message).");
   }
 
 

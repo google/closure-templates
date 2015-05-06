@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
@@ -47,6 +48,11 @@ import javax.annotation.Nullable;
  */
 public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  private static final SoyError GENDER_AND_SELECT_NOT_ALLOWED = SoyError.of(
+      "Cannot mix ''genders'' attribute with ''select'' command in the same message.");
+  private static final SoyError MORE_THAN_TWO_GENDER_EXPRS = SoyError.of(
+      "In a msg with ''plural'', the ''genders'' attribute can contain at most 2 expressions "
+      + "(otherwise, combinatorial explosion would cause a gigantic generated message).");
 
   /** Fallback base select var name. */
   public static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";
@@ -80,18 +86,13 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
 
     // Check that 'genders' attribute and 'select' command are not used together.
     if (msg.getChild(0) instanceof MsgSelectNode) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "Cannot mix 'genders' attribute with 'select' command in the same message. Please use" +
-              " one or the other only.",
-          msg);
+      errorReporter.report(
+          msg.getChild(0).getSourceLocation(), GENDER_AND_SELECT_NOT_ALLOWED);
     }
 
     // If plural msg, check that there are max 2 genders.
     if (msg.getChild(0) instanceof MsgPluralNode && genderExprs.size() > 2) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions" +
-              " (otherwise, combinatorial explosion would cause a gigantic generated message).",
-          msg);
+      errorReporter.report(msg.getSourceLocation(), MORE_THAN_TWO_GENDER_EXPRS);
     }
 
     // ------ Do the rewrite. ------
