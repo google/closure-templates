@@ -16,8 +16,12 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import com.google.common.collect.Iterables;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -26,66 +30,59 @@ import junit.framework.TestCase;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public class CheckTemplateVisibilityTest extends TestCase {
+public final class CheckTemplateVisibilityTest extends TestCase {
 
   public void testCallPrivateTemplateFromSameFile() {
-    assertNoVisibilityError("{namespace ns autoescape=\"strict\"}\n"
-        + "/** Private template. */\n"
-        + "{template .foo visibility=\"private\"}\n"
-        + "oops!\n"
-        + "{/template}\n"
-        + "/** Public template. */\n"
-        + "{template .bar}\n"
-        + "{call .foo /}\n"
-        + "{/template}");
+    SoyFileSetParserBuilder.forFileContents("{namespace ns autoescape=\"strict\"}\n"
+      + "/** Private template. */\n"
+      + "{template .foo visibility=\"private\"}\n"
+      + "oops!\n"
+      + "{/template}\n"
+      + "/** Public template. */\n"
+      + "{template .bar}\n"
+      + "{call .foo /}\n"
+      + "{/template}")
+        .doRunCheckingPasses(true)
+        .errorReporter(ExplodingErrorReporter.get())
+        .parse();
   }
 
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
-    assertVisibilityError(
-        "{namespace ns autoescape=\"strict\"}\n"
-        + "/** Private template. */\n"
-        + "{template .foo visibility=\"private\"}\n"
-        + "oops!\n"
-        + "{/template}",
-
-        "{namespace ns autoescape=\"strict\"}\n"
-        + "/** Public template. */\n"
-        + "{template .bar}\n"
-        + "{call .foo /}\n"
-        + "{/template}");
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forFileContents("{namespace ns autoescape=\"strict\"}\n"
+      + "/** Private template. */\n"
+      + "{template .foo visibility=\"private\"}\n"
+      + "oops!\n"
+      + "{/template}", "{namespace ns autoescape=\"strict\"}\n"
+      + "/** Public template. */\n"
+      + "{template .bar}\n"
+      + "{call .foo /}\n"
+      + "{/template}")
+        .doRunCheckingPasses(true)
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
+        "Template ns.foo has private visibility, not visible from here.");
   }
 
   public void testCallPrivateTemplateFromSameNamespaceAndDifferentFile() {
-    assertVisibilityError(
-        "{namespace ns autoescape=\"strict\"}\n"
-        + "/** Private template. */\n"
-        + "{template .foo visibility=\"private\"}\n"
-        + "oops!\n"
-        + "{/template}",
-
-        "{namespace ns2 autoescape=\"strict\"}\n"
-        + "/** Public template. */\n"
-        + "{template .bar}\n"
-        + "{call ns.foo /}\n"
-        + "{/template}");
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forFileContents("{namespace ns autoescape=\"strict\"}\n"
+      + "/** Private template. */\n"
+      + "{template .foo visibility=\"private\"}\n"
+      + "oops!\n"
+      + "{/template}", "{namespace ns2 autoescape=\"strict\"}\n"
+      + "/** Public template. */\n"
+      + "{template .bar}\n"
+      + "{call ns.foo /}\n"
+      + "{/template}")
+        .doRunCheckingPasses(true)
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
+        "Template ns.foo has private visibility, not visible from here.");
   }
 
-  private void assertVisibilityError(String... sources) {
-    try {
-      SoyFileSetParserBuilder.forFileContents(sources)
-          .doRunCheckingPasses(true)
-          .parse();
-      fail("expected a SoySyntaxException");
-    } catch (SoySyntaxException expected) {}
-  }
-
-  private void assertNoVisibilityError(String... sources) {
-    try {
-      SoyFileSetParserBuilder.forFileContents(sources)
-          .doRunCheckingPasses(true)
-          .parse();
-    } catch (SoySyntaxException e) {
-      fail();
-    }
-  }
 }

@@ -17,8 +17,8 @@
 package com.google.template.soy.sharedpasses;
 
 
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -37,12 +37,14 @@ import com.google.template.soy.soytree.Visibility;
  */
 public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
 
+  private static final SoyError CALLEE_NOT_VISIBLE = SoyError.of(
+    "Template {0} has {1} visibility, not visible from here.");
+
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
   /** Save the name of the file and template currently being visited. */
   private String currentFileName;
-  private String currentTemplateName;
 
   public CheckTemplateVisibility(ErrorReporter errorReporter) {
     super(errorReporter);
@@ -61,9 +63,7 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-    currentTemplateName = node.getTemplateName();
     visitChildren(node);
-    currentTemplateName = null;
   }
 
   @Override protected void visitCallNode(CallNode node) {
@@ -83,14 +83,11 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
     String calleeName = node.getCalleeName();
     TemplateNode definition = templateRegistry.getBasicTemplate(calleeName);
     if (definition != null && !isVisible(definition)) {
-      throw SoySyntaxException.createWithMetaInfo(
-          calleeName
-          + " [visibility=\""
-          + definition.getVisibility().getAttributeValue()
-          + "\"] not visible from here",
+      errorReporter.report(
           node.getSourceLocation(),
-          null /* srcLoc and filePath can't both be nonnull */,
-          currentTemplateName);
+          CALLEE_NOT_VISIBLE,
+          calleeName,
+          definition.getVisibility().getAttributeValue());
     }
   }
 
