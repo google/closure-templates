@@ -22,6 +22,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -30,7 +31,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Map;
@@ -48,6 +48,9 @@ import javax.inject.Inject;
  *
  */
 public final class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  private static final SoyError UNKNOWN_PRINT_DIRECTIVE = SoyError.of(
+      "Unknown print directive ''{0}''.");
 
   /** Map of all SoyPrintDirectives (name to directive). */
   private final Map<String, SoyPrintDirective> soyDirectivesMap;
@@ -94,10 +97,9 @@ public final class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void>
     for (PrintDirectiveNode directiveNode : Lists.newArrayList(node.getChildren()) /*copy*/) {
       SoyPrintDirective directive = soyDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Failed to find SoyPrintDirective with name '" + directiveNode.getName() + "'" +
-                " (tag " + node.toSourceString() + ")",
-            directiveNode);
+        errorReporter.report(
+            directiveNode.getSourceLocation(), UNKNOWN_PRINT_DIRECTIVE, directiveNode.getName());
+        continue; // Proceeding would cause NullPointerExceptions.
       }
       if (directive.shouldCancelAutoescape()) {
         shouldCancelAutoescape = true;
