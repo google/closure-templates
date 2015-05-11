@@ -19,8 +19,9 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -34,11 +35,11 @@ import junit.framework.TestCase;
  * Unit tests for CheckCallingParamTypesVisitor.
  *
  */
-public class CheckCallingParamTypesVisitorTest extends TestCase {
+public final class CheckCallingParamTypesVisitorTest extends TestCase {
 
   public void testArgumentTypeMismatch() {
     assertInvalidSoyFiles(
-        "Argument type mismatch",
+        "Type mismatch on param p1: expected: int, actual: html.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -56,7 +57,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/template}\n");
 
     assertInvalidSoyFiles(
-        "Argument type mismatch",
+        "Type mismatch on param p1: expected: int, actual: html.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -78,7 +79,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
 
   public void testArgumentTypeMismatch_fixWithCheckNotNull() {
     assertInvalidSoyFiles(
-        "Argument type mismatch",
+        "Type mismatch on param h1: expected: html, actual: html|null.",
         Joiner.on('\n').join(
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}",
             "",
@@ -118,7 +119,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
   public void testArgumentTypeMismatchInDelcall() {
 
     assertInvalidSoyFiles(
-        "Argument type mismatch",
+        "Type mismatch on param p1: expected: int, actual: html.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -136,7 +137,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
             "{/deltemplate}\n");
 
     assertInvalidSoyFiles(
-        "Argument type mismatch",
+        "Type mismatch on param p1: expected: int, actual: html.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -239,7 +240,7 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
 
   public void testIndirectParams() {
     assertInvalidSoyFiles(
-        "Argument type mismatch",
+        "Type mismatch on param p1: expected: int, actual: html.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -343,13 +344,10 @@ public class CheckCallingParamTypesVisitorTest extends TestCase {
         .errorReporter(boom)
         .parse();
     new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
-    try {
-      // TODO(user): even though the visitor has an error reporter, it doesn't *use* the error
-      // reporter yet. Remove this try-catch once it does.
-      new CheckCallingParamTypesVisitor(boom).exec(soyTree);
-      fail("Exception expected");
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new CheckCallingParamTypesVisitor(errorReporter).exec(soyTree);
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+        .contains(expectedErrorMsgSubstr);
   }
 }
