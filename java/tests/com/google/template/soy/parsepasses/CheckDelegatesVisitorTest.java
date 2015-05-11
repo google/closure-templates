@@ -125,7 +125,8 @@ public final class CheckDelegatesVisitorTest extends TestCase {
   public void testErrorParamsMismatch() {
     assertInvalidSoyFiles(
             "Found delegate template with same name 'MagicButton' " +
-            "but different param declarations compared to the definition at no-path-2:5:1.",
+            "but different param declarations compared to the " +
+            "definition at no-path-2:5:1.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -148,8 +149,8 @@ public final class CheckDelegatesVisitorTest extends TestCase {
             "{/deltemplate}\n");
 
     assertInvalidSoyFiles(
-        "Found delegate template with same name 'MagicButton' but different param declarations" +
-            " compared to the definition at no-path-2:5:1.",
+        "Found delegate template with same name 'MagicButton' but different param " +
+            "declarations compared to the definition at no-path-2:5:1.",
         "" +
             "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
             "\n" +
@@ -188,6 +189,23 @@ public final class CheckDelegatesVisitorTest extends TestCase {
             "  something\n" +
             "{/deltemplate}\n");
   }
+
+  public void testOkNonRequiredParamsMismatchAcrossVariants() {
+
+    assertValidSoyFiles(
+        "" +
+            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
+            "\n" +
+            "/***/\n" +  // no params
+            "{deltemplate MagicButton}\n" +
+            "  vanilla\n" +
+            "{/deltemplate}\n" +
+            "/** @param? foo */\n" +  // an optional param
+            "{deltemplate MagicButton variant=\"'something'\"}\n" +
+            "  something\n" +
+            "{/deltemplate}\n");
+  }
+
 
   public void testAllowPublicBasicTemplateInDelegatePackage() {
     assertValidSoyFiles(

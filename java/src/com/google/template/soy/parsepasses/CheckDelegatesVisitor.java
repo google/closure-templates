@@ -38,6 +38,8 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -122,7 +124,7 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     for (Iterable<DelTemplateKey> delTemplateKeys : delTemplateNameToKeysMap.asMap().values()) {
 
       TemplateDelegateNode firstDelTemplate = null;
-      Set<TemplateParam> firstParamSet = null;
+      Set<TemplateParam> firstRequiredParamSet = null;
       ContentKind firstContentKind = null;
 
       // Then, loop over keys that share the same name (effectively, over variants):
@@ -135,12 +137,12 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
             if (firstDelTemplate == null) {
               // First template encountered.
               firstDelTemplate = delTemplate;
-              firstParamSet = Sets.newHashSet(delTemplate.getParams());
+              firstRequiredParamSet = getRequiredParamSet(delTemplate);
               firstContentKind = delTemplate.getContentKind();
             } else {
               // Not first template encountered.
-              Set<TemplateParam> currParamSet = Sets.newHashSet(delTemplate.getParams());
-              if (!currParamSet.equals(firstParamSet)) {
+              Set<TemplateParam> currRequiredParamSet = getRequiredParamSet(delTemplate);
+              if (!currRequiredParamSet.equals(firstRequiredParamSet)) {
                 errorReporter.report(
                     delTemplate.getSourceLocation(),
                     DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS,
@@ -168,6 +170,17 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
         }
       }
     }
+  }
+
+
+  private static Set<TemplateParam> getRequiredParamSet(TemplateDelegateNode delTemplate) {
+    Set<TemplateParam> paramSet = new HashSet<>();
+    for (TemplateParam param : delTemplate.getParams()) {
+      if (param.isRequired()) {
+        paramSet.add(param);
+      }
+    }
+    return paramSet;
   }
 
 
