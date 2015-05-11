@@ -168,7 +168,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   // Implementation for a dummy root node.
 
   @Override protected JsExpr visitExprRootNode(ExprRootNode node) {
-    return visit(node.getChild(0));
+    return visit(node.getRoot());
   }
 
   // -----------------------------------------------------------------------------------------------

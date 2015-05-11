@@ -1030,7 +1030,7 @@ public final class GenerateParseInfoVisitor
 
     @Override protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
-      ExprNode expr = node.getChild(0);
+      ExprNode expr = node.getRoot();
       node.setType(expr.getType());
     }
 

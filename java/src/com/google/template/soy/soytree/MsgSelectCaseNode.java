@@ -106,7 +106,7 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
               .parseExpression());
 
       // Make sure the expression is a string.
-      if (!(strLit.numChildren() == 1 && strLit.getChild(0) instanceof StringNode)) {
+      if (!(strLit.numChildren() == 1 && strLit.getRoot() instanceof StringNode)) {
         errorReporter.report(sourceLocation, INVALID_STRING_FOR_SELECT_CASE);
       }
 
@@ -114,7 +114,7 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
         return error();
       }
 
-      String caseValue = ((StringNode) (strLit.getChild(0))).getValue();
+      String caseValue = ((StringNode) (strLit.getRoot())).getValue();
       return new MsgSelectCaseNode(id, sourceLocation, commandText, caseValue);
     }
   }

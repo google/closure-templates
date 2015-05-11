@@ -113,7 +113,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
 
   @Override protected PyExpr visitExprRootNode(ExprRootNode node) {
-    return visit(node.getChild(0));
+    return visit(node.getRoot());
   }
 
 

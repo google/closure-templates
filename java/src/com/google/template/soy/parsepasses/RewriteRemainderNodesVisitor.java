@@ -62,8 +62,8 @@ public final class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<V
     }
 
     // Check for the function node with the function "remainder()".
-    if (exprRootNode.getChild(0) instanceof FunctionNode) {
-      FunctionNode functionNode = (FunctionNode) exprRootNode.getChild(0);
+    if (exprRootNode.getRoot() instanceof FunctionNode) {
+      FunctionNode functionNode = (FunctionNode) exprRootNode.getRoot();
       if (functionNode.getFunctionName().equals("remainder")) {
 
         if (currPluralNode == null) {

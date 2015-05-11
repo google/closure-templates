@@ -135,7 +135,7 @@ class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
       return;  // don't replace this node
     }
 
-    ExprNode expr = node.getExprUnion().getExpr().getChild(0);
+    ExprNode expr = node.getExprUnion().getExpr().getRoot();
     if (!(expr instanceof FunctionNode)) {
       return;  // don't replace this node
     }

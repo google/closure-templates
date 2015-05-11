@@ -210,7 +210,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
     if (delTemplateVariantExpr == null || delTemplateVariantExpr.numChildren() != 1) {
       throw invalidExpressionError();
     }
-    ExprNode exprNode = delTemplateVariantExpr.getChild(0);
+    ExprNode exprNode = delTemplateVariantExpr.getRoot();
     if (exprNode instanceof IntegerNode) {
       // Globals were already substituted: We may now create the definitive variant and key fields
       // on this node.

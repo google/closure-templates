@@ -125,7 +125,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     }
 
     return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-        exprRoot.getChild(0), FALLBACK_BASE_PLACEHOLDER_NAME);
+        exprRoot.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
 

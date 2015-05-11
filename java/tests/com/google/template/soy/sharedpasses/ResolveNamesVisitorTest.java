@@ -147,9 +147,9 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(firstLet.getVar().localVariableIndex()).isEqualTo(0);
     assertThat(secondLet.getVar().localVariableIndex()).isEqualTo(1);
     assertThat(thirdLet.getVar().localVariableIndex()).isEqualTo(2);
-    assertThat(((VarRefNode) secondLet.getValueExpr().getChild(0)).getDefnDecl())
+    assertThat(((VarRefNode) secondLet.getValueExpr().getRoot()).getDefnDecl())
         .isEqualTo(firstLet.getVar());
-    assertThat(((VarRefNode) thirdLet.getValueExpr().getChild(0)).getDefnDecl())
+    assertThat(((VarRefNode) thirdLet.getValueExpr().getRoot()).getDefnDecl())
         .isEqualTo(secondLet.getVar());
   }
 

@@ -149,7 +149,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
 
   @Override protected SoyValue visitExprRootNode(ExprRootNode node) {
-    return visit(node.getChild(0));
+    return visit(node.getRoot());
   }
 
 

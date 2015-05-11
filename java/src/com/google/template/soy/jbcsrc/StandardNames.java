@@ -25,6 +25,7 @@ final class StandardNames {
   static final String STATE_FIELD = "$state";
   static final String RENDER_CONTEXT_FIELD = "$renderContext";
   static final String CURRENT_CALLEE_FIELD = "$currentCallee";
+  static final String CURRENT_RENDEREE_FIELD = "$currentRenderee";
 
   static final String FACTORY_CLASS = "Factory";
 

@@ -34,6 +34,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
 import com.google.common.base.Enums;
+import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -41,7 +42,7 @@ import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
@@ -150,19 +151,27 @@ final class LazyClosureCompiler {
   private final InnerClasses innerClasses;
   private final VariableLookup parentVariables;
   private final ErrorReporter errorReporter;
+  private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
 
   LazyClosureCompiler(
       CompiledTemplateRegistry registry, 
       InnerClasses innerClasses,
       VariableLookup parentVariables, 
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariables = parentVariables;
     this.errorReporter = errorReporter;
+    this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
   }
   
-  Expression compileLazyExpression(SoyNode declaringNode, String varName, ExprRootNode exprNode) {
+  Expression compileLazyExpression(SoyNode declaringNode, String varName, ExprNode exprNode) {
+    Optional<Expression> asSoyValueProvider =
+        expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
+    if (asSoyValueProvider.isPresent()) {
+      return asSoyValueProvider.get();
+    }
     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
     ClassVisitor visitor = new CheckClassAdapter(writer, false);
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
@@ -178,8 +187,9 @@ final class LazyClosureCompiler {
     return expr;
   }
 
-  Expression compileLazyContent(
-      RenderUnitNode renderUnit, String varName) {
+  Expression compileLazyContent(RenderUnitNode renderUnit, String varName) {
+    // TODO(lukes): consider adding an optimization for renderUnits that only contain RawTextNodes
+    // they do exist!
     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
     ClassVisitor visitor = new CheckClassAdapter(writer, false);
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
@@ -222,7 +232,7 @@ final class LazyClosureCompiler {
           new String[] {});
     }
 
-    Expression compileExpression(ExprRootNode exprNode) {
+    Expression compileExpression(ExprNode exprNode) {
       final Label start = new Label();
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);

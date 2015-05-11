@@ -140,7 +140,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       // operator and the declaredSyntaxVersion is 2.3+ (meaning we resolved the 'or' output to be
       // type bool).
       if (declaredSyntaxVersion.num >= SyntaxVersion.V2_3.num &&
-          expr.getChild(0) instanceof OrOpNode) {
+          expr.getRoot() instanceof OrOpNode) {
         errorMsg += " (if you're intending the 'or' operator to return one of the operands" +
             " instead of bool, please use the binary null-coalescing operator '?:' instead)";
       }
@@ -368,7 +368,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
     @Override protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
-      ExprNode expr = node.getChild(0);
+      ExprNode expr = node.getRoot();
       node.setType(expr.getType());
       tryApplySubstitution(node);
     }
@@ -931,7 +931,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitExprRootNode(ExprRootNode node) {
-      visitAndImplicitlyCastToBoolean(node.getChild(0));
+      visitAndImplicitlyCastToBoolean(node.getRoot());
     }
 
     void visitAndImplicitlyCastToBoolean(ExprNode node) {

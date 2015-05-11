@@ -78,16 +78,13 @@ public class LazyClosureCompilerTest extends TestCase {
     RenderResult result = template.render(output, EMPTY_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());  // we found bar!
-    // Nothing :(  This should be 'hello' but unfortunately we always force full resolution of
-    // SoyValueProviders in order to print.  There is a TODO in SoyNodeCompiler.visitPrintNode about
-    // this.
-    assertEquals("", output.toString());
+    assertEquals("hello ", output.toString());
 
     // make sure no progress is made
     result = template.render(output, EMPTY_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());
-    assertEquals("", output.toString());
+    assertEquals("hello ", output.toString());
     bar.set("bar");
 
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
@@ -144,7 +141,9 @@ public class LazyClosureCompilerTest extends TestCase {
 
   public void testLetValueNodeStructure() {
     // make sure we don't break normal reflection apis
-    CompiledTemplate.Factory factory = compileTemplateBody("{let $foo : 1 /}");
+    CompiledTemplate.Factory factory = compileTemplateBody(
+        "{let $bar : 'a' /}",
+        "{let $foo : $bar + 1 /}");
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     
     assertThat(template.getClass().getDeclaredClasses()).asList().hasSize(2);

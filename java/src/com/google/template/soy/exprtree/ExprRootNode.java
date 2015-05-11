@@ -34,7 +34,7 @@ public final class ExprRootNode extends AbstractParentExprNode {
   public static List<ExprNode> unwrap(Iterable<ExprRootNode> exprs) {
     ImmutableList.Builder<ExprNode> builder = ImmutableList.builder();
     for (ExprRootNode expr : exprs) {
-      builder.add(expr.getChild(0));
+      builder.add(expr.getRoot());
     }
     return builder.build();
   }
@@ -70,6 +70,9 @@ public final class ExprRootNode extends AbstractParentExprNode {
     return Kind.EXPR_ROOT_NODE;
   }
 
+  public ExprNode getRoot() {
+    return getChild(0);
+  }
 
   @Override public ExprNode getChild(int index) {
     Preconditions.checkArgument(index == 0);
@@ -78,7 +81,7 @@ public final class ExprRootNode extends AbstractParentExprNode {
 
 
   @Override public String toSourceString() {
-    return getChild(0).toSourceString();
+    return getRoot().toSourceString();
   }
 
 

@@ -68,7 +68,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     // really be parsed in CallNode.
     baseSelectVarName =
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME);
+            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
 
@@ -90,7 +90,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     this.selectExpr = selectExpr;
     this.baseSelectVarName = (baseSelectVarName != null) ? baseSelectVarName :
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME);
+            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
 

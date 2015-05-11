@@ -249,4 +249,36 @@ public final class DetachStateTest extends TestCase {
     assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
     assertEquals("prefix foo suffix", output.toString());
   }
+
+  public void testDetachOnParamTransclusion() throws IOException {
+    CompiledTemplate.Factory factory = TemplateTester.compileFile(
+        "{namespace ns autoescape=\"strict\"}",
+        "",
+        "/** */",
+        "{template .caller}",
+        "  {@param callerParam : string}",
+        "  {call .callee}",
+        "    {param calleeParam}",
+        "      prefix {$callerParam} suffix",
+        "    {/param}",
+        "  {/call}",
+        "{/template}",
+        "",
+        "/** */",
+        "{template .callee}",
+        "  {@param calleeParam : string}",
+        "  {$calleeParam}",
+        "{/template}",
+        ""
+        ).getTemplateFactory("ns.caller");
+    SettableFuture<String> param = SettableFuture.create();
+    SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
+    CompiledTemplate template = factory.create(params, EMPTY_DICT);
+    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    assertEquals(RenderResult.continueAfter(param), template.render(output, EMPTY_CONTEXT));
+    assertEquals("prefix ", output.toString());
+    param.set("foo");
+    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals("prefix foo suffix", output.toString());
+  }
 }

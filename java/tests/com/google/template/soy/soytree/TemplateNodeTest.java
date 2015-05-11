@@ -409,11 +409,11 @@ public class TemplateNodeTest extends TestCase {
     ExprUnion exprUnion = exprUnions.get(0);
     assertEquals("test.GLOBAL_CONSTANT", exprUnion.getExprText());
     assertEquals(1, exprUnion.getExpr().numChildren());
-    assertTrue(exprUnion.getExpr().getChild(0) instanceof GlobalNode);
+    assertTrue(exprUnion.getExpr().getRoot() instanceof GlobalNode);
     // Substitute the global expression.
     exprUnion.getExpr().replaceChild(
         0,
-        new IntegerNode(123, exprUnion.getExpr().getChild(0).getSourceLocation()));
+        new IntegerNode(123, exprUnion.getExpr().getRoot().getSourceLocation()));
     // Check the new values.
     assertEquals("123", node.getDelTemplateVariant());
     assertEquals("123", node.getDelTemplateKey().variant);

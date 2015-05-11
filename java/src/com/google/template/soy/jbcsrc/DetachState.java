@@ -229,7 +229,7 @@ final class DetachState implements ExpressionDetacher.Factory {
    * @param callRender an Expression that can generate code to call the render method, should be
    *     safe to generate more than once. 
    */
-  Statement detachForCall(final Expression callRender) {
+  Statement detachForRender(final Expression callRender) {
     checkArgument(callRender.resultType().equals(Type.getType(RenderResult.class)));
     final Label reattachRender = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();

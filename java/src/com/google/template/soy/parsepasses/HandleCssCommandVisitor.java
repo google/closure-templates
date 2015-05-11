@@ -117,7 +117,7 @@ public final class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> 
         if (newPrintNode.getExprUnion().getExpr() == null) {
           isInvalidExpr = true;
         } else {
-          ExprNode exprNode = newPrintNode.getExprUnion().getExpr().getChild(0);
+          ExprNode exprNode = newPrintNode.getExprUnion().getExpr().getRoot();
           if (!(exprNode instanceof GlobalNode || exprNode instanceof VarRefNode ||
               exprNode instanceof DataAccessNode)) {
             isInvalidExpr = true;

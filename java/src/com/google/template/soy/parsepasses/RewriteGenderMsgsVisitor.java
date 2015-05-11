@@ -117,10 +117,10 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
       // Check whether the generated base name would be the same (both for the old naive algorithm
       // and the new algorithm). If so, then there's no need to specify the baseSelectVarName.
       if (MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-          genderExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME)
+          genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)
           && MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
-              genderExpr.getChild(0), FALLBACK_BASE_SELECT_VAR_NAME)
+              genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)) {
         baseSelectVarName = null;
       }

@@ -18,9 +18,11 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
+import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
@@ -208,6 +210,8 @@ final class VariableSet {
   private final LocalVariable thisVar;
   // Allocated lazily
   @Nullable private FieldRef currentCalleeField; 
+  // Allocated lazily
+  @Nullable private FieldRef currentRendereeField; 
 
   /**
    * @param owner The type that is the owner of the method being generated
@@ -219,6 +223,7 @@ final class VariableSet {
       Method method) {
     this.fieldNames = fieldNames;
     this.fieldNames.claimName(CURRENT_CALLEE_FIELD);
+    this.fieldNames.claimName(CURRENT_RENDEREE_FIELD);
     this.owner = owner;
     this.thisVar = thisVar;
     availableSlots.set(0);   // for 'this'
@@ -311,10 +316,13 @@ final class VariableSet {
     if (currentCalleeField != null) {
       currentCalleeField.defineField(writer);
     }
+    if (currentRendereeField != null) {
+      currentRendereeField.defineField(writer);
+    }
   }
 
   /**
-   * Returns the field that holds the current callee template (if any).
+   * Returns the field that holds the current callee template.
    * 
    * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
    * restoring the current callee to a local.
@@ -324,6 +332,21 @@ final class VariableSet {
     if (local == null) {
       local = currentCalleeField = 
           FieldRef.createField(owner, CURRENT_CALLEE_FIELD, CompiledTemplate.class);
+    }
+    return local;
+  }
+
+  /**
+   * Returns the field that holds the currently rendering SoyValueProvider.
+   * 
+   * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
+   * restoring the current renderee to a local.
+   */
+  FieldRef getCurrentRenderee() {
+    FieldRef local = currentRendereeField;
+    if (local == null) {
+      local = currentRendereeField = 
+          FieldRef.createField(owner, CURRENT_RENDEREE_FIELD, SoyValueProvider.class);
     }
     return local;
   }

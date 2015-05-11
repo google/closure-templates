@@ -755,11 +755,11 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(0, pn0.getChildren().size());
     assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
-    assertTrue(pn0.getExprUnion().getExpr().getChild(0) instanceof FieldAccessNode);
+    assertTrue(pn0.getExprUnion().getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn1 = (PrintNode) nodes.get(1);
     assertTrue(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
-    assertTrue(pn1.getExprUnion().getExpr().getChild(0) instanceof FieldAccessNode);
+    assertTrue(pn1.getExprUnion().getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertTrue(pn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -770,7 +770,7 @@ public final class TemplateParserTest extends TestCase {
     assertFalse(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_1));
     assertEquals("|noAutoescape", pn2d0.getName());
     assertEquals("XXX", pn2.genBasePhName());
-    assertTrue(pn2.getExprUnion().getExpr().getChild(0) instanceof PlusOpNode);
+    assertTrue(pn2.getExprUnion().getExpr().getRoot() instanceof PlusOpNode);
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertTrue(pn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -782,9 +782,9 @@ public final class TemplateParserTest extends TestCase {
     PrintDirectiveNode pn3d1 = pn3.getChild(1);
     assertTrue(pn3d1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|insertWordBreaks", pn3d1.getName());
-    assertEquals(8, ((IntegerNode) pn3d1.getArgs().get(0).getChild(0)).getValue());
+    assertEquals(8, ((IntegerNode) pn3d1.getArgs().get(0).getRoot()).getValue());
     assertEquals("XXX", pn3.genBasePhName());
-    assertTrue(pn3.getExprUnion().getExpr().getChild(0) instanceof StringNode);
+    assertTrue(pn3.getExprUnion().getExpr().getRoot() instanceof StringNode);
 
     assertFalse(pn0.genSamenessKey().equals(pn2.genSamenessKey()));
     assertFalse(pn3.genSamenessKey().equals(pn0.genSamenessKey()));
@@ -813,7 +813,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
     assertTrue(pn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(0, pn1.getChildren().size());
-    assertTrue(pn1.getExprUnion().getExpr().getChild(0) instanceof FieldAccessNode);
+    assertTrue(pn1.getExprUnion().getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertEquals("$boo.foo", pn2.getExprText());
@@ -1112,16 +1112,16 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("$zoo", in0icn0.getExprText());
     assertEquals(1, in0icn0.numChildren());
     assertEquals("$zoo", ((PrintNode) in0icn0.getChild(0)).getExprText());
-    assertTrue(in0icn0.getExprUnion().getExpr().getChild(0) instanceof VarRefNode);
+    assertTrue(in0icn0.getExprUnion().getExpr().getRoot() instanceof VarRefNode);
 
     IfNode in1 = (IfNode) nodes.get(1);
     assertEquals(3, in1.numChildren());
     IfCondNode in1icn0 = (IfCondNode) in1.getChild(0);
     assertEquals("$boo", in1icn0.getExprText());
-    assertTrue(in1icn0.getExprUnion().getExpr().getChild(0) instanceof VarRefNode);
+    assertTrue(in1icn0.getExprUnion().getExpr().getRoot() instanceof VarRefNode);
     IfCondNode in1icn1 = (IfCondNode) in1.getChild(1);
     assertEquals("$foo.goo > 2", in1icn1.getExprText());
-    assertTrue(in1icn1.getExprUnion().getExpr().getChild(0) instanceof GreaterThanOpNode);
+    assertTrue(in1icn1.getExprUnion().getExpr().getRoot() instanceof GreaterThanOpNode);
     assertEquals("", ((IfElseNode) in1.getChild(2)).getCommandText());
     assertEquals("{if $boo}Blah{elseif $foo.goo > 2}{$moo}{else}Blah {$moo}{/if}",
                  in1.toSourceString());
@@ -1145,25 +1145,25 @@ public final class TemplateParserTest extends TestCase {
 
     SwitchNode sn = (SwitchNode) nodes.get(0);
     assertEquals("$boo", sn.getExpr().toSourceString());
-    assertTrue(sn.getExpr().getChild(0) instanceof VarRefNode);
+    assertTrue(sn.getExpr().getRoot() instanceof VarRefNode);
     assertEquals(4, sn.numChildren());
 
     SwitchCaseNode scn0 = (SwitchCaseNode) sn.getChild(0);
     assertEquals("0", scn0.getExprListText());
     assertEquals(1, scn0.getExprList().size());
-    assertTrue(scn0.getExprList().get(0).getChild(0) instanceof IntegerNode);
+    assertTrue(scn0.getExprList().get(0).getRoot() instanceof IntegerNode);
 
     SwitchCaseNode scn1 = (SwitchCaseNode) sn.getChild(1);
     assertEquals("$foo.goo", scn1.getExprListText());
     assertEquals(1, scn1.getExprList().size());
-    assertTrue(scn1.getExprList().get(0).getChild(0) instanceof FieldAccessNode);
+    assertTrue(scn1.getExprList().get(0).getRoot() instanceof FieldAccessNode);
 
     SwitchCaseNode scn2 = (SwitchCaseNode) sn.getChild(2);
     assertEquals("-1, 1, $moo", scn2.getExprListText());
     assertEquals(3, scn2.getExprList().size());
-    assertTrue(scn2.getExprList().get(0).getChild(0) instanceof NegativeOpNode);
-    assertTrue(scn2.getExprList().get(1).getChild(0) instanceof IntegerNode);
-    assertTrue(scn2.getExprList().get(2).getChild(0) instanceof VarRefNode);
+    assertTrue(scn2.getExprList().get(0).getRoot() instanceof NegativeOpNode);
+    assertTrue(scn2.getExprList().get(1).getRoot() instanceof IntegerNode);
+    assertTrue(scn2.getExprList().get(2).getRoot() instanceof VarRefNode);
     assertEquals("Bluh", ((RawTextNode) scn2.getChild(0)).getRawText());
 
     assertEquals(
@@ -1193,7 +1193,7 @@ public final class TemplateParserTest extends TestCase {
 
     ForeachNode fn0 = (ForeachNode) nodes.get(0);
     assertEquals("$goose", fn0.getExprText());
-    assertTrue(fn0.getExpr().getChild(0) instanceof VarRefNode);
+    assertTrue(fn0.getExpr().getRoot() instanceof VarRefNode);
     assertEquals(1, fn0.numChildren());
 
     ForeachNonemptyNode fn0fnn0 = (ForeachNonemptyNode) fn0.getChild(0);
@@ -1204,7 +1204,7 @@ public final class TemplateParserTest extends TestCase {
 
     ForeachNode fn1 = (ForeachNode) nodes.get(1);
     assertEquals("$foo.booze", fn1.getExprText());
-    assertTrue(fn1.getExpr().getChild(0) instanceof FieldAccessNode);
+    assertTrue(fn1.getExpr().getRoot() instanceof FieldAccessNode);
     assertEquals(2, fn1.numChildren());
 
     ForeachNonemptyNode fn1fnn0 = (ForeachNonemptyNode) fn1.getChild(0);
@@ -1241,8 +1241,8 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("1", rangeArgs.start().get().toSourceString());
     assertEquals("$itemsLength + 1", rangeArgs.limit().toSourceString());
 
-    assertThat(rangeArgs.start().get().getChild(0)).isInstanceOf(IntegerNode.class);
-    assertThat(rangeArgs.limit().getChild(0)).isInstanceOf(PlusOpNode.class);
+    assertThat(rangeArgs.start().get().getRoot()).isInstanceOf(IntegerNode.class);
+    assertThat(rangeArgs.limit().getRoot()).isInstanceOf(PlusOpNode.class);
 
     assertEquals(1, fn.numChildren());
     MsgNode mn = ((MsgFallbackGroupNode) ((ForNode) nodes.get(0)).getChild(0)).getChild(0);
@@ -1302,7 +1302,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(".zooTemplate", cn2.getSrcCalleeName());
     assertEquals(true, cn2.dataAttribute().isPassingData());
     assertEquals(false, cn2.dataAttribute().isPassingAllData());
-    assertTrue(cn2.dataAttribute().dataExpr().getChild(0) != null);
+    assertTrue(cn2.dataAttribute().dataExpr().getRoot() != null);
     assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
     assertEquals(3, cn2.numChildren());
 
@@ -1310,7 +1310,7 @@ public final class TemplateParserTest extends TestCase {
       final CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
       assertEquals("yoo", cn2cpvn0.getKey());
       assertEquals("round($too)", cn2cpvn0.getValueExprText());
-      assertTrue(cn2cpvn0.getValueExprUnion().getExpr().getChild(0) instanceof FunctionNode);
+      assertTrue(cn2cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
     }
 
     {
@@ -1344,7 +1344,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(".zooTemplate", cn4.getSrcCalleeName());
     assertEquals(true, cn4.dataAttribute().isPassingData());
     assertEquals(false, cn4.dataAttribute().isPassingAllData());
-    assertTrue(cn4.dataAttribute().dataExpr().getChild(0) != null);
+    assertTrue(cn4.dataAttribute().dataExpr().getRoot() != null);
     assertEquals("$animals", cn4.dataAttribute().dataExpr().toSourceString());
     assertEquals(4, cn4.numChildren());
 
@@ -1352,7 +1352,7 @@ public final class TemplateParserTest extends TestCase {
       final CallParamValueNode cn4cpvn0 = (CallParamValueNode) cn4.getChild(0);
       assertEquals("yoo", cn4cpvn0.getKey());
       assertEquals("round($too)", cn4cpvn0.getValueExprText());
-      assertTrue(cn4cpvn0.getValueExprUnion().getExpr().getChild(0) instanceof FunctionNode);
+      assertTrue(cn4cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
     }
 
     {
@@ -1415,14 +1415,14 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.dataAttribute().isPassingData());
     assertEquals(false, cn2.dataAttribute().isPassingAllData());
-    assertTrue(cn2.dataAttribute().dataExpr().getChild(0) != null);
+    assertTrue(cn2.dataAttribute().dataExpr().getRoot() != null);
     assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
     assertEquals(2, cn2.numChildren());
 
     CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
     assertEquals("yoo", cn2cpvn0.getKey());
     assertEquals("round($too)", cn2cpvn0.getValueExprText());
-    assertTrue(cn2cpvn0.getValueExprUnion().getExpr().getChild(0) instanceof FunctionNode);
+    assertTrue(cn2cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
 
     CallParamContentNode cn2cpcn1 = (CallParamContentNode) cn2.getChild(1);
     assertEquals("woo", cn2cpcn1.getKey());
@@ -1461,7 +1461,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.dataAttribute().isPassingData());
     assertEquals(false, cn2.dataAttribute().isPassingAllData());
-    assertTrue(cn2.dataAttribute().dataExpr().getChild(0) != null);
+    assertTrue(cn2.dataAttribute().dataExpr().getRoot() != null);
     assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
     assertEquals(1, cn2.numChildren());
 

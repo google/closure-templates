@@ -93,7 +93,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
       if (valueExprRoot == null) {
         return;
       }
-      VarRefNode valueDataRef = (VarRefNode) valueExprRoot.getChild(0);
+      VarRefNode valueDataRef = (VarRefNode) valueExprRoot.getRoot();
       if (valueDataRef.isLocalVar() || valueDataRef.isInjected()) {
         return;
       }

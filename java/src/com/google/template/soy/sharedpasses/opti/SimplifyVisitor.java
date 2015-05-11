@@ -342,7 +342,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   private static boolean isConstant(ExprRootNode exprRoot) {
-    return exprRoot != null && exprRoot.getChild(0) instanceof PrimitiveNode;
+    return exprRoot != null && exprRoot.getRoot() instanceof PrimitiveNode;
   }
 
 
@@ -352,7 +352,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
       return null;
     }
 
-    ExprNode expr = exprRoot.getChild(0);
+    ExprNode expr = exprRoot.getRoot();
     switch (expr.getKind()) {
       case NULL_NODE: return NullData.INSTANCE;
       case BOOLEAN_NODE: return BooleanData.forValue(((BooleanNode) expr).getValue());

@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
 import com.google.common.primitives.Primitives;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
@@ -33,6 +34,8 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.Printer;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -375,6 +378,53 @@ final class BytecodeUtils {
   }
 
   /**
+   * Returns an expression that evaluates to {@code left} if left is non null, and evaluates to
+   * {@code right} otherwise. 
+   */
+  static Expression firstNonNull(final Expression left, final Expression right) {
+    checkArgument(left.resultType().getSort() == Type.OBJECT);
+    checkArgument(right.resultType().getSort() == Type.OBJECT);
+    return new SimpleExpression(left.resultType(), 
+        left.isConstant() && right.isConstant()) {
+      @Override void doGen(CodeBuilder cb) {
+        Label leftIsNonNull = new Label();
+        left.gen(cb);                   // Stack: L
+        cb.dup();                       // Stack: L, L
+        cb.ifNonNull(leftIsNonNull);    // Stack: L
+        // pop the extra copy of left
+        cb.pop();                       // Stack:  
+        right.gen(cb);                  // Stack: R
+        cb.mark(leftIsNonNull);         // At this point the stack has an instance of L or R
+      }
+    };
+  }
+  
+  /**
+   * Returns an expression that evaluates equivalently to a java ternary expression: 
+   * {@code condition ? left : right}
+   */
+  static Expression ternary(final Expression condition, 
+      final Expression trueBranch, 
+      final Expression falseBranch) {
+    checkArgument(condition.resultType().equals(Type.BOOLEAN_TYPE));
+    checkArgument(trueBranch.resultType().getSort() == falseBranch.resultType().getSort());
+    return new SimpleExpression(trueBranch.resultType(), 
+        condition.isConstant() && trueBranch.isConstant() && falseBranch.isConstant()) {
+      @Override void doGen(CodeBuilder mv) {
+        condition.gen(mv);
+        Label ifFalse = new Label();
+        Label end = new Label();
+        mv.visitJumpInsn(Opcodes.IFEQ, ifFalse);  // if 0 goto ifFalse
+        trueBranch.gen(mv);  // eval true branch
+        mv.visitJumpInsn(Opcodes.GOTO, end);  // jump to the end
+        mv.visitLabel(ifFalse);
+        falseBranch.gen(mv);  // eval false branch
+        mv.visitLabel(end);
+      }
+    };
+  }
+
+  /**
    * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
    * expressions.
    */
@@ -436,5 +486,70 @@ final class BytecodeUtils {
         adapter.mark(end);
       }
     };
+  }
+
+  /**
+   * Returns an expression that returns a new {@link ArrayList} containing all the given items.
+   */
+  static Expression newArrayList(Iterable<? extends Expression> items) {
+    final ImmutableList<Expression> copy = ImmutableList.copyOf(items);
+    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
+        .construct(constant(copy.size()));
+    return new SimpleExpression(Type.getType(List.class), false) {
+      @Override void doGen(CodeBuilder mv) {
+        construct.gen(mv);
+        for (Expression child : copy) {
+          mv.dup();
+          child.gen(mv);
+          MethodRef.ARRAY_LIST_ADD.invokeUnchecked(mv);
+          mv.pop();  // pop the bool result of arraylist.add
+        }
+      }
+    };
+  }
+
+  /**
+   * Returns an expression that returns a new {@link LinkedHashMap} containing all the given 
+   * entries.
+   */
+  static Expression newLinkedHashMap(
+      Iterable<? extends Expression> keys, 
+      Iterable<? extends Expression> values) {
+    final ImmutableList<Expression> keysCopy = ImmutableList.copyOf(keys);
+    final ImmutableList<Expression> valuesCopy = ImmutableList.copyOf(values);
+    checkArgument(keysCopy.size() == valuesCopy.size());
+    for (int i = 0; i < keysCopy.size(); i++) {
+      checkArgument(keysCopy.get(i).resultType().getSort() == Type.OBJECT);
+      checkArgument(valuesCopy.get(i).resultType().getSort() == Type.OBJECT);
+    }
+    final Expression construct = ConstructorRef.LINKED_HASH_MAP_SIZE
+        .construct(constant(hashMapCapacity(keysCopy.size())));
+    return new SimpleExpression(Type.getType(LinkedHashMap.class), false) {
+      @Override void doGen(CodeBuilder mv) {
+        construct.gen(mv);
+        for (int i = 0; i < keysCopy.size(); i++) {
+          Expression key = keysCopy.get(i);
+          Expression value = valuesCopy.get(i);
+          mv.dup();
+          key.gen(mv);
+          value.gen(mv);
+          MethodRef.LINKED_HASH_MAP_PUT.invokeUnchecked(mv);
+          mv.pop();  // pop the Object result of map.put
+        }
+      }
+    };
+  }
+  
+  private static int hashMapCapacity(int expectedSize) {
+    if (expectedSize < 3) {
+      return expectedSize + 1;
+    }
+    if (expectedSize < Ints.MAX_POWER_OF_TWO) {
+      // This is the calculation used in JDK8 to resize when a putAll
+      // happens; it seems to be the most conservative calculation we
+      // can make.  0.75 is the default load factor.
+      return (int) (expectedSize / 0.75F + 1.0F);
+    }
+    return Integer.MAX_VALUE; // any large value
   }
 }

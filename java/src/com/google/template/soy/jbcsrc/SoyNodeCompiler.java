@@ -106,6 +106,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       VariableLookup variables,
       ErrorReporter errorReporter) {
     DetachState detachState = new DetachState(variableSet, thisVar, stateField);
+    ExpressionCompiler expressionCompiler = 
+        ExpressionCompiler.create(detachState, variables, errorReporter);
+    ExpressionToSoyValueProviderCompiler soyValueProviderCompiler = 
+        ExpressionToSoyValueProviderCompiler.create(expressionCompiler, variables, errorReporter);
     return new SoyNodeCompiler(
         thisVar,
         registry,
@@ -113,8 +117,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         variableSet,
         variables,
         appendableVar,
-        ExpressionCompiler.create(detachState, variables, errorReporter),
-        new LazyClosureCompiler(registry, innerClasses, variables, errorReporter),
+        expressionCompiler,
+        soyValueProviderCompiler,
+        new LazyClosureCompiler(
+            registry, innerClasses, variables, errorReporter, soyValueProviderCompiler),
         errorReporter);
   }
 
@@ -125,6 +131,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private final VariableLookup variableLookup;
   private final Expression appendableExpression;
   private final ExpressionCompiler exprCompiler;
+  private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   private final LazyClosureCompiler lazyClosureCompiler;
   private Scope currentScope;
 
@@ -136,6 +143,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       VariableLookup variableLookup, 
       Expression appendableExpression, 
       ExpressionCompiler exprCompiler,
+      ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler, 
       LazyClosureCompiler lazyClosureCompiler,
       ErrorReporter errorReporter) {
     super(errorReporter);
@@ -147,6 +155,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.variableLookup = checkNotNull(variableLookup);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.exprCompiler = checkNotNull(exprCompiler);
+    this.expressionToSoyValueProviderCompiler = checkNotNull(expressionToSoyValueProviderCompiler);
     this.lazyClosureCompiler = checkNotNull(lazyClosureCompiler);
   }
 
@@ -408,18 +417,41 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           "The jbcsrc implementation does not support print directives (yet!): "
               + node.toSourceString());
     }
-    // TODO(lukes): We need to have an alternate expression compiler that evaluate an expression to
-    // a SoyValueProvider (instead of a SoyValue) when possible.  This will allow us to generate
-    // code that calls SoyValueProvider.renderAndResolve.
     Label reattachPoint = new Label();
-    final SoyExpression printExpr = 
-        exprCompiler.compile(node.getExprUnion().getExpr(), reattachPoint)
-            .convert(String.class);
-
-    Expression renderSoyValue = 
-        MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, printExpr)
-            .labelStart(reattachPoint);
-    return detachState.detachLimited(renderSoyValue).withSourceLocation(node.getSourceLocation());
+    ExprRootNode expr = node.getExprUnion().getExpr();
+    Optional<Expression> asSoyValueProvider = 
+        expressionToSoyValueProviderCompiler.compileAvoidingBoxing(expr, reattachPoint);
+    if (asSoyValueProvider.isPresent()) {
+      // In this case we want to render the SoyValueProvider via renderAndResolve which will enable
+      // incremental rendering of parameters for lazy transclusions!
+      // This actually ends up looking a lot like how calls work so we use the same strategy.
+      FieldRef currentRendereeField = variables.getCurrentRenderee();
+      Statement initRenderee = 
+          currentRendereeField.putInstanceField(thisVar, asSoyValueProvider.get()) 
+              .labelStart(reattachPoint);
+      
+      // This cast will always succeed.
+      Expression callRenderAndResolve = currentRendereeField.accessor(thisVar)
+          .invoke(MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE, 
+              appendableExpression,
+              // the isLast param
+              // TODO(lukes): pass a real value here when we have expression use analysis.
+              constant(false));
+      Statement doCall = detachState.detachForRender(callRenderAndResolve);
+      Statement clearRenderee = currentRendereeField.putInstanceField(thisVar, 
+          BytecodeUtils.constantNull(SoyValueProvider.class));
+      return Statement.concat(initRenderee, doCall, clearRenderee)
+          .withSourceLocation(node.getSourceLocation());
+    } else {
+      final SoyExpression printExpr = 
+          exprCompiler.compile(expr, reattachPoint)
+              .convert(String.class);
+  
+      Expression renderSoyValue = 
+          MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, printExpr)
+              .labelStart(reattachPoint);
+      return detachState.detachLimited(renderSoyValue).withSourceLocation(node.getSourceLocation());
+    }
   }
 
   @Override protected Statement visitRawTextNode(RawTextNode node) {
@@ -493,7 +525,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         .invoke(typedCallee, 
             appendableExpression, 
             variableLookup.getRenderContext());
-    Statement callCallee = detachState.detachForCall(callRender);
+    Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee = currentCalleeField.putInstanceField(thisVar, 
         BytecodeUtils.constantNull(CompiledTemplate.class));
     return Statement.concat(initCallee, callCallee, clearCallee)
@@ -511,13 +543,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       for (CallParamNode child : node.getChildren()) {
         String paramKey = child.getKey();
         Expression valueExpr;
-        // TODO(lukes): a trivial optimization would be to identify trivial params and skip 
-        // generating the SoyValueProvider subclass.  This should be able to reuse logic that we 
-        // will write for compiling expressions to SoyValueProviders when possible (needed for
-        // incremental printing in visitPrintNode).  Also, many params are constants, so we could
-        // provisionally compile params to expressions, see if they are constants and then just box
-        // them directly. The latter optimization would additionally require knowledge that there
-        // are no detaches.
         if (child instanceof CallParamContentNode) {
           valueExpr = lazyClosureCompiler.compileLazyContent(
               (CallParamContentNode) child, paramKey); 
@@ -572,6 +597,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         variableLookup,
         MethodRef.RUNTIME_LOGGER.invoke(),
         exprCompiler,
+        expressionToSoyValueProviderCompiler,
         lazyClosureCompiler,
         errorReporter).visitChildrenInNewScope(node);
   }

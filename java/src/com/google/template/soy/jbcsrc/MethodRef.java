@@ -116,6 +116,8 @@ import java.util.Map;
   static final MethodRef SOY_VALUE_STRING_VALUE = create(SoyValue.class, "stringValue");
   static final MethodRef SOY_VALUE_PROVIDER_RESOLVE = 
       create(Runtime.class, "resolveSoyValueProvider", SoyValueProvider.class);
+  static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE = 
+      create(SoyValueProvider.class, "renderAndResolve", AdvisingAppendable.class, boolean.class);
   static final MethodRef SOY_VALUE_PROVIDER_STATUS = create(SoyValueProvider.class, "status");
   static final MethodRef SOY_RECORD_HAS_FIELD = create(SoyRecord.class, "hasField", String.class);
   static final MethodRef SOY_RECORD_GET_FIELD_PROVIDER = 
