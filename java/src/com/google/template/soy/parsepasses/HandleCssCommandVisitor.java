@@ -16,10 +16,10 @@
 
 package com.google.template.soy.parsepasses;
 
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -32,9 +32,8 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
+import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.List;
 
@@ -51,15 +50,14 @@ import java.util.List;
  * (c) BACKEND_SPECIFIC: Don't change anything. Let backend handle 'css' commands.
  *
  */
-public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  private static final SoyError INVALID_CSS_REFERENCE = SoyError.of(
+    "The css-handling scheme is ''reference'', but '{css}' tag does not contain a valid reference");
 
 
   /** Scheme for handling 'css' commands. */
   private final CssHandlingScheme cssHandlingScheme;
-
-  /** The list of CssNodes found in the tree. */
-  private List<CssNode> cssNodes;
-
 
   /**
    * @param cssHandlingScheme Scheme for handling 'css' commands.
@@ -72,7 +70,6 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override public Void exec(SoyNode node) {
-    cssNodes = Lists.newArrayList();
     visit(node);
     return null;
   }
@@ -92,10 +89,10 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
     // interfere with the traversal.
 
     // This pass simply finds all the CssNodes.
-    visitChildren(node);
+    List<CssNode> cssNodes = SoytreeUtils.getAllNodesOfType(node, CssNode.class);
 
     // Perform the replacments.
-    IdGenerator nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
+    IdGenerator nodeIdGen = node.getNodeIdGenerator();
     for (CssNode cssNode : cssNodes) {
 
       StandaloneNode newNode;
@@ -127,10 +124,7 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
           }
         }
         if (isInvalidExpr) {
-          throw SoySyntaxExceptionUtils.createWithNode(
-              "The css-handling scheme is 'reference', but tag " + cssNode.getTagString() +
-                  " does not contain a valid reference.",
-              node);
+          errorReporter.report(cssNode.getSourceLocation(), INVALID_CSS_REFERENCE);
         }
 
       } else {
@@ -140,21 +134,4 @@ public class HandleCssCommandVisitor extends AbstractSoyNodeVisitor<Void> {
       cssNode.getParent().replaceChild(cssNode, newNode);
     }
   }
-
-
-  @Override protected void visitCssNode(CssNode node) {
-    cssNodes.add(node);
-  }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Fallback implementation.
-
-
-  @Override protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
-  }
-
 }
