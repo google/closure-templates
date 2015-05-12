@@ -3764,8 +3764,8 @@ goog.addDependency('ui/emoji/emojipalette.js', ['goog.ui.emoji.EmojiPalette'], [
 goog.addDependency('ui/emoji/emojipaletterenderer.js', ['goog.ui.emoji.EmojiPaletteRenderer'], ['goog.a11y.aria', 'goog.asserts', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.style', 'goog.ui.PaletteRenderer', 'goog.ui.emoji.Emoji'], false);
 goog.addDependency('ui/emoji/emojipicker.js', ['goog.ui.emoji.EmojiPicker'], ['goog.dom.TagName', 'goog.style', 'goog.ui.Component', 'goog.ui.TabPane', 'goog.ui.emoji.Emoji', 'goog.ui.emoji.EmojiPalette', 'goog.ui.emoji.EmojiPaletteRenderer', 'goog.ui.emoji.ProgressiveEmojiPaletteRenderer'], false);
 goog.addDependency('ui/emoji/emojipicker_test.js', ['goog.ui.emoji.EmojiPickerTest'], ['goog.dom.TagName', 'goog.dom.classlist', 'goog.events.EventHandler', 'goog.style', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.Component', 'goog.ui.emoji.Emoji', 'goog.ui.emoji.EmojiPicker', 'goog.ui.emoji.SpriteInfo'], false);
-goog.addDependency('ui/emoji/fast_nonprogressive_emojipicker_test.js', ['goog.ui.emoji.FastNonProgressiveEmojiPickerTest'], ['goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.net.EventType', 'goog.style', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit', 'goog.ui.emoji.Emoji', 'goog.ui.emoji.EmojiPicker', 'goog.ui.emoji.SpriteInfo', 'goog.userAgent'], false);
-goog.addDependency('ui/emoji/fast_progressive_emojipicker_test.js', ['goog.ui.emoji.FastProgressiveEmojiPickerTest'], ['goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.net.EventType', 'goog.style', 'goog.testing.AsyncTestCase', 'goog.testing.jsunit', 'goog.ui.emoji.Emoji', 'goog.ui.emoji.EmojiPicker', 'goog.ui.emoji.SpriteInfo'], false);
+goog.addDependency('ui/emoji/fast_nonprogressive_emojipicker_test.js', ['goog.ui.emoji.FastNonProgressiveEmojiPickerTest'], ['goog.Promise', 'goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.net.EventType', 'goog.style', 'goog.testing.jsunit', 'goog.ui.emoji.Emoji', 'goog.ui.emoji.EmojiPicker', 'goog.ui.emoji.SpriteInfo'], false);
+goog.addDependency('ui/emoji/fast_progressive_emojipicker_test.js', ['goog.ui.emoji.FastProgressiveEmojiPickerTest'], ['goog.Promise', 'goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.net.EventType', 'goog.style', 'goog.testing.jsunit', 'goog.ui.emoji.Emoji', 'goog.ui.emoji.EmojiPicker', 'goog.ui.emoji.SpriteInfo'], false);
 goog.addDependency('ui/emoji/popupemojipicker.js', ['goog.ui.emoji.PopupEmojiPicker'], ['goog.events.EventType', 'goog.positioning.AnchoredPosition', 'goog.positioning.Corner', 'goog.ui.Component', 'goog.ui.Popup', 'goog.ui.emoji.EmojiPicker'], false);
 goog.addDependency('ui/emoji/popupemojipicker_test.js', ['goog.ui.emoji.PopupEmojiPickerTest'], ['goog.dom', 'goog.testing.jsunit', 'goog.ui.emoji.PopupEmojiPicker'], false);
 goog.addDependency('ui/emoji/progressiveemojipaletterenderer.js', ['goog.ui.emoji.ProgressiveEmojiPaletteRenderer'], ['goog.dom.TagName', 'goog.style', 'goog.ui.emoji.EmojiPaletteRenderer'], false);
@@ -8807,7 +8807,8 @@ goog.i18n.bidi.ltrChars_ =
  * @type {string}
  * @private
  */
-goog.i18n.bidi.rtlChars_ = '\u0591-\u07FF\u200F\uFB1D-\uFDFF\uFE70-\uFEFC';
+goog.i18n.bidi.rtlChars_ =
+    '\u0591-\u06EF\u06FA-\u07FF\u200F\uFB1D-\uFDFF\uFE70-\uFEFC';
 
 
 /**
@@ -9359,10 +9360,20 @@ goog.i18n.bidi.wordSeparatorRe_ = /\s+/;
  * Regular expression to check if a string contains any numerals. Used to
  * differentiate between completely neutral strings and those containing
  * numbers, which are weakly LTR.
+ *
+ * Native Arabic digits (\u0660 - \u0669) are not included because although they
+ * do flow left-to-right inside a number, this is the case even if the  overall
+ * directionality is RTL, and a mathematical expression using these digits is
+ * supposed to flow right-to-left overall, including unary plus and minus
+ * appearing to the right of a number, and this does depend on the overall
+ * directionality being RTL. The digits used in Farsi (\u06F0 - \u06F9), on the
+ * other hand, are included, since Farsi math (including unary plus and minus)
+ * does flow left-to-right.
+ *
  * @type {RegExp}
  * @private
  */
-goog.i18n.bidi.hasNumeralsRe_ = /\d/;
+goog.i18n.bidi.hasNumeralsRe_ = /[\d\u06f0-\u06f9]/;
 
 
 /**
