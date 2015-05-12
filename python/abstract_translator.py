@@ -46,6 +46,16 @@ except NameError:
 class AbstractTranslator(object):
   """This class defines the API for a valid i18n extension."""
 
+  def is_msg_available(self, msg_id):
+    """Determines whether an individual message is available for translation.
+
+    Args:
+      msg_id: The id of the message to test.
+    Returns:
+      Whether the message is available for translation.
+    """
+    raise NotImplementedError
+
   def prepare(self, msg_id, msg_text, msg_placeholders):
     """Prepares an I18N string for later rendering.
 
@@ -189,7 +199,7 @@ class AbstractTranslator(object):
 
   # Arbitrary ICU strings.
 
-  def prepare_icu(self, msg_id, msg_text):
+  def prepare_icu(self, msg_id, msg_text, msg_fields):
     """Prepare an ICU string for rendering.
 
     Same as prepare(), but takes a string in ICU syntax for
@@ -198,6 +208,7 @@ class AbstractTranslator(object):
     Args:
       msg_id: Message identifier.
       msg_text: An ICU string.
+      msg_fields: A tuple containing the names of all configurable ICU fields.
     Returns:
       An opaque object that's passed to the render_icu()
       method to render this string.

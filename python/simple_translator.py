@@ -19,10 +19,9 @@ from __future__ import unicode_literals
 
 __author__ = 'steveyang@google.com (Chenyun Yang)'
 
+import icu
+
 from . import abstract_translator
-from icu import Formattable
-from icu import Locale
-from icu import MessageFormat
 
 # To allow the rest of the file to assume Python 3 strings, we will assign str
 # to unicode for Python 2. This will error in 3 and be ignored.
@@ -37,6 +36,9 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
 
   This is a minimal implementation of the core API for demo purpose.
   """
+
+  def is_msg_available(self, msg_id):
+    return True
 
   def prepare_literal(self, msg_id, msg_text):
     # use the string itself as the opaque object
@@ -60,8 +62,15 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
     msg_text = msg.get('=%d' % case_value) or msg.get('other')
     return msg_text.format(**values)
 
-  def prepare_icu(self, msg_id, msg_text):
-    return MessageFormat(msg_text, Locale('en'))
+  def prepare_icu(self, msg_id, msg_text, msg_fields):
+    return icu.MessageFormat(msg_text, icu.Locale('en'))
 
   def render_icu(self, msg, values):
-    return msg.format(values.keys(), map(Formattable, values.values()))
+    return msg.format(values.keys(), map(_format_icu, values.values()))
+
+
+def _format_icu(value):
+  try:
+    return icu.Formattable(value)
+  except:
+    return icu.Formattable(str(value))

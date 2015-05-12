@@ -218,6 +218,10 @@ def filter_normalize_uri(value):
   return generated_sanitize.filter_normalize_uri_helper(value)
 
 
+def normalize_html(value):
+  return generated_sanitize.normalize_html_helper(value)
+
+
 def normalize_uri(value):
   return generated_sanitize.normalize_uri_helper(value)
 
