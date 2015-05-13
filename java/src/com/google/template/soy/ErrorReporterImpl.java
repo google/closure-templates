@@ -66,6 +66,23 @@ public final class ErrorReporterImpl implements ErrorReporter {
     return copy;
   }
 
+  /**
+   * If errors have been reported, throws a single {@link SoySyntaxException} containing
+   * all of the errors as suppressed exceptions.
+   *
+   * <p>This should only be used for entry points that cannot be converted to pretty-print
+   * the {@link SoyError}s directly (example: {@link SoyFileSet#compileToTofu()}).
+   */
+  void throwIfErrorsPresent() throws SoySyntaxException {
+    if (!errors.isEmpty()) {
+      SoySyntaxException combined = new SoySyntaxException("errors during Soy compilation");
+      for (SoySyntaxException e : errors) {
+        combined.addSuppressed(e);
+      }
+      throw combined;
+    }
+  }
+
   private static final class CheckpointImpl implements Checkpoint {
     private final int numErrors;
 

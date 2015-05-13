@@ -683,6 +683,11 @@ public final class SoyFileSet {
     return generalOptions;
   }
 
+  /** TODO(user): workaround for {@link SoyJsSrcResource}. Remove. */
+  ErrorReporter getErrorReporter() {
+    return errorReporter;
+  }
+
   /**
    * Generates Java classes containing parse info (param names, template names, meta info). There
    * will be one Java class per Soy file.
@@ -869,16 +874,7 @@ public final class SoyFileSet {
     // Clear the SoyDoc strings because they use unnecessary memory.
     new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
 
-    ImmutableCollection<? extends SoySyntaxException> errors
-        = ((ErrorReporterImpl) errorReporter).getErrors();
-    if (!errors.isEmpty()) {
-      SoySyntaxException combinedException
-          = new SoySyntaxException("errors during Soy compilation");
-      for (SoySyntaxException error : errors) {
-        combinedException.addSuppressed(error);
-      }
-      throw combinedException;
-    }
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
     return baseTofuFactory.create(soyTree, tofuOptions.useCaching(), errorReporter);
   }
