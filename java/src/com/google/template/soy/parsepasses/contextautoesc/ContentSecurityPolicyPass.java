@@ -25,6 +25,8 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.parsepasses.contextautoesc.Context.State;
+import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode.RawTextSlice;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
@@ -134,6 +136,18 @@ public final class ContentSecurityPolicyPass {
               // but we're in JS or CSS, then we must be in a script or style body.
               && (c.state == Context.State.JS || c.state == Context.State.CSS)
               );
+        }
+      };
+
+
+  /**
+   * True immediately before an HTML attribute value.
+   */
+  private static final Predicate<? super Context> HTML_BEFORE_ATTRIBUTE_VALUE =
+      new Predicate<Context>() {
+        @Override
+        public boolean apply(Context c) {
+          return c.state == State.HTML_BEFORE_ATTRIBUTE_VALUE;
         }
       };
 
@@ -365,15 +379,18 @@ public final class ContentSecurityPolicyPass {
 
 
   /**
-   * Handles steps 1 and 2 by finding event handler attributes that appear entirely within a raw
-   * text node and creating a {@link CspVerifierAttrGenerator} instance for each one.
+   * Handles steps 1 and 2 by finding event handler attributes that appear entirely within
+   * a raw text node.
    */
   private static void findCompleteInlineEventHandlers(
       Iterable<? extends SlicedRawTextNode> slicedRawTextNodes,
       ImmutableList.Builder<InjectedSoyGenerator> out) {
 
-    List<SlicedRawTextNode.RawTextSlice> valueSlices = SlicedRawTextNode.find(
-        slicedRawTextNodes, null, IN_SCRIPT_OR_STYLE_ATTR_VALUE, null);
+    Iterable<RawTextSlice> valueSlices = SlicedRawTextNode.find(
+        slicedRawTextNodes,
+        HTML_BEFORE_ATTRIBUTE_VALUE,
+        IN_SCRIPT_OR_STYLE_ATTR_VALUE,
+        null /* nextContextPredicate */);
 
     // Step 1: identify the beginning of an inline event handler.
     for (SlicedRawTextNode.RawTextSlice valueSlice : valueSlices) {
