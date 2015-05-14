@@ -36,6 +36,9 @@ import java.util.Map;
  */
 public final class PyExprUtils {
 
+  /** The variable name used to reference the current translator instance. */
+  public static final String TRANSLATOR_NAME = "translator_impl";
+
   /** Expression constant for empty string. */
   private static final PyExpr EMPTY_STRING = new PyStringExpr("''");
 

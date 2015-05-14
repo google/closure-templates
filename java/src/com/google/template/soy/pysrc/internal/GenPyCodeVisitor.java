@@ -758,7 +758,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String translationNamespace = nameSpaceAndName.first;
       String translationName = nameSpaceAndName.second;
       pyCodeBuilder.appendLine("from ", translationNamespace, " import ", translationName);
-      pyCodeBuilder.appendLine(MsgFuncGenerator.TRANSLATOR_NAME, " = ", translationName, "()");
+      pyCodeBuilder.appendLine(PyExprUtils.TRANSLATOR_NAME, " = ", translationName, "()");
     }
   }
 

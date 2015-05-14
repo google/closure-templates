@@ -97,7 +97,8 @@ public final class GenPyExprsVisitorTest extends TestCase {
         + "translator_impl.prepare_literal("
           + "###, "
           + "'archive')) "
-      + "if is_msg_available(###) else translator_impl.render_literal("
+      + "if translator_impl.is_msg_available(###) or not translator_impl.is_msg_available(###) "
+      + "else translator_impl.render_literal("
         + "translator_impl.prepare_literal(###, 'ARCHIVE'))";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode,
