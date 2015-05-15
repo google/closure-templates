@@ -19,7 +19,6 @@ package com.google.template.soy.parsepasses;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -39,7 +38,6 @@ import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
