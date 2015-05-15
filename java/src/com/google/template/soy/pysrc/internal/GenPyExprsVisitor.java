@@ -208,7 +208,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     PyExpr msg = msgFuncGeneratorFactory.create(node.getChild(0), localVarExprs).getPyExpr();
 
-    // MsgFallbackGroupNode could only have 1 or 2 child, see TemplateParseTest.java
+    // MsgFallbackGroupNode could only have one child or two children. See MsgFallbackGroupNode.
     if (node.numChildren() > 1) {
       StringBuilder pyExprTextSb = new StringBuilder();
       PyExpr fallbackMsg = msgFuncGeneratorFactory.create(

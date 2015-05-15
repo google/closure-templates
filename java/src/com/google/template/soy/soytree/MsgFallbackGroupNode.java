@@ -23,8 +23,11 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 /**
- * Represents a group of one or more messages. If more than one message, then they form a fallback
- * list (first message that has a translation will be shown).
+ * Represents one message or a pair of message and fallback message.
+ *
+ * <p>Only one {@code fallbackmsg} is allowed by the parser.
+ * {@link com.google.template.soy.soyparse.TemplateParserTest.java#testRecognizeCommands}
+ * TODO(user): fix the grammar.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
