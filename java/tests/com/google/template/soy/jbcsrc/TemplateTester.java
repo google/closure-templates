@@ -25,7 +25,13 @@ import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.basicdirectives.BasicDirectivesModule;
+import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -34,7 +40,11 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -49,9 +59,26 @@ import java.util.Map;
  * Utilities for testing compiled soy templates.
  */
 public final class TemplateTester {
-  static final RenderContext EMPTY_CONTEXT = new RenderContext(
-      SoyCssRenamingMap.IDENTITY, SoyCssRenamingMap.IDENTITY, 
-      ImmutableMap.<String, SoyJavaFunction>of());
+  private static final Injector INJECTOR =
+      Guice.createInjector(
+          new SharedModule(), 
+          new SharedPassesModule(),
+          new BasicDirectivesModule(), 
+          new BasicFunctionsModule(), 
+          new AbstractModule() {
+            @Provides RenderContext provideContext(
+                @Shared Map<String, SoyJavaFunction> functions,
+                @Shared Map<String, SoyJavaPrintDirective> printDirectives) {
+              return new RenderContext(
+                  SoyCssRenamingMap.IDENTITY, 
+                  SoyCssRenamingMap.IDENTITY,
+                  ImmutableMap.copyOf(functions), 
+                  ImmutableMap.copyOf(printDirectives));
+            }
+            @Override protected void configure() {}
+          });
+
+  static final RenderContext DEFAULT_CONTEXT = INJECTOR.getInstance(RenderContext.class);
 
   private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =
       new SubjectFactory<CompiledTemplateSubject, String>() {
@@ -93,19 +120,19 @@ public final class TemplateTester {
     }
     
     CompiledTemplateSubject logsOutput(String expected) {
-      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_DICT, EMPTY_CONTEXT);
+      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_DICT, DEFAULT_CONTEXT);
     }
 
     CompiledTemplateSubject rendersAs(String expected) {
-      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, EMPTY_CONTEXT);
+      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, DEFAULT_CONTEXT);
     }
     
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
-      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, EMPTY_CONTEXT);
+      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, DEFAULT_CONTEXT);
     }
     
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params,  Map<String, ?> ij) {
-      return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), EMPTY_CONTEXT);
+      return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), DEFAULT_CONTEXT);
     }
     
     CompiledTemplateSubject rendersAs(String expected, RenderContext context) {

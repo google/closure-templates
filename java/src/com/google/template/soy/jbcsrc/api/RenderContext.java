@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 /** 
  * A collection of contextual rendering data.  Each top level rendering operation will obtain a
@@ -31,12 +32,15 @@ public final class RenderContext {
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
   private final ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap;
+  private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
 
   public RenderContext(SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap, 
-      ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap) {
+      ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap,
+      ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap) {
     this.cssRenamingMap = checkNotNull(cssRenamingMap);
     this.xidRenamingMap = checkNotNull(xidRenamingMap);
     this.soyJavaFunctionsMap = checkNotNull(soyJavaFunctionsMap);
+    this.soyJavaDirectivesMap = checkNotNull(soyJavaDirectivesMap);
   }
 
   public String renameCssSelector(String selector) {
@@ -55,5 +59,14 @@ public final class RenderContext {
       throw new IllegalStateException("Failed to find Soy function with name '" + name + "'");
     }
     return fn;
+  }
+
+  public SoyJavaPrintDirective getPrintDirective(String name) {
+    SoyJavaPrintDirective printDirective = soyJavaDirectivesMap.get(name);
+    if (printDirective == null) {
+      throw new IllegalStateException(
+          "Failed to find Soy ptint directive with name '" + name + "'");
+    }
+    return printDirective;
   }
 }

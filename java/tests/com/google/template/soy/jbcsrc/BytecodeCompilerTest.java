@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
-import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
+import static com.google.template.soy.jbcsrc.TemplateTester.DEFAULT_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.base.Joiner;
@@ -39,6 +39,7 @@ import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import junit.framework.TestCase;
 
@@ -121,7 +122,7 @@ public class BytecodeCompilerTest extends TestCase {
       throws IOException {
     CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
     AdvisingStringBuilder sb = new AdvisingStringBuilder();
-    assertEquals(RenderResult.done(), caller.render(sb, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), caller.render(sb, DEFAULT_CONTEXT));
     String output = sb.toString();
     return output;
   }
@@ -307,7 +308,8 @@ public class BytecodeCompilerTest extends TestCase {
     RenderContext ctx = new RenderContext(
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
         SoyCssRenamingMap.IDENTITY,
-        ImmutableMap.<String, SoyJavaFunction>of());
+        ImmutableMap.<String, SoyJavaFunction>of(),
+        ImmutableMap.<String, SoyJavaPrintDirective>of());
     assertThatTemplateBody("{css foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{css foo2}").rendersAs("foo2", ctx);
     assertThatTemplateBody("{css 1+2, foo2}").rendersAs("3-foo2", ctx);
@@ -317,7 +319,8 @@ public class BytecodeCompilerTest extends TestCase {
     RenderContext ctx = new RenderContext(
         SoyCssRenamingMap.IDENTITY,
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
-        ImmutableMap.<String, SoyJavaFunction>of());
+        ImmutableMap.<String, SoyJavaFunction>of(),
+        ImmutableMap.<String, SoyJavaPrintDirective>of());
     assertThatTemplateBody("{xid foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{xid foo2}").rendersAs("foo2_", ctx);
   }
@@ -338,8 +341,14 @@ public class BytecodeCompilerTest extends TestCase {
           @Override public SoyValue computeForJava(List<SoyValue> args) {
             return IntegerData.forValue(args.get(0).integerValue() + 1);
           }
-        }));
+        }),
+        ImmutableMap.<String, SoyJavaPrintDirective>of());
     assertThatTemplateBody("{plusOne(1)}").rendersAs("2", ctx);
+  }
+
+  public void testPrintDirectives() {
+    assertThatTemplateBody("{' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}")
+        .rendersAs(" blah &amp;&amp;blahbl<wbr>ahblah");
   }
 
   public void testParam() {

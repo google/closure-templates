@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
-import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
+import static com.google.template.soy.jbcsrc.TemplateTester.DEFAULT_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 
 import com.google.common.collect.ImmutableList;
@@ -72,15 +72,15 @@ public final class DetachStateTest extends TestCase {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello world", output.toString());
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // detached!!!
-    assertEquals(RenderResult.limited(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello world", output.toString());
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello world", output.toString());  // nothing was added
   }
 
@@ -94,19 +94,19 @@ public final class DetachStateTest extends TestCase {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello world", output.toString());
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // detached!!!
-    assertEquals(RenderResult.limited(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello", output.toString());
-    assertEquals(RenderResult.limited(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello ", output.toString());
-    assertEquals(RenderResult.limited(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello world", output.toString());
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello world", output.toString());  // nothing was added
   }
 
@@ -119,17 +119,17 @@ public final class DetachStateTest extends TestCase {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("0123456789", output.toString());
 
     output = new TestAppendable();
     output.softLimitReached = true;
     for (int i = 0; i < 10; i++) {
-      assertEquals(RenderResult.limited(), template.render(output, EMPTY_CONTEXT));
+      assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
       assertEquals(String.valueOf(i), output.toString());
       output.delegate.setLength(0);
     }
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertThat(output.toString()).isEmpty(); // last render was empty
   }
 
@@ -142,19 +142,19 @@ public final class DetachStateTest extends TestCase {
         asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
     
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    RenderResult result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(future, result.future());
     assertEquals("prefix ", output.toString());
 
     // No progress is made, our caller is an idiot and didn't wait for the future
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(future, result.future());
     assertEquals("prefix ", output.toString());
 
     future.set("future");
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.done(), result);
     assertEquals("prefix future suffix", output.toString());
   }
@@ -177,28 +177,28 @@ public final class DetachStateTest extends TestCase {
         asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
 
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    RenderResult result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(0), result.future());
     assertEquals("prefix\nloop-prefix\n", output.toString());
 
     output.clear();
     futures.get(0).set("first");
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(1), result.future());
     assertEquals("first\nloop-suffix\nloop-prefix\n", output.toString());
 
     output.clear();
     futures.get(1).set("second");
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(2), result.future());
     assertEquals("second\nloop-suffix\nloop-prefix\n", output.toString());
 
     output.clear();
     futures.get(2).set("third");
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.done(), result);
     assertEquals("third\nloop-suffix\nsuffix", output.toString());
   }
@@ -216,7 +216,7 @@ public final class DetachStateTest extends TestCase {
     SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));
     AdvisingStringBuilder output = new AdvisingStringBuilder();
     assertEquals(RenderResult.done(), 
-        factory.create(params, EMPTY_DICT).render(output, EMPTY_CONTEXT));
+        factory.create(params, EMPTY_DICT).render(output, DEFAULT_CONTEXT));
     assertEquals("2345", output.toString());
   }
 
@@ -243,10 +243,10 @@ public final class DetachStateTest extends TestCase {
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    assertEquals(RenderResult.continueAfter(param), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.continueAfter(param), template.render(output, DEFAULT_CONTEXT));
     assertEquals("prefix ", output.toString());
     param.set("foo");
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("prefix foo suffix", output.toString());
   }
 
@@ -275,10 +275,10 @@ public final class DetachStateTest extends TestCase {
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    assertEquals(RenderResult.continueAfter(param), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.continueAfter(param), template.render(output, DEFAULT_CONTEXT));
     assertEquals("prefix ", output.toString());
     param.set("foo");
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("prefix foo suffix", output.toString());
   }
 }

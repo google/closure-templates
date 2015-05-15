@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -37,11 +38,13 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -138,6 +141,8 @@ import java.util.Map;
       create(RenderContext.class, "renameXid", String.class);
   static final MethodRef RENDER_CONTEXT_GET_FUNCTION = 
       create(RenderContext.class, "getFunction", String.class);
+  static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE = 
+      create(RenderContext.class, "getPrintDirective", String.class);
   static final MethodRef SOY_LIST_AS_JAVA_LIST = create(SoyList.class, "asJavaList");
   static final MethodRef LIST_SIZE = create(List.class, "size");
   static final MethodRef LIST_GET = create(List.class, "get", int.class);
@@ -148,6 +153,11 @@ import java.util.Map;
   static final MethodRef INTS_CHECKED_CAST = create(Ints.class, "checkedCast", long.class);
   static final MethodRef RUNTIME_CALL_SOY_FUNCTION = 
       create(Runtime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
+  static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE = 
+      create(Runtime.class, "applyPrintDirective", 
+          SoyJavaPrintDirective.class, SoyValue.class, List.class);
+  static final MethodRef RUNTIME_APPLY_ESCAPERS =
+      create(Runtime.class, "applyEscapers", CompiledTemplate.class, List.class, ContentKind.class);
   static final MethodRef PARAM_STORE_SET_FIELD = 
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
 

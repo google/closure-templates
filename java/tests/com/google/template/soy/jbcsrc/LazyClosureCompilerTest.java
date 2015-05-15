@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
-import static com.google.template.soy.jbcsrc.TemplateTester.EMPTY_CONTEXT;
+import static com.google.template.soy.jbcsrc.TemplateTester.DEFAULT_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
@@ -75,19 +75,19 @@ public class LazyClosureCompilerTest extends TestCase {
         "{$foo}");
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    RenderResult result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());  // we found bar!
     assertEquals("hello ", output.toString());
 
     // make sure no progress is made
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());
     assertEquals("hello ", output.toString());
     bar.set("bar");
 
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("hello bar", output.toString());
   }
 
@@ -123,19 +123,19 @@ public class LazyClosureCompilerTest extends TestCase {
 
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, EMPTY_CONTEXT);
+    RenderResult result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());  // we found bar!
     assertEquals("before use", output.toString());
     
     // make sure no progress is made
-    result = template.render(output, EMPTY_CONTEXT);
+    result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());
     assertEquals("before use", output.toString());
     bar.set(" bar");
 
-    assertEquals(RenderResult.done(), template.render(output, EMPTY_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
     assertEquals("before use bar bar", output.toString());
   }
 
