@@ -2581,7 +2581,7 @@ private void StmtLookaheadHelper() :
 
 
 /**
- * MsgStmt -> MsgTag TemplateBlockForMsg ( FallbackmsgTag TemplateBlockForMsg )* EndMsgTag
+ * MsgStmt -> MsgTag TemplateBlockForMsg ( FallbackmsgTag TemplateBlockForMsg )? EndMsgTag
  */
 private MsgFallbackGroupNode MsgStmt() :
 {
@@ -2614,16 +2614,11 @@ private MsgFallbackGroupNode MsgStmt() :
     }
     templateBlockForMsg = TemplateBlockForMsg()
     { msgNode.addChildren(templateBlockForMsg); }
-  )*
+  )?
 
   EndMsgTag()
 
-  { // Currently, allow at most one 'fallbackmsg'.
-    if (msgFbGrpNode.numChildren() > 2) {
-      errorReporter.report(cmdText.srcLocation(), MULTIPLE_FALLBACK_MSGS);
-    }
-    return msgFbGrpNode;
-  }
+  { return msgFbGrpNode; }
 }
 
 
