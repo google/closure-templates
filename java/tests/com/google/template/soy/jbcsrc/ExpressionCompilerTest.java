@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
+import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
@@ -43,8 +44,10 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
@@ -392,6 +395,27 @@ public class ExpressionCompilerTest extends TestCase {
             BytecodeUtils.constantNull(SoyList.class)));
     assertExpression("$nullList[1]").throwsException(NullPointerException.class);
     assertExpression("$nullList?[1]").evaluatesTo(null);
+  }
+
+  public void testFieldAccess() {
+    variables.put("record", compileExpression("['a': 0, 'b': 1, 'c': 2]").box());
+    // By default all values are boxed
+    assertExpression("$record.a").evaluatesTo(IntegerData.forValue(0));
+    assertExpression("$record.b").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("$record.c").evaluatesTo(IntegerData.forValue(2));
+
+    // However, they will be unboxed if possible
+    assertExpression("$record.a + 1").evaluatesTo(1L);
+  }
+
+  public void testNullSafeFieldAccess() {
+    variables.put("nullRecord",
+        SoyExpression.forSoyValue(
+            SoyTypes.makeNullable(
+                RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
+            BytecodeUtils.constantNull(SoyDict.class)));
+    assertExpression("$nullRecord.a").throwsException(NullPointerException.class);
+    assertExpression("$nullRecord?.a").evaluatesTo(null);
   }
 
   private void assertExprEquals(String left, String right) {

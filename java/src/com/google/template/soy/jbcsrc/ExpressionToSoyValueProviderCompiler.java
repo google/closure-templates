@@ -16,6 +16,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.data.SoyValueProvider;
@@ -92,6 +93,7 @@ final class ExpressionToSoyValueProviderCompiler {
    * than calling {@link #toString()} and passing directly to the output.
    */
   Optional<Expression> compileAvoidingBoxing(ExprNode node, Label reattachPoint) {
+    checkNotNull(node);
     return new CompilerVisitor(
         reporter, variables, null, exprCompiler.asBasicCompiler(reattachPoint))
         .exec(node);
@@ -106,6 +108,7 @@ final class ExpressionToSoyValueProviderCompiler {
    * params), but we also want to preserve any laziness.  So boxing is fine, but detaches are not.
    */
   Optional<Expression> compileAvoidingDetaches(ExprNode node) {
+    checkNotNull(node);
     return new CompilerVisitor(reporter, variables, exprCompiler, null)
         .exec(node);
   }

@@ -309,7 +309,8 @@ public class BytecodeCompilerTest extends TestCase {
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
         SoyCssRenamingMap.IDENTITY,
         ImmutableMap.<String, SoyJavaFunction>of(),
-        ImmutableMap.<String, SoyJavaPrintDirective>of());
+        ImmutableMap.<String, SoyJavaPrintDirective>of(),
+        SoyValueHelper.UNCUSTOMIZED_INSTANCE);
     assertThatTemplateBody("{css foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{css foo2}").rendersAs("foo2", ctx);
     assertThatTemplateBody("{css 1+2, foo2}").rendersAs("3-foo2", ctx);
@@ -320,7 +321,8 @@ public class BytecodeCompilerTest extends TestCase {
         SoyCssRenamingMap.IDENTITY,
         new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
         ImmutableMap.<String, SoyJavaFunction>of(),
-        ImmutableMap.<String, SoyJavaPrintDirective>of());
+        ImmutableMap.<String, SoyJavaPrintDirective>of(),
+        SoyValueHelper.UNCUSTOMIZED_INSTANCE);
     assertThatTemplateBody("{xid foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{xid foo2}").rendersAs("foo2_", ctx);
   }
@@ -342,7 +344,8 @@ public class BytecodeCompilerTest extends TestCase {
             return IntegerData.forValue(args.get(0).integerValue() + 1);
           }
         }),
-        ImmutableMap.<String, SoyJavaPrintDirective>of());
+        ImmutableMap.<String, SoyJavaPrintDirective>of(),
+        SoyValueHelper.UNCUSTOMIZED_INSTANCE);
     assertThatTemplateBody("{plusOne(1)}").rendersAs("2", ctx);
   }
 

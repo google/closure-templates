@@ -19,12 +19,13 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
-/** 
+/**
  * A collection of contextual rendering data.  Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
  */
@@ -33,14 +34,17 @@ public final class RenderContext {
   private final SoyIdRenamingMap xidRenamingMap;
   private final ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
+  private final SoyValueConverter converter;
 
-  public RenderContext(SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap, 
+  public RenderContext(SoyCssRenamingMap cssRenamingMap, SoyIdRenamingMap xidRenamingMap,
       ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap,
-      ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap) {
+      ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
+      SoyValueConverter converter) {
     this.cssRenamingMap = checkNotNull(cssRenamingMap);
     this.xidRenamingMap = checkNotNull(xidRenamingMap);
     this.soyJavaFunctionsMap = checkNotNull(soyJavaFunctionsMap);
     this.soyJavaDirectivesMap = checkNotNull(soyJavaDirectivesMap);
+    this.converter = converter;
   }
 
   public String renameCssSelector(String selector) {
@@ -52,7 +56,7 @@ public final class RenderContext {
     String string = xidRenamingMap.get(id);
     return string == null ? id + "_" : string;
   }
-  
+
   public SoyJavaFunction getFunction(String name) {
     SoyJavaFunction fn = soyJavaFunctionsMap.get(name);
     if (fn == null) {

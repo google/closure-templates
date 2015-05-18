@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyList;
@@ -51,11 +52,11 @@ import java.util.Map;
  * but depending on the type they may also support additional unboxing conversions.
  */
 class SoyExpression extends Expression {
-  private static final ImmutableSet<Kind> STRING_KINDS = 
+  private static final ImmutableSet<Kind> STRING_KINDS =
       Sets.immutableEnumSet(Kind.STRING, Kind.HTML, Kind.ATTRIBUTES, Kind.JS, Kind.CSS, Kind.URI);
 
   static SoyExpression forSoyValue(SoyType type, Expression delegate) {
-    return new SoyExpression(type, type.javaType(), delegate);
+    return new SoyExpression(type, type.javaType(), delegate, Optional.<Expression>absent());
   }
 
   static SoyExpression forBool(Expression delegate) {
@@ -87,7 +88,7 @@ class SoyExpression extends Expression {
   }
 
   static final SoyExpression NULL =
-      new SoyExpression(NullType.getInstance(), Object.class, 
+      new SoyExpression(NullType.getInstance(), Object.class,
           new SimpleExpression(Type.getType(Object.class), true) {
             @Override void doGen(CodeBuilder adapter) {
               adapter.visitInsn(Opcodes.ACONST_NULL);
@@ -99,7 +100,7 @@ class SoyExpression extends Expression {
         @Override
         SoyExpression box() {
           return new DefaultBoxed(BoolType.getInstance(), this,
-              FieldRef.BOOLEAN_DATA_TRUE.accessor());
+              FieldRef.BOOLEAN_DATA_TRUE.accessor(), Optional.<Expression>absent());
         }
       };
 
@@ -108,19 +109,25 @@ class SoyExpression extends Expression {
         @Override
         SoyExpression box() {
           return new DefaultBoxed(BoolType.getInstance(), this,
-              FieldRef.BOOLEAN_DATA_FALSE.accessor());
+              FieldRef.BOOLEAN_DATA_FALSE.accessor(), Optional.<Expression>absent());
         }
       };
 
   private final Class<?> clazz;
   private final SoyType soyType;
   private final Expression delegate;
+  private final Optional<Expression> renderContext;
 
   private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate) {
+    this(soyType, clazz, delegate, Optional.<Expression>absent());
+  }
+
+  private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate,
+      Optional<Expression> renderContext) {
     checkArgument(
         clazz.isAssignableFrom(classFromAsmType(delegate.resultType())),
-        "delegate with type %s isn't compatible with asserted SoyExpression type %s", 
-        delegate.resultType(), 
+        "delegate with type %s isn't compatible with asserted SoyExpression type %s",
+        delegate.resultType(),
         clazz);
     // If this is a boxed type, make sure the declared clazz is compatible
     // TODO(lukes): support this check for unboxed types as well.
@@ -130,6 +137,7 @@ class SoyExpression extends Expression {
     this.soyType = soyType;
     this.clazz = clazz;
     this.delegate = delegate;
+    this.renderContext = renderContext;
   }
 
   @Override final Type resultType() {
@@ -236,7 +244,7 @@ class SoyExpression extends Expression {
     if (isKnownList()) {
       return asBoxed(MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate));
     }
-    if (isKnownMap()) {
+    if (isKnownMap() || isKnownRecord()) {
       return asBoxed(MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(delegate));
     }
     if (soyType.getKind() == Kind.NULL) {
@@ -246,7 +254,7 @@ class SoyExpression extends Expression {
   }
 
   private DefaultBoxed asBoxed(Expression expr) {
-    return new DefaultBoxed(soyType, this, expr);
+    return new DefaultBoxed(soyType, this, expr, renderContext);
   }
 
   /**
@@ -319,8 +327,8 @@ class SoyExpression extends Expression {
       return forFloat(MethodRef.SOY_VALUE_FLOAT_VALUE.invoke(box()));
     }
     if (asType.equals(String.class)) {
-      // string coercion is performed via the toString method
-      return forString(MethodRef.STRING_VALUE_OF.invoke(box()));
+      // string coercion is performed via the coerceToString method
+      return forString(MethodRef.RUNTIME_COERCE_TO_STRING.invoke(box()));
     }
     if (asType.equals(boolean.class)) {
       final SoyExpression boxedDelegate = box();
@@ -364,7 +372,7 @@ class SoyExpression extends Expression {
    * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
    */
   SoyExpression withSource(Expression expr) {
-    return new SoyExpression(soyType, clazz, expr);
+    return new SoyExpression(soyType, clazz, expr, renderContext);
   }
 
   /**
@@ -373,8 +381,9 @@ class SoyExpression extends Expression {
   private static final class DefaultBoxed extends SoyExpression {
     private final SoyExpression unboxed;
 
-    DefaultBoxed(SoyType soyType, SoyExpression unboxed, Expression delegate) {
-      super(soyType, soyType.javaType(), delegate);
+    DefaultBoxed(SoyType soyType, SoyExpression unboxed, Expression delegate,
+        Optional<Expression> expr) {
+      super(soyType, soyType.javaType(), delegate, expr);
       this.unboxed = unboxed;
     }
 

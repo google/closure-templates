@@ -94,6 +94,8 @@ import java.util.Map;
       create(Runtime.class, "unexpectedStateError", int.class);
   static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN = 
       create(Runtime.class, "coerceToBoolean", double.class);
+  static final MethodRef RUNTIME_COERCE_TO_STRING = 
+      create(Runtime.class, "coerceToString", SoyValue.class);
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
@@ -103,7 +105,11 @@ import java.util.Map;
       create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
   static final MethodRef RUNTIME_LOGGER = create(Runtime.class, "logger");
   static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
+  static final MethodRef INTEGER_TO_STRING = create(Integer.class, "toString", int.class);
   static final MethodRef DOUBLE_TO_STRING = create(Double.class, "toString", double.class);
+  static final MethodRef DOUBLE_VALUE = create(Number.class, "doubleValue");
+  static final MethodRef LONG_VALUE = create(Number.class, "longValue");
+  static final MethodRef BOOLEAN_VALUE = create(Boolean.class, "booleanValue");
 
   // Instance methods
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
@@ -160,8 +166,9 @@ import java.util.Map;
       create(Runtime.class, "applyEscapers", CompiledTemplate.class, List.class, ContentKind.class);
   static final MethodRef PARAM_STORE_SET_FIELD = 
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
+  static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
 
-  private static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
+  static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
     try {
       // Ensure that the method exists and is public.

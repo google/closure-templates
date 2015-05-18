@@ -203,4 +203,8 @@ public final class Runtime {
     // only NaN is != to itself so this ensures that v is not NaN and not == 0.0
     return v != 0.0 & v == v;
   }
+
+  public static String coerceToString(@Nullable SoyValue v) {
+    return v == null ? "null" : v.coerceToString();
+  }
 }

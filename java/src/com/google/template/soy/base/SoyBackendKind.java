@@ -23,6 +23,7 @@ package com.google.template.soy.base;
  */
 public enum SoyBackendKind {
   TOFU,
+  JBC_SRC,
   JS_SRC,
   PYTHON_SRC
 }

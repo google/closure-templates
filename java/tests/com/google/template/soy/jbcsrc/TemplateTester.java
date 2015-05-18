@@ -33,6 +33,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
@@ -47,6 +48,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -67,13 +69,15 @@ public final class TemplateTester {
           new BasicFunctionsModule(), 
           new AbstractModule() {
             @Provides RenderContext provideContext(
+                SoyValueHelper converter,
                 @Shared Map<String, SoyJavaFunction> functions,
                 @Shared Map<String, SoyJavaPrintDirective> printDirectives) {
               return new RenderContext(
                   SoyCssRenamingMap.IDENTITY, 
                   SoyCssRenamingMap.IDENTITY,
                   ImmutableMap.copyOf(functions), 
-                  ImmutableMap.copyOf(printDirectives));
+                  ImmutableMap.copyOf(printDirectives),
+                  converter);
             }
             @Override protected void configure() {}
           });
@@ -113,10 +117,26 @@ public final class TemplateTester {
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
     private Iterable<ClassData> classData;
+    private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+    private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
     private CompiledTemplate.Factory factory;
 
     private CompiledTemplateSubject(FailureStrategy failureStrategy, String subject) {
       super(failureStrategy, subject);
+    }
+
+    CompiledTemplateSubject withTypeRegistry(SoyTypeRegistry typeRegistry) {
+      classData = null;
+      factory = null;
+      this.typeRegistry = typeRegistry;
+      return this;
+    }
+
+    CompiledTemplateSubject withValueConverter(SoyValueConverter converter) {
+      classData = null;
+      factory = null;
+      this.converter = converter;
+      return this;
     }
     
     CompiledTemplateSubject logsOutput(String expected) {
@@ -130,6 +150,11 @@ public final class TemplateTester {
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
       return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, DEFAULT_CONTEXT);
     }
+
+    CompiledTemplateSubject rendersAs(
+        String expected, Map<String, ?> params, RenderContext context) {
+      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, context);
+    }
     
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params,  Map<String, ?> ij) {
       return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), DEFAULT_CONTEXT);
@@ -137,6 +162,10 @@ public final class TemplateTester {
     
     CompiledTemplateSubject rendersAs(String expected, RenderContext context) {
       return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, context);
+    }
+
+    private SoyRecord asRecord(Map<String, ?> params) {
+      return (SoyRecord) converter.convert(params);
     }
 
     private CompiledTemplateSubject rendersAndLogs(String expectedOutput, String expectedLogged, 
@@ -179,7 +208,10 @@ public final class TemplateTester {
 
     private void compile() {
       if (classData == null) {
-        SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
+        SoyFileSetNode fileSet = 
+            SoyFileSetParserBuilder.forFileContents(getSubject())
+                .typeRegistry(typeRegistry).parse();
+        new UnsupportedFeatureReporter(ExplodingErrorReporter.get()).check(fileSet);
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
         TemplateRegistry registry = new TemplateRegistry(fileSet, ExplodingErrorReporter.get());
