@@ -79,6 +79,7 @@ public final class ErrorReporterImpl implements ErrorReporter {
       for (SoySyntaxException e : errors) {
         combined.addSuppressed(e);
       }
+      errors.clear();
       throw combined;
     }
   }
