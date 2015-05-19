@@ -16,14 +16,20 @@
 
 package com.google.template.soy.i18ndirectives;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
@@ -47,7 +53,7 @@ import javax.inject.Provider;
  * instance, it can be "native" so that we show native characters in languages like arabic (this
  * argument is ignored for templates running in JavaScript).
  *
- * Usage examples:
+ * <p>Usage examples:
  * {@code
        {$value|formatNum}
        {$value|formatNum:'decimal'}
@@ -55,7 +61,8 @@ import javax.inject.Provider;
    }
  *
  */
-class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsSrcPrintDirective {
+class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsSrcPrintDirective,
+      SoyPySrcPrintDirective {
 
 
   // Map of format arguments to the Closure Format enum.
@@ -77,16 +84,19 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
   private static final ImmutableSet<String> REQUIRED_JS_LIBS =
       ImmutableSet.of("goog.i18n.NumberFormat");
 
+  private static final String DEFAULT_FORMAT = "decimal";
+
 
   /**
    * Provide the current Locale string.
    *
-   * Note that this Locale value is only used in the Java environment. Closure does not provide a
+   * <p>Note that this Locale value is only used in the Java environment. Closure does not provide a
    * clear mechanism to override the NumberFormat defined when the NumberFormat module loads. This
    * is probably not a significant loss of functionality, since the primary reason to inject the
    * LocaleString is because the Java VM's default Locale may not be the same as the desired Locale
    * for the page, while in the JavaScript environment, the value of goog.LOCALE should reliably
-   * indicate which Locale Soy should use.
+   * indicate which Locale Soy should use. Similarly, the Python backend relies on implementation
+   * specific runtime locale support.
    */
   private final Provider<String> localeStringProvider;
 
@@ -107,7 +117,6 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     return false;
   }
 
-
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     ULocale uLocale = I18nUtils.parseULocale(localeStringProvider.get())
         .setKeywordValue("numbers", "local");
@@ -117,7 +126,7 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     }
 
     NumberFormat numberFormat;
-    String formatType = args.isEmpty() ? "decimal" : args.get(0).stringValue();
+    String formatType = args.isEmpty() ? DEFAULT_FORMAT : args.get(0).stringValue();
     if ("decimal".equals(formatType)) {
       numberFormat = NumberFormat.getInstance(uLocale);
     } else if ("percent".equals(formatType)) {
@@ -145,23 +154,11 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     return StringData.forValue(numberFormat.format(((NumberData) value).toFloat()));
   }
 
-
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    String numberFormatType = !args.isEmpty() ? args.get(0).getText() : null;
-
-    String numberFormatDecl;
-    if (numberFormatType == null) {
-      numberFormatDecl = "goog.i18n.NumberFormat.Format.DECIMAL";
-    } else if (JS_ARGS_TO_ENUM.containsKey(numberFormatType)) {
-      numberFormatDecl = JS_ARGS_TO_ENUM.get(numberFormatType);
-    } else {
-      throw SoySyntaxException.createWithoutMetaInfo("First argument to formatNum must be "
-          + "constant, and one of: 'decimal', 'currency', 'percent', 'scientific', "
-          + "'compact_short', or 'compact_long'.");
-    }
+    String numberFormatType = parseFormat(args);
 
     StringBuilder expr = new StringBuilder();
-    expr.append("(new goog.i18n.NumberFormat(" + numberFormatDecl + "))");
+    expr.append("(new goog.i18n.NumberFormat(" + JS_ARGS_TO_ENUM.get(numberFormatType) + "))");
     if ("'compact_short'".equals(numberFormatType) || "'compact_long'".equals(numberFormatType)) {
       expr.append(".setSignificantDigits(3)");
     }
@@ -170,8 +167,36 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     return new JsExpr(expr.toString(), Integer.MAX_VALUE);
   }
 
+  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    String numberFormatType = parseFormat(args);
+
+    PyFunctionExprBuilder builder =
+        new PyFunctionExprBuilder(PyExprUtils.TRANSLATOR_NAME + ".format_num")
+            .addArg(value)
+            .addArg(new PyExpr(numberFormatType, Integer.MAX_VALUE));
+
+    return builder.asPyStringExpr();
+  }
 
   @Override public ImmutableSet<String> getRequiredJsLibNames() {
     return REQUIRED_JS_LIBS;
+  }
+
+  /**
+   * Validates that the provided format matches a supported format, and returns the value, if not,
+   * this throws an exception.
+   * @param args The list of provided arguments.
+   * @return String The number format type.
+   */
+  private static String parseFormat(List<? extends TargetExpr> args) {
+    String numberFormatType = !args.isEmpty() ? args.get(0).getText() : "'" + DEFAULT_FORMAT + "'";
+
+    if (!JS_ARGS_TO_ENUM.containsKey(numberFormatType)) {
+      String validKeys = Joiner.on("', '").join(JS_ARGS_TO_ENUM.keySet());
+      throw SoySyntaxException.createWithoutMetaInfo("First argument to formatNum must be "
+          + "constant, and one of: '" + validKeys + "'.");
+    }
+
+    return numberFormatType;
   }
 }

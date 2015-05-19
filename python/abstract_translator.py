@@ -225,5 +225,15 @@ class AbstractTranslator(object):
     Returns:
       The rendered string.
     """
+    raise NotImplementedError
 
+  def format_num(self, value, target_format):
+    """Formats a number into a specific format (decimal, currency, etc.).
+
+    Args:
+      value: The value to format.
+      target_format: The target number format.
+    Returns:
+      The given number formatted into a string.
+    """
     raise NotImplementedError
