@@ -214,7 +214,7 @@ public final class GeneratePySanitizeEscapingDirectiveCode
   }
 
   /** ["foo", "bar"] -> '("foo", "bar")' */
-  private String toPyStringTuple(Iterable<? extends String> strings) {
+  private String toPyStringTuple(Iterable<String> strings) {
     StringBuilder sb = new StringBuilder();
     boolean isFirst = true;
     sb.append('(');

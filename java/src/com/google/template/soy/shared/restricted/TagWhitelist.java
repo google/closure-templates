@@ -84,7 +84,7 @@ public final class TagWhitelist {
   /** Contains lower-case names of innocuous HTML elements. */
   private final ImmutableSet<String> safeTagNames;
 
-  TagWhitelist(Collection<? extends String> tagNames) {
+  TagWhitelist(Collection<String> tagNames) {
     this.safeTagNames = ImmutableSet.copyOf(tagNames);
     assert requireLowerCaseTagNames(this.safeTagNames);
   }
@@ -125,7 +125,7 @@ public final class TagWhitelist {
 
   public Set<String> asSet() { return safeTagNames; }
 
-  private static boolean requireLowerCaseTagNames(Iterable<? extends String> strs) {
+  private static boolean requireLowerCaseTagNames(Iterable<String> strs) {
     for (String str : strs) {
       assert str.equals(str.toLowerCase(Locale.ENGLISH))
           && VALID_TAG_NAME.matcher(str).matches()

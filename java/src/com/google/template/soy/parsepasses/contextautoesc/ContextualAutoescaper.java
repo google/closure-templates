@@ -119,8 +119,8 @@ public final class ContextualAutoescaper {
    *     consume and produce.
    */
   public ContextualAutoescaper(
-      Iterable<? extends String> autoescapeCancellingDirectives,
-      Map<? extends String, ? extends SanitizedContent.ContentKind> sanitizedContentOperators,
+      Iterable<String> autoescapeCancellingDirectives,
+      Map<String, SanitizedContent.ContentKind> sanitizedContentOperators,
       ErrorReporter errorReporter) {
     this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);

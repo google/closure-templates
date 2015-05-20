@@ -275,7 +275,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
   }
 
   /** ["foo", "bar"] -> '{"foo": true, "bar": true}' */
-  private String toJsStringSet(Iterable<? extends String> strings) {
+  private String toJsStringSet(Iterable<String> strings) {
     StringBuilder sb = new StringBuilder();
     boolean isFirst = true;
     sb.append('{');
