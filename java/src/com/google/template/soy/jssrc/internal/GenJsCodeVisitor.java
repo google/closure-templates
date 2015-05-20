@@ -469,10 +469,12 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     SortedSet<String> requiredObjectTypes = ImmutableSortedSet.of();
     if (hasStrictParams(soyFile)) {
       requiredObjectTypes = getRequiredObjectTypes(soyFile);
+      jsCodeBuilder.appendLine("/** @suppress {extraRequire} */");
       jsCodeBuilder.appendLine("goog.require('goog.asserts');");
     }
 
     if (jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
+      jsCodeBuilder.appendLine("/** @suppress {extraRequire} */");
       jsCodeBuilder.appendLine("goog.require('", GOOG_IS_RTL_NAMESPACE, "');");
     }
 
