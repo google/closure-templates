@@ -30,9 +30,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 
 /**
  * A visitor that scans for features not supported by jbcsrc and reports errors for them.
@@ -55,17 +52,6 @@ final class UnsupportedFeatureReporter {
       this.exprVisitor = new ExprNodeVisitor(errorReporter);
     }
 
-    @Override protected void visitTemplateNode(TemplateNode node) {
-      super.visitTemplateNode(node);
-      for (TemplateParam param : node.getAllParams()) {
-        if (param.declLoc() == DeclLoc.SOY_DOC) {
-          errorReporter.report(node.getSourceLocation(), 
-              SoyError.of(
-                  "jbcsrc doesn't support Soy doc style params, use {@param ...} instead"));
-        }
-      }
-    }
-    
     @Override protected void visitSoyFileNode(SoyFileNode node) {
       super.visitSoyFileNode(node);
       if (node.getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
@@ -103,10 +89,6 @@ final class UnsupportedFeatureReporter {
       VarDefn defn = node.getDefnDecl();
       switch (defn.kind()) {
         case IJ_PARAM:
-          errorReporter.report(node.getSourceLocation(), 
-              SoyError.of(
-                  "jbcsrc doesn't support $ij access, declare {@inject ..} params instead)"));
-          break;
         case LOCAL_VAR:
         case PARAM:
           break;

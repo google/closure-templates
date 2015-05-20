@@ -700,11 +700,6 @@ compare the output of both renderers. However, we may select particular
 (legacy) corners of the language to <strong>not support. </strong>Including, but
 not limited to:
 
-  * SoyDoc declared params
-     * These aren’t actually difficult to support, but i would like to push
-       people to new stuff and this is a carrot
-  * $ij.foo style ij params.  {@inject foo: any} should be sufficient and has
-    simpler semantics
   * strict autoescaping is mandatory
   * ...more to come...
 

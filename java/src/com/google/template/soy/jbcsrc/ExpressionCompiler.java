@@ -64,6 +64,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
@@ -558,6 +559,13 @@ final class ExpressionCompiler {
           paramExpr.cast(varRef.getType().javaType()));
     }
 
+    @Override SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
+      Expression ij = variables.getIjRecord()
+          .invoke(MethodRef.SOY_RECORD_GET_FIELD_PROVIDER, constant(param.name()));
+      return SoyExpression.forSoyValue(varRef.getType(),
+          detacher.get().resolveSoyValueProvider(ij).cast(varRef.getType().javaType()));
+    }
+
     @Override SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
       Expression expression = variables.getLocal(local);
       expression = detacher.get().resolveSoyValueProvider(expression);
@@ -814,6 +822,10 @@ final class ExpressionCompiler {
     }
 
     @Override protected Boolean visitDataAccessNode(DataAccessNode node) {
+      return true;
+    }
+
+    @Override Boolean visitIjParam(VarRefNode node, InjectedParam param) {
       return true;
     }
 

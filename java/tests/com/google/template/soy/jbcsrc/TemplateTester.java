@@ -97,7 +97,12 @@ public final class TemplateTester {
    * <p>The given body lines are wrapped in a template called {@code ns.foo} that has no params.
    */
   public static CompiledTemplateSubject assertThatTemplateBody(String ...body) {
-    return Truth.assertAbout(FACTORY).that(toTemplate(body));
+    String template = toTemplate(body);
+    return assertThatFile(template);
+  }
+
+  static CompiledTemplateSubject assertThatFile(String ...template) {
+    return Truth.assertAbout(FACTORY).that(Joiner.on('\n').join(template));
   }
 
   /**

@@ -28,6 +28,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
+import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -59,14 +60,9 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
             throw new AssertionError("Unexpected local variable: " + local);
         }
       case PARAM:
-        TemplateParam param = (TemplateParam) defn;
-        if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
-          throw new RuntimeException(
-              "header doc params are not supported by jbcsrc, use {@param..} instead");
-        }
-        return visitParam(node, param);
+        return visitParam(node, (TemplateParam) defn);
       case IJ_PARAM:
-        throw new RuntimeException("$ij are not supported by jbcsrc, use {@inject..} instead");
+        return visitIjParam(node, (InjectedParam) defn);
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
       default:
@@ -119,6 +115,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitParam(VarRefNode varRef, TemplateParam param) {
+    return visitExprNode(varRef);
+  }
+
+  T visitIjParam(VarRefNode varRef, InjectedParam ij) {
     return visitExprNode(varRef);
   }
 

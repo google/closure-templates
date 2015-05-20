@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.DEFAULT_CONTEXT;
+import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.base.Joiner;
@@ -362,11 +363,34 @@ public class BytecodeCompilerTest extends TestCase {
         .rendersAs("3", ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.of("foo", 3));
   }
+  
+  public void testParam_headerDocParam() {
+    assertThatFile(
+        "{namespace ns autoescape=\"strict\"}",
+        "/** ",
+        " * @param foo A foo",
+        "*/ ",
+        "{template .foo}",
+        "  {$foo + 1}",
+        "{/template}",
+        "")
+        .rendersAs("2", ImmutableMap.of("foo", 1))
+        .rendersAs("3", ImmutableMap.of("foo", 2))
+        .rendersAs("4", ImmutableMap.of("foo", 3));
+  }
 
   public void testInjectParam() {
     assertThatTemplateBody(
         "{@inject foo : int }",
         "{$foo + 1}")
+        .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
+        .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
+        .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
+  }
+
+  public void testInjectParam_legacyIj() {
+    assertThatTemplateBody(
+        "{$ij.foo + 1}")
         .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
         .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
