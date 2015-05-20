@@ -697,12 +697,8 @@ public final class SoyFileSet {
    *     "namespace", or "generic".
    * @return A map from generated file name (of the form "<*>SoyInfo.java") to generated file
    *     content.
-   * @throws SoySyntaxException If a syntax error is found.
-   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
-   * can inspect.
    */
-  ImmutableMap<String, String> generateParseInfo(
-      String javaPackage, String javaClassNameSource) throws SoySyntaxException {
+  ParseInfo generateParseInfo(String javaPackage, String javaClassNameSource) {
 
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
@@ -712,8 +708,19 @@ public final class SoyFileSet {
 
     // Do renaming of package-relative class names.
     new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(soyTree);
-    return new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, errorReporter)
-        .exec(soyTree);
+    ImmutableMap<String, String> parseInfo =
+        new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, errorReporter).exec(soyTree);
+    return new ParseInfo(result(), parseInfo);
+  }
+
+  static final class ParseInfo {
+    final CompilationResult result;
+    final ImmutableMap<String, String> generatedFiles;
+
+    ParseInfo(CompilationResult result, ImmutableMap<String, String> generatedFiles) {
+      this.result = result;
+      this.generatedFiles = generatedFiles;
+    }
   }
 
   /**
