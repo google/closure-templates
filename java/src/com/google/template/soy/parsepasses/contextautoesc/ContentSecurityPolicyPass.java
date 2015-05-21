@@ -143,7 +143,7 @@ public final class ContentSecurityPolicyPass {
   /**
    * True immediately before an HTML attribute value.
    */
-  private static final Predicate<? super Context> HTML_BEFORE_ATTRIBUTE_VALUE =
+  public static final Predicate<? super Context> HTML_BEFORE_ATTRIBUTE_VALUE =
       new Predicate<Context>() {
         @Override
         public boolean apply(Context c) {

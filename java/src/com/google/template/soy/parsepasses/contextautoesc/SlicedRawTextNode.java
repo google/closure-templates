@@ -80,6 +80,10 @@ public final class SlicedRawTextNode {
       return endOffset - startOffset;
     }
 
+    public SlicedRawTextNode getSlicedRawTextNode() {
+      return slicedRawTextNode;
+    }
+
     /**
      * Splits this slice in two at the given offset and returns the slice after the split.
      * @param offset into the slice.
