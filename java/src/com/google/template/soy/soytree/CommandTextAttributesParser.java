@@ -41,8 +41,9 @@ public final class CommandTextAttributesParser {
       = SoyError.of("Unsupported attribute ''{0}'' in ''{1}'' command text ({2}).");
   private static final SoyError DUPLICATE_ATTRIBUTE
       = SoyError.of("Duplicate attribute ''{0}'' in ''{1}'' command text ({2}).");
-  private static final SoyError INVALID_ATTRIBUTE_VALUE
-      = SoyError.of("Invalid value for attribute ''{0}'' in ''{1}'' command text ({2}).");
+  private static final SoyError INVALID_ATTRIBUTE_VALUE = SoyError.of(
+      "Invalid value for attribute ''{0}'' in ''{1}'' command text ({2}). "
+      + "Valid values are {3}.");
   private static final SoyError MISSING_REQUIRED_ATTRIBUTE
       = SoyError.of("Missing required attribute ''{0}'' in ''{1}'' command text ({2}).");
 
@@ -144,7 +145,8 @@ public final class CommandTextAttributesParser {
               INVALID_ATTRIBUTE_VALUE,
               supportedAttribute.name,
               commandName,
-              commandText);
+              commandText,
+              supportedAttribute.allowedValues.toString());
         }
 
       } else {
