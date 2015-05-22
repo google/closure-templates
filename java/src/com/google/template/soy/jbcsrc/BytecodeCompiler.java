@@ -23,12 +23,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.jbcsrc.api.CompiledTemplates;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
-
-import java.util.Map;
 
 /**
  * The entry point to the {@code jbcsrc} compiler.
@@ -52,8 +49,8 @@ final class BytecodeCompiler {
     MemoryClassLoader loader = 
         compileTemplates(registry, compilerRegistry, ExplodingErrorReporter.get());
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
-    // TODO(lukes): support deltemplates eventually
-    for (String name : registry.getBasicTemplatesMap().keySet()) {
+    for (TemplateNode node : registry.getAllTemplates()) {
+      String name = node.getTemplateName();
       factories.put(name, loadFactory(compilerRegistry.getTemplateInfo(name), loader));
     }
     return new CompiledTemplates(factories.build());
@@ -63,13 +60,8 @@ final class BytecodeCompiler {
     // TODO(lukes): use a real error reporter
     UnsupportedFeatureReporter reporter =
         new UnsupportedFeatureReporter(ExplodingErrorReporter.get());
-    for (TemplateBasicNode node : registry.getBasicTemplatesMap().values()) {
+    for (TemplateNode node : registry.getAllTemplates()) {
       reporter.check(node);
-    }
-    for (DelegateTemplateDivision division : registry.getDelTemplatesMap().values()) {
-      for (TemplateDelegateNode node : division.delPackageNameToDelTemplateMap.values()) {
-        reporter.check(node);
-      }
     }
   }
 
@@ -108,9 +100,8 @@ final class BytecodeCompiler {
     // We generate all the classes and then start loading them.  This 2 phase process ensures that
     // we don't have to worry about ordering (where a class we have generated references a class we
     // haven't generated yet), because none of the classes are loadable until they all are.
-    for (Map.Entry<String, TemplateBasicNode> template :
-        registry.getBasicTemplatesMap().entrySet()) {
-      String name = template.getKey();
+    for (TemplateNode template : registry.getAllTemplates()) {
+      String name = template.getTemplateName();
       CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(name);
       TemplateCompiler templateCompiler = 
           new TemplateCompiler(compilerRegistry, classInfo, errorReporter);

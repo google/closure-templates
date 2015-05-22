@@ -33,7 +33,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-
 /**
  * A registry or index of all templates in a Soy tree.
  *
@@ -93,6 +92,8 @@ public final class TemplateRegistry {
    *  descending priority order. */
   private final ImmutableListMultimap<DelTemplateKey, DelegateTemplateDivision> delTemplatesMap;
 
+  private final ImmutableList<TemplateNode> allTemplates;
+
   /**
    * Constructor.
    * @param soyTree The Soy tree from which to build a template registry.
@@ -100,7 +101,7 @@ public final class TemplateRegistry {
   public TemplateRegistry(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
 
     // ------ Iterate through all templates to collect data. ------
-
+    ImmutableList.Builder<TemplateNode> allTemplatesBuilder = ImmutableList.builder();
     Map<String, TemplateBasicNode> basicTemplates = new LinkedHashMap<>();
     ImmutableSetMultimap.Builder<String, DelTemplateKey> delTemplateBuilder =
         ImmutableSetMultimap.builder();
@@ -109,7 +110,7 @@ public final class TemplateRegistry {
 
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       for (TemplateNode template : soyFile.getChildren()) {
-
+        allTemplatesBuilder.add(template);
         if (template instanceof TemplateBasicNode) {
           // Case 1: Basic template.
           TemplateBasicNode prev = basicTemplates.put(
@@ -197,6 +198,7 @@ public final class TemplateRegistry {
 
     delTemplatesMap = delTemplatesMapBuilder.build();
     delTemplateNameToKeysMap = delTemplateBuilder.build();
+    allTemplates = allTemplatesBuilder.build();
   }
 
 
@@ -242,6 +244,13 @@ public final class TemplateRegistry {
     return delTemplateNameToKeysMap.containsKey(delTemplateName);
   }
 
+  /**
+   * Returns all registered templates ({@link TemplateBasicNode basic} and
+   * {@link TemplateDelegateNode delegate} nodes), in no particular order.
+   */
+  public ImmutableList<TemplateNode> getAllTemplates() {
+    return allTemplates;
+  }
 
   /**
    * Retrieves the set of {@code DelegateTemplateDivision}s for all variants of a given a delegate
@@ -279,10 +288,10 @@ public final class TemplateRegistry {
     TemplateDelegateNode delTemplate = selectDelTemplateHelper(
         delTemplateKey, activeDelPackageNames);
 
-    if (delTemplate == null && !delTemplateKey.variant.isEmpty()) {
+    if (delTemplate == null && !delTemplateKey.variant().isEmpty()) {
       // Fall back to empty variant.
       delTemplate = selectDelTemplateHelper(
-          new DelTemplateKey(delTemplateKey.name, ""), activeDelPackageNames);
+          DelTemplateKey.create(delTemplateKey.name(), ""), activeDelPackageNames);
     }
 
     return delTemplate;

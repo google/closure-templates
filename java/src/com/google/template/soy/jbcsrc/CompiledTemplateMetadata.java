@@ -22,11 +22,10 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.runtime.Names;
-import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateNode;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-
 
 /**
  * Information about a compiled template.
@@ -61,7 +60,7 @@ import org.objectweb.asm.commons.Method;
     }
   }
 
-  static CompiledTemplateMetadata create(String templateName, TemplateBasicNode node) {
+  static CompiledTemplateMetadata create(String templateName, TemplateNode node) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
     TypeInfo type = TypeInfo.create(className);
     return new AutoValue_CompiledTemplateMetadata(
@@ -86,5 +85,5 @@ import org.objectweb.asm.commons.Method;
   abstract TypeInfo typeInfo();
 
   /** The actual template. */
-  abstract TemplateBasicNode node();
+  abstract TemplateNode node();
 }

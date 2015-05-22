@@ -39,7 +39,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -166,7 +166,7 @@ final class TemplateCompiler {
         createLocal("context", 2, Type.getType(RenderContext.class), start, end);
     final VariableSet variableSet = 
         new VariableSet(fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
-    TemplateBasicNode node = template.node();
+    TemplateNode node = template.node();
     TemplateVariables variables = 
         new TemplateVariables(variableSet, thisVar, contextVar);
     final Statement methodBody =

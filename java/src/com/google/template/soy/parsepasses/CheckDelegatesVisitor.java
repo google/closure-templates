@@ -109,7 +109,7 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Check that no name is reused for both basic and delegate templates.
     for (DelTemplateKey delTemplateKey : delTemplatesMap.keySet()) {
-      String name = delTemplateKey.name;
+      String name = delTemplateKey.name();
       if (basicTemplatesMap.containsKey(name)) {
         SourceLocation sourceLocation = basicTemplatesMap.get(name).getSourceLocation();
         errorReporter.report(

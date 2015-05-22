@@ -150,7 +150,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     if (delTemplateVariant != null) {
       // The variant value is already available (i.e. we either have a string literal or no variant
       // was defined). In these cases we can already define a template key.
-      this.delTemplateKey = new DelTemplateKey(delTemplateName, delTemplateVariant);
+      this.delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
       this.templateNameForUserMsgs = delTemplateKey.toString();
     }
 
@@ -197,7 +197,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
     this.delTemplateName = delTemplateName;
     this.delTemplateVariant = delTemplateVariant;
-    this.delTemplateKey = new DelTemplateKey(delTemplateName, delTemplateVariant);
+    this.delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
     this.templateNameForUserMsgs = delTemplateKey.toString();
     this.delPriority = delPriority;
     setAutoescapeInfo(autoescapeMode, contentKind);
@@ -232,6 +232,8 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     // the intended usage of the Soy compiler, but some projects use it this way). Note that the
     // node id is also included in the generated name, which is already sufficient for guaranteeing
     // unique names in the case where all Soy files are compiled together at once.
+    // TODO(lukes): why calculate a hash? just cat the bits together to get a
+    // reasonable and unique string?  is this for client obfuscation?
     String delPackageAndDelTemplateStr =
         (soyFileHeaderInfo.delPackageName == null ? "" : soyFileHeaderInfo.delPackageName) +
             "~" + delTemplateName + "~" + delTemplateVariant;

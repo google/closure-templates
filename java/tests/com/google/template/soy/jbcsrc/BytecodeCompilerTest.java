@@ -25,6 +25,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -34,13 +35,18 @@ import com.google.template.soy.data.internal.EasyDictImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.CompiledTemplates;
+import com.google.template.soy.jbcsrc.api.DelTemplateSelector;
+import com.google.template.soy.jbcsrc.api.DelTemplateSelectorImpl;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
@@ -54,6 +60,141 @@ import java.util.Set;
  * A test for the template compiler, notably {@link BytecodeCompiler} and its collaborators.
  */
 public class BytecodeCompilerTest extends TestCase {
+
+  public void testDelCall_delPackageSelections() throws IOException {
+    String soyFileContent1 = Joiner.on("\n").join(
+        "{namespace ns1 autoescape=\"strict\"}",
+        "",
+        "/***/",
+        "{template .callerTemplate}",
+        "  {delcall myApp.myDelegate}",
+        "    {param boo: 'aaaaaah' /}",
+        "  {/delcall}",
+        "{/template}",
+        "",
+        "/** */",
+        "{deltemplate myApp.myDelegate}",  // default implementation (doesn't use $boo)
+        "  {@param boo : string}",
+        "  000",
+        "{/deltemplate}",
+        "");
+
+    String soyFileContent2 = Joiner.on("\n").join(
+        "{delpackage SecretFeature}",
+        "{namespace ns2 autoescape=\"strict\"}",
+        "",
+        "/** */",
+        "{deltemplate myApp.myDelegate}",  // implementation in SecretFeature
+        "  {@param boo : string}",
+        "  111 {$boo}",
+        "{/deltemplate}",
+        "");
+
+    String soyFileContent3 = Joiner.on("\n").join(
+        "{delpackage AlternateSecretFeature}",
+        "{namespace ns3 autoescape=\"strict\"}",
+        "",
+        "/** */",
+        "{deltemplate myApp.myDelegate}",  // implementation in AlternateSecretFeature
+        "  222 {call .helper data=\"all\" /}",
+        "{/deltemplate}",
+        "");
+
+    String soyFileContent4 = Joiner.on("\n").join(
+        "{namespace ns3 autoescape=\"strict\"}",
+        "",
+        "/** */",
+        "{template .helper private=\"true\"}",
+        "  {@param boo : string}",
+        "  {$boo}",
+        "{/template}",
+        "");
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder
+        .forFileContents(soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
+        .parse();
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    CompiledTemplates templates = BytecodeCompiler.compile(templateRegistry);
+    DelTemplateSelectorImpl.Factory selectorFactory =
+        new DelTemplateSelectorImpl.Factory(templateRegistry, templates);
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
+    ImmutableSet<String> activePackages = ImmutableSet.<String>of();
+
+    assertThat(renderWithActivePackages(factory, selectorFactory.create(activePackages)))
+        .isEqualTo("000");
+
+    activePackages = ImmutableSet.of("SecretFeature");
+    assertThat(renderWithActivePackages(factory, selectorFactory.create(activePackages)))
+        .isEqualTo("111 aaaaaah");
+
+    activePackages = ImmutableSet.of("AlternateSecretFeature");
+    assertThat(renderWithActivePackages(factory, selectorFactory.create(activePackages)))
+        .isEqualTo("222 aaaaaah");
+    
+    activePackages = ImmutableSet.of("NonexistentFeature");
+    assertThat(renderWithActivePackages(factory, selectorFactory.create(activePackages)))
+        .isEqualTo("000");
+  }
+
+  private String renderWithActivePackages(CompiledTemplate.Factory factory,
+      DelTemplateSelector create) throws IOException {
+    RenderContext context = DEFAULT_CONTEXT.toBuilder()
+        .withTemplateSelector(create)
+        .build();
+    AdvisingStringBuilder builder = new AdvisingStringBuilder();
+    assertEquals(RenderResult.done(), 
+        factory.create(EMPTY_DICT, EMPTY_DICT).render(builder, context));
+    String string = builder.toString();
+    return string;
+  }
+
+  public void testDelCall_delVariant() throws IOException {
+    String soyFileContent1 = Joiner.on("\n").join(
+        "{namespace ns1 autoescape=\"strict\"}",
+        "",
+        "/***/",
+        "{template .callerTemplate}",
+        "  {@param variant : string}",
+        "  {delcall ns1.del variant=\"$variant\" allowemptydefault=\"true\"/}",
+        "{/template}",
+        "",
+        "/** */",
+        "{deltemplate ns1.del variant=\"'v1'\"}",
+        "  v1",
+        "{/deltemplate}",
+        "",
+        "/** */",
+        "{deltemplate ns1.del variant=\"'v2'\"}",
+        "  v2",
+        "{/deltemplate}",
+        "");
+
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse();
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    CompiledTemplates templates = BytecodeCompiler.compile(templateRegistry);
+    DelTemplateSelectorImpl.Factory selectorFactory =
+        new DelTemplateSelectorImpl.Factory(templateRegistry, templates);
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
+    RenderContext context = DEFAULT_CONTEXT.toBuilder()
+        .withTemplateSelector(selectorFactory.create(ImmutableSet.<String>of()))
+        .build();
+    AdvisingStringBuilder builder = new AdvisingStringBuilder();
+    assertEquals(RenderResult.done(), 
+        factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "v1")), EMPTY_DICT)
+            .render(builder, context));
+    assertThat(builder.toString()).isEqualTo("v1");
+    builder.clear();
+
+    assertEquals(RenderResult.done(), 
+        factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "v2")), EMPTY_DICT)
+            .render(builder, context));
+    assertThat(builder.toString()).isEqualTo("v2");
+    builder.clear();
+
+    assertEquals(RenderResult.done(), 
+        factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
+            .render(builder, context));
+    assertThat(builder.toString()).isEqualTo("");
+  }
 
   public void testCallBasicNode() throws IOException {
     CompiledTemplates templates = TemplateTester.compileFile(
@@ -306,47 +447,39 @@ public class BytecodeCompilerTest extends TestCase {
   }
 
   public void testCssNode() {
-    RenderContext ctx = new RenderContext(
-        new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
-        SoyCssRenamingMap.IDENTITY,
-        ImmutableMap.<String, SoyJavaFunction>of(),
-        ImmutableMap.<String, SoyJavaPrintDirective>of(),
-        SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    RenderContext ctx = DEFAULT_CONTEXT.toBuilder()
+        .withCssRenamingMap(new FakeRenamingMap(ImmutableMap.of("foo", "bar")))
+        .build();
     assertThatTemplateBody("{css foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{css foo2}").rendersAs("foo2", ctx);
     assertThatTemplateBody("{css 1+2, foo2}").rendersAs("3-foo2", ctx);
   }
 
   public void testXidNode() {
-    RenderContext ctx = new RenderContext(
-        SoyCssRenamingMap.IDENTITY,
-        new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
-        ImmutableMap.<String, SoyJavaFunction>of(),
-        ImmutableMap.<String, SoyJavaPrintDirective>of(),
-        SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    RenderContext ctx = DEFAULT_CONTEXT.toBuilder()
+        .withXidRenamingMap(new FakeRenamingMap(ImmutableMap.of("foo", "bar")))
+        .build();
     assertThatTemplateBody("{xid foo}").rendersAs("bar", ctx);
     assertThatTemplateBody("{xid foo2}").rendersAs("foo2_", ctx);
   }
-  
+
   public void testCallCustomFunction() {
-    RenderContext ctx = new RenderContext(
-        SoyCssRenamingMap.IDENTITY,
-        new FakeRenamingMap(ImmutableMap.of("foo", "bar")),
-        ImmutableMap.<String, SoyJavaFunction>of("plusOne", new SoyJavaFunction() {
-          @Override public Set<Integer> getValidArgsSizes() {
-            return ImmutableSet.of(1);
-          }
-
-          @Override public String getName() {
-            return "plusOne";
-          }
-
-          @Override public SoyValue computeForJava(List<SoyValue> args) {
-            return IntegerData.forValue(args.get(0).integerValue() + 1);
-          }
-        }),
-        ImmutableMap.<String, SoyJavaPrintDirective>of(),
-        SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    RenderContext ctx = DEFAULT_CONTEXT.toBuilder()
+        .withSoyFunctions(ImmutableMap.<String, SoyJavaFunction>of("plusOne", 
+            new SoyJavaFunction() {
+              @Override public Set<Integer> getValidArgsSizes() {
+                return ImmutableSet.of(1);
+              }
+    
+              @Override public String getName() {
+                return "plusOne";
+              }
+    
+              @Override public SoyValue computeForJava(List<SoyValue> args) {
+                return IntegerData.forValue(args.get(0).integerValue() + 1);
+              }
+            }))
+        .build();
     assertThatTemplateBody("{plusOne(1)}").rendersAs("2", ctx);
   }
 

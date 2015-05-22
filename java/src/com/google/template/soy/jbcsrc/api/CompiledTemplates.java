@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.api;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
 /**
  * The result of template compilation.
  */
-final class CompiledTemplates {
-  private final ImmutableMap<String, CompiledTemplate.Factory> templateFactories;
+public final class CompiledTemplates {
+  private final ImmutableMap<String, CompiledTemplate.Factory> templateNameToFactory;
 
-  CompiledTemplates(ImmutableMap<String, CompiledTemplate.Factory> templateFactories) {
-    this.templateFactories = templateFactories;
+  public CompiledTemplates(ImmutableMap<String, CompiledTemplate.Factory> templateFactories) {
+    this.templateNameToFactory = templateFactories;
   } 
 
   /**
    * Returns a factory for the given fully qualified template name.
    */
-  CompiledTemplate.Factory getTemplateFactory(String name) {
-    return templateFactories.get(name);
+  public CompiledTemplate.Factory getTemplateFactory(String name) {
+    checkNotNull(name);
+    CompiledTemplate.Factory factory = templateNameToFactory.get(name);
+    if (factory == null) {
+      throw new IllegalArgumentException("No template was compiled for: " + name);
+    }
+    return factory;
   }
 }

@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
@@ -38,9 +37,11 @@ import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory;
+import com.google.template.soy.jbcsrc.api.CompiledTemplates;
+import com.google.template.soy.jbcsrc.api.DelTemplateSelector;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -72,12 +73,17 @@ public final class TemplateTester {
                 SoyValueHelper converter,
                 @Shared Map<String, SoyJavaFunction> functions,
                 @Shared Map<String, SoyJavaPrintDirective> printDirectives) {
-              return new RenderContext(
-                  SoyCssRenamingMap.IDENTITY, 
-                  SoyCssRenamingMap.IDENTITY,
-                  ImmutableMap.copyOf(functions), 
-                  ImmutableMap.copyOf(printDirectives),
-                  converter);
+              return new RenderContext.Builder()
+                  .withSoyFunctions(functions)
+                  .withSoyPrintDirectives(printDirectives)
+                  .withConverter(converter)
+                  .withTemplateSelector(new DelTemplateSelector() {
+                    @Override public Factory selectDelTemplate(String calleeName, String variant,
+                        boolean allowEmpty) {
+                      throw new UnsupportedOperationException();
+                    }
+                  })
+                  .build();
             }
             @Override protected void configure() {}
           });

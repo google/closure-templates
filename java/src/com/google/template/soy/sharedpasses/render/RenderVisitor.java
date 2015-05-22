@@ -536,7 +536,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             node);
       }
     }
-    DelTemplateKey delegateKey = new DelTemplateKey(node.getDelCalleeName(), variant);
+    DelTemplateKey delegateKey = DelTemplateKey.create(node.getDelCalleeName(), variant);
 
     TemplateDelegateNode callee;
     try {

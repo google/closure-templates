@@ -149,6 +149,9 @@ import java.util.Map;
       create(RenderContext.class, "getFunction", String.class);
   static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE = 
       create(RenderContext.class, "getPrintDirective", String.class);
+  static final MethodRef RENDER_CONTEXT_GET_DELTEMPLATE = 
+      create(RenderContext.class, "getDelTemplate", 
+          String.class, String.class, boolean.class, SoyRecord.class, SoyRecord.class);
   static final MethodRef SOY_LIST_AS_JAVA_LIST = create(SoyList.class, "asJavaList");
   static final MethodRef LIST_SIZE = create(List.class, "size");
   static final MethodRef LIST_GET = create(List.class, "get", int.class);
@@ -167,6 +170,8 @@ import java.util.Map;
   static final MethodRef PARAM_STORE_SET_FIELD = 
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
   static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
+  static final MethodRef COMPILED_TEMPLATE_RENDER = 
+      create(CompiledTemplate.class, "render", AdvisingAppendable.class, RenderContext.class);
 
   static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

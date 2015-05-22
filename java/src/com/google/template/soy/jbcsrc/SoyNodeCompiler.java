@@ -39,8 +39,10 @@ import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallNode.DataAttribute;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -78,6 +80,8 @@ import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 /**
  * Compiles {@link SoyNode soy nodes} into {@link Statement statements}.
@@ -175,7 +179,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return Statement.concat(jumpTable, templateBody);
   }
 
-  @Override protected Statement visitTemplateBasicNode(TemplateNode node) {
+  @Override protected Statement visitTemplateNode(TemplateNode node) {
     return visitChildrenInNewScope(node);
   }
 
@@ -539,14 +543,71 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         .withSourceLocation(node.getSourceLocation());
   }
 
+  /**
+   * Given this delcall:
+   * {@code {delcall foo.bar variant="$expr" allowemptydefault="true"}}
+   *
+   * Generate code that looks like:
+   * <pre> {@code
+   *   renderContext.getDeltemplate("foo.bar", <variant-expression>, true)
+   *       .create(<prepareParameters>, ijParams)
+   *       .render(appendable, renderContext)
+   *
+   * }</pre>
+   *
+   * <p>We share logic with {@link #visitCallBasicNode(CallBasicNode)} around the actual calling
+   * convention (setting up detaches, storing the template in a field). As well as the logic for
+   * preparing the data record.  The only interesting part of delcalls is calculating the
+   * {@code variant} and the fact that we have to invoke the {@link RenderContext} runtime to do
+   * the deltemplate lookup.
+   */
+  @Override protected Statement visitCallDelegateNode(CallDelegateNode node) {
+    Label reattachPoint = new Label();
+    Expression variantExpr;
+    if (node.getDelCalleeVariantExpr() == null) {
+      variantExpr = constant("");
+    } else {
+      variantExpr =
+          exprCompiler.compile(node.getDelCalleeVariantExpr(), reattachPoint).convert(String.class);
+    }
+    Expression calleeExpression =
+        variableLookup.getRenderContext()
+            .invoke(MethodRef.RENDER_CONTEXT_GET_DELTEMPLATE,
+                constant(node.getDelCalleeName()),
+                variantExpr,
+                constant(node.allowsEmptyDefault()),
+                prepareParamsHelper(node, reattachPoint),
+                variableLookup.getIjRecord());
+
+    return visitCallNodeHelper(
+        node,
+        registry.getDelTemplateContentKind(node.getDelCalleeName()),
+        MethodRef.COMPILED_TEMPLATE_RENDER,
+        reattachPoint,
+        calleeExpression);
+  }
+
   @Override protected Statement visitCallBasicNode(CallBasicNode node) {
     // Basic nodes are basic! We can just call the node directly.
     CompiledTemplateMetadata callee = registry.getTemplateInfo(node.getCalleeName());
     Label reattachPoint = new Label();
-    FieldRef currentCalleeField = variables.getCurrentCalleeField();
     Expression calleeExpression =
         callee.constructor()
             .construct(prepareParamsHelper(node, reattachPoint), variableLookup.getIjRecord());
+    return visitCallNodeHelper(
+        node,
+        callee.node().getContentKind(),
+        callee.renderMethod(),
+        reattachPoint,
+        calleeExpression);
+  }
+
+  private Statement visitCallNodeHelper(CallNode node,
+      @Nullable ContentKind calleeContentKind,
+      MethodRef renderMethod,
+      Label reattachPoint,
+      Expression calleeExpression) {
+    FieldRef currentCalleeField = variables.getCurrentCalleeField();
     // Apply escaping directives if any
     if (!node.getEscapingDirectiveNames().isEmpty()) {
       List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectiveNames().size());
@@ -559,19 +620,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               calleeExpression,
               BytecodeUtils.newArrayList(directiveExprs),
-              callee.node().getContentKind() == null
+              calleeContentKind == null
                   ? BytecodeUtils.constantNull(ContentKind.class)
-                  : FieldRef.enumReference(callee.node().getContentKind()).accessor());
+                  : FieldRef.enumReference(calleeContentKind).accessor());
     }
     Statement initCallee =
         currentCalleeField.putInstanceField(thisVar, calleeExpression).labelStart(reattachPoint);
 
     // This cast will always succeed.
-    Expression typedCallee = currentCalleeField.accessor(thisVar).cast(callee.typeInfo().type());
-    Expression callRender = callee.renderMethod()
-        .invoke(typedCallee,
-            appendableExpression,
-            variableLookup.getRenderContext());
+    Expression typedCallee = currentCalleeField.accessor(thisVar)
+        .cast(calleeExpression.resultType());
+    Expression callRender =
+        typedCallee.invoke(renderMethod, appendableExpression, variableLookup.getRenderContext());
     Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee = currentCalleeField.putInstanceField(thisVar,
         BytecodeUtils.constantNull(CompiledTemplate.class));
