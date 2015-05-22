@@ -38,7 +38,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.Visibility;
 
 import java.util.Collection;
 import java.util.List;
@@ -260,11 +259,15 @@ public final class ContextualAutoescaper {
       = new Predicate<TemplateNode>() {
         @Override
         public boolean apply(TemplateNode templateNode) {
-          // All strict templates should be inferred, since inference doesn't descend into strict
-          // templates.
+          // All strict and contextual. With strict, every template establishes its own context.
+          // With contextual, even if we don't see any callers in the call graph, it still might be
+          // called from another file.  This used to skip private templates, but private supposedly
+          // only means the template can only be called by other templates, and even then, it is
+          // not really enforced strongly by the Closure JS Compiler. (Prior to changing this,
+          // there were a few templates that weren't contextually autoescaped because they were
+          // private, but were still being called directly from JS.)
           return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT ||
-              (templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL &&
-                  templateNode.getVisibility() != Visibility.LEGACY_PRIVATE);
+              templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL;
         }
   };
 

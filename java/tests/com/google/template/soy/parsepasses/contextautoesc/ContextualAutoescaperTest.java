@@ -127,6 +127,20 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
+  public void testPrivateTemplate() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .privateFoo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "Hello, {$world |escapeHtml}!\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .privateFoo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "Hello, {$world}!\n",
+            "{/template}"));
+  }
+
   public void testPrintInTextAndLink() throws Exception {
     assertContextualRewriting(
         join(
@@ -915,7 +929,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
             "{template .pagenum autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$pageIndex} of {$pageCount}\n",
+              "{$pageIndex |escapeHtml} of {$pageCount |escapeHtml}\n",
             "{/template}\n\n",
             "/**\n",
             " * @param pageIndex 0-indexed index of the current page.\n",
