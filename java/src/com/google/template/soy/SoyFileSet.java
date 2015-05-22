@@ -1088,10 +1088,6 @@ public final class SoyFileSet {
       (new AssertStrictAutoescapingVisitor(errorReporter)).exec(soyTree);
     }
 
-    if (checkConformance != null) {
-      checkConformance.exec(soyTree);
-    }
-
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
     new HandleCssCommandVisitor(generalOptions.getCssHandlingScheme(), errorReporter).exec(soyTree);
     if (generalOptions.getCompileTimeGlobals() != null || typeRegistry != null) {
@@ -1108,6 +1104,21 @@ public final class SoyFileSet {
     // in some places, but with runtime guarantees.
     doContextualEscaping(soyTree);
     performAutoescapeVisitor.exec(soyTree);
+
+    // Run the conformance checks after the CheckEscapingSanityVisitor has run
+    // (in doContextualAutoescaping). This is because one particular conformance check,
+    // com.google.template.soy.conformance.BanInlineEventHandlers, runs the contextual autoescaper
+    // for its side effects (context inference). The contextual autoescaper mutates the parse tree,
+    // (specifically, adding |text directives) and the CheckEscapingSanityVisitor, thinking that
+    // the template author used them, complains that they are for internal use only.
+    // TODO(brndn): consider moving the conformance pass out of the main compilation path.
+    // A risk of the current situation is that the conformance pass could actually modify
+    // gencode destined for production. On the other hand, moving the conformance pass elsewhere
+    // could reduce its value, since it might not see precisely the same AST seen on the main
+    // compilation path.
+    if (checkConformance != null) {
+      checkConformance.exec(soyTree);
+    }
 
     // Add print directives that mark inline-scripts as safe to run.
     if (generalOptions.supportContentSecurityPolicy()) {
