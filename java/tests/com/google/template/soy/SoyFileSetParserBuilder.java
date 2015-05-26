@@ -26,7 +26,6 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -114,7 +113,7 @@ public final class SoyFileSetParserBuilder {
    *   <li>{@link com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor}
    *   </li>
    *   <li>{@link com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor}</li>
-   *   <li>{@link  com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor}</li>
+   *   <li>{@link com.google.template.soy.sharedpasses.CheckSoyDocVisitor}</li>
    *   <li>{@link com.google.template.soy.sharedpasses.CheckTemplateVisibility}</li>
    *   <li>{@link com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor}</li>
    * </ul>

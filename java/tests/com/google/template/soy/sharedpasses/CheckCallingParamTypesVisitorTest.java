@@ -333,7 +333,7 @@ public final class CheckCallingParamTypesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .errorReporter(errorReporter)
         .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, errorReporter).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, errorReporter).exec(soyTree);
     new CheckCallingParamTypesVisitor(errorReporter).exec(soyTree);
     return soyTree;
   }
@@ -343,7 +343,7 @@ public final class CheckCallingParamTypesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .errorReporter(boom)
         .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new CheckCallingParamTypesVisitor(errorReporter).exec(soyTree);
     assertThat(errorReporter.getErrorMessages()).hasSize(1);

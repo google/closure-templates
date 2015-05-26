@@ -24,7 +24,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
+import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -373,7 +373,7 @@ public final class CheckDelegatesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .errorReporter(boom)
         .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new CheckDelegatesVisitor(errorReporter).exec(soyTree);
     assertThat(errorReporter.getErrorMessages()).isEmpty();
@@ -384,7 +384,7 @@ public final class CheckDelegatesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .errorReporter(boom)
         .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new CheckDelegatesVisitor(errorReporter).exec(soyTree);
     assertThat(errorReporter.getErrorMessages()).hasSize(1);

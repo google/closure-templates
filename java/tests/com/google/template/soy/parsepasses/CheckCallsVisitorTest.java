@@ -25,7 +25,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
+import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -172,7 +172,7 @@ public final class CheckCallsVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .errorReporter(boom)
         .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
     new CheckCallsVisitor(boom).exec(soyTree);
   }
 
@@ -180,7 +180,7 @@ public final class CheckCallsVisitorTest extends TestCase {
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, errorReporter).exec(soyTree);
+    new CheckSoyDocVisitor(SyntaxVersion.V2_0, errorReporter).exec(soyTree);
     new CheckCallsVisitor(errorReporter).exec(soyTree);
     ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
     assertThat(errorMessages).hasSize(1);

@@ -38,7 +38,7 @@ import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVis
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
+import com.google.template.soy.sharedpasses.CheckSoyDocVisitor;
 import com.google.template.soy.sharedpasses.CheckTemplateVisibility;
 import com.google.template.soy.sharedpasses.RemoveHtmlCommentsVisitor;
 import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
@@ -290,7 +290,7 @@ public final class SoyFileSetParser {
    * tree.
    */
   private void runWholeFileSetCheckingPasses(SoyFileSetNode soyTree) {
-    new CheckTemplateParamsVisitor(declaredSyntaxVersion, errorReporter)
+    new CheckSoyDocVisitor(declaredSyntaxVersion, errorReporter)
         .exec(soyTree);
     new CheckDelegatesVisitor(errorReporter)
         .exec(soyTree);
