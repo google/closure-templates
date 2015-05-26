@@ -21,7 +21,6 @@ import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
@@ -34,6 +33,7 @@ import org.objectweb.asm.commons.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -261,7 +261,8 @@ final class VariableSet {
         frames.pop();
         // Use identity semantics to make sure we visit each label at most once.  visiting a label
         // more than once tends to corrupt internal asm state.
-        final Set<Label> endLabels = Sets.newSetFromMap(new IdentityHashMap<Label, Boolean>());
+        final Set<Label> endLabels =
+            Collections.newSetFromMap(new IdentityHashMap<Label, Boolean>());
         for (Variable var : currentFrame.values()) {
           endLabels.add(var.local.end());
           availableSlots.clear(var.local.index(),
