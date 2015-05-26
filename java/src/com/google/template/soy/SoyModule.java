@@ -27,7 +27,7 @@ import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
-import com.google.template.soy.parsepasses.PerformAutoescapeVisitor;
+import com.google.template.soy.parsepasses.PerformDeprecatedNoncontextualAutoescapeVisitor;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -52,7 +52,7 @@ public class SoyModule extends AbstractModule {
     // Bindings for when explicit dependencies are required.
     // Note: We don't promise to support this. We actually frown upon requireExplicitBindings.
     bind(ContextualAutoescaper.class);
-    bind(PerformAutoescapeVisitor.class);
+    bind(PerformDeprecatedNoncontextualAutoescapeVisitor.class);
     bind(SoyFileSet.Builder.class);
     bind(SoyTypeOps.class);
     bind(SoyValueHelper.class);
