@@ -18,12 +18,16 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.ListType;
@@ -34,11 +38,13 @@ import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.primitive.UnknownType;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -85,6 +91,17 @@ class SoyExpression extends Expression {
 
   static SoyExpression forRecord(RecordType recordType, Expression delegate) {
     return new SoyExpression(recordType, Map.class, delegate);
+  }
+
+  /**
+   * Returns an Expression that evaluates to a list containing all the items as boxed soy values.
+   */
+  static Expression asBoxedList(List<SoyExpression> items) {
+    List<Expression> childExprs = new ArrayList<>(items.size());
+    for (SoyExpression child : items) {
+      childExprs.add(child.box());
+    }
+    return BytecodeUtils.asList(childExprs);
   }
 
   static final SoyExpression NULL =
@@ -275,7 +292,7 @@ class SoyExpression extends Expression {
       Expression intExpr = delegate;
       if (isBoxed()) {
         // unbox first
-        intExpr = MethodRef.SOY_VALUE_LONG_VALUE.invoke(intExpr);
+        intExpr = intExpr.invoke(MethodRef.SOY_VALUE_LONG_VALUE);
       }
       if (asType.equals(double.class)) {
         return forFloat(BytecodeUtils.numericConversion(intExpr, Type.DOUBLE_TYPE));
@@ -291,7 +308,7 @@ class SoyExpression extends Expression {
       Expression floatExpr = delegate;
       if (isBoxed()) {
         // unbox first
-        floatExpr = MethodRef.SOY_VALUE_LONG_VALUE.invoke(floatExpr);
+        floatExpr = floatExpr.invoke(MethodRef.SOY_VALUE_LONG_VALUE);
       }
       if (asType.equals(long.class)) {
         throw new IllegalArgumentException("Cannot convert float to int");
@@ -307,13 +324,13 @@ class SoyExpression extends Expression {
       Expression stringExpr = delegate;
       if (isBoxed()) {
         // unbox first
-        stringExpr = MethodRef.SOY_VALUE_STRING_VALUE.invoke(stringExpr);
+        stringExpr = stringExpr.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
       }
       if (asType.equals(double.class) || asType.equals(long.class)) {
         throw new IllegalArgumentException("Cannot convert string to " + asType);
       }
       if (asType.equals(boolean.class)) {
-        return forBool(MethodRef.STRING_IS_EMPTY.invoke(stringExpr));
+        return forBool(stringExpr.invoke(MethodRef.STRING_IS_EMPTY));
       }
     }
 
@@ -321,10 +338,10 @@ class SoyExpression extends Expression {
 
     // SoyValue conversions, we first box ourselves and then call a SoyValue method
     if (asType.equals(long.class)) {
-      return forInt(MethodRef.SOY_VALUE_LONG_VALUE.invoke(box()));
+      return forInt(box().invoke(MethodRef.SOY_VALUE_LONG_VALUE));
     }
     if (asType.equals(double.class)) {
-      return forFloat(MethodRef.SOY_VALUE_FLOAT_VALUE.invoke(box()));
+      return forFloat(box().invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
     }
     if (asType.equals(String.class)) {
       // string coercion is performed via the coerceToString method
@@ -375,6 +392,32 @@ class SoyExpression extends Expression {
     return new SoyExpression(soyType, clazz, expr, renderContext);
   }
 
+  /**
+  * Applies a print directive to the soyValue, only useful for parameterless print directives such
+  * as those applied to {@link MsgNode msg nodes} and {@link CallNode call nodes} for autoescaping.
+  * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy
+  * expressions.
+  */
+  SoyExpression applyPrintDirective(Expression renderContext, String directive) {
+    return applyPrintDirective(renderContext, directive, MethodRef.IMMUTABLE_LIST_OF.invoke());
+  }
+
+  /**
+  * Applies a print directive to the soyValue.
+  */
+  SoyExpression applyPrintDirective(
+      Expression renderContext, String directive, Expression argsList) {
+    // Technically the type is either StringData or SanitizedContent depending on this type, but
+    // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
+    // benefit (and strangely there is no common super type for SanitizedContent and String), this
+    // is probably because after escaping, the only thing you would ever do is convert to a string.
+    return SoyExpression.forSoyValue(UnknownType.getInstance(),
+        MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
+            renderContext
+                .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)),
+                this.box(),
+            argsList));
+  }
   /**
    * Default subtype of {@link SoyExpression} used by our core expression implementations.
    */

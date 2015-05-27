@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
 import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.STORE;
@@ -72,7 +73,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
-import com.google.template.soy.types.primitive.AnyType;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -155,11 +155,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       LazyClosureCompiler lazyClosureCompiler,
       ErrorReporter errorReporter) {
     super(errorReporter);
+    // TODO(lukes): consider extracting a special subtype of Expression for the appendable, we could
+    // then associate additional metadata with it (like, does it support detaching).
     appendableExpression.checkAssignableTo(Type.getType(AdvisingAppendable.class));
     this.thisVar = checkNotNull(thisVar);
     this.registry = checkNotNull(registry);
-    this.detachState = detachState;
-    this.variables = variables;
+    this.detachState = checkNotNull(detachState);
+    this.variables = checkNotNull(variables);
     this.variableLookup = checkNotNull(variableLookup);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.exprCompiler = checkNotNull(exprCompiler);
@@ -420,30 +422,59 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitPrintNode(PrintNode node) {
-    if (!node.getChildren().isEmpty()) {
-      return printWithDirectives(node);
-    } else {
+    // First check our special case for compatible content types (no print directives) and an
+    // expression that evaluates to a SoyValueProvider.  This will allow us to render incrementally
+    if (node.getChildren().isEmpty()) {
       Label reattachPoint = new Label();
       ExprRootNode expr = node.getExprUnion().getExpr();
       Optional<Expression> asSoyValueProvider =
           expressionToSoyValueProviderCompiler.compileAvoidingBoxing(expr, reattachPoint);
       if (asSoyValueProvider.isPresent()) {
-        Expression value = asSoyValueProvider.get();
-        return renderIncrementally(node, value, reattachPoint);
-      } else {
-        SoyExpression printExpr =
-            exprCompiler.compile(expr, reattachPoint)
-                .convert(String.class);
-
-        Expression renderSoyValue =
-            MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, printExpr)
-                .labelStart(reattachPoint);
-        return detachState.detachLimited(renderSoyValue)
-            .withSourceLocation(node.getSourceLocation());
+        return renderIncrementally(node, asSoyValueProvider.get(), reattachPoint);
       }
     }
+    // otherwise we need to do some escapes or simply cannot do incremental rendering
+    Label reattachPoint = new Label();
+    SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
+    Expression renderSoyValue =
+        appendableExpression.invoke(
+            MethodRef.ADVISING_APPENDABLE_APPEND,
+            value.convert(String.class))
+                .labelStart(reattachPoint);
+    return detachState.detachLimited(renderSoyValue)
+        .withSourceLocation(node.getSourceLocation());
   }
 
+  private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
+    BasicExpressionCompiler basic = exprCompiler.asBasicCompiler(reattachPoint);
+    SoyExpression value = basic.compile(node.getExprUnion().getExpr());
+    // We may have print directives, that means we need to pass the render value through a bunch of
+    // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
+    // TODO(user): tracks adding streaming print directives which would help with this,
+    // because instead of wrapping the soy value, we would just wrap the appendable.
+    for (PrintDirectiveNode printDirective : node.getChildren()) {
+      value = value.applyPrintDirective(
+          variableLookup.getRenderContext(),
+          printDirective.getName(),
+          basic.compileToList(printDirective.getArgs()));
+    }
+    return value;
+  }
+
+  /**
+   * TODO(lukes): if the expression is a param, then this is kind of silly since it looks like
+   * <pre>{@code
+   *   SoyValueProvider localParam = this.param;
+   *   this.currentRenderee = localParam;
+   *   SoyValueProvider localRenderee = this.currentRenderee;
+   *   localRenderee.renderAndResolve();
+   * }</pre>
+   *
+   * <p>In this case we could elide the currentRenderee altogether if we knew the soyValueProvider
+   * expression was just a field read... And this is the _common_case for .renderAndResolve calls.
+   * to actually do this we could add a mechanism similar to the SaveStrategy enum for expressions,
+   * kind of like {@link Expression#isConstant()} which isn't that useful in practice.
+   */
   private Statement renderIncrementally(PrintNode node, Expression soyValueProvider,
       Label reattachPoint) {
     // In this case we want to render the SoyValueProvider via renderAndResolve which will
@@ -462,38 +493,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             // TODO(lukes): pass a real value here when we have expression use analysis.
             constant(false));
     Statement doCall = detachState.detachForRender(callRenderAndResolve);
-    Statement clearRenderee = currentRendereeField.putInstanceField(thisVar,
-        BytecodeUtils.constantNull(SoyValueProvider.class));
+    Statement clearRenderee =
+        currentRendereeField.putInstanceField(thisVar, constantNull(SoyValueProvider.class));
     return Statement.concat(initRenderee, doCall, clearRenderee)
         .withSourceLocation(node.getSourceLocation());
-  }
-
-  private Statement printWithDirectives(PrintNode node) {
-    // We have print directives, that means we need to pass the render value through a bunch of
-    // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
-    // TODO(user): tracks adding streaming print directives which would help with this,
-    // because instead of wrapping the soy value, we would just wrap the appendable.
-    Label reattachPoint = new Label();
-    BasicExpressionCompiler basic = exprCompiler.asBasicCompiler(reattachPoint);
-    Expression value = basic.compile(node.getExprUnion().getExpr()).box();
-    for (PrintDirectiveNode child : node.getChildren()) {
-      Expression directive = variableLookup.getRenderContext()
-          .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(child.getName()));
-      Expression args = compileToList(basic, child.getArgs());
-      value = MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(directive, value, args);
-    }
-    Expression printExpr =
-        SoyExpression.forSoyValue(AnyType.getInstance(), value).convert(String.class);
-    Expression renderSoyValue =
-        MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, printExpr)
-            .labelStart(reattachPoint);
-    return detachState.detachLimited(renderSoyValue).withSourceLocation(node.getSourceLocation());
   }
 
   @Override protected Statement visitRawTextNode(RawTextNode node) {
     Expression render = MethodRef.ADVISING_APPENDABLE_APPEND
         .invoke(appendableExpression, constant(node.getRawText()));
-
+    // TODO(lukes): add some heuristics about when to add this
+    // ideas:
+    // * never try to detach in certain 'contexts' (e.g. attribute context)
+    // * never detach after rendering small chunks (< 128 bytes?)
     return detachState.detachLimited(render).withSourceLocation(node.getSourceLocation());
   }
 
@@ -507,9 +519,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   // for them, even though they write to the output.
 
   @Override protected Statement visitXidNode(XidNode node) {
-    Expression rename = MethodRef.RENDER_CONTEXT_RENAME_XID
-        .invoke(variableLookup.getRenderContext(), constant(node.getText()));
-    return MethodRef.ADVISING_APPENDABLE_APPEND.invoke(appendableExpression, rename)
+    return appendableExpression
+        .invoke(
+            MethodRef.ADVISING_APPENDABLE_APPEND,
+            variableLookup.getRenderContext()
+                .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(node.getText())))
         .toStatement()
         .withSourceLocation(node.getSourceLocation());
   }
@@ -524,8 +538,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   // assigned at startup.
 
   @Override protected Statement visitCssNode(CssNode node) {
-    Expression renamedSelector = MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR
-        .invoke(variableLookup.getRenderContext(), constant(node.getSelectorText()));
+    Expression renamedSelector =
+        variableLookup.getRenderContext()
+            .invoke(MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR, constant(node.getSelectorText()));
 
     if (node.getComponentNameExpr() != null) {
       Label reattachPoint = new Label();
@@ -619,7 +634,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       calleeExpression =
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               calleeExpression,
-              BytecodeUtils.newArrayList(directiveExprs),
+              BytecodeUtils.asList(directiveExprs),
               calleeContentKind == null
                   ? BytecodeUtils.constantNull(ContentKind.class)
                   : FieldRef.enumReference(calleeContentKind).accessor());
@@ -696,17 +711,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitLogNode(LogNode node) {
-    return new SoyNodeCompiler(
-        thisVar,
-        registry,
-        detachState,
-        variables,
-        variableLookup,
-        MethodRef.RUNTIME_LOGGER.invoke(),
-        exprCompiler,
-        expressionToSoyValueProviderCompiler,
-        lazyClosureCompiler,
-        errorReporter).visitChildrenInNewScope(node);
+    return compilerWithNewAppendable(MethodRef.RUNTIME_LOGGER.invoke())
+        .visitChildrenInNewScope(node);
   }
 
   @Override protected Statement visitLetValueNode(LetValueNode node) {
@@ -726,15 +732,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         "The jbcsrc backend doesn't support: " + node.getKind() + " nodes yet.");
   }
 
-  private Expression compileToList(BasicExpressionCompiler basic, List<ExprRootNode> children) {
-    if (children.isEmpty()) {
-      return MethodRef.IMMUTABLE_LIST_OF.invoke();
-    } else {
-      List<Expression> exprs = new ArrayList<>(children.size());
-      for (ExprRootNode expr : children) {
-        exprs.add(basic.compile(expr).box());
-      }
-      return BytecodeUtils.newArrayList(exprs);
-    }
+  /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
+  private SoyNodeCompiler compilerWithNewAppendable(Expression appendable) {
+    return new SoyNodeCompiler(
+        thisVar,
+        registry,
+        detachState,
+        variables,
+        variableLookup,
+        appendable,
+        exprCompiler,
+        expressionToSoyValueProviderCompiler,
+        lazyClosureCompiler,
+        errorReporter);
   }
 }

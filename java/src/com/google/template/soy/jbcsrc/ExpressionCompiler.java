@@ -105,6 +105,17 @@ final class ExpressionCompiler {
     SoyExpression compile(ExprNode expr) {
       return compilerVisitor.exec(expr);
     }
+
+    /**
+     * Returns an expression that evaluates to a {@code List<SoyValue>} containing all the children.
+     */
+    Expression compileToList(List<? extends ExprNode> children) {
+      List<SoyExpression> soyExprs = new ArrayList<>(children.size());
+      for (ExprNode expr : children) {
+        soyExprs.add(compile(expr));
+      }
+      return SoyExpression.asBoxedList(soyExprs);
+    }
   }
 
   /**
@@ -244,7 +255,8 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
       // anyway and could additionally delay detach generation.  Ditto for MapLiteralNode.
-      return SoyExpression.forList((ListType) node.getType(), childrenAsList(node.getChildren()));
+      return SoyExpression.forList((ListType) node.getType(),
+          SoyExpression.asBoxedList(visitChildren(node)));
     }
 
     @Override protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
@@ -657,7 +669,7 @@ final class ExpressionCompiler {
       Expression soyJavaFunctionExpr =
           MethodRef.RENDER_CONTEXT_GET_FUNCTION
               .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
-      Expression list = childrenAsList(node.getChildren());
+      Expression list = SoyExpression.asBoxedList(visitChildren(node));
       return SoyExpression.forSoyValue(AnyType.getInstance(),
           MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
     }
@@ -665,22 +677,6 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitExprNode(ExprNode node) {
       throw new UnsupportedOperationException(
           "Support for " + node.getKind() + " has node been added yet");
-    }
-
-    /**
-     * Returns an Expression that evaluates to a list containing all the child expressions.
-     */
-    private Expression childrenAsList(List<ExprNode> children) {
-      int numChildren = children.size();
-      if (numChildren == 0) {
-        return MethodRef.IMMUTABLE_LIST_OF.invoke().asConstant();
-      }
-      List<Expression> childExprs = new ArrayList<>(numChildren);
-      for (ExprNode child : children) {
-        // All children must be soy values
-        childExprs.add(visit(child).box());
-      }
-      return BytecodeUtils.newArrayList(childExprs);
     }
 
     /**

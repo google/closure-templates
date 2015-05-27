@@ -180,7 +180,15 @@ abstract class Expression extends BytecodeProducer {
   Expression invoke(MethodRef method, Expression ...args) {
     return method.invoke(ImmutableList.<Expression>builder().add(this).add(args).build());
   }
-  
+
+  /**
+   * A simple helper that calls through to {@link MethodRef#invokeVoid(Expression...)}, but allows a
+   * more natural fluent call style.
+   */
+  Statement invokeVoid(MethodRef method, Expression ...args) {
+    return method.invokeVoid(ImmutableList.<Expression>builder().add(this).add(args).build());
+  }
+
   /**
    * Returns a new expression identical to this one but with the given label applied at the start
    * of the expression.

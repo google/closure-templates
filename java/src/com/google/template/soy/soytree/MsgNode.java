@@ -43,6 +43,14 @@ import javax.annotation.Nullable;
  * Node representing a 'msg' block. Every child must be a RawTextNode, MsgPlaceholderNode,
  * MsgPluralNode, or MsgSelectNode.
  *
+ * <p>The AST will be one of the following
+ * <ul>
+ *     <li>A single {@link RawTextNode}
+ *     <li>A mix of {@link RawTextNode} and {@link MsgPlaceholderNode}
+ *     <li>A single {@link MsgPluralNode}
+ *     <li>A single {@link MsgSelectNode}
+ * </ul>
+ *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */

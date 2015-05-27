@@ -364,7 +364,7 @@ final class BytecodeUtils {
   private static Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
     if (other.isKnownString()) {
       SoyExpression strOther = other.convert(String.class);
-      return MethodRef.EQUALS.invoke(stringExpr, strOther);
+      return stringExpr.invoke(MethodRef.EQUALS, strOther);
     }
     if (other.isKnownNumber()) {
       // in this case, we actually try to convert stringExpr to a number
@@ -491,11 +491,17 @@ final class BytecodeUtils {
   /**
    * Returns an expression that returns a new {@link ArrayList} containing all the given items.
    */
-  static Expression newArrayList(Iterable<? extends Expression> items) {
+  static Expression asList(Iterable<? extends Expression> items) {
     final ImmutableList<Expression> copy = ImmutableList.copyOf(items);
-    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE
-        .construct(constant(copy.size()));
-    return new SimpleExpression(Type.getType(List.class), false) {
+    switch (copy.size()) {
+      case 0:
+        return MethodRef.IMMUTABLE_LIST_OF.invoke();
+      case 1:
+        return MethodRef.IMMUTABLE_LIST_OF_1.invoke(copy.get(0));
+      default: // fallthrough
+    }
+    final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
+    return new SimpleExpression(Type.getType(ArrayList.class), false) {
       @Override void doGen(CodeBuilder mv) {
         construct.gen(mv);
         for (Expression child : copy) {

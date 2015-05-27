@@ -97,6 +97,7 @@ import java.util.Map;
   static final MethodRef RUNTIME_COERCE_TO_STRING = 
       create(Runtime.class, "coerceToString", SoyValue.class);
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
+  static final MethodRef IMMUTABLE_LIST_OF_1 = create(ImmutableList.class, "of", Object.class);
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
   static final MethodRef RENDER_RESULT_IS_DONE = create(RenderResult.class, "isDone");
