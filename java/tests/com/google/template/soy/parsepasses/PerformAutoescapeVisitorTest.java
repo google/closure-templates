@@ -46,10 +46,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Unit tests for {@link PerformDeprecatedNoncontextualAutoescapeVisitor}.
+ * Unit tests for PerformAutoescapeVisitor.
  *
  */
-public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends TestCase {
+public final class PerformAutoescapeVisitorTest extends TestCase {
 
 
   private static final SoyPrintDirective MOCK_BOO_DIRECTIVE =
@@ -80,7 +80,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     // Before.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -100,7 +100,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
     assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(2);
@@ -124,7 +124,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
     assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -154,7 +154,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
     assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -179,7 +179,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     // Before.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
@@ -198,7 +198,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
     assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -221,7 +221,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
     assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After: The redundant noAutoescape calls are omitted.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
@@ -248,7 +248,7 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
     assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -264,12 +264,12 @@ public final class PerformDeprecatedNoncontextualAutoescapeVisitorTest extends T
         .errorReporter(FAIL)
         .parse();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new PerformDeprecatedNoncontextualAutoescapeVisitor(SOY_DIRECTIVES_MAP, errorReporter).exec(
-        soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, errorReporter).exec(soyTree);
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
         "Unknown print directive '|fake'.");
   }
+
 
   /**
    * Helper that puts the given test 'print' tags into a test file, parses the test file, and

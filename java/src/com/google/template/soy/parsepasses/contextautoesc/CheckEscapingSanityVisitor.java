@@ -90,7 +90,7 @@ public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Voi
   }
 
   @Override protected void visitCallBasicNode(CallBasicNode node) {
-    if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
+    if (autoescapeMode == AutoescapeMode.TRUE) {
       TemplateNode callee = templateRegistry.getBasicTemplate((node).getCalleeName());
       // It's possible that the callee template is in another file, and Soy is being used to compile
       // one file at a time without context (not recommended, but supported). In this case callee
@@ -106,7 +106,7 @@ public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Voi
   }
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
-    if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
+    if (autoescapeMode == AutoescapeMode.TRUE) {
       TemplateNode callee;
       Set<DelegateTemplateDivision> divisions =
           templateRegistry.getDelTemplateDivisionsForAllVariants((node).getDelCalleeName());
@@ -135,7 +135,7 @@ public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Voi
       RenderUnitNode node, String nodeName, String selfClosingExample) {
     final AutoescapeMode oldMode = autoescapeMode;
     if (node.getContentKind() != null) {
-      if (autoescapeMode == AutoescapeMode.NOAUTOESCAPE) {
+      if (autoescapeMode == AutoescapeMode.FALSE) {
         throw SoyAutoescapeException.createWithNode(
             "{" + nodeName + "} node with 'kind' attribute is not permitted in non-autoescaped "
             + "templates: " + node.toSourceString(),
