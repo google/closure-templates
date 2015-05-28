@@ -73,6 +73,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.AnyType;
+import com.google.template.soy.types.primitive.SanitizedType;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -513,6 +514,13 @@ final class ExpressionCompiler {
       final SoyExpression condition = visit(node.getChild(0)).convert(boolean.class);
       SoyExpression trueBranch = visit(node.getChild(1));
       SoyExpression falseBranch = visit(node.getChild(2));
+      // If types are == and they are both boxed (or both not boxed) then we can just use them
+      // directly.
+      boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
+      if (typesEqual && (trueBranch.isBoxed() == falseBranch.isBoxed())) {
+        return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
+      }
+      // Otherwise try some simple unboxing conversions to get bytecode compatible types.
       if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
         final SoyExpression trueAsLong = trueBranch.convert(long.class);
         final SoyExpression falseAsLong = falseBranch.convert(long.class);
@@ -523,18 +531,23 @@ final class ExpressionCompiler {
         final SoyExpression falseAsFloat = falseBranch.convert(double.class);
         return SoyExpression.forFloat(ternary(condition, trueAsFloat, falseAsFloat));
       }
-      if (trueBranch.isKnownString() && falseBranch.isKnownString()) {
+      if (typesEqual && trueBranch.isKnownStringOrSanitizedContent()
+          && falseBranch.isKnownStringOrSanitizedContent()) {
         final SoyExpression trueAsString = trueBranch.convert(String.class);
         final SoyExpression falseAsString = falseBranch.convert(String.class);
-        return SoyExpression.forString(ternary(condition, trueAsString, falseAsString));
+        Expression ternary = ternary(condition, trueAsString, falseAsString);
+        if (trueBranch.isKnownSanitizedContent()) {
+          return SoyExpression.forSanitizedString(ternary,
+              ((SanitizedType) trueBranch.soyType()).getContentKind());
+        }
+        return SoyExpression.forString(ternary);
       }
       // Fallback to boxing and use the type from the type checker as our node type.
       // TODO(lukes): can we do better here? other types? if the types match can we generically
       // unbox? in the common case the runtime type will just be SoyValue, which is not very useful.
       final Expression trueBoxed = trueBranch.box().cast(node.getType().javaType());
       final Expression falseBoxed = falseBranch.box().cast(node.getType().javaType());
-      return SoyExpression.forSoyValue(node.getType(),
-          ternary(condition, trueBoxed, falseBoxed));
+      return SoyExpression.forSoyValue(node.getType(), ternary(condition, trueBoxed, falseBoxed));
     }
 
     @Override SoyExpression visitForLoopIndex(VarRefNode varRef, LocalVar local) {

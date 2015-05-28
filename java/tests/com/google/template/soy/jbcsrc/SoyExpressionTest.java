@@ -18,7 +18,10 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
+import static com.google.template.soy.jbcsrc.SoyExpression.forSanitizedString;
 
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -76,5 +79,13 @@ public class SoyExpressionTest extends TestCase {
     assertThatExpression(SoyExpression.NULL.box().convert(Object.class)).evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.convert(boolean.class)).evaluatesTo(false);
     assertThatExpression(SoyExpression.NULL.convert(String.class)).evaluatesTo("null");
+  }
+
+  public void testSanitizedExpressions() {
+    assertThatExpression(forSanitizedString(constant("foo"), ContentKind.ATTRIBUTES).box())
+        .evaluatesTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("foo", ContentKind.ATTRIBUTES));
+    assertThatExpression(
+        forSanitizedString(constant("foo"), ContentKind.ATTRIBUTES).convert(boolean.class))
+            .evaluatesTo(true);
   }
 }

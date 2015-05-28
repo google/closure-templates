@@ -361,8 +361,16 @@ final class BytecodeUtils {
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
   }
 
+  /**
+   * Compare a string valued expression to another expression using soy == semantics.
+   * 
+   * @param stringExpr An expression that is known to be an unboxed string
+   * @param other An expression to compare it to.
+   */
   private static Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
-    if (other.isKnownString()) {
+    // This is compatible with SharedRuntime.compareString, which interestingly makes == break
+    // transitivity.  See b/21461181
+    if (other.isKnownStringOrSanitizedContent()) {
       SoyExpression strOther = other.convert(String.class);
       return stringExpr.invoke(MethodRef.EQUALS, strOther);
     }

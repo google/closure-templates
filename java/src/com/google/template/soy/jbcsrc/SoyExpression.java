@@ -19,10 +19,12 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.CallNode;
@@ -37,6 +39,7 @@ import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
+import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 
@@ -79,6 +82,10 @@ class SoyExpression extends Expression {
 
   static SoyExpression forString(Expression delegate) {
     return new SoyExpression(StringType.getInstance(), String.class, delegate);
+  }
+
+  static SoyExpression forSanitizedString(Expression delegate, ContentKind kind) {
+    return new SoyExpression(SanitizedType.getTypeForContentKind(kind), String.class, delegate);
   }
 
   static SoyExpression forList(ListType listType, Expression delegate) {
@@ -184,8 +191,20 @@ class SoyExpression extends Expression {
    * it may in fact be a string.
    */
   boolean isKnownString() {
+    return soyType.getKind() == Kind.STRING;
+  }
+
+  boolean isKnownStringOrSanitizedContent() {
     // It 'is' a string if it is unboxed or is one of our string types
     return STRING_KINDS.contains(soyType.getKind());
+  }
+
+  boolean isKnownSanitizedContent() {
+    return soyType.getKind() != Kind.STRING && STRING_KINDS.contains(soyType.getKind());
+  }
+
+  boolean isKnownSanitizedContent(ContentKind kind) {
+    return soyType.equals(SanitizedType.getTypeForContentKind(kind));
   }
 
   /**
@@ -224,7 +243,7 @@ class SoyExpression extends Expression {
     return soyType.getKind() == Kind.BOOL;
   }
 
-  private boolean isBoxed() {
+  boolean isBoxed() {
     return SoyValue.class.isAssignableFrom(clazz);
   }
 
@@ -252,6 +271,10 @@ class SoyExpression extends Expression {
     }
     if (isKnownFloat()) {
       return asBoxed(MethodRef.FLOAT_DATA_FOR_VALUE.invoke(delegate));
+    }
+    if (isKnownSanitizedContent()) {
+      return asBoxed(MethodRef.ORDAIN_AS_SAFE.invoke(delegate,
+          FieldRef.enumReference(((SanitizedType) soyType).getContentKind()).accessor()));
     }
     if (isKnownString()) {
       // TODO(lukes): we are losing some type information when we do string conversions. Use the
@@ -320,7 +343,7 @@ class SoyExpression extends Expression {
         return forString(MethodRef.DOUBLE_TO_STRING.invoke(floatExpr));
       }
     }
-    if (isKnownString()) {
+    if (isKnownStringOrSanitizedContent()) {
       Expression stringExpr = delegate;
       if (isBoxed()) {
         // unbox first
@@ -330,7 +353,7 @@ class SoyExpression extends Expression {
         throw new IllegalArgumentException("Cannot convert string to " + asType);
       }
       if (asType.equals(boolean.class)) {
-        return forBool(stringExpr.invoke(MethodRef.STRING_IS_EMPTY));
+        return forBool(logicalNot(stringExpr.invoke(MethodRef.STRING_IS_EMPTY)));
       }
     }
 

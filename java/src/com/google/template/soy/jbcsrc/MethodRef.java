@@ -29,6 +29,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
@@ -173,6 +174,8 @@ import java.util.Map;
   static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
   static final MethodRef COMPILED_TEMPLATE_RENDER = 
       create(CompiledTemplate.class, "render", AdvisingAppendable.class, RenderContext.class);
+  static final MethodRef ORDAIN_AS_SAFE = 
+      create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class);
 
   static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
