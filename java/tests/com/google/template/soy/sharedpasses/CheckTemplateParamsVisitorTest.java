@@ -18,8 +18,9 @@ package com.google.template.soy.sharedpasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -27,21 +28,21 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import junit.framework.TestCase;
 
 /**
- * Unit tests for CheckSoyDocVisitor.
+ * Unit tests for {@link CheckTemplateParamsVisitor}.
  *
  */
-public final class CheckSoyDocVisitorTest extends TestCase {
+public final class CheckTemplateParamsVisitorTest extends TestCase {
 
-  public void testMatchingSimple() throws SoySyntaxException {
+  public void testMatchingSimple() {
     // ------ No params ------
     String soyDoc = "";
     String templateBody = "Hello world!";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
 
     // ------ Only 'print' statements ------
     soyDoc = "@param boo @param foo @param? goo @param moo";
     templateBody = "{$boo}{$foo.goo |noAutoescape}{2 * $goo[round($moo)]}";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
 
     // ------ Simple 'if' statement with nested 'print' statement ------
     soyDoc =
@@ -51,10 +52,10 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "{if $boo.foo}\n" +
         "  Slimy {$goo}.\n" +
         "{/if}\n";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
   }
 
-  public void testMatchingWithAdvancedStmts() throws SoySyntaxException {
+  public void testMatchingWithAdvancedStmts() {
     // ------ 'if', 'elseif', 'else', '/if' ------
     String soyDoc = "@param boo @param foo";
     String templateBody =
@@ -65,7 +66,7 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "{else}\n" +
         "  {$foo.moo}\n" +
         "{/if}\n";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
 
     // ------ 'switch', 'case', 'default', '/switch' ------
     soyDoc = "@param boo @param foo @param moo @param too @param zoo";
@@ -78,7 +79,7 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "{default}\n" +
         "  Not {$zoo}.\n" +
         "{/switch}\n";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
 
     // ------ 'foreach', 'ifempty', '/foreach' ------
     soyDoc = "@param moose @param? meese";
@@ -88,7 +89,7 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "{ifempty}\n" +
         "  No {$meese}.\n" +
         "{/foreach}\n";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
 
     // ------ 'for', '/for' ------
     soyDoc = "@param boo";
@@ -96,10 +97,10 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "{for $i in range(length($boo))}\n" +
         "  {$i + 1}: {$boo[$i]}.\n" +
         "{/for}\n";
-    runTemplateTestHelper(soyDoc, templateBody);  // should not throw exception
+    assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
   }
 
-  public void testCalls() throws SoySyntaxException {
+  public void testCalls() {
     String fileContent1 =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -145,10 +146,10 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {$gaa}{$maa}\n" +
         "{/template}\n";
 
-    runSoyFilesTestHelper(fileContent1, fileContent2);
+    assertThat(soyDocErrorsFor(fileContent1, fileContent2)).isEmpty();
   }
 
-  public void testCallWithMissingParam() throws SoySyntaxException {
+  public void testCallWithMissingParam() {
     String fileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -167,34 +168,27 @@ public final class CheckSoyDocVisitorTest extends TestCase {
     // This is actually not reported as an error right now because param 'y' in the callee may be
     // optional, even though the SoyDoc does not list the param as optional (many people don't use
     // the @param? tag at all).
-    runSoyFilesTestHelper(fileContent);
+    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
   }
 
-  public void testUndeclaredParam() throws SoySyntaxException {
+  public void testUndeclaredParam() {
     String soyDoc = "@param foo";
     String templateBody = "{$boo.foo}";
-    try {
-      runTemplateTestHelper(soyDoc, templateBody);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Found references to data keys that are not declared in SoyDoc: [boo]");
-    }
+    ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0)).isEqualTo("Unknown data key boo.");
+    assertThat(errors.get(1)).isEqualTo("Param foo unused in template body.");
   }
 
-  public void testUnusedParam() throws SoySyntaxException {
+  public void testUnusedParam() {
     String soyDoc = "@param boo @param? foo";
     String templateBody = "{$boo.foo}";
-    try {
-      runTemplateTestHelper(soyDoc, templateBody);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Found params declared in SoyDoc but not used in template: [foo]");
-    }
+    ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
+    assertThat(errors).hasSize(1);
+    assertThat(errors.get(0)).isEqualTo("Param foo unused in template body.");
   }
 
-  public void testUnusedParamInCallWithAllData() throws SoySyntaxException {
+  public void testUnusedParamInCallWithAllData() {
     String fileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -211,16 +205,12 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {$moo}\n" +
         "{/template}\n";
 
-    try {
-      runSoyFilesTestHelper(fileContent);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Found params declared in SoyDoc but not used in template: [zoo]");
-    }
+    ImmutableList<String> errors = soyDocErrorsFor(fileContent);
+    assertThat(errors).hasSize(1);
+    assertThat(errors.get(0)).isEqualTo("Param zoo unused in template body.");
   }
 
-  public void testWithExternalCallWithAllData() throws SoySyntaxException {
+  public void testWithExternalCallWithAllData() {
     String fileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -231,22 +221,19 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {call goo.moo data=\"all\" /}\n" +
         "{/template}\n";
 
-    runSoyFilesTestHelper(fileContent);
+    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
   }
 
-  public void testUnusedParamWithRecursiveCall() throws SoySyntaxException {
+  public void testUnusedParamWithRecursiveCall() {
     String soyDoc = "@param boo @param foo";
     String templateBody = "{call name=\".foo\" data=\"all\" /}";
-    try {
-      runTemplateTestHelper(soyDoc, templateBody);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Found params declared in SoyDoc but not used in template: [boo, foo]");
-    }
+    ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0)).isEqualTo("Param boo unused in template body.");
+    assertThat(errors.get(1)).isEqualTo("Param foo unused in template body.");
   }
 
-  public void testUnusedParamInDelegateTemplate() throws SoySyntaxException {
+  public void testUnusedParamInDelegateTemplate() {
     String fileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -257,10 +244,10 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  blah\n" +
         "{/deltemplate}\n";
 
-    runSoyFilesTestHelper(fileContent);
+    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
   }
 
-  public void testDelegateCallVariant() throws SoySyntaxException {
+  public void testDelegateCallVariant() {
     String fileContent = "" +
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -271,10 +258,10 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {delcall MagicButton variant=\"$variant\" /}\n" +
         "{/template}\n";
 
-    runSoyFilesTestHelper(fileContent);
+    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
   }
 
-  public void testOnlyCheckFilesInV2() throws SoySyntaxException {
+  public void testOnlyCheckFilesInV2() {
     String fileContent0 =
         "{namespace boo0 autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +  // file is missing SoyDoc
@@ -299,16 +286,12 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {$goo2.moo2}\n" +
         "{/template}\n";
 
-    try {
-      runSoyFilesTestHelper(fileContent0, fileContent1, fileContent2);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Found references to data keys that are not declared in SoyDoc: [goo2]");
-    }
+    ImmutableList<String> errors = soyDocErrorsFor(fileContent0, fileContent1, fileContent2);
+    assertThat(errors).hasSize(1);
+    assertThat(errors.get(0)).isEqualTo("Unknown data key goo2.");
   }
 
-  public void testWithHeaderParams() throws SoySyntaxException {
+  public void testWithHeaderParams() {
     String fileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -320,7 +303,7 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {$zoo}\n" +
         "{/template}\n";
 
-    runSoyFilesTestHelper(fileContent);
+    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
 
     fileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
@@ -331,17 +314,13 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         "  {@inject zoo: string}\n" +
         "{/template}\n";
 
-    try {
-      runSoyFilesTestHelper(fileContent);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Found params declared in SoyDoc but not used in template: [goo, zoo]");
-    }
+    ImmutableList<String> errors = soyDocErrorsFor(fileContent);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0)).isEqualTo("Param goo unused in template body.");
+    assertThat(errors.get(1)).isEqualTo("Param zoo unused in template body.");
   }
 
-  private static void runTemplateTestHelper(String soyDoc, String templateBody)
-      throws SoySyntaxException {
+  private static ImmutableList<String> soyDocErrorsForTemplate(String soyDoc, String templateBody) {
     String testFileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
@@ -350,11 +329,15 @@ public final class CheckSoyDocVisitorTest extends TestCase {
         templateBody + "\n" +
         "{/template}\n";
 
-    runSoyFilesTestHelper(testFileContent);
+    return soyDocErrorsFor(testFileContent);
   }
 
-  private static void runSoyFilesTestHelper(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    new CheckSoyDocVisitor(SyntaxVersion.V1_0, ExplodingErrorReporter.get()).exec(soyTree);
+  private static ImmutableList<String> soyDocErrorsFor(String... soyFileContents) {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .errorReporter(ExplodingErrorReporter.get())
+        .parse();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new CheckTemplateParamsVisitor(SyntaxVersion.V1_0, errorReporter).exec(soyTree);
+    return errorReporter.getErrorMessages();
   }
 }
