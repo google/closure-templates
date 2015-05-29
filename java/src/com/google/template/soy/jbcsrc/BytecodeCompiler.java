@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -30,16 +31,20 @@ import com.google.template.soy.soytree.TemplateRegistry;
 /**
  * The entry point to the {@code jbcsrc} compiler.
  */
-final class BytecodeCompiler {
+public final class BytecodeCompiler {
   /**
    * Compiles all the templates in the given registry.
    *
-   * <p>TODO(lukes): this interface is insufficient.  We will eventually need additional data to
-   * implement print directives, escaping directives, and soy functions.  Look at the jssrc compiler
-   * to see how it is configured.
+   * @return CompiledTemplates or {@code absent()} if compilation fails, in which case errors will
+   *     have been reported to the error reporter.
    */
-  static CompiledTemplates compile(TemplateRegistry registry) {
-    checkForUnsupportedFeatures(registry);
+  public static Optional<CompiledTemplates> compile(
+      TemplateRegistry registry, ErrorReporter reporter) {
+    ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
+    checkForUnsupportedFeatures(registry, reporter);
+    if (reporter.errorsSince(checkpoint)) {
+      return Optional.absent();
+    }
     CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
     // TODO(lukes): currently we compile all the classes, but you could easily imagine being
@@ -53,13 +58,12 @@ final class BytecodeCompiler {
       String name = node.getTemplateName();
       factories.put(name, loadFactory(compilerRegistry.getTemplateInfo(name), loader));
     }
-    return new CompiledTemplates(factories.build());
+    return Optional.of(new CompiledTemplates(factories.build()));
   }
 
-  private static void checkForUnsupportedFeatures(TemplateRegistry registry) {
-    // TODO(lukes): use a real error reporter
-    UnsupportedFeatureReporter reporter =
-        new UnsupportedFeatureReporter(ExplodingErrorReporter.get());
+  private static void checkForUnsupportedFeatures(TemplateRegistry registry,
+      ErrorReporter errorReporter) {
+    UnsupportedFeatureReporter reporter = new UnsupportedFeatureReporter(errorReporter);
     for (TemplateNode node : registry.getAllTemplates()) {
       reporter.check(node);
     }

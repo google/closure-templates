@@ -290,6 +290,7 @@ public final class TemplateTester {
     String file = Joiner.on('\n').join(fileBody);
     return BytecodeCompiler.compile(
         new TemplateRegistry(SoyFileSetParserBuilder.forFileContents(file).parse(),
-            ExplodingErrorReporter.get()));
+            ExplodingErrorReporter.get()),
+        ExplodingErrorReporter.get()).get();
   }
 }

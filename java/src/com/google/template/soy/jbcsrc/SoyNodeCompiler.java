@@ -597,7 +597,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return visitCallNodeHelper(
         node,
         registry.getDelTemplateContentKind(node.getDelCalleeName()),
-        MethodRef.COMPILED_TEMPLATE_RENDER,
         reattachPoint,
         calleeExpression);
   }
@@ -612,14 +611,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return visitCallNodeHelper(
         node,
         callee.node().getContentKind(),
-        callee.renderMethod(),
         reattachPoint,
         calleeExpression);
   }
 
   private Statement visitCallNodeHelper(CallNode node,
       @Nullable ContentKind calleeContentKind,
-      MethodRef renderMethod,
       Label reattachPoint,
       Expression calleeExpression) {
     FieldRef currentCalleeField = variables.getCurrentCalleeField();
@@ -642,11 +639,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement initCallee =
         currentCalleeField.putInstanceField(thisVar, calleeExpression).labelStart(reattachPoint);
 
-    // This cast will always succeed.
-    Expression typedCallee = currentCalleeField.accessor(thisVar)
-        .cast(calleeExpression.resultType());
-    Expression callRender =
-        typedCallee.invoke(renderMethod, appendableExpression, variableLookup.getRenderContext());
+    Expression callRender = currentCalleeField.accessor(thisVar)
+        .invoke(MethodRef.COMPILED_TEMPLATE_RENDER,
+            appendableExpression,
+            variableLookup.getRenderContext());
     Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee = currentCalleeField.putInstanceField(thisVar,
         BytecodeUtils.constantNull(CompiledTemplate.class));

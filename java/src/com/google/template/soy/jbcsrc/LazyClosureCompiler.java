@@ -177,7 +177,7 @@ final class LazyClosureCompiler {
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
         getProposedName(declaringNode, varName),
         LAZY_CLOSURE_ACCESS);
-    Expression expr = 
+    Expression expr =
         new CompilationUnit(visitor, type, DetachableSoyValueProvider.class, declaringNode)
             .compileExpression(exprNode);
     
@@ -195,7 +195,7 @@ final class LazyClosureCompiler {
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
         getProposedName(renderUnit, varName),
         LAZY_CLOSURE_ACCESS);
-    Expression expr = 
+    Expression expr =
         new CompilationUnit(visitor, type, DetachableContentProvider.class, renderUnit)
             .compileRenderable(renderUnit);
     
@@ -230,6 +230,10 @@ final class LazyClosureCompiler {
           null, // not a generic type
           this.baseClass.internalName(), // superclass
           new String[] {});
+      visitor.visitSource(
+        node.getSourceLocation().getFileName(),
+        // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
+        null);
     }
 
     Expression compileExpression(ExprNode exprNode) {
@@ -243,7 +247,8 @@ final class LazyClosureCompiler {
           ExpressionCompiler.createBasicCompiler(lookup, errorReporter)
               .compile(exprNode)
               .box();
-      final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
+      final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression)
+          .withSourceLocation(exprNode.getSourceLocation());
       final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
       Statement doResolveImpl = new Statement() {
         @Override void doGen(CodeBuilder adapter) {
@@ -297,11 +302,12 @@ final class LazyClosureCompiler {
           variableSet.generateTableEntries(adapter);
         }
       };
-
-      final Expression contentKind = 
-          renderUnit.getContentKind() == null 
-              ? BytecodeUtils.constantNull(ContentKind.class) 
-              : FieldRef.enumReference(renderUnit.getContentKind()).accessor();
+      ContentKind kind = renderUnit.getContentKind();
+      final Expression contentKind =
+          // treat TEXT as null which is what the type checker does
+          (kind == null || kind == ContentKind.TEXT)
+              ? BytecodeUtils.constantNull(ContentKind.class)
+              : FieldRef.enumReference(kind).accessor();
       Statement superClassContstructor = new Statement() {
         @Override void doGen(CodeBuilder adapter) {
           adapter.loadThis();

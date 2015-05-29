@@ -113,7 +113,8 @@ public class BytecodeCompilerTest extends TestCase {
         .forFileContents(soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
         .parse();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
-    CompiledTemplates templates = BytecodeCompiler.compile(templateRegistry);
+    CompiledTemplates templates = 
+        BytecodeCompiler.compile(templateRegistry, ExplodingErrorReporter.get()).get();
     DelTemplateSelectorImpl.Factory selectorFactory =
         new DelTemplateSelectorImpl.Factory(templateRegistry, templates);
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
@@ -170,7 +171,8 @@ public class BytecodeCompilerTest extends TestCase {
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
-    CompiledTemplates templates = BytecodeCompiler.compile(templateRegistry);
+    CompiledTemplates templates = 
+        BytecodeCompiler.compile(templateRegistry, ExplodingErrorReporter.get()).get();
     DelTemplateSelectorImpl.Factory selectorFactory =
         new DelTemplateSelectorImpl.Factory(templateRegistry, templates);
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");

@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -39,6 +40,9 @@ import com.google.template.soy.conformance.CheckConformance;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.jbcsrc.BytecodeCompiler;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -886,6 +890,62 @@ public final class SoyFileSet {
     return baseTofuFactory.create(soyTree, tofuOptions.useCaching(), errorReporter);
   }
 
+  /**
+   * This is an <em>extremely experimental API</em> and subject to change.  Not all features of soy
+   * are implemented in this new backend and the features that are implemented are not necessarily
+   * correct!
+   *
+   * <p>See com/google/template/soy/jbcsrc/README.md for background on this new backend.
+   *
+   * <p>Compiles this Soy file set into a set of java classes implementing the
+   * {@link CompiledTemplate} interface.
+   *
+   * @return A set of compiled templates
+   * @throws SoySyntaxException If a syntax error is found.
+   */
+  public CompiledTemplates compileTemplates() throws SoySyntaxException {
+    // allow null (the default) or false
+    if (generalOptions.allowExternalCalls() == Boolean.TRUE) {
+      throw new UnsupportedOperationException(
+          "jbcsrc doesn't support the allowExternalCalls option");
+    }
+    SyntaxVersion declaredSyntaxVersion =
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_4);
+    Checkpoint checkpoint = errorReporter.checkpoint();
+    SoyFileSetNode soyTree = new SoyFileSetParser(
+        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
+        .parse();
+    if (errorReporter.errorsSince(checkpoint)) {
+      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    }
+
+    checkpoint = errorReporter.checkpoint();
+    runMiddleendPasses(soyTree, declaredSyntaxVersion);
+    new AssertNoExternalCallsVisitor(errorReporter).exec(soyTree);
+    if (errorReporter.errorsSince(checkpoint)) {
+      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    }
+
+    checkpoint = errorReporter.checkpoint();
+    // Note: Globals should have been substituted already. The pass below is just a check.
+    new SubstituteGlobalsVisitor(
+        generalOptions.getCompileTimeGlobals(),
+        typeRegistry,
+        true /* shouldAssertNoUnboundGlobals */,
+        errorReporter)
+        .exec(soyTree);
+    if (errorReporter.errorsSince(checkpoint)) {
+      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    }
+
+    checkpoint = errorReporter.checkpoint();
+    TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
+    Optional<CompiledTemplates> templates = BytecodeCompiler.compile(registry, errorReporter);
+    if (errorReporter.errorsSince(checkpoint)) {
+      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    }
+    return templates.get();
+  }
 
   /**
    * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
