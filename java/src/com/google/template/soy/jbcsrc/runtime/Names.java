@@ -29,9 +29,6 @@ public final class Names {
 
   private Names() {}
 
-  // Roman numeral 10, not a valid Soy character but a valid java identifier part
-  private static final char SEPARATOR = 'Ⅹ';
-  
   /**
    * Translate a user controlled Soy name to a form that is safe to encode in a java class, method
    * or field name.
@@ -44,7 +41,7 @@ public final class Names {
   public static String javaClassNameFromSoyTemplateName(String soyTemplate) {
     checkArgument(BaseUtils.isDottedIdentifier(soyTemplate),
         "%s is not a valid template name.", soyTemplate);
-    return CLASS_PREFIX + soyTemplate.replace('.', SEPARATOR);
+    return CLASS_PREFIX + soyTemplate;
   }
 
   /**
@@ -56,6 +53,6 @@ public final class Names {
       throw new IllegalArgumentException("java class: " + javaClass
           + " is not a mangled soy template name");
     }
-    return javaClass.substring(CLASS_PREFIX.length()).replace(SEPARATOR, '.');
+    return javaClass.substring(CLASS_PREFIX.length());
   }
 }

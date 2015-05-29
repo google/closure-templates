@@ -27,7 +27,7 @@ import junit.framework.TestCase;
 public class NamesTest extends TestCase {
 
   public void testMangleName() {
-    assertEquals("com.google.template.soy.jbcsrc.gen.fooⅩbarⅩBaz",
+    assertEquals("com.google.template.soy.jbcsrc.gen.foo.bar.Baz",
         Names.javaClassNameFromSoyTemplateName("foo.bar.Baz"));
     assertEquals("foo.bar.Baz",
         soyTemplateNameFromJavaClassName(javaClassNameFromSoyTemplateName("foo.bar.Baz")));

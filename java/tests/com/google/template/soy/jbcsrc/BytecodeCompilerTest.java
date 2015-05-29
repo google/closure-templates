@@ -581,14 +581,14 @@ public class BytecodeCompilerTest extends TestCase {
   public void testBasicFunctionality() {
     // make sure we don't break standard reflection access
     CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody("hello world");
-    assertEquals("com.google.template.soy.jbcsrc.gen.nsⅩfoo$Factory",
+    assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo$Factory",
         factory.getClass().getName());
     assertEquals("Factory", factory.getClass().getSimpleName());
 
     Class<? extends CompiledTemplate> templateClass = 
         factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
-    assertEquals("com.google.template.soy.jbcsrc.gen.nsⅩfoo", templateClass.getName());
-    assertEquals("nsⅩfoo", templateClass.getSimpleName());
+    assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo", templateClass.getName());
+    assertEquals("foo", templateClass.getSimpleName());
 
     // ensure that the factory is an inner class of the template.
     assertEquals(templateClass, factory.getClass().getEnclosingClass());
