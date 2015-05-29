@@ -492,7 +492,7 @@ public abstract class TemplateNodeBuilder {
     soyDoc = NEWLINE.matcher(soyDoc).replaceAll("\n");
 
     // Escape all @deprecated javadoc tags.
-    // TODO(user): add this to the specification and then also generate @Deprecated annotations
+    // TODO(cushon): add this to the specification and then also generate @Deprecated annotations
     soyDoc = soyDoc.replace("@deprecated", "&#64;deprecated");
 
     // Strip start/end tokens and spaces (including newlines if they occupy their own lines).

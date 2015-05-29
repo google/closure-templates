@@ -694,9 +694,10 @@ public final class GenerateParseInfoVisitor
    * Private helper for visitSoyFileNode() and visitTemplateNode() to convert an identifier to upper
    * underscore format.
    *
-   * We simply dispatch to Utils.convertToUpperUnderscore() to do the actual conversion. The reason
-   * for the existence of this method is that we cache all results of previous invocations in this
-   * pass because this method is expected to be called for the same identifier multiple times.
+   * <p>We simply dispatch to Utils.convertToUpperUnderscore() to do the actual conversion.
+   * The reason for the existence of this method is that we cache all results of previous
+   * invocations in this pass because this method is expected to be called for the same identifier
+   * multiple times.
    *
    * @param ident The identifier to convert.
    * @return The identifier in upper underscore format.
@@ -932,8 +933,8 @@ public final class GenerateParseInfoVisitor
   /**
    * Private helper class for visitSoyFileNode() to collect all the CSS names appearing in a file.
    *
-   * The return value of exec() is a map from each CSS name appearing in the given node's subtree to
-   * its CssTagsPrefixPresence state.
+   * <p>The return value of exec() is a map from each CSS name appearing in the given node's subtree
+   * to its CssTagsPrefixPresence state.
    */
   private static class CollectCssNamesVisitor
       extends AbstractSoyNodeVisitor<SortedMap<String, CssTagsPrefixPresence>> {
@@ -1043,12 +1044,11 @@ public final class GenerateParseInfoVisitor
     @Override protected void visitFieldAccessNode(FieldAccessNode node) {
       visit(node.getBaseExprChild());
       SoyType baseType = node.getBaseExprChild().getType();
-      if (baseType instanceof SoyProtoType) {
-        SoyObjectType protoType = (SoyObjectType) baseType;
-        String importName = protoType.getFieldImport(node.getFieldName(), SoyBackendKind.TOFU);
-        if (importName != null) {
-          protoTypes.add(importName);
-        }
+      if (baseType instanceof SoyObjectType) {
+        SoyObjectType objectType = (SoyObjectType) baseType;
+        Set<String> importedNames = objectType.getFieldAccessImports(
+            node.getFieldName(), SoyBackendKind.TOFU);
+        protoTypes.addAll(importedNames);
       }
     }
   }

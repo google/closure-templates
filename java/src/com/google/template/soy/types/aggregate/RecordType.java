@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types.aggregate;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SoyRecord;
@@ -102,6 +103,8 @@ public final class RecordType implements SoyObjectType {
   @Override public String getFieldAccessExpr(
       String fieldContainerExpr, String fieldName, SoyBackendKind backendKind) {
     if (backendKind == SoyBackendKind.JS_SRC) {
+      // TODO(user): if fieldName is a reserved word, should we use bracket lookup
+      // to be compatible with strict mode?
       return fieldContainerExpr + "." + fieldName;
     } else {
       throw new UnsupportedOperationException();
@@ -109,8 +112,9 @@ public final class RecordType implements SoyObjectType {
   }
 
 
-  @Override public String getFieldImport(String fieldName, SoyBackendKind backend) {
-    return null;
+  @Override public ImmutableSet<String> getFieldAccessImports(
+      String fieldName, SoyBackendKind backend) {
+    return ImmutableSet.of();
   }
 
 

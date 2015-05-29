@@ -1740,11 +1740,9 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     protected void visitFieldAccessNode(FieldAccessNode node) {
       SoyType baseType = node.getBaseExprChild().getType();
       if (baseType instanceof SoyObjectType) {
-        String importSymbol = ((SoyObjectType) baseType).getFieldImport(
+        Set<String> importedSymbols = ((SoyObjectType) baseType).getFieldAccessImports(
             node.getFieldName(), SoyBackendKind.JS_SRC);
-        if (importSymbol != null) {
-          imports.add(importSymbol);
-        }
+        imports.addAll(importedSymbols);
       }
       visit(node.getBaseExprChild());
     }
