@@ -185,7 +185,12 @@ import java.util.Map;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    TypeInfo ownerType = TypeInfo.create(clazz);
+    return create(m);
+  }
+
+  static MethodRef create(java.lang.reflect.Method m) {
+    Class<?> clazz = m.getDeclaringClass();
+    TypeInfo ownerType = TypeInfo.create(m.getDeclaringClass());
     boolean isStatic = Modifier.isStatic(m.getModifiers());
     ImmutableList<Type> argTypes;
     if (isStatic) {

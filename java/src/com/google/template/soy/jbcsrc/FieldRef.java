@@ -76,18 +76,22 @@ import java.lang.reflect.Modifier;
   }
 
   static FieldRef staticFieldReference(Class<?> owner, String name) {
-    Class<?> fieldType;
+    java.lang.reflect.Field declaredField;
     try {
-      java.lang.reflect.Field declaredField = owner.getDeclaredField(name);
-      if (!Modifier.isStatic(declaredField.getModifiers())) {
-        throw new IllegalStateException("Field: " + declaredField + " is not static");
-      }
-      fieldType = declaredField.getType();
+      declaredField = owner.getDeclaredField(name);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    return staticFieldReference(declaredField);
+  }
+
+  static FieldRef staticFieldReference(java.lang.reflect.Field field) {
+    if (!Modifier.isStatic(field.getModifiers())) {
+      throw new IllegalStateException("Field: " + field + " is not static");
+    }
     return new AutoValue_FieldRef(
-        TypeInfo.create(owner), name, Type.getType(fieldType), Opcodes.ACC_STATIC);
+        TypeInfo.create(field.getDeclaringClass()), field.getName(), Type.getType(field.getType()),
+        Opcodes.ACC_STATIC);
   }
 
   static <T extends Enum<T>> FieldRef enumReference(T enumInstance) {
