@@ -175,7 +175,7 @@ final class TemplateCompiler {
             innerClasses,
             stateField,
             thisVar,
-            appendableVar,
+            AppendableExpression.forLocal(appendableVar),
             variableSet,
             variables,
             errorReporter).compile(node);

@@ -38,7 +38,6 @@ import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -109,7 +108,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       InnerClasses innerClasses,
       FieldRef stateField,
       Expression thisVar,
-      Expression appendableVar,
+      AppendableExpression appendableVar,
       VariableSet variableSet,
       VariableLookup variables,
       ErrorReporter errorReporter) {
@@ -137,7 +136,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private final DetachState detachState;
   private final VariableSet variables;
   private final VariableLookup variableLookup;
-  private final Expression appendableExpression;
+  private final AppendableExpression appendableExpression;
   private final ExpressionCompiler exprCompiler;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   private final LazyClosureCompiler lazyClosureCompiler;
@@ -149,15 +148,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       DetachState detachState,
       VariableSet variables,
       VariableLookup variableLookup,
-      Expression appendableExpression,
+      AppendableExpression appendableExpression,
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       LazyClosureCompiler lazyClosureCompiler,
       ErrorReporter errorReporter) {
     super(errorReporter);
-    // TODO(lukes): consider extracting a special subtype of Expression for the appendable, we could
-    // then associate additional metadata with it (like, does it support detaching).
-    appendableExpression.checkAssignableTo(Type.getType(AdvisingAppendable.class));
     this.thisVar = checkNotNull(thisVar);
     this.registry = checkNotNull(registry);
     this.detachState = checkNotNull(detachState);
@@ -436,10 +432,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // otherwise we need to do some escapes or simply cannot do incremental rendering
     Label reattachPoint = new Label();
     SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
-    Expression renderSoyValue =
-        appendableExpression.invoke(
-            MethodRef.ADVISING_APPENDABLE_APPEND,
-            value.convert(String.class))
+    AppendableExpression renderSoyValue =
+        appendableExpression.appendString(value.convert(String.class))
                 .labelStart(reattachPoint);
     return detachState.detachLimited(renderSoyValue)
         .withSourceLocation(node.getSourceLocation());
@@ -500,8 +494,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitRawTextNode(RawTextNode node) {
-    Expression render = MethodRef.ADVISING_APPENDABLE_APPEND
-        .invoke(appendableExpression, constant(node.getRawText()));
+    AppendableExpression render = appendableExpression.appendString(constant(node.getRawText()));
     // TODO(lukes): add some heuristics about when to add this
     // ideas:
     // * never try to detach in certain 'contexts' (e.g. attribute context)
@@ -519,9 +512,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   // for them, even though they write to the output.
 
   @Override protected Statement visitXidNode(XidNode node) {
-    return appendableExpression
-        .invoke(
-            MethodRef.ADVISING_APPENDABLE_APPEND,
+    return appendableExpression.appendString(
             variableLookup.getRenderContext()
                 .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(node.getText())))
         .toStatement()
@@ -546,14 +537,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Label reattachPoint = new Label();
       SoyExpression compiledComponent =
           exprCompiler.compile(node.getComponentNameExpr(), reattachPoint).convert(String.class);
-      return appendableExpression.invoke(MethodRef.ADVISING_APPENDABLE_APPEND, compiledComponent)
-          .invoke(MethodRef.ADVISING_APPENDABLE_APPEND_CHAR, constant('-'))
-          .invoke(MethodRef.ADVISING_APPENDABLE_APPEND, renamedSelector)
+      return appendableExpression.appendString(compiledComponent)
+          .appendChar(constant('-'))
+          .appendString(renamedSelector)
           .labelStart(reattachPoint)
           .toStatement()
           .withSourceLocation(node.getSourceLocation());
     }
-    return appendableExpression.invoke(MethodRef.ADVISING_APPENDABLE_APPEND, renamedSelector)
+    return appendableExpression.appendString(renamedSelector)
         .toStatement()
         .withSourceLocation(node.getSourceLocation());
   }
@@ -707,7 +698,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitLogNode(LogNode node) {
-    return compilerWithNewAppendable(MethodRef.RUNTIME_LOGGER.invoke())
+    return compilerWithNewAppendable(AppendableExpression.logger())
         .visitChildrenInNewScope(node);
   }
 
@@ -729,7 +720,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
-  private SoyNodeCompiler compilerWithNewAppendable(Expression appendable) {
+  private SoyNodeCompiler compilerWithNewAppendable(AppendableExpression appendable) {
     return new SoyNodeCompiler(
         thisVar,
         registry,

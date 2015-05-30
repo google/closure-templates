@@ -137,17 +137,11 @@ import java.util.Map;
   static final MethodRef INTEGER_DATA_INTEGER_VALUE = create(IntegerData.class, "integerValue");
   static final MethodRef STRING_CONCAT = create(String.class, "concat", String.class);
   static final MethodRef STRING_IS_EMPTY = create(String.class, "isEmpty");
-  static final MethodRef ADVISING_APPENDABLE_APPEND = 
-      create(AdvisingAppendable.class, "append", CharSequence.class);
-  static final MethodRef ADVISING_APPENDABLE_APPEND_CHAR = 
-      create(AdvisingAppendable.class, "append", char.class);
-  static final MethodRef ADVISING_APPENDABLE_SOFT_LIMITED = 
-      create(AdvisingAppendable.class, "softLimitReached");
-  static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR = 
+  static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR =
       create(RenderContext.class, "renameCssSelector", String.class);
-  static final MethodRef RENDER_CONTEXT_RENAME_XID = 
+  static final MethodRef RENDER_CONTEXT_RENAME_XID =
       create(RenderContext.class, "renameXid", String.class);
-  static final MethodRef RENDER_CONTEXT_GET_FUNCTION = 
+  static final MethodRef RENDER_CONTEXT_GET_FUNCTION =
       create(RenderContext.class, "getFunction", String.class);
   static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE = 
       create(RenderContext.class, "getPrintDirective", String.class);

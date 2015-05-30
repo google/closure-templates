@@ -287,7 +287,8 @@ final class LazyClosureCompiler {
       LazyClosureVariableLookup lookup = 
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler = SoyNodeCompiler.create(registry, innerClasses, stateField,
-          thisVar, appendableVar, variableSet, lookup, errorReporter);
+          thisVar, AppendableExpression.forLocal(appendableVar), variableSet, lookup,
+          errorReporter);
       final Statement nodeBody = soyNodeCompiler.compileChildren(renderUnit);
       final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody = new Statement() {

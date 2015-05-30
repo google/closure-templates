@@ -24,7 +24,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.SaveRestoreState;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.Label;
@@ -166,14 +165,16 @@ final class DetachState implements ExpressionDetacher.Factory {
    * Returns a Statement that will conditionally detach if the given {@link AdvisingAppendable} has
    * been {@link AdvisingAppendable#softLimitReached() output limited}.
    */
-  Statement detachLimited(Expression appendable) {
-    checkArgument(appendable.resultType().equals(Type.getType(AdvisingAppendable.class)));
+  Statement detachLimited(AppendableExpression appendable) {
+    if (!appendable.supportsSoftLimiting()) {
+      return appendable.toStatement();
+    }
     final Label reattachPoint = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
     
     Statement restore = saveRestoreState.restore();
     int state = addState(reattachPoint, restore);
-    final Expression isSoftLimited = MethodRef.ADVISING_APPENDABLE_SOFT_LIMITED.invoke(appendable);
+    final Expression isSoftLimited = appendable.softLimitReached();
     final Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
     final Statement saveState = 
         stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
