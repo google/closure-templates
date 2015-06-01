@@ -242,27 +242,30 @@ final class TemplateCompiler {
    */
   private Expression getAndCheckParam(final LocalVariable paramsVar, final LocalVariable ijVar,
       final TemplateParam param) {
+    Expression fieldName = BytecodeUtils.constant(param.name());
     Expression record = param.isInjected() ? ijVar : paramsVar;
-    final Expression provider = MethodRef.SOY_RECORD_GET_FIELD_PROVIDER
-        .invoke(record, BytecodeUtils.constant(param.name()));
-    final Expression nullProvider = FieldRef.NULL_PROVIDER.accessor();
+    final Expression provider = MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
+    final Statement checkPresence;
+    if (param.isRequired()) {
+      final Expression hasField = record.invoke(MethodRef.SOY_RECORD_HAS_FIELD, fieldName);
+      checkPresence = new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          hasField.gen(adapter);
+          Label ifTrue = new Label();
+          adapter.ifZCmp(Opcodes.IFNE, ifTrue);
+          adapter.throwException(Type.getType(SoyDataException.class),
+              "Required " + (param.isInjected() ? "@inject" : "@param") + ": '" + param.name()
+                  + "' is undefined.");
+          adapter.mark(ifTrue);
+        }
+      };
+    } else {
+      checkPresence = Statement.NULL_STATEMENT;
+    }
     return new SimpleExpression(Type.getType(SoyValueProvider.class), false) {
       @Override void doGen(CodeBuilder adapter) {
+        checkPresence.gen(adapter);
         provider.gen(adapter);
-        adapter.dup();
-        Label nonNull = new Label();
-        adapter.ifNonNull(nonNull);
-        if (param.isRequired()) {
-          adapter.throwException(Type.getType(SoyDataException.class), 
-              "Required " + (param.isInjected() ? "@inject" : "@param") + ": '" 
-                  + param.name() + "' is undefined.");
-        } else {
-          // non required params default to null
-          adapter.pop();  // pop the extra copy of provider that we dup()'d above
-          nullProvider.gen(adapter);
-        }
-        adapter.mark(nonNull);
-        // At the end there should be a single SoyValueProvider on the stack.
       }
     };
   }

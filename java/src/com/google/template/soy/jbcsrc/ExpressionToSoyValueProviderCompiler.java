@@ -199,8 +199,9 @@ final class ExpressionToSoyValueProviderCompiler {
 
     @Override Optional<Expression> visitIjParam(VarRefNode node, InjectedParam ij) {
       return Optional.of(
-          variables.getIjRecord()
-              .invoke(MethodRef.SOY_RECORD_GET_FIELD_PROVIDER, constant(ij.name())));
+          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+              variables.getIjRecord(),
+              constant(ij.name())));
     }
 
     @Override Optional<Expression> visitLetNodeVar(VarRefNode varRef, LocalVar local) {

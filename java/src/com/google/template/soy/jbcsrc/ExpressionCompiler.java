@@ -585,8 +585,8 @@ final class ExpressionCompiler {
     }
 
     @Override SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
-      Expression ij = variables.getIjRecord()
-          .invoke(MethodRef.SOY_RECORD_GET_FIELD_PROVIDER, constant(param.name()));
+      Expression ij = MethodRef.RUNTIME_GET_FIELD_PROVIDER
+          .invoke(variables.getIjRecord(), constant(param.name()));
       return SoyExpression.forSoyValue(varRef.getType(),
           detacher.get().resolveSoyValueProvider(ij).cast(varRef.getType().javaType()));
     }
@@ -769,9 +769,9 @@ final class ExpressionCompiler {
           case RECORD:
             // Always fall back to SoyRecord.  All known object and record types implement this
             // interface.
-            Expression fieldProvider = baseExpr.box()
-                .cast(SoyRecord.class)
-                .invoke(MethodRef.SOY_RECORD_GET_FIELD_PROVIDER, constant(node.getFieldName()));
+            Expression fieldProvider = MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+                baseExpr.box().cast(SoyRecord.class),
+                constant(node.getFieldName()));
             return SoyExpression.forSoyValue(node.getType(),
                 detacher.get()
                     .resolveSoyValueProvider(fieldProvider)

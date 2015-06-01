@@ -501,13 +501,11 @@ final class BytecodeUtils {
    */
   static Expression asList(Iterable<? extends Expression> items) {
     final ImmutableList<Expression> copy = ImmutableList.copyOf(items);
-    switch (copy.size()) {
-      case 0:
-        return MethodRef.IMMUTABLE_LIST_OF.invoke();
-      case 1:
-        return MethodRef.IMMUTABLE_LIST_OF_1.invoke(copy.get(0));
-      default: // fallthrough
+    if (copy.isEmpty()) {
+      return MethodRef.IMMUTABLE_LIST_OF.invoke();
     }
+    // Note, we cannot neccesarily use ImmutableList for anything besides the empty list because
+    // we may need to put a null in it.
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
     return new SimpleExpression(Type.getType(ArrayList.class), false) {
       @Override void doGen(CodeBuilder mv) {

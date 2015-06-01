@@ -88,6 +88,15 @@ public final class Runtime {
   }
 
   /**
+   * Helper funtion to make SoyRecord.getFieldProvider a non-nullable function.
+   */
+  public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
+    // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
+    SoyValueProvider provider = record.getFieldProvider(field);
+    return provider == null ? NULL_PROVIDER : provider;
+  }
+
+  /**
    * Helper function to translate null -> NullData when calling SoyJavaFunctions that may expect it.
    *
    * <p>In the long run we should either fix ToFu (and all SoyJavaFunctions) to not use NullData or

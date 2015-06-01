@@ -98,7 +98,6 @@ import java.util.Map;
   static final MethodRef RUNTIME_COERCE_TO_STRING = 
       create(Runtime.class, "coerceToString", SoyValue.class);
   static final MethodRef IMMUTABLE_LIST_OF = create(ImmutableList.class, "of");
-  static final MethodRef IMMUTABLE_LIST_OF_1 = create(ImmutableList.class, "of", Object.class);
   static final MethodRef IMMUTABLE_MAP_OF = create(ImmutableMap.class, "of");
   static final MethodRef RENDER_RESULT_DONE = create(RenderResult.class, "done");
   static final MethodRef RENDER_RESULT_IS_DONE = create(RenderResult.class, "isDone");
@@ -131,8 +130,6 @@ import java.util.Map;
       create(SoyValueProvider.class, "renderAndResolve", AdvisingAppendable.class, boolean.class);
   static final MethodRef SOY_VALUE_PROVIDER_STATUS = create(SoyValueProvider.class, "status");
   static final MethodRef SOY_RECORD_HAS_FIELD = create(SoyRecord.class, "hasField", String.class);
-  static final MethodRef SOY_RECORD_GET_FIELD_PROVIDER = 
-      create(SoyRecord.class, "getFieldProvider", String.class);
   static final MethodRef INTEGER_DATA_GET_VALUE = create(IntegerData.class, "getValue");
   static final MethodRef INTEGER_DATA_INTEGER_VALUE = create(IntegerData.class, "integerValue");
   static final MethodRef STRING_CONCAT = create(String.class, "concat", String.class);
@@ -163,7 +160,9 @@ import java.util.Map;
           SoyJavaPrintDirective.class, SoyValue.class, List.class);
   static final MethodRef RUNTIME_APPLY_ESCAPERS =
       create(Runtime.class, "applyEscapers", CompiledTemplate.class, List.class, ContentKind.class);
-  static final MethodRef PARAM_STORE_SET_FIELD = 
+  static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
+      create(Runtime.class, "getFieldProvider", SoyRecord.class, String.class);
+  static final MethodRef PARAM_STORE_SET_FIELD =
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
   static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
   static final MethodRef COMPILED_TEMPLATE_RENDER = 

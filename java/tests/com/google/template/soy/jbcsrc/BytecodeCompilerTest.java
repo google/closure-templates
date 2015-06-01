@@ -485,6 +485,13 @@ public class BytecodeCompilerTest extends TestCase {
     assertThatTemplateBody("{plusOne(1)}").rendersAs("2", ctx);
   }
 
+  public void testIsNonNull() {
+    assertThatTemplateBody(
+        "{@param foo : [a : [ b : string]] }",
+        "{isNonnull($foo.a)}"
+    ).rendersAs("false", ImmutableMap.<String, Object>of("foo", ImmutableMap.<String, String>of()));
+  }
+
   public void testPrintDirectives() {
     assertThatTemplateBody("{' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}")
         .rendersAs(" blah &amp;&amp;blahbl<wbr>ahblah");

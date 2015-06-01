@@ -191,6 +191,9 @@ public final class TemplateTester {
       } catch (IOException e) {
         // AdvisingStringBuilder doesn't throw IOE
         throw new AssertionError(e);
+      } catch (Exception e) {
+        failureStrategy.fail(String.format("Unexpected failure for %s", getDisplaySubject()), e);
+        result = null;
       }
       if (result.type() != RenderResult.Type.DONE) {
         fail("renders to completion", result);
