@@ -25,6 +25,8 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.types.primitive.AnyType;
+import com.google.template.soy.types.primitive.FloatType;
 
 import junit.framework.TestCase;
 
@@ -38,6 +40,10 @@ public class SoyExpressionTest extends TestCase {
     assertThatExpression(expr).evaluatesTo(12L);
     assertThatExpression(expr.box()).evaluatesTo(IntegerData.forValue(12));
     assertThatExpression(expr.box().convert(long.class)).evaluatesTo(12L);
+    assertThatExpression(expr.convert(double.class)).evaluatesTo(12D);
+    assertThatExpression(
+        SoyExpression.forSoyValue(AnyType.getInstance(), expr.box()).convert(double.class))
+            .evaluatesTo(12D);
 
     assertThatExpression(expr.convert(boolean.class)).evaluatesTo(true);
     assertThatExpression(SoyExpression.forInt(constant(0L)).convert(boolean.class))
@@ -50,6 +56,8 @@ public class SoyExpressionTest extends TestCase {
     assertThatExpression(expr).evaluatesTo(12.34D);
     assertThatExpression(expr.box()).evaluatesTo(FloatData.forValue(12.34D));
     assertThatExpression(expr.box().convert(double.class)).evaluatesTo(12.34D);
+    assertThatExpression(SoyExpression.forSoyValue(FloatType.getInstance(), expr.box())
+        .convert(String.class)).evaluatesTo("12.34");
 
     assertThatExpression(expr.convert(boolean.class)).evaluatesTo(true);
     assertThatExpression(SoyExpression.forFloat(constant(0D))

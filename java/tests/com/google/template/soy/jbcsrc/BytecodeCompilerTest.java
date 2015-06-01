@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -490,6 +491,19 @@ public class BytecodeCompilerTest extends TestCase {
         "{@param foo : [a : [ b : string]] }",
         "{isNonnull($foo.a)}"
     ).rendersAs("false", ImmutableMap.<String, Object>of("foo", ImmutableMap.<String, String>of()));
+  }
+
+  // Tests for a bug in an integration test where unnecessary float unboxing conversions happened.
+  public void testBoxedIntComparisonFromFunctions() {
+    assertThatTemplateBody(
+        "{@param list : list<int>}",
+        "{foreach $item in $list}",
+        "{if index($item) == ceiling(length($list) / 2) - 1}",
+        "  Middle.",
+        "{/if}",
+        "{/foreach}",
+        ""
+    ).rendersAs("Middle.", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
   }
 
   public void testPrintDirectives() {

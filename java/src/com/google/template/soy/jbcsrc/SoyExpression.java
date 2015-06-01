@@ -331,7 +331,10 @@ class SoyExpression extends Expression {
       Expression floatExpr = delegate;
       if (isBoxed()) {
         // unbox first
-        floatExpr = floatExpr.invoke(MethodRef.SOY_VALUE_LONG_VALUE);
+        floatExpr = floatExpr.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE);
+      }
+      if (asType.equals(double.class)) {
+        return forFloat(floatExpr);
       }
       if (asType.equals(long.class)) {
         throw new IllegalArgumentException("Cannot convert float to int");
@@ -364,7 +367,9 @@ class SoyExpression extends Expression {
       return forInt(box().invoke(MethodRef.SOY_VALUE_LONG_VALUE));
     }
     if (asType.equals(double.class)) {
-      return forFloat(box().invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
+      // invoke numberValue() since floatValue() only works on floats while numberValue() will also
+      // work on ints
+      return forFloat(box().invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
     }
     if (asType.equals(String.class)) {
       // string coercion is performed via the coerceToString method

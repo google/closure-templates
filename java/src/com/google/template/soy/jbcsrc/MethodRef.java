@@ -123,6 +123,7 @@ import java.util.Map;
   static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN = create(SoyValue.class, "coerceToBoolean");
   static final MethodRef SOY_VALUE_LONG_VALUE = create(SoyValue.class, "longValue");
   static final MethodRef SOY_VALUE_FLOAT_VALUE = create(SoyValue.class, "floatValue");
+  static final MethodRef SOY_VALUE_NUMBER_VALUE = create(SoyValue.class, "numberValue");
   static final MethodRef SOY_VALUE_STRING_VALUE = create(SoyValue.class, "stringValue");
   static final MethodRef SOY_VALUE_PROVIDER_RESOLVE = 
       create(Runtime.class, "resolveSoyValueProvider", SoyValueProvider.class);
