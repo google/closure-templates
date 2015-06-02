@@ -17,12 +17,16 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
+import static com.google.template.soy.jbcsrc.StandardNames.MSG_PLACEHOLDER_MAP_FIELD;
+import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
+import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
 import org.objectweb.asm.ClassVisitor;
@@ -42,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -212,6 +217,11 @@ final class VariableSet {
   @Nullable private FieldRef currentCalleeField; 
   // Allocated lazily
   @Nullable private FieldRef currentRendereeField; 
+  // Allocated lazily
+  @Nullable private FieldRef tempBufferField;
+  // Allocated lazily
+  @Nullable private FieldRef msgPlaceholderMapField;
+  private int msgPlaceholderMapInitialSize = Integer.MIN_VALUE;
 
   /**
    * @param owner The type that is the owner of the method being generated
@@ -224,6 +234,8 @@ final class VariableSet {
     this.fieldNames = fieldNames;
     this.fieldNames.claimName(CURRENT_CALLEE_FIELD);
     this.fieldNames.claimName(CURRENT_RENDEREE_FIELD);
+    this.fieldNames.claimName(TEMP_BUFFER_FIELD);
+    this.fieldNames.claimName(MSG_PLACEHOLDER_MAP_FIELD);
     this.owner = owner;
     this.thisVar = thisVar;
     availableSlots.set(0);   // for 'this'
@@ -309,8 +321,13 @@ final class VariableSet {
     }
   }
 
-  /** Defines all the fields necessary for the registered variables. */
-  void defineFields(ClassVisitor writer) {
+  /** 
+   * Defines all the fields necessary for the registered variables.
+   * 
+   * @return a statement to initialize the fields
+   */
+  @CheckReturnValue Statement defineFields(ClassVisitor writer) {
+    List<Statement> initializers = new ArrayList<>();
     for (Variable var : allVariables) {
       var.maybeDefineField(writer);
     }
@@ -320,6 +337,35 @@ final class VariableSet {
     if (currentRendereeField != null) {
       currentRendereeField.defineField(writer);
     }
+    if (tempBufferField != null) {
+      tempBufferField.defineField(writer);
+      // If a template needs a temp buffer then we initialize it eagerly in the template constructor
+      // this may be wasteful in the case that the buffer is only used on certain call paths, but
+      // if it turns out to be expensive, this could always be solved by an author by refactoring
+      // their templates (e.g. extract the conditional logic into another template)
+      final Expression newStringBuilder = ConstructorRef.ADVISING_STRING_BUILDER.construct();
+      initializers.add(new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          adapter.loadThis();
+          newStringBuilder.gen(adapter);
+          tempBufferField.putUnchecked(adapter);
+        }
+      });
+    }
+    if (msgPlaceholderMapField != null) {
+      msgPlaceholderMapField.defineField(writer);
+      // same comment as above about eager initialization.
+      final Expression newHashMap =
+          ConstructorRef.LINKED_HASH_MAP_SIZE.construct(constant(msgPlaceholderMapInitialSize));
+      initializers.add(new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          adapter.loadThis();
+          newHashMap.gen(adapter);
+          msgPlaceholderMapField.putUnchecked(adapter);
+        }
+      });
+    }
+    return Statement.concat(initializers);
   }
 
   /**
@@ -333,6 +379,31 @@ final class VariableSet {
     if (local == null) {
       local = currentCalleeField = 
           FieldRef.createField(owner, CURRENT_CALLEE_FIELD, CompiledTemplate.class);
+    }
+    return local;
+  }
+
+  /**
+   * Returns the field that holds the current temp buffer.
+   */
+  FieldRef getTempBufferField() {
+    FieldRef local = tempBufferField;
+    if (local == null) {
+      local = tempBufferField =
+          FieldRef.createFinalField(owner, TEMP_BUFFER_FIELD, AdvisingStringBuilder.class);
+    }
+    return local;
+  }
+
+  /**
+   * Returns the field that holds a map used for rendering msg placeholders.
+   */
+  FieldRef getMsgPlaceholderMapField(int requiredSize) {
+    FieldRef local = msgPlaceholderMapField;
+    this.msgPlaceholderMapInitialSize = Math.max(msgPlaceholderMapInitialSize, requiredSize);
+    if (local == null) {
+      local = msgPlaceholderMapField =
+          FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class);
     }
     return local;
   }

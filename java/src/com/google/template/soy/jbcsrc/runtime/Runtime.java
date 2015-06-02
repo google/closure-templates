@@ -31,11 +31,16 @@ import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
+import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -176,9 +181,31 @@ public final class Runtime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
-  public void checkRequiredParam(SoyRecord params, String paramName) {
+  public static void checkRequiredParam(SoyRecord params, String paramName) {
     if (!params.hasField(paramName)) {
       throw new SoyDataException("required param '$" + paramName + "' is undefined");
+    }
+  }
+
+  /**
+   * Render a message containing raw text sections and placeholders.
+   */
+  public static void renderSoyMsgWithPlaceholders(SoyMsg msg, Map<String, String> placeholders,
+      Appendable out) throws IOException {
+    for (SoyMsgPart msgPart : msg.getParts()) {
+      if (msgPart instanceof SoyMsgRawTextPart) {
+        out.append(((SoyMsgRawTextPart) msgPart).getRawText());
+      } else if (msgPart instanceof SoyMsgPlaceholderPart) {
+        String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
+        String str = placeholders.get(placeholderName);
+        if (str == null) {
+          throw new IllegalArgumentException(
+              "No value provided for placeholder: '" + placeholderName + "'");
+        }
+        out.append(str);
+      } else {
+        throw new AssertionError("unexpected part: " + msgPart);
+      }
     }
   }
 

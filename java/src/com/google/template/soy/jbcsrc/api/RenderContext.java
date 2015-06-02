@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -41,20 +43,19 @@ public final class RenderContext {
   private final ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
   private final SoyValueConverter converter;
+  /** The bundle of translated messages */
+  private final SoyMsgBundle msgBundle;
+  private final SoyMsgBundle defaultBundle;
 
-  private RenderContext(
-      DelTemplateSelector templateSelector,
-      SoyCssRenamingMap cssRenamingMap,
-      SoyIdRenamingMap xidRenamingMap,
-      ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap,
-      ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      SoyValueConverter converter) {
-    this.templateSelector = checkNotNull(templateSelector);
-    this.cssRenamingMap = checkNotNull(cssRenamingMap);
-    this.xidRenamingMap = checkNotNull(xidRenamingMap);
-    this.soyJavaFunctionsMap = checkNotNull(soyJavaFunctionsMap);
-    this.soyJavaDirectivesMap = checkNotNull(soyJavaDirectivesMap);
-    this.converter = converter;
+  private RenderContext(Builder builder) {
+    this.templateSelector = checkNotNull(builder.templateSelector);
+    this.cssRenamingMap = builder.cssRenamingMap;
+    this.xidRenamingMap = builder.xidRenamingMap;
+    this.soyJavaFunctionsMap = builder.soyJavaFunctionsMap;
+    this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
+    this.converter = builder.converter;
+    this.msgBundle = builder.msgBundle;
+    this.defaultBundle = builder.defaultBundle;
   }
 
   public String renameCssSelector(String selector) {
@@ -89,6 +90,29 @@ public final class RenderContext {
     return templateSelector.selectDelTemplate(calleeName, variant, allowEmpty).create(params, ij);
   }
 
+  /**
+   * Returns the {@link SoyMsg} associated with the {@code msgId} or {@code null} if there is no
+   * such translation.
+   */
+  public boolean hasSoyMsg(long msgId) {
+    return msgBundle.getMsg(msgId) != null;
+  }
+
+  /**
+   * Returns the {@link SoyMsg} associated with the {@code msgId} or the fallback (aka english)
+   * translation if there is no such message.
+   */
+  public SoyMsg getSoyMsg(long msgId) {
+    SoyMsg msg = msgBundle.getMsg(msgId);
+    if (msg == null) {
+      msg = defaultBundle.getMsg(msgId);
+      if (msg == null) {
+        throw new IllegalArgumentException("unknown messageId: " + msgId);
+      }
+    }
+    return msg;
+  }
+
   @VisibleForTesting
   public Builder toBuilder() {
     return new Builder()
@@ -96,7 +120,9 @@ public final class RenderContext {
         .withSoyFunctions(soyJavaFunctionsMap)
         .withSoyPrintDirectives(soyJavaDirectivesMap)
         .withCssRenamingMap(cssRenamingMap)
-        .withXidRenamingMap(xidRenamingMap);
+        .withXidRenamingMap(xidRenamingMap)
+        .withConverter(converter)
+        .withMessageBundles(msgBundle, defaultBundle);
   }
 
   /** A builder for configuring the context. */
@@ -107,6 +133,8 @@ public final class RenderContext {
     private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
+    private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
+    private SoyMsgBundle defaultBundle = SoyMsgBundle.EMPTY;
 
     public Builder withTemplateSelector(DelTemplateSelector selector) {
       this.templateSelector = checkNotNull(selector);
@@ -138,14 +166,16 @@ public final class RenderContext {
       return this;
     }
 
+    public Builder withMessageBundles(
+        SoyMsgBundle msgBundle,
+        SoyMsgBundle defaultBundle) {
+      this.msgBundle = checkNotNull(msgBundle);
+      this.defaultBundle = checkNotNull(defaultBundle);
+      return this;
+    }
+
     public RenderContext build() {
-      return new RenderContext(
-          checkNotNull(templateSelector),
-          cssRenamingMap,
-          xidRenamingMap,
-          soyJavaFunctionsMap,
-          soyJavaDirectivesMap,
-          converter);
+      return new RenderContext(this);
     }
   }
 }

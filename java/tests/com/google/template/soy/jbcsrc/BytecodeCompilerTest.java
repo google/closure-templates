@@ -184,16 +184,14 @@ public class BytecodeCompilerTest extends TestCase {
     assertEquals(RenderResult.done(), 
         factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "v1")), EMPTY_DICT)
             .render(builder, context));
-    assertThat(builder.toString()).isEqualTo("v1");
-    builder.clear();
+    assertThat(builder.getAndClearBuffer()).isEqualTo("v1");
 
-    assertEquals(RenderResult.done(), 
+    assertEquals(RenderResult.done(),
         factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "v2")), EMPTY_DICT)
             .render(builder, context));
-    assertThat(builder.toString()).isEqualTo("v2");
-    builder.clear();
+    assertThat(builder.getAndClearBuffer()).isEqualTo("v2");
 
-    assertEquals(RenderResult.done(), 
+    assertEquals(RenderResult.done(),
         factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
             .render(builder, context));
     assertThat(builder.toString()).isEqualTo("");
@@ -618,6 +616,28 @@ public class BytecodeCompilerTest extends TestCase {
     assertEquals(templateClass, factory.getClass().getDeclaringClass());
 
     assertThat(templateClass.getDeclaredClasses()).asList().contains(factory.getClass());
+  }
+
+  public void testRenderMsgStmt() throws Exception {
+    assertThatTemplateBody(
+        "{@param quota : int}",
+        "{@param url : string}",
+        "{msg desc=\"msg with placeholders.\"}",
+        "  You're currently using {$quota} MB of your quota.{sp}",
+        "  <a href=\"{$url}\">Learn more</A>",
+        "  <br /><br />",
+        "{/msg}",
+        "{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}",
+        "{msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}",
+        "{msg meaning=\"verb\" desc=\"\"}Archive{/msg}",
+        "{msg desc=\"\"}Archive{/msg}",
+        "")
+        .rendersAs(
+            "You're currently using 26 MB of your quota. "
+                + "<a href=\"http://foo.com\">Learn more</A>"
+                + "<br /><br />"
+                + "ArchiveArchiveArchiveArchive",
+            ImmutableMap.of("quota", 26, "url", "http://foo.com"));
   }
 
   private static final class FakeRenamingMap implements SoyCssRenamingMap {

@@ -42,6 +42,8 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplates;
 import com.google.template.soy.jbcsrc.api.DelTemplateSelector;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -128,9 +130,11 @@ public final class TemplateTester {
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
     private Iterable<ClassData> classData;
+    private SoyMsgBundle msgBundle;
     private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
     private CompiledTemplate.Factory factory;
+    private RenderContext defaultContext = DEFAULT_CONTEXT;
 
     private CompiledTemplateSubject(FailureStrategy failureStrategy, String subject) {
       super(failureStrategy, subject);
@@ -149,29 +153,42 @@ public final class TemplateTester {
       this.converter = converter;
       return this;
     }
-    
+
+    CompiledTemplateSubject withMessages(SoyMsgBundle bundle) {
+      classData = null;
+      factory = null;
+      this.msgBundle = bundle;
+      return this;
+    }
+
     CompiledTemplateSubject logsOutput(String expected) {
-      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_DICT, DEFAULT_CONTEXT);
+      compile();
+      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_DICT, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected) {
-      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, DEFAULT_CONTEXT);
+      compile();
+      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, defaultContext);
     }
     
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
-      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, DEFAULT_CONTEXT);
+      compile();
+      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(
         String expected, Map<String, ?> params, RenderContext context) {
+      compile();
       return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, context);
     }
     
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params,  Map<String, ?> ij) {
-      return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), DEFAULT_CONTEXT);
+      compile();
+      return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), defaultContext);
     }
     
     CompiledTemplateSubject rendersAs(String expected, RenderContext context) {
+      compile();
       return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, context);
     }
 
@@ -181,7 +198,6 @@ public final class TemplateTester {
 
     private CompiledTemplateSubject rendersAndLogs(String expectedOutput, String expectedLogged, 
         SoyRecord params, SoyRecord ij, RenderContext context) {
-      compile();
       CompiledTemplate template = factory.create(params, ij);
       AdvisingStringBuilder builder = new AdvisingStringBuilder();
       LogCapturer logOutput = new LogCapturer();
@@ -226,6 +242,17 @@ public final class TemplateTester {
             SoyFileSetParserBuilder.forFileContents(getSubject())
                 .typeRegistry(typeRegistry).parse();
         new UnsupportedFeatureReporter(ExplodingErrorReporter.get()).check(fileSet);
+
+        // Extract messages, to make it easy to test translations and get default (english) strings
+        SoyMsgBundle messages = new ExtractMsgsVisitor(ExplodingErrorReporter.get()).exec(fileSet);
+        SoyMsgBundle defaultBundle = messages;
+        if (this.msgBundle != null) {
+          messages = this.msgBundle;
+        }
+        defaultContext = defaultContext.toBuilder()
+            .withMessageBundles(messages, defaultBundle)
+            .build();
+
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
         TemplateRegistry registry = new TemplateRegistry(fileSet, ExplodingErrorReporter.get());

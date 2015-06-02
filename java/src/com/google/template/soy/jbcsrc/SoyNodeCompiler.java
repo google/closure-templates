@@ -35,11 +35,13 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -61,6 +63,9 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgHtmlTagNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -550,6 +555,39 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /**
+   * MsgFallbackGroupNodes have either one or two children.  In the 2 child case the second child is
+   * the {@code {fallbackmsg}} entry.  For this we generate code that looks like:
+   * <pre> {@code
+   *   if (renderContext.hasMsg(primaryId)) {
+   *     <render primary msg>
+   *   } else {
+   *     <render fallback msg>
+   *   }
+   * }</pre>
+   *
+   * <p>All of the logic for actually rendering {@code msg} nodes is handled by the
+   * {@link MsgCompiler}.
+   */
+  @Override protected Statement visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    MsgNode msg = node.getMsg();
+    long id = MsgUtils.computeMsgIdForDualFormat(msg);
+    ImmutableList<String> escapingDirectives = node.getEscapingDirectiveNames();
+    Statement renderDefault = getMsgCompiler().compileMessage(id, msg, escapingDirectives);
+    // fallback groups have 1 or 2 children.  if there are 2 then the second is a fallback and we
+    // need to check for presence.
+    if (node.hasFallbackMsg()) {
+      MsgNode fallback = node.getFallbackMsg();
+      long fallbackId = MsgUtils.computeMsgIdForDualFormat(node.getChild(1));
+      IfBlock ifAvailableRenderDefault = IfBlock.create(variableLookup.getRenderContext()
+          .invoke(MethodRef.RENDER_CONTEXT_HAS_SOY_MSG, constant(id)), renderDefault);
+      return ControlFlow.ifElseChain(ImmutableList.of(ifAvailableRenderDefault),
+          Optional.of(getMsgCompiler().compileMessage(fallbackId, fallback, escapingDirectives)));
+    } else {
+      return renderDefault;
+    }
+  }
+
+  /**
    * Given this delcall:
    * {@code {delcall foo.bar variant="$expr" allowemptydefault="true"}}
    *
@@ -714,9 +752,36 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 
+  @Override protected Statement visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+    // trivial node that is just a number of children surrounded by raw text nodes.
+    return Statement.concat(visitChildren(node)).withSourceLocation(node.getSourceLocation());
+  }
+
   @Override protected Statement visitSoyNode(SoyNode node) {
     throw new UnsupportedOperationException(
         "The jbcsrc backend doesn't support: " + node.getKind() + " nodes yet.");
+  }
+
+  private MsgCompiler getMsgCompiler() {
+    return new MsgCompiler(thisVar, detachState, variables, variableLookup, appendableExpression,
+        new SoyNodeToStringCompiler() {
+          @Override public Statement compileToBuffer(
+              MsgHtmlTagNode htmlTagNode, AppendableExpression appendable) {
+            return compilerWithNewAppendable(appendable).visit(htmlTagNode);
+          }
+
+          @Override public Expression compileToString(PrintNode node, Label reattachPoint) {
+            return compilePrintNodeAsExpression(node, reattachPoint).convert(String.class);
+          }
+
+          @Override public Statement compileToBuffer(
+              CallNode call, AppendableExpression appendable) {
+            // TODO(lukes): in the case that CallNode has to be escaped we will render all the bytes
+            // into a buffer, box it into a soy value, escape it, then copy the bytes into this
+            // buffer.  Consider optimizing at least one of the buffer copies away.
+            return compilerWithNewAppendable(appendable).visit(call);
+          }
+        });
   }
 
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */

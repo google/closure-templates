@@ -879,7 +879,7 @@ public final class TemplateParserTest extends TestCase {
     List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getBodyNodes();
     assertEquals(5, nodes.size());
 
-    MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
+    MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getMsg();
     assertEquals("Tells user's quota usage.", mn0.getDesc());
     assertEquals(null, mn0.getMeaning());
     assertEquals(false, mn0.isHidden());
@@ -919,7 +919,7 @@ public final class TemplateParserTest extends TestCase {
     MsgFallbackGroupNode mfgn1 = (MsgFallbackGroupNode) nodes.get(1);
     assertEquals(
         "{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}", mfgn1.toSourceString());
-    MsgNode mn1 = mfgn1.getChild(0);
+    MsgNode mn1 = mfgn1.getMsg();
     assertEquals("", mn1.getDesc());
     assertEquals("noun", mn1.getMeaning());
     assertEquals(true, mn1.isHidden());

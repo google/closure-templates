@@ -206,21 +206,21 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   }
 
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    PyExpr msg = msgFuncGeneratorFactory.create(node.getChild(0), localVarExprs).getPyExpr();
+    PyExpr msg = msgFuncGeneratorFactory.create(node.getMsg(), localVarExprs).getPyExpr();
 
     // MsgFallbackGroupNode could only have one child or two children. See MsgFallbackGroupNode.
-    if (node.numChildren() > 1) {
+    if (node.hasFallbackMsg()) {
       StringBuilder pyExprTextSb = new StringBuilder();
       PyExpr fallbackMsg = msgFuncGeneratorFactory.create(
-          node.getChild(1), localVarExprs).getPyExpr();
+          node.getFallbackMsg(), localVarExprs).getPyExpr();
 
       // Build Python ternary expression: a if cond else c
       pyExprTextSb.append(msg.getText()).append(" if ");
 
       // The fallback message is only used if the first message is not available, but the fallback
       // is. So availability of both messages must be tested.
-      long firstId = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(node.getChild(0)).id;
-      long secondId = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(node.getChild(1)).id;
+      long firstId = MsgUtils.computeMsgIdForDualFormat(node.getMsg());
+      long secondId = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
       pyExprTextSb.append(PyExprUtils.TRANSLATOR_NAME + ".is_msg_available(" + firstId + ")")
           .append(" or not ")
           .append(PyExprUtils.TRANSLATOR_NAME + ".is_msg_available(" + secondId + ")");

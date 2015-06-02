@@ -180,23 +180,20 @@ public final class DetachStateTest extends TestCase {
     RenderResult result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(0), result.future());
-    assertEquals("prefix\nloop-prefix\n", output.toString());
+    assertEquals("prefix\nloop-prefix\n", output.getAndClearBuffer());
 
-    output.clear();
     futures.get(0).set("first");
     result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(1), result.future());
-    assertEquals("first\nloop-suffix\nloop-prefix\n", output.toString());
+    assertEquals("first\nloop-suffix\nloop-prefix\n", output.getAndClearBuffer());
 
-    output.clear();
     futures.get(1).set("second");
     result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(2), result.future());
-    assertEquals("second\nloop-suffix\nloop-prefix\n", output.toString());
+    assertEquals("second\nloop-suffix\nloop-prefix\n", output.getAndClearBuffer());
 
-    output.clear();
     futures.get(2).set("third");
     result = template.render(output, DEFAULT_CONTEXT);
     assertEquals(RenderResult.done(), result);

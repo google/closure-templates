@@ -39,10 +39,13 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
+import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -63,6 +66,7 @@ import java.util.Map;
  * A reference to a method that can be called at runtime.
  */
 @AutoValue abstract class MethodRef {
+  // TODO(lukes): sort alphabetically? the initial organization has long been lost
   // Static methods
   static final MethodRef BOOLEAN_DATA_FOR_VALUE = 
       create(BooleanData.class, "forValue", boolean.class);
@@ -170,6 +174,19 @@ import java.util.Map;
       create(CompiledTemplate.class, "render", AdvisingAppendable.class, RenderContext.class);
   static final MethodRef ORDAIN_AS_SAFE = 
       create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class);
+
+  static final MethodRef ADVISING_STRING_BUILDER_GET_AND_CLEAR =
+      MethodRef.create(AdvisingStringBuilder.class, "getAndClearBuffer");
+  static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
+      MethodRef.create(SoyMsgRawTextPart.class, "getRawText");
+  static final MethodRef SOY_MSG_GET_PARTS = MethodRef.create(SoyMsg.class, "getParts");
+  static final MethodRef RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS = MethodRef.create(Runtime.class,
+      "renderSoyMsgWithPlaceholders", SoyMsg.class, Map.class, Appendable.class);
+  static final MethodRef RENDER_CONTEXT_GET_SOY_MSG =
+      MethodRef.create(RenderContext.class, "getSoyMsg", long.class);
+  static final MethodRef RENDER_CONTEXT_HAS_SOY_MSG =
+      MethodRef.create(RenderContext.class, "hasSoyMsg", long.class);
+  static final MethodRef LINKED_HASH_MAP_CLEAR = MethodRef.create(LinkedHashMap.class, "clear");
 
   static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

@@ -145,8 +145,9 @@ final class TemplateCompiler {
       field.defineField(writer);
     }
 
-    generateConstructor();
-    generateRenderMethod();
+    Statement fieldInitializers = generateRenderMethod();
+
+    generateConstructor(fieldInitializers);
     
     innerClasses.registerAllInnerClasses(writer);
     writer.visitEnd();
@@ -156,7 +157,7 @@ final class TemplateCompiler {
     return classes;
   }
 
-  private void generateRenderMethod() {
+  private Statement generateRenderMethod() {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -193,7 +194,7 @@ final class TemplateCompiler {
         variableSet.generateTableEntries(adapter);
       }
     }.writeMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), IOException.class, writer);
-    variableSet.defineFields(writer);
+    return variableSet.defineFields(writer);
   }
 
   /** 
@@ -201,8 +202,10 @@ final class TemplateCompiler {
    * params.
    * 
    * <p>This constructor is called by the generate factory classes.
+   *
+   * @param fieldInitializers additional statements to initialize fields (other than params)
    */
-  private void generateConstructor() {
+  private void generateConstructor(Statement fieldInitializers) {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -210,6 +213,7 @@ final class TemplateCompiler {
         createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
     final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
     final List<Statement> assignments = new ArrayList<>();
+    assignments.add(fieldInitializers);  // for other fields needed by the compiler.
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
     assignments.add(ijField.putInstanceField(thisVar, ijVar));
     for (final TemplateParam param : template.node().getAllParams()) {

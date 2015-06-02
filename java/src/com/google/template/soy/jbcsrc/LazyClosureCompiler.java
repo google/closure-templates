@@ -258,6 +258,7 @@ final class LazyClosureCompiler {
           adapter.mark(end);
         }
       };
+      Statement fieldInitializers = variableSet.defineFields(visitor);
       Expression constructExpr = generateConstructor(
           new Statement() {
             @Override void doGen(CodeBuilder adapter) {
@@ -265,10 +266,10 @@ final class LazyClosureCompiler {
               adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
             }
           }, 
+          fieldInitializers,
           lookup.getCapturedFields());
 
       doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, visitor);
-      variableSet.defineFields(visitor);
       return constructExpr;
     }
 
@@ -309,6 +310,7 @@ final class LazyClosureCompiler {
           (kind == null || kind == ContentKind.TEXT)
               ? BytecodeUtils.constantNull(ContentKind.class)
               : FieldRef.enumReference(kind).accessor();
+      Statement fieldInitializers = variableSet.defineFields(visitor);
       Statement superClassContstructor = new Statement() {
         @Override void doGen(CodeBuilder adapter) {
           adapter.loadThis();
@@ -317,10 +319,11 @@ final class LazyClosureCompiler {
         }
       };
       Expression constructExpr = 
-          generateConstructor(superClassContstructor, lookup.getCapturedFields());
+          generateConstructor(superClassContstructor, 
+              fieldInitializers, 
+              lookup.getCapturedFields());
 
       fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, visitor);
-      variableSet.defineFields(visitor);
       return constructExpr;
     }
 
@@ -331,6 +334,7 @@ final class LazyClosureCompiler {
      * <p>This constructor is called by the generate factory classes.
      */
     Expression generateConstructor(final Statement superClassConstructorInvocation, 
+        final Statement fieldInitializers,
         Iterable<ParentCapture> captures) {
       final Label start = new Label();
       final Label end = new Label();
@@ -352,18 +356,21 @@ final class LazyClosureCompiler {
       }
 
       Statement constructorBody = new Statement() {
-        @Override void doGen(CodeBuilder ga) {
-          ga.mark(start);
+        @Override void doGen(CodeBuilder cb) {
+          cb.mark(start);
           // call super()
-          superClassConstructorInvocation.gen(ga);
+          superClassConstructorInvocation.gen(cb);
+          // init fields
+          fieldInitializers.gen(cb);
+          // assign params to fields
           for (Statement assignment : assignments) {
-            assignment.gen(ga);
+            assignment.gen(cb);
           }
-          ga.returnValue();
-          ga.mark(end);
-          thisVar.tableEntry(ga);
+          cb.returnValue();
+          cb.mark(end);
+          thisVar.tableEntry(cb);
           for (LocalVariable local : params) {
-            local.tableEntry(ga);
+            local.tableEntry(cb);
           }
         }
       };
