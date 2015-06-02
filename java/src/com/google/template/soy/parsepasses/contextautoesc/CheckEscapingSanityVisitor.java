@@ -50,7 +50,7 @@ import java.util.Set;
  * <p>{@link #exec} should be called on a full parse tree.
  *
  */
-final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Current escaping mode. */
   private AutoescapeMode autoescapeMode;
 
@@ -90,7 +90,7 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override protected void visitCallBasicNode(CallBasicNode node) {
-    if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
+    if (autoescapeMode == AutoescapeMode.TRUE) {
       TemplateNode callee = templateRegistry.getBasicTemplate((node).getCalleeName());
       // It's possible that the callee template is in another file, and Soy is being used to compile
       // one file at a time without context (not recommended, but supported). In this case callee
@@ -106,7 +106,7 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
-    if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
+    if (autoescapeMode == AutoescapeMode.TRUE) {
       TemplateNode callee;
       Set<DelegateTemplateDivision> divisions =
           templateRegistry.getDelTemplateDivisionsForAllVariants((node).getDelCalleeName());
@@ -135,7 +135,7 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
       RenderUnitNode node, String nodeName, String selfClosingExample) {
     final AutoescapeMode oldMode = autoescapeMode;
     if (node.getContentKind() != null) {
-      if (autoescapeMode == AutoescapeMode.NOAUTOESCAPE) {
+      if (autoescapeMode == AutoescapeMode.FALSE) {
         throw SoyAutoescapeException.createWithNode(
             "{" + nodeName + "} node with 'kind' attribute is not permitted in non-autoescaped "
             + "templates: " + node.toSourceString(),

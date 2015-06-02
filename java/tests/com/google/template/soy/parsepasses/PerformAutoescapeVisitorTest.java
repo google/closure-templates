@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.parsepasses.contextautoesc;
+package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
@@ -28,6 +32,7 @@ import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -35,19 +40,31 @@ import com.google.template.soy.soytree.SoyNode;
 
 import junit.framework.TestCase;
 
+import org.easymock.EasyMock;
+
 import java.util.List;
+import java.util.Map;
 
 /**
- * Unit tests for {@link PerformDeprecatedNonContextualAutoescapeVisitor}.
+ * Unit tests for PerformAutoescapeVisitor.
  *
  */
-public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends TestCase {
+public final class PerformAutoescapeVisitorTest extends TestCase {
 
-  private static final ImmutableSet<String> AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES =
-      ImmutableSet.of(
-          EscapeHtmlDirective.NAME,
-          NoAutoescapeDirective.NAME,
-          IdDirective.NAME);
+
+  private static final SoyPrintDirective MOCK_BOO_DIRECTIVE =
+      EasyMock.createMock(SoyPrintDirective.class);
+  static {
+    expect(MOCK_BOO_DIRECTIVE.shouldCancelAutoescape()).andReturn(false).anyTimes();
+    replay(MOCK_BOO_DIRECTIVE);
+  }
+
+  private static final Map<String, SoyPrintDirective> SOY_DIRECTIVES_MAP =
+      ImmutableMap.of(
+          EscapeHtmlDirective.NAME, new EscapeHtmlDirective(),
+          NoAutoescapeDirective.NAME, new NoAutoescapeDirective(),
+          IdDirective.NAME, new IdDirective(),
+          "|boo", MOCK_BOO_DIRECTIVE);
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
@@ -63,8 +80,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     // Before.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -84,8 +100,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
     assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(2);
@@ -109,8 +124,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
     assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -140,8 +154,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
     assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After. Note that noAutoescape remains to filter against ContentKind.TEXT.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -166,8 +179,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     // Before.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
@@ -186,8 +198,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
     assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -210,8 +221,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(1).getChild(0).getName()).isEqualTo(NoAutoescapeDirective.NAME);
     assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After: The redundant noAutoescape calls are omitted.
     assertThat(printNodes.get(0).getChildren()).isEmpty();
@@ -238,8 +248,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
     assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
 
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL).exec(soyTree);
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, FAIL).exec(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
@@ -249,6 +258,18 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(2).getChildren()).hasSize(1);
     assertThat(printNodes.get(2).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
   }
+
+  public void testUnknownPrintDirective() {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents("{print 123 |fake}")
+        .errorReporter(FAIL)
+        .parse();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new PerformAutoescapeVisitor(SOY_DIRECTIVES_MAP, errorReporter).exec(soyTree);
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
+        "Unknown print directive '|fake'.");
+  }
+
 
   /**
    * Helper that puts the given test 'print' tags into a test file, parses the test file, and
