@@ -21,11 +21,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.template.soy.base.SoySyntaxException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 
@@ -138,7 +140,12 @@ public interface SoyFileSupplier {
       if (inputFileUrl.getProtocol().equals("file")) {
         // If the URL corresponds to a local file (such as a resource during local development),
         // open it up as a volatile file, so we can account for changes to the file.
-        return new VolatileSoyFileSupplier(new File(inputFileUrl.getPath()), soyFileKind);
+        try {
+          return new VolatileSoyFileSupplier(new File(inputFileUrl.toURI()), soyFileKind);
+        } catch (URISyntaxException e) {
+          throw SoySyntaxException.createWithoutMetaInfo(
+                  "Error in URL Syntax " + inputFileUrl + ": " + e);
+        }
       } else {
         return create(
             Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
