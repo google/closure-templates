@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Set;
 
-
 /**
  * Specifies how the outputs of <code>{print}</code> commands that lack escaping directives are
  * encoded.
@@ -29,9 +28,9 @@ import java.util.Set;
 public enum AutoescapeMode {
 
   /** Auto-escaping is off for the template. */
-  FALSE("deprecated-noautoescape"),
+  NOAUTOESCAPE("deprecated-noautoescape"),
   /** Auto-escaping is on for the template so directiveless prints will be HTML escaped. */
-  TRUE("deprecated-noncontextual"),
+  NONCONTEXTUAL("deprecated-noncontextual"),
   /**
    * Contextual auto-escaping is on for the template so directiveless prints will be escaped based
    * on the surrounding context.
