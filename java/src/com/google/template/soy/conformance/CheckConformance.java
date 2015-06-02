@@ -16,14 +16,12 @@
 
 package com.google.template.soy.conformance;
 
-import com.google.template.soy.basetree.Node;
-import com.google.template.soy.basetree.NodeVisitor;
-
-
 /**
  * Marker interface for collecting Soy conformance violations.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public interface CheckConformance extends NodeVisitor<Node, Void> {}
+public interface CheckConformance {
 
+  void check(ConformanceInput input);
+}

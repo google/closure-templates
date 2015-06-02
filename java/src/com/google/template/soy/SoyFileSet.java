@@ -37,6 +37,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.CheckConformance;
+import com.google.template.soy.conformance.ConformanceInput;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -1118,6 +1119,10 @@ public final class SoyFileSet {
     return new CompilationResult(errors, new ErrorPrettyPrinter(soyFileSuppliers));
   }
 
+  // TODO(gboyer): There are several fields on this class that end up saving around some state, and
+  // thus are not safe to be used by multiple threads at once. Here, we add synchronized as a
+  // stop-gap. However, given that most users of SoyFileSet use it once and throw it away, that
+  // might be a better precondition.
   /**
    * Runs middleend passes on the given Soy tree.
    *
@@ -1127,7 +1132,8 @@ public final class SoyFileSet {
    * @throws SoyAutoescapeException If there is a problem determining the context for an
    *     {@code autoescape="contextual"} template or one of its callers.
    */
-  private void runMiddleendPasses(SoyFileSetNode soyTree, SyntaxVersion declaredSyntaxVersion)
+  private synchronized void runMiddleendPasses(
+      SoyFileSetNode soyTree, SyntaxVersion declaredSyntaxVersion)
       throws SoySyntaxException {
 
     // Check that all function calls have a SoyFunction definition and have the correct arity.
@@ -1165,19 +1171,9 @@ public final class SoyFileSet {
     doContextualEscaping(soyTree);
     performAutoescapeVisitor.exec(soyTree);
 
-    // Run the conformance checks after the CheckEscapingSanityVisitor has run
-    // (in doContextualAutoescaping). This is because one particular conformance check,
-    // com.google.template.soy.conformance.BanInlineEventHandlers, runs the contextual autoescaper
-    // for its side effects (context inference). The contextual autoescaper mutates the parse tree,
-    // (specifically, adding |text directives) and the CheckEscapingSanityVisitor, thinking that
-    // the template author used them, complains that they are for internal use only.
-    // TODO(brndn): consider moving the conformance pass out of the main compilation path.
-    // A risk of the current situation is that the conformance pass could actually modify
-    // gencode destined for production. On the other hand, moving the conformance pass elsewhere
-    // could reduce its value, since it might not see precisely the same AST seen on the main
-    // compilation path.
     if (checkConformance != null) {
-      checkConformance.exec(soyTree);
+      checkConformance.check(ConformanceInput.create(
+          soyTree, contextualAutoescaper.getSlicedRawTextNodes()));
     }
 
     // Add print directives that mark inline-scripts as safe to run.

@@ -83,7 +83,7 @@ public final class ContextualAutoescaper {
   private Inferences inferences;
 
   /** Raw text nodes sliced by context. */
-  private List<SlicedRawTextNode> slicedRawTextNodes;
+  private ImmutableList<SlicedRawTextNode> slicedRawTextNodes;
 
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
@@ -213,7 +213,7 @@ public final class ContextualAutoescaper {
    * Maps ranges of text-nodes to contexts so that later parse passes can add attributes or
    * elements.
    */
-  public List<SlicedRawTextNode> getSlicedRawTextNodes() {
+  public ImmutableList<SlicedRawTextNode> getSlicedRawTextNodes() {
     return slicedRawTextNodes;
   }
 
