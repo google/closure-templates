@@ -53,11 +53,14 @@ public final class SharedRuntime {
     // Treat the case where either is a string specially.
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() + operand1.longValue());
-    } else if (operand0 instanceof StringData || operand1 instanceof StringData) {
+    } else if (operand0 instanceof StringData || operand1 instanceof StringData
+        || operand0 instanceof SanitizedContent || operand1 instanceof SanitizedContent) {
       // String concatenation. Note we're calling toString() instead of stringValue() in case one
       // of the operands needs to be coerced to a string.
       return StringData.forValue(operand0.toString() + operand1);
     } else {
+      // TODO(gboyer): Invert the logic here, and only perform this case if one of the arguments is
+      // of type NumberValue. Otherwise, concatenate as strings.
       return FloatData.forValue(operand0.numberValue() + operand1.numberValue());
     }
   }
