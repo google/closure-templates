@@ -66,7 +66,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     }
 
     public SoyFileHeaderInfo(String namespace) {
-      this(null, namespace, AutoescapeMode.TRUE);
+      this(null, namespace, AutoescapeMode.NONCONTEXTUAL);
     }
 
     public SoyFileHeaderInfo(

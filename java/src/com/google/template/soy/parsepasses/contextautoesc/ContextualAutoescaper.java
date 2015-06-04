@@ -146,6 +146,9 @@ public final class ContextualAutoescaper {
    */
   public List<TemplateNode> rewrite(SoyFileSetNode fileSet)
       throws SoyAutoescapeException {
+    // Do preliminary sanity checks.
+    new CheckEscapingSanityVisitor(errorReporter).exec(fileSet);
+
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
 
@@ -194,7 +197,14 @@ public final class ContextualAutoescaper {
     new NonContextualTypedRenderUnitNodesVisitor().exec(fileSet);
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    return new Rewriter(inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
+    List<TemplateNode> extraTemplates = new Rewriter(
+        inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
+
+    // Perform autoescaping on templates that use a deprecated autoescape strategy.
+    new PerformDeprecatedNonContextualAutoescapeVisitor(
+        autoescapeCancellingDirectives, errorReporter).exec(fileSet);
+
+    return extraTemplates;
   }
 
 
@@ -293,7 +303,7 @@ public final class ContextualAutoescaper {
     }
 
     @Override protected void visitTemplateNode(TemplateNode node) {
-      if (node.getAutoescapeMode() == AutoescapeMode.TRUE) {
+      if (node.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {
         visitChildren(node);
       }
     }
@@ -317,7 +327,7 @@ public final class ContextualAutoescaper {
             ImmutableList.builder();
         InferenceEngine.inferStrictRenderUnitNode(
             // As this visitor visits only non-contextual templates.
-            AutoescapeMode.TRUE,
+            AutoescapeMode.NONCONTEXTUAL,
             node,
             inferences,
             autoescapeCancellingDirectives,
