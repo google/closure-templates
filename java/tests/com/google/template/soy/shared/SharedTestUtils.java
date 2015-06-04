@@ -48,19 +48,9 @@ public final class SharedTestUtils {
    * scoped values common to all backends. Does not seed backend-specific API call parameters.
    *
    * @param injector The Guice injector responsible for injections during the API call.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
-   * @param bidiGlobalDir The bidi global directionality (ltr=1, rtl=-1, or 0 to use a value derived
-   *     from the msgBundle locale, if any, otherwise ltr).
-   * @return The ApiCallScope object (for use by the caller of this method to seed additional API
-   *     call parameters, such as backend-specific parameters).
    */
-  public static GuiceSimpleScope simulateNewApiCall(
-      Injector injector, @Nullable SoyMsgBundle msgBundle, int bidiGlobalDir) {
-
-    return simulateNewApiCall(
-        injector, msgBundle,
-        bidiGlobalDir == 0 ? null : BidiGlobalDir.forStaticIsRtl(bidiGlobalDir < 0));
+  public static GuiceSimpleScope simulateNewApiCall(Injector injector) {
+    return simulateNewApiCall(injector, null, BidiGlobalDir.LTR);
   }
 
 

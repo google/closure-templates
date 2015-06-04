@@ -52,7 +52,7 @@ public class SoyBidiUtils {
    *     directionality.
    * @return 1 if the language/locale is left-to-right or unknown, and -1 if it's right-to-left.
    */
-  public static int getBidiGlobalDir(String localeString) {
+  static BidiGlobalDir getBidiGlobalDir(String localeString) {
     boolean isRtl;
     try {
       isRtl = localeString != null
@@ -61,7 +61,7 @@ public class SoyBidiUtils {
     } catch (IllegalArgumentException localeException) {
       isRtl = false;
     }
-    return isRtl ? -1 : 1;
+    return BidiGlobalDir.forStaticIsRtl(isRtl);
   }
 
 

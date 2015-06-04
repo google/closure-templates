@@ -184,8 +184,7 @@ public class BaseTofu implements SoyTofu {
 
     apiCallScope.enter();
     try {
-      ApiCallScopeUtils.seedSharedParams(
-          apiCallScope, msgBundle, 0 /*use msgBundle locale's direction, ltr if null*/);
+      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
       getCachedTemplateRegistry(Pair.of(msgBundle, cssRenamingMap), true);
     } finally {
       apiCallScope.exit();
@@ -311,8 +310,7 @@ public class BaseTofu implements SoyTofu {
 
     try {
       // Seed the scoped parameters.
-      ApiCallScopeUtils.seedSharedParams(
-          apiCallScope, msgBundle, 0 /*use msgBundle locale's direction, ltr if null*/);
+      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
 
       // Do the rendering.
       TemplateRegistry cachedTemplateRegistry = isCaching ?

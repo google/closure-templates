@@ -77,7 +77,7 @@ public class EvalVisitorTest extends TestCase {
 
   @Override protected void setUp() {
     testData = createTestData();
-    SharedTestUtils.simulateNewApiCall(INJECTOR, null, 0);
+    SharedTestUtils.simulateNewApiCall(INJECTOR);
   }
 
   protected SoyRecord createTestData() {

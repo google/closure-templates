@@ -19,8 +19,10 @@ package com.google.template.soy.bididirectives;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.util.Providers;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
@@ -35,10 +37,10 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
 
 
   private static final BidiSpanWrapDirective BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR =
-      new BidiSpanWrapDirective(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_LTR_PROVIDER);
+      new BidiSpanWrapDirective(Providers.of(BidiGlobalDir.LTR));
 
   private static final BidiSpanWrapDirective BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL =
-      new BidiSpanWrapDirective(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER);
+      new BidiSpanWrapDirective(Providers.of(BidiGlobalDir.RTL));
 
 
   public void testApplyForTofu() {

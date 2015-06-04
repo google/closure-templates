@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared;
 
+import com.google.inject.util.Providers;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 
@@ -29,12 +30,6 @@ import javax.inject.Provider;
  */
 public class SharedRestrictedTestUtils {
 
-  private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_STATIC_LTR =
-      BidiGlobalDir.forStaticIsRtl(false);
-
-  private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_STATIC_RTL =
-      BidiGlobalDir.forStaticIsRtl(true);
-
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET =
       BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
 
@@ -45,31 +40,9 @@ public class SharedRestrictedTestUtils {
   private SharedRestrictedTestUtils() {}
 
 
-  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_STATIC_LTR_PROVIDER =
-      new Provider<BidiGlobalDir>() {
-        @Override public BidiGlobalDir get() {
-          return BIDI_GLOBAL_DIR_FOR_STATIC_LTR;
-        }
-      };
-
-  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER =
-      new Provider<BidiGlobalDir>() {
-        @Override public BidiGlobalDir get() {
-          return BIDI_GLOBAL_DIR_FOR_STATIC_RTL;
-        }
-      };
-
   public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER =
-      new Provider<BidiGlobalDir>() {
-        @Override public BidiGlobalDir get() {
-          return BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET;
-        }
-      };
+      Providers.of(BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET);
 
   public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER =
-      new Provider<BidiGlobalDir>() {
-        @Override public BidiGlobalDir get() {
-          return BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET;
-        }
-      };
+      Providers.of(BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET);
 }

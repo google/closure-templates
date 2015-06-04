@@ -27,28 +27,28 @@ public class SoyBidiUtilsTest extends TestCase {
 
 
   public void testGetBidiGlobalDir() {
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir(null));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("en"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("fr"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("ru"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("ja"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("zh-CN"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("fil"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("az"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("iw-Latn"));
-    assertEquals(1, SoyBidiUtils.getBidiGlobalDir("zz-ZZ"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("qbi"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("en-US-psrtl"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("en-x-psrtl"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("iw"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("iw-IL"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("he"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("ar"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("ar-EG"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("fa"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("ur"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("az-Arab"));
-    assertEquals(-1, SoyBidiUtils.getBidiGlobalDir("az-Arab-IR"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir(null));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("en"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("fr"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("ru"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("ja"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("zh-CN"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("fil"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("az"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("iw-Latn"));
+    assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("zz-ZZ"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("qbi"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("en-US-psrtl"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("en-x-psrtl"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("iw"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("iw-IL"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("he"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("ar"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("ar-EG"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("fa"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("ur"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("az-Arab"));
+    assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("az-Arab-IR"));
   }
 
 

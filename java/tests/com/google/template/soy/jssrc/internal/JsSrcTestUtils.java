@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -42,7 +43,7 @@ final class JsSrcTestUtils {
    * @param injector The Guice injector responsible for injections during the API call.
    */
   public static void simulateNewApiCall(Injector injector) {
-    simulateNewApiCall(injector, new SoyJsSrcOptions(), null, 0);
+    simulateNewApiCall(injector, new SoyJsSrcOptions());
   }
 
 
@@ -54,7 +55,7 @@ final class JsSrcTestUtils {
    * @param jsSrcOptions The options for generating JS source code.
    */
   public static void simulateNewApiCall(Injector injector, SoyJsSrcOptions jsSrcOptions) {
-    simulateNewApiCall(injector, jsSrcOptions, null, 0);
+    simulateNewApiCall(injector, jsSrcOptions, null, BidiGlobalDir.LTR);
   }
 
 
@@ -66,12 +67,11 @@ final class JsSrcTestUtils {
    * @param jsSrcOptions The options for generating JS source code.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the
    *     Soy source.
-   * @param bidiGlobalDir The bidi global directionality (ltr=1, rtl=-1), or 0 to use a value
-   *     derived from the message bundle.
+   * @param bidiGlobalDir The bidi global directionality
    */
-  public static void simulateNewApiCall(
+  private static void simulateNewApiCall(
       Injector injector, SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle,
-      int bidiGlobalDir) {
+      BidiGlobalDir bidiGlobalDir) {
 
     GuiceSimpleScope apiCallScope =
         SharedTestUtils.simulateNewApiCall(injector, msgBundle, bidiGlobalDir);

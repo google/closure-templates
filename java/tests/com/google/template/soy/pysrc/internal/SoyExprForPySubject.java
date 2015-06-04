@@ -100,7 +100,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
         = SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
-    SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
+    SharedTestUtils.simulateNewApiCall(INJECTOR);
     GenPyExprsVisitor genPyExprsVisitor = INJECTOR.getInstance(
         GenPyExprsVisitorFactory.class).create(localVarExprs);
     List<PyExpr> actualPyExprs = genPyExprsVisitor.exec(node);

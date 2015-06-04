@@ -19,9 +19,11 @@ package com.google.template.soy.bidifunctions;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.util.Providers;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -37,10 +39,10 @@ public class BidiMarkFunctionTest extends TestCase {
 
 
   private static final BidiMarkFunction BIDI_MARK_FUNCTION_FOR_STATIC_LTR =
-      new BidiMarkFunction(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_LTR_PROVIDER);
+      new BidiMarkFunction(Providers.of(BidiGlobalDir.LTR));
 
   private static final BidiMarkFunction BIDI_MARK_FUNCTION_FOR_STATIC_RTL =
-      new BidiMarkFunction(SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_STATIC_RTL_PROVIDER);
+      new BidiMarkFunction(Providers.of(BidiGlobalDir.RTL));
 
 
   public void testComputeForJava() {

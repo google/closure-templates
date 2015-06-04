@@ -54,9 +54,6 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
           .put("bidiEndEdge", MOCK_FUNCTION)
           .build();
 
-  private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_STATIC_LTR =
-      BidiGlobalDir.forStaticIsRtl(false);
-
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET =
       BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
 
@@ -72,7 +69,7 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_STATIC_LTR, FAIL);
+        SOY_JS_SRC_FUNCTIONS_MAP, BidiGlobalDir.LTR, FAIL);
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 

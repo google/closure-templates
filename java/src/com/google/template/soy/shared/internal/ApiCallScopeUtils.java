@@ -31,6 +31,8 @@ import javax.annotation.Nullable;
  *
  */
 public class ApiCallScopeUtils {
+  private static final Key<String> LOCALE_STRING_KEY = Key.get(String.class, LocaleString.class);
+  private static final Key<BidiGlobalDir> GLOBAL_DIR_KEY = Key.get(BidiGlobalDir.class);
 
   private ApiCallScopeUtils() {}
 
@@ -40,13 +42,10 @@ public class ApiCallScopeUtils {
    *
    * @param apiCallScope The scope object that manages the API call scope.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   * @param bidiGlobalDir The bidi global directionality (ltr=1, rtl=-1, or 0 to use a value derived
-   *     from the msgBundle locale, if any, otherwise ltr).
    */
-  public static void seedSharedParams(
-      GuiceSimpleScope apiCallScope, @Nullable SoyMsgBundle msgBundle, int bidiGlobalDir) {
-    seedSharedParams(apiCallScope, msgBundle,
-                     bidiGlobalDir == 0 ? null : BidiGlobalDir.forStaticIsRtl(bidiGlobalDir < 0));
+  public static void seedSharedParams(GuiceSimpleScope apiCallScope,
+      @Nullable SoyMsgBundle msgBundle) {
+    seedSharedParams(apiCallScope, msgBundle, null);
   }
 
 
@@ -67,9 +66,7 @@ public class ApiCallScopeUtils {
         bidiGlobalDir = BidiGlobalDir.forStaticLocale(localeString);
     }
 
-    // TODO(lukes):  have the callers stop passing SoyMsgBundle to these methods
-    apiCallScope.seed(Key.get(String.class, LocaleString.class), localeString);
-    apiCallScope.seed(BidiGlobalDir.class, bidiGlobalDir);
+    apiCallScope.seed(LOCALE_STRING_KEY, localeString);
+    apiCallScope.seed(GLOBAL_DIR_KEY, bidiGlobalDir);
   }
-
 }

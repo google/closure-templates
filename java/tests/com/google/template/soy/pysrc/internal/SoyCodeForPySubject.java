@@ -137,7 +137,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private GenPyCodeVisitor getGenPyCodeVisitor() {
     // Setup default configs.
     SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn, translationClass);
-    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR, null, null);
+    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR);
     apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
     apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), RUNTIME_PATH);
 
