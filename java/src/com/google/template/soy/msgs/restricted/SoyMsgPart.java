@@ -26,6 +26,9 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class SoyMsgPart {
+  // TODO(lukes): there is a fair bit of code inspecting this type hierarchy via cascading
+  // instanceof tests.  Consider introducing a visitor api or an enum for fast switching.
+
   /** A case in a plural or 'select' msg part. */
   @AutoValue public abstract static class Case<T> {
     public static <T> Case<T> create(T spec, Iterable<? extends SoyMsgPart> parts) {

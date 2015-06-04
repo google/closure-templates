@@ -221,7 +221,7 @@ final class VariableSet {
   @Nullable private FieldRef tempBufferField;
   // Allocated lazily
   @Nullable private FieldRef msgPlaceholderMapField;
-  private int msgPlaceholderMapInitialSize = Integer.MIN_VALUE;
+  private int msgPlaceholderMapInitialSize = 0;
 
   /**
    * @param owner The type that is the owner of the method being generated
@@ -321,6 +321,9 @@ final class VariableSet {
     }
   }
 
+  // TODO(lukes): consider moving all these optional 'one per template' fields to a different object
+  // for management.
+
   /** 
    * Defines all the fields necessary for the registered variables.
    * 
@@ -398,14 +401,21 @@ final class VariableSet {
   /**
    * Returns the field that holds a map used for rendering msg placeholders.
    */
-  FieldRef getMsgPlaceholderMapField(int requiredSize) {
+  FieldRef getMsgPlaceholderMapField() {
     FieldRef local = msgPlaceholderMapField;
-    this.msgPlaceholderMapInitialSize = Math.max(msgPlaceholderMapInitialSize, requiredSize);
     if (local == null) {
       local = msgPlaceholderMapField =
           FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class);
     }
     return local;
+  }
+
+  /**
+   * Configures a minimum size for the {@link #getMsgPlaceholderMapField()}.
+   */
+  void setMsgPlaceholderMapMinSize(int size) {
+    // we use the max of all the requested minimum sizes for the initial size
+    this.msgPlaceholderMapInitialSize = Math.max(msgPlaceholderMapInitialSize, size);
   }
 
   /**

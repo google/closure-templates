@@ -37,6 +37,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.CompiledTemplates;
@@ -640,6 +641,27 @@ public class BytecodeCompilerTest extends TestCase {
             ImmutableMap.of("quota", 26, "url", "http://foo.com"));
   }
 
+  public void testGenders() {
+    CompiledTemplateSubject tester = assertThatTemplateBody(
+        "{@param userGender : string}",
+        "{@param targetName : string}",
+        "{@param targetGender : string}",
+        "{msg genders=\"$userGender, $targetGender\" desc=\"...\"}",
+        "  You replied to {$targetName}.",
+        "{/msg}",
+        "");
+    tester.rendersAs("You replied to bender the offender.", 
+            ImmutableMap.of(
+                "userGender", "male", 
+                "targetName", "bender the offender", 
+                "targetGender", "male"));
+    tester.rendersAs("You replied to gender bender.", 
+        ImmutableMap.of(
+            "userGender", "male", 
+            "targetName", "gender bender", 
+            "targetGender", "female"));
+  }
+  
   private static final class FakeRenamingMap implements SoyCssRenamingMap {
     private final Map<String, String> renamingMap;
     FakeRenamingMap(Map<String, String> renamingMap) {

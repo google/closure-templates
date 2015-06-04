@@ -21,21 +21,28 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgPluralRemainderNode;
+import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import org.objectweb.asm.Label;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A helper for compiling {@link MsgNode messages}
@@ -47,7 +54,21 @@ final class MsgCompiler {
    * limited way.
    */
   interface SoyNodeToStringCompiler {
-    /** 
+    /**
+     * Compiles the expression to a {@link String} valued expression.
+     *
+     * <p>If the node requires detach logic, it should use the given label as the reattach point.
+     */
+    Expression compileToString(ExprRootNode node, Label reattachPoint);
+
+    /**
+     * Compiles the expression to an {@code IntegerData} valued expression.
+     *
+     * <p>If the node requires detach logic, it should use the given label as the reattach point.
+     */
+    Expression compileToInt(ExprRootNode node, Label reattachPoint);
+
+    /**
      * Compiles the print node to a {@link String} valued expression.
      * 
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
@@ -107,15 +128,12 @@ final class MsgCompiler {
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
       printMsg = handleBasicTranslation(escapingDirectives, soyMsg);
-    } else if (!msg.isPlrselMsg()) {
+    } else {
       // String translation + placeholders
       printMsg = handleTranslationWithPlaceholders(msg, escapingDirectives, soyMsg);
-    } else {
-      throw new UnsupportedOperationException(
-          "Support for plurals and genders has not been added yet");
     }
     return Statement.concat(
-        printMsg.withSourceLocation(msg.getSourceLocation()), 
+        printMsg.withSourceLocation(msg.getSourceLocation()),
         detachState.detachLimited(appendableExpression));
   }
 
@@ -143,15 +161,15 @@ final class MsgCompiler {
       MsgNode msg,
       List<String> escapingDirectives,
       Expression soyMsg) {
-    // sanity check
-    int numPlaceholders =
-        Iterables.size(Iterables.filter(msg.getChildren(), MsgPlaceholderNode.class));
-    checkState(numPlaceholders > 0);
     // We need to render placeholders into a buffer and then pack them into a map to pass to
     // Runtime.renderSoyMsgWithPlaceholders.
-    Expression placeholderMap =
-        variables.getMsgPlaceholderMapField(numPlaceholders).accessor(thisVar);
-    Statement populateMap = renderPlaceholdersIntoMap(placeholderMap, msg);
+    Expression placeholderMap = variables.getMsgPlaceholderMapField().accessor(thisVar);
+    Map<String, Statement> placeholderNameToPutStatement = new LinkedHashMap<>();
+    putPlaceholdersIntoMap(placeholderMap, msg, placeholderNameToPutStatement);
+    // sanity check
+    checkState(!placeholderNameToPutStatement.isEmpty());
+    variables.setMsgPlaceholderMapMinSize(placeholderNameToPutStatement.size());
+    Statement populateMap = Statement.concat(placeholderNameToPutStatement.values());
     Statement clearMap = placeholderMap.invokeVoid(MethodRef.LINKED_HASH_MAP_CLEAR);
     Statement render;
     if (escapingDirectives.isEmpty()) {
@@ -176,27 +194,81 @@ final class MsgCompiler {
         .withSourceLocation(msg.getSourceLocation());
   }
 
-  private Statement renderPlaceholdersIntoMap(Expression mapExpression, MsgNode msg) {
-    List<Statement> putStatements = new ArrayList<>();
-    for (MsgPlaceholderNode placeholder :
-          Iterables.filter(msg.getChildren(), MsgPlaceholderNode.class)) {
-      StandaloneNode initialNode = placeholder.getChild(0);
-      String mapKey = placeholder.getBaseVarName();
-      Statement putEntyInMap;
-      if (initialNode instanceof MsgHtmlTagNode) {
-        putEntyInMap = 
-            addHtmlTagNodeToPlaceholderMap(mapExpression, mapKey, (MsgHtmlTagNode) initialNode);
-      } else if (initialNode instanceof CallNode) {
-        putEntyInMap = addCallNodeToPlaceholderMap(mapExpression, mapKey, (CallNode) initialNode);
-      } else if (initialNode instanceof PrintNode) {
-        putEntyInMap = addPrintNodeToPlaceholderMap(mapExpression, mapKey, (PrintNode) initialNode);
+  /**
+   * Adds a {@link Statement} to {@link Map#put} every msg placeholder, plural variable and select
+   * case value into {@code mapExpression}
+   */
+  private void putPlaceholdersIntoMap(Expression mapExpression, ParentSoyNode<?> msg,
+      Map<String, Statement> placeholderNameToPutStatement) {
+    for (SoyNode child : msg.getChildren()) {
+      String varName;
+      boolean addPlaceholder = true;
+      if (child instanceof MsgSubstUnitNode && !(child instanceof MsgPluralRemainderNode)) {
+        // Every placeholder may appear multiple times in overall {msg} if it is duplicated in
+        // multiple cases of {plural} or {select} statements.  However, when this happens the
+        // compiler ensures that the placeholders are identical when calculating placeholder names.
+        // So as long as two MsgSubstUnitNodes have the same placeholder we can just use the first
+        // one for generating the placeholder code.  This is the same strategy that jssrc uses.
+        varName = ((MsgSubstUnitNode) child).getBaseVarName();
+        if (placeholderNameToPutStatement.containsKey(varName)) {
+          addPlaceholder = false;
+        }
       } else {
-        // the AST for MsgNodes guarantee that these are the only options
-        throw new AssertionError();
+        // must be a RawTextNode or a MsgPluralRemainderNode, these don't need placeholders
+        continue;
       }
-      putStatements.add(putEntyInMap);
+      if (child instanceof MsgPluralNode) {
+        MsgPluralNode plural = (MsgPluralNode) child;
+        if (addPlaceholder) {
+          Label reattachPoint = new Label();
+          Expression value = soyNodeCompiler.compileToInt(plural.getExpr(), reattachPoint);
+          placeholderNameToPutStatement.put(varName,
+              putToMap(mapExpression, varName, value).labelStart(reattachPoint));
+        }
+        // Recursively visit plural cases
+        for (CaseOrDefaultNode caseOrDefault : plural.getChildren()) {
+          putPlaceholdersIntoMap(mapExpression, caseOrDefault, placeholderNameToPutStatement);
+        }
+      } else if (child instanceof MsgSelectNode) {
+        MsgSelectNode select = (MsgSelectNode) child;
+        if (addPlaceholder) {
+          Label reattachPoint = new Label();
+          Expression value = soyNodeCompiler.compileToString(select.getExpr(), reattachPoint);
+          placeholderNameToPutStatement.put(varName,
+              putToMap(mapExpression, varName, value).labelStart(reattachPoint));
+        }
+        // Recursively visit select cases
+        for (CaseOrDefaultNode caseOrDefault : select.getChildren()) {
+          putPlaceholdersIntoMap(mapExpression, caseOrDefault, placeholderNameToPutStatement);
+        }
+      } else if (child instanceof MsgPlaceholderNode) {
+        if (addPlaceholder) {
+          placeholderNameToPutStatement.put(varName,
+              putPlaceholderIntoMap(mapExpression, (MsgPlaceholderNode) child));
+        }
+      } else {
+        throw new AssertionError("unexpected child: " + child);
+      }
     }
-    return Statement.concat(putStatements);
+  }
+
+  private Statement putPlaceholderIntoMap(Expression mapExpression, MsgPlaceholderNode placeholder)
+      throws AssertionError {
+    StandaloneNode initialNode = placeholder.getChild(0);
+    String mapKey = placeholder.getBaseVarName();
+    Statement putEntyInMap;
+    if (initialNode instanceof MsgHtmlTagNode) {
+      putEntyInMap =
+          addHtmlTagNodeToPlaceholderMap(mapExpression, mapKey, (MsgHtmlTagNode) initialNode);
+    } else if (initialNode instanceof CallNode) {
+      putEntyInMap = addCallNodeToPlaceholderMap(mapExpression, mapKey, (CallNode) initialNode);
+    } else if (initialNode instanceof PrintNode) {
+      putEntyInMap = addPrintNodeToPlaceholderMap(mapExpression, mapKey, (PrintNode) initialNode);
+    } else {
+      // the AST for MsgNodes guarantee that these are the only options
+      throw new AssertionError();
+    }
+    return putEntyInMap;
   }
 
   /**
@@ -246,12 +318,16 @@ final class MsgCompiler {
     // This is much like the escaping path of visitPrintNode but somewhat simpler because our
     // ultimate target is a string rather than putting bytes on the output stream.
     Label reattachPoint = new Label();
+    Expression compileToString = soyNodeCompiler.compileToString(printNode, reattachPoint);
+    return putToMap(mapExpression, mapKey, compileToString).labelStart(reattachPoint);
+  }
+
+  private Statement putToMap(Expression mapExpression, String mapKey, Expression valueExpression) {
     return mapExpression
         .invoke(MethodRef.LINKED_HASH_MAP_PUT,
             constant(mapKey),
-            soyNodeCompiler.compileToString(printNode, reattachPoint))
-        .toStatement()
-        .labelStart(reattachPoint);
+            valueExpression)
+        .toStatement();
   }
 
   private AppendableExpression tempBuffer() {

@@ -31,6 +31,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
@@ -578,8 +579,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.hasFallbackMsg()) {
       MsgNode fallback = node.getFallbackMsg();
       long fallbackId = MsgUtils.computeMsgIdForDualFormat(node.getChild(1));
-      IfBlock ifAvailableRenderDefault = IfBlock.create(variableLookup.getRenderContext()
-          .invoke(MethodRef.RENDER_CONTEXT_HAS_SOY_MSG, constant(id)), renderDefault);
+      IfBlock ifAvailableRenderDefault =
+          IfBlock.create(
+              variableLookup.getRenderContext()
+                  .invoke(MethodRef.RENDER_CONTEXT_USE_PRIMARY_MSG,
+                      constant(id),
+                      constant(fallbackId)),
+              renderDefault);
       return ControlFlow.ifElseChain(ImmutableList.of(ifAvailableRenderDefault),
           Optional.of(getMsgCompiler().compileMessage(fallbackId, fallback, escapingDirectives)));
     } else {
@@ -780,6 +786,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             // into a buffer, box it into a soy value, escape it, then copy the bytes into this
             // buffer.  Consider optimizing at least one of the buffer copies away.
             return compilerWithNewAppendable(appendable).visit(call);
+          }
+
+          @Override public Expression compileToString(ExprRootNode node, Label reattachPoint) {
+            return exprCompiler.compile(node, reattachPoint).convert(String.class);
+          }
+
+          @Override public Expression compileToInt(ExprRootNode node, Label reattachPoint) {
+            return exprCompiler.compile(node, reattachPoint).box().cast(IntegerData.class);
+
           }
         });
   }

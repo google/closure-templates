@@ -184,8 +184,8 @@ import java.util.Map;
       "renderSoyMsgWithPlaceholders", SoyMsg.class, Map.class, Appendable.class);
   static final MethodRef RENDER_CONTEXT_GET_SOY_MSG =
       MethodRef.create(RenderContext.class, "getSoyMsg", long.class);
-  static final MethodRef RENDER_CONTEXT_HAS_SOY_MSG =
-      MethodRef.create(RenderContext.class, "hasSoyMsg", long.class);
+  static final MethodRef RENDER_CONTEXT_USE_PRIMARY_MSG =
+      MethodRef.create(RenderContext.class, "usePrimaryMsg", long.class, long.class);
   static final MethodRef LINKED_HASH_MAP_CLEAR = MethodRef.create(LinkedHashMap.class, "clear");
 
   static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {

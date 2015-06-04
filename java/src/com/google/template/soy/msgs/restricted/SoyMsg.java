@@ -21,6 +21,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import com.ibm.icu.util.ULocale;
+
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -155,6 +157,11 @@ public final class SoyMsg {
   /** Returns the language/locale string. */
   public String getLocaleString() {
     return localeString;
+  }
+
+  public ULocale getLocale() {
+    // TODO(lukes): Consider storing this in preference to the localeString
+    return new ULocale(localeString);
   }
 
   /** Returns the unique id for this message (same across all translations). */

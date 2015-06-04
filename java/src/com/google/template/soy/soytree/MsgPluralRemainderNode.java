@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 
-
 /**
  * Node representing a 'remainder' section in a 'plural' block.
  *
@@ -26,7 +25,7 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  *
  */
 public final class MsgPluralRemainderNode extends AbstractSoyNode implements MsgSubstUnitNode {
-
+  // TODO(lukes): this shouldn't implement MsgSubstUnitNode
 
   /** The source string. */
   private final String sourceString;

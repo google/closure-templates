@@ -2808,8 +2808,8 @@ goog.addDependency('editor/command.js', ['goog.editor.Command'], [], false);
 goog.addDependency('editor/contenteditablefield.js', ['goog.editor.ContentEditableField'], ['goog.asserts', 'goog.editor.Field', 'goog.log'], false);
 goog.addDependency('editor/contenteditablefield_test.js', ['goog.editor.ContentEditableFieldTest'], ['goog.dom', 'goog.editor.ContentEditableField', 'goog.editor.field_test', 'goog.testing.jsunit'], false);
 goog.addDependency('editor/defines.js', ['goog.editor.defines'], [], false);
-goog.addDependency('editor/field.js', ['goog.editor.Field', 'goog.editor.Field.EventType'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.array', 'goog.asserts', 'goog.async.Delay', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Plugin', 'goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo', 'goog.editor.node', 'goog.editor.range', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.log', 'goog.log.Level', 'goog.string', 'goog.string.Unicode', 'goog.style', 'goog.userAgent', 'goog.userAgent.product'], false);
-goog.addDependency('editor/field_test.js', ['goog.editor.field_test'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.range', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.testing.LooseMock', 'goog.testing.MockClock', 'goog.testing.dom', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.recordFunction', 'goog.userAgent'], false);
+goog.addDependency('editor/field.js', ['goog.editor.Field', 'goog.editor.Field.EventType'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.array', 'goog.asserts', 'goog.async.Delay', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.dom.classes', 'goog.editor.BrowserFeature', 'goog.editor.Command', 'goog.editor.Plugin', 'goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo', 'goog.editor.node', 'goog.editor.range', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.log', 'goog.log.Level', 'goog.string', 'goog.string.Unicode', 'goog.style', 'goog.userAgent', 'goog.userAgent.product'], false);
+goog.addDependency('editor/field_test.js', ['goog.editor.field_test'], ['goog.array', 'goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.dom.classes', 'goog.editor.BrowserFeature', 'goog.editor.Field', 'goog.editor.Plugin', 'goog.editor.range', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.functions', 'goog.testing.LooseMock', 'goog.testing.MockClock', 'goog.testing.dom', 'goog.testing.events', 'goog.testing.events.Event', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('editor/focus.js', ['goog.editor.focus'], ['goog.dom.selection'], false);
 goog.addDependency('editor/focus_test.js', ['goog.editor.focusTest'], ['goog.dom.selection', 'goog.editor.BrowserFeature', 'goog.editor.focus', 'goog.testing.jsunit'], false);
 goog.addDependency('editor/icontent.js', ['goog.editor.icontent', 'goog.editor.icontent.FieldFormatInfo', 'goog.editor.icontent.FieldStyleInfo'], ['goog.dom', 'goog.editor.BrowserFeature', 'goog.style', 'goog.userAgent'], false);
@@ -7897,8 +7897,8 @@ goog.provide('goog.object');
  *
  * @param {Object<K,V>} obj The object over which to iterate.
  * @param {function(this:T,V,?,Object<K,V>):?} f The function to call
- *     for every element. This function takes 3 arguments (the element, the
- *     index and the object) and the return value is ignored.
+ *     for every element. This function takes 3 arguments (the value, the
+ *     key and the object) and the return value is ignored.
  * @param {T=} opt_obj This is used as the 'this' object within f.
  * @template T,K,V
  */
@@ -7916,7 +7916,7 @@ goog.object.forEach = function(obj, f, opt_obj) {
  * @param {Object<K,V>} obj The object over which to iterate.
  * @param {function(this:T,V,?,Object<K,V>):boolean} f The function to call
  *     for every element. This
- *     function takes 3 arguments (the element, the index and the object)
+ *     function takes 3 arguments (the value, the key and the object)
  *     and should return a boolean. If the return value is true the
  *     element is added to the result object. If it is false the
  *     element is not included.
@@ -7943,7 +7943,7 @@ goog.object.filter = function(obj, f, opt_obj) {
  * @param {Object<K,V>} obj The object over which to iterate.
  * @param {function(this:T,V,?,Object<K,V>):R} f The function to call
  *     for every element. This function
- *     takes 3 arguments (the element, the index and the object)
+ *     takes 3 arguments (the value, the key and the object)
  *     and should return something. The result will be inserted
  *     into a new object.
  * @param {T=} opt_obj This is used as the 'this' object within f.
@@ -7967,7 +7967,7 @@ goog.object.map = function(obj, f, opt_obj) {
  * @param {Object<K,V>} obj The object to check.
  * @param {function(this:T,V,?,Object<K,V>):boolean} f The function to
  *     call for every element. This function
- *     takes 3 arguments (the element, the index and the object) and should
+ *     takes 3 arguments (the value, the key and the object) and should
  *     return a boolean.
  * @param {T=} opt_obj This is used as the 'this' object within f.
  * @return {boolean} true if any element passes the test.
@@ -7991,7 +7991,7 @@ goog.object.some = function(obj, f, opt_obj) {
  * @param {Object<K,V>} obj The object to check.
  * @param {?function(this:T,V,?,Object<K,V>):boolean} f The function to
  *     call for every element. This function
- *     takes 3 arguments (the element, the index and the object) and should
+ *     takes 3 arguments (the value, the key and the object) and should
  *     return a boolean.
  * @param {T=} opt_obj This is used as the 'this' object within f.
  * @return {boolean} false if any element fails the test.

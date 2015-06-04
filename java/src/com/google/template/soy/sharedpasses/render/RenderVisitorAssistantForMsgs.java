@@ -23,9 +23,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
@@ -45,7 +43,6 @@ import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.SoyNode;
 
-import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.util.ULocale;
 
 import java.util.List;
@@ -129,11 +126,11 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       SoyMsgPart firstPart = msgParts.get(0);
 
       if (firstPart instanceof SoyMsgPluralPart) {
-        (new PlrselMsgPartsVisitor(msg, new ULocale(translation.getLocaleString())))
+        (new PlrselMsgPartsVisitor(msg, translation.getLocale()))
             .visitPart((SoyMsgPluralPart) firstPart);
 
       } else if (firstPart instanceof SoyMsgSelectPart) {
-        (new PlrselMsgPartsVisitor(msg, new ULocale(translation.getLocaleString())))
+        (new PlrselMsgPartsVisitor(msg, translation.getLocale()))
             .visitPart((SoyMsgSelectPart) firstPart);
 
       } else {
@@ -275,10 +272,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     /** The locale for the translated message considered. */
     private final ULocale locale;
 
-    /** Holds the value of the remainder for the current enclosing plural part. */
-    private double currentPluralRemainderValue;
-
-
     /**
      * Constructor.
      * @param msgNode The parent message node for the parts dealt here.
@@ -314,22 +307,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             repSelectNode);
       }
 
-      List<SoyMsgPart> caseParts = null;
-      List<SoyMsgPart> defaultParts = null;
-
-      // Handle cases.
-      for (Case<String> case0 : selectPart.getCases()) {
-        if (case0.spec() == null) {
-          defaultParts = case0.parts();
-        } else if (case0.spec().equals(correctSelectValue)) {
-          caseParts = case0.parts();
-          break;
-        }
-      }
-
-      if (caseParts == null) {
-        caseParts = defaultParts;
-      }
+      List<SoyMsgPart> caseParts = selectPart.lookupCase(correctSelectValue);
 
       if (caseParts != null) {
 
@@ -383,55 +361,8 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             repPluralNode);
       }
 
-      currentPluralRemainderValue = correctPluralValue - repPluralNode.getOffset();
-
       // Handle cases.
-      List<SoyMsgPart> caseParts = null;
-
-      // Check whether the plural value matches any explicit numeric value.
-      boolean hasNonExplicitCases = false;
-      List<SoyMsgPart> otherCaseParts = null;
-      for (Case<SoyMsgPluralCaseSpec> case0 : pluralPart.getCases()) {
-
-        SoyMsgPluralCaseSpec pluralCaseSpec = case0.spec();
-        SoyMsgPluralCaseSpec.Type caseType = pluralCaseSpec.getType();
-        if (caseType == SoyMsgPluralCaseSpec.Type.EXPLICIT) {
-          if (pluralCaseSpec.getExplicitValue() == correctPluralValue) {
-            caseParts = case0.parts();
-            break;
-          }
-
-        } else if (caseType == SoyMsgPluralCaseSpec.Type.OTHER) {
-          otherCaseParts = case0.parts();
-
-        } else {
-          hasNonExplicitCases = true;
-
-        }
-      }
-
-      if (caseParts == null && hasNonExplicitCases) {
-        // Didn't match any numeric value.  Check which plural rule it matches.
-        String pluralKeyword = PluralRules.forLocale(locale).select(currentPluralRemainderValue);
-        SoyMsgPluralCaseSpec.Type correctCaseType =
-            new SoyMsgPluralCaseSpec(pluralKeyword).getType();
-
-
-        // Iterate the cases once again for non-numeric keywords.
-        for (Case<SoyMsgPluralCaseSpec> case0 : pluralPart.getCases()) {
-
-          if (case0.spec().getType() == correctCaseType) {
-            caseParts = case0.parts();
-            break;
-          }
-        }
-      }
-
-      if (caseParts == null) {
-        // Fall back to the "other" case. This can happen either if there aren't any non-specific
-        // cases, or there is not the non-specific case that we need.
-        caseParts = otherCaseParts;
-      }
+      List<SoyMsgPart> caseParts = pluralPart.lookupCase((int) correctPluralValue, locale);
 
       for (SoyMsgPart casePart : caseParts) {
 
@@ -442,7 +373,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
           appendRawTextPart((SoyMsgRawTextPart) casePart);
 
         } else if (casePart instanceof SoyMsgPluralRemainderPart) {
-          appendPluralRemainder();
+          appendPluralRemainder(correctPluralValue - pluralPart.getOffset());
 
         } else {
           // Plural parts will not have nested plural/select parts.  So, this is an error.
@@ -460,7 +391,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
      * the {@code StringBuilder} object in {@code RenderVisitor}.  Since this is precomputed
      * when visiting the {@code SoyMsgPluralPart} object, it is directly used here.
      */
-    private void appendPluralRemainder() {
+    private void appendPluralRemainder(double currentPluralRemainderValue) {
       RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(),
           String.valueOf(currentPluralRemainderValue));
     }

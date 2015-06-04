@@ -91,11 +91,11 @@ public final class RenderContext {
   }
 
   /**
-   * Returns the {@link SoyMsg} associated with the {@code msgId} or {@code null} if there is no
-   * such translation.
+   * Returns {@code true} if the primary msg should be used instead of the fallback.
    */
-  public boolean hasSoyMsg(long msgId) {
-    return msgBundle.getMsg(msgId) != null;
+  public boolean usePrimaryMsg(long msgId, long fallbackId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    return msgBundle.getMsg(msgId) != null || msgBundle.getMsg(fallbackId) == null;
   }
 
   /**
