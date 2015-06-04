@@ -67,7 +67,7 @@ public class ApiCallScopeUtils {
         bidiGlobalDir = BidiGlobalDir.forStaticLocale(localeString);
     }
 
-    apiCallScope.seed(SoyMsgBundle.class, msgBundle);
+    // TODO(lukes):  have the callers stop passing SoyMsgBundle to these methods
     apiCallScope.seed(Key.get(String.class, LocaleString.class), localeString);
     apiCallScope.seed(BidiGlobalDir.class, bidiGlobalDir);
   }

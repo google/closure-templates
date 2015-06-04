@@ -34,7 +34,6 @@ import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
@@ -92,9 +91,6 @@ public class SharedModule extends AbstractModule {
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(Boolean.class).annotatedWith(IsUsingIjData.class)
         .toProvider(GuiceSimpleScope.<Boolean>getUnscopedProvider())
-        .in(ApiCallScope.class);
-    bind(SoyMsgBundle.class)
-        .toProvider(GuiceSimpleScope.<SoyMsgBundle>getUnscopedProvider())
         .in(ApiCallScope.class);
     bind(String.class).annotatedWith(LocaleString.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
