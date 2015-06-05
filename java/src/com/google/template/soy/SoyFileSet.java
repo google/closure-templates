@@ -55,6 +55,8 @@ import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.parsepasses.ChangeCallsToPassAllDataVisitor;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
 import com.google.template.soy.parsepasses.HandleCssCommandVisitor;
+import com.google.template.soy.parsepasses.PerformAutoescapeVisitor;
+import com.google.template.soy.parsepasses.contextautoesc.CheckEscapingSanityVisitor;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
@@ -581,6 +583,9 @@ public final class SoyFileSet {
   /** Factory for creating an instance of CheckFunctionCallsVisitor. */
   private final CheckFunctionCallsVisitorFactory checkFunctionCallsVisitorFactory;
 
+  /** The instance of PerformAutoescapeVisitor to use. */
+  private final PerformAutoescapeVisitor performAutoescapeVisitor;
+
   /** The instance of ContextualAutoescaper to use. */
   private final ContextualAutoescaper contextualAutoescaper;
 
@@ -614,6 +619,7 @@ public final class SoyFileSet {
    * @param pySrcMainProvider Provider for getting an instance of PySrcMain.
    * @param checkFunctionCallsVisitorFactory Factory for creating an instance of
    *     CheckFunctionCallsVisitor.
+   * @param performAutoescapeVisitor The instance of PerformAutoescapeVisitor to use.
    * @param contextualAutoescaper The instance of ContextualAutoescaper to use.
    * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param typeRegistry The type registry to resolve parameter type names.
@@ -630,6 +636,7 @@ public final class SoyFileSet {
       Provider<JsSrcMain> jsSrcMainProvider,
       Provider<PySrcMain> pySrcMainProvider,
       CheckFunctionCallsVisitorFactory checkFunctionCallsVisitorFactory,
+      PerformAutoescapeVisitor performAutoescapeVisitor,
       ContextualAutoescaper contextualAutoescaper,
       SimplifyVisitor simplifyVisitor,
       SoyTypeRegistry typeRegistry,
@@ -646,6 +653,7 @@ public final class SoyFileSet {
     this.jsSrcMainProvider = jsSrcMainProvider;
     this.pySrcMainProvider = pySrcMainProvider;
     this.checkFunctionCallsVisitorFactory = checkFunctionCallsVisitorFactory;
+    this.performAutoescapeVisitor = performAutoescapeVisitor;
     this.contextualAutoescaper = contextualAutoescaper;
     this.simplifyVisitor = simplifyVisitor;
 
@@ -1161,6 +1169,7 @@ public final class SoyFileSet {
     // |escapeHtml directives.  The contextual directive filterHtmlIdent serves the same purpose
     // in some places, but with runtime guarantees.
     doContextualEscaping(soyTree);
+    performAutoescapeVisitor.exec(soyTree);
 
     if (checkConformance != null) {
       checkConformance.check(ConformanceInput.create(
@@ -1181,6 +1190,7 @@ public final class SoyFileSet {
 
   private void doContextualEscaping(SoyFileSetNode soyTree)
       throws SoySyntaxException {
+    new CheckEscapingSanityVisitor(errorReporter).exec(soyTree);
     List<TemplateNode> extraTemplates = contextualAutoescaper.rewrite(soyTree);
     // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
     if (!extraTemplates.isEmpty()) {
