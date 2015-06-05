@@ -84,7 +84,7 @@ public final class PerformAutoescapeVisitor extends AbstractSoyNodeVisitor<Void>
 
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-    currTemplateShouldAutoescape = node.getAutoescapeMode() != AutoescapeMode.FALSE;
+    currTemplateShouldAutoescape = node.getAutoescapeMode() != AutoescapeMode.NOAUTOESCAPE;
     visitChildren(node);
   }
 

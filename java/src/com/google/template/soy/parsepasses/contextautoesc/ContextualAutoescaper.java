@@ -293,7 +293,7 @@ public final class ContextualAutoescaper {
     }
 
     @Override protected void visitTemplateNode(TemplateNode node) {
-      if (node.getAutoescapeMode() == AutoescapeMode.TRUE) {
+      if (node.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {
         visitChildren(node);
       }
     }
@@ -317,7 +317,7 @@ public final class ContextualAutoescaper {
             ImmutableList.builder();
         InferenceEngine.inferStrictRenderUnitNode(
             // As this visitor visits only non-contextual templates.
-            AutoescapeMode.TRUE,
+            AutoescapeMode.NONCONTEXTUAL,
             node,
             inferences,
             autoescapeCancellingDirectives,

@@ -194,7 +194,7 @@ final class InferenceEngine {
     this.inferences = inferences;
     this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
     this.slicedRawTextNodesBuilder = slicedRawTextNodesBuilder;
-    this.defaultEscapingMode = (autoescapeMode != AutoescapeMode.FALSE) ?
+    this.defaultEscapingMode = (autoescapeMode != AutoescapeMode.NOAUTOESCAPE) ?
         EscapingMode.ESCAPE_HTML : null;
     this.errorReporter = errorReporter;
   }
@@ -560,10 +560,10 @@ final class InferenceEngine {
               // Infer one.
               escapingModes = escapingModesToSet = context.getEscapingModes();
               break;
-            case FALSE:
+            case NOAUTOESCAPE:
               // Nothing to do. Just assume that the end context is the same as the start context.
               break;
-            case TRUE:
+            case NONCONTEXTUAL:
               escapingModes = ImmutableList.of(defaultEscapingMode);
               break;
           }
