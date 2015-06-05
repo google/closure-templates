@@ -37,6 +37,7 @@ public final class SharedRuntime {
    */
   public static boolean equal(SoyValue operand0, SoyValue operand1) {
     // Treat the case where either is a string specially.
+    // TODO(gboyer): This should probably handle SanitizedContent == SanitizedContent, even though
     if (operand0 instanceof StringData) {
       return compareString((StringData) operand0, operand1);
     }
@@ -50,18 +51,14 @@ public final class SharedRuntime {
    * Performs the {@code +} operator on the two values.
    */
   public static SoyValue plus(SoyValue operand0, SoyValue operand1) {
-    // Treat the case where either is a string specially.
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() + operand1.longValue());
-    } else if (operand0 instanceof StringData || operand1 instanceof StringData
-        || operand0 instanceof SanitizedContent || operand1 instanceof SanitizedContent) {
-      // String concatenation. Note we're calling toString() instead of stringValue() in case one
-      // of the operands needs to be coerced to a string.
-      return StringData.forValue(operand0.toString() + operand1);
-    } else {
-      // TODO(gboyer): Invert the logic here, and only perform this case if one of the arguments is
-      // of type NumberValue. Otherwise, concatenate as strings.
+    } else if (operand0 instanceof NumberData && operand1 instanceof NumberData) {
       return FloatData.forValue(operand0.numberValue() + operand1.numberValue());
+    } else {
+      // String concatenation is the fallback for other types (like in JS). Use the implemented
+      // coerceToString() for the type.
+      return StringData.forValue(operand0.coerceToString() + operand1.coerceToString());
     }
   }
 

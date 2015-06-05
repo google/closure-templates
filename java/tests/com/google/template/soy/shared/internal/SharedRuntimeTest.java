@@ -21,6 +21,9 @@ import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEqual;
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
@@ -54,6 +57,16 @@ public class SharedRuntimeTest extends TestCase {
     
     // coerced to string
     assertEquals("32", plus(StringData.forValue("3"), IntegerData.forValue(2)).stringValue());
+
+    // SanitizedContent:
+    assertEquals("HelloWorld", plus(SanitizedContents.unsanitizedText("Hello"),
+        SanitizedContents.unsanitizedText("World")).stringValue());
+
+    // Even arrays:
+    SoyValueHelper helper = new SoyValueHelper();
+    assertEquals("[Hello][World]", plus(
+        helper.convert(ImmutableList.of("Hello")).resolve(),
+        helper.convert(ImmutableList.of("World")).resolve()).stringValue());
   }
 
   public void testLessThan() {
