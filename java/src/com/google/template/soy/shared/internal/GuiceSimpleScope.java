@@ -27,6 +27,8 @@ import com.google.inject.Scope;
 import java.util.Map;
 import java.util.Stack;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * Scopes a single execution of a block of code.
  *
@@ -57,7 +59,9 @@ import java.util.Stack;
  *
  */
 public class GuiceSimpleScope implements Scope {
-
+  public interface WithScope extends AutoCloseable {
+    @Override public void close();
+  }
 
   /** Provider to use as the unscoped provider for scoped parameters. Always throws exception. */
   private static final Provider<Object> UNSCOPED_PROVIDER =
@@ -86,17 +90,23 @@ public class GuiceSimpleScope implements Scope {
   /** The ThreadLocal holding all the values in scope. */
   private final ThreadLocal<Stack<Map<Key<?>, Object>>> scopedValuesTl = new ThreadLocal<>();
 
+  private final WithScope exiter = new WithScope() {
+    @Override public void close() {
+      exit();
+    }
+  };
 
   /**
    * Enters an occurrence of this scope.
    */
-  public void enter() {
+  @CheckReturnValue public WithScope enter() {
     Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
     if (stack == null) {
       stack = new Stack<>();
       scopedValuesTl.set(stack);
     }
     stack.push(Maps.<Key<?>, Object>newHashMap());
+    return exiter;
   }
 
 

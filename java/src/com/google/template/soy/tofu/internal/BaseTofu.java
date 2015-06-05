@@ -36,6 +36,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
@@ -182,12 +183,9 @@ public class BaseTofu implements SoyTofu {
       throw new SoyTofuException("Cannot addToCache() when isCaching is false.");
     }
 
-    apiCallScope.enter();
-    try {
+    try (WithScope withScope = apiCallScope.enter()) {
       ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
       getCachedTemplateRegistry(Pair.of(msgBundle, cssRenamingMap), true);
-    } finally {
-      apiCallScope.exit();
     }
   }
 
@@ -306,9 +304,7 @@ public class BaseTofu implements SoyTofu {
       activeDelPackageNames = Collections.emptySet();
     }
 
-    apiCallScope.enter();
-
-    try {
+    try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
 
@@ -327,9 +323,6 @@ public class BaseTofu implements SoyTofu {
             templateRegistryForNoCaching, outputBuf, templateName, data, ijData,
             activeDelPackageNames, msgBundle, idRenamingMap, cssRenamingMap);
       }
-
-    } finally {
-      apiCallScope.exit();
     }
   }
 

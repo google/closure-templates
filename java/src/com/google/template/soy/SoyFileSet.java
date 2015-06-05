@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
@@ -44,6 +45,8 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.CompiledTemplates;
+import com.google.template.soy.jbcsrc.api.SoySauce;
+import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -70,6 +73,8 @@ import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.sharedpasses.AssertNoExternalCallsVisitor;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
+import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
+import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
@@ -574,6 +579,9 @@ public final class SoyFileSet {
   /** Factory for creating an instance of BaseTofu. */
   private final BaseTofuFactory baseTofuFactory;
 
+  /** Factory for creating an instance of BaseTofu. */
+  private final SoySauceImpl.Factory soyTemplatesFactory;
+
   /** Provider for getting an instance of JsSrcMain. */
   private final Provider<JsSrcMain> jsSrcMainProvider;
 
@@ -633,6 +641,7 @@ public final class SoyFileSet {
   @Inject
   SoyFileSet(
       BaseTofuFactory baseTofuFactory,
+      SoySauceImpl.Factory soyTemplatesFactory,
       Provider<JsSrcMain> jsSrcMainProvider,
       Provider<PySrcMain> pySrcMainProvider,
       CheckFunctionCallsVisitorFactory checkFunctionCallsVisitorFactory,
@@ -648,7 +657,7 @@ public final class SoyFileSet {
 
     // Default value is optionally replaced using method injection.
     this.msgBundleHandlerProvider = DEFAULT_SOY_MSG_BUNDLE_HANDLER_PROVIDER;
-
+    this.soyTemplatesFactory = soyTemplatesFactory;
     this.baseTofuFactory = baseTofuFactory;
     this.jsSrcMainProvider = jsSrcMainProvider;
     this.pySrcMainProvider = pySrcMainProvider;
@@ -904,7 +913,7 @@ public final class SoyFileSet {
    * @return A set of compiled templates
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public CompiledTemplates compileTemplates() throws SoySyntaxException {
+  public SoySauce compileTemplates() throws SoySyntaxException {
     // allow null (the default) or false
     if (generalOptions.allowExternalCalls() == Boolean.TRUE) {
       throw new UnsupportedOperationException(
@@ -945,7 +954,27 @@ public final class SoyFileSet {
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }
-    return templates.get();
+    CompiledTemplates compiledTemplates = templates.get();
+    return soyTemplatesFactory.create(
+        compiledTemplates,
+        registry,
+        extractMsgs(),
+        getTransitiveIjs(soyTree, registry));
+  }
+
+  private ImmutableSetMultimap<String, String> getTransitiveIjs(
+      SoyFileSetNode soyTree, TemplateRegistry registry) {
+    ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap =
+        new FindIjParamsVisitor(registry, errorReporter)
+            .execOnAllTemplates(soyTree);
+    ImmutableSetMultimap.Builder<String, String> templateToTranstivieIjParams =
+        ImmutableSetMultimap.builder();
+    for (Map.Entry<TemplateNode, IjParamsInfo> entry : templateToIjParamsInfoMap.entrySet()) {
+      templateToTranstivieIjParams.putAll(
+          entry.getKey().getTemplateName(),
+          entry.getValue().ijParamSet);
+    }
+    return templateToTranstivieIjParams.build();
   }
 
   /**

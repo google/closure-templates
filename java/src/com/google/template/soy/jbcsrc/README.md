@@ -710,7 +710,12 @@ migrating from ToFu:
     ToFu only flags this error when you access the param.
   * ToFu throws SoyDataException for runtime errors in templates.  JbcSrc will
     throw standard java exceptions (NullPointerException, ClassCastException)
-    as appropriate. 
+    as appropriate.
+  * ToFu allows (and defaults!) the `$ij` record to be `null` and allows null
+    safe access to `$ij` variables (e.g. `$ij?.foo`).  jbcsrc allows for the
+    null safe access syntax for compatibility, but the `$ij` record itself is
+    never null (And so in jbcsrc such accesses are equivalent to non-nullsafe
+    accesses).
 
 A Bytecode Primer
 -----------------

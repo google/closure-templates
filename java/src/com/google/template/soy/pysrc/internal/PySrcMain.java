@@ -30,6 +30,7 @@ import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
@@ -93,8 +94,7 @@ public final class PySrcMain {
   public List<String> genPySrc(SoyFileSetNode soyTree, SoyPySrcOptions pySrcOptions)
       throws SoySyntaxException {
 
-    apiCallScope.enter();
-    try {
+    try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
       apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), pySrcOptions.getRuntimePath());
@@ -108,9 +108,6 @@ public final class PySrcMain {
 
       simplifyVisitor.exec(soyTree);
       return genPyCodeVisitorProvider.get().exec(soyTree);
-
-    } finally {
-      apiCallScope.exit();
     }
   }
 

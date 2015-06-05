@@ -34,6 +34,7 @@ import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor.EncounteredPlrselMsgException;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
@@ -130,8 +131,7 @@ public class JsSrcMain {
         "Do not specify useGoogIsRtlForBidiGlobalDir without either" +
         " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
 
-    apiCallScope.enter();
-    try {
+    try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
       apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), isUsingIjData);
@@ -166,9 +166,6 @@ public class JsSrcMain {
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
       simplifyVisitor.exec(soyTree);
       return genJsCodeVisitorProvider.get().exec(soyTree);
-
-    } finally {
-      apiCallScope.exit();
     }
   }
 

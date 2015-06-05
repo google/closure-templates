@@ -25,6 +25,7 @@ import com.google.template.soy.bididirectives.BidiDirectivesModule;
 import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
+import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
 import com.google.template.soy.parsepasses.PerformAutoescapeVisitor;
@@ -56,6 +57,7 @@ public class SoyModule extends AbstractModule {
     bind(SoyFileSet.Builder.class);
     bind(SoyTypeOps.class);
     bind(SoyValueHelper.class);
+    bind(SoySauceImpl.Factory.class);
 
     // Install default directive and function modules.
     install(new BasicDirectivesModule());

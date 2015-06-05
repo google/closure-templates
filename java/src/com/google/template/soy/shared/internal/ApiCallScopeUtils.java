@@ -16,6 +16,8 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.inject.Key;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -66,7 +68,19 @@ public class ApiCallScopeUtils {
         bidiGlobalDir = BidiGlobalDir.forStaticLocale(localeString);
     }
 
+    seedSharedParams(apiCallScope, bidiGlobalDir, localeString);
+  }
+
+  /**
+   * Helper utility to seed params shared by multiple backends.
+   *
+   * @param apiCallScope The scope object that manages the API call scope.
+   * @param bidiGlobalDir The bidi global directionality.
+   * @param localeString The current locale.
+   */
+  public static void seedSharedParams(
+      GuiceSimpleScope apiCallScope, BidiGlobalDir bidiGlobalDir, @Nullable String localeString) {
     apiCallScope.seed(LOCALE_STRING_KEY, localeString);
-    apiCallScope.seed(GLOBAL_DIR_KEY, bidiGlobalDir);
+    apiCallScope.seed(GLOBAL_DIR_KEY, checkNotNull(bidiGlobalDir));
   }
 }

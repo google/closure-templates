@@ -66,6 +66,7 @@ public final class SharedTestUtils {
    * @return The ApiCallScope object (for use by the caller of this method to seed additional API
    *     call parameters, such as backend-specific parameters).
    */
+  @SuppressWarnings("CheckReturnValue")  // the call to apiCallScope.enter()
   public static GuiceSimpleScope simulateNewApiCall(
       Injector injector, @Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir) {
 
