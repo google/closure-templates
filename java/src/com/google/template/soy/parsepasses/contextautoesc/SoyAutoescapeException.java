@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Indicates failure to propagate contexts through a template or an existing escaping directive on a
  * 'print' tag that is inconsistent with the contexts in which it appears.
@@ -152,5 +151,4 @@ public final class SoyAutoescapeException extends SoySyntaxException {
     }
     return this;
   }
-
 }

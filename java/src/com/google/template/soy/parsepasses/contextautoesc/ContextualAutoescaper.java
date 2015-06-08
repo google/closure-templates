@@ -16,15 +16,19 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -40,6 +44,7 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +71,13 @@ import javax.inject.Inject;
  *
  */
 public final class ContextualAutoescaper {
+
+  @VisibleForTesting
+  static final String AUTOESCAPE_ERROR_PREFIX =
+      "Invalid or ambiguous syntax prevents Soy from escaping this template correctly:\n";
+
+  private static final SoyError AUTOESCAPE_ERROR = SoyError.of(
+      AUTOESCAPE_ERROR_PREFIX + "{0}");
 
   /**
    * Soy directives that cancel autoescaping (see
@@ -135,17 +147,8 @@ public final class ContextualAutoescaper {
    * @return Extra templates which were derived from templates under fileSet and which must be
    *     compiled with fileSet to produce a correct output.  See {@link DerivedTemplateUtils} for an
    *     explanation of these.
-   * @throws SoyAutoescapeException If it is impossible to statically determine the context of
-   *     portions of templates.
-   *     It is not possible to decide what to do with {@code $x} in:
-   *     <xmp class=prettyprint>
-   *     <script>{if $condition}</script>{/if}
-   *     alert('Is this script or text? {$x}');
-   *     //<textarea><script></script><textarea></textarea>
-   *     </xmp>
    */
-  public List<TemplateNode> rewrite(SoyFileSetNode fileSet)
-      throws SoyAutoescapeException {
+  public List<TemplateNode> rewrite(SoyFileSetNode fileSet) {
     // Do preliminary sanity checks.
     new CheckEscapingSanityVisitor(errorReporter).exec(fileSet);
 
@@ -172,19 +175,29 @@ public final class ContextualAutoescaper {
     Set<TemplateNode> templateNodesToType = callGraph.callersOf(
         Collections2.filter(allTemplates, IS_CONTEXTUAL));
     templateNodesToType.addAll(Collections2.filter(allTemplates, REQUIRES_INFERENCE));
+    Set<SourceLocation> errorLocations = new HashSet<>();
     for (TemplateNode templateNode : templateNodesToType) {
-      // In strict mode, the author specifies the kind of SanitizedContent to produce, and thus the
-      // context in which to escape.
-      Context startContext = (templateNode.getContentKind() != null) ?
-          Context.getStartContextForContentKind(templateNode.getContentKind()) :
-          Context.HTML_PCDATA;
-      InferenceEngine.inferTemplateEndContext(
-          templateNode,
-          startContext,
-          inferences,
-          autoescapeCancellingDirectives,
-          slicedRawTextNodesBuilder,
-          errorReporter);
+      try {
+        // In strict mode, the author specifies the kind of SanitizedContent to produce, and thus
+        // the context in which to escape.
+        Context startContext = (templateNode.getContentKind() != null) ?
+            Context.getStartContextForContentKind(templateNode.getContentKind()) :
+            Context.HTML_PCDATA;
+        InferenceEngine.inferTemplateEndContext(
+            templateNode,
+            startContext,
+            inferences,
+            autoescapeCancellingDirectives,
+            slicedRawTextNodesBuilder,
+            errorReporter);
+      } catch (SoyAutoescapeException e) {
+        reportError(errorLocations, e);
+      }
+    }
+
+    if (!errorLocations.isEmpty()) {
+      // Bail out early, since future passes won't succeed and may throw precondition errors.
+      return ImmutableList.<TemplateNode>of();
     }
 
     // Store inferences so that after processing, clients can access the output contexts for
@@ -244,6 +257,30 @@ public final class ContextualAutoescaper {
    */
   public ImmutableList<SlicedRawTextNode> getSlicedRawTextNodes() {
     return slicedRawTextNodes;
+  }
+
+  /**
+   * Reports an autoescape exception.
+   */
+  void reportError(Set<SourceLocation> errorLocations, SoyAutoescapeException e) {
+    // First, get to the root cause of the exception, and assemble an error message indicating
+    // the full call stack that led to the failure.
+    String message = "- " + e.getMessage();
+    while (e.getCause() instanceof SoyAutoescapeException) {
+      e = (SoyAutoescapeException) e.getCause();
+      message += "\n- " + e.getMessage();
+    }
+
+    // Now that we've gotten to the leaf, let's use its source location as the canonical one for
+    // reporting and de-duping. (We might otherwise end up reporting a single error multiple times
+    // because a single template was called by multiple other contextual templates.)
+    // TODO(gboyer): Delete this logic once deprecated-contextual is removed.
+    SourceLocation location = Preconditions.checkNotNull(e.getSourceLocation());
+    if (errorLocations.contains(location)) {
+      return;
+    }
+    errorLocations.add(location);
+    errorReporter.report(location, AUTOESCAPE_ERROR, message);
   }
 
   /**

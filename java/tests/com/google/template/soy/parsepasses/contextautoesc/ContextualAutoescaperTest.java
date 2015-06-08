@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -699,9 +700,12 @@ public final class ContextualAutoescaperTest extends TestCase {
 
   public void testRecursiveTemplateGuessFails() throws Exception {
     assertRewriteFails(
-        "In file no-path:10:5, template quot__C13: " +
-        "{if} command without {else} changes context : " +
-        "{if Math.random() lt 0.5}{call quot data=\"all\" /}{/if}",
+        "In file no-path:5:5, template foo: Error while re-contextualizing template quot in"
+        + " context (Context JS REGEX):"
+        + "\n- In file no-path:10:30, template quot__C2010: Error while re-contextualizing template"
+        + " quot in context (Context JS_DQ_STRING):"
+        + "\n- In file no-path:10:5, template quot__C13: {if} command without {else} changes"
+        + " context : {if Math.random() lt 0.5}{call quot data=\"all\" /}{/if}",
         join(
             "{namespace ns}\n\n",
             "{template foo autoescape=\"deprecated-contextual\"}\n",
@@ -2361,9 +2365,27 @@ public final class ContextualAutoescaperTest extends TestCase {
   private String rewrittenSource(SoyFileSetNode soyTree)
       throws SoyAutoescapeException {
 
+    FormattingErrorReporter reporter = new FormattingErrorReporter();
     List<TemplateNode> tmpls
-        = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, ExplodingErrorReporter.get())
+        = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, reporter)
         .rewrite(soyTree);
+
+    if (!reporter.getErrorMessages().isEmpty()) {
+      String message = reporter.getErrorMessages().get(0);
+      if (message.startsWith(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX)) {
+        // Grab the part after the prefix (and the "- " used for indentation).
+        message = message.substring(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX.length() + 2);
+        // Re-throw as an exception, so that tests are easier to write. I considered having the
+        // tests explicitly check the error messages; however, there's a substantial risk that some
+        // positive test might forget to check the error messages, and it leaves all callers of
+        // this with two things to check.
+        // TODO(gboyer): Once 100% of the contextual autoescaper's errors are migrated to the error
+        // reporter, we can stop throwing and simply add explicit checks in the cases.
+        throw SoyAutoescapeException.createWithoutMetaInfo(message);
+      } else {
+        throw new IllegalStateException("Unexpected error: " + message);
+      }
+    }
 
     StringBuilder src = new StringBuilder();
     src.append(soyTree.getChild(0).toSourceString());
