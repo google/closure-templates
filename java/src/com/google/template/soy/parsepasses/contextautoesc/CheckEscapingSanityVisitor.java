@@ -50,7 +50,7 @@ import java.util.Set;
  * <p>{@link #exec} should be called on a full parse tree.
  *
  */
-public final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Current escaping mode. */
   private AutoescapeMode autoescapeMode;
 

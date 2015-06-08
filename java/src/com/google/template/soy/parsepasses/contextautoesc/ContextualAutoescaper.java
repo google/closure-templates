@@ -146,6 +146,9 @@ public final class ContextualAutoescaper {
    */
   public List<TemplateNode> rewrite(SoyFileSetNode fileSet)
       throws SoyAutoescapeException {
+    // Do preliminary sanity checks.
+    new CheckEscapingSanityVisitor(errorReporter).exec(fileSet);
+
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
 
@@ -191,12 +194,38 @@ public final class ContextualAutoescaper {
     // Store context boundaries so that later passes can make use of element/attribute boundaries.
     this.slicedRawTextNodes = slicedRawTextNodesBuilder.build();
 
-    new NonContextualTypedRenderUnitNodesVisitor().exec(fileSet);
+    runVisitorOnAllTemplatesIncludingNewOnes(
+        inferences, new NonContextualTypedRenderUnitNodesVisitor());
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    return new Rewriter(inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
+    List<TemplateNode> extraTemplates = new Rewriter(
+        inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
+
+    runVisitorOnAllTemplatesIncludingNewOnes(inferences,
+        new PerformDeprecatedNonContextualAutoescapeVisitor(
+            autoescapeCancellingDirectives, errorReporter, fileSet.getNodeIdGenerator()));
+
+    return extraTemplates;
   }
 
+  /**
+   * Runs a visitor on all templates, including newly-generated ones.
+   *
+   * <p>After running the inference engine, new re-contextualized templates have been generated,
+   * but haven't been folded back into the SoyFileSetNode (which happens in the SoyFileSet monster
+   * class).
+   *
+   * <p>Note this is true even for non-contextual templates. If a non-contextual template
+   * eventually is called by a contextual one, the call subtree will be rewritten for the alternate
+   * context (even though they remain non-contextually autoescaped).
+   */
+  private void runVisitorOnAllTemplatesIncludingNewOnes(
+      Inferences inferences, AbstractSoyNodeVisitor<?> visitor) {
+    List<TemplateNode> allTemplatesIncludingNewOnes = inferences.getAllTemplates();
+    for (TemplateNode templateNode : allTemplatesIncludingNewOnes) {
+      visitor.exec(templateNode);
+    }
+  }
 
   /**
    * Null if no typing has been done for the named template, or otherwise the context after a call

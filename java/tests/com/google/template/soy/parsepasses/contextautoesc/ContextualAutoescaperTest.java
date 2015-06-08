@@ -856,7 +856,7 @@ public final class ContextualAutoescaperTest extends TestCase {
               "{$x |escapeHtml}\n",
             "{/template}\n\n",
             "{template bar autoescape=\"deprecated-noncontextual\"}\n",
-              "<b>{call foo /}</b> {$y}\n",
+              "<b>{call foo /}</b> {$y |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -2182,7 +2182,6 @@ public final class ContextualAutoescaperTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
         .errorReporter(boom)
         .parse();
-    new CheckEscapingSanityVisitor(boom).exec(soyTree);
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
@@ -2224,7 +2223,6 @@ public final class ContextualAutoescaperTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
         .errorReporter(boom)
         .parse();
-    new CheckEscapingSanityVisitor(boom).exec(soyTree);
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
@@ -2382,27 +2380,9 @@ public final class ContextualAutoescaperTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs)
         .errorReporter(boom)
         .parse();
-    new CheckEscapingSanityVisitor(boom).exec(soyTree);
 
     String source = rewrittenSource(soyTree);
     assertThat(source.trim()).isEqualTo(expectedOutput);
-
-    // Make sure that the transformation is idempotent.
-    if (!source.contains("__C")) {  // Skip if there are extern extra templates.
-      assertThat(rewrittenSource(soyTree).trim()).isEqualTo(expectedOutput);
-    }
-
-    // And idempotent from a normalized input if the templates are not
-    // autoescape="deprecated-contextual".
-    String input = join(inputs);
-    String inputWithoutAutoescape = input
-        .replaceAll("\\s+autoescape\\s*=\\s*\"(deprecated-contextual|strict)\"",
-            " autoescape=\"deprecated-noncontextual\"")
-        .replaceAll("\\s+kind\\s*=\\s*\"([a-z]*)\"", "");
-    SoyFileSetNode soyTree2
-        = SoyFileSetParserBuilder.forFileContents(inputWithoutAutoescape).parse();
-    String original = soyTree2.getChild(0).toSourceString();
-    assertThat(rewrittenSource(soyTree2)).isEqualTo(original);
   }
 
   private void assertContextualRewritingNoop(String expectedOutput) throws SoyAutoescapeException {
@@ -2428,7 +2408,6 @@ public final class ContextualAutoescaperTest extends TestCase {
         .parse();
 
     try {
-      new CheckEscapingSanityVisitor(ExplodingErrorReporter.get()).exec(soyTree);
       rewrittenSource(soyTree);
     } catch (SoyAutoescapeException ex) {
       // Find the root cause; during contextualization, we re-wrap exceptions on the path to a

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Set;
 
-
 /**
  * Specifies how the outputs of <code>{print}</code> commands that lack escaping directives are
  * encoded.
