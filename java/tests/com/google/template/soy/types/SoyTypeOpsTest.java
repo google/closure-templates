@@ -37,42 +37,45 @@ public class SoyTypeOpsTest extends TestCase {
   public final SoyTypeOps typeOps = new SoyTypeOps(typeRegistry);
 
   public void testLeastCommonType() {
-    assertThat(typeOps.computeLeastCommonType(IntType.getInstance(), AnyType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(IntType.getInstance(), AnyType.getInstance()))
         .isEqualTo(AnyType.getInstance());
-    assertThat(typeOps.computeLeastCommonType(IntType.getInstance(), UnknownType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(IntType.getInstance(), UnknownType.getInstance()))
         .isEqualTo(UnknownType.getInstance());
-    assertThat(typeOps.computeLeastCommonType(UnknownType.getInstance(), IntType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(UnknownType.getInstance(), IntType.getInstance()))
         .isEqualTo(UnknownType.getInstance());
-    assertThat(typeOps.computeLeastCommonType(AnyType.getInstance(), IntType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(AnyType.getInstance(), IntType.getInstance()))
         .isEqualTo(AnyType.getInstance());
-    assertThat(typeOps.computeLeastCommonType(StringType.getInstance(), HtmlType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(StringType.getInstance());
-    assertThat(typeOps.computeLeastCommonType(HtmlType.getInstance(), StringType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(HtmlType.getInstance(), StringType.getInstance()))
         .isEqualTo(StringType.getInstance());
-    assertThat(typeOps.computeLeastCommonType(IntType.getInstance(), FloatType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(IntType.getInstance(), FloatType.getInstance()))
         .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
-    assertThat(typeOps.computeLeastCommonType(FloatType.getInstance(), IntType.getInstance()))
+    assertThat(typeOps.computeLowestCommonType(FloatType.getInstance(), IntType.getInstance()))
         .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
   }
 
   public void testLeastCommonTypeArithmetic() {
-    assertThat(
-        typeOps.computeLeastCommonTypeArithmetic(IntType.getInstance(), AnyType.getInstance()))
-        .isEqualTo(AnyType.getInstance());
-    assertThat(
-        typeOps.computeLeastCommonTypeArithmetic(AnyType.getInstance(), IntType.getInstance()))
-        .isEqualTo(AnyType.getInstance());
-    assertThat(
-        typeOps.computeLeastCommonTypeArithmetic(StringType.getInstance(), HtmlType.getInstance()))
-        .isEqualTo(StringType.getInstance());
-    assertThat(
-        typeOps.computeLeastCommonTypeArithmetic(HtmlType.getInstance(), StringType.getInstance()))
-        .isEqualTo(StringType.getInstance());
-    assertThat(
-        typeOps.computeLeastCommonTypeArithmetic(IntType.getInstance(), FloatType.getInstance()))
-        .isEqualTo(FloatType.getInstance());
-    assertThat(
-        typeOps.computeLeastCommonTypeArithmetic(FloatType.getInstance(), IntType.getInstance()))
-        .isEqualTo(FloatType.getInstance());
+    SoyType intT = IntType.getInstance();
+    SoyType anyT = AnyType.getInstance();
+    SoyType unknownT = UnknownType.getInstance();
+    SoyType floatT = FloatType.getInstance();
+    SoyType stringT = StringType.getInstance();
+    SoyType htmlT = HtmlType.getInstance();
+    SoyType numberT = typeRegistry.getType("number");
+
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(intT, anyT)).isAbsent();
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(anyT, intT)).isAbsent();
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(stringT, htmlT)).isAbsent();
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(htmlT, stringT)).isAbsent();
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(intT, floatT)).hasValue(floatT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(floatT, intT)).hasValue(floatT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(floatT, unknownT)).hasValue(unknownT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(unknownT, floatT)).hasValue(unknownT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(intT, intT)).hasValue(intT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(floatT, floatT)).hasValue(floatT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(floatT, numberT)).hasValue(numberT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(intT, numberT)).hasValue(numberT);
+    assertThat(typeOps.computeLowestCommonTypeArithmetic(numberT, numberT)).hasValue(numberT);
   }
 }

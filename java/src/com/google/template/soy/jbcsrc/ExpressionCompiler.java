@@ -380,7 +380,7 @@ final class ExpressionCompiler {
             MethodRef.STRING_CONCAT.invoke(leftString, rightString));
       }
       return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
+          MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()).cast(node.getType().javaType()));
     }
 
     @Override protected final SoyExpression visitMinusOpNode(MinusOpNode node) {

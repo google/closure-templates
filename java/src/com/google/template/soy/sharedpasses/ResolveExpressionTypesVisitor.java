@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.types.SoyTypes.removeNull;
 
 import com.google.common.base.Equivalence.Wrapper;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -310,7 +311,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         for (SoyType unionMember : unionType.getMembers()) {
           fieldTypes.add(getElementType(unionMember, owningNode));
         }
-        return typeOps.computeLeastCommonType(fieldTypes);
+        return typeOps.computeLowestCommonType(fieldTypes);
       }
 
       default:
@@ -389,7 +390,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         elementTypes.add(UnknownType.getInstance());
       }
       node.setType(typeOps.getTypeRegistry().getOrCreateListType(
-          typeOps.computeLeastCommonType(elementTypes)));
+          typeOps.computeLowestCommonType(elementTypes)));
       tryApplySubstitution(node);
     }
 
@@ -427,8 +428,8 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
           keyTypes.add(key.getType());
           valueTypes.add(value.getType());
         }
-        commonKeyType = typeOps.computeLeastCommonType(keyTypes);
-        commonValueType = typeOps.computeLeastCommonType(valueTypes);
+        commonKeyType = typeOps.computeLowestCommonType(keyTypes);
+        commonValueType = typeOps.computeLowestCommonType(valueTypes);
       }
 
       if (StringType.getInstance().isAssignableFrom(commonKeyType)
@@ -500,32 +501,20 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
     @Override protected void visitPlusOpNode(PlusOpNode node) {
       visitChildren(node);
-      SoyType t0 = node.getChild(0).getType();
-      SoyType t1 = node.getChild(1).getType();
-
-      // String concatenation coerces non-string arguments to string.
-      // TODO(user): technically, *any* type concatenated with a string will
-      // be coerced to a string, but I'm not sure that all of those conversions
-      // are well-defined in both Java and JS. Feel free to add to this list.
-      if (t0.getKind() == SoyType.Kind.STRING &&
-          (t1.getKind() == SoyType.Kind.BOOL ||
-          t1.getKind() == SoyType.Kind.INT ||
-          t1.getKind() == SoyType.Kind.FLOAT)) {
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      Optional<SoyType> arithmeticType = typeOps.computeLowestCommonTypeArithmetic(left, right);
+      if (arithmeticType.isPresent()) {
+        node.setType(arithmeticType.get());
+      } else if (StringType.getInstance().isAssignableFrom(left)
+          || StringType.getInstance().isAssignableFrom(right)) {
+        // if either is a string, the whole thing will be coerced to concentation
         node.setType(StringType.getInstance());
-        return;
+      } else {
+        // This is undefined territory.  Possibly this should be made a compiler error since
+        // currently every backend does different things with '1 + true'.
+        node.setType(UnknownType.getInstance());
       }
-
-      if (t1.getKind() == SoyType.Kind.STRING &&
-          (t0.getKind() == SoyType.Kind.BOOL ||
-          t0.getKind() == SoyType.Kind.INT ||
-          t0.getKind() == SoyType.Kind.FLOAT)) {
-        node.setType(StringType.getInstance());
-        return;
-      }
-
-      node.setType(typeOps.computeLeastCommonTypeArithmetic(
-          node.getChild(0).getType(),
-          node.getChild(1).getType()));
       tryApplySubstitution(node);
     }
 
@@ -622,7 +611,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       // Restore substitutions to previous state
       substitutions = savedSubstitutionState;
 
-      node.setType(typeOps.computeLeastCommonType(
+      node.setType(typeOps.computeLowestCommonType(
           node.getChild(0).getType(), node.getChild(1).getType()));
       tryApplySubstitution(node);
     }
@@ -653,7 +642,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
       substitutions = savedSubstitutionState;
 
       // For a conditional node, it will return either child 1 or 2.
-      node.setType(typeOps.computeLeastCommonType(
+      node.setType(typeOps.computeLowestCommonType(
           node.getChild(1).getType(),
           node.getChild(2).getType()));
       tryApplySubstitution(node);
@@ -718,9 +707,17 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
     private void visitArithmeticOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      node.setType(typeOps.computeLeastCommonTypeArithmetic(
-          node.getChild(0).getType(),
-          node.getChild(1).getType()));
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      Optional<SoyType> arithmeticType = typeOps.computeLowestCommonTypeArithmetic(left, right);
+      if (arithmeticType.isPresent()) {
+        node.setType(arithmeticType.get());
+      } else {
+        // TODO(b/21712154): jssrc will do some type coercions here, tofu will throw exceptions.
+        // so the best idea is probably to add an error.  However, 'number' is probably the most
+        // accurate (even if sometimes it will fail).
+        node.setType(typeOps.getTypeRegistry().getType("number"));
+      }
       tryApplySubstitution(node);
     }
 
@@ -801,7 +798,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
             }
             fieldTypes.add(getFieldType(unionMember, fieldName, isNullSafe));
           }
-          return typeOps.computeLeastCommonType(fieldTypes);
+          return typeOps.computeLowestCommonType(fieldTypes);
         }
 
         default:
@@ -853,7 +850,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
           for (SoyType unionMember : unionType.getMembers()) {
             itemTypes.add(getItemType(unionMember, keyType));
           }
-          return typeOps.computeLeastCommonType(itemTypes);
+          return typeOps.computeLowestCommonType(itemTypes);
         }
 
         default:
@@ -1105,7 +1102,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
           // Thus "((a instanceof any) OR (a instanceof bool)) == (a instanceof any)"
           SoyType rightSideType = right.get(entry.getKey());
           result.put(entry.getKey(),
-              typeOps.computeLeastCommonType(entry.getValue(), rightSideType));
+              typeOps.computeLowestCommonType(entry.getValue(), rightSideType));
         }
       }
       return result;

@@ -218,6 +218,7 @@ public class ExpressionCompilerTest extends TestCase {
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("$foo + 2").evaluatesTo(IntegerData.forValue(3));
     assertExpression("$foo + '2'").evaluatesTo("12");
+    assertExpression("['foo'] + ['bar']").evaluatesTo("[foo][bar]");
   }
 
   public void testNotOpNode() {

@@ -250,6 +250,13 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(17)).isEqualTo(FloatType.getInstance());
   }
 
+  public void ignoreTestArithmeticTypesError() {
+    assertResolveExpressionTypesFails(
+        "Incompatible types in arithmetic expression. Expected int or float",
+        constructTemplateSource(
+            "{'a' / 'b'}"));
+  }
+
   public void testStringConcatenation() {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
         constructTemplateSource(
@@ -263,7 +270,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
             "{$ps + $pb}",
             "{$pi + $ps}",
             "{$pf + $ps}",
-            "{$pb + $ps}"))
+            "{$pb + $ps}",
+            "{$pb + $pi}"))
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
@@ -278,6 +286,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(4)).isEqualTo(StringType.getInstance());
     assertThat(types.get(5)).isEqualTo(StringType.getInstance());
     assertThat(types.get(6)).isEqualTo(StringType.getInstance());
+    // Actual value of this one is backend specific. aka undefined behavior
+    assertThat(types.get(7)).isEqualTo(UnknownType.getInstance());
   }
 
   public void testLogicalOps() {
@@ -645,7 +655,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
 
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
-    SoyType boolOrNullType = makeNullable(BoolType.getInstance());;
+    SoyType boolOrNullType = makeNullable(BoolType.getInstance());
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
         "{@param pa: bool|null}",
         "{@param pb: bool}",
@@ -759,6 +769,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
       createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
       fail("Expected SoySyntaxException");
     } catch (SoySyntaxException e) {
+      assertThat(e.getMessage()).contains(expectedError);
+    } catch (IllegalStateException e) {
+      // from the exploding error reporter
+      assertThat(e.getMessage()).startsWith("Unexpected SoyError:");
       assertThat(e.getMessage()).contains(expectedError);
     }
   }

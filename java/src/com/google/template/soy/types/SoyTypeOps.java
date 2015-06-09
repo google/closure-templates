@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.base.Optional;
 import com.google.template.soy.types.primitive.FloatType;
 
 import java.util.Collection;
@@ -27,6 +28,9 @@ import javax.inject.Inject;
  *
  */
 public final class SoyTypeOps {
+  // TODO(lukes): create a static type for this.  Though, should it be Kind.UNION? or a new Kind
+  // for a super type of int and float.
+  private final SoyType numberType;
 
   private final SoyTypeRegistry typeRegistry;
 
@@ -34,6 +38,7 @@ public final class SoyTypeOps {
   @Inject
   public SoyTypeOps(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
+    this.numberType = typeRegistry.getType("number");
   }
 
 
@@ -47,7 +52,7 @@ public final class SoyTypeOps {
    * @param t1 Another type.
    * @return A type that is assignable from both t0 and t1.
    */
-  public SoyType computeLeastCommonType(SoyType t0, SoyType t1) {
+  public SoyType computeLowestCommonType(SoyType t0, SoyType t1) {
     if (t0.isAssignableFrom(t1)) {
       return t0;
     } else if (t1.isAssignableFrom(t0)) {
@@ -67,10 +72,10 @@ public final class SoyTypeOps {
    * @param types list of types.
    * @return A type that is assignable from all of the listed types.
    */
-  public SoyType computeLeastCommonType(Collection<SoyType> types) {
+  public SoyType computeLowestCommonType(Collection<SoyType> types) {
     SoyType result = null;
     for (SoyType type : types) {
-      result = (result == null) ? type : computeLeastCommonType(result, type);
+      result = (result == null) ? type : computeLowestCommonType(result, type);
     }
     return result;
   }
@@ -81,21 +86,29 @@ public final class SoyTypeOps {
    * into account arithmetic promotions - that is, converting int to float if needed.
    * @param t0 A type.
    * @param t1 Another type.
-   * @return A type that is assignable from both t0 and t1.
+   * @return A type that is assignable from both t0 and t1 or absent if the types are not arithmetic
+   *    meaning a subtype of 'number' or unknown.
    */
-  public SoyType computeLeastCommonTypeArithmetic(SoyType t0, SoyType t1) {
-    if (t0.isAssignableFrom(t1)) {
-      return t0;
-    } else if (t1.isAssignableFrom(t0)) {
-      return t1;
-    } else if (t0.getKind() == SoyType.Kind.FLOAT && t1.getKind() == SoyType.Kind.INT ||
-        t1.getKind() == SoyType.Kind.FLOAT && t0.getKind() == SoyType.Kind.INT) {
-      return FloatType.getInstance();
-    } else {
-      // TODO: At some point we should just give up and use 'any'.
-      // Probably this should happen if the types have no relation with
-      // each other.
-      return typeRegistry.getOrCreateUnionType(t0, t1);
+  public Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
+    // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
+    // operation.
+    if (!isNumericOrUnknown(t0) || !isNumericOrUnknown(t1)) {
+      return Optional.absent();
     }
+    // Note: everything is assignable to unknown and itself.  So the first two conditions take care
+    // of all cases but a mix of float and int.
+    if (t0.isAssignableFrom(t1)) {
+      return Optional.of(t0);
+    } else if (t1.isAssignableFrom(t0)) {
+      return Optional.of(t1);
+    } else {
+      // If we get here then we know that we have a mix of float and int.  In this case arithmetic
+      // ops always 'upgrade' to float.  So just return that.
+      return Optional.<SoyType>of(FloatType.getInstance());
+    }
+  }
+
+  private boolean isNumericOrUnknown(SoyType t0) {
+    return t0.getKind() == SoyType.Kind.UNKNOWN || numberType.isAssignableFrom(t0);
   }
 }

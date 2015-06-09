@@ -1338,7 +1338,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           continue;
         }
         Collection<SoyType> paramTypes = ipi.indirectParamTypes.get(indirectParamName);
-        SoyType combinedType = typeOps.computeLeastCommonType(paramTypes);
+        SoyType combinedType = typeOps.computeLowestCommonType(paramTypes);
         // Note that Union folds duplicate types and flattens unions, so if
         // the combinedType is already a union this will do the right thing.
         // TODO: detect cases where nullable is not needed (requires flow
