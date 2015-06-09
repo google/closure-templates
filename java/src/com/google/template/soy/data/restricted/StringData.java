@@ -31,7 +31,7 @@ import javax.annotation.concurrent.Immutable;
  *
  */
 @Immutable
-public abstract class StringData extends PrimitiveData {
+public abstract class StringData extends PrimitiveData implements SoyString {
 
 
   /** Static instance of StringData with value "". */

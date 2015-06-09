@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.data.internal.RenderableThunk;
+import com.google.template.soy.data.restricted.SoyString;
 
 import java.io.IOException;
 
@@ -30,7 +31,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @ParametersAreNonnullByDefault
 @Immutable
-public abstract class SanitizedContent extends SoyData {
+public abstract class SanitizedContent extends SoyData implements SoyString {
   /**
    * Creates a SanitizedContent object.
    *

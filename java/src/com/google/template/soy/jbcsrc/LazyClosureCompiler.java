@@ -306,8 +306,7 @@ final class LazyClosureCompiler {
       };
       ContentKind kind = renderUnit.getContentKind();
       final Expression contentKind =
-          // treat TEXT as null which is what the type checker does
-          (kind == null || kind == ContentKind.TEXT)
+          (kind == null)
               ? BytecodeUtils.constantNull(ContentKind.class)
               : FieldRef.enumReference(kind).accessor();
       Statement fieldInitializers = variableSet.defineFields(visitor);

@@ -16,9 +16,8 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.types.SoyType;
 
 /**
@@ -59,10 +58,10 @@ public final class StringType extends PrimitiveType {
 
 
   @Override public boolean isInstance(SoyValue value) {
-    return value instanceof StringData || value instanceof SanitizedContent;
+    return value instanceof SoyString;
   }
 
   @Override public Class<? extends SoyValue> javaType() {
-    return StringData.class;
+    return SoyString.class;
   }
 }
