@@ -307,7 +307,7 @@ public final class ExpressionParser {
     // TODO(brndn): The Math.max fiddling is required because some callers instantiate
     // the expression parser with SourceLocation.UNKNOWN (for example, ExprParseUtils).
     return new SourceLocation(
-        token.image,
+        parentSourceLocation.getFilePath(),
         Math.max(1, parentSourceLocation.getLineNumber()),
         Math.max(1, parentSourceLocation.getBeginColumn() + token.beginColumn),
         Math.max(1, parentSourceLocation.getLineNumber()),
