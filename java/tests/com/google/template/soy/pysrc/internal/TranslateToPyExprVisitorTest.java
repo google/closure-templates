@@ -68,14 +68,16 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']").translatesTo(
         new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
 
-    // QuotedKeysIfJs should change nothing.
-    assertThatSoyExpr("quoteKeysIfJs([:])").translatesTo(new PyExpr("{}", Integer.MAX_VALUE));
-    assertThatSoyExpr("quoteKeysIfJs( ['aaa': $foo, 'bbb': 'blah'] )").translatesTo(
-        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
-
     // Non-string keys are allowed in Python.
     assertThatSoyExpr("[1: 'blah', 0: 123]").translatesTo(
         new PyExpr("{1: 'blah', 0: 123}", Integer.MAX_VALUE));
+  }
+
+  public void testMapLiteral_quotedKeysIfJS() {
+    // QuotedKeysIfJs should change nothing in Python.
+    assertThatSoyExpr("quoteKeysIfJs([:])").translatesTo(new PyExpr("{}", Integer.MAX_VALUE));
+    assertThatSoyExpr("quoteKeysIfJs( ['aaa': $foo, 'bbb': 'blah'] )").translatesTo(
+        new PyExpr("{'aaa': opt_data.get('foo'), 'bbb': 'blah'}", Integer.MAX_VALUE));
   }
 
   public void testGlobals() {

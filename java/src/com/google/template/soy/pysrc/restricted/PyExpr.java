@@ -36,8 +36,22 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
 public class PyExpr extends TargetExpr {
 
   /**
+   * Create a new Python expression with the given text and precedence.
+   *
+   * <p>The precedence should be carefully considered for complex expressions. The precedence should
+   * represent the top most operator, or if there are multiple at the same level, the operator with
+   * the lowest value.
+   *
+   * <p>For example in the expression {@code x + y * z}, {@code x + y} has the lower precedence
+   * (will evaluate last), and is most likely to be trumped if combined into a more complex
+   * expression. So the precedence of the entire expression should be the {@code +} operators
+   * precedence.
+   *
+   * <p>An expression with a precedence which can't be trumped (such variable access or a function
+   * call) should use Integer.MAX_VALUE to avoid unnecessary parenthesis.
+   *
    * @param text The Python expression text.
-   * @param precedence The precedence of the top-most operator. Or Integer.MAX_VALUE.
+   * @param precedence The precedence of the top-most operator or Integer.MAX_VALUE.
    */
   public PyExpr(String text, int precedence) {
     super(text, precedence);

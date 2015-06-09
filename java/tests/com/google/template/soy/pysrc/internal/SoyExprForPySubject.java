@@ -52,27 +52,40 @@ import java.util.Map;
  */
 public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, String> {
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
   private ImmutableMap<String, PrimitiveData> globals;
 
   private final LocalVariableStack localVarExprs;
 
+  private final Injector injector;
 
-  SoyExprForPySubject(FailureStrategy failureStrategy, String expr) {
+
+  private SoyExprForPySubject(FailureStrategy failureStrategy, String expr) {
     super(failureStrategy, expr);
-    globals = null;
     localVarExprs = new LocalVariableStack();
+    injector = Guice.createInjector(new SoyModule());
   }
 
+  /**
+   * Adds a frame of local variables to the top of the {@link LocalVariableStack}.
+   *
+   * @param localVarFrame one frame of local variables
+   * @return the current subject for chaining
+   */
   public SoyExprForPySubject with(Map<String, PyExpr> localVarFrame) {
     localVarExprs.pushFrame();
-    for(String name : localVarFrame.keySet()) {
-      localVarExprs.addVariable(name, localVarFrame.get(name));
+    for (Map.Entry<String, PyExpr> entry : localVarFrame.entrySet()) {
+      localVarExprs.addVariable(entry.getKey(), entry.getValue());
     }
     return this;
   }
 
+  /**
+   * Sets a map of key to {@link PrimitiveData} values as the current globally available data. Any
+   * compilation step will use these globals to replace unrecognized variables.
+   *
+   * @param globals a map of keys to PrimitiveData values
+   * @return the current subject for chaining
+   */
   public SoyExprForPySubject withGlobals(ImmutableMap<String, PrimitiveData> globals) {
     this.globals = globals;
     return this;
@@ -81,7 +94,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   /**
    * Asserts the subject compiles to the correct PyExpr.
    *
-   * @param expectedPyExpr The expected result of compilation.
+   * @param expectedPyExpr the expected result of compilation
    */
   public void compilesTo(PyExpr expectedPyExpr) {
     compilesTo(ImmutableList.of(expectedPyExpr));
@@ -93,15 +106,15 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * <p>The given Soy expr is wrapped in a full body of a template. The actual result is replaced
    * with ids for ### so that tests don't break when ids change.
    *
-   * @param expectedPyExprs The expected result of compilation.
+   * @param expectedPyExprs the expected result of compilation
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
-    SoyFileSetNode soyTree
-        = SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
-    SharedTestUtils.simulateNewApiCall(INJECTOR);
-    GenPyExprsVisitor genPyExprsVisitor = INJECTOR.getInstance(
+    SharedTestUtils.simulateNewApiCall(injector);
+    GenPyExprsVisitor genPyExprsVisitor = injector.getInstance(
         GenPyExprsVisitorFactory.class).create(localVarExprs);
     List<PyExpr> actualPyExprs = genPyExprsVisitor.exec(node);
 
@@ -110,7 +123,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
       PyExpr expectedPyExpr = expectedPyExprs.get(i);
       PyExpr actualPyExpr = actualPyExprs.get(i);
       assertThat(actualPyExpr.getText().replaceAll("\\([0-9]+", "(###"))
-        .isEqualTo(expectedPyExpr.getText());
+          .isEqualTo(expectedPyExpr.getText());
       assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
     }
   }
@@ -118,7 +131,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   /**
    * Asserts the subject translates to the expected PyExpr.
    *
-   * @param expectedPyExpr The expected result of translation.
+   * @param expectedPyExpr the expected result of translation
    */
   public void translatesTo(PyExpr expectedPyExpr) {
     translatesTo(expectedPyExpr, null);
@@ -128,8 +141,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * Asserts the subject translates to the expected PyExpr including verification of the exact
    * PyExpr class (e.g. {@code PyStringExpr.class}).
    *
-   * @param expectedPyExpr The expected result of translation.
-   * @param expectedClass The expected class of the resulting PyExpr.
+   * @param expectedPyExpr the expected result of translation
+   * @param expectedClass the expected class of the resulting PyExpr
    */
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
     String soyExpr = String.format("{print %s}", getSubject());
@@ -142,7 +155,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     PrintNode node = (PrintNode)SharedTestUtils.getNode(soyTree, 0);
     ExprNode exprNode = node.getExprUnion().getExpr();
 
-    PyExpr actualPyExpr = INJECTOR.getInstance(TranslateToPyExprVisitorFactory.class)
+    PyExpr actualPyExpr = injector.getInstance(TranslateToPyExprVisitorFactory.class)
         .create(localVarExprs)
         .exec(exprNode);
     assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
