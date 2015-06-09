@@ -46,8 +46,6 @@ import java.util.List;
  */
 public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, String> {
 
-  private static final Injector INJECTOR = Guice.createInjector(new PySrcModule());
-
   private static final String RUNTIME_PATH = "example.runtime";
 
   private String bidiIsRtlFn = "";
@@ -55,6 +53,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private String translationClass = "";
 
   private boolean isFile;
+
+  private final Injector injector;
 
 
   /**
@@ -69,6 +69,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   SoyCodeForPySubject(FailureStrategy failureStrategy, String code, boolean isFile) {
     super(failureStrategy, code);
     this.isFile = isFile;
+    this.injector = Guice.createInjector(new PySrcModule());
   }
 
 
@@ -137,7 +138,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private GenPyCodeVisitor getGenPyCodeVisitor() {
     // Setup default configs.
     SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn, translationClass);
-    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(INJECTOR);
+    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(injector);
     apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
     apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), RUNTIME_PATH);
 
@@ -146,7 +147,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     apiCallScope.seed(Key.get(String.class, PyTranslationClass.class), translationClass);
 
     // Execute the compiler.
-    return INJECTOR.getInstance(GenPyCodeVisitor.class);
+    return injector.getInstance(GenPyCodeVisitor.class);
   }
 
   private String compileFile() {
@@ -169,7 +170,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     genPyCodeVisitor.localVarExprs = new LocalVariableStack();
     genPyCodeVisitor.localVarExprs.pushFrame();
     genPyCodeVisitor.genPyExprsVisitor =
-        INJECTOR.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
+        injector.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
 
     genPyCodeVisitor.visitForTesting(node); // note: we're calling visit(), not exec()
 
