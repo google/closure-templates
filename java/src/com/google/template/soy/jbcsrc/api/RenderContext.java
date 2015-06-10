@@ -128,8 +128,8 @@ public final class RenderContext {
   /** A builder for configuring the context. */
   public static final class Builder {
     private DelTemplateSelector templateSelector;
-    private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.IDENTITY;
-    private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.IDENTITY;
+    private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
+    private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
     private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
