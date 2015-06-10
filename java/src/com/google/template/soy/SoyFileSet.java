@@ -1157,6 +1157,8 @@ public final class SoyFileSet {
       SoyFileSetNode soyTree, SyntaxVersion declaredSyntaxVersion)
       throws SoySyntaxException {
 
+    Checkpoint checkpoint = errorReporter.checkpoint();
+
     // Check that all function calls have a SoyFunction definition and have the correct arity.
     // This really belongs in SoyFileSetParser, but moving it there would cause SoyFileSetParser to
     // need to be injected, and that feels like overkill at this time.
@@ -1186,10 +1188,13 @@ public final class SoyFileSet {
           .exec(soyTree);
     }
 
-    // Run contextual escaping after CSS has been done, but before the autoescape visitor adds
-    // |escapeHtml directives.  The contextual directive filterHtmlIdent serves the same purpose
-    // in some places, but with runtime guarantees.
+    // Run contextual escaping after CSS and substitutions have been done.
     doContextualEscaping(soyTree);
+    if (errorReporter.errorsSince(checkpoint)) {
+      // Further passes that rely on sliced raw text nodes, such as conformance and CSP, can't
+      // proceed if contextual escaping failed.
+      return;
+    }
 
     if (checkConformance != null) {
       checkConformance.check(ConformanceInput.create(
