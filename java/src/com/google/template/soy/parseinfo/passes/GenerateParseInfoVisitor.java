@@ -473,8 +473,16 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("\"", node.getFileName(), "\",");
     ilb.appendLine("\"", node.getNamespace(), "\",");
 
-    // Templates.
+    // Params from all templates.
     List<String> itemSnippets = Lists.newArrayList();
+    for (String upperUnderscoreKey : allParamKeysMap.keySet()) {
+      itemSnippets.add("Param." + upperUnderscoreKey);
+    }
+    appendImmutableSortedSet(ilb, "<String>", itemSnippets);
+    ilb.appendLineEnd(",");
+
+    // Templates.
+    itemSnippets = Lists.newArrayList();
     itemSnippets.addAll(publicBasicTemplateMap.keySet());
     appendImmutableList(ilb, "<SoyTemplateInfo>", itemSnippets);
     ilb.appendLineEnd(",");
@@ -645,6 +653,11 @@ public final class GenerateParseInfoVisitor
     }
 
     appendIjParamSet(ilb, ijParamsInfo);
+    ilb.appendLineEnd(",");
+    // TODO: We should really disallow external basic calls when GenerateParseInfoVisitor is used.
+    ilb.appendLine(ijParamsInfo.mayHaveIjParamsInExternalCalls, ",");
+    ilb.appendLineStart(ijParamsInfo.mayHaveIjParamsInExternalDelCalls);
+
     ilb.appendLineEnd(");");
     ilb.decreaseIndent(2);
 

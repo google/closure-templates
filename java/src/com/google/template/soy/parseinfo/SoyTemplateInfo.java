@@ -49,6 +49,33 @@ public class SoyTemplateInfo {
   /** Set of injected params used by this template (or a transitive callee). */
   private final ImmutableSortedSet<String> ijParamSet;
 
+  /** Whether this template may have injected params indirectly used in external basic calls. */
+  private final boolean mayHaveIjParamsInExternalCalls;
+
+  /** Whether this template may have injected params indirectly used in external delegate calls. */
+  private final boolean mayHaveIjParamsInExternalDelCalls;
+
+
+  /**
+   * Constructor for internal use only, for the case of a template that doesn't use injected data
+   * (even transitively).
+   *
+   * <p> Important: Do not construct SoyTemplateInfo objects outside of Soy internal or
+   * Soy-generated code. User code that constructs SoyTemplateInfo objects will be broken by future
+   * Soy changes.
+   *
+   * @param name The full template name.
+   * @param paramMap Map from each param to whether it's required for this template.
+   * @deprecated Users should not be creating SoyTemplateInfo objects. If you're constructing
+   *     SoyTemplateInfo objects from non-Soy-internal code, your code will be broken by future
+   *     Soy changes.
+   */
+  @Deprecated
+  public SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
+    this(name, paramMap, ImmutableSortedSet.<String>of(), false, false);
+  }
+
+
   /**
    * Constructor for internal use only, for the general case.
    *
@@ -59,16 +86,23 @@ public class SoyTemplateInfo {
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.
    * @param ijParamSet Set of injected params used by this template (or a transitive callee).
+   * @param mayHaveIjParamsInExternalCalls Whether this template may have injected params
+   *     indirectly used in external basic calls.
+   * @param mayHaveIjParamsInExternalDelCalls Whether this template may have injected params
+   *     indirectly used in external delegate calls.
    */
   public SoyTemplateInfo(
       String name, ImmutableMap<String, ParamRequisiteness> paramMap,
-      ImmutableSortedSet<String> ijParamSet) {
+      ImmutableSortedSet<String> ijParamSet, boolean mayHaveIjParamsInExternalCalls,
+      boolean mayHaveIjParamsInExternalDelCalls) {
     this.name = name;
     int lastDotPos = name.lastIndexOf('.');
     Preconditions.checkArgument(lastDotPos > 0);
     this.partialName = name.substring(lastDotPos);
     this.paramMap = paramMap;
     this.ijParamSet = ijParamSet;
+    this.mayHaveIjParamsInExternalCalls = mayHaveIjParamsInExternalCalls;
+    this.mayHaveIjParamsInExternalDelCalls = mayHaveIjParamsInExternalDelCalls;
   }
 
 
@@ -89,6 +123,8 @@ public class SoyTemplateInfo {
 
   /**
    * Returns the set of injected params used by this template (or a transitive callee).
+   * @see #mayHaveIjParamsInExternalCalls()
+   * @see #mayHaveIjParamsInExternalDelCalls()
    */
   public ImmutableSortedSet<String> getUsedIjParams() {
     return ijParamSet;

@@ -67,7 +67,9 @@ public final class ParseInfoIjExampleSoyInfo extends SoyFileInfo {
       super(
           "examples.abc.hello",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of());
+          ImmutableSortedSet.<String>of(),
+          false,
+          false);
     }
 
     private static final HelloSoyTemplateInfo __INSTANCE__ =
@@ -123,7 +125,9 @@ public final class ParseInfoIjExampleSoyInfo extends SoyFileInfo {
               "boo",
               "gooDefault",
               "gooNondefault",
-              "moo"));
+              "moo"),
+          false,
+          true);
     }
 
     private static final AaaSoyTemplateInfo __INSTANCE__ =
@@ -179,7 +183,9 @@ public final class ParseInfoIjExampleSoyInfo extends SoyFileInfo {
           ImmutableSortedSet.<String>of(
               "boo",
               "gooDefault",
-              "gooNondefault"));
+              "gooNondefault"),
+          false,
+          true);
     }
 
     private static final BbbCccSoyTemplateInfo __INSTANCE__ =
@@ -199,6 +205,13 @@ public final class ParseInfoIjExampleSoyInfo extends SoyFileInfo {
     super(
         "ParseInfoIjExample.soy",
         "examples.abc",
+        ImmutableSortedSet.<String>of(
+            Param.PPP_1,
+            Param.QQQ_22,
+            Param.RRR_3,
+            Param.SSS,
+            Param.XXX,
+            Param.YYY_ZZZ),
         ImmutableList.<SoyTemplateInfo>of(
             HELLO,
             AAA,
