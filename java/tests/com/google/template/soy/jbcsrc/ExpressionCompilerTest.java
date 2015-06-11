@@ -151,7 +151,7 @@ public class ExpressionCompilerTest extends TestCase {
     try {
       compileExpression("-'asdf'");
       fail();
-    } catch (IllegalArgumentException expected) {}
+    } catch (UnexpectedCompilerFailureException expected) {}
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("-$foo").evaluatesTo(IntegerData.forValue(-1));

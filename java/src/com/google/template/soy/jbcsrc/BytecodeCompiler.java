@@ -20,9 +20,11 @@ import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.CompiledTemplates;
 import com.google.template.soy.soytree.TemplateNode;
@@ -106,12 +108,28 @@ public final class BytecodeCompiler {
     // haven't generated yet), because none of the classes are loadable until they all are.
     for (TemplateNode template : registry.getAllTemplates()) {
       String name = template.getTemplateName();
-      CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(name);
-      TemplateCompiler templateCompiler = 
-          new TemplateCompiler(compilerRegistry, classInfo, errorReporter);
-      for (ClassData clazz : templateCompiler.compile()) {
-        clazz.checkClass();
-        builder.add(clazz);
+      try {
+        CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(name);
+        TemplateCompiler templateCompiler = 
+            new TemplateCompiler(compilerRegistry, classInfo, errorReporter);
+        for (ClassData clazz : templateCompiler.compile()) {
+          clazz.checkClass();
+          builder.add(clazz);
+        }
+      // Report unexpected errors and keep going to try to collect more.
+      } catch (UnexpectedCompilerFailureException e) {
+        errorReporter.report(e.getOriginalLocation(), 
+            SoyError.of("Unexpected error while compiling template: ''{0}''\nSoy Stack:\n{1}"
+                + "\nCompiler Stack:{2}"), 
+            name,
+            e.printSoyStack(),
+            Throwables.getStackTraceAsString(e));
+        
+      } catch (Throwable t) {
+        errorReporter.report(template.getSourceLocation(), 
+            SoyError.of("Unexpected error while compiling template: ''{0}''\n{1}"), 
+            name, 
+            Throwables.getStackTraceAsString(t));
       }
     }
     return builder.build();

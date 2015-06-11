@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -40,6 +41,17 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   protected EnhancedAbstractExprNodeVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
+  }
+
+  @Override protected final T visit(ExprNode node) {
+    try {
+      return super.visit(node);
+    } catch (UnexpectedCompilerFailureException e) {
+      e.addLocation(node.getSourceLocation());
+      throw e;
+    } catch (Throwable t) {
+      throw new UnexpectedCompilerFailureException(node.getSourceLocation(), t);
+    }
   }
 
   @Override protected final T visitVarRefNode(VarRefNode node) {

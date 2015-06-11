@@ -183,6 +183,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return Statement.concat(jumpTable, templateBody);
   }
 
+  @Override protected Statement visit(SoyNode node) {
+    try {
+      return super.visit(node);
+    } catch (UnexpectedCompilerFailureException e) {
+      e.addLocation(node.getSourceLocation());
+      throw e;
+    } catch (Throwable t) {
+      throw new UnexpectedCompilerFailureException(node.getSourceLocation(), t);
+    }
+  }
+
   @Override protected Statement visitTemplateNode(TemplateNode node) {
     return visitChildrenInNewScope(node);
   }
