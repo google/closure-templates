@@ -20,7 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -51,6 +53,8 @@ import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 
 import junit.framework.TestCase;
+
+import java.util.Set;
 
 
 /**
@@ -409,6 +413,19 @@ public class SoyTypesTest extends TestCase {
         LIST_DATA, MAP_DATA, DICT_DATA);
   }
 
+  public void testAllContentKindsCovered() {
+    Set<SoyType> types = Sets.newIdentityHashSet();
+    for (ContentKind kind : ContentKind.values()) {
+      SoyType typeForContentKind = SanitizedType.getTypeForContentKind(kind);
+      if (kind == ContentKind.TEXT) {
+        assertEquals(StringType.getInstance(), typeForContentKind);
+      } else {
+        assertEquals(kind, ((SanitizedType) typeForContentKind).getContentKind());
+      }
+      // ensure there is a unique SoyType for every ContentKind
+      assertTrue(types.add(typeForContentKind));
+    }
+  }
 
   public void testListTypeIsInstance() {
     ListType listOfString = ListType.of(StringType.getInstance());

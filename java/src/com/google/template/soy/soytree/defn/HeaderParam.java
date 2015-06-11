@@ -30,6 +30,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public final class HeaderParam extends TemplateParam {
+  // TODO(brndn): this should have SourceLocation information
 
   /** The original source string for the param type. May be null if unavailable. */
   @Nullable private final String typeSrc;

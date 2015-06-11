@@ -21,7 +21,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
@@ -47,6 +49,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.SanitizedType;
+import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.proto.SoyProtoType;
 
 import java.util.Collection;
@@ -161,8 +164,10 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
           argType = expr.getType();
         }
       } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
-        argType = SanitizedType.getTypeForContentKind(
-            ((CallParamContentNode) callerParam).getContentKind());
+        ContentKind contentKind = ((CallParamContentNode) callerParam).getContentKind();
+        argType = contentKind == null
+            ? StringType.getInstance()
+            : SanitizedType.getTypeForContentKind(contentKind);
       }
       String paramName = callerParam.getKey();
       if (argType != null) {
@@ -178,7 +183,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
         boolean staticTypeSafe = true;
         for (SoyType formalType : declaredParamTypes) {
           staticTypeSafe &= checkArgumentAgainstParamType(
-              call, paramName, argType, formalType,
+              callerParam.getSourceLocation(), paramName, argType, formalType,
               calleeParamTypes);
         }
         if (staticTypeSafe) {
@@ -211,7 +216,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
           boolean staticTypeSafe = true;
           for (SoyType formalType : declaredParamTypes) {
             staticTypeSafe &= checkArgumentAgainstParamType(
-                call, paramName, callerParam.type(), formalType,
+                call.getSourceLocation(), paramName, callerParam.type(), formalType,
                 calleeParamTypes);
           }
           if (staticTypeSafe) {
@@ -244,7 +249,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
   /**
    * Check that the argument passed to the template is compatible with the template
    * parameter type.
-   * @param call The call node.
+   * @param location The location to report a type check error.
    * @param paramName the name of the parameter.
    * @param argType The type of the value being passed.
    * @param formalType The type of the parameter.
@@ -252,7 +257,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
    * @return true if runtime type checks can be elided for this param
    */
   private boolean checkArgumentAgainstParamType(
-      CallNode call, String paramName, SoyType argType, SoyType formalType,
+      SourceLocation location, String paramName, SoyType argType, SoyType formalType,
       TemplateParamTypes calleeParams) {
     if (!calleeParams.isStrictlyTyped
         && formalType.getKind() == SoyType.Kind.UNKNOWN ||
@@ -260,7 +265,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
       // Special rules for unknown / any
       if (argType instanceof SoyProtoType) {
         errorReporter.report(
-            call.getSourceLocation(),
+            location,
             PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT,
             paramName,
             argType);
@@ -289,8 +294,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
             return false;
           }
         }
-        errorReporter.report(
-            call.getSourceLocation(), ARGUMENT_TYPE_MISMATCH, paramName, formalType, argType);
+        errorReporter.report(location, ARGUMENT_TYPE_MISMATCH, paramName, formalType, argType);
       }
     }
     return true;

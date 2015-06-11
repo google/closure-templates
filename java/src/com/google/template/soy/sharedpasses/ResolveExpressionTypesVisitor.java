@@ -157,30 +157,10 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
   @Override protected void visitLetContentNode(LetContentNode node) {
     visitSoyNode(node);
-    SoyType varType = StringType.getInstance();
-    if (node.getContentKind() != null) {
-      switch (node.getContentKind()) {
-        case ATTRIBUTES:
-          varType = SanitizedType.AttributesType.getInstance();
-          break;
-        case CSS:
-          varType = SanitizedType.CssType.getInstance();
-          break;
-        case HTML:
-          varType = SanitizedType.HtmlType.getInstance();
-          break;
-        case JS:
-          varType = SanitizedType.JsType.getInstance();
-          break;
-        case URI:
-          varType = SanitizedType.UriType.getInstance();
-          break;
-        case TEXT:
-        default:
-          break;
-      }
-    }
-    node.getVar().setType(varType);
+    node.getVar().setType(
+        node.getContentKind() != null
+            ? SanitizedType.getTypeForContentKind(node.getContentKind())
+            : StringType.getInstance());
   }
 
   @Override protected void visitForNode(ForNode node) {
