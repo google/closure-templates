@@ -331,13 +331,13 @@ final class CollectTypeHelpersExprVisitor extends AbstractExprNodeVisitor<Void> 
       @Override Optional<String> externalClosurePathFor(SoyType minimalType) {
         HelperFunctions.FieldAccessStrategy strategy =
             HelperFunctions.strategyForFieldLookup(minimalType, fieldName);
-        switch (strategy.op) {
+        switch (strategy.op()) {
           case BRACKET: case DOT: case METHOD:
             return Optional.absent();
           case LIBRARY_FN:
-            return Optional.of(strategy.fieldKey);
+            return Optional.of(strategy.fieldKey());
         }
-        throw new AssertionError("unrecognized " + strategy.op);
+        throw new AssertionError("unrecognized " + strategy.op());
       }
 
       @Override String helperNamePrefix() {

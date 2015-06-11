@@ -25,6 +25,18 @@ import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoAutoescapeTrueSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoBidiSupportSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithParamBlockSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithParamSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithoutParamSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoDoubleBracesSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoExpressionsSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoForSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoForeachSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoMsgSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoPrintSoyTemplateInfo;
+
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_AUTOESCAPE_TRUE;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_BIDI_SUPPORT;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_CALL_WITHOUT_PARAM;
@@ -148,20 +160,21 @@ public class FeaturesUsage {
 
     writeExampleHeader("demoPrint");
     System.out.println(tofu.newRenderer(DEMO_PRINT)
-        .setData(new SoyMapData(DEMO_PRINT.BOO, "Boo!", DEMO_PRINT.TWO, 2))
+        .setData(new SoyMapData(DemoPrintSoyTemplateInfo.BOO, "Boo!",
+            DemoPrintSoyTemplateInfo.TWO, 2))
         .setMsgBundle(msgBundle)
         .render());
 
     writeExampleHeader("demoAutoescapeTrue");
     System.out.println(tofu.newRenderer(DEMO_AUTOESCAPE_TRUE)
-        .setData(new SoyMapData(DEMO_AUTOESCAPE_TRUE.ITALIC_HTML, "<i>italic</i>"))
+        .setData(new SoyMapData(DemoAutoescapeTrueSoyTemplateInfo.ITALIC_HTML, "<i>italic</i>"))
         .setMsgBundle(msgBundle)
         .render());
 
     writeExampleHeader("demoMsg");
     System.out.println(tofu.newRenderer(DEMO_MSG)
-        .setData(ImmutableMap.of(DEMO_MSG.NAME, "Ed",
-                                 DEMO_MSG.LABS_URL, "http://labs.google.com"))
+        .setData(ImmutableMap.of(DemoMsgSoyTemplateInfo.NAME, "Ed",
+                                 DemoMsgSoyTemplateInfo.LABS_URL, "http://labs.google.com"))
         .setMsgBundle(msgBundle)
         .render());
 
@@ -190,21 +203,21 @@ public class FeaturesUsage {
     persons.add(new SoyMapData("name", "Lex", "numWaffles", 1));
     persons.add(new SoyMapData("name", "Mel", "numWaffles", 2));
     System.out.println(tofu.newRenderer(DEMO_FOREACH)
-        .setData(new SoyMapData(DEMO_FOREACH.PERSONS, persons))
+        .setData(new SoyMapData(DemoForeachSoyTemplateInfo.PERSONS, persons))
         .setMsgBundle(msgBundle)
         .render());
 
     writeExampleHeader("demoFor");
     System.out.println(tofu.newRenderer(DEMO_FOR)
-        .setData(new SoyMapData(DEMO_FOR.NUM_LINES, 3))
+        .setData(new SoyMapData(DemoForSoyTemplateInfo.NUM_LINES, 3))
         .setMsgBundle(msgBundle)
         .render());
 
     writeExampleHeader("demoCallWithoutParam");
     System.out.println(tofu.newRenderer(DEMO_CALL_WITHOUT_PARAM)
         .setData(new SoyMapData(
-                     DEMO_CALL_WITHOUT_PARAM.NAME, "Neo",
-                     DEMO_CALL_WITHOUT_PARAM.TRIP_INFO,
+                     DemoCallWithoutParamSoyTemplateInfo.NAME, "Neo",
+                     DemoCallWithoutParamSoyTemplateInfo.TRIP_INFO,
                          new SoyMapData("name", "Neo", "destination", "The Matrix")))
         .setMsgBundle(msgBundle)
         .render());
@@ -212,9 +225,9 @@ public class FeaturesUsage {
     writeExampleHeader("demoCallWithParam");
     System.out.println(tofu.newRenderer(DEMO_CALL_WITH_PARAM)
         .setData(ImmutableMap.of(
-                 DEMO_CALL_WITH_PARAM.NAME, "Oz",
-                 DEMO_CALL_WITH_PARAM.COMPANION_NAME, "Pip",
-                 DEMO_CALL_WITH_PARAM.DESTINATIONS,
+                 DemoCallWithParamSoyTemplateInfo.NAME, "Oz",
+                 DemoCallWithParamSoyTemplateInfo.COMPANION_NAME, "Pip",
+                 DemoCallWithParamSoyTemplateInfo.DESTINATIONS,
                  ImmutableList.of("Gillikin Country", "Munchkin Country",
                                   "Quadling Country", "Winkie Country")))
         .setMsgBundle(msgBundle)
@@ -222,7 +235,7 @@ public class FeaturesUsage {
 
     writeExampleHeader("demoCallWithParamBlock");
     System.out.println(tofu.newRenderer(DEMO_CALL_WITH_PARAM_BLOCK)
-        .setData(new SoyMapData(DEMO_CALL_WITH_PARAM_BLOCK.NAME, "Quo"))
+        .setData(new SoyMapData(DemoCallWithParamBlockSoyTemplateInfo.NAME, "Quo"))
         .setMsgBundle(msgBundle)
         .render());
 
@@ -233,15 +246,15 @@ public class FeaturesUsage {
     students.add(new SoyMapData("name", "Tim", "major", "Engineering", "year", 2005));
     students.add(new SoyMapData("name", "Uma", "major", "Biology", "year", 1972));
     System.out.println(tofu.newRenderer(DEMO_EXPRESSIONS)
-        .setData(new SoyMapData(DEMO_EXPRESSIONS.STUDENTS, students,
-                                DEMO_EXPRESSIONS.CURRENT_YEAR, 2008))
+        .setData(new SoyMapData(DemoExpressionsSoyTemplateInfo.STUDENTS, students,
+                                DemoExpressionsSoyTemplateInfo.CURRENT_YEAR, 2008))
         .setMsgBundle(msgBundle)
         .render());
 
     writeExampleHeader("demoDoubleBraces");
     System.out.println(tofu.newRenderer(DEMO_DOUBLE_BRACES)
-        .setData(ImmutableMap.of(DEMO_DOUBLE_BRACES.SET_NAME, "prime numbers",
-                                 DEMO_DOUBLE_BRACES.SET_MEMBERS,
+        .setData(ImmutableMap.of(DemoDoubleBracesSoyTemplateInfo.SET_NAME, "prime numbers",
+                                 DemoDoubleBracesSoyTemplateInfo.SET_MEMBERS,
                                      ImmutableList.of(2, 3, 5, 7, 11, 13)))
          .setMsgBundle(msgBundle)
          .render());
@@ -251,10 +264,10 @@ public class FeaturesUsage {
     // this really in action, run the Javascript example.
     writeExampleHeader("demoBidiSupport");
     System.out.println(tofu.newRenderer(DEMO_BIDI_SUPPORT)
-        .setData(ImmutableMap.of(DEMO_BIDI_SUPPORT.TITLE, "2008: A BiDi Odyssey",
-                                 DEMO_BIDI_SUPPORT.AUTHOR, "John Doe, Esq.",
-                                 DEMO_BIDI_SUPPORT.YEAR, "1973",
-                                 DEMO_BIDI_SUPPORT.KEYWORDS,
+        .setData(ImmutableMap.of(DemoBidiSupportSoyTemplateInfo.TITLE, "2008: A BiDi Odyssey",
+                                 DemoBidiSupportSoyTemplateInfo.AUTHOR, "John Doe, Esq.",
+                                 DemoBidiSupportSoyTemplateInfo.YEAR, "1973",
+                                 DemoBidiSupportSoyTemplateInfo.KEYWORDS,
                                  ImmutableList.of(
                                      "Bi(Di)",
                                      "2008 (\u05E9\u05E0\u05D4)",

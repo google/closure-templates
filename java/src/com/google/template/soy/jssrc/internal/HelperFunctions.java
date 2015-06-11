@@ -16,13 +16,12 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.types.SoyType;
-
-import javax.annotation.Nullable;
 
 /**
  * Details of helper functions that decompose structured data and which survive Closure Compiler's
@@ -177,49 +176,37 @@ final class HelperFunctions {
   /**
    * A strategy for reading a field from a container.
    */
-  static final class FieldAccessStrategy {
-    /** Specifies the kind of JS that is used to read the field. */
-    final FieldAccessOperator op;
-    /** A string used in conjunction with op to generate a JS expression that reads the field. */
-    final String fieldKey;
-
-    FieldAccessStrategy(FieldAccessOperator op, String fieldKey) {
-      this.op = Preconditions.checkNotNull(op);
-      this.fieldKey = Preconditions.checkNotNull(fieldKey);
+  @AutoValue abstract static class FieldAccessStrategy {
+    static FieldAccessStrategy create(FieldAccessOperator op, String fieldKey) {
+      return new AutoValue_HelperFunctions_FieldAccessStrategy(op, fieldKey);
     }
+
+    /** Specifies the kind of JS that is used to read the field. */
+    abstract FieldAccessOperator op();
+    /** A string used in conjunction with op to generate a JS expression that reads the field. */
+    abstract String fieldKey();
+
 
     /** An expression that does the read. */
     JsExpr read(JsExpr container) {
-      switch (op) {
+      switch (op()) {
         case DOT:
-          if (!BaseUtils.isIdentifier(fieldKey)) {
-            throw new AssertionError(fieldKey);
+          if (!BaseUtils.isIdentifier(fieldKey())) {
+            throw new AssertionError(fieldKey());
           }
-          return new JsExpr(container.getText() + "." + fieldKey, container.getPrecedence());
+          return new JsExpr(container.getText() + "." + fieldKey(), container.getPrecedence());
         case BRACKET:
           return new JsExpr(
-              container.getText() + "[" + BaseUtils.escapeToSoyString(fieldKey, true) + "]",
+              container.getText() + "[" + BaseUtils.escapeToSoyString(fieldKey(), true) + "]",
               Integer.MAX_VALUE);
         case METHOD:
-          if (!BaseUtils.isIdentifier(fieldKey)) {
-            throw new AssertionError(fieldKey);
+          if (!BaseUtils.isIdentifier(fieldKey())) {
+            throw new AssertionError(fieldKey());
           }
-          return new JsExpr(container.getText() + "." + fieldKey + "()", container.getPrecedence());
+          return new JsExpr(container.getText() + "." + fieldKey() + "()", 
+              container.getPrecedence());
       }
-      throw new AssertionError("unexpected op " + op);
-    }
-
-    @Override public boolean equals(@Nullable Object o) {
-      // TODO(lukes): rewrite this class as an @AutoValue type
-      if (!(o instanceof FieldAccessStrategy)) {
-        return false;
-      }
-      FieldAccessStrategy that = (FieldAccessStrategy) this;
-      return this.op == that.op && this.fieldKey.equals(that.fieldKey);
-    }
-
-    @Override public int hashCode() {
-      return (31 * op.hashCode() + fieldKey.hashCode()) ^ 0xd5e45d71;
+      throw new AssertionError("unexpected op " + op());
     }
   }
 
@@ -254,9 +241,9 @@ final class HelperFunctions {
     if (BaseUtils.isIdentifier(fieldName)
         // foo.if is valid ES5, but not in strict mode.
         && !JsSrcUtils.isReservedWord(fieldName)) {
-      return new FieldAccessStrategy(FieldAccessOperator.DOT, fieldName);
+      return FieldAccessStrategy.create(FieldAccessOperator.DOT, fieldName);
     } else {
-      return new FieldAccessStrategy(FieldAccessOperator.BRACKET, fieldName);
+      return FieldAccessStrategy.create(FieldAccessOperator.BRACKET, fieldName);
     }
   }
 }

@@ -41,7 +41,7 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
 
 
   private static class TestPrintDirective implements SoyLibraryAssistedJsSrcPrintDirective {
-    public ImmutableSet<String> getRequiredJsLibNames() {
+    @Override public ImmutableSet<String> getRequiredJsLibNames() {
       return ImmutableSet.of("test.closure.name");
     }
 
@@ -64,7 +64,7 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
 
 
   private static class AnotherTestPrintDirective implements SoyLibraryAssistedJsSrcPrintDirective {
-    public ImmutableSet<String> getRequiredJsLibNames() {
+    @Override public ImmutableSet<String> getRequiredJsLibNames() {
       return ImmutableSet.of("another.closure.name");
     }
 
