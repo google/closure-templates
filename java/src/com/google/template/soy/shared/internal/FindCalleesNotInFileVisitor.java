@@ -17,7 +17,6 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -26,8 +25,8 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.SortedSet;
 
 /**
  * Visitor for finding the templates called in a file that are not defined in the file.
@@ -45,21 +44,19 @@ import java.util.SortedSet;
  * in T.
  *
  */
-public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<SortedSet<String>> {
-
+public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Set<CallBasicNode>> {
 
   /** The names of templates defined in this file. */
   private Set<String> templatesInFile;
 
-  /** The names of called templates not defined in this file (the result). */
-  private SortedSet<String> calleesNotInFile;
+  /** The call nodes of templates not defined in this file (the result). */
+  private Set<CallBasicNode> calleesNotInFile;
 
   public FindCalleesNotInFileVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
   }
 
-  @Override public SortedSet<String> exec(SoyNode node) {
-
+  @Override public Set<CallBasicNode> exec(SoyNode node) {
     Preconditions.checkArgument(node instanceof SoyFileNode);
     visit(node);
     return calleesNotInFile;
@@ -71,25 +68,21 @@ public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<So
 
 
   @Override protected void visitSoyFileNode(SoyFileNode node) {
-
-    templatesInFile = Sets.newHashSet();
+    templatesInFile = new LinkedHashSet<>();
     for (TemplateNode template : node.getChildren()) {
       templatesInFile.add(template.getTemplateName());
     }
 
-    calleesNotInFile = Sets.newTreeSet();
-
+    calleesNotInFile = new LinkedHashSet<>();
     visitChildren(node);
   }
 
 
   @Override protected void visitCallBasicNode(CallBasicNode node) {
-
     String calleeName = node.getCalleeName();
     if (!templatesInFile.contains(calleeName)) {
-      calleesNotInFile.add(calleeName);
+      calleesNotInFile.add(node);
     }
-
     visitChildren(node);
   }
 
@@ -103,5 +96,4 @@ public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<So
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

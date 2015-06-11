@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
@@ -36,6 +37,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -63,6 +65,8 @@ import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.inject.Inject;
 
@@ -75,6 +79,9 @@ import javax.inject.Inject;
  *
  */
 final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
+
+  private static final SoyError NON_NAMESPACED_TEMPLATE =
+      SoyError.of("Called template does not reside in a namespace.");
 
   /** The module path for the runtime libraries. */
   private final String runtimePath;
@@ -766,25 +773,30 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require Soy namespaces.
    * @param soyFile The node we're visiting.
    */
-  private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
-    for (String calleeNotInFile : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
-      int lastDotIndex = calleeNotInFile.lastIndexOf('.');
-      if (lastDotIndex == -1) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Called template \"" + calleeNotInFile + "\" does not reside in a namespace.",
-            soyFile);
+    private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
+      SortedSet<String> calleeModules = new TreeSet<>();
+      for (CallBasicNode node : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+        String calleeNotInFile = node.getCalleeName();
+        int lastDotIndex = calleeNotInFile.lastIndexOf('.');
+        if (lastDotIndex == -1) {
+          errorReporter.report(node.getSourceLocation(), NON_NAMESPACED_TEMPLATE);
+          continue;
+        }
+        String calleeModule = calleeNotInFile.substring(0, lastDotIndex);
+        if (!calleeModule.isEmpty()) {
+          calleeModules.add(calleeModule);
+        }
       }
-      String calleeModule = calleeNotInFile.substring(0, lastDotIndex);
-      if (!calleeModule.isEmpty()) {
-        Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
-        String calleeNamespace = nameSpaceAndName.first;
-        String calleeName = nameSpaceAndName.second;
-        pyCodeBuilder.appendLine(calleeName, " = runtime.namespaced_import('", calleeName,
-             "', namespace='", calleeNamespace, "')");
-      }
+
+      for (String calleeModule : calleeModules) {
+          Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
+          String calleeNamespace = nameSpaceAndName.first;
+          String calleeName = nameSpaceAndName.second;
+          pyCodeBuilder.appendLine(calleeName, " = runtime.namespaced_import('", calleeName,
+               "', namespace='", calleeNamespace, "')");
+        }
+      pyCodeBuilder.appendLine();
     }
-    pyCodeBuilder.appendLine();
-  }
 
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to add module constant to register this module's

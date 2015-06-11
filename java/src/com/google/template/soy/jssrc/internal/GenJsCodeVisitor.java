@@ -28,6 +28,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -46,6 +47,7 @@ import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -98,6 +100,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -115,6 +118,9 @@ import javax.inject.Inject;
  */
 final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
+  private static final SoyError NON_NAMESPACED_TEMPLATE =
+      SoyError.of("Using the option to provide/require Soy namespaces, but called template "
+          + "does not reside in a namespace.");
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
@@ -509,13 +515,12 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     String prevCalleeNamespace = null;
     Set<String> calleeNamespaces = Sets.newTreeSet();
-    for (String calleeNotInFile : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+    for (CallBasicNode node : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+      String calleeNotInFile = node.getCalleeName();
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
       if (lastDotIndex == -1) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "When using the option to provide/require Soy namespaces, found a called template \"" +
-                calleeNotInFile + "\" that does not reside in a namespace.",
-            soyFile);
+        errorReporter.report(node.getSourceLocation(), NON_NAMESPACED_TEMPLATE);
+        continue;
       }
       calleeNamespaces.add(calleeNotInFile.substring(0, lastDotIndex));
     }
@@ -533,9 +538,12 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
-
-    for (String calleeNotInFile : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
-      jsCodeBuilder.appendLine("goog.require('", calleeNotInFile, "');");
+    SortedSet<String> requires = new TreeSet<>();
+    for (CallBasicNode node : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+      requires.add(node.getCalleeName());
+    }
+    for (String require : requires) {
+      jsCodeBuilder.appendLine("goog.require('", require, "');");
     }
   }
 
