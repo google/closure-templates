@@ -114,8 +114,8 @@ abstract class AbstractDict extends SoyAbstractMap implements SoyDict {
 
   protected final String getStringKey(SoyValue key) {
     try {
-      return ((StringData) key).getValue();
-    } catch (ClassCastException e) {
+      return key.stringValue();
+    } catch (SoyDataException e) {
       throw new SoyDataException(
           "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
     }
