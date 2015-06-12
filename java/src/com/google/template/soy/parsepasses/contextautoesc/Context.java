@@ -149,8 +149,8 @@ public final class Context {
   /**
    * The context reached after escaping content using the given mode from this context.
    * This makes an optimistic assumption that the escaped string is not empty, but in practice this
-   * makes no difference except to minor differences such as that between {@link UriPart#START} and
-   * {@link UriPart#PRE_QUERY}.
+   * makes little difference, except {@link UriPart#START} and subsequent states, but it is
+   * the wildcard state {@link UriPart#MAYBE_VARIABLE_SCHEME}.
    */
   public Context getContextAfterEscaping(@Nullable EscapingMode mode) {
     if (mode == null) {
@@ -176,7 +176,11 @@ public final class Context {
           .withAttrType(AttributeType.PLAIN_TEXT)
           .build();
     } else if (uriPart == UriPart.START) {
-      return derive(UriPart.PRE_QUERY);
+      // TODO(gboyer): When we start enforcing strict URI syntax, make it an error to call this if
+      // we're already in MAYBE*_SCHEME, because it is possible in a non-strict contextual template
+      // that someone would use noAutoescape to try and get around the requirement of no print
+      // statements in MAYBE*_SCHEME.
+      return derive(UriPart.MAYBE_VARIABLE_SCHEME);
     }
     return this;
   }
@@ -288,8 +292,17 @@ public final class Context {
         //       /bar/
         //     {/else}
         //     {$baz}">
-        // Is {$baz} part of a query or part of a path?
         return ImmutableList.<EscapingMode>of();
+      case MAYBE_SCHEME:
+      case MAYBE_VARIABLE_SCHEME:
+        // Is {$baz} part of a query or part of a path? Similary, in:
+        //   <a href="{$x}{$y}">
+        // is $y in the scheme, path, query, or fragment?
+        // TODO(gboyer): The goal is to make this an error. However, there are still a few
+        // templates in Google that need to be migrated, but in order to migrate some of them, we
+        // need heuristics in the new MAYBE_VARIABLE_SCHEME state transitions. I'm now checking in
+        // these states with this particular error condition disabled first.
+        break;
       default:
         break;
     }
@@ -516,7 +529,7 @@ public final class Context {
   private static final int N_JS_SLASH_BITS = 2;
 
   /** The number of bits needed to store a {@link UriPart} value. */
-  private static final int N_URI_PART_BITS = 3;
+  private static final int N_URI_PART_BITS = 4;
 
   static {
     // We'd better have enough bits in an int.
@@ -556,13 +569,37 @@ public final class Context {
     }
 
     if (a.equals(b.derive(a.uriPart))) {
-      return a.derive(
-          // If the parts differ but neither could be in the fragment then a ? will conclusively
-          // transition into the query state, so use UKNNOWN_PRE_FRAGMENT to allow {print} commands
-          // after '?'.  With unknown, {print}s are only allowed after a '#'.
-          a.uriPart != UriPart.FRAGMENT && b.uriPart != UriPart.FRAGMENT &&
-          a.uriPart != UriPart.UNKNOWN && b.uriPart != UriPart.UNKNOWN ?
-          UriPart.UNKNOWN_PRE_FRAGMENT : UriPart.UNKNOWN);
+      if (a.uriPart != UriPart.FRAGMENT && b.uriPart != UriPart.FRAGMENT
+          && a.uriPart != UriPart.UNKNOWN && b.uriPart != UriPart.UNKNOWN) {
+        if (a.uriPart == UriPart.MAYBE_VARIABLE_SCHEME
+            || b.uriPart == UriPart.MAYBE_VARIABLE_SCHEME) {
+          // This is the case you might see on a URL that starts with a print statement, and one
+          // branch has a slash or ampersand but the other doesn't.  Re-entering
+          // MAYBE_VARIABLE_SCHEME allows us to pretend that the last branch was just part of the
+          // leading print statement, which leaves us in a relatively-unknown state, but no more
+          // unknown had it just been completely opaque.
+          //
+          // Good Example 1: {$urlWithQuery}{if $a}&a={$a}{/if}{if $b}&b={$b}{/if}
+          // In this example, the first "if" statement has two branches:
+          // - "true": {$urlWithQuey}&a={$a} looks like a QUERY due to hueristics
+          // - "false": {$urlWithQuery} only, which Soy doesn't know at compile-time to actually
+          // have a query, and it remains in MAYBE_VARIABLE_SCHEME.
+          // Instead of yielding UNKNOWN, this yields MAYBE_VARIABLE_SCHEME, which the second
+          // {if $b} can safely deal with.
+          //
+          // Good Example 2: {$base}{if $a}/a{/if}{if $b}/b{/if}
+          // In this, one branch transitions definitely into an authority or path, but the other
+          // might not. However, we can remain in MAYBE_VARIABLE_SCHEME safely.
+          //
+          // Malformed, but still safe from XSS: {$base}{if $a}?a={$a}{else}/b{/if}?c={$c}
+          // In this, the resulting URL is non-sensical. However, in all paths, because a question
+          // mark or slash is seen, it is impossible to set scheme, and safe from XSS. Furthermore,
+          // $a and $c are percent-encoded like a query param, so are limited in scope.
+          return a.derive(UriPart.MAYBE_VARIABLE_SCHEME);
+        }
+        return a.derive(UriPart.UNKNOWN_PRE_FRAGMENT);
+      }
+      return a.derive(UriPart.UNKNOWN);
     }
 
     // Order by state so that we don't have to duplicate tests below.
@@ -1039,11 +1076,41 @@ public final class Context {
     /** Not in a URI. */
     NONE,
 
-    /** Where a scheme might be seen.  At ^ in {@code ^http://host/path?k=v#frag}. */
+    /**
+     * At the absolute beginning of a URI.
+     *
+     * <p>At ^ in {@code ^http://host/path?k=v#frag} or {@code ^foo/bar?a=1}.
+     */
     START,
 
+    /**
+     * After a print statement in the beginning of a URI, where it's still possible to be in the
+     * scheme.
+     *
+     * <p>For example, after {@code href=&quot;&#123;$x&#125;}, it's hard to know what will happen.
+     * For example, if $x is "java" (a perfectly valid relative URI on its own), then
+     * "script:alert(1)" would execute as Javascript. But if $x is "java" followed by
+     * "/test.html", it's a relative URI.
+     *
+     * <p>This state is kept until we see anything that's hard-coded that makes it clear that we've
+     * left the scheme context; while remaining in this state, print statements and colons are
+     * forbidden, since we don't want what looks like a relative URI to set the scheme.
+     */
+    MAYBE_VARIABLE_SCHEME,
+
+    /**
+     * Still possibly in the scheme, though it could also be a relative path, but no print
+     * statements have been seen yet.
+     *
+     * <p>For example, between carets in {@code h^ttp^://host/path} or {@code f^oo^/bar.html}.
+     *
+     * <p>This is similar to MAYBE_VARIABLE_SCHEME in that print statements are forbidden; however,
+     * colons are allowed and transition to AUTHORITY_OR_PATH.
+     */
+    MAYBE_SCHEME,
+
     /** In the scheme, authority, or path.  Between ^s in {@code h^ttp://host/path^?k=v#frag}. */
-    PRE_QUERY,
+    AUTHORITY_OR_PATH,
 
     /** In the query portion.  Between ^s in {@code http://host/path?^k=v^#frag}*/
     QUERY,

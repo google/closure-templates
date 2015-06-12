@@ -698,6 +698,44 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
+  // TODO(gboyer): Enable this after the last few templates are migrated.
+  public void DISABLED_testUrlMaybeVariableSchemePrintStatement() throws Exception {
+    assertRewriteFails(
+        "In file no-path:4:14, template foo: Cannot determine which part of the URL {$y} is in.",
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"{$x}{$y}\">Test</a>\n",
+            "{/template}"));
+  }
+
+  // TODO(gboyer): Enable this after the last few templates are migrated.
+  public void DISABLED_testUrlMaybeVariableSchemeColon() throws Exception {
+    assertRewriteFails(
+        "In file no-path:4:14, template foo: "
+        + "Soy can't safely process a URI that might start with a variable scheme. "
+        + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
+        + "attacker-controlled. Either use a hard-coded scheme, or introduce "
+        + "disambiguating punctuation (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
+        + "{$x}?foo=:{$y})",
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"{$x}:foo()\">Test</a>\n",
+            "{/template}"));
+  }
+
+  // TODO(gboyer): Enable this after the last few templates are migrated.
+  public void DISABLED_testUrlMaybeSchemePrintStatement() throws Exception {
+    assertRewriteFails(
+        "In file no-path:4:13, template foo: Cannot determine which part of the URL {$x} is in.",
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"foo{$x}\">Test</a>\n",
+            "{/template}"));
+  }
+
   public void testRecursiveTemplateGuessFails() throws Exception {
     assertRewriteFails(
         "In file no-path:5:5, template foo: Error while re-contextualizing template quot in"

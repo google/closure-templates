@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
+import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.RawTextNode;
 
 import java.util.List;
@@ -445,7 +446,7 @@ final class RawTextContextUpdater {
   private static Transition makeTransitionToState(String regex, final Context.State state) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.derive(state).derive(Context.UriPart.NONE);
+        return prior.derive(state).derive(UriPart.NONE);
       }
     };
   }
@@ -460,7 +461,7 @@ final class RawTextContextUpdater {
         return prior.toBuilder()
             .withState(state)
             .withSlashType(Context.JsFollowingSlash.NONE)
-            .withUriPart(Context.UriPart.NONE)
+            .withUriPart(UriPart.NONE)
             .build();
       }
     };
@@ -481,22 +482,101 @@ final class RawTextContextUpdater {
   private static final Transition TRANSITION_TO_SELF = makeTransitionToSelf("\\z");
   // Matching at the end is lowest possible precedence.
 
-  private static final Transition URI_PART_TRANSITION = new Transition("[?#]|\\z") {
+  private static UriPart getNextUriPart(UriPart uriPart, char matchChar) {
+    // This switch statement is designed to process a URI in order via a sequence of fall throughs.
+    switch (uriPart) {
+      case MAYBE_SCHEME:
+      case MAYBE_VARIABLE_SCHEME:
+        // From the RFC: https://tools.ietf.org/html/rfc3986#section-3.1
+        // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+        // At this point, our goal is to try to prove that we've safely left the scheme, and then
+        // transition to a more specific state.
+
+        if (matchChar == ':') {
+          // Ah, it looks like we might be able to conclude we've set the scheme, but...
+          if (uriPart == UriPart.MAYBE_VARIABLE_SCHEME) {
+            // At the start of a URL, and we already saw a print statement, and now we suddenly
+            // see a colon. While this could be relatively safe if it's a {$host}:{$port} pair,
+            // at compile-time, we can't be sure that "$host" isn't something like "javascript"
+            // and "$port" isn't "deleteMyAccount()".
+            throw SoyAutoescapeException.createWithoutMetaInfo(
+                "Soy can't safely process a URI that might start with a variable scheme. "
+                + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
+                + "attacker-controlled. Either use a hard-coded scheme, or introduce "
+                + "disambiguating punctuation (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
+                + "{$x}?foo=:{$y})");
+          } else {
+            // At the start of the URL, and we just saw some hard-coded characters and a colon, like
+            // http:. This is safe (assuming it's a good scheme), and now we're on our way to the
+            // authority.
+            // TODO(gboyer): Transition to a stricter state if we end up seeing a dangerous scheme
+            // like javascript: or data:, and only allow hard-coded paths.
+            return UriPart.AUTHORITY_OR_PATH;
+          }
+        }
+
+        if (matchChar == '/') {
+          // Upon seeing a slash, it's impossible to set a valid scheme anymore. Either we're in the
+          // path, or we're starting a protocol-relative URI. (For all we know, we *could* be
+          // in the query, e.g. {$base}/foo if $base has a question mark, but sadly we have to go
+          // by what we know statically. However, usually query param groups tend to contain
+          // ampersands and equal signs, which we check for later heuristically.)
+          return UriPart.AUTHORITY_OR_PATH;
+        }
+
+        if ((matchChar == '=' || matchChar == '&') && uriPart == UriPart.MAYBE_VARIABLE_SCHEME) {
+          // This case is really special, and is only seen in cases like href="{$x}&amp;foo={$y}" or
+          // href="{$x}foo={$y}".  While in this case we can never be sure that we're in the query
+          // part, we do know two things:
+          //
+          // 1) We can't possibly set a dangerous scheme, since no valid scheme contains = or &
+          // 2) Within QUERY, all print statements are encoded as a URI component, which limits
+          // the damage that can be done; it can't even break into another path segment.
+          // Therefore, it is secure to assume this.
+          //
+          // Note we can safely handle ampersand even in HTML contexts because attribute values
+          // are processed unescaped.
+          return UriPart.QUERY;
+        }
+        // fall through
+      case AUTHORITY_OR_PATH:
+      case UNKNOWN_PRE_FRAGMENT:
+        if (matchChar == '?') {
+          // Upon a ? we can be pretty sure we're in the query. While it's possible for something
+          // like {$base}?foo=bar to be in the fragment if $base contains a #, it's safe to assume
+          // we're in the query, because query params are escaped more strictly than the fragment.
+          return UriPart.QUERY;
+        }
+        // fall through
+      case QUERY:
+      case UNKNOWN:
+        if (matchChar == '#') {
+          // A # anywhere proves we're in the fragment, even if we're already in the fragment.
+          return UriPart.FRAGMENT;
+        }
+        // fall through
+      case FRAGMENT:
+        // No transitions for fragment.
+        return uriPart;
+      default:
+        throw new AssertionError("Unanticipated URI part: " + uriPart);
+    }
+  }
+
+  private static final Transition URI_PART_TRANSITION = new Transition("[:./&?=#]|\\z") {
     @Override boolean isApplicableTo(Context prior, Matcher matcher) {
       return true;
     }
+
     @Override Context computeNextContext(Context prior, Matcher matcher) {
-      Context.UriPart uriPart = prior.uriPart;
-      if (uriPart == Context.UriPart.START) {
-        uriPart = Context.UriPart.PRE_QUERY;
+      UriPart uriPart = prior.uriPart;
+      // TODO(gboyer): Handle variable scheme
+      if (uriPart == UriPart.START) {
+        uriPart = UriPart.MAYBE_SCHEME;
       }
-      if (uriPart != Context.UriPart.FRAGMENT) {
-        String match = matcher.group(0);
-        if ("?".equals(match) && uriPart != Context.UriPart.UNKNOWN) {
-          uriPart = Context.UriPart.QUERY;
-        } else if ("#".equals(match)) {
-          uriPart = Context.UriPart.FRAGMENT;
-        }
+      String match = matcher.group(0);
+      if (!match.isEmpty()) {
+        uriPart = getNextUriPart(uriPart, match.charAt(0));
       }
       return prior.derive(uriPart);
     }
@@ -540,7 +620,7 @@ final class RawTextContextUpdater {
         }
         return prior.toBuilder()
             .withState(state)
-            .withUriPart(Context.UriPart.START)
+            .withUriPart(UriPart.START)
             .build();
       }
     };
