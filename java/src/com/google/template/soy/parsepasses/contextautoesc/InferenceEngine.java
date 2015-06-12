@@ -654,10 +654,15 @@ final class InferenceEngine {
           // elsewhere), we can make this optimization even if we can't see all the deltemplates.
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (calleeStrictContentKind != null || targets == null || targets.isEmpty()) {
+          Context callContext = startContext.getContextBeforeDynamicValue();
           // If a strict template calls another strict template (or an unknown extern), the result
           // will be escaped, so the call statement behaves effectively like a print statement.
           // No re-contextualization of the callee is done.
-          inferences.setEscapingDirectives(callNode, context, context.getEscapingModes());
+          // TODO(gboyer): Throw an exception if the list of escaping modes is empty, which
+          // indicates that there's no valid escaper for this context. My plan is to actually have
+          // getEscapingModes() itself throw the exception, but this requires some weeding out of
+          // bad existing templates.
+          inferences.setEscapingDirectives(callNode, callContext, callContext.getEscapingModes());
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (startContext.state == Context.State.TEXT) {
           // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode
