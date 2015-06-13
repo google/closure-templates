@@ -144,9 +144,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoComments",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoCommentsSoyTemplateInfo __INSTANCE__ =
@@ -176,9 +174,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoLineJoining",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoLineJoiningSoyTemplateInfo __INSTANCE__ =
@@ -208,9 +204,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoRawTextCommands",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoRawTextCommandsSoyTemplateInfo __INSTANCE__ =
@@ -248,9 +242,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("boo", ParamRequisiteness.REQUIRED)
               .put("two", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoPrintSoyTemplateInfo __INSTANCE__ =
@@ -285,9 +277,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("italicHtml", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoAutoescapeTrueSoyTemplateInfo __INSTANCE__ =
@@ -325,9 +315,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("name", ParamRequisiteness.REQUIRED)
               .put("labsUrl", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoMsgSoyTemplateInfo __INSTANCE__ =
@@ -362,9 +350,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("pi", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoIfSoyTemplateInfo __INSTANCE__ =
@@ -399,9 +385,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("name", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoSwitchSoyTemplateInfo __INSTANCE__ =
@@ -436,9 +420,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("persons", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoForeachSoyTemplateInfo __INSTANCE__ =
@@ -473,9 +455,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("numLines", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoForSoyTemplateInfo __INSTANCE__ =
@@ -518,9 +498,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("tripInfo", ParamRequisiteness.REQUIRED)
               .put("destination", ParamRequisiteness.OPTIONAL)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoCallWithoutParamSoyTemplateInfo __INSTANCE__ =
@@ -550,9 +528,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoCallOtherFile",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoCallOtherFileSoyTemplateInfo __INSTANCE__ =
@@ -593,9 +569,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("companionName", ParamRequisiteness.REQUIRED)
               .put("destinations", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoCallWithParamSoyTemplateInfo __INSTANCE__ =
@@ -630,9 +604,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("name", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoCallWithParamBlockSoyTemplateInfo __INSTANCE__ =
@@ -670,9 +642,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("message", ParamRequisiteness.REQUIRED)
               .put("list", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoParamWithKindAttributeSoyTemplateInfo __INSTANCE__ =
@@ -710,9 +680,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("students", ParamRequisiteness.REQUIRED)
               .put("currentYear", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoExpressionsSoyTemplateInfo __INSTANCE__ =
@@ -750,9 +718,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("setName", ParamRequisiteness.REQUIRED)
               .put("setMembers", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoDoubleBracesSoyTemplateInfo __INSTANCE__ =
@@ -796,9 +762,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("year", ParamRequisiteness.REQUIRED)
               .put("keywords", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final DemoBidiSupportSoyTemplateInfo __INSTANCE__ =
@@ -829,9 +793,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.bidiGlobalDir",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final BidiGlobalDirSoyTemplateInfo __INSTANCE__ =
@@ -869,9 +831,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("exampleNum", ParamRequisiteness.REQUIRED)
               .put("exampleName", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
-          false,
-          false);
+          ImmutableSortedSet.<String>of());
     }
 
     private static final ExampleHeaderSoyTemplateInfo __INSTANCE__ =
@@ -891,33 +851,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     super(
         "features.soy",
         "soy.examples.features",
-        ImmutableSortedSet.<String>of(
-            Param.AUTHOR,
-            Param.BOO,
-            Param.COMPANION_NAME,
-            Param.CURRENT_YEAR,
-            Param.DESTINATION,
-            Param.DESTINATIONS,
-            Param.EXAMPLE_NAME,
-            Param.EXAMPLE_NUM,
-            Param.ITALIC_HTML,
-            Param.ITEMS,
-            Param.KEYWORDS,
-            Param.LABS_URL,
-            Param.LIST,
-            Param.LIST_ITEMS,
-            Param.MESSAGE,
-            Param.NAME,
-            Param.NUM_LINES,
-            Param.PERSONS,
-            Param.PI,
-            Param.SET_MEMBERS,
-            Param.SET_NAME,
-            Param.STUDENTS,
-            Param.TITLE,
-            Param.TRIP_INFO,
-            Param.TWO,
-            Param.YEAR),
         ImmutableList.<SoyTemplateInfo>of(
             DEMO_COMMENTS,
             DEMO_LINE_JOINING,
