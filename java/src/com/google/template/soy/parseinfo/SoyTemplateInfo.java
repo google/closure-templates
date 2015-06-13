@@ -40,21 +40,11 @@ public class SoyTemplateInfo {
   /** The full template name. */
   private final String name;
 
-  /** The partial template name (starting from the last dot). */
-  private final String partialName;
-
   /** Map from each param to whether it's required for this template. */
   private final ImmutableMap<String, ParamRequisiteness> paramMap;
 
   /** Set of injected params used by this template (or a transitive callee). */
   private final ImmutableSortedSet<String> ijParamSet;
-
-  /** Whether this template may have injected params indirectly used in external basic calls. */
-  private final boolean mayHaveIjParamsInExternalCalls;
-
-  /** Whether this template may have injected params indirectly used in external delegate calls. */
-  private final boolean mayHaveIjParamsInExternalDelCalls;
-
 
   /**
    * Constructor for internal use only, for the case of a template that doesn't use injected data
@@ -96,13 +86,9 @@ public class SoyTemplateInfo {
       ImmutableSortedSet<String> ijParamSet, boolean mayHaveIjParamsInExternalCalls,
       boolean mayHaveIjParamsInExternalDelCalls) {
     this.name = name;
-    int lastDotPos = name.lastIndexOf('.');
-    Preconditions.checkArgument(lastDotPos > 0);
-    this.partialName = name.substring(lastDotPos);
+    Preconditions.checkArgument(name.lastIndexOf('.') > 0);
     this.paramMap = paramMap;
     this.ijParamSet = ijParamSet;
-    this.mayHaveIjParamsInExternalCalls = mayHaveIjParamsInExternalCalls;
-    this.mayHaveIjParamsInExternalDelCalls = mayHaveIjParamsInExternalDelCalls;
   }
 
 
@@ -113,7 +99,7 @@ public class SoyTemplateInfo {
 
   /** Returns the partial template name (starting from the last dot), e.g. {@code .myTemplate}. */
   public String getPartialName() {
-    return partialName;
+    return name.substring(name.lastIndexOf('.'));
   }
 
   /** Returns a map from each param to whether it's required for this template. */
@@ -129,5 +115,4 @@ public class SoyTemplateInfo {
   public ImmutableSortedSet<String> getUsedIjParams() {
     return ijParamSet;
   }
-
 }
