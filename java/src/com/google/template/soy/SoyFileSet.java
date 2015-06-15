@@ -912,7 +912,7 @@ public final class SoyFileSet {
           "jbcsrc doesn't support the allowExternalCalls option");
     }
     SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_4);
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
     Checkpoint checkpoint = errorReporter.checkpoint();
     SoyFileSetNode soyTree = new SoyFileSetParser(
         typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
