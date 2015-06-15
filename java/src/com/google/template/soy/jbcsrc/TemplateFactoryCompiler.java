@@ -20,13 +20,11 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.defineDefaultConstruc
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
-import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
-import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 
-import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -73,7 +71,7 @@ final class TemplateFactoryCompiler {
 
   /** Compiles the factory. */
   void compile() {
-    ClassWriter cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
+    SoyClassWriter cw = new SoyClassWriter();
     TypeInfo factoryType = innerClasses.registerInnerClass(FACTORY_CLASS, FACTORY_ACCESS);
     cw.visit(Opcodes.V1_7,
         FACTORY_ACCESS,
@@ -103,13 +101,14 @@ final class TemplateFactoryCompiler {
    * is more mature since it is likely that servers ship dead templates and there is no point
    * loading them.
    */
-  private void generateStaticInitializer(ClassWriter cw) {
+  private void generateStaticInitializer(ClassVisitor cv) {
     GeneratorAdapter ga = new GeneratorAdapter(
         Opcodes.ACC_STATIC,
         BytecodeUtils.CLASS_INIT,
         null /* no generic signature */,
         null /* no checked exceptions */,
-        cw);
+        cv);
+    ga.visitCode();
     ga.push(template.typeInfo().type());
     ga.visitVarInsn(Opcodes.ASTORE, 0);
     ga.returnValue();
@@ -120,7 +119,7 @@ final class TemplateFactoryCompiler {
    * Writes the {@link CompiledTemplate.Factory#create} method, which directly delegates to the
    * constructor of the {@link #template}.
    */
-  private void generateCreateMethod(ClassWriter cw, TypeInfo factoryType) {
+  private void generateCreateMethod(ClassVisitor cv, TypeInfo factoryType) {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(factoryType, start, end);
@@ -138,6 +137,6 @@ final class TemplateFactoryCompiler {
         paramsVar.tableEntry(ga);
         ijVar.tableEntry(ga);
       }
-    }.writeMethod(Opcodes.ACC_PUBLIC, CREATE_METHOD, cw);
+    }.writeMethod(Opcodes.ACC_PUBLIC, CREATE_METHOD, cv);
   }
 }

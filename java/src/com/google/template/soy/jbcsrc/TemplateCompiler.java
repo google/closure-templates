@@ -23,8 +23,6 @@ import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
-import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
-import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDataException;
@@ -43,12 +41,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -70,7 +65,7 @@ final class TemplateCompiler {
   private final CompiledTemplateMetadata template;
   private final InnerClasses innerClasses;
   private final ErrorReporter errorReporter;
-  private ClassVisitor writer;
+  private SoyClassWriter writer;
 
   TemplateCompiler(CompiledTemplateRegistry registry, CompiledTemplateMetadata template,
       ErrorReporter errorReporter) {
@@ -121,8 +116,7 @@ final class TemplateCompiler {
     // constructors directly.
     new TemplateFactoryCompiler(template, innerClasses).compile();
 
-    ClassWriter classWriter = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
-    writer = new CheckClassAdapter(classWriter, false);
+    writer = new SoyClassWriter();
     writer.visit(Opcodes.V1_7, 
         Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL,
         template.typeInfo().type().getInternalName(), 
@@ -152,8 +146,9 @@ final class TemplateCompiler {
     innerClasses.registerAllInnerClasses(writer);
     writer.visitEnd();
 
-    classes.add(ClassData.create(template.typeInfo(), classWriter.toByteArray()));
+    classes.add(ClassData.create(template.typeInfo(), writer.toByteArray()));
     classes.addAll(innerClasses.getInnerClassData());
+    writer = null;
     return classes;
   }
 

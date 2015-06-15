@@ -254,6 +254,7 @@ final class BytecodeUtils {
    */
   static void defineDefaultConstructor(ClassVisitor cv, TypeInfo ownerType) {
     CodeBuilder mg = new CodeBuilder(Opcodes.ACC_PUBLIC, NULLARY_INIT, null, cv);
+    mg.visitCode();
     Label start = mg.mark();
     Label end = mg.newLabel();
     LocalVariable thisVar = LocalVariable.createThisVar(ownerType, start, end);

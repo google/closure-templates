@@ -25,7 +25,8 @@ import com.google.template.soy.base.internal.BaseUtils;
  * files.  These utilities are shared between the compiler and the runtime system.
  */
 public final class Names {
-  private static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
+  public static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
+  public static final String INTERNAL_CLASS_PREFIX = CLASS_PREFIX.replace('.', '/');
 
   private Names() {}
 

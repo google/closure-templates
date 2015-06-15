@@ -17,8 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
-import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -28,7 +26,6 @@ import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -251,7 +248,7 @@ public final class ExpressionTester {
     TypeInfo generatedType = TypeInfo.create(
         ExpressionTester.class.getPackage().getName() + "." + targetInterface.getSimpleName() 
             + "Impl");
-    ClassWriter cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
+    SoyClassWriter cw = new SoyClassWriter();
     cw.visit(Opcodes.V1_7, 
         Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL,
         generatedType.type().getInternalName(), 
@@ -270,6 +267,7 @@ public final class ExpressionTester {
     }
     GeneratorAdapter generator = 
         new GeneratorAdapter(Opcodes.ACC_PUBLIC, voidInvoke, null, null, cw);
+    generator.visitCode();
     generator.loadThis();
     generator.invokeVirtual(generatedType.type(), invoke);
     generator.visitInsn(Opcodes.RETURN);
