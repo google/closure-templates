@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.shared.internal.CodeBuilder;
@@ -61,20 +60,6 @@ import java.util.List;
  */
 final class JsCodeBuilder extends CodeBuilder<JsExpr> {
 
-  /** The {@code OutputCodeGenerator} to use. */
-  private final CodeStyle codeStyle;
-
-
-  /**
-   * Constructs a new instance. At the start, the code is empty and the indent is 0 spaces.
-   *
-   * @param codeStyle The code style to use.
-   */
-  public JsCodeBuilder(CodeStyle codeStyle) {
-    super();
-    this.codeStyle = codeStyle;
-  }
-
   @Override public void initOutputVarIfNecessary() {
 
     if (getOutputVarIsInited()) {
@@ -82,53 +67,23 @@ final class JsCodeBuilder extends CodeBuilder<JsExpr> {
       return;
     }
 
-    if (codeStyle == CodeStyle.STRINGBUILDER) {
-      // var output = new soy.StringBuilder();
-      appendLine("var ", getOutputVarName(), " = new soy.StringBuilder();");
-    } else {
-      // var output = '';
-      appendLine("var ", getOutputVarName(), " = '';");
-    }
+    // var output = '';
+    appendLine("var ", getOutputVarName(), " = '';");
     setOutputVarInited();
   }
 
   @Override public void addToOutputVar(List<? extends JsExpr> jsExprs) {
-
-    if (codeStyle == CodeStyle.STRINGBUILDER) {
-      StringBuilder commaSeparatedJsExprsSb = new StringBuilder();
-      boolean isFirst = true;
-      for (JsExpr jsExpr : jsExprs) {
-        if (isFirst) {
-          isFirst = false;
-        } else {
-          commaSeparatedJsExprsSb.append(", ");
-        }
-        commaSeparatedJsExprsSb.append(jsExpr.getText());
-      }
-
-      if (getOutputVarIsInited()) {
-        // output.append(AAA, BBB);
-        appendLine(getOutputVarName(), ".append(", commaSeparatedJsExprsSb.toString(), ");");
-      } else {
-        // var output = new soy.StringBuilder(AAA, BBB);
-        appendLine("var ", getOutputVarName(), " = new soy.StringBuilder(",
-                   commaSeparatedJsExprsSb.toString(), ");");
-        setOutputVarInited();
-      }
-
-    } else {  // CodeStyle.CONCAT
-      if (getOutputVarIsInited()) {
-        // output += AAA + BBB + CCC;
-        appendLine(getOutputVarName(), " += ", JsExprUtils.concatJsExprs(jsExprs).getText(), ";");
-      } else {
-        // var output = '' + AAA + BBB + CCC;
-        // NOTE: We initialize with '' to enforce string concatenation. This ensures something like
-        // {2}{2} becomes '22' instead of 4.
-        // TODO: Optimize this away if we know the first or second expression is a string.
-        String contents = JsExprUtils.concatJsExprsForceString(jsExprs).getText();
-        appendLine("var ", getOutputVarName(), " = ", contents, ";");
-        setOutputVarInited();
-      }
+    if (getOutputVarIsInited()) {
+      // output += AAA + BBB + CCC;
+      appendLine(getOutputVarName(), " += ", JsExprUtils.concatJsExprs(jsExprs).getText(), ";");
+    } else {
+      // var output = '' + AAA + BBB + CCC;
+      // NOTE: We initialize with '' to enforce string concatenation. This ensures something like
+      // {2}{2} becomes '22' instead of 4.
+      // TODO: Optimize this away if we know the first or second expression is a string.
+      String contents = JsExprUtils.concatJsExprsForceString(jsExprs).getText();
+      appendLine("var ", getOutputVarName(), " = ", contents, ";");
+      setOutputVarInited();
     }
   }
 }

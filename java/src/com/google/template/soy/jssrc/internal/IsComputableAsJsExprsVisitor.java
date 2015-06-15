@@ -17,8 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -68,22 +66,16 @@ import javax.inject.Inject;
 @ApiCallScope
 class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
-
-  /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
-
   /** The memoized results of past visits to nodes. */
   private final Map<SoyNode, Boolean> memoizedResults;
 
 
   /**
-   * @param jsSrcOptions The options for generating JS source code.
    * @param errorReporter For reporting errors.
    */
   @Inject
-  IsComputableAsJsExprsVisitor(SoyJsSrcOptions jsSrcOptions, ErrorReporter errorReporter) {
+  IsComputableAsJsExprsVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
-    this.jsSrcOptions = jsSrcOptions;
     memoizedResults = new HashMap<>();
   }
 
@@ -197,7 +189,7 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boole
 
 
   @Override protected Boolean visitCallNode(CallNode node) {
-    return jsSrcOptions.getCodeStyle() == CodeStyle.CONCAT && areChildrenComputableAsJsExprs(node);
+    return areChildrenComputableAsJsExprs(node);
   }
 
 

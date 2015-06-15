@@ -21,8 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -34,15 +32,6 @@ import junit.framework.TestCase;
  *
  */
 public class CanInitOutputVarVisitorTest extends TestCase {
-
-
-  private static SoyJsSrcOptions jsSrcOptions;
-
-
-  @Override protected void setUp() {
-    jsSrcOptions = new SoyJsSrcOptions();
-  }
-
 
   public void testSameValueAsIsComputableAsJsExprsVisitor() {
 
@@ -77,10 +66,6 @@ public class CanInitOutputVarVisitorTest extends TestCase {
 
     runTestHelper("{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}", true);
 
-    // Note: Default code style is 'stringbuilder'.
-    runTestHelper("{call name=\".foo\" data=\"all\" /}", true);
-
-    jsSrcOptions.setCodeStyle(CodeStyle.CONCAT);
     runTestHelper("{call name=\".foo\" data=\"all\" /}", true);
 
     runTestHelper("{call name=\".foo\" data=\"$boo\"}{param key=\"goo\" value=\"$moo\" /}{/call}",
@@ -92,8 +77,6 @@ public class CanInitOutputVarVisitorTest extends TestCase {
 
 
   public void testNotSameValueAsIsComputableAsJsExprsVisitor() {
-
-    jsSrcOptions.setCodeStyle(CodeStyle.CONCAT);
     runTestHelper("{call name=\".foo\" data=\"$boo\"}" +
                   "{param key=\"goo\"}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
                   "{/call}",
@@ -119,8 +102,8 @@ public class CanInitOutputVarVisitorTest extends TestCase {
     new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(jsSrcOptions, boom);
-    CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(jsSrcOptions, icajev, boom);
+    IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(boom);
+    CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(icajev, boom);
     assertThat(ciovv.exec(node) == icajev.exec(node))
         .isEqualTo(isSameValueAsIsComputableAsJsExprsVisitor);
   }

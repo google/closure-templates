@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
@@ -303,7 +302,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       return;  // don't generate code for deps
     }
 
-    jsCodeBuilder = new JsCodeBuilder(jsSrcOptions.getCodeStyle());
+    jsCodeBuilder = new JsCodeBuilder();
 
     jsCodeBuilder.appendLine("// This file was automatically generated from ",
                              node.getFileName(), ".");
@@ -468,9 +467,6 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     jsCodeBuilder.appendLine("goog.require('soy');");
     jsCodeBuilder.appendLine("goog.require('soydata');");
-    if (jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
-      jsCodeBuilder.appendLine("goog.require('soy.StringBuilder');");
-    }
 
     SortedSet<String> requiredObjectTypes = ImmutableSortedSet.of();
     if (hasStrictParams(soyFile)) {
@@ -559,8 +555,6 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
-
-    boolean isCodeStyleStringbuilder = jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER;
     boolean useStrongTyping = hasStrictParams(node);
 
     localVarTranslations = new ArrayDeque<>();
@@ -581,11 +575,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       } else {
         jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_data");
       }
-      if (isCodeStyleStringbuilder) {
-        jsCodeBuilder.appendLine(" * @param {soy.StringBuilder=} opt_sb");
-      } else {
-        jsCodeBuilder.appendLine(" * @param {(null|undefined)=} opt_ignored");
-      }
+      jsCodeBuilder.appendLine(" * @param {(null|undefined)=} opt_ignored");
       if (isUsingIjData) {
         jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData");
       }
@@ -606,7 +596,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // ------ Generate function definition up to opening brace. ------
     jsCodeBuilder.appendLine(
         node.getTemplateName(), " = function(opt_data",
-        (isCodeStyleStringbuilder ? ", opt_sb" : ", opt_ignored"),
+        ", opt_ignored",
         (isUsingIjData ? ", opt_ijData" : ""), ") {");
     jsCodeBuilder.increaseIndent();
     // If there are any null coalescing operators then we need to generate an additional temporary
@@ -648,8 +638,6 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Generates the function body.
    */
   private void generateFunctionBody(TemplateNode node) {
-    boolean isCodeStyleStringbuilder = jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER;
-
     localVarTranslations.push(Maps.<String, JsExpr>newHashMap());
 
     // Generate statement to ensure data is defined, if necessary.
@@ -661,7 +649,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     genParamTypeChecks(node);
 
     JsExpr resultJsExpr;
-    if (!isCodeStyleStringbuilder && isComputableAsJsExprsVisitor.exec(node)) {
+    if (isComputableAsJsExprsVisitor.exec(node)) {
       // Case 1: The code style is 'concat' and the whole template body can be represented as JS
       // expressions. We specially handle this case because we don't want to generate the variable
       // 'output' at all. We simply concatenate the JS expressions and return the result.
@@ -693,32 +681,12 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Case 2: Normal case.
 
       jsCodeBuilder.pushOutputVar("output");
-      if (isCodeStyleStringbuilder) {
-        jsCodeBuilder.appendLine("var output = opt_sb || new soy.StringBuilder();");
-        jsCodeBuilder.setOutputVarInited();
-      }
-
       visitChildren(node);
-
-      if (isCodeStyleStringbuilder) {
-        resultJsExpr = new JsExpr("opt_sb ? '' : output.toString()", Integer.MAX_VALUE);
-      } else {
-        resultJsExpr = new JsExpr("output", Integer.MAX_VALUE);
-      }
+      resultJsExpr = new JsExpr("output", Integer.MAX_VALUE);
       jsCodeBuilder.popOutputVar();
     }
 
     if (node.getContentKind() != null) {
-      if (isCodeStyleStringbuilder) {
-        // TODO: In string builder mode, the only way to support strict is if callers know
-        // whether their callees are strict and wrap at the call site. This is challenging
-        // because most projects compile Javascript one file at a time. Since concat mode
-        // is faster in most browsers nowadays, this may not be a priority.
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Soy's StringBuilder-based code generation mode does not currently support " +
-                "autoescape=\"strict\".",
-            node);
-      }
       // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
       // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
       // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
@@ -804,10 +772,6 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     jsCodeBuilder.popOutputVar();
     localVarTranslations.pop();
-
-    if (jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
-      jsCodeBuilder.appendLine(generatedVarName, " = ", generatedVarName, ".toString();");
-    }
 
     if (node.getContentKind() != null) {
       // If the let node had a content kind specified, it was autoescaped in the corresponding
@@ -1188,15 +1152,9 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
 
-    if (jsSrcOptions.getCodeStyle() == CodeStyle.STRINGBUILDER) {
-      // For 'stringbuilder' code style, pass the current output var to collect the call's output.
-      genCallCodeUtils.genAndAppendCallStmt(jsCodeBuilder, node, localVarTranslations);
-
-    } else {
-      // For 'concat' code style, we simply add the call's result to the current output var.
-      JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations);
-      jsCodeBuilder.addToOutputVar(ImmutableList.of(callExpr));
-    }
+    // Add the call's result to the current output var.
+    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations);
+    jsCodeBuilder.addToOutputVar(ImmutableList.of(callExpr));
   }
 
   @Override protected void visitCallParamContentNode(CallParamContentNode node) {

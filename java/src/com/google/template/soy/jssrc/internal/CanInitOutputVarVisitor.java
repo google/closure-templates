@@ -18,8 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Inject;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -34,27 +32,20 @@ import com.google.template.soy.soytree.SoyNode;
  */
 class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
-
-  /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
-
   /** The IsComputableAsJsExprsVisitor used by this instance (when needed). */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
 
   /**
-   * @param jsSrcOptions The options for generating JS source code.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
    * @param errorReporter For reporting errors.
    */
   @Inject
   CanInitOutputVarVisitor(
-      SoyJsSrcOptions jsSrcOptions,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       ErrorReporter errorReporter) {
     super(errorReporter);
-    this.jsSrcOptions = jsSrcOptions;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
   }
 
@@ -64,11 +55,8 @@ class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
 
   @Override protected Boolean visitCallNode(CallNode node) {
-    // If we're generating code in the 'concat' style, then the call is a JS expression that returns
-    // its output as a string. However, if we're generating code in the 'stringbuilder' style, then
-    // the call is a full statement that returns no value (instead, the output is directly appended
-    // to the StringBuilder we pass to the callee).
-    return jsSrcOptions.getCodeStyle() == CodeStyle.CONCAT;
+    // The call is a JS expression that returns its output as a string.
+    return true;
   }
 
 

@@ -23,25 +23,13 @@ import com.google.common.base.Preconditions;
  * Compilation options for the JS Src output target (backend).
  *
  */
-public class SoyJsSrcOptions implements Cloneable {
-
-
-  /**
-   * The two supported code styles.
-   */
-  public static enum CodeStyle {
-    STRINGBUILDER, CONCAT
-  }
-
+public final class SoyJsSrcOptions implements Cloneable {
 
   /** Whether to allow deprecated syntax (semi backwards compatible mode). */
   private boolean shouldAllowDeprecatedSyntax;
 
   /** Whether to enable use of injected data. */
   private boolean isUsingIjData;
-
-  /** The output variable code style to use. */
-  private CodeStyle codeStyle;
 
   /** Whether we should generate JSDoc with type info for the Closure Compiler. */
   private boolean shouldGenerateJsdoc;
@@ -83,7 +71,6 @@ public class SoyJsSrcOptions implements Cloneable {
   public SoyJsSrcOptions() {
     shouldAllowDeprecatedSyntax = false;
     isUsingIjData = false;
-    codeStyle = CodeStyle.CONCAT;
     shouldGenerateJsdoc = false;
     shouldProvideRequireSoyNamespaces = false;
     shouldProvideRequireJsFunctions = false;
@@ -98,7 +85,6 @@ public class SoyJsSrcOptions implements Cloneable {
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
     this.shouldAllowDeprecatedSyntax = orig.shouldAllowDeprecatedSyntax;
     this.isUsingIjData = orig.isUsingIjData;
-    this.codeStyle = orig.codeStyle;
     this.shouldGenerateJsdoc = orig.shouldGenerateJsdoc;
     this.shouldProvideRequireSoyNamespaces = orig.shouldProvideRequireSoyNamespaces;
     this.shouldProvideRequireJsFunctions = orig.shouldProvideRequireJsFunctions;
@@ -143,21 +129,6 @@ public class SoyJsSrcOptions implements Cloneable {
   /** Returns whether use of injected data is currently enabled. */
   public boolean isUsingIjData() {
     return isUsingIjData;
-  }
-
-
-  /**
-   * Sets the output variable code style to use.
-   * @param codeStyle The code style to set.
-   */
-  public void setCodeStyle(CodeStyle codeStyle) {
-    this.codeStyle = codeStyle;
-  }
-
-
-  /** Returns the currently set code style. */
-  public CodeStyle getCodeStyle() {
-    return codeStyle;
   }
 
 

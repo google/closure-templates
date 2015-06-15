@@ -27,7 +27,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -167,9 +166,6 @@ public final class GenJsExprsVisitorTest extends TestCase {
 
 
   public void testCall() {
-
-    jsSrcOptions.setCodeStyle(CodeStyle.CONCAT);
-
     assertGeneratedJsExprs(
         "{call name=\"some.func\" data=\"all\" /}",
         ImmutableList.of(new JsExpr("some.func(opt_data)", Integer.MAX_VALUE)));
@@ -209,7 +205,6 @@ public final class GenJsExprsVisitorTest extends TestCase {
         soyNodeCode,
         ImmutableList.of(new JsExpr(expectedJsExprText, Operator.CONDITIONAL.getPrecedence())));
 
-    jsSrcOptions.setCodeStyle(CodeStyle.CONCAT);
     soyNodeCode =
         "{call name=\"some.func\"}" +
         "  {param key=\"goo\"}{lb}{index($goo)}{rb} is {$goo.moo}{/param}" +

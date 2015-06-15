@@ -21,8 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -30,19 +28,10 @@ import com.google.template.soy.soytree.SoyNode;
 import junit.framework.TestCase;
 
 /**
- * Unit tests for IsComputableAsJsExprsVisitor.
+ * Unit tests for {@link IsComputableAsJsExprsVisitor}.
  *
  */
 public final class IsComputableAsJsExprsVisitorTest extends TestCase {
-
-
-  private static SoyJsSrcOptions jsSrcOptions;
-
-
-  @Override protected void setUp() {
-    jsSrcOptions = new SoyJsSrcOptions();
-  }
-
 
   public void testAlwaysTrueNodes() {
 
@@ -90,11 +79,6 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
 
 
   public void testCallNode() {
-
-    jsSrcOptions.setCodeStyle(CodeStyle.STRINGBUILDER);
-    runTestHelper("{call name=\".foo\" data=\"all\" /}", false);
-
-    jsSrcOptions.setCodeStyle(CodeStyle.CONCAT);
     runTestHelper("{call name=\".foo\" data=\"all\" /}", true);
 
     runTestHelper("{call name=\".foo\" data=\"$boo\"}{param key=\"goo\" value=\"$moo\" /}{/call}",
@@ -127,7 +111,7 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
     // Several tests have msg nodes.
     new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
-    assertThat(new IsComputableAsJsExprsVisitor(jsSrcOptions, boom).exec(node))
+    assertThat(new IsComputableAsJsExprsVisitor(boom).exec(node))
         .isEqualTo(expectedResult);
   }
 

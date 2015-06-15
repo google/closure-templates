@@ -18,9 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
@@ -43,14 +41,10 @@ import javax.inject.Inject;
  * Utilities for generating JS code for calls.
  *
  */
-class GenCallCodeUtils {
-
+final class GenCallCodeUtils {
 
   /** All registered JS print directives. */
   private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
-
-  /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
 
   /** Whether any of the Soy code uses injected data. */
   private final boolean isUsingIjData;
@@ -64,31 +58,23 @@ class GenCallCodeUtils {
   /** Factory for creating an instance of GenJsExprsVisitor. */
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
-
   /**
-   * @param jsSrcOptions The options for generating JS source code.
    * @param isUsingIjData Whether any of the Soy code uses injected data.
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
-   * @param errorReporter For reporting errors.
    */
   @Inject
   GenCallCodeUtils(
-      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap, SoyJsSrcOptions jsSrcOptions,
+      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       @IsUsingIjData boolean isUsingIjData, JsExprTranslator jsExprTranslator,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      GenJsExprsVisitorFactory genJsExprsVisitorFactory,
-      ErrorReporter errorReporter) {
-    this.jsSrcOptions = jsSrcOptions;
+      GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
     this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
     this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
-    this.errorReporter = errorReporter;
   }
 
 
@@ -109,36 +95,6 @@ class GenCallCodeUtils {
   public JsExpr genCallExpr(
       CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations) {
     return genCallExprHelper(callNode, localVarTranslations, null);
-  }
-
-
-  /**
-   * Generates the JS statement for a given call (the version that passes a StringBuilder) and
-   * appends it to the given jsCodeBuilder. This method is only applicable for code style
-   * 'stringbuilder'.
-   *
-   * <p> Important: If there are CallParamContentNode children whose contents are not computable as
-   * JS expressions, then this function assumes that, elsewhere, code has been generated to define
-   * their respective 'param<n>' temporary variables.
-   *
-   * @see #genCallExprHelper for code gen examples.
-   *
-   * @param jsCodeBuilder The code builder to append the call to.
-   * @param callNode The call to generate code for.
-   * @param localVarTranslations The current stack of replacement JS expressions for the local
-   *     variables (and foreach-loop special functions) current in scope.
-   */
-  public void genAndAppendCallStmt(
-      JsCodeBuilder jsCodeBuilder, CallNode callNode,
-      Deque<Map<String, JsExpr>> localVarTranslations) {
-
-    if (jsSrcOptions.getCodeStyle() != SoyJsSrcOptions.CodeStyle.STRINGBUILDER) {
-      throw new AssertionError();
-    }
-
-    JsExpr callExpr =
-        genCallExprHelper(callNode, localVarTranslations, jsCodeBuilder.getOutputVarName());
-    jsCodeBuilder.appendLine(callExpr.getText(), ";");
   }
 
 
@@ -333,9 +289,6 @@ class GenCallCodeUtils {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.
           String paramExpr = "param" + cpcn.getId();
-          if (jsSrcOptions.getCodeStyle() == SoyJsSrcOptions.CodeStyle.STRINGBUILDER) {
-            paramExpr += ".toString()";
-          }
           valueJsExpr = new JsExpr(paramExpr, Integer.MAX_VALUE);
         }
 

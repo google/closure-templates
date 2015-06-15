@@ -22,7 +22,6 @@ import com.google.inject.Injector;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.SoyJsSrcOptions.CodeStyle;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 
@@ -101,9 +100,10 @@ public final class SoyToJsSrcCompiler {
           handler = MainClassUtils.BooleanOptionHandler.class)
   private boolean isUsingIjData = false;
 
+  // TODO(user): remove
   @Option(name = "--codeStyle",
           usage = "The code style to use when generating JS code ('stringbuilder' or 'concat').")
-  private CodeStyle codeStyle = CodeStyle.CONCAT;
+  private String codeStyle = "concat";
 
   @Option(name = "--shouldGenerateJsdoc",
           usage = "Whether we should generate JSDoc with type info for the Closure Compiler." +
@@ -291,7 +291,6 @@ public final class SoyToJsSrcCompiler {
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setIsUsingIjData(isUsingIjData);
-    jsSrcOptions.setCodeStyle(codeStyle);
     jsSrcOptions.setShouldGenerateJsdoc(shouldGenerateJsdoc);
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
     jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);
