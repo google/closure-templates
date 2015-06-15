@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -51,6 +52,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -264,7 +266,6 @@ final class InferenceEngine {
      * Propagates context across raw chunks of HTML text.
      */
     @Override protected void visitRawTextNode(RawTextNode rawTextNode) {
-      String rawText = rawTextNode.getRawText();
       Context newContext;
       try {
         SlicedRawTextNode sliced = RawTextContextUpdater.processRawText(rawTextNode, context);
@@ -272,12 +273,6 @@ final class InferenceEngine {
         slicedRawTextNodesBuilder.add(sliced);
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(rawTextNode);
-      }
-      if (newContext.isErrorContext()) {
-        throw SoyAutoescapeException.createWithNode(
-            "Failed to compute an output context for raw text `" + rawText +
-                "` starting in context " + context,
-            rawTextNode);
       }
       context = newContext;
     }
@@ -443,14 +438,14 @@ final class InferenceEngine {
         for (SoyNode child : forNode.getChildren()) {
           afterBody = infer(child, afterBody);
         }
-        Context combined = Context.union(context, afterBody);
-        if (combined.isErrorContext()) {
+        Optional<Context> combined = Context.union(context, afterBody);
+        if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               "{for} command changes context so it cannot be reentered : " +
                   forNode.toSourceString(),
               forNode);
         }
-        context = combined;
+        context = combined.get();
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(forNode);
       }
@@ -477,14 +472,14 @@ final class InferenceEngine {
           afterBody = infer(neNode, context);
           // Make sure that repeated invocations of the body end up in the same state.
           Context elseContext = infer(neNode, afterBody);
-          Context combined = Context.union(elseContext, afterBody);
-          if (combined.isErrorContext()) {
+          Optional<Context> combined = Context.union(elseContext, afterBody);
+          if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
                 "{foreach} body does not end in the same context after repeated entries : " +
                     neNode.toSourceString(),
                 neNode);
           }
-          afterBody = combined;
+          afterBody = combined.get();
         }
         Context ifemptyContext;
         if (ieNode != null) {
@@ -492,8 +487,8 @@ final class InferenceEngine {
         } else {
           ifemptyContext = context;
         }
-        Context combined = Context.union(ifemptyContext, afterBody);
-        if (combined.isErrorContext()) {
+        Optional<Context> combined = Context.union(ifemptyContext, afterBody);
+        if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               (ieNode == null ?
                   "{foreach} body changes context : " :
@@ -501,7 +496,7 @@ final class InferenceEngine {
                   foreachNode.toSourceString(),
               ieNode == null ? foreachNode : ieNode);
         }
-        context = combined;
+        context = combined.get();
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(foreachNode);
       }
@@ -777,14 +772,15 @@ final class InferenceEngine {
         // startContexts, e.g. JsFollowingSlash.
         Pair<Inferences, Context> secondHypothesis = hypothesizeContextualization(
             startContext, endContext, calleeName, templateNodes, inferences);
-        endContext = Context.union(secondHypothesis.second, endContext);
+        Optional<Context> combined = Context.union(secondHypothesis.second, endContext);
         // See if the first and second hypothesis result in a compatible end context.
-        if (endContext.isErrorContext()) {
+        if (!combined.isPresent()) {
           // Cannot identify an end context. Bail.
           throw SoyAutoescapeException.createWithNode(
               "Cannot determine end context for recursive template " + calleeName,
               templateNodes.get(0));
         }
+        endContext = combined.get();
       }
       subInferences.recordTemplateEndContext(calleeName, endContext);
       subInferences.foldIntoParent();
@@ -813,15 +809,23 @@ final class InferenceEngine {
       // Create a hypothetical world of inferences based on this hypothesis. It is up to the caller
       // to fold these into the parent inferences if it chooses to use these.
       Inferences inferences = new Inferences(parentInferences);
-      Context endContext = null;
+      List<Context> endContexts = new ArrayList<Context>();
       inferences.recordTemplateEndContext(calleeName, hypotheticalEndContext);
       for (TemplateNode templateNode : templateNodes) {
-        Context c = inferTemplateEndContext(
+        endContexts.add(inferTemplateEndContext(
             templateNode, startContext, inferences, autoescapeCancellingDirectives,
-            slicedRawTextNodesBuilder, errorReporter);
-        endContext = (endContext != null) ? Context.union(endContext, c) : c;
+            slicedRawTextNodesBuilder, errorReporter));
       }
-      return Pair.of(inferences, endContext);
+      Optional<Context> combined = Context.union(endContexts);
+      if (!combined.isPresent()) {
+        throw SoyAutoescapeException.createWithNode(
+            "Deltemplates diverge when used with deprecated-contextual autoescaping."
+                + " Based on the call site, assuming these templates all start in "
+                + startContext + ", the different deltemplates end in incompatible contexts: "
+                + Joiner.on(", ").join(endContexts),
+            templateNodes.get(0));
+      }
+      return Pair.of(inferences, combined.get());
     }
 
 
@@ -839,8 +843,8 @@ final class InferenceEngine {
         while (childIt.hasNext()) {
           SoyNode branch = childIt.next();
           Context brOut = infer(branch, context);
-          Context combined = Context.union(out, brOut);
-          if (combined.isErrorContext()) {
+          Optional<Context> combined = Context.union(out, brOut);
+          if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
                 (node instanceof IfNode ?
                     "{if} command branch ends in a different context than preceding branches: " :
@@ -848,7 +852,7 @@ final class InferenceEngine {
                     branch.toSourceString(),
                 branch);
           }
-          out = combined;
+          out = combined.get();
           if (branch instanceof IfElseNode || branch instanceof SwitchDefaultNode) {
             sawElseOrDefault = true;
           }
@@ -857,8 +861,8 @@ final class InferenceEngine {
         // If there is no else or default, then the end context has to be the compatible with the
         // start context.
         if (!sawElseOrDefault) {
-          Context combined = Context.union(context, out);
-          if (combined.isErrorContext()) {
+          Optional<Context> combined = Context.union(context, out);
+          if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
                 (node instanceof IfNode ?
                     "{if} command without {else} changes context : " :
@@ -866,7 +870,7 @@ final class InferenceEngine {
                     node.toSourceString(),
                 node);
           }
-          out = combined;
+          out = combined.get();
         }
 
         context = out;
@@ -927,20 +931,15 @@ final class InferenceEngine {
    */
   private static Context getContextAfterEscaping(
        SoyNode node, Context startContext, List<EscapingMode> escapingModes) {
-    // TODO: Shouldn't this use the last escaping mode, since the order is from earliest to the
-    // latest escaping?
-    Context endContext =
-        startContext.getContextAfterEscaping(Iterables.getFirst(escapingModes, null));
-    if (endContext.isErrorContext()) {
-      if (startContext.uriPart == Context.UriPart.UNKNOWN ||
-          startContext.uriPart == Context.UriPart.UNKNOWN_PRE_FRAGMENT) {
-        throw SoyAutoescapeException.createWithNode(
-            "Cannot determine which part of the URL " + node.toSourceString() + " is in.", node);
-      } else {
-        throw SoyAutoescapeException.createWithNode(
-            "Don't put {print} or {call} inside comments : " + node.toSourceString(), node);
-      }
+    // NOTE: This uses the first escaping mode, so that, for example, it will pass in the
+    // escapeHtmlAttribute if it's inside of an href, instead of the relevant URI escaper.
+    // However, with the prevalence of strict, it's probably better at some point to stop passing
+    // in an escaping mode and infer the next context unconditionally.
+    Preconditions.checkArgument(!escapingModes.isEmpty());
+    try {
+      return startContext.getContextAfterEscaping(Iterables.getFirst(escapingModes, null));
+    } catch (SoyAutoescapeException e) {
+      throw e.maybeAssociateNode(node);
     }
-    return endContext;
   }
 }

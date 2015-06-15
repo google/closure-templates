@@ -351,7 +351,7 @@ public final class ContextualAutoescaperTest extends TestCase {
   public void testPrintInsideJsCommentRejected() throws Exception {
     assertRewriteFails(
         "In file no-path:4:12, template foo: " +
-        "Don't put {print} or {call} inside comments : {$x}",
+        "Soy doesn't support dynamic values in JS and CSS comments.",
         join(
             "{namespace ns}\n\n",
             "{template foo autoescape=\"deprecated-contextual\"}\n",
@@ -683,7 +683,9 @@ public final class ContextualAutoescaperTest extends TestCase {
               "\">\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:49, template foo: Cannot determine which part of the URL {$x} is in.",
+        "In file no-path:4:49, template foo: Cannot determine which part of the URL this dynamic"
+        + " value is in. Most likely, a preceding conditional block began a ?query or #fragment,"
+        + " but only on one branch.",
         join(
             "{namespace ns}\n\n",
             "{template foo autoescape=\"deprecated-contextual\"}\n",
@@ -698,10 +700,12 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
-  // TODO(gboyer): Enable this after the last few templates are migrated.
-  public void DISABLED_testUrlMaybeVariableSchemePrintStatement() throws Exception {
+  public void testUrlMaybeVariableSchemePrintStatement() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:14, template foo: Cannot determine which part of the URL {$y} is in.",
+        "In file no-path:4:14, template foo: Soy can't prove this URI concatenation has a safe"
+        + " scheme at compile time. Either combine adjacent print statements (e.g. {$x + $y}"
+        + " instead of {$x}{$y}), or introduce disambiguating characters"
+        + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
         join(
             "{namespace ns}\n\n",
             "{template foo autoescape=\"strict\"}\n",
@@ -709,15 +713,12 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
-  // TODO(gboyer): Enable this after the last few templates are migrated.
-  public void DISABLED_testUrlMaybeVariableSchemeColon() throws Exception {
+  public void testUrlMaybeVariableSchemeColon() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:14, template foo: "
-        + "Soy can't safely process a URI that might start with a variable scheme. "
-        + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
-        + "attacker-controlled. Either use a hard-coded scheme, or introduce "
-        + "disambiguating punctuation (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
-        + "{$x}?foo=:{$y})",
+        "In file no-path:4:14, template foo: Soy can't safely process a URI that might start with a"
+        + " variable scheme. For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y"
+        + " is attacker-controlled. Either use a hard-coded scheme, or introduce disambiguating"
+        + " characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or {$x}?foo=:{$y})",
         join(
             "{namespace ns}\n\n",
             "{template foo autoescape=\"strict\"}\n",
@@ -725,10 +726,13 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
-  // TODO(gboyer): Enable this after the last few templates are migrated.
-  public void DISABLED_testUrlMaybeSchemePrintStatement() throws Exception {
+  public void testUrlMaybeSchemePrintStatement() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:13, template foo: Cannot determine which part of the URL {$x} is in.",
+        "In file no-path:4:13, template foo:"
+        + " Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
+        + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or move the"
+        + " print statement to the start of the URI to enable runtime validation"
+        + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
         join(
             "{namespace ns}\n\n",
             "{template foo autoescape=\"strict\"}\n",
@@ -1187,35 +1191,6 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/deltemplate}"));
   }
 
-  public void testDelegateTemplateCalledInNonPcdataContexts()
-      throws Exception {
-    assertContextualRewriting(
-        join(
-            "{delpackage dp}\n",
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "<script>{delcall foo__C2010 /}</script>\n",
-            "{/template}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "x = {$x |escapeHtml}\n",
-            "{/deltemplate}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo__C2010 autoescape=\"deprecated-contextual\"}\n",
-              "x = {$x |escapeJsValue}\n",
-            "{/deltemplate}"),
-        join(
-            "{delpackage dp}\n",
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "<script>{delcall foo /}</script>\n",
-            "{/template}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "x = {$x}\n",
-            "{/deltemplate}"));
-  }
-
   public void testDelegateTemplatesReturnTypesUnioned()
       throws Exception {
     assertRewriteFails(
@@ -1251,6 +1226,39 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/deltemplate}"));
   }
 
+  public void testDelegateTemplatesMustHaveCompatibleEndContexts()
+      throws Exception {
+    assertRewriteFails(
+        "In file no-path-0:4:1, template main: "
+        + "Error while re-contextualizing template foo in context (Context HTML_PCDATA):\n"
+        + "- In file no-path-1:5:1, template foo: "
+        + "Deltemplates diverge when used with deprecated-contextual autoescaping. "
+        + "Based on the call site, assuming these templates all start in (Context HTML_PCDATA), "
+        + "the different deltemplates end in incompatible contexts: "
+        + "(Context JS REGEX), (Context HTML_PCDATA)",
+        join(
+            "{namespace ns}\n\n",
+            "{template main autoescape=\"deprecated-contextual\"}\n",
+              "{delcall foo}\n",
+                "{param x: '' /}\n",
+              "{/delcall}\n",
+              "</script>\n",
+            "{/template}"),
+        join(
+            "{delpackage dp1}\n",
+            "{namespace ns}\n\n",
+            "/** @param x */\n",
+            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
+              "<script>x = {$x};\n",
+            "{/deltemplate}"),
+        join(
+            "{delpackage dp2}\n",
+            "{namespace ns}\n\n",
+            "/** @param x */\n",
+            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
+              "This does not open a script tag.\n",
+            "{/deltemplate}"));
+  }
 
   public void testTypedLetBlockIsContextuallyEscaped() {
     assertContextualRewriting(

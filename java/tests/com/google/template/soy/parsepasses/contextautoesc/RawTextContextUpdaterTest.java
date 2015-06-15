@@ -524,10 +524,6 @@ public class RawTextContextUpdaterTest extends TestCase {
     // ContextualAutoescaperTest.
   }
 
-  public final void testError() throws Exception {
-    assertTransition("ERROR", "/*//'\"\r\n\f\n\rFoo", "ERROR");
-  }
-
   public final void testRcdata() throws Exception {
     assertTransition("HTML_RCDATA XMP", "", "HTML_RCDATA XMP");
     assertTransition("HTML_RCDATA XMP", "Hello, World!", "HTML_RCDATA XMP");
@@ -570,8 +566,17 @@ public class RawTextContextUpdaterTest extends TestCase {
   }
 
   private static void assertTransition(String from, String rawText, String to) throws Exception {
-    Context after = RawTextContextUpdater.processRawText(
-        new RawTextNode(0, rawText, SourceLocation.UNKNOWN), parseContext(from)).getEndContext();
+    Context after;
+    try {
+      after = RawTextContextUpdater.processRawText(
+          new RawTextNode(0, rawText, SourceLocation.UNKNOWN), parseContext(from)).getEndContext();
+    } catch (SoyAutoescapeException e) {
+      if (!to.equals("ERROR")) {
+        throw new AssertionError("Expected context (" + to + ") but got an exception", e);
+      } else {
+        return; // Good!
+      }
+    }
     // Assert against the toString() for simpler test authoring -- if a developer misspells the
     // "to" context, they'll see a useful string-based diff.
     assertWithMessage(rawText).that(after.toString()).isEqualTo("(Context " + to + ")");
@@ -579,7 +584,7 @@ public class RawTextContextUpdaterTest extends TestCase {
 
   private static Context parseContext(String text) {
     Queue<String> parts = Lists.newLinkedList(Arrays.asList(text.split(" ")));
-    Context.Builder builder = Context.ERROR.toBuilder();
+    Context.Builder builder = Context.HTML_PCDATA.toBuilder();
     builder.withState(Context.State.valueOf(parts.remove()));
     if (!parts.isEmpty()) {
       try {

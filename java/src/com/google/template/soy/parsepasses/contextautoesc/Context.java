@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -121,10 +122,6 @@ public final class Context {
   public static final Context HTML_PCDATA = new Context(State.HTML_PCDATA);
 
 
-  /** A special state transitioned to if the CSS/HTML/JS parser cannot compute the next context. */
-  public static final Context ERROR = new Context(State.ERROR);
-
-
   /** Returns a context that differs only in the state. */
   public Context derive(State state) {
     return state == this.state ? this : toBuilder().withState(state).build();
@@ -152,10 +149,8 @@ public final class Context {
    * makes little difference, except {@link UriPart#START} and subsequent states, but it is
    * the wildcard state {@link UriPart#MAYBE_VARIABLE_SCHEME}.
    */
-  public Context getContextAfterEscaping(@Nullable EscapingMode mode) {
-    if (mode == null) {
-      return ERROR;
-    }
+  public Context getContextAfterEscaping(EscapingMode mode) {
+    Preconditions.checkNotNull(mode);
     if (mode == EscapingMode.ESCAPE_JS_VALUE) {
       switch (slashType) {
         case DIV_OP:
@@ -259,9 +254,10 @@ public final class Context {
   public ImmutableList<EscapingMode> getEscapingModes() {
     EscapingMode escapingMode = state.escapingMode;
 
-    // Short circuit on the error return case first.
+    // Short circuit on the error case first.
     if (escapingMode == null) {
-      return ImmutableList.<EscapingMode>of();
+      throw SoyAutoescapeException.createWithoutMetaInfo(
+          "Soy doesn't support dynamic values in JS and CSS comments.");
     }
 
     // Any additional mode that allows the primary escaping mode's output language to be
@@ -292,17 +288,28 @@ public final class Context {
         //       /bar/
         //     {/else}
         //     {$baz}">
-        return ImmutableList.<EscapingMode>of();
-      case MAYBE_SCHEME:
+        // Is {$baz} part of a query or part of a path?
+        // TODO(gboyer): In these unknown states, it might be interesting to indicate what the two
+        // contexts were.
+        throw SoyAutoescapeException.createWithoutMetaInfo(
+            "Cannot determine which part of the URL this dynamic value is in. Most likely, a"
+            + " preceding conditional block began a ?query or #fragment, but only on one branch.");
       case MAYBE_VARIABLE_SCHEME:
-        // Is {$baz} part of a query or part of a path? Similary, in:
+        // Is $y in the scheme, path, query, or fragment below?
         //   <a href="{$x}{$y}">
-        // is $y in the scheme, path, query, or fragment?
-        // TODO(gboyer): The goal is to make this an error. However, there are still a few
-        // templates in Google that need to be migrated, but in order to migrate some of them, we
-        // need heuristics in the new MAYBE_VARIABLE_SCHEME state transitions. I'm now checking in
-        // these states with this particular error condition disabled first.
-        break;
+        throw SoyAutoescapeException.createWithoutMetaInfo(
+            "Soy can't prove this URI concatenation has a safe scheme at compile time."
+            + " Either combine adjacent print statements (e.g. {$x + $y} instead of {$x}{$y}),"
+            + " or introduce disambiguating characters"
+            + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})");
+      case MAYBE_SCHEME:
+        // Could $x cause a bad scheme, e.g. if it's "script:deleteMyAccount()"?
+        //   <a href="java{$x}">
+        throw SoyAutoescapeException.createWithoutMetaInfo(
+            "Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
+            + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or move the"
+            + " print statement to the start of the URI to enable runtime validation"
+            + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").");
       default:
         break;
     }
@@ -465,15 +472,6 @@ public final class Context {
 
 
   /**
-   * True if this context is in the {@link State#ERROR error} state.
-   * @see #ERROR
-   */
-  public boolean isErrorContext() {
-    return state == State.ERROR;
-  }
-
-
-  /**
    * @deprecated Prefer comparing states or predicates like isValidEndContext
    */
   @Deprecated
@@ -552,20 +550,20 @@ public final class Context {
    * A context which is consistent with both contexts.
    * This should be used when multiple execution paths join, such as the path through the
    * then-clause of an <code>{if}</code> command and the path through the else-clause.
-   * @return {@link #ERROR} when there is no such context consistent with both.
+   * @return Optional.absent() when there is no such context consistent with both.
    */
-  public static Context union(Context a, Context b) {
+  static Optional<Context> union(Context a, Context b) {
     // TODO(gboyer): Add a test that TEXT doesn't union with any other type.
     if (a.equals(b)) {
-      return a;
+      return Optional.of(a);
     }
 
     if (a.templateNestDepth != b.templateNestDepth) {
-      return ERROR;
+      return Optional.absent();
     }
 
     if (a.equals(b.derive(a.slashType))) {
-      return a.derive(JsFollowingSlash.UNKNOWN);
+      return Optional.of(a.derive(JsFollowingSlash.UNKNOWN));
     }
 
     if (a.equals(b.derive(a.uriPart))) {
@@ -595,11 +593,11 @@ public final class Context {
           // In this, the resulting URL is non-sensical. However, in all paths, because a question
           // mark or slash is seen, it is impossible to set scheme, and safe from XSS. Furthermore,
           // $a and $c are percent-encoded like a query param, so are limited in scope.
-          return a.derive(UriPart.MAYBE_VARIABLE_SCHEME);
+          return Optional.of(a.derive(UriPart.MAYBE_VARIABLE_SCHEME));
         }
-        return a.derive(UriPart.UNKNOWN_PRE_FRAGMENT);
+        return Optional.of(a.derive(UriPart.UNKNOWN_PRE_FRAGMENT));
       }
-      return a.derive(UriPart.UNKNOWN);
+      return Optional.of(a.derive(UriPart.UNKNOWN));
     }
 
     // Order by state so that we don't have to duplicate tests below.
@@ -614,7 +612,7 @@ public final class Context {
     if (a.state == State.HTML_TAG_NAME && b.state == State.HTML_TAG) {
       // We do not need to compare a.elType and b.elType since in HTML_TAG_NAME,
       // there is no tag name, so no loss of information.
-      return b;
+      return Optional.of(b);
     }
 
     if (a.state == State.HTML_TAG && a.elType == b.elType) {
@@ -625,11 +623,20 @@ public final class Context {
           // In an attribute value ended by a delimiter.
           b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
         // TODO: do we need to require a space before any new attribute name?
-        return a;
+        return Optional.of(a);
       }
     }
 
-    return ERROR;
+    return Optional.absent();
+  }
+
+  static Optional<Context> union(Iterable<Context> contexts) {
+    Iterator<Context> iterator = contexts.iterator();
+    Optional<Context> context = Optional.of(iterator.next());
+    while (iterator.hasNext() && context.isPresent()) {
+      context = union(context.get(), iterator.next());
+    }
+    return context;
   }
 
   @Override
@@ -914,10 +921,7 @@ public final class Context {
     URI(EscapingMode.NORMALIZE_URI),
 
     /** Plain text; no escaping. */
-    TEXT(EscapingMode.TEXT),
-
-    /** Not inside any valid HTML/CSS/JS construct. */
-    ERROR,
+    TEXT(EscapingMode.TEXT)
     ;
 
     /**

@@ -207,12 +207,6 @@ final class RawTextContextUpdater {
    * @param text Non empty.
    */
   private void processNextToken(String text, Context context) throws SoyAutoescapeException {
-    if (context.isErrorContext()) {  // The ERROR state is infectious.
-      this.numCharsConsumed = text.length();
-      this.next = context;
-      return;
-    }
-
     // Find the transition whose pattern matches earliest in the raw text.
     int earliestStart = Integer.MAX_VALUE;
     int earliestEnd = -1;
@@ -238,8 +232,8 @@ final class RawTextContextUpdater {
       this.next = earliestTransition.computeNextContext(context, earliestMatcher);
       this.numCharsConsumed = earliestEnd;
     } else {
-      this.next = Context.ERROR;
-      this.numCharsConsumed = text.length();
+      throw SoyAutoescapeException.createWithoutMetaInfo(
+          "Error determining next state when encountering \"" + text + "\" in " + context);
     }
     if (numCharsConsumed == 0 && this.next.state == context.state) {
       throw new IllegalStateException("Infinite loop at `" + text + "` / " + context);
@@ -344,7 +338,8 @@ final class RawTextContextUpdater {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
         boolean isEndTag = "/".equals(matcher.group(1));
         if (isEndTag && prior.templateNestDepth == 0) {
-          return Context.ERROR;
+          throw SoyAutoescapeException.createWithoutMetaInfo(
+              "Saw an html5 </template> without encountering <template>.");
         }
         Context.Builder builder = prior.toBuilder()
             .withTemplateNestDepth(prior.templateNestDepth + (isEndTag ? -1 : 1))
@@ -452,6 +447,17 @@ final class RawTextContextUpdater {
   }
 
   /**
+   * A transition to an error state.
+   */
+  private static Transition makeTransitionToError(String regex, final String message) {
+    return new Transition(regex) {
+      @Override Context computeNextContext(Context prior, Matcher matcher) {
+        throw SoyAutoescapeException.createWithoutMetaInfo(message);
+      }
+    };
+  }
+
+  /**
    * A transition to the given JS string start state.
    */
   private static Transition makeTransitionToJsString(
@@ -503,7 +509,7 @@ final class RawTextContextUpdater {
                 "Soy can't safely process a URI that might start with a variable scheme. "
                 + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
                 + "attacker-controlled. Either use a hard-coded scheme, or introduce "
-                + "disambiguating punctuation (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
+                + "disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
                 + "{$x}?foo=:{$y})");
           } else {
             // At the start of the URL, and we just saw some hard-coded characters and a colon, like
@@ -743,31 +749,31 @@ final class RawTextContextUpdater {
       .put(Context.State.CSS_DQ_STRING, ImmutableList.of(
           makeTransitionToState("\"", Context.State.CSS),
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
-          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
+          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literals."),
           makeEndTagTransition("style"),  // TODO: Make this an error transition?
           TRANSITION_TO_SELF))
       .put(Context.State.CSS_SQ_STRING, ImmutableList.of(
           makeTransitionToState("'", Context.State.CSS),
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
-          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
+          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literals."),
           makeEndTagTransition("style"),  // TODO: Make this an error transition?
           TRANSITION_TO_SELF))
       .put(Context.State.CSS_URI, ImmutableList.of(
           makeTransitionToState("[\\)\\s]", Context.State.CSS),
           URI_PART_TRANSITION,
-          makeTransitionToState("[\"']", Context.State.ERROR),
+          makeTransitionToError("[\"']", "Quotes not permitted in CSS URIs."),
           makeEndTagTransition("style")))
       .put(Context.State.CSS_SQ_URI, ImmutableList.of(
           makeTransitionToState("'", Context.State.CSS),
           URI_PART_TRANSITION,
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
-          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
+          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
           makeEndTagTransition("style")))
       .put(Context.State.CSS_DQ_URI, ImmutableList.of(
           makeTransitionToState("\"", Context.State.CSS),
           URI_PART_TRANSITION,
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
-          makeTransitionToState("[\n\r\f]", Context.State.ERROR),
+          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
           makeEndTagTransition("style")))
       .put(Context.State.JS, ImmutableList.of(
           makeTransitionToState("/\\*", Context.State.JS_BLOCK_COMMENT),
