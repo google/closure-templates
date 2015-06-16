@@ -160,8 +160,10 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         "a%25bc%20%3E%20d",
         UnsafeSanitizedContentOrdainer.ordainAsSafe("a%bc > d", SanitizedContent.ContentKind.HTML),
         escapeUri);
+    // NOTE: URIs are not treated specially (e.g. /redirect?continue={$url} should not allow $url
+    // to break out and add other query params, and would be unexpected.)
     assertTofuOutput(
-        "a%bc%20%3E%20d",
+        "a%25bc%20%3E%20d",
         UnsafeSanitizedContentOrdainer.ordainAsSafe("a%bc > d", SanitizedContent.ContentKind.URI),
         escapeUri);
 
@@ -170,7 +172,8 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("a%25b%20%3E%20c", " 'a%b > c' ", escapeUri)
         .addTest("a%25bc%20%3E%20d",
             "soydata.VERY_UNSAFE.ordainSanitizedHtml('a%bc > d')", escapeUri)
-        .addTest("a%bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedUri('a%bc > d')", escapeUri)
+        .addTest("a%25bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedUri('a%bc > d')",
+            escapeUri)
         .runTests();
   }
 

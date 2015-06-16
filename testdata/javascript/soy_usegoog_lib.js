@@ -25180,13 +25180,12 @@ soy.$$pctEncode_ = function(ch) {
  * @return {string} An escaped version of value.
  */
 soy.$$escapeUri = function(value) {
-  if (soydata.isContentKind(value, soydata.SanitizedContentKind.URI)) {
-    goog.asserts.assert(value.constructor === soydata.SanitizedUri);
-    return soy.$$normalizeUri(value);
-  }
-  if (value instanceof goog.html.SafeUrl) {
-    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
-  }
+  // NOTE: We don't check for SanitizedUri or SafeUri, because just because
+  // something is already a valid complete URL doesn't mean we don't want to
+  // encode it as a component.  For example, it would be bad if
+  // ?redirect={$url} didn't escape ampersands, because in that template, the
+  // continue URL should be treated as a single unit.
+
   // Apostophes and parentheses are not matched by encodeURIComponent.
   // They are technically special in URIs, but only appear in the obsolete mark
   // production in Appendix D.2 of RFC 3986, so can be encoded without changing

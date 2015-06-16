@@ -265,12 +265,11 @@ public class SanitizersTest extends TestCase {
     assertEquals("%EF%BC%83%EF%BC%9A", Sanitizers.escapeUri("\uff03\uff1a"));
     // Test other unicode codepoints.
     assertEquals("%C2%85%E2%80%A8", Sanitizers.escapeUri("\u0085\u2028"));
-    // Test Sanitized Content of the right kind. Note that some characters are still normalized --
-    // specifically, ones that are allowed in URI's but not attributes but don't change meaning
-    // (and parentheses since they're technically reserved).
-    assertEquals("foo%28%27&%27%29", Sanitizers.escapeUri(
+    // SanitizedUris are not special in URIs. For example, in /redirect?continue={$url}, we clearly
+    // don't want ampersands in the continue URL to break out of the continue param.
+    assertEquals("foo%20%28%2527%26%27%29", Sanitizers.escapeUri(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "foo(%27&')", SanitizedContent.ContentKind.URI)));
+            "foo (%27&')", SanitizedContent.ContentKind.URI)));
     // Test SanitizedContent of the wrong kind -- it should be completely escaped.
     assertEquals("%2528%2529", Sanitizers.escapeUri(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(

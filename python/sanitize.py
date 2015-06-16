@@ -161,9 +161,6 @@ def escape_js_value(value):
 
 
 def escape_uri(value):
-  if is_content_kind(value, CONTENT_KIND.URI):
-    return normalize_uri(value)
-
   return generated_sanitize.escape_uri_helper(value)
 
 

@@ -352,18 +352,15 @@ public final class Sanitizers {
 
 
   /**
-   * Converts the input to a piece of a URI by percent encoding assuming a UTF-8 encoding.
+   * Converts the input to a piece of a URI by percent encoding the value as UTF-8 bytes.
    */
   public static String escapeUri(SoyValue value) {
-    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)) {
-      return normalizeUri(value);
-    }
     return escapeUri(value.coerceToString());
   }
 
 
   /**
-   * Converts plain text to a piece of a URI by percent encoding assuming a UTF-8 encoding.
+   * Converts plain text to a piece of a URI by percent encoding the string as UTF-8 bytes.
    */
   public static String escapeUri(String value) {
     return uriEscaper().escape(value);
