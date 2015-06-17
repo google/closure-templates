@@ -46,7 +46,7 @@ public interface SoyFileSupplier {
    * cryptographically strong hash function produces a more reliable version identifier than a
    * time-stamp but not one that can be said to be newer or older than any other version.
    */
-  public interface Version {
+  interface Version {
 
     /**
      * Compares to versions that are equivalent.  Meaningless if applied to versions from a
@@ -56,7 +56,7 @@ public interface SoyFileSupplier {
 
 
     /** A version for stable resources : resources that don't change over the life of a JVM. */
-    public static final Version STABLE_VERSION = new Version() {};
+    Version STABLE_VERSION = new Version() {};
 
   }
 
@@ -66,37 +66,37 @@ public interface SoyFileSupplier {
    *
    * @throws IOException If there is an error opening the input.
    */
-  public Reader open() throws IOException;
+  Reader open() throws IOException;
 
 
   /**
    * True if the underlying resource has changed since the given version.
    */
-  public boolean hasChangedSince(Version version);
+  boolean hasChangedSince(Version version);
 
 
   /**
    * Returns the kind of this input Soy file.
    */
-  public SoyFileKind getSoyFileKind();
+  SoyFileKind getSoyFileKind();
 
 
   /**
    * Returns the path to the Soy file, used for as a unique map/set key and for messages.
    */
-  public String getFilePath();
+  String getFilePath();
 
   /**
    * Returns the version of the Soy file read.
    */
-  public Version getVersion();
+  Version getVersion();
 
   /**
    * Container for factory methods for {@link SoyFileSupplier}s.
    *
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public static final class Factory {
+  final class Factory {
 
 
     /**
