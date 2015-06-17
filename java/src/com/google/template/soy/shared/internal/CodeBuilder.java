@@ -16,7 +16,7 @@
 
 package com.google.template.soy.shared.internal;
 
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
@@ -69,33 +69,29 @@ public abstract class CodeBuilder<E extends TargetExpr> {
 
   /**
    * Increases the current indent.
-   * @throws SoySyntaxException If the new indent depth would be greater than 20.
    */
-  public void increaseIndent() throws SoySyntaxException {
+  public void increaseIndent() {
     changeIndentHelper(1);
   }
 
   /**
    * Increases the current indent twice.
-   * @throws SoySyntaxException If the new indent depth would be greater than 20.
    */
-  public void increaseIndentTwice() throws SoySyntaxException {
+  public void increaseIndentTwice() {
     changeIndentHelper(2);
   }
 
   /**
    * Decreases the current indent.
-   * @throws SoySyntaxException If the new indent depth would be less than 0.
    */
-  public void decreaseIndent() throws SoySyntaxException {
+  public void decreaseIndent() {
     changeIndentHelper(-1);
   }
 
   /**
    * Decreases the current indent twice.
-   * @throws SoySyntaxException If the new indent depth would be less than 0.
    */
-  public void decreaseIndentTwice() throws SoySyntaxException {
+  public void decreaseIndentTwice() {
     changeIndentHelper(-2);
   }
 
@@ -103,16 +99,10 @@ public abstract class CodeBuilder<E extends TargetExpr> {
    * Private helper for increaseIndent(), increaseIndentTwice(), decreaseIndent(), and
    * decreaseIndentTwice().
    * @param chg The number of indent levels to change.
-   * @throws SoySyntaxException If the new indent depth would be less than 0 or greater than 20.
    */
-  private void changeIndentHelper(int chg) throws SoySyntaxException {
+  private void changeIndentHelper(int chg) {
     int newIndentDepth = indent.length() + chg * INDENT_SIZE;
-    if (newIndentDepth < 0) {
-      throw SoySyntaxException.createWithoutMetaInfo("Indent is less than 0 spaces!");
-    }
-    if (newIndentDepth > 20) {
-      throw SoySyntaxException.createWithoutMetaInfo("Indent is more than 20 spaces!");
-    }
+    Preconditions.checkState(newIndentDepth >= 0 && newIndentDepth <= SPACES.length());
     indent = SPACES.substring(0, newIndentDepth);
   }
 

@@ -18,7 +18,6 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
 import junit.framework.TestCase;
@@ -69,7 +68,7 @@ public final class CodeBuilderTest extends TestCase {
     try {
       cb.decreaseIndent();
       fail();
-    } catch (SoySyntaxException sse) {
+    } catch (IllegalStateException e) {
       // Test passes.
     }
 
@@ -78,7 +77,7 @@ public final class CodeBuilderTest extends TestCase {
         cb.increaseIndent();
       }
       fail();
-    } catch (SoySyntaxException sse) {
+    } catch (IllegalStateException e) {
       // Test passes.
     }
   }
