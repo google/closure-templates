@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree.defn;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.types.SoyType;
 
@@ -37,10 +39,11 @@ public class LocalVar extends AbstractVarDefn {
     this.declaringNode = declaringNode;
   }
 
-
-  LocalVar(LocalVar localVar) {
+  /** Copy constructor for when the declaring node is being cloned. */
+  public LocalVar(LocalVar localVar, LocalVarNode declaringNode) {
     super(localVar);
-    this.declaringNode = localVar.declaringNode;
+    checkArgument(localVar.declaringNode != declaringNode);
+    this.declaringNode = declaringNode;
   }
 
 
@@ -55,10 +58,6 @@ public class LocalVar extends AbstractVarDefn {
    */
   public void setType(SoyType type) {
     this.type = type;
-  }
-
-  @Override public LocalVar clone() {
-    return new LocalVar(this);
   }
 
   public LocalVarNode declaringNode() {

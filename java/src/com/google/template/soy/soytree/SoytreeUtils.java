@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
@@ -26,11 +28,16 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -40,7 +47,7 @@ import javax.annotation.Nullable;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SoytreeUtils {
+public final class SoytreeUtils {
 
 
   private SoytreeUtils() {}
@@ -259,8 +266,7 @@ public class SoytreeUtils {
   public static <T extends SoyNode> T cloneWithNewIds(T origNode, IdGenerator nodeIdGen) {
 
     // Clone the node.
-    @SuppressWarnings("unchecked")
-    T clone = (T) origNode.clone();
+    T clone = cloneNode(origNode);
 
     // Generate new ids.
     (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
@@ -292,8 +298,7 @@ public class SoytreeUtils {
     Preconditions.checkNotNull(origNodes);
     List<T> clones = new ArrayList<>(origNodes.size());
     for (T origNode : origNodes) {
-      @SuppressWarnings("unchecked")
-      T clone = (T) origNode.clone();
+      T clone = cloneNode(origNode);
       (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
       clones.add(clone);
     }
@@ -301,6 +306,42 @@ public class SoytreeUtils {
     return clones;
   }
 
+  /**
+   * Clones a SoyNode but unlike SoyNode.clone() keeps {@link VarRefNode#getDefnDecl()} pointing at
+   * the correct tree.
+   */
+  public static <T extends SoyNode> T cloneNode(T original) {
+    @SuppressWarnings("unchecked")  // this holds for all SoyNode types
+    T cloned = (T) original.clone();
+
+    // TODO(lukes):  this is not efficient but it is the only way to work around the limitations
+    // of the Object.clone() interface.  A better solution would be to introduce our own clone
+    // method which could take a parameter.  For nodes in the AST object graph that are the back
+    // edges in cycles (e.g. LocalVar) we could maintain an identity map which could be used to
+    // efficiently reconstruct the cycles.  For now we just fix it up after the fact.
+
+    // All vardefns in varrefs have been invalidated.  Currently we only reassign vardefns for
+    // LocalVarNodes because those have links (via declaringNode()) back up the tree, so we need to
+    // make sure that the declaringNode() links are correctly defined to point at the new tree
+    // instead of the previous one.
+    List<LocalVarNode> originalLocalVarNodes = getAllNodesOfType(original, LocalVarNode.class);
+    List<LocalVarNode> newLocalVarNodes = getAllNodesOfType(cloned, LocalVarNode.class);
+    Map<VarDefn, VarDefn> replacementMap = new IdentityHashMap<>();
+    for (int i = 0; i < newLocalVarNodes.size(); i++) {
+      VarDefn oldDefn = originalLocalVarNodes.get(i).getVar();
+      VarDefn newDefn = newLocalVarNodes.get(i).getVar();
+      checkState(oldDefn.name().equals(newDefn.name()));  // sanity check
+      replacementMap.put(oldDefn, newDefn);
+    }
+    // limiting this to just local vars would make sense.
+    for (VarRefNode varRef : getAllNodesOfType(cloned, VarRefNode.class)) {
+      VarDefn replacement = replacementMap.get(varRef.getDefnDecl());
+      if (replacement != null) {
+        varRef.setDefn(replacement);
+      }
+    }
+    return cloned;
+  }
 
   /**
    * Private helper for cloneWithNewIds() to set new ids on a cloned subtree.

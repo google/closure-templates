@@ -51,7 +51,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
    */
   private ForeachNonemptyNode(ForeachNonemptyNode orig) {
     super(orig);
-    this.var = orig.var.clone();
+    this.var = new LoopVar(orig.var, this);
   }
 
 
@@ -65,7 +65,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
   }
 
 
-  public final LoopVar getVar() {
+  @Override public final LoopVar getVar() {
     return var;
   }
 

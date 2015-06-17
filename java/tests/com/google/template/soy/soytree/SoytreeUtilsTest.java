@@ -18,18 +18,26 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.io.CharSource;
+import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.StableSoyFileSupplier;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.TestCase;
@@ -117,13 +125,26 @@ public final class SoytreeUtilsTest extends TestCase {
 
   private static final String SOY_SOURCE_FOR_TESTING_CLONING = Joiner.on('\n').join(
       "{namespace ns autoescape=\"deprecated-noncontextual\"}",
-      "{template ex1 private=\"true\"}",
+      "/** example for cloning. */",
+      "{template .ex1 private=\"true\"}",
+      "  {@param a : ?}",
+      "  {@param b : ?}",
+      "  {@param c : ?}",
+      "  {@param v : ?}",
+      "  {@param x : ?}",
+      "  {@param start : ?}",
+      "  {@param end : ?}",
+      "  {@param cond0 : ?}",
+      "  {@param cond1 : ?}",
+      "  {@param items : ?}",
+      "  {@param world : ?}",
+      "  {@param foo : ?}",
       "  Hello, World!",
       "  {lb}{call foo data=\"all\"}{param x: $x /}{/call}{rb}",
       "  {$x |escapeHtml}",
       "  {if $cond0}",
       "    {$a}",
-      "  {elsif $cond1}",
+      "  {elseif $cond1}",
       "    {print $b}",
       "  {else}",
       "    {$c}",
@@ -149,27 +170,57 @@ public final class SoytreeUtilsTest extends TestCase {
       "      <li value={$i}>foo</li>",
       "    {/for}",
       "  </ol>",
+      "  {let $local : 'foo' /}",
+      "  {$local}",
       "{/template}");
 
 
   public final void testClone() throws Exception {
-
-    IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    SoyFileNode soyFile = new SoyFileParser(
+    SoyFileSetNode soyTree = new SoyFileSetParser(
             new SoyTypeRegistry(),
-            nodeIdGen,
-            SOY_SOURCE_FOR_TESTING_CLONING,
-            SoyFileKind.SRC,
-            "test.soy")
-        .parseSoyFile();
-    soyTree.addChild(soyFile);
+            null,  // ast cache
+            SyntaxVersion.V2_4,
+            ImmutableList.of(
+                new StableSoyFileSupplier(
+                    CharSource.wrap(SOY_SOURCE_FOR_TESTING_CLONING),
+                    SoyFileKind.SRC,
+                    "test.soy")),
+            ExplodingErrorReporter.get())
+        .parse();
 
-    SoyFileSetNode clone = soyTree.clone();
+    SoyFileSetNode clone = SoytreeUtils.cloneNode(soyTree);
     assertEquals(1, clone.numChildren());
 
     assertEquals(clone.toTreeString(0), soyTree.toTreeString(0));
-    assertEquals(clone.getChild(0).toSourceString(), soyFile.toSourceString());
+    assertEquals(clone.getChild(0).toSourceString(), soyTree.getChild(0).toSourceString());
+    // All the localvarnodes, there is one of each type
+    ForNode forNode =
+        Iterables.getOnlyElement(SoytreeUtils.getAllNodesOfType(clone, ForNode.class));
+    ForeachNonemptyNode foreachNonemptyNode =
+        Iterables.getOnlyElement(SoytreeUtils.getAllNodesOfType(clone, ForeachNonemptyNode.class));
+    LetValueNode letValueNode =
+        Iterables.getOnlyElement(SoytreeUtils.getAllNodesOfType(clone, LetValueNode.class));
+    for (VarRefNode varRef : SoytreeUtils.getAllNodesOfType(clone, VarRefNode.class)) {
+      VarDefn defn = varRef.getDefnDecl();
+      LocalVar local;
+      switch (varRef.getName()) {
+        case "local":
+          local = (LocalVar) defn;
+          assertSame(letValueNode, local.declaringNode());
+          assertSame(letValueNode.getVar(), local);
+          break;
+        case "item":
+          local = (LocalVar) defn;
+          assertSame(foreachNonemptyNode, local.declaringNode());
+          assertSame(foreachNonemptyNode.getVar(), defn);
+          break;
+        case "i":
+          local = (LocalVar) defn;
+          assertSame(forNode, local.declaringNode());
+          assertSame(forNode.getVar(), defn);
+          break;
+      }
+    }
   }
 
 
@@ -257,7 +308,7 @@ public final class SoytreeUtilsTest extends TestCase {
     assertFalse(msgHtmlTagNodes.isEmpty());
 
     for (MsgHtmlTagNode origMsgHtmlTagNode : msgHtmlTagNodes) {
-      MsgHtmlTagNode clonedMsgHtmlTagNode = origMsgHtmlTagNode.clone();
+      MsgHtmlTagNode clonedMsgHtmlTagNode = SoytreeUtils.cloneNode(origMsgHtmlTagNode);
 
       assertEquals(clonedMsgHtmlTagNode.numChildren(), origMsgHtmlTagNode.numChildren());
       assertEquals(clonedMsgHtmlTagNode.getId(), origMsgHtmlTagNode.getId());

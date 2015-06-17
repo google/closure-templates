@@ -80,6 +80,7 @@ import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -1066,7 +1067,7 @@ public final class SoyFileSet {
       // Generating localized JS.
       for (String locale : locales) {
 
-        SoyFileSetNode soyTreeClone = soyTree.clone();
+        SoyFileSetNode soyTreeClone = SoytreeUtils.cloneNode(soyTree);
 
         String msgFilePath = MainEntryPointUtils.buildFilePath(
             messageFilePathFormat, locale, null, inputFilePathPrefix);

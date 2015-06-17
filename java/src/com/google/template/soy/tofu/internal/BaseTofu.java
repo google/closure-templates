@@ -45,6 +45,7 @@ import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -149,7 +150,7 @@ public class BaseTofu implements SoyTofu {
     } else {
       cachedTemplateRegistries = null;
     }
-    SoyFileSetNode soyTreeForNoCaching = soyTree.clone();
+    SoyFileSetNode soyTreeForNoCaching = SoytreeUtils.cloneNode(soyTree);
     templateRegistryForNoCaching = buildTemplateRegistry(soyTreeForNoCaching);
     templateToIjParamsInfoMap =
         new FindIjParamsVisitor(templateRegistryForNoCaching, errorReporter)
@@ -265,7 +266,7 @@ public class BaseTofu implements SoyTofu {
       if (!doAddToCache) {
         return null;
       }
-      SoyFileSetNode soyTreeClone = soyTree.clone();
+      SoyFileSetNode soyTreeClone = SoytreeUtils.cloneNode(soyTree);
       new InsertMsgsVisitor(key.first, true /* dontErrorOnPlrselMsgs */ , errorReporter)
           .exec(soyTreeClone);
       new RenameCssVisitor(key.second, errorReporter)

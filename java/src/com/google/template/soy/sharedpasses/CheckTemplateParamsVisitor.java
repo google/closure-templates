@@ -58,7 +58,7 @@ import java.util.Map.Entry;
  */
 public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError UNDECLARED_DATA_KEY = SoyError.of("Unknown data key {0}.");
+  private static final SoyError UNDECLARED_DATA_KEY = SoyError.of("Unknown data key ''{0}''.");
   private static final SoyError UNUSED_PARAM = SoyError.of("Param {0} unused in template body.");
 
   /** User-declared syntax version. */

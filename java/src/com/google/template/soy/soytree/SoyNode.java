@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.exprtree.VarDefn;
 
 import java.util.List;
 
@@ -279,7 +280,10 @@ public interface SoyNode extends Node {
     /**
      * Returns the name of this node's local variable (without the preceding '$').
      */
-    public String getVarName();
+    String getVarName();
+
+    /** Returns the variable definition. */
+    VarDefn getVar();
   }
 
 

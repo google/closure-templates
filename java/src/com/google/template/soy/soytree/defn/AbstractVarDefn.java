@@ -66,6 +66,7 @@ abstract class AbstractVarDefn implements VarDefn {
   @Override public int localVariableIndex() {
     return localVariableIndex;
   }
-
-  @Override public abstract AbstractVarDefn clone();
+  @Override public String toString() {
+    return getClass().getSimpleName() + "{name = " + name() + "}";
+  }
 }

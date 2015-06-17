@@ -47,11 +47,6 @@ public final class HeaderParam extends TemplateParam {
     this.typeSrc = typeSrc;
   }
 
-  private HeaderParam(HeaderParam param) {
-    super(param);
-    this.typeSrc = param.typeSrc;
-  }
-
   @Override public DeclLoc declLoc() {
     return DeclLoc.HEADER;
   }
@@ -79,9 +74,5 @@ public final class HeaderParam extends TemplateParam {
   @Override public int hashCode() {
     // Note: 'typeSrc' is nonessential.
     return super.abstractHashCode() * 31 + type.hashCode();
-  }
-
-  @Override public HeaderParam clone() {
-    return new HeaderParam(this);
   }
 }

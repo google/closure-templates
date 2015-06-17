@@ -77,7 +77,7 @@ public final class SoyFileSetParser {
   private final SyntaxVersion declaredSyntaxVersion;
 
   /** The suppliers of the Soy files to parse. */
-  private final List<SoyFileSupplier> soyFileSuppliers;
+  private final List<? extends SoyFileSupplier> soyFileSuppliers;
 
   /** Whether to run initial parsing passes. */
   private final boolean doRunInitialParsingPasses;
@@ -98,7 +98,7 @@ public final class SoyFileSetParser {
       SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
-      List<SoyFileSupplier> soyFileSuppliers,
+      List<? extends SoyFileSupplier> soyFileSuppliers,
       ErrorReporter errorReporter) {
     // By default, run all the parsing and checking passes.
     this(
@@ -118,7 +118,7 @@ public final class SoyFileSetParser {
       SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
-      List<SoyFileSupplier> soyFileSuppliers,
+      List<? extends SoyFileSupplier> soyFileSuppliers,
       ErrorReporter errorReporter,
       boolean doRunInitialParsingPasses,
       boolean doRunCheckingPasses) {
@@ -146,7 +146,7 @@ public final class SoyFileSetParser {
   /**
    * Ensures all SoyFileSuppliers have unique paths.
    */
-  private static void verifyUniquePaths(Iterable<SoyFileSupplier> soyFileSuppliers) {
+  private static void verifyUniquePaths(Iterable<? extends SoyFileSupplier> soyFileSuppliers) {
     Set<String> paths = Sets.newHashSet();
     for (SoyFileSupplier supplier : soyFileSuppliers) {
       Preconditions.checkArgument(

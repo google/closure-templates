@@ -25,7 +25,10 @@ import com.google.template.soy.types.SoyType;
  */
 public class LoopVar extends LocalVar {
 
+  /** The index of the currentIndex variable. */
   private int currentIndexIndex;
+
+  /** The index of the isLast variable. */
   private int isLastIndex;
 
   /**
@@ -37,8 +40,9 @@ public class LoopVar extends LocalVar {
     super(name, declaringNode, type);
   }
 
-  private LoopVar(LoopVar loop) {
-    super(loop);
+  /** Copy constructor for when the declaring node is being cloned. */
+  public LoopVar(LoopVar loop, LocalVarNode declaringNode) {
+    super(loop, declaringNode);
     this.currentIndexIndex = loop.currentIndexIndex;
     this.isLastIndex = loop.isLastIndex;
   }
@@ -46,7 +50,6 @@ public class LoopVar extends LocalVar {
   @Override public Kind kind() {
     return Kind.LOCAL_VAR;
   }
-
 
   public void setExtraLoopIndices(int currentIndexIndex, int isLastIndex) {
     this.currentIndexIndex = currentIndexIndex;
@@ -59,9 +62,5 @@ public class LoopVar extends LocalVar {
 
   public int isLastIteratorIndex() {
     return this.isLastIndex;
-  }
-
-  @Override public LoopVar clone() {
-    return new LoopVar(this);
   }
 }

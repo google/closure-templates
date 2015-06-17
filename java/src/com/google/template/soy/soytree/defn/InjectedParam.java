@@ -31,19 +31,11 @@ public final class InjectedParam extends AbstractVarDefn {
     super(name, UnknownType.getInstance());
   }
 
-  private InjectedParam(InjectedParam param) {
-    super(param);
-  }
-
   @Override public Kind kind() {
     return Kind.IJ_PARAM;
   }
 
   @Override public int localVariableIndex() {
     return -1;
-  }
-
-  @Override public InjectedParam clone() {
-    return new InjectedParam(this);
   }
 }

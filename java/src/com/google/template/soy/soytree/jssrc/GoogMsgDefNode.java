@@ -21,12 +21,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.List;
-
 
 /**
  * Represents a {@code goog.getMsg*} definition of a group of one or more messages. If more than one
@@ -38,7 +36,7 @@ import java.util.List;
  *
  */
 public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
-    implements StandaloneNode, SplitLevelTopNode<MsgNode>, LocalVarInlineNode {
+    implements StandaloneNode, SplitLevelTopNode<MsgNode> {
 
 
   /** Map from child MsgNode to its msg id. */
@@ -115,7 +113,7 @@ public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
   }
 
 
-  @Override public String getVarName() {
+  public String getVarName() {
     return getRenderedGoogMsgVarName();
   }
 

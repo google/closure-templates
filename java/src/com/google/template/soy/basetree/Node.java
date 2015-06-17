@@ -144,6 +144,10 @@ public interface Node {
    * <p>TODO(lukes): The usecases for a clone method are few and far between.  Making the AST nodes
    * immutable (or at least unmodifiable) would be preferable to maintaining our clone() methods.
    *
+   * <p>Don't clone nodes unless you know what you're doing. The Soy AST is not actually a tree (it
+   * contains back edges from variables to their definitions), and naively cloning nodes can result
+   * in pointers into stale ASTs
+   *
    * @return A clone of this code.
    */
   public Node clone();

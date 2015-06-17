@@ -105,7 +105,7 @@ public abstract class LetNode extends AbstractCommandNode
    */
   protected LetNode(LetNode orig) {
     super(orig);
-    this.var = orig.var.clone();
+    this.var = new LocalVar(orig.var, this);
   }
 
 

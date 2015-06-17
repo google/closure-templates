@@ -187,6 +187,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.cssBaseNamespace = orig.cssBaseNamespace;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
+    // TODO(lukes): params and injectedParams are not really immutable, just mostly.  Consider
+    // cloning them here and modifying SoytreeUtils.cloneNode to reassign these as well.
     this.params = orig.params;  // immutable
     this.injectedParams = orig.injectedParams;
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;

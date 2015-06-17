@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +58,7 @@ public final class SoyAstCache {
 
     /** Make a defensive copy. */
     private VersionedFile copy() {
-      return new AutoValue_SoyAstCache_VersionedFile(file().clone(), version());
+      return new AutoValue_SoyAstCache_VersionedFile(SoytreeUtils.cloneNode(file()), version());
     }
   }
 

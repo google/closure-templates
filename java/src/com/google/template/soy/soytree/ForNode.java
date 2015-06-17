@@ -185,7 +185,7 @@ public final class ForNode extends AbstractBlockCommandNode
    */
   private ForNode(ForNode orig) {
     super(orig);
-    this.var = orig.var.clone();
+    this.var = new LocalVar(orig.var, this);
     this.rangeArgs = orig.rangeArgs.copy();
   }
 
@@ -195,7 +195,7 @@ public final class ForNode extends AbstractBlockCommandNode
   }
 
 
-  public final LocalVar getVar() {
+  @Override public final LocalVar getVar() {
     return var;
   }
 
