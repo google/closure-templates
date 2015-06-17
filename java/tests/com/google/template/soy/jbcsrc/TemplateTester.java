@@ -50,6 +50,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -242,7 +243,11 @@ public final class TemplateTester {
             SoyFileSetParserBuilder.forFileContents(getSubject())
                 .typeRegistry(typeRegistry).parse();
         new UnsupportedFeatureReporter(ExplodingErrorReporter.get()).check(fileSet);
-
+        // Clone the tree, there tend to be bugs in the AST clone implementations that don't show
+        // up until development time when we do a lot of AST cloning, so clone here to try to flush
+        // them out.
+        fileSet = SoytreeUtils.cloneNode(fileSet);
+        
         // Extract messages, to make it easy to test translations and get default (english) strings
         SoyMsgBundle messages = new ExtractMsgsVisitor(ExplodingErrorReporter.get()).exec(fileSet);
         SoyMsgBundle defaultBundle = messages;

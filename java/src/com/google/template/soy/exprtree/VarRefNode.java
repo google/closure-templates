@@ -77,6 +77,7 @@ public final class VarRefNode extends AbstractExprNode {
     this.name = orig.name;
     this.isInjected = orig.isInjected;
     this.isNullSafeInjected = orig.isNullSafeInjected;
+    this.subtituteType = orig.subtituteType;
     // N.B. don't clone here.  If the tree is getting cloned then our defn will also need to be
     // reset.  However, defns are problematic because they create non-tree edges in the AST.
     // 1. all defns for the same variable should be the same (induces a dag structure).

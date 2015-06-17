@@ -505,6 +505,20 @@ public class BytecodeCompilerTest extends TestCase {
     ).rendersAs("Middle.", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
   }
 
+  public void testOptionalListIteration() {
+    CompiledTemplateSubject tester = assertThatTemplateBody(
+        "{@param? list : list<int>}",
+        "{if $list}",
+        "  {foreach $item in $list}",
+        "    {$item}",
+        "  {/foreach}",
+        "{/if}",
+        ""
+    );
+    tester.rendersAs("123", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
+    tester.rendersAs("");
+  }
+
   public void testPrintDirectives() {
     assertThatTemplateBody("{' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}")
         .rendersAs(" blah &amp;&amp;blahbl<wbr>ahblah");

@@ -401,9 +401,10 @@ class SoyExpression extends Expression {
         listType = (ListType) soyType;
       } else {
         Kind kind = soyType.getKind();
-        if (kind == Kind.ANY || kind == Kind.UNKNOWN) {
-          listType = ListType.of(soyType);
+        if (kind == Kind.UNKNOWN) {
+          listType = ListType.of(UnknownType.getInstance());
         } else {
+          // The type checker should have already rejected all of these
           throw new UnsupportedOperationException("Cannot convert " + soyType + " to " + asType);
         }
       }
