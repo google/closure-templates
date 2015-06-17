@@ -16,11 +16,8 @@
 
 package com.google.template.soy;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
-import com.google.common.io.Files;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
@@ -40,8 +37,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -70,7 +65,6 @@ public final class SoyUtils {
    * @param output The object to append the generated text to.
    * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
-   * @see #generateCompileTimeGlobalsFile(Map, File)
    */
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, Appendable output) throws IOException {
@@ -82,26 +76,6 @@ public final class SoyUtils {
       String valueSrcStr =
           InternalValueUtils.convertPrimitiveDataToExpr(entry.getValue()).toSourceString();
       output.append(entry.getKey()).append(" = ").append(valueSrcStr).append("\n");
-    }
-  }
-
-
-  /**
-   * Generates a compile-time globals file in the format expected by the Soy compiler.
-   *
-   * <p> The generated lines will follow the iteration order of the provided map.
-   *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-   * @param file The file to write the generated text to.
-   * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
-   * @throws IOException If there is an error appending to the given {@code Appendable}.
-   * @see #generateCompileTimeGlobalsFile(Map, Appendable)
-   */
-  public static void generateCompileTimeGlobalsFile(
-      Map<String, ?> compileTimeGlobalsMap, File file) throws IOException {
-    try (BufferedWriter writer = Files.newWriter(file, UTF_8)) {
-      generateCompileTimeGlobalsFile(compileTimeGlobalsMap, writer);
     }
   }
 
