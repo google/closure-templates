@@ -16,126 +16,118 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.Subject;
+import com.google.common.truth.SubjectFactory;
+import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 
 import junit.framework.TestCase;
 
+
 /**
  * Unit tests for SimplifyExprVisitor.
  *
  */
-public class SimplifyExprVisitorTest extends TestCase {
+public final class SimplifyExprVisitorTest extends TestCase {
 
-
-  public void testSimplifyFullySimplifiableExpr() throws Exception {
-
-    assertEquals("-210", simplifyExpr("-99+-111").toSourceString());
-    assertEquals("'-99-111'", simplifyExpr("-99 + '-111'").toSourceString());
-    assertEquals("''", simplifyExpr("false or 0 or 0.0 or ''").toSourceString());
-    assertEquals("true", simplifyExpr("0 <= 0").toSourceString());
-    assertEquals("true", simplifyExpr("'22' == 22").toSourceString());
-    assertEquals("true", simplifyExpr("'22' == '' + 22").toSourceString());
+  public void testSimplifyFullySimplifiableExpr() {
+    assertThat("-99+-111").simplifiesTo("-210");
+    assertThat("-99+-111").simplifiesTo("-210");
+    assertThat("-99 + '-111'").simplifiesTo("'-99-111'");
+    assertThat("false or 0 or 0.0 or ''").simplifiesTo("''");
+    assertThat("0 <= 0").simplifiesTo("true");
+    assertThat("'22' == 22").simplifiesTo("true");
+    assertThat("'22' == '' + 22").simplifiesTo("true");
 
     // With functions.
-    // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.
-    //assertEquals("8", simplifyExpr("max(4, 8)").toSourceString());
-    //assertEquals("3", simplifyExpr("floor(7/2)").toSourceString());
+    assertThat("max(4, 8)").simplifiesTo("8");
+    assertThat("floor(7/2)").simplifiesTo("3");
   }
 
 
-  public void testSimplifyNotSimplifiableExpr() throws Exception {
-
-    assertEquals("$boo", simplifyExpr("$boo").toSourceString());
-    assertEquals("$boo % 3", simplifyExpr("$boo % 3").toSourceString());
-    assertEquals("not $boo", simplifyExpr("not $boo").toSourceString());
-    assertEquals("$boo + ''", simplifyExpr("$boo + ''").toSourceString());
+  public void testSimplifyNotSimplifiableExpr() {
+    assertThat("$boo").simplifiesTo("$boo");
+    assertThat("$boo % 3").simplifiesTo("$boo % 3");
+    assertThat("not $boo").simplifiesTo("not $boo");
+    assertThat("$boo + ''").simplifiesTo("$boo + ''");
 
     // With functions.
-    assertEquals("max(4, $boo)", simplifyExpr("max(4, $boo)").toSourceString());
-    assertEquals("floor($boo / 3)", simplifyExpr("floor($boo / 3)").toSourceString());
+    assertThat("max(4, $boo)").simplifiesTo("max(4, $boo)");
+    assertThat("floor($boo / 3)").simplifiesTo("floor($boo / 3)");
   }
 
 
-  public void testSimplifyPartiallySimplifiableExpr() throws Exception {
-
-    assertEquals("15 % $boo", simplifyExpr("3 * 5 % $boo").toSourceString());
-    assertEquals("not $boo", simplifyExpr("not false and not $boo").toSourceString());
-    assertEquals("'ab' + $boo", simplifyExpr("'a' + 'b' + $boo").toSourceString());
+  public void testSimplifyPartiallySimplifiableExpr() {
+    assertThat("3 * 5 % $boo").simplifiesTo("15 % $boo");
+    assertThat("not false and not $boo").simplifiesTo("not $boo");
+    assertThat("'a' + 'b' + $boo").simplifiesTo("'ab' + $boo");
 
     // With functions.
-    // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.
-    //assertEquals("max(8, $boo)", simplifyExpr("max(max(4, 8), $boo)").toSourceString());
-    assertEquals("floor($boo / 3.0)", simplifyExpr("floor($boo / (1.0 + 2))").toSourceString());
+    assertThat("max(max(4, 8), $boo)").simplifiesTo("max(8, $boo)");
+    assertThat("floor($boo / (1.0 + 2))").simplifiesTo("floor($boo / 3.0)");
   }
 
 
-  public void testSimplifyListAndMapLiterals() throws Exception {
-
-    assertEquals("['ab', -2]", simplifyExpr("['a' + 'b', 1 - 3]").toSourceString());
-    assertEquals("['ab': -2]", simplifyExpr("['a' + 'b': 1 - 3]").toSourceString());
-    assertEquals("[8, ['ab', -2]]", simplifyExpr("[8, ['a' + 'b', 1 - 3]]").toSourceString());
-    assertEquals("['z': ['ab': -2]]", simplifyExpr("['z': ['a' + 'b': 1 - 3]]").toSourceString());
+  public void testSimplifyListAndMapLiterals() {
+    assertThat("['a' + 'b', 1 - 3]").simplifiesTo("['ab', -2]");
+    assertThat("['a' + 'b': 1 - 3]").simplifiesTo("['ab': -2]");
+    assertThat("[8, ['a' + 'b', 1 - 3]]").simplifiesTo("[8, ['ab', -2]]");
+    assertThat("['z': ['a' + 'b': 1 - 3]]").simplifiesTo("['z': ['ab': -2]]");
 
     // With functions.
     // Note: Currently, ListLiteralNode and MapLiteralNode are never considered to be constant,
     // even though in reality, they can be constant. So in the current implementation, this keys()
     // call cannot be simplified away.
-    assertEquals("keys(['ab': -2])", simplifyExpr("keys(['a' + 'b': 1 - 3])").toSourceString());
+    assertThat("keys(['a' + 'b': 1 - 3])").simplifiesTo("keys(['ab': -2])");
   }
 
 
-  public void testSimplifyBinaryLogicalOps() throws Exception {
-
+  public void testSimplifyBinaryLogicalOps() {
     // 'and'
-    assertEquals("true", simplifyExpr("true and true").toSourceString());
-    assertEquals("false", simplifyExpr("true and false").toSourceString());
-    assertEquals("false", simplifyExpr("false and true").toSourceString());
-    assertEquals("false", simplifyExpr("false and false").toSourceString());
-    assertEquals("$boo", simplifyExpr("true and $boo").toSourceString());
-    assertEquals("$boo and true", // Can't simplify
-        simplifyExpr("$boo and true").toSourceString());
-    assertEquals("1", simplifyExpr("true and 1").toSourceString());
-    assertEquals("true", simplifyExpr("1 and true").toSourceString());
-    assertEquals("false", simplifyExpr("false and 1").toSourceString());
-    assertEquals("false", simplifyExpr("1 and false").toSourceString());
-    assertEquals("false", simplifyExpr("false and $boo").toSourceString());
-    assertEquals("$boo and false", // Can't simplify
-        simplifyExpr("$boo and false").toSourceString());
+    assertThat("true and true").simplifiesTo("true");
+    assertThat("true and false").simplifiesTo("false");
+    assertThat("false and true").simplifiesTo("false");
+    assertThat("false and false").simplifiesTo("false");
+    assertThat("true and $boo").simplifiesTo("$boo");
+    assertThat("$boo and true").simplifiesTo("$boo and true"); // Can't simplify
+    assertThat("true and 1").simplifiesTo("1");
+    assertThat("1 and true").simplifiesTo("true");
+    assertThat("false and 1").simplifiesTo("false");
+    assertThat("1 and false").simplifiesTo("false");
+    assertThat("false and $boo").simplifiesTo("false");
+    assertThat("$boo and false").simplifiesTo("$boo and false"); // Can't simplify
 
     // 'or'
-    assertEquals("true", simplifyExpr("true or true").toSourceString());
-    assertEquals("true", simplifyExpr("true or false").toSourceString());
-    assertEquals("true", simplifyExpr("false or true").toSourceString());
-    assertEquals("false", simplifyExpr("false or false").toSourceString());
-    assertEquals("true", simplifyExpr("true or $boo").toSourceString());
-    assertEquals("$boo or true", // Can't simplify
-        simplifyExpr("$boo or true").toSourceString());
-    assertEquals("$boo", simplifyExpr("false or $boo").toSourceString());
-    assertEquals("$boo or false",
-        simplifyExpr("$boo or false").toSourceString());
-    assertEquals("1", simplifyExpr("false or 1").toSourceString());
-    assertEquals("1", simplifyExpr("1 or false").toSourceString());
-    assertEquals("true", simplifyExpr("true or 1").toSourceString());
-    assertEquals("1", simplifyExpr("1 or true").toSourceString());
+    assertThat("true or true").simplifiesTo("true");
+    assertThat("true or false").simplifiesTo("true");
+    assertThat("false or true").simplifiesTo("true");
+    assertThat("false or false").simplifiesTo("false");
+    assertThat("true or $boo").simplifiesTo("true");
+    assertThat("$boo or true").simplifiesTo("$boo or true"); // Can't simplify
+    assertThat("false or $boo").simplifiesTo("$boo");
+    assertThat("$boo or false").simplifiesTo("$boo or false");
+    assertThat("false or 1").simplifiesTo("1");
+    assertThat("1 or false").simplifiesTo("1");
+    assertThat("true or 1").simplifiesTo("true");
+    assertThat("1 or true").simplifiesTo("1");
   }
 
 
-  public void testSimplifyConditionalOp() throws Exception {
-
-    assertEquals("111", simplifyExpr("true ? 111 : 222").toSourceString());
-    assertEquals("222", simplifyExpr("false ? 111 : 222").toSourceString());
-    assertEquals("111", simplifyExpr("true ? 111 : $boo").toSourceString());
-    assertEquals("222", simplifyExpr("false ? $boo : 222").toSourceString());
-    assertEquals("$boo or true ? $boo and false : true", // Can't simplify
-        simplifyExpr("$boo or true ? $boo and false : true").toSourceString());
+  public void testSimplifyConditionalOp() {
+    assertThat("true ? 111 : 222").simplifiesTo("111");
+    assertThat("false ? 111 : 222").simplifiesTo("222");
+    assertThat("true ? 111 : $boo").simplifiesTo("111");
+    assertThat("false ? $boo : 222").simplifiesTo("222");
+    assertThat("$boo or true ? $boo and false : true")
+        .simplifiesTo("$boo or true ? $boo and false : true"); // Can't simplify
   }
 
 
@@ -146,14 +138,29 @@ public class SimplifyExprVisitorTest extends TestCase {
   private static final Injector INJECTOR =
       Guice.createInjector(new SharedPassesModule(), new BasicFunctionsModule());
 
+  private static final class SimplifySubject extends Subject<SimplifySubject, String> {
+    private SimplifySubject(FailureStrategy failureStrategy, String s) {
+      super(failureStrategy, s);
+    }
 
-  private static ExprNode simplifyExpr(String expression) throws Exception {
-    ExprRootNode exprRoot = new ExprRootNode(
-        new ExpressionParser(expression, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+    private void simplifiesTo(String expected) {
+      ExprRootNode exprRoot = new ExprRootNode(
+          new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
           .parseExpression());
-    SimplifyExprVisitor simplifyExprVisitor = INJECTOR.getInstance(SimplifyExprVisitor.class);
-    simplifyExprVisitor.exec(exprRoot);
-    return exprRoot;
+      INJECTOR.getInstance(SimplifyExprVisitor.class).exec(exprRoot);
+      Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
+    }
   }
 
+  private static final SubjectFactory<SimplifySubject, String> FACTORY =
+      new SubjectFactory<SimplifySubject, String>() {
+    @Override
+    public SimplifySubject getSubject(FailureStrategy failureStrategy, String s) {
+      return new SimplifySubject(failureStrategy, s);
+    }
+  };
+
+  private static SimplifySubject assertThat(String input) {
+    return Truth.assertAbout(FACTORY).that(input);
+  }
 }
