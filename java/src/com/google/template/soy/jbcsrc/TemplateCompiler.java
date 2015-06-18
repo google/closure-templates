@@ -33,6 +33,7 @@ import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.api.TemplateMetadata;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -41,6 +42,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -123,6 +125,7 @@ final class TemplateCompiler {
         null, // not a generic type
         "java/lang/Object", // superclass
         INTERFACES);
+    generateTemplateMetadata();
     // TODO(lukes): this associates a file name that will ultimately appear in exceptions as well
     // as be used by debuggers to 'attach source'.  We may want to consider placing our generated
     // classes in packages such that they are in the same classpath relative location as the source
@@ -150,6 +153,19 @@ final class TemplateCompiler {
     classes.addAll(innerClasses.getInnerClassData());
     writer = null;
     return classes;
+  }
+
+  /** Writes a {@link TemplateMetadata} to the generated class. */
+  private void generateTemplateMetadata() {
+    AnnotationVisitor annotationWriter = 
+        writer.visitAnnotation(
+            Type.getDescriptor(TemplateMetadata.class), 
+            true /* visible at runtime */);
+    String kind = template.node().getContentKind() == null 
+        ? ""
+        : template.node().getContentKind().name(); 
+    annotationWriter.visit("contentKind", kind);
+    annotationWriter.visitEnd();
   }
 
   private Statement generateRenderMethod() {

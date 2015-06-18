@@ -1,0 +1,19 @@
+// Copyright 2015 Google Inc. All Rights Reserved.
+
+{namespace strict_test autoescape="strict"}
+
+/** hello html */
+{template .helloHtml kind="html"}
+  {call .hello /}
+{/template}
+
+/** hello js */
+{template .helloJs kind="js"}
+  '{call .hello /}'
+{/template}
+
+/** hello */
+{template .hello}
+Hello world
+{/template}
+

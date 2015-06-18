@@ -45,6 +45,7 @@ import com.google.template.soy.jbcsrc.api.DelTemplateSelector;
 import com.google.template.soy.jbcsrc.api.DelTemplateSelectorImpl;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.api.TemplateMetadata;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -635,12 +636,28 @@ public class BytecodeCompilerTest extends TestCase {
         factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
     assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo", templateClass.getName());
     assertEquals("foo", templateClass.getSimpleName());
+    assertEquals("HTML", templateClass.getAnnotation(TemplateMetadata.class).contentKind());
 
     // ensure that the factory is an inner class of the template.
     assertEquals(templateClass, factory.getClass().getEnclosingClass());
     assertEquals(templateClass, factory.getClass().getDeclaringClass());
 
     assertThat(templateClass.getDeclaredClasses()).asList().contains(factory.getClass());
+  }
+
+  public void testContentKindNonStrict() {
+    assertThat(
+            TemplateTester.compileFile(
+                    "{namespace ns autoescape=\"deprecated-contextual\"}",
+                    "/** foo */",
+                    "{template .foo}",
+                    "{/template}")
+                .getTemplateFactory("ns.foo")
+                .getClass()
+                .getDeclaringClass()
+                .getAnnotation(TemplateMetadata.class)
+                .contentKind())
+        .isEmpty();
   }
 
   public void testRenderMsgStmt() throws Exception {

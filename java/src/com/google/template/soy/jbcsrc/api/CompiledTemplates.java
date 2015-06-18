@@ -18,7 +18,9 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 /**
  * The result of template compilation.
@@ -28,7 +30,17 @@ public final class CompiledTemplates {
 
   public CompiledTemplates(ImmutableMap<String, CompiledTemplate.Factory> templateFactories) {
     this.templateNameToFactory = templateFactories;
-  } 
+  }
+
+  /** Returns the strict content type of the template. */
+  public Optional<ContentKind> getTemplateContentKind(String name) {
+    TemplateMetadata meta = getTemplateMetadata(name);
+    String contentKind = meta.contentKind();
+    if (contentKind.isEmpty()) {
+      return Optional.absent();
+    }
+    return Optional.of(ContentKind.valueOf(contentKind));
+  }
 
   /**
    * Returns a factory for the given fully qualified template name.
@@ -41,4 +53,15 @@ public final class CompiledTemplates {
     }
     return factory;
   }
+  
+  private TemplateMetadata getTemplateMetadata(String name) {
+    // TODO(lukes): cache this in a map?
+    // Each template factory is an inner class of its corresponding template file and the annotation
+    // is always on the template
+    return getTemplateFactory(name)
+        .getClass()
+        .getDeclaringClass()
+        .getAnnotation(TemplateMetadata.class);
+  }
+
 }

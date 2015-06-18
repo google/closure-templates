@@ -16,21 +16,25 @@
 
 package com.google.template.soy.jbcsrc.api;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.MsgPartUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
-import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
@@ -85,16 +89,6 @@ public final class SoySauceImpl implements SoySauce {
     }
   }
   
-  private static final RenderContinuation DONE_CONTINUATION = new RenderContinuation() {
-    @Override public RenderResult result() {
-      return RenderResult.done();
-    }
-
-    @Override public RenderContinuation continueRender() {
-      throw new IllegalStateException("Rendering is already complete and cannot be continued");
-    }
-  };
-
   private final CompiledTemplates templates;
   private final SoyMsgBundle defaultMsgBundle;
   private final GuiceSimpleScope apiCallScope;
@@ -144,18 +138,18 @@ public final class SoySauceImpl implements SoySauce {
     return new SoyMsgBundleImpl("en", builder.build());
   }
 
-  @Override public ImmutableSet<String> getTransitiveIjParamsForTemplate(
-      SoyTemplateInfo templateInfo) {
-    return templateToTransitiveUsedIjParams.get(templateInfo.getName());
+  @Override public ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateName) {
+    return templateToTransitiveUsedIjParams.get(templateName);  
   }
 
-  @Override public RendererImpl renderTemplate(SoyTemplateInfo template) {
-    CompiledTemplate.Factory factory = templates.getTemplateFactory(template.getName());
-    return new RendererImpl(factory);
+  @Override public RendererImpl renderTemplate(String template) {
+    CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
+    return new RendererImpl(factory, templates.getTemplateContentKind(template));
   }
 
   private final class RendererImpl implements Renderer {
     private final CompiledTemplate.Factory templateFactory;
+    private final Optional<ContentKind> contentKind;
     private ImmutableSet<String> activeDelegatePackages = ImmutableSet.of();
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
     private final RenderContext.Builder contextBuilder = new RenderContext.Builder()
@@ -165,9 +159,12 @@ public final class SoySauceImpl implements SoySauce {
     private SoyRecord data = SoyValueHelper.EMPTY_DICT;
     // Unlike Tofu we default to empty, not null.
     private SoyRecord ij = SoyValueHelper.EMPTY_DICT;
+    private ContentKind expectedContentKind = ContentKind.HTML;
+    private boolean contentKindExplicitlySet;
 
-    RendererImpl(CompiledTemplate.Factory templateFactory) {
+    RendererImpl(CompiledTemplate.Factory templateFactory, Optional<ContentKind> contentKind) {
       this.templateFactory = checkNotNull(templateFactory);
+      this.contentKind = contentKind;
     }
 
     @Override public RendererImpl setIj(Map<String, ?> record) {
@@ -200,8 +197,47 @@ public final class SoySauceImpl implements SoySauce {
       this.msgs = checkNotNull(msgs);
       return this;
     }
+    
+    @Override public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
+      checkNotNull(contentKind);
+      this.contentKindExplicitlySet = true;
+      this.expectedContentKind = expectedContentKind;
+      return this;
+    }
 
-    @Override public RenderContinuation render(AdvisingAppendable out) throws IOException {
+    @Override public WriteContinuation render(AdvisingAppendable out) throws IOException {
+      if (contentKindExplicitlySet || contentKind.isPresent()) {
+        enforceContentKind();
+      }
+      return startRender(out);
+    }
+
+    @Override public Continuation<String> render() {
+      if (contentKindExplicitlySet || contentKind.isPresent()) {
+        enforceContentKind();
+      }
+      AdvisingStringBuilder buf = new AdvisingStringBuilder();
+      try {
+        return Continuations.stringContinuation(startRender(buf), buf);
+      } catch (IOException e) {
+        throw new AssertionError("impossible", e);
+      }
+    }
+
+    @Override public Continuation<SanitizedContent> renderStrict() {
+      if (!contentKind.isPresent()) {
+        throw new IllegalStateException("Cannot render non strict templates to SanitizedContent");
+      }
+      enforceContentKind();
+      AdvisingStringBuilder buf = new AdvisingStringBuilder();
+      try {
+        return Continuations.strictContinuation(startRender(buf), buf, expectedContentKind);
+      } catch (IOException e) {
+        throw new AssertionError("impossible", e);
+      }
+    }
+
+    private <T> WriteContinuation startRender(AdvisingAppendable out) throws IOException {
       RenderContext context = contextBuilder
           .withMessageBundles(msgs, defaultMsgBundle)
           .withTemplateSelector(factory.create(activeDelegatePackages))
@@ -211,9 +247,26 @@ public final class SoySauceImpl implements SoySauce {
       CompiledTemplate template = templateFactory.create(data, ij);
       return doRender(template, scoper, out, context);
     }
+
+    private void enforceContentKind() {
+      if (expectedContentKind == SanitizedContent.ContentKind.TEXT) {
+        // Allow any template to be called as text. This is consistent with the fact that
+        // kind="text" templates can call any other template.
+        return;
+      }
+      if (!contentKind.isPresent()) {
+        throw new IllegalStateException("Cannot render a non strict template as '" 
+            + NodeContentKinds.toAttributeValue(expectedContentKind) + "'");
+      }
+      if (expectedContentKind != contentKind.get()) {
+        throw new IllegalStateException("Expected template to be kind=\""
+            + NodeContentKinds.toAttributeValue(expectedContentKind)
+            + "\" but was kind=\"" + NodeContentKinds.toAttributeValue(contentKind.get()));
+      }
+    }
   }
 
-  private static RenderContinuation doRender(
+  private static WriteContinuation doRender(
       CompiledTemplate template, Scoper scoper, AdvisingAppendable out, RenderContext context) 
           throws IOException {
     RenderResult result;
@@ -221,12 +274,12 @@ public final class SoySauceImpl implements SoySauce {
       result = template.render(out, context);
     }
     if (result.isDone()) {
-      return DONE_CONTINUATION;
+      return Continuations.done();
     }
-    return new Continuation(result, scoper, context, out, template);
+    return new WriteContinuationImpl(result, scoper, context, out, template);
   }
 
-  private static final class Continuation implements RenderContinuation {
+  private static final class WriteContinuationImpl implements WriteContinuation {
     final RenderResult result;
     final Scoper scoper;
     final RenderContext context;
@@ -234,8 +287,9 @@ public final class SoySauceImpl implements SoySauce {
     final CompiledTemplate template;
     boolean hasContinueBeenCalled;
 
-    Continuation(RenderResult result, Scoper scoper, RenderContext context, AdvisingAppendable out,
-        CompiledTemplate template) {
+    WriteContinuationImpl(RenderResult result, Scoper scoper, RenderContext context, 
+        AdvisingAppendable out, CompiledTemplate template) {
+      checkArgument(!result.isDone());
       this.result = checkNotNull(result);
       this.scoper = checkNotNull(scoper);
       this.context = checkNotNull(context);
@@ -247,7 +301,7 @@ public final class SoySauceImpl implements SoySauce {
       return result;
     }
 
-    @Override public RenderContinuation continueRender() throws IOException {
+    @Override public WriteContinuation continueRender() throws IOException {
       if (hasContinueBeenCalled) {
         throw new IllegalStateException("continueRender() has already been called.");
       }
@@ -268,6 +322,8 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     WithScope enter() {
+      // TODO(lukes): this isn't right, re-entering the scope shouldn't retrigger injection of
+      // items, we need an explicit detach api.
       WithScope withScope = scope.enter();
       ApiCallScopeUtils.seedSharedParams(scope, dir, localeString);
       return withScope;
