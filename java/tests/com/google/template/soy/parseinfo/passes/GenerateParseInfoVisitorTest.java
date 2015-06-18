@@ -23,6 +23,7 @@ import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.
 
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 
 import junit.framework.TestCase;
@@ -92,6 +93,13 @@ public final class GenerateParseInfoVisitorTest extends TestCase {
   }
 
   private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
-    return new SoyFileNode(0, filePath, SoyFileKind.SRC, null, namespace, null);
+    return new SoyFileNode(
+        0,
+        filePath,
+        SoyFileKind.SRC,
+        ExplodingErrorReporter.get(),
+        null /* delpackageCmdText */,
+        namespace,
+        null /* aliasCmdTexts */);
   }
 }

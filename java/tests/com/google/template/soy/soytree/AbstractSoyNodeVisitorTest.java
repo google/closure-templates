@@ -38,7 +38,14 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = new SoyFileSetNode(0, null);
 
-    SoyFileNode soyFile = new SoyFileNode(0, "", SoyFileKind.SRC, null, "boo", null);
+    SoyFileNode soyFile = new SoyFileNode(
+        0,
+        "",
+        SoyFileKind.SRC,
+        FAIL,
+        null /* delpackageCmdText */,
+        "boo" /* namespaceCmdText */,
+        null /* aliasCmdTexts */);
     soyTree.addChild(soyFile);
 
     SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");
