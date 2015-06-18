@@ -72,7 +72,6 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
-import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.SanitizedType;
 
 import org.objectweb.asm.Label;
@@ -683,7 +682,7 @@ final class ExpressionCompiler {
           MethodRef.RENDER_CONTEXT_GET_FUNCTION
               .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
       Expression list = SoyExpression.asBoxedList(visitChildren(node));
-      return SoyExpression.forSoyValue(AnyType.getInstance(),
+      return SoyExpression.forSoyValue(node.getType(),
           MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
     }
 

@@ -332,6 +332,16 @@ public class BytecodeCompilerTest extends TestCase {
             "last!"));
   }
 
+  public void testForEachNode_mapKeys() {
+    assertThatTemplateBody(
+        "{@param map : map<string, int>}",
+        "{foreach $key in keys($map)}",
+        "  {$key} - {$map[$key]}{if not isLast($key)}{\\n}{/if}",
+        "{/foreach}")
+        .rendersAs("a - 1\nb - 2",
+            ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
+  }
+
   public void testSwitchNode() {
     assertThatTemplateBody(
         "{switch 1}", 
