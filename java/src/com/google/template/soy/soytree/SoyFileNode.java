@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.AutoescapeMode.parseAutoEscapeMode;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -149,7 +151,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
           Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
               attributeText, ExplodingErrorReporter.get(), getSourceLocation());
           if (attributes.containsKey("autoescape")) {
-            defaultAutoescapeMode = AutoescapeMode.forAttributeValue(attributes.get("autoescape"));
+            defaultAutoescapeMode =
+                parseAutoEscapeMode(attributes.get("autoescape"),
+                    getSourceLocation(),
+                    ExplodingErrorReporter.get());
           }
           if (attributes.containsKey("requirecss")) {
             requiredCssNamespaces =

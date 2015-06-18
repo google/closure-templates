@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.AutoescapeMode.parseAutoEscapeMode;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -322,7 +324,7 @@ public abstract class TemplateNodeBuilder {
     AutoescapeMode autoescapeMode;
     String autoescapeModeStr = attributes.get("autoescape");
     if (autoescapeModeStr != null) {
-      autoescapeMode = AutoescapeMode.forAttributeValue(autoescapeModeStr);
+      autoescapeMode = parseAutoEscapeMode(autoescapeModeStr, sourceLocation, errorReporter);
     } else {
       autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
     }

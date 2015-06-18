@@ -17,6 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 
 import java.util.Set;
 
@@ -43,6 +46,8 @@ public enum AutoescapeMode {
   STRICT("strict"),
   ;
 
+  private static final SoyError INVALID_AUTOESCAPE_ERROR =
+      SoyError.of("invalid ''autoescape'' value ''{0}'', expected one of {1}");
   private static final ImmutableMap<String, AutoescapeMode> valueToModeMap;
 
   static {
@@ -84,9 +89,17 @@ public enum AutoescapeMode {
 
 
   /**
-   * The value such that attributeValue.equals(value.getAttributeValue()).
+   * Returns the parsed value.
    */
-  public static AutoescapeMode forAttributeValue(String attributeValue) {
-    return valueToModeMap.get(attributeValue);
+  public static AutoescapeMode parseAutoEscapeMode(String autoescapeModeStr, SourceLocation loc,
+      ErrorReporter reporter) {
+    AutoescapeMode parsed = valueToModeMap.get(autoescapeModeStr);
+    if (parsed == null) {
+      // failed to parse!
+      reporter.report(loc, INVALID_AUTOESCAPE_ERROR, autoescapeModeStr,  valueToModeMap.keySet());
+      return AutoescapeMode.NOAUTOESCAPE;  // default for unparsed
+    } else {
+      return parsed;
+    }
   }
 }

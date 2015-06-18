@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableList;
@@ -285,9 +286,9 @@ public class TemplateNodeTest extends TestCase {
           .build();
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
+      assertThat(sse.getMessage()).contains(
           "Invalid 'template' command missing template name: "
-          + "{template autoescape=\"deprecated-noncontextual\"}."));
+          + "{template autoescape=\"deprecated-noncontextual\"}.");
     }
 
     try {
@@ -297,17 +298,27 @@ public class TemplateNodeTest extends TestCase {
           .build();
       fail();
     } catch (SoySyntaxException sse) {
-      assertTrue(sse.getMessage().contains(
-          "Invalid 'template' command with template name declared multiple times (.foo, x.foo)."));
+      assertThat(sse.getMessage()).contains(
+          "Invalid 'template' command with template name declared multiple times (.foo, x.foo).");
     }
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText("autoescape=\"true").setSoyDoc("/***/").build();
+          .setId(0).setCmdText("autoescape=\"strict").setSoyDoc("/***/").build();
       fail();
     } catch (IllegalStateException e) {
-      assertTrue(e.getMessage().contains(
-          "Malformed attributes in 'template' command text (autoescape=\"true)."));
+      assertThat(e.getMessage()).contains(
+          "Malformed attributes in 'template' command text (autoescape=\"strict).");
+    }
+    try {
+      templateBasicNode()
+          .setId(0).setCmdText(".foo autoescape=\"false\"").setSoyDoc("/***/").build();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e.getMessage()).contains(
+          "Invalid value for attribute 'autoescape' in 'template' command text "
+          + "(autoescape=\"false\"). Valid values are "
+          + "[deprecated-noautoescape, deprecated-noncontextual, deprecated-contextual, strict].");
     }
   }
 
