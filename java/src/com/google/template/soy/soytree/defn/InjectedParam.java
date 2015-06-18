@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
 
 /**
@@ -28,7 +29,11 @@ public final class InjectedParam extends AbstractVarDefn {
    * @param name The variable name.
    */
   public InjectedParam(String name) {
-    super(name, UnknownType.getInstance());
+    this(name, UnknownType.getInstance());
+  }
+
+  public InjectedParam(String name, SoyType type) {
+    super(name, type);
   }
 
   @Override public Kind kind() {
@@ -37,5 +42,9 @@ public final class InjectedParam extends AbstractVarDefn {
 
   @Override public int localVariableIndex() {
     return -1;
+  }
+
+  @Override public void setLocalVariableIndex(int i) {
+    throw new UnsupportedOperationException();
   }
 }

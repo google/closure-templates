@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.parsepasses.contextautoesc.Context.State;
 import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode.RawTextSlice;
@@ -34,6 +33,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.types.primitive.StringType;
 
 import java.util.Collections;
@@ -97,6 +97,14 @@ public final class ContentSecurityPolicyPass {
   /** The closing double quote that appears after an attribute value. */
   private static final String ATTR_AFTER_VALUE = "\"";
 
+  /**
+   * A variable definition for {@code $ij.csp_nonce}.
+   * Since this pass implicitly blesses scripts that appear in the template text, authors should not
+   * explicitly mention {@code $id.csp_nonce} in their template signatures, so we do not look for a
+   * declared variable definition.
+   */
+  private static final InjectedParam IMPLICIT_CSP_NONCE_DEFN =
+      new InjectedParam(CSP_NONCE_VARIABLE_NAME, StringType.getInstance());
 
 
   // ---------------------------------------------------------------------------------------------
@@ -563,7 +571,7 @@ public final class ContentSecurityPolicyPass {
         SourceLocation.UNKNOWN,
         true /*injected*/,
         true /* nullSafeInjected */,
-        ImplicitCspNonceDefn.SINGLETON);
+        IMPLICIT_CSP_NONCE_DEFN);
   }
 
 
@@ -578,48 +586,4 @@ public final class ContentSecurityPolicyPass {
         .exprUnion(new ExprUnion(makeReferenceToInjectedCspNonce()))
         .build(ExplodingErrorReporter.get());
   }
-
-
-  /**
-   * A variable definition for {@code $ij.csp_nonce}.
-   * Since this pass implicitly blesses scripts that appear in the template text, authors should not
-   * explicitly mention {@code $id.csp_nonce} in their template signatures, so we do not look for a
-   * declared variable definition.
-   */
-  private static final class ImplicitCspNonceDefn implements VarDefn {
-
-    private ImplicitCspNonceDefn() {
-      // Singleton.
-    }
-
-    public static final ImplicitCspNonceDefn SINGLETON = new ImplicitCspNonceDefn();
-
-    public Kind kind() {
-      return Kind.IJ_PARAM;
-    }
-
-    public String name() {
-      return CSP_NONCE_VARIABLE_NAME;
-    }
-
-    /**
-     * A CSP nonce is an unguessable web-safe opaque identifier.
-     * "String" is the type that best describes the value thus far since the type system does not
-     * distinguish between human readable strings, strings in various structured languages, and
-     * opaque identifiers.
-     */
-    @Override public StringType type() {
-      return StringType.getInstance();
-    }
-
-    @Override public int localVariableIndex() {
-      // ij params don't have indices
-      return -1;
-    }
-
-    @Override public void setLocalVariableIndex(int i) {
-      throw new UnsupportedOperationException();
-    }
-  }
-
 }
