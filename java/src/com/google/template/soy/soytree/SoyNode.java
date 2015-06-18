@@ -43,7 +43,7 @@ public interface SoyNode extends Node {
    * Enum of specific node kinds (corresponding to specific node types).
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public static enum Kind {
+  enum Kind {
 
     SOY_FILE_SET_NODE,
     SOY_FILE_NODE,
@@ -104,7 +104,7 @@ public interface SoyNode extends Node {
   /**
    * Returns this node's kind (corresponding to this node's specific type).
    */
-  public Kind getKind();
+  Kind getKind();
 
 
   /**
@@ -113,16 +113,16 @@ public interface SoyNode extends Node {
    * used during cloning.
    * @param id The new id for this node.
    */
-  public void setId(int id);
+  void setId(int id);
 
 
   /**
    * Returns this node's id.
    */
-  public int getId();
+  int getId();
 
 
-  @Override public ParentSoyNode<?> getParent();
+  @Override ParentSoyNode<?> getParent();
 
 
   /**
@@ -130,7 +130,7 @@ public interface SoyNode extends Node {
    * <p> The copied nodes will have the same ids as the original nodes. If you need to copy a
    * subtree with new ids assigned to the copied nodes, use {@link SoytreeUtils#cloneWithNewIds}.
    */
-  @Override public SoyNode copy(CopyState copyState);
+  @Override SoyNode copy(CopyState copyState);
 
 
   // -----------------------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ public interface SoyNode extends Node {
   /**
    * A node in a Soy parse tree that may be a parent.
    */
-  public static interface ParentSoyNode<N extends SoyNode> extends SoyNode, ParentNode<N> {}
+  interface ParentSoyNode<N extends SoyNode> extends SoyNode, ParentNode<N> {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ public interface SoyNode extends Node {
    * may be freely moved (either moved within the node's subtree or moved outside of the node's
    * subtree).
    */
-  public static interface SplitLevelTopNode<N extends SoyNode> extends ParentSoyNode<N> {}
+  interface SplitLevelTopNode<N extends SoyNode> extends ParentSoyNode<N> {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -168,9 +168,9 @@ public interface SoyNode extends Node {
    * to be legal as the direct child of a template). To put it another way, a node that can legally
    * appear as the sibling of a RawTextNode or PrintNode.
    */
-  public static interface StandaloneNode extends SoyNode {
+  interface StandaloneNode extends SoyNode {
 
-    @Override public BlockNode getParent();
+    @Override BlockNode getParent();
   }
 
 
@@ -180,7 +180,7 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a template block.
    */
-  public static interface BlockNode extends ParentSoyNode<StandaloneNode> {}
+  interface BlockNode extends ParentSoyNode<StandaloneNode> {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -189,24 +189,24 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a specific Soy command.
    */
-  public static interface CommandNode extends SoyNode {
+  interface CommandNode extends SoyNode {
 
     /**
      * Returns the Soy command name.
      */
-    public String getCommandName();
+    String getCommandName();
 
     /**
      * Returns the command text (may be the empty string).
      */
-    public String getCommandText();
+    String getCommandText();
 
     /**
      * Builds a Soy tag string that could be the Soy tag for this node. Note that this may not
      * necessarily be the actual original Soy tag, but a (sort of) canonical equivalent.
      * @return A Soy tag string that could be the Soy tag for this node.
      */
-    public String getTagString();
+    String getTagString();
   }
 
 
@@ -216,7 +216,7 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a Soy command that encloses a template block.
    */
-  public static interface BlockCommandNode extends CommandNode, BlockNode {}
+  interface BlockCommandNode extends CommandNode, BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -225,12 +225,12 @@ public interface SoyNode extends Node {
   /**
    * A node that represents an independent unit of rendering.
    */
-  public static interface RenderUnitNode extends BlockCommandNode {
+  interface RenderUnitNode extends BlockCommandNode {
 
     /**
      * Returns the content kind for strict autoescape, or null if not specified or not applicable.
      */
-    @Nullable public ContentKind getContentKind();
+    @Nullable ContentKind getContentKind();
   }
 
 
@@ -240,7 +240,7 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a specific Soy statement.
    */
-  public static interface StatementNode extends StandaloneNode {}
+  interface StatementNode extends StandaloneNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ public interface SoyNode extends Node {
    * <p> Includes nodes such as IfCondNode, IfElseNode, SwitchCaseNode, SwitchDefaultNode,
    * ForeachNonemptyNode, ForeachIfemptyNode, ForNode etc.
    */
-  public static interface ConditionalBlockNode extends BlockNode {}
+  interface ConditionalBlockNode extends BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -266,7 +266,7 @@ public interface SoyNode extends Node {
    *
    * <p> Includes nodes such as ForeachNonemptyNode and ForNode.
    */
-  public static interface LoopNode extends BlockNode {}
+  interface LoopNode extends BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -276,7 +276,7 @@ public interface SoyNode extends Node {
    * A node that adds a new local variable. The scope of the new local variable comprises either
    * the children of this node or the younger siblings of this node.
    */
-  public static interface LocalVarNode extends SoyNode {
+  interface LocalVarNode extends SoyNode {
 
     /**
      * Returns the name of this node's local variable (without the preceding '$').
@@ -294,7 +294,7 @@ public interface SoyNode extends Node {
   /**
    * A node that adds a new local variable whose scope comprises the children of this code.
    */
-  public static interface LocalVarBlockNode extends LocalVarNode, BlockNode {}
+  interface LocalVarBlockNode extends LocalVarNode, BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -303,7 +303,7 @@ public interface SoyNode extends Node {
   /**
    * A node that adds a new local variable whose scope comprises the younger siblings of this node.
    */
-  public static interface LocalVarInlineNode extends LocalVarNode, StandaloneNode {}
+  interface LocalVarInlineNode extends LocalVarNode, StandaloneNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -312,12 +312,12 @@ public interface SoyNode extends Node {
   /**
    * A node that holds some expressions in its fields/properties.
    */
-  public static interface ExprHolderNode extends SoyNode {
+  interface ExprHolderNode extends SoyNode {
 
     /**
      * Returns the list of expressions in this node.
      */
-    public List<ExprUnion> getAllExprUnions();
+    List<ExprUnion> getAllExprUnions();
   }
 
 
@@ -329,9 +329,9 @@ public interface SoyNode extends Node {
    * message is rendered. Currently, one of MsgPlaceholderNode, MsgSelectNode, MsgPluralNode, or
    * MsgPluralRemainderNode.
    */
-  public static interface MsgSubstUnitNode extends StandaloneNode {
+  interface MsgSubstUnitNode extends StandaloneNode {
 
-    @Override public MsgBlockNode getParent();
+    @Override MsgBlockNode getParent();
 
     /**
      * Returns the base var name for this substitution unit. (For a placeholder, this is the base
@@ -341,7 +341,7 @@ public interface SoyNode extends Node {
      * substitution unit in the future could have multiple vars. But until that happens, this
      * simpler model is sufficient.
      */
-    public String getBaseVarName();
+    String getBaseVarName();
 
     /**
      * Returns whether this substitution unit should use the same var name as another substitution
@@ -349,7 +349,7 @@ public interface SoyNode extends Node {
      * i.e. it appears twice in the same message.)
      * @param other The other substitution unit to check against.
      */
-    public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other);
+    boolean shouldUseSameVarNameAs(MsgSubstUnitNode other);
   }
 
 
@@ -360,7 +360,7 @@ public interface SoyNode extends Node {
    * A block node that can hold message content. Every direct child of a MsgBlockNode must be either
    * a RawTextNode or a MsgSubstUnitNode.
    */
-  public static interface MsgBlockNode extends BlockNode {}
+  interface MsgBlockNode extends BlockNode {}
 
 
   // -----------------------------------------------------------------------------------------------
@@ -369,20 +369,20 @@ public interface SoyNode extends Node {
   /**
    * A node that can be the initial content (i.e. initial child) of a MsgPlaceholderNode.
    */
-  public static interface MsgPlaceholderInitialNode extends StandaloneNode {
+  interface MsgPlaceholderInitialNode extends StandaloneNode {
 
     /**
      * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
      * this raw name can be any identifier (not necessarily in upper-underscore format).
      * @return The user-supplied placeholder name, or null if not supplied or not applicable.
      */
-    public String getUserSuppliedPhName();
+    String getUserSuppliedPhName();
 
     /**
      * Generates the base placeholder name for this node.
      * @return The base placeholder name for this node.
      */
-    public String genBasePhName();
+    String genBasePhName();
 
     /**
      * Generates the key object used in comparisons to determine whether two placeholder nodes
@@ -390,7 +390,7 @@ public interface SoyNode extends Node {
      * @return The key object for determining whether this node and another node should be
      *     represented by the same placeholder.
      */
-    public Object genSamenessKey();
+    Object genSamenessKey();
   }
 
 }
