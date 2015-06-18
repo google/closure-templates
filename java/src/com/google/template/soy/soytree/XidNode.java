@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
@@ -64,8 +65,8 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private XidNode(XidNode orig) {
-    super(orig);
+  private XidNode(XidNode orig, CopyState copyState) {
+    super(orig, copyState);
     text = orig.text;
   }
 
@@ -107,8 +108,8 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
   }
 
 
-  @Override public XidNode clone() {
-    return new XidNode(this);
+  @Override public XidNode copy(CopyState copyState) {
+    return new XidNode(this, copyState);
   }
 
   /**

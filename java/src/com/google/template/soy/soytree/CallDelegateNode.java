@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -286,11 +287,11 @@ public final class CallDelegateNode extends CallNode {
    * @param orig The node to copy.
    */
   @SuppressWarnings("ConstantConditions")  // for IntelliJ
-  private CallDelegateNode(CallDelegateNode orig) {
-    super(orig);
+  private CallDelegateNode(CallDelegateNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
     this.delCalleeVariantExpr =
-        (orig.delCalleeVariantExpr != null) ? orig.delCalleeVariantExpr.clone() : null;
+        (orig.delCalleeVariantExpr != null) ? orig.delCalleeVariantExpr.copy(copyState) : null;
     this.allowsEmptyDefault = orig.allowsEmptyDefault;
     this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
   }
@@ -357,8 +358,8 @@ public final class CallDelegateNode extends CallNode {
   }
 
 
-  @Override public CallDelegateNode clone() {
-    return new CallDelegateNode(this);
+  @Override public CallDelegateNode copy(CopyState copyState) {
+    return new CallDelegateNode(this, copyState);
   }
 
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -56,9 +57,9 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private ForeachNode(ForeachNode orig) {
-    super(orig);
-    this.expr = orig.expr.clone();
+  private ForeachNode(ForeachNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.expr = orig.expr.copy(copyState);
   }
 
 
@@ -89,8 +90,8 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
   }
 
 
-  @Override public ForeachNode clone() {
-    return new ForeachNode(this);
+  @Override public ForeachNode copy(CopyState copyState) {
+    return new ForeachNode(this, copyState);
   }
 
 }

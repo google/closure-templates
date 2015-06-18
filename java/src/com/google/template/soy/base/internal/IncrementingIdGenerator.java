@@ -16,7 +16,6 @@
 
 package com.google.template.soy.base.internal;
 
-
 /**
  * A generator of incrementing unique integer ids, starting from 0.
  *
@@ -40,7 +39,7 @@ public final class IncrementingIdGenerator implements IdGenerator {
     return currId++;
   }
 
-  @Override public IncrementingIdGenerator clone() {
+  @Override public IncrementingIdGenerator copy() {
     return new IncrementingIdGenerator(this);
   }
 }

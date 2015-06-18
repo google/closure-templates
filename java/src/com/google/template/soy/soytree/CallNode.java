@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
@@ -136,11 +137,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
     @Nullable public abstract ExprRootNode dataExpr();
 
-    DataAttribute copy() {
+    DataAttribute copy(CopyState copyState) {
       if (dataExpr() == null) {
         return this;
       }
-      return new AutoValue_CallNode_DataAttribute(true, dataExpr().clone());
+      return new AutoValue_CallNode_DataAttribute(true, dataExpr().copy(copyState));
     }
   }
 
@@ -171,10 +172,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  @SuppressWarnings("ConstantConditions")  // for IntelliJ
-  protected CallNode(CallNode orig) {
-    super(orig);
-    this.dataAttr = orig.dataAttr.copy();
+  protected CallNode(CallNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.dataAttr = orig.dataAttr.copy(copyState);
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }

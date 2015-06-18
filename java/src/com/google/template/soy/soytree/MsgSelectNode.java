@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -98,9 +99,9 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgSelectNode(MsgSelectNode orig) {
-    super(orig);
-    this.selectExpr = orig.selectExpr.clone();
+  private MsgSelectNode(MsgSelectNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.selectExpr = orig.selectExpr.copy(copyState);
     this.baseSelectVarName = orig.baseSelectVarName;
   }
 
@@ -138,8 +139,8 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   }
 
 
-  @Override public MsgSelectNode clone() {
-    return new MsgSelectNode(this);
+  @Override public MsgSelectNode copy(CopyState copyState) {
+    return new MsgSelectNode(this, copyState);
   }
 
   /**

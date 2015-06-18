@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 
@@ -58,8 +59,8 @@ public final class ItemAccessNode extends DataAccessNode {
     addChild(key); // Key is child 1, Base is child 0.
   }
 
-  private ItemAccessNode(ItemAccessNode orig) {
-    super(orig);
+  private ItemAccessNode(ItemAccessNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.isDotSyntax = orig.isDotSyntax;
   }
 
@@ -87,8 +88,8 @@ public final class ItemAccessNode extends DataAccessNode {
   }
 
 
-  @Override public ItemAccessNode clone() {
-    return new ItemAccessNode(this);
+  @Override public ItemAccessNode copy(CopyState copyState) {
+    return new ItemAccessNode(this, copyState);
   }
 
 

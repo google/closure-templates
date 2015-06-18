@@ -18,7 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-
+import com.google.template.soy.basetree.CopyState;
 
 /**
  * Abstract node representing a 'case' or 'default' block in 'select', 'switch' or 'plural'
@@ -47,8 +47,8 @@ public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected CaseOrDefaultNode(CaseOrDefaultNode orig) {
-    super(orig);
+  protected CaseOrDefaultNode(CaseOrDefaultNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 

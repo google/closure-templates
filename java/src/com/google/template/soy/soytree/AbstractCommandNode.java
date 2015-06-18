@@ -19,8 +19,8 @@ package com.google.template.soy.soytree;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.CommandNode;
-
 
 /**
  * Abstract implementation of a CommandNode.
@@ -54,8 +54,8 @@ abstract class AbstractCommandNode extends AbstractSoyNode implements CommandNod
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected AbstractCommandNode(AbstractCommandNode orig) {
-    super(orig);
+  protected AbstractCommandNode(AbstractCommandNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.commandName = orig.commandName;
     this.commandText = orig.commandText;
   }

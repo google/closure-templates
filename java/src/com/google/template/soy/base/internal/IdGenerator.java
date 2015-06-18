@@ -16,7 +16,6 @@
 
 package com.google.template.soy.base.internal;
 
-
 /**
  * A generator of int ids. Implementations can generate fixed ids, unique ids, or anything else.
  *
@@ -36,6 +35,6 @@ public interface IdGenerator {
    * of ids going forward.
    * @return A clone of this id generator.
    */
-  public IdGenerator clone();
+  public IdGenerator copy();
 
 }

@@ -17,9 +17,9 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 
 import java.util.List;
-
 
 /**
  * A node representing a map literal (with keys and values as alternating children).
@@ -42,8 +42,8 @@ public final class MapLiteralNode extends AbstractParentExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MapLiteralNode(MapLiteralNode orig) {
-    super(orig);
+  private MapLiteralNode(MapLiteralNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -74,8 +74,8 @@ public final class MapLiteralNode extends AbstractParentExprNode {
   }
 
 
-  @Override public MapLiteralNode clone() {
-    return new MapLiteralNode(this);
+  @Override public MapLiteralNode copy(CopyState copyState) {
+    return new MapLiteralNode(this, copyState);
   }
 
 }

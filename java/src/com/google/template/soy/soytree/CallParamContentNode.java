@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -74,9 +75,9 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private CallParamContentNode(CallParamContentNode orig) {
-    super(orig);
-    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
+  private CallParamContentNode(CallParamContentNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.key = orig.key;
     this.contentKind = orig.contentKind;
   }
@@ -176,8 +177,8 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     return parentMixin.toTreeString(indent);
   }
 
-  @Override public CallParamContentNode clone() {
-    return new CallParamContentNode(this);
+  @Override public CallParamContentNode copy(CopyState copyState) {
+    return new CallParamContentNode(this, copyState);
   }
 
   public static final class Builder extends CallParamNode.Builder {

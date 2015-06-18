@@ -17,10 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 
 /**
  * Node representing an 'if' statement.
@@ -44,8 +44,8 @@ public final class IfNode extends AbstractParentSoyNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private IfNode(IfNode orig) {
-    super(orig);
+  private IfNode(IfNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -68,8 +68,8 @@ public final class IfNode extends AbstractParentSoyNode<SoyNode>
   }
 
 
-  @Override public IfNode clone() {
-    return new IfNode(this);
+  @Override public IfNode copy(CopyState copyState) {
+    return new IfNode(this, copyState);
   }
 
 }

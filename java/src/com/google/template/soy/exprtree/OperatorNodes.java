@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 
 /**
  * Container of nodes representing operators.
@@ -39,11 +40,13 @@ public class OperatorNodes {
       super(Operator.NEGATIVE, sourceLocation);
     }
 
-    private NegativeOpNode(NegativeOpNode orig) { super(orig); }
+    private NegativeOpNode(NegativeOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.NEGATIVE_OP_NODE; }
 
-    @Override public NegativeOpNode clone() { return new NegativeOpNode(this); }
+    @Override public NegativeOpNode copy(CopyState copyState) {
+      return new NegativeOpNode(this, copyState);
+    }
   }
 
 
@@ -56,11 +59,11 @@ public class OperatorNodes {
       super(Operator.NOT, sourceLocation);
     }
 
-    private NotOpNode(NotOpNode orig) { super(orig); }
+    private NotOpNode(NotOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.NOT_OP_NODE; }
 
-    @Override public NotOpNode clone() { return new NotOpNode(this); }
+    @Override public NotOpNode copy(CopyState copyState) { return new NotOpNode(this, copyState); }
   }
 
 
@@ -73,11 +76,13 @@ public class OperatorNodes {
       super(Operator.TIMES, sourceLocation);
     }
 
-    private TimesOpNode(TimesOpNode orig) { super(orig); }
+    private TimesOpNode(TimesOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.TIMES_OP_NODE; }
 
-    @Override public TimesOpNode clone() { return new TimesOpNode(this); }
+    @Override public TimesOpNode copy(CopyState copyState) {
+      return new TimesOpNode(this, copyState);
+    }
   }
 
 
@@ -90,11 +95,13 @@ public class OperatorNodes {
       super(Operator.DIVIDE_BY, sourceLocation);
     }
 
-    private DivideByOpNode(DivideByOpNode orig) { super(orig); }
+    private DivideByOpNode(DivideByOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.DIVIDE_BY_OP_NODE; }
 
-    @Override public DivideByOpNode clone() { return new DivideByOpNode(this); }
+    @Override public DivideByOpNode copy(CopyState copyState) {
+      return new DivideByOpNode(this, copyState);
+    }
   }
 
 
@@ -107,11 +114,11 @@ public class OperatorNodes {
       super(Operator.MOD, sourceLocation);
     }
 
-    private ModOpNode(ModOpNode orig) { super(orig); }
+    private ModOpNode(ModOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.MOD_OP_NODE; }
 
-    @Override public ModOpNode clone() { return new ModOpNode(this); }
+    @Override public ModOpNode copy(CopyState copyState) { return new ModOpNode(this, copyState); }
   }
 
 
@@ -124,11 +131,13 @@ public class OperatorNodes {
       super(Operator.PLUS, sourceLocation);
     }
 
-    private PlusOpNode(PlusOpNode orig) { super(orig); }
+    private PlusOpNode(PlusOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.PLUS_OP_NODE; }
 
-    @Override public PlusOpNode clone() { return new PlusOpNode(this); }
+    @Override public PlusOpNode copy(CopyState copyState) {
+      return new PlusOpNode(this, copyState);
+    }
   }
 
 
@@ -141,11 +150,13 @@ public class OperatorNodes {
       super(Operator.MINUS, sourceLocation);
     }
 
-    private MinusOpNode(MinusOpNode orig) { super(orig); }
+    private MinusOpNode(MinusOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.MINUS_OP_NODE; }
 
-    @Override public MinusOpNode clone() { return new MinusOpNode(this); }
+    @Override public MinusOpNode copy(CopyState copyState) {
+      return new MinusOpNode(this, copyState);
+    }
   }
 
 
@@ -158,11 +169,13 @@ public class OperatorNodes {
       super(Operator.LESS_THAN, sourceLocation);
     }
 
-    private LessThanOpNode(LessThanOpNode orig) { super(orig); }
+    private LessThanOpNode(LessThanOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.LESS_THAN_OP_NODE; }
 
-    @Override public LessThanOpNode clone() { return new LessThanOpNode(this); }
+    @Override public LessThanOpNode copy(CopyState copyState) {
+      return new LessThanOpNode(this, copyState);
+    }
   }
 
 
@@ -175,11 +188,15 @@ public class OperatorNodes {
       super(Operator.GREATER_THAN, sourceLocation);
     }
 
-    private GreaterThanOpNode(GreaterThanOpNode orig) { super(orig); }
+    private GreaterThanOpNode(GreaterThanOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
 
     @Override public Kind getKind() { return Kind.GREATER_THAN_OP_NODE; }
 
-    @Override public GreaterThanOpNode clone() { return new GreaterThanOpNode(this); }
+    @Override public GreaterThanOpNode copy(CopyState copyState) {
+      return new GreaterThanOpNode(this, copyState);
+    }
   }
 
 
@@ -192,11 +209,15 @@ public class OperatorNodes {
       super(Operator.LESS_THAN_OR_EQUAL, sourceLocation);
     }
 
-    private LessThanOrEqualOpNode(LessThanOrEqualOpNode orig) { super(orig); }
+    private LessThanOrEqualOpNode(LessThanOrEqualOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
 
     @Override public Kind getKind() { return Kind.LESS_THAN_OR_EQUAL_OP_NODE; }
 
-    @Override public LessThanOrEqualOpNode clone() { return new LessThanOrEqualOpNode(this); }
+    @Override public LessThanOrEqualOpNode copy(CopyState copyState) {
+      return new LessThanOrEqualOpNode(this, copyState);
+    }
   }
 
 
@@ -209,11 +230,15 @@ public class OperatorNodes {
       super(Operator.GREATER_THAN_OR_EQUAL, sourceLocation);
     }
 
-    private GreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode orig) { super(orig); }
+    private GreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
 
     @Override public Kind getKind() { return Kind.GREATER_THAN_OR_EQUAL_OP_NODE; }
 
-    @Override public GreaterThanOrEqualOpNode clone() { return new GreaterThanOrEqualOpNode(this); }
+    @Override public GreaterThanOrEqualOpNode copy(CopyState copyState) {
+      return new GreaterThanOrEqualOpNode(this, copyState);
+    }
   }
 
 
@@ -226,11 +251,13 @@ public class OperatorNodes {
       super(Operator.EQUAL, sourceLocation);
     }
 
-    private EqualOpNode(EqualOpNode orig) { super(orig); }
+    private EqualOpNode(EqualOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.EQUAL_OP_NODE; }
 
-    @Override public EqualOpNode clone() { return new EqualOpNode(this); }
+    @Override public EqualOpNode copy(CopyState copyState) {
+      return new EqualOpNode(this, copyState);
+    }
   }
 
 
@@ -243,11 +270,13 @@ public class OperatorNodes {
       super(Operator.NOT_EQUAL, sourceLocation);
     }
 
-    private NotEqualOpNode(NotEqualOpNode orig) { super(orig); }
+    private NotEqualOpNode(NotEqualOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.NOT_EQUAL_OP_NODE; }
 
-    @Override public NotEqualOpNode clone() { return new NotEqualOpNode(this); }
+    @Override public NotEqualOpNode copy(CopyState copyState) {
+      return new NotEqualOpNode(this, copyState);
+    }
   }
 
 
@@ -260,11 +289,11 @@ public class OperatorNodes {
       super(Operator.AND, sourceLocation);
     }
 
-    private AndOpNode(AndOpNode orig) { super(orig); }
+    private AndOpNode(AndOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.AND_OP_NODE; }
 
-    @Override public AndOpNode clone() { return new AndOpNode(this); }
+    @Override public AndOpNode copy(CopyState copyState) { return new AndOpNode(this, copyState); }
   }
 
 
@@ -277,11 +306,11 @@ public class OperatorNodes {
       super(Operator.OR, sourceLocation);
     }
 
-    private OrOpNode(OrOpNode orig) { super(orig); }
+    private OrOpNode(OrOpNode orig, CopyState copyState) { super(orig, copyState); }
 
     @Override public Kind getKind() { return Kind.OR_OP_NODE; }
 
-    @Override public OrOpNode clone() { return new OrOpNode(this); }
+    @Override public OrOpNode copy(CopyState copyState) { return new OrOpNode(this, copyState); }
   }
 
 
@@ -294,7 +323,9 @@ public class OperatorNodes {
       super(Operator.NULL_COALESCING, sourceLocation);
     }
 
-    private NullCoalescingOpNode(NullCoalescingOpNode orig) { super(orig); }
+    private NullCoalescingOpNode(NullCoalescingOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
 
     public ExprNode getLeftChild() {
       return getChild(0);
@@ -306,7 +337,9 @@ public class OperatorNodes {
 
     @Override public Kind getKind() { return Kind.NULL_COALESCING_OP_NODE; }
 
-    @Override public NullCoalescingOpNode clone() { return new NullCoalescingOpNode(this); }
+    @Override public NullCoalescingOpNode copy(CopyState copyState) {
+      return new NullCoalescingOpNode(this, copyState);
+    }
   }
 
 
@@ -319,11 +352,15 @@ public class OperatorNodes {
       super(Operator.CONDITIONAL, sourceLocation);
     }
 
-    private ConditionalOpNode(ConditionalOpNode orig) { super(orig); }
+    private ConditionalOpNode(ConditionalOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
 
     @Override public Kind getKind() { return Kind.CONDITIONAL_OP_NODE; }
 
-    @Override public ConditionalOpNode clone() { return new ConditionalOpNode(this); }
+    @Override public ConditionalOpNode copy(CopyState copyState) {
+      return new ConditionalOpNode(this, copyState);
+    }
   }
 
 }

@@ -56,7 +56,7 @@ public final class HeaderParam extends TemplateParam {
     return typeSrc;
   }
 
-  @Override public HeaderParam cloneEssential() {
+  @Override public HeaderParam copyEssential() {
     // Note: 'typeSrc' and 'desc' are nonessential.
     HeaderParam headerParam = new HeaderParam(name(), null, type, isRequired(), isInjected(), null);
     headerParam.setLocalVariableIndex(localVariableIndex());

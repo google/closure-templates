@@ -17,9 +17,9 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.FloatType;
-
 
 /**
  * Node representing a float value.
@@ -46,8 +46,8 @@ public final class FloatNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private FloatNode(FloatNode orig) {
-    super(orig);
+  private FloatNode(FloatNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.value = orig.value;
   }
 
@@ -73,8 +73,8 @@ public final class FloatNode extends AbstractPrimitiveNode {
   }
 
 
-  @Override public FloatNode clone() {
-    return new FloatNode(this);
+  @Override public FloatNode copy(CopyState copyState) {
+    return new FloatNode(this, copyState);
   }
 
 }

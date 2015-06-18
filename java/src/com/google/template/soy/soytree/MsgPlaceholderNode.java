@@ -16,8 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
-
 
 /**
  * A node that is the direct child of a MsgBlockNode and will turn into a placeholder.
@@ -57,8 +57,8 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPlaceholderNode(MsgPlaceholderNode orig) {
-    super(orig);
+  private MsgPlaceholderNode(MsgPlaceholderNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.basePhName = orig.basePhName;
     this.initialNodeKind = orig.initialNodeKind;
     this.samenessKey = orig.samenessKey;
@@ -97,8 +97,8 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
   }
 
 
-  @Override public MsgPlaceholderNode clone() {
-    return new MsgPlaceholderNode(this);
+  @Override public MsgPlaceholderNode copy(CopyState copyState) {
+    return new MsgPlaceholderNode(this, copyState);
   }
 
 }

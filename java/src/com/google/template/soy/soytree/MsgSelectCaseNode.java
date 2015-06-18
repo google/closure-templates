@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
@@ -49,8 +50,8 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgSelectCaseNode(MsgSelectCaseNode orig) {
-    super(orig);
+  private MsgSelectCaseNode(MsgSelectCaseNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.caseValue = orig.caseValue;
   }
 
@@ -66,8 +67,8 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
   }
 
 
-  @Override public MsgSelectCaseNode clone() {
-    return new MsgSelectCaseNode(this);
+  @Override public MsgSelectCaseNode copy(CopyState copyState) {
+    return new MsgSelectCaseNode(this, copyState);
   }
 
   /**

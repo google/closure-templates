@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -54,12 +55,12 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SwitchCaseNode(SwitchCaseNode orig) {
-    super(orig);
+  private SwitchCaseNode(SwitchCaseNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.exprListText = orig.exprListText;
     this.exprList = Lists.newArrayListWithCapacity(orig.exprList.size());
     for (ExprRootNode origExpr : orig.exprList) {
-      this.exprList.add(origExpr.clone());
+      this.exprList.add(origExpr.copy(copyState));
     }
   }
 
@@ -86,8 +87,8 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
   }
 
 
-  @Override public SwitchCaseNode clone() {
-    return new SwitchCaseNode(this);
+  @Override public SwitchCaseNode copy(CopyState copyState) {
+    return new SwitchCaseNode(this, copyState);
   }
 
   /**

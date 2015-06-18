@@ -18,9 +18,12 @@ package com.google.template.soy.soytree.jssrc;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
@@ -88,8 +91,8 @@ public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private GoogMsgDefNode(GoogMsgDefNode orig) {
-    super(orig);
+  private GoogMsgDefNode(GoogMsgDefNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.childToMsgIdMap = orig.childToMsgIdMap;  // immutable
     this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;
     this.sourceString = orig.sourceString;
@@ -128,8 +131,8 @@ public final class GoogMsgDefNode extends AbstractParentSoyNode<MsgNode>
   }
 
 
-  @Override public GoogMsgDefNode clone() {
-    return new GoogMsgDefNode(this);
+  @Override public GoogMsgDefNode copy(CopyState copyState) {
+    return new GoogMsgDefNode(this, copyState);
   }
 
 }

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprparse.ExpressionParser;
@@ -157,12 +158,12 @@ public final class MsgNode extends AbstractBlockCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgNode(MsgNode orig) {
-    super(orig);
+  private MsgNode(MsgNode orig, CopyState copyState) {
+    super(orig, copyState);
     if (orig.genderExprs != null) {
       ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
       for (ExprRootNode node : orig.genderExprs) {
-        builder.add(node.clone());
+        builder.add(node.copy(copyState));
       }
       this.genderExprs = builder.build();
     } else {
@@ -344,8 +345,8 @@ public final class MsgNode extends AbstractBlockCommandNode
   }
 
 
-  @Override public MsgNode clone() {
-    return new MsgNode(this);
+  @Override public MsgNode copy(CopyState copyState) {
+    return new MsgNode(this, copyState);
   }
 
 

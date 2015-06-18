@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
@@ -50,8 +51,8 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPluralCaseNode(MsgPluralCaseNode orig) {
-    super(orig);
+  private MsgPluralCaseNode(MsgPluralCaseNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.caseNumber = orig.caseNumber;
   }
 
@@ -67,8 +68,8 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
   }
 
 
-  @Override public MsgPluralCaseNode clone() {
-    return new MsgPluralCaseNode(this);
+  @Override public MsgPluralCaseNode copy(CopyState copyState) {
+    return new MsgPluralCaseNode(this, copyState);
   }
 
   /**

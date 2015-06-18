@@ -28,6 +28,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -223,8 +224,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SoyFileNode(SoyFileNode orig) {
-    super(orig);
+  private SoyFileNode(SoyFileNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.soyFileKind = orig.soyFileKind;
     this.delPackageName = orig.delPackageName;
     this.namespace = orig.namespace;
@@ -339,8 +340,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   }
 
 
-  @Override public SoyFileNode clone() {
-    return new SoyFileNode(this);
+  @Override public SoyFileNode copy(CopyState copyState) {
+    return new SoyFileNode(this, copyState);
   }
 
 }

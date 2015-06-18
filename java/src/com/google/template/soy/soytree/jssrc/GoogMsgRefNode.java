@@ -18,7 +18,10 @@ package com.google.template.soy.soytree.jssrc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.AbstractSoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
@@ -63,8 +66,8 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private GoogMsgRefNode(GoogMsgRefNode orig) {
-    super(orig);
+  private GoogMsgRefNode(GoogMsgRefNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.renderedGoogMsgVarName = orig.renderedGoogMsgVarName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }
@@ -91,8 +94,8 @@ public final class GoogMsgRefNode extends AbstractSoyNode implements StandaloneN
   }
 
 
-  @Override public GoogMsgRefNode clone() {
-    return new GoogMsgRefNode(this);
+  @Override public GoogMsgRefNode copy(CopyState copyState) {
+    return new GoogMsgRefNode(this, copyState);
   }
 
 

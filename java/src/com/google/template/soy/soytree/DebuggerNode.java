@@ -17,9 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 
 /**
  * Node representing the 'debugger' statement.
@@ -38,8 +38,8 @@ public final class DebuggerNode extends AbstractCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private DebuggerNode(DebuggerNode orig) {
-    super(orig);
+  private DebuggerNode(DebuggerNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -53,8 +53,8 @@ public final class DebuggerNode extends AbstractCommandNode
   }
 
 
-  @Override public DebuggerNode clone() {
-    return new DebuggerNode(this);
+  @Override public DebuggerNode copy(CopyState copyState) {
+    return new DebuggerNode(this, copyState);
   }
 
 }

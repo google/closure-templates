@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 
 /**
  * A node representing a function (with args as children).
@@ -44,8 +45,8 @@ public final class FunctionNode extends AbstractParentExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private FunctionNode(FunctionNode orig) {
-    super(orig);
+  private FunctionNode(FunctionNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.functionName = orig.functionName;
   }
 
@@ -81,8 +82,8 @@ public final class FunctionNode extends AbstractParentExprNode {
   }
 
 
-  @Override public FunctionNode clone() {
-    return new FunctionNode(this);
+  @Override public FunctionNode copy(CopyState copyState) {
+    return new FunctionNode(this, copyState);
   }
 
 }

@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.CaseFormat;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
@@ -78,7 +79,7 @@ public final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNode
     int indexInParent = parent.getChildIndex(node);
     parent.removeChild(indexInParent);
 
-    CssNode newNode = new CssNode(node, packagePrefix + selectorText.substring(1));
+    CssNode newNode = new CssNode(node, packagePrefix + selectorText.substring(1), new CopyState());
     parent.addChild(indexInParent, newNode);
   }
 

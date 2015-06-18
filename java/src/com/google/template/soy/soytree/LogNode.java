@@ -17,9 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 
 /**
  * Node representing the 'log' statement.
@@ -38,8 +38,8 @@ public final class LogNode extends AbstractBlockCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private LogNode(LogNode orig) {
-    super(orig);
+  private LogNode(LogNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -53,8 +53,8 @@ public final class LogNode extends AbstractBlockCommandNode
   }
 
 
-  @Override public LogNode clone() {
-    return new LogNode(this);
+  @Override public LogNode copy(CopyState copyState) {
+    return new LogNode(this, copyState);
   }
 
 }

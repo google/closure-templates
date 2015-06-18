@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.exprparse.ExpressionParser;
@@ -77,10 +78,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private PrintNode(PrintNode orig) {
-    super(orig);
+  private PrintNode(PrintNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.isImplicit = orig.isImplicit;
-    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.clone() : null;
+    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
   }
 
@@ -168,8 +169,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   }
 
 
-  @Override public PrintNode clone() {
-    return new PrintNode(this);
+  @Override public PrintNode copy(CopyState copyState) {
+    return new PrintNode(this, copyState);
   }
 
   /**

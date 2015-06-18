@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -113,8 +114,8 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgHtmlTagNode(MsgHtmlTagNode orig) {
-    super(orig);
+  private MsgHtmlTagNode(MsgHtmlTagNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.lcTagName = orig.lcTagName;
     this.isSelfEnding = orig.isSelfEnding;
     this.isOnlyRawText = orig.isOnlyRawText;
@@ -213,8 +214,8 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   }
 
 
-  @Override public MsgHtmlTagNode clone() {
-    return new MsgHtmlTagNode(this);
+  @Override public MsgHtmlTagNode copy(CopyState copyState) {
+    return new MsgHtmlTagNode(this, copyState);
   }
 
   /**

@@ -19,7 +19,7 @@ package com.google.template.soy.exprtree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.AbstractNode;
-
+import com.google.template.soy.basetree.CopyState;
 
 /**
  * Abstract implementation of an ExprNode.
@@ -45,8 +45,8 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected AbstractExprNode(AbstractExprNode orig) {
-    super(orig);
+  protected AbstractExprNode(AbstractExprNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.sourceLocation = orig.sourceLocation;
   }
 
@@ -56,7 +56,7 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
    * the parentSourceLocation that is passed in to the ExpressionParser constructor.
    * The quality of these parentSourceLocations varies. Callers often perform regex-based
    * munging of expression texts before passing them to the ExpressionParser
-   * (example: {@link CallParamNode.Builder#parseCommandTextHelper}), which implies that the
+   * (example: {@code CallParamNode.Builder#parseCommandTextHelper}), which implies that the
    * parentSourceLocation passed along with the munged text is inaccurate.
    *
    * <p>Until this is fixed, source locations obtained from expression nodes should be treated as
@@ -66,6 +66,4 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
   public SourceLocation getSourceLocation() {
     return sourceLocation;
   }
-
-  @Override public abstract ExprNode clone();
 }

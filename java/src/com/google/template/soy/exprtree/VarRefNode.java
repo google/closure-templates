@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 
 import java.util.Objects;
@@ -72,8 +73,8 @@ public final class VarRefNode extends AbstractExprNode {
     this.defn = defn;
   }
 
-  private VarRefNode(VarRefNode orig) {
-    super(orig);
+  private VarRefNode(VarRefNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.name = orig.name;
     this.isInjected = orig.isInjected;
     this.isNullSafeInjected = orig.isNullSafeInjected;
@@ -82,7 +83,7 @@ public final class VarRefNode extends AbstractExprNode {
     // reset.  However, defns are problematic because they create non-tree edges in the AST.
     // 1. all defns for the same variable should be the same (induces a dag structure).
     // 2. local variables have declaringNode references (induces cycles).
-    // so calling clone() here could create an infinite loop and even if it didn't it would still be
+    // so calling copy() here could create an infinite loop and even if it didn't it would still be
     // wrong.  So instead we just use the prior defn and rely on our caller to manually fix up the
     // defn after cloning.  This should be handled by SoytreeUtils.cloneNode.
     this.defn = orig.defn;
@@ -156,8 +157,8 @@ public final class VarRefNode extends AbstractExprNode {
     return "$" + (isInjected ? (isNullSafeInjected ? "ij?." : "ij.") : "") + name;
   }
 
-  @Override public VarRefNode clone() {
-    return new VarRefNode(this);
+  @Override public VarRefNode copy(CopyState copyState) {
+    return new VarRefNode(this, copyState);
   }
 
   @Override public boolean equals(Object other) {

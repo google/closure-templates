@@ -18,8 +18,8 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-
 
 /**
  * Node representing a Soy file set (the root of the Soy parse tree).
@@ -56,9 +56,9 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SoyFileSetNode(SoyFileSetNode orig) {
-    super(orig);
-    this.nodeIdGen = orig.nodeIdGen.clone();
+  private SoyFileSetNode(SoyFileSetNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.nodeIdGen = orig.nodeIdGen.copy();
   }
 
 
@@ -78,8 +78,8 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   }
 
 
-  @Override public SoyFileSetNode clone() {
-    return new SoyFileSetNode(this);
+  @Override public SoyFileSetNode copy(CopyState copyState) {
+    return new SoyFileSetNode(this, copyState);
   }
 
 }

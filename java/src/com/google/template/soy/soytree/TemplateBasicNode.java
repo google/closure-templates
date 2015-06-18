@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 /**
@@ -48,15 +49,15 @@ public final class TemplateBasicNode extends TemplateNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private TemplateBasicNode(TemplateBasicNode orig) {
-    super(orig);
+  private TemplateBasicNode(TemplateBasicNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
   @Override public Kind getKind() {
     return Kind.TEMPLATE_BASIC_NODE;
   }
 
-  @Override public TemplateBasicNode clone() {
-    return new TemplateBasicNode(this);
+  @Override public TemplateBasicNode copy(CopyState copyState) {
+    return new TemplateBasicNode(this, copyState);
   }
 }

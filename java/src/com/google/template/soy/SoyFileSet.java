@@ -861,7 +861,7 @@ public final class SoyFileSet {
   public SoyTofu compileToTofu(SoyTofuOptions tofuOptions) throws SoySyntaxException {
 
     // Defensive copy of options. (Doesn't matter now, but might forget later when it matters.)
-    tofuOptions = tofuOptions.clone();
+    tofuOptions = tofuOptions.copy();
 
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);

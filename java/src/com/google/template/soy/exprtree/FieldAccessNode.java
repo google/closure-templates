@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.basetree.CopyState;
 
 import java.util.Objects;
 
@@ -41,8 +42,8 @@ public final class FieldAccessNode extends DataAccessNode {
     this.fieldName = fieldName;
   }
 
-  private FieldAccessNode(FieldAccessNode orig) {
-    super(orig);
+  private FieldAccessNode(FieldAccessNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.fieldName = orig.fieldName;
   }
 
@@ -67,8 +68,8 @@ public final class FieldAccessNode extends DataAccessNode {
   }
 
 
-  @Override public FieldAccessNode clone() {
-    return new FieldAccessNode(this);
+  @Override public FieldAccessNode copy(CopyState copyState) {
+    return new FieldAccessNode(this, copyState);
   }
 
 

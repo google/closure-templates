@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
@@ -90,14 +91,14 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private PrintDirectiveNode(PrintDirectiveNode orig) {
-    super(orig);
+  private PrintDirectiveNode(PrintDirectiveNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.srcName = orig.srcName;
     this.name = orig.name;
     this.argsText = orig.argsText;
     List<ExprRootNode> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
     for (ExprRootNode origArg : orig.args) {
-      tempArgs.add(origArg.clone());
+      tempArgs.add(origArg.copy(copyState));
     }
     this.args = ImmutableList.copyOf(tempArgs);
   }
@@ -130,8 +131,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   }
 
 
-  @Override public PrintDirectiveNode clone() {
-    return new PrintDirectiveNode(this);
+  @Override public PrintDirectiveNode copy(CopyState copyState) {
+    return new PrintDirectiveNode(this, copyState);
   }
 
   /**

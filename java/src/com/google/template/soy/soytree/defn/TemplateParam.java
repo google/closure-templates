@@ -92,7 +92,7 @@ public abstract class TemplateParam extends AbstractVarDefn {
     return desc;
   }
 
-  public abstract TemplateParam cloneEssential();
+  public abstract TemplateParam copyEssential();
 
   // Subclasses must implement equals().
   @Override public abstract boolean equals(Object o);

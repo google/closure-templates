@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -62,9 +63,9 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private LetValueNode(LetValueNode orig) {
-    super(orig);
-    this.valueExpr = orig.valueExpr.clone();
+  private LetValueNode(LetValueNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.valueExpr = orig.valueExpr.copy(copyState);
   }
 
 
@@ -94,8 +95,8 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   }
 
 
-  @Override public LetValueNode clone() {
-    return new LetValueNode(this);
+  @Override public LetValueNode copy(CopyState copyState) {
+    return new LetValueNode(this, copyState);
   }
 
   /**

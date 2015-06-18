@@ -47,7 +47,7 @@ public final class SoyDocParam extends TemplateParam {
     return UnknownType.getInstance();
   }
 
-  @Override public SoyDocParam cloneEssential() {
+  @Override public SoyDocParam copyEssential() {
     // Note: 'desc' is nonessential.
     SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null);
     soyDocParam.setLocalVariableIndex(localVariableIndex());
@@ -65,7 +65,7 @@ public final class SoyDocParam extends TemplateParam {
     return super.abstractHashCode();
   }
 
-  @Override public SoyDocParam clone() {
+  public SoyDocParam clone() {
     return new SoyDocParam(this);
   }
 }

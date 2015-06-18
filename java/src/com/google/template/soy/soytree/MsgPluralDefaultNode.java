@@ -17,8 +17,8 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
-
 
 /**
  * Node representing the 'default' block in a 'plural' block.
@@ -42,8 +42,8 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPluralDefaultNode(MsgPluralDefaultNode orig) {
-    super(orig);
+  private MsgPluralDefaultNode(MsgPluralDefaultNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -52,8 +52,8 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
   }
 
 
-  @Override public MsgPluralDefaultNode clone() {
-    return new MsgPluralDefaultNode(this);
+  @Override public MsgPluralDefaultNode copy(CopyState copyState) {
+    return new MsgPluralDefaultNode(this, copyState);
   }
 
 }

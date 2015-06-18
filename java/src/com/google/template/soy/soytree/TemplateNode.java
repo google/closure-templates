@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -174,8 +175,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected TemplateNode(TemplateNode orig) {
-    super(orig);
+  protected TemplateNode(TemplateNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.soyFileHeaderInfo = orig.soyFileHeaderInfo;  // immutable
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
@@ -277,7 +278,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     assert params != null;  // prevent warnings
     List<TemplateParam> newParams = Lists.newArrayListWithCapacity(params.size());
     for (TemplateParam origParam : params) {
-      newParams.add(origParam.cloneEssential());
+      newParams.add(origParam.copyEssential());
     }
     params = ImmutableList.copyOf(newParams);
   }

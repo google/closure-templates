@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -53,9 +54,9 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private SwitchNode(SwitchNode orig) {
-    super(orig);
-    this.expr = orig.expr.clone();
+  private SwitchNode(SwitchNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.expr = orig.expr.copy(copyState);
   }
 
 
@@ -91,8 +92,8 @@ public final class SwitchNode extends AbstractParentCommandNode<SoyNode>
   }
 
 
-  @Override public SwitchNode clone() {
-    return new SwitchNode(this);
+  @Override public SwitchNode copy(CopyState copyState) {
+    return new SwitchNode(this, copyState);
   }
 
   /**

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.base.internal;
 
-
 /**
  * A generator of fixed ids.
  *
@@ -51,7 +50,7 @@ public final class FixedIdGenerator implements IdGenerator {
     return fixedId;
   }
 
-  @Override public FixedIdGenerator clone() {
+  @Override public FixedIdGenerator copy() {
     return new FixedIdGenerator(fixedId);
   }
 }

@@ -64,7 +64,7 @@ public final class MixinParentNode<N extends Node> {
    * @param orig The node to copy.
    * @param newMaster The master node for the copy.
    */
-  public MixinParentNode(MixinParentNode<N> orig, ParentNode<N> newMaster) {
+  public MixinParentNode(MixinParentNode<N> orig, ParentNode<N> newMaster, CopyState copyState) {
     this.master = newMaster;
 
     this.needsEnvFrameDuringInterp = orig.needsEnvFrameDuringInterp;
@@ -72,7 +72,7 @@ public final class MixinParentNode<N extends Node> {
     this.children = Lists.newArrayListWithCapacity(orig.children.size());
     for (N origChild : orig.children) {
       @SuppressWarnings("unchecked")
-      N newChild = (N) origChild.clone();
+      N newChild = (N) origChild.copy(copyState);
       this.children.add(newChild);
       newChild.setParent(this.master);
     }

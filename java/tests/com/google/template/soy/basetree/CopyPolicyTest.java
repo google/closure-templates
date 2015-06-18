@@ -31,14 +31,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Tests for how {@link Node} subtypes implement {@link Node#clone()}.
+ * Tests for how {@link Node} subtypes implement {@link Node#copy(CopyState)}.
  * 
- * <p>{@link Node#clone()} specifies a policy for how {@code clone} is implemented.  This tries to
- * test for certain violations of that policy.
+ * <p>{@link Node#copy(CopyState)} specifies a policy for how {@code copy} is implemented.  This
+ * tries to test for certain violations of that policy.
  */
-public class ClonePolicyTest extends TestCase  {
+public final class CopyPolicyTest extends TestCase {
   
-  public void testClone() throws IOException, SecurityException, NoSuchMethodException {
+  public void testCopy() throws IOException, SecurityException {
     // We use top level classes to ignore node types defined as inner classes for tests.
     ImmutableSet<ClassInfo> topLevelClasses = 
         ClassPath.from(ClassLoader.getSystemClassLoader()).getTopLevelClasses();
@@ -59,17 +59,17 @@ public class ClonePolicyTest extends TestCase  {
       }
     }
     if (!errors.isEmpty()) {
-      fail("Clone policy failure:\n" + Joiner.on('\n').join(errors));
+      fail("Copy policy failure:\n" + Joiner.on('\n').join(errors));
     }
   }
-
-  private void checkConcreteNode(Class<?> node, Set<String> errors) 
-      throws NoSuchMethodException, SecurityException {
+  
+  @SuppressWarnings("MissingFail")
+  private void checkConcreteNode(Class<?> node, Set<String> errors) throws SecurityException {
     if (!Modifier.isFinal(node.getModifiers())) {
       errors.add("Non abstract Node types should be final. " + node.getName());
     }
     try {
-      Constructor<?> copyConstructor = node.getDeclaredConstructor(node);
+      Constructor<?> copyConstructor = node.getDeclaredConstructor(node, CopyState.class);
       if (!Modifier.isPrivate(copyConstructor.getModifiers())) {
         errors.add("Node class: "  + node.getName() 
             + " should have a private copy constructor. Found " + copyConstructor 
@@ -78,20 +78,18 @@ public class ClonePolicyTest extends TestCase  {
     } catch (NoSuchMethodException e) {
       errors.add("Node class: "  + node.getName() + " should have a private copy constructor");
     }
-    Method m = node.getDeclaredMethod("clone");
-    // the method exists
-    if (!Modifier.isPublic(m.getModifiers())) {
-      errors.add("Node type: " + node.getName() + " has a clone() method that is not public");
-    }
-    if (m.getExceptionTypes().length != 0) {
-      errors.add("node clone() methods should not throw checked exceptions: " + m);
+    try {
+      node.getDeclaredMethod("clone");
+      errors.add("Node type: " + node.getName() + " has overridden clone()");
+    } catch (NoSuchMethodException expected) {
+      
     }
   }
 
   private void checkAbstractNode(Class<?> node, Set<String> errors) {
     // should have a protected copy constructor
     try {
-      Constructor<?> copyConstructor = node.getDeclaredConstructor(node);
+      Constructor<?> copyConstructor = node.getDeclaredConstructor(node, CopyState.class);
       if (!Modifier.isProtected(copyConstructor.getModifiers())) {
         errors.add("Node class: "  + node.getName() 
             + " should have a protected copy constructor. Found " + copyConstructor 
@@ -100,16 +98,13 @@ public class ClonePolicyTest extends TestCase  {
     } catch (NoSuchMethodException e) {
       errors.add("Node class: "  + node.getName() + " should have a protected copy constructor");
     }
-    // if it has a clone method, it should be abstract
+    // if it has a copy method, it should be abstract
     try {
-      Method m = node.getDeclaredMethod("clone");
+      Method m = node.getDeclaredMethod("copy", CopyState.class);
       // the method exists
       if (!Modifier.isAbstract(m.getModifiers())) {
         errors.add("Abstract node type: " + node.getName() 
-            + " has a clone() method that is not abstract");
-      }
-      if (m.getExceptionTypes().length != 0) {
-        errors.add("node clone() methods should not throw checked exceptions: " + m);
+            + " has a copy(CopyState) method that is not abstract");
       }
     } catch (NoSuchMethodException e) {
       // fine

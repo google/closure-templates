@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.Lists;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 
@@ -84,8 +85,8 @@ public final class ExprUnion {
     this.exprText = exprTextV1;
   }
 
-  private ExprUnion(ExprUnion orig) {
-    this.expr = orig.expr != null ? orig.expr.clone() : null;
+  private ExprUnion(ExprUnion orig, CopyState copyState) {
+    this.expr = orig.expr != null ? orig.expr.copy(copyState) : null;
     this.exprText = orig.exprText;
   }
 
@@ -108,8 +109,8 @@ public final class ExprUnion {
   /**
    * Returns a (deep) clone of this object.
    */
-  @Override public ExprUnion clone() {
-    return new ExprUnion(this);
+  public ExprUnion copy(CopyState copyState) {
+    return new ExprUnion(this, copyState);
   }
 
 }

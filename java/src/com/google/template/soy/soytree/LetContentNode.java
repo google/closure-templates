@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -64,9 +65,9 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private LetContentNode(LetContentNode orig) {
-    super(orig);
-    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
+  private LetContentNode(LetContentNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.contentKind = orig.contentKind;
   }
 
@@ -168,8 +169,8 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     return parentMixin.toTreeString(indent);
   }
 
-  @Override public LetContentNode clone() {
-    return new LetContentNode(this);
+  @Override public LetContentNode copy(CopyState copyState) {
+    return new LetContentNode(this, copyState);
   }
 
   /**

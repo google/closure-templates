@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -100,8 +101,8 @@ public abstract class CallParamNode extends AbstractCommandNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected CallParamNode(CallParamNode orig) {
-    super(orig);
+  protected CallParamNode(CallParamNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 

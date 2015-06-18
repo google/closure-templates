@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -64,10 +65,12 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private CallParamValueNode(CallParamValueNode orig) {
-    super(orig);
+  private CallParamValueNode(CallParamValueNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.key = orig.key;
-    this.valueExprUnion = (orig.valueExprUnion != null) ? orig.valueExprUnion.clone() : null;
+    this.valueExprUnion = (orig.valueExprUnion != null)
+        ? orig.valueExprUnion.copy(copyState)
+        : null;
   }
 
 
@@ -103,8 +106,8 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   }
 
 
-  @Override public CallParamValueNode clone() {
-    return new CallParamValueNode(this);
+  @Override public CallParamValueNode copy(CopyState copyState) {
+    return new CallParamValueNode(this, copyState);
   }
 
   public static final class Builder extends CallParamNode.Builder {

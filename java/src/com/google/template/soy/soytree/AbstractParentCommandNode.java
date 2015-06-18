@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -53,9 +54,9 @@ abstract class AbstractParentCommandNode<N extends SoyNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected AbstractParentCommandNode(AbstractParentCommandNode<N> orig) {
-    super(orig);
-    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
+  protected AbstractParentCommandNode(AbstractParentCommandNode<N> orig, CopyState copyState) {
+    super(orig, copyState);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
   }
 
 

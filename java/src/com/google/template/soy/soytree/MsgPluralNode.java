@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -90,10 +91,10 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPluralNode(MsgPluralNode orig) {
-    super(orig);
+  private MsgPluralNode(MsgPluralNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.offset = orig.offset;
-    this.pluralExpr = orig.pluralExpr.clone();
+    this.pluralExpr = orig.pluralExpr.copy(copyState);
     this.basePluralVarName = orig.basePluralVarName;
   }
 
@@ -143,8 +144,8 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   }
 
 
-  @Override public MsgPluralNode clone() {
-    return new MsgPluralNode(this);
+  @Override public MsgPluralNode copy(CopyState copyState) {
+    return new MsgPluralNode(this, copyState);
   }
 
   /**

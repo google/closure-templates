@@ -16,8 +16,11 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.basetree.CopyState;
 
 import java.util.List;
 
@@ -53,6 +56,7 @@ public final class ExprRootNode extends AbstractParentExprNode {
    */
   public ExprRootNode(ExprNode child) {
     super(child.getSourceLocation());
+    checkArgument(!(child instanceof ExprRootNode));
     this.addChild(child);
   }
 
@@ -61,8 +65,8 @@ public final class ExprRootNode extends AbstractParentExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private ExprRootNode(ExprRootNode orig) {
-    super(orig);
+  private ExprRootNode(ExprRootNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -85,8 +89,8 @@ public final class ExprRootNode extends AbstractParentExprNode {
   }
 
 
-  @Override public ExprRootNode clone() {
-    return new ExprRootNode(this);
+  @Override public ExprRootNode copy(CopyState copyState) {
+    return new ExprRootNode(this, copyState);
   }
 
 }

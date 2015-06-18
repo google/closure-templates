@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.BoolType;
 
@@ -47,8 +48,8 @@ public final class BooleanNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private BooleanNode(BooleanNode orig) {
-    super(orig);
+  private BooleanNode(BooleanNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.value = orig.value;
   }
 
@@ -74,8 +75,8 @@ public final class BooleanNode extends AbstractPrimitiveNode {
   }
 
 
-  @Override public BooleanNode clone() {
-    return new BooleanNode(this);
+  @Override public BooleanNode copy(CopyState copyState) {
+    return new BooleanNode(this, copyState);
   }
 
 }

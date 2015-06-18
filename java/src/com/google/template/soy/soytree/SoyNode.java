@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -126,10 +127,10 @@ public interface SoyNode extends Node {
 
   /**
    * {@inheritDoc}
-   * <p> The cloned nodes will have the same ids as the original nodes. If you need to clone a
-   * subtree with new ids assigned to the cloned nodes, use {@link SoytreeUtils#cloneWithNewIds}.
+   * <p> The copied nodes will have the same ids as the original nodes. If you need to copy a
+   * subtree with new ids assigned to the copied nodes, use {@link SoytreeUtils#cloneWithNewIds}.
    */
-  @Override public SoyNode clone();
+  @Override public SoyNode copy(CopyState copyState);
 
 
   // -----------------------------------------------------------------------------------------------

@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.IntType;
 
@@ -47,8 +48,8 @@ public final class IntegerNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private IntegerNode(IntegerNode orig) {
-    super(orig);
+  private IntegerNode(IntegerNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.value = orig.value;
   }
 
@@ -74,8 +75,8 @@ public final class IntegerNode extends AbstractPrimitiveNode {
   }
 
 
-  @Override public IntegerNode clone() {
-    return new IntegerNode(this);
+  @Override public IntegerNode copy(CopyState copyState) {
+    return new IntegerNode(this, copyState);
   }
 
 

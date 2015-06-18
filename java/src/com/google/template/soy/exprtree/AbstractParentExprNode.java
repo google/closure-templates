@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.types.SoyType;
@@ -59,9 +60,9 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected AbstractParentExprNode(AbstractParentExprNode orig) {
-    super(orig);
-    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this);
+  protected AbstractParentExprNode(AbstractParentExprNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.type = orig.type;
   }
 

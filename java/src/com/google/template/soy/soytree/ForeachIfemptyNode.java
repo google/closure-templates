@@ -17,8 +17,8 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
-
 
 /**
  * Node representing the 'ifempty' portion of a 'foreach' statement.
@@ -43,8 +43,8 @@ public final class ForeachIfemptyNode extends AbstractBlockCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private ForeachIfemptyNode(ForeachIfemptyNode orig) {
-    super(orig);
+  private ForeachIfemptyNode(ForeachIfemptyNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 
@@ -67,8 +67,8 @@ public final class ForeachIfemptyNode extends AbstractBlockCommandNode
   }
 
 
-  @Override public ForeachIfemptyNode clone() {
-    return new ForeachIfemptyNode(this);
+  @Override public ForeachIfemptyNode copy(CopyState copyState) {
+    return new ForeachIfemptyNode(this, copyState);
   }
 
 }

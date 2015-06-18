@@ -25,8 +25,7 @@ import junit.framework.TestCase;
  * Unit tests for SoyJsSrcOptions.
  *
  */
-public class SoyJsSrcOptionsTest extends TestCase {
-
+public final class SoyJsSrcOptionsTest extends TestCase {
 
   public void testClone() {
 
@@ -41,5 +40,4 @@ public class SoyJsSrcOptionsTest extends TestCase {
     assertThat(clonedOptions.shouldGenerateGoogMsgDefs())
         .isEqualTo(options.shouldGenerateGoogMsgDefs());
   }
-
 }

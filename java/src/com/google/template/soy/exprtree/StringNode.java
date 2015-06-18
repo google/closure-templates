@@ -18,9 +18,9 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.StringType;
-
 
 /**
  * Node representing a string value.
@@ -47,8 +47,8 @@ public final class StringNode extends AbstractPrimitiveNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private StringNode(StringNode orig) {
-    super(orig);
+  private StringNode(StringNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.value = orig.value;
   }
 
@@ -91,8 +91,8 @@ public final class StringNode extends AbstractPrimitiveNode {
   }
 
 
-  @Override public StringNode clone() {
-    return new StringNode(this);
+  @Override public StringNode copy(CopyState copyState) {
+    return new StringNode(this, copyState);
   }
 
 }

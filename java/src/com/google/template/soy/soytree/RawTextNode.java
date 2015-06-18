@@ -18,12 +18,12 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Node representing a contiguous raw text section.
@@ -64,8 +64,8 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private RawTextNode(RawTextNode orig) {
-    super(orig);
+  private RawTextNode(RawTextNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.rawText = orig.rawText;
   }
 
@@ -102,8 +102,8 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   }
 
 
-  @Override public RawTextNode clone() {
-    return new RawTextNode(this);
+  @Override public RawTextNode copy(CopyState copyState) {
+    return new RawTextNode(this, copyState);
   }
 
 }

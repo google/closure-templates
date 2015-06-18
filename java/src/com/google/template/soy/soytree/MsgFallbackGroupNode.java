@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -61,8 +62,8 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgFallbackGroupNode(MsgFallbackGroupNode orig) {
-    super(orig);
+  private MsgFallbackGroupNode(MsgFallbackGroupNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
   }
 
@@ -98,8 +99,8 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     return getChild(1);
   }
 
-  @Override public MsgFallbackGroupNode clone() {
-    return new MsgFallbackGroupNode(this);
+  @Override public MsgFallbackGroupNode copy(CopyState copyState) {
+    return new MsgFallbackGroupNode(this, copyState);
   }
 
   /**

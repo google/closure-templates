@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 
 /**
  * Base class which represents access to a field or element of an aggregate value,
@@ -43,8 +44,8 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
     this.isNullSafe = isNullSafe;
   }
 
-  protected DataAccessNode(DataAccessNode orig) {
-    super(orig);
+  protected DataAccessNode(DataAccessNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.isNullSafe = orig.isNullSafe;
   }
 

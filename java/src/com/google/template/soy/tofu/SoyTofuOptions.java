@@ -16,12 +16,11 @@
 
 package com.google.template.soy.tofu;
 
-
 /**
  * Compilation options for the Tofu backend.
  *
  */
-public class SoyTofuOptions implements Cloneable {
+public class SoyTofuOptions {
 
 
   /** Whether the resulting SoyTofu instance should cache intermediate results after substitutions
@@ -66,12 +65,10 @@ public class SoyTofuOptions implements Cloneable {
   }
 
 
-  @Override public SoyTofuOptions clone() {
-    try {
-      return (SoyTofuOptions) super.clone();
-    } catch (CloneNotSupportedException cnse) {
-      throw new RuntimeException("Cloneable interface removed from SoyTofuOptions.");
-    }
+  public SoyTofuOptions copy() {
+    SoyTofuOptions opts = new SoyTofuOptions();
+    opts.useCaching = this.useCaching;
+    return opts;
   }
 
 }

@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -126,8 +127,8 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private TemplateDelegateNode(TemplateDelegateNode orig) {
-    super(orig);
+  private TemplateDelegateNode(TemplateDelegateNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.delTemplateName = orig.delTemplateName;
     this.delTemplateVariant = orig.delTemplateVariant;
     this.delTemplateVariantExpr = orig.delTemplateVariantExpr;
@@ -178,8 +179,8 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   }
 
 
-  @Override public TemplateDelegateNode clone() {
-    return new TemplateDelegateNode(this);
+  @Override public TemplateDelegateNode copy(CopyState copyState) {
+    return new TemplateDelegateNode(this, copyState);
   }
 
 

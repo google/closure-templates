@@ -539,7 +539,7 @@ public final class GenerateParseInfoVisitor
       TemplateParam existingParam = transitiveParamMap.get(param.name());
       if (existingParam == null) {
         // Note: We don't list the description for indirect params.
-        transitiveParamMap.put(param.name(), param.cloneEssential());
+        transitiveParamMap.put(param.name(), param.copyEssential());
       }
     }
 

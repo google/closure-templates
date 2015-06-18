@@ -17,8 +17,8 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
-
 
 /**
  * Node representing a variable.
@@ -53,8 +53,8 @@ public final class VarNode extends AbstractExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private VarNode(VarNode orig) {
-    super(orig);
+  private VarNode(VarNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.name = orig.name;
   }
 
@@ -80,8 +80,8 @@ public final class VarNode extends AbstractExprNode {
   }
 
 
-  @Override public VarNode clone() {
-    return new VarNode(this);
+  @Override public VarNode copy(CopyState copyState) {
+    return new VarNode(this, copyState);
   }
 
 }

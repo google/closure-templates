@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -103,8 +104,8 @@ public abstract class LetNode extends AbstractCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected LetNode(LetNode orig) {
-    super(orig);
+  protected LetNode(LetNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
   }
 
@@ -167,7 +168,7 @@ public abstract class LetNode extends AbstractCommandNode
   /**
    * Get the local variable defined by this node.
    */
-  public final LocalVar getVar() {
+  @Override public final LocalVar getVar() {
     return var;
   }
 }

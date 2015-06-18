@@ -21,6 +21,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprparse.ExpressionParser;
@@ -84,14 +85,14 @@ public final class ForNode extends AbstractBlockCommandNode
      */
     public abstract Optional<ExprRootNode> increment();
 
-    private RangeArgs copy() {
+    private RangeArgs copy(CopyState copyState) {
       return create(
           start().isPresent()
-              ? Optional.of(start().get().clone())
+              ? Optional.of(start().get().copy(copyState))
               : Optional.<ExprRootNode>absent(),
-          limit().clone(),
+          limit().copy(copyState),
           increment().isPresent()
-              ? Optional.of(increment().get().clone())
+              ? Optional.of(increment().get().copy(copyState))
               : Optional.<ExprRootNode>absent());
     }
   }
@@ -183,10 +184,10 @@ public final class ForNode extends AbstractBlockCommandNode
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private ForNode(ForNode orig) {
-    super(orig);
+  private ForNode(ForNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
-    this.rangeArgs = orig.rangeArgs.copy();
+    this.rangeArgs = orig.rangeArgs.copy(copyState);
   }
 
 
@@ -226,8 +227,8 @@ public final class ForNode extends AbstractBlockCommandNode
   }
 
 
-  @Override public ForNode clone() {
-    return new ForNode(this);
+  @Override public ForNode copy(CopyState copyState) {
+    return new ForNode(this, copyState);
   }
 
 }

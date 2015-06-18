@@ -17,9 +17,9 @@
 package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
-
 
 /**
  * Node representing a global.
@@ -49,8 +49,8 @@ public final class GlobalNode extends AbstractExprNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private GlobalNode(GlobalNode orig) {
-    super(orig);
+  private GlobalNode(GlobalNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.name = orig.name;
   }
 
@@ -76,8 +76,8 @@ public final class GlobalNode extends AbstractExprNode {
   }
 
 
-  @Override public GlobalNode clone() {
-    return new GlobalNode(this);
+  @Override public GlobalNode copy(CopyState copyState) {
+    return new GlobalNode(this, copyState);
   }
 
 }

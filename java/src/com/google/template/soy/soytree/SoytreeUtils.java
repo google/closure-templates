@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -248,7 +249,7 @@ public final class SoytreeUtils {
 
   /**
    * Clones the given node and then generates and sets new ids on all the cloned nodes (by default,
-   * SoyNode.clone() creates cloned nodes with the same ids as the original nodes).
+   * SoyNode.copy(copyState) creates cloned nodes with the same ids as the original nodes).
    *
    * <p> This function will use the original Soy tree's node id generator to generate the new node
    * ids for the cloned nodes. Thus, the original node to be cloned must be part of a full Soy tree.
@@ -277,7 +278,7 @@ public final class SoytreeUtils {
 
   /**
    * Clones the given list of nodes and then generates and sets new ids on all the cloned nodes (by
-   * default, SoyNode.clone() creates cloned nodes with the same ids as the original nodes).
+   * default, SoyNode.copy(copyState) creates cloned nodes with the same ids as the original nodes).
    *
    * <p> This function will use the original Soy tree's node id generator to generate the new node
    * ids for the cloned nodes. Thus, the original nodes to be cloned must be part of a full Soy
@@ -307,17 +308,18 @@ public final class SoytreeUtils {
   }
 
   /**
-   * Clones a SoyNode but unlike SoyNode.clone() keeps {@link VarRefNode#getDefnDecl()} pointing at
-   * the correct tree.
+   * Clones a SoyNode but unlike SoyNode.copy(copyState) keeps {@link VarRefNode#getDefnDecl()}
+   * pointing at the correct tree.
    */
   public static <T extends SoyNode> T cloneNode(T original) {
     @SuppressWarnings("unchecked")  // this holds for all SoyNode types
-    T cloned = (T) original.clone();
+    // TODO(lukes): eliminate this method once all logic has been moved into copy state
+    T cloned = (T) original.copy(new CopyState());
 
     // TODO(lukes):  this is not efficient but it is the only way to work around the limitations
-    // of the Object.clone() interface.  A better solution would be to introduce our own clone
-    // method which could take a parameter.  For nodes in the AST object graph that are the back
-    // edges in cycles (e.g. LocalVar) we could maintain an identity map which could be used to
+    // of the Object.copy(copyState) interface.  A better solution would be to introduce our own
+    // clone method which could take a parameter.  For nodes in the AST object graph that are the
+    // back edges in cycles (e.g. LocalVar) we could maintain an identity map which could be used to
     // efficiently reconstruct the cycles.  For now we just fix it up after the fact.
 
     // All vardefns in varrefs have been invalidated.  Currently we only reassign vardefns for

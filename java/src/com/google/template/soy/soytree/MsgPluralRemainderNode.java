@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 
 /**
@@ -44,8 +45,8 @@ public final class MsgPluralRemainderNode extends AbstractSoyNode implements Msg
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private MsgPluralRemainderNode(MsgPluralRemainderNode orig) {
-    super(orig);
+  private MsgPluralRemainderNode(MsgPluralRemainderNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.sourceString = orig.sourceString;
   }
 
@@ -75,8 +76,8 @@ public final class MsgPluralRemainderNode extends AbstractSoyNode implements Msg
   }
 
 
-  @Override public MsgPluralRemainderNode clone() {
-    return new MsgPluralRemainderNode(this);
+  @Override public MsgPluralRemainderNode copy(CopyState copyState) {
+    return new MsgPluralRemainderNode(this, copyState);
   }
 
 }

@@ -17,9 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-
 
 /**
  * Abstract implementation of a BlockNode.
@@ -42,8 +42,8 @@ abstract class AbstractBlockNode extends AbstractParentSoyNode<StandaloneNode>
    * Copy constructor.
    * @param orig The node to copy.
    */
-  protected AbstractBlockNode(AbstractBlockNode orig) {
-    super(orig);
+  protected AbstractBlockNode(AbstractBlockNode orig, CopyState copyState) {
+    super(orig, copyState);
   }
 
 }

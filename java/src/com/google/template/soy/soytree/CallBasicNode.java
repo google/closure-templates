@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
@@ -124,8 +125,8 @@ public final class CallBasicNode extends CallNode {
    * Copy constructor.
    * @param orig The node to copy.
    */
-  private CallBasicNode(CallBasicNode orig) {
-    super(orig);
+  private CallBasicNode(CallBasicNode orig, CopyState copyState) {
+    super(orig, copyState);
     this.sourceCalleeName = orig.sourceCalleeName;
     this.calleeName = orig.calleeName;
     this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
@@ -168,8 +169,8 @@ public final class CallBasicNode extends CallNode {
     return calleeName;
   }
 
-  @Override public CallBasicNode clone() {
-    return new CallBasicNode(this);
+  @Override public CallBasicNode copy(CopyState copyState) {
+    return new CallBasicNode(this, copyState);
   }
 
   public static final class Builder {
