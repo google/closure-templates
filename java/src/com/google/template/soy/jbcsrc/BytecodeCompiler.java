@@ -23,7 +23,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.CompiledTemplates;
@@ -53,8 +52,10 @@ public final class BytecodeCompiler {
     // configured in such a way that we load the classes from the system class loader.  Then we
     // could add a build phase that writes the compiled templates out to a jar.  Then in the non
     // development mode case we could skip even parsing templates!
-    MemoryClassLoader loader = 
-        compileTemplates(registry, compilerRegistry, ExplodingErrorReporter.get());
+    MemoryClassLoader loader = compileTemplates(registry, compilerRegistry, reporter);
+    if (reporter.errorsSince(checkpoint)) {
+      return Optional.absent();
+    }
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
     for (TemplateNode node : registry.getAllTemplates()) {
       String name = node.getTemplateName();
