@@ -32,7 +32,6 @@ import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
@@ -88,11 +87,8 @@ import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
-import com.google.template.soy.types.primitive.StringType;
-import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.proto.SoyProtoType;
 
 import java.text.MessageFormat;
@@ -107,7 +103,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -604,10 +599,9 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         ", opt_ignored",
         (isUsingIjData ? ", opt_ijData" : ""), ") {");
     jsCodeBuilder.increaseIndent();
-    // If there are any null coalescing operators or switch nodes then we need to generate an
-    // additional temporary variable.
-    if (!SoytreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()
-        || !SoytreeUtils.getAllNodesOfType(node, SwitchNode.class).isEmpty()) {
+    // If there are any null coalescing operators then we need to generate an additional temporary
+    // variable.
+    if (!SoytreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()) {
       jsCodeBuilder.appendLine("var $$temp;");
     }
 
@@ -884,8 +878,9 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override protected void visitSwitchNode(SwitchNode node) {
 
-    String switchExpr = coerceTypeForSwitchComparison(node.getExpr(), node.getExprText());
-    jsCodeBuilder.appendLine("switch (", switchExpr, ") {");
+    JsExpr switchValueJsExpr = jsExprTranslator.translateToJsExpr(
+        node.getExpr(), node.getExprText(), localVarTranslations);
+    jsCodeBuilder.appendLine("switch (", switchValueJsExpr.getText(), ") {");
     jsCodeBuilder.increaseIndent();
 
     for (SoyNode child : node.getChildren()) {
@@ -920,31 +915,6 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     jsCodeBuilder.decreaseIndent();
     jsCodeBuilder.appendLine("}");
-  }
-
-  // js switch statements use  === for comparing the switch expr to the cases.  In order to preserve
-  // soy equality semantics for sanitized content objects we need to coerce cases and switch exprs
-  // to strings.
-  private String coerceTypeForSwitchComparison(
-      @Nullable ExprRootNode v2Expr,
-      @Nullable String v1Expr) {
-    String jsExpr = jsExprTranslator.translateToJsExpr(
-        v2Expr, v1Expr, localVarTranslations).getText();
-    if (v2Expr != null) {
-      SoyType type = v2Expr.getType();
-      if (StringType.getInstance().isAssignableFrom(type)) {
-        return jsExpr + ".toString()";
-      }
-      if (type.equals(AnyType.getInstance()) || type.equals(UnknownType.getInstance())) {
-        return "(goog.isObject($$temp = " + jsExpr + ")) ? $$temp.toString() : $$temp";
-      }
-      // For everything else just pass through.  switching on objects/collections is unlikely to
-      // have reasonably defined behavior.
-      return jsExpr;
-    } else {
-      // soy v1, do nothing
-      return jsExpr;
-    }
   }
 
   /**

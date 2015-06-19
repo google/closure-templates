@@ -68,9 +68,8 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoSwitch = function(opt_data, opt_ignored) {
-  var $$temp;
   var output = 'Dear ' + soy.$$escapeHtml(opt_data.name) + ', &nbsp;';
-  switch ((goog.isObject($$temp = opt_data.name)) ? $$temp.toString() : $$temp) {
+  switch (opt_data.name) {
     case 'Go':
       output += 'You\'ve been bad this year.';
       break;
@@ -157,9 +156,8 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoCallWithParamBlock = function(opt_data, opt_ignored) {
-  var $$temp;
   var param179 = '';
-  switch ((goog.isObject($$temp = Math.floor(Math.random() * 3))) ? $$temp.toString() : $$temp) {
+  switch (Math.floor(Math.random() * 3)) {
     case 0:
       param179 += 'Boston';
       break;

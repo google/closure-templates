@@ -46,7 +46,6 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -417,7 +416,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
         for (ExprNode caseExpr : scn.getExprList()) {
-          if (SharedRuntime.equal(switchValue, eval(caseExpr, scn))) {
+          if (switchValue.equals(eval(caseExpr, scn))) {
             visit(scn);
             return;
           }
