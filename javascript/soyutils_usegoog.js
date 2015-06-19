@@ -52,6 +52,7 @@ goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.SafeStyle');
 goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
@@ -1441,6 +1442,9 @@ soy.$$filterNormalizeUri = function(value) {
   }
   if (value instanceof goog.html.SafeUrl) {
     return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
+  }
+  if (value instanceof goog.html.TrustedResourceUrl) {
+    return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
   }
   return soy.esc.$$filterNormalizeUriHelper(value);
 };

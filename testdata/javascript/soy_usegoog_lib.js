@@ -10826,29 +10826,62 @@ goog.html.SafeUrl.fromConstant = function(url) {
 
 
 /**
- * A pattern that matches Blob types that can have SafeUrls created from
- * URL.createObjectURL(blob). Only matches image types, currently.
+ * A pattern that matches Blob or data types that can have SafeUrls created
+ * from URL.createObjectURL(blob) or via a data: URI.  Only matches image and
+ * video types, currently.
  * @const
  * @private
  */
-goog.html.SAFE_BLOB_TYPE_PATTERN_ =
-    /^image\/(?:bmp|gif|jpeg|jpg|png|tiff|webp)$/i;
+goog.html.SAFE_MIME_TYPE_PATTERN_ =
+    /^(?:image\/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video\/(?:mpeg|mp4|ogg|webm))$/i;
 
 
 /**
- * Creates a SafeUrl wrapping a blob URL for the given {@code blob}. The
- * blob URL is created with {@code URL.createObjectURL}. If the MIME type
- * for {@code blob} is not of a known safe image MIME type, then the
+ * Creates a SafeUrl wrapping a blob URL for the given {@code blob}.
+ *
+ * The blob URL is created with {@code URL.createObjectURL}. If the MIME type
+ * for {@code blob} is not of a known safe image or video MIME type, then the
  * SafeUrl will wrap {@link #INNOCUOUS_STRING}.
+ *
  * @see http://www.w3.org/TR/FileAPI/#url
  * @param {!Blob} blob
  * @return {!goog.html.SafeUrl} The blob URL, or an innocuous string wrapped
  *   as a SafeUrl.
  */
 goog.html.SafeUrl.fromBlob = function(blob) {
-  var url = goog.html.SAFE_BLOB_TYPE_PATTERN_.test(blob.type) ?
+  var url = goog.html.SAFE_MIME_TYPE_PATTERN_.test(blob.type) ?
       goog.fs.url.createObjectUrl(blob) : goog.html.SafeUrl.INNOCUOUS_STRING;
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
+};
+
+
+/**
+ * Matches a base-64 data URL, with the first match group being the MIME type.
+ * @const
+ * @private
+ */
+goog.html.DATA_URL_PATTERN_ = /^data:([^;,]*);base64,[a-z0-9+\/]+=*$/i;
+
+
+/**
+ * Creates a SafeUrl wrapping a data: URL, after validating it matches a
+ * known-safe image or video MIME type.
+ *
+ * @param {string} dataUrl A valid base64 data URL with one of the whitelisted
+ *     image or video MIME types.
+ * @return {!goog.html.SafeUrl} A matching safe URL, or {@link INNOCUOUS_STRING}
+ *     wrapped as a SafeUrl if it does not pass.
+ */
+goog.html.SafeUrl.fromDataUrl = function(dataUrl) {
+  // There's a slight risk here that a browser sniffs the content type if it
+  // doesn't know the MIME type and executes HTML within the data: URL. For this
+  // to cause XSS it would also have to execute the HTML in the same origin
+  // of the page with the link. It seems unlikely that both of these will
+  // happen, particularly in not really old IEs.
+  var match = dataUrl.match(goog.html.DATA_URL_PATTERN_);
+  var valid = match && goog.html.SAFE_MIME_TYPE_PATTERN_.test(match[1]);
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
+      valid ? dataUrl : goog.html.SafeUrl.INNOCUOUS_STRING);
 };
 
 
@@ -15903,9 +15936,17 @@ goog.labs.userAgent.browser.matchOpera_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchIE_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Edge') ||
-      goog.labs.userAgent.util.matchUserAgent('Trident') ||
+  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
       goog.labs.userAgent.util.matchUserAgent('MSIE');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Edge.
+ * @private
+ */
+goog.labs.userAgent.browser.matchEdge_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Edge');
 };
 
 
@@ -15927,7 +15968,7 @@ goog.labs.userAgent.browser.matchSafari_ = function() {
       !(goog.labs.userAgent.browser.matchChrome_() ||
         goog.labs.userAgent.browser.matchCoast_() ||
         goog.labs.userAgent.browser.matchOpera_() ||
-        goog.labs.userAgent.browser.matchIE_() ||
+        goog.labs.userAgent.browser.matchEdge_() ||
         goog.labs.userAgent.browser.isSilk() ||
         goog.labs.userAgent.util.matchUserAgent('Android'));
 };
@@ -15967,7 +16008,7 @@ goog.labs.userAgent.browser.matchChrome_ = function() {
   return (goog.labs.userAgent.util.matchUserAgent('Chrome') ||
       goog.labs.userAgent.util.matchUserAgent('CriOS')) &&
       !goog.labs.userAgent.browser.matchOpera_() &&
-      !goog.labs.userAgent.browser.matchIE_();
+      !goog.labs.userAgent.browser.matchEdge_();
 };
 
 
@@ -15996,6 +16037,12 @@ goog.labs.userAgent.browser.isOpera = goog.labs.userAgent.browser.matchOpera_;
  * @return {boolean} Whether the user's browser is IE.
  */
 goog.labs.userAgent.browser.isIE = goog.labs.userAgent.browser.matchIE_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Edge.
+ */
+goog.labs.userAgent.browser.isEdge = goog.labs.userAgent.browser.matchEdge_;
 
 
 /**
@@ -16098,6 +16145,11 @@ goog.labs.userAgent.browser.getVersion = function() {
     return lookUpValueWithKeys(['Version', 'Opera', 'OPR']);
   }
 
+  // Check Edge before Chrome since it has Chrome in the string.
+  if (goog.labs.userAgent.browser.isEdge()) {
+    return lookUpValueWithKeys(['Edge']);
+  }
+
   if (goog.labs.userAgent.browser.isChrome()) {
     return lookUpValueWithKeys(['Chrome', 'CriOS']);
   }
@@ -16140,11 +16192,6 @@ goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
   var rv = /rv: *([\d\.]*)/.exec(userAgent);
   if (rv && rv[1]) {
     return rv[1];
-  }
-
-  var edge = /Edge\/([\d\.]+)/.exec(userAgent);
-  if (edge) {
-    return edge[1];
   }
 
   var version = '';
@@ -16544,6 +16591,12 @@ goog.define('goog.userAgent.ASSUME_IE', false);
 
 
 /**
+ * @define {boolean} Whether we know at compile-time that the browser is EDGE.
+ */
+goog.define('goog.userAgent.ASSUME_EDGE', false);
+
+
+/**
  * @define {boolean} Whether we know at compile-time that the browser is GECKO.
  */
 goog.define('goog.userAgent.ASSUME_GECKO', false);
@@ -16583,6 +16636,7 @@ goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
  */
 goog.userAgent.BROWSER_KNOWN_ =
     goog.userAgent.ASSUME_IE ||
+    goog.userAgent.ASSUME_EDGE ||
     goog.userAgent.ASSUME_GECKO ||
     goog.userAgent.ASSUME_MOBILE_WEBKIT ||
     goog.userAgent.ASSUME_WEBKIT ||
@@ -16627,6 +16681,22 @@ goog.userAgent.OPERA = goog.userAgent.BROWSER_KNOWN_ ?
 goog.userAgent.IE = goog.userAgent.BROWSER_KNOWN_ ?
     goog.userAgent.ASSUME_IE :
     goog.labs.userAgent.browser.isIE();
+
+
+/**
+ * Whether the user agent is Microsoft Edge.
+ * @type {boolean}
+ */
+goog.userAgent.EDGE = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_EDGE :
+    goog.labs.userAgent.engine.isEdge();
+
+
+/**
+ * Whether the user agent is MS Internet Explorer or MS Edge.
+ * @type {boolean}
+ */
+goog.userAgent.EDGE_OR_IE = goog.userAgent.EDGE || goog.userAgent.IE;
 
 
 /**
@@ -16880,7 +16950,7 @@ goog.userAgent.determineVersion_ = function() {
     version = arr ? arr[1] : '';
   }
 
-  if (goog.userAgent.IE && !goog.labs.userAgent.engine.isEdge()) {
+  if (goog.userAgent.IE) {
     // IE9 can be in document mode 9 but be reporting an inconsistent user agent
     // version.  If it is identifying as a version lower than 9 we take the
     // documentMode as the version instead.  IE8 has similar behavior.
@@ -16908,7 +16978,7 @@ goog.userAgent.getVersionRegexResult_ = function() {
   if (goog.userAgent.GECKO) {
     return /rv\:([^\);]+)(\)|;)/.exec(userAgent);
   }
-  if (goog.userAgent.IE && goog.labs.userAgent.engine.isEdge()) {
+  if (goog.userAgent.EDGE) {
     return /Edge\/([\d\.]+)/.exec(userAgent);
   }
   if (goog.userAgent.IE) {
@@ -17000,9 +17070,7 @@ goog.userAgent.isVersion = goog.userAgent.isVersionOrHigher;
 
 /**
  * Whether the IE effective document mode is higher or the same as the given
- * document mode version. Because document modes were deprecated with the launch
- * of IE's new Edge engine, Edge browsers will always return true for this
- * function.
+ * document mode version.
  * NOTE: Only for IE, return false for another browser.
  *
  * @param {number} documentMode The document mode version to check.
@@ -17010,8 +17078,7 @@ goog.userAgent.isVersion = goog.userAgent.isVersionOrHigher;
  *     same as the given version.
  */
 goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
-  return goog.userAgent.IE && (goog.labs.userAgent.engine.isEdge() ||
-      goog.userAgent.DOCUMENT_MODE >= documentMode);
+  return goog.userAgent.DOCUMENT_MODE >= documentMode;
 };
 
 
@@ -17026,18 +17093,17 @@ goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
 
 
 /**
- * For IE version < 7 and IE Edge browsers, documentMode is undefined. For
- * non-Edge browsers attempt to use the CSS1Compat property to see if we are in
- * standards mode. If we are in standards mode, treat the browser version as the
- * document mode. Otherwise, IE is emulating version 5.
+ * For IE version < 7, documentMode is undefined, so attempt to use the
+ * CSS1Compat property to see if we are in standards mode. If we are in
+ * standards mode, treat the browser version as the document mode. Otherwise,
+ * IE is emulating version 5.
  * @type {number|undefined}
  * @const
  */
 goog.userAgent.DOCUMENT_MODE = (function() {
   var doc = goog.global['document'];
   var mode = goog.userAgent.getDocumentMode_();
-  if (!doc || !goog.userAgent.IE ||
-      (!mode && goog.labs.userAgent.engine.isEdge())) {
+  if (!doc || !goog.userAgent.IE) {
     return undefined;
   }
   return mode || (doc['compatMode'] == 'CSS1Compat' ?
@@ -19825,7 +19891,7 @@ goog.dom.getChildren = function(element) {
  * @return {Element} The first child node of {@code node} that is an element.
  */
 goog.dom.getFirstElementChild = function(node) {
-  if (node.firstElementChild != undefined) {
+  if (goog.isDef(node.firstElementChild)) {
     return /** @type {!Element} */(node).firstElementChild;
   }
   return goog.dom.getNextElementNode_(node.firstChild, true);
@@ -19838,7 +19904,7 @@ goog.dom.getFirstElementChild = function(node) {
  * @return {Element} The last child node of {@code node} that is an element.
  */
 goog.dom.getLastElementChild = function(node) {
-  if (node.lastElementChild != undefined) {
+  if (goog.isDef(node.lastElementChild)) {
     return /** @type {!Element} */(node).lastElementChild;
   }
   return goog.dom.getNextElementNode_(node.lastChild, false);
@@ -19851,7 +19917,7 @@ goog.dom.getLastElementChild = function(node) {
  * @return {Element} The next sibling of {@code node} that is an element.
  */
 goog.dom.getNextElementSibling = function(node) {
-  if (node.nextElementSibling != undefined) {
+  if (goog.isDef(node.nextElementSibling)) {
     return /** @type {!Element} */(node).nextElementSibling;
   }
   return goog.dom.getNextElementNode_(node.nextSibling, true);
@@ -19865,7 +19931,7 @@ goog.dom.getNextElementSibling = function(node) {
  *     an element.
  */
 goog.dom.getPreviousElementSibling = function(node) {
-  if (node.previousElementSibling != undefined) {
+  if (goog.isDef(node.previousElementSibling)) {
     return /** @type {!Element} */(node).previousElementSibling;
   }
   return goog.dom.getNextElementNode_(node.previousSibling, false);
@@ -23837,6 +23903,7 @@ goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.SafeStyle');
 goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
@@ -25226,6 +25293,9 @@ soy.$$filterNormalizeUri = function(value) {
   }
   if (value instanceof goog.html.SafeUrl) {
     return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
+  }
+  if (value instanceof goog.html.TrustedResourceUrl) {
+    return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
   }
   return soy.esc.$$filterNormalizeUriHelper(value);
 };
