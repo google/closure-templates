@@ -25,8 +25,10 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
+import com.google.template.soy.soytree.TemplateNode.Priority;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -105,7 +107,7 @@ public final class TemplateRegistry {
     Map<String, TemplateBasicNode> basicTemplates = new LinkedHashMap<>();
     ImmutableSetMultimap.Builder<String, DelTemplateKey> delTemplateBuilder =
         ImmutableSetMultimap.builder();
-    Map<DelTemplateKey, Map<Integer, Map<String, TemplateDelegateNode>>> tempDelTemplatesMap =
+    Map<DelTemplateKey, Map<Priority, Map<String, TemplateDelegateNode>>> tempDelTemplatesMap =
         new LinkedHashMap<>();
 
     for (SoyFileNode soyFile : soyTree.getChildren()) {
@@ -132,13 +134,13 @@ public final class TemplateRegistry {
           delTemplateBuilder.put(delTemplateName, delTemplateKey);
 
           // Add to tempDelTemplatesMap.
-          int delPriority = delTemplate.getDelPriority();
+          Priority delPriority = delTemplate.getDelPriority();
           String delPackageName = delTemplate.getDelPackageName();
 
-          Map<Integer, Map<String, TemplateDelegateNode>> tempDivisions =
+          Map<Priority, Map<String, TemplateDelegateNode>> tempDivisions =
               tempDelTemplatesMap.get(delTemplateKey);
           if (tempDivisions == null) {
-            tempDivisions = new LinkedHashMap<>();
+            tempDivisions = new EnumMap<>(Priority.class);
             tempDelTemplatesMap.put(delTemplateKey, tempDivisions);
           }
 
@@ -178,19 +180,21 @@ public final class TemplateRegistry {
         = ImmutableListMultimap.builder();
 
     for (DelTemplateKey delTemplateKey : tempDelTemplatesMap.keySet()) {
-      Map<Integer, Map<String, TemplateDelegateNode>> tempDivisions =
+      Map<Priority, Map<String, TemplateDelegateNode>> tempDivisions =
           tempDelTemplatesMap.get(delTemplateKey);
 
       ImmutableList.Builder<DelegateTemplateDivision> divisionsBuilder = ImmutableList.builder();
 
       // Note: List should be in decreasing priority order.
-      for (int priority = TemplateNode.MAX_PRIORITY; priority >= 0; priority--) {
-        if (!tempDivisions.containsKey(priority)) {
-          continue;
-        }
-        Map<String, TemplateDelegateNode> tempDivision = tempDivisions.get(priority);
-        DelegateTemplateDivision division = new DelegateTemplateDivision(tempDivision);
-        divisionsBuilder.add(division);
+      Map<String, TemplateDelegateNode> highPriorityTemplates =
+          tempDivisions.get(Priority.HIGH_PRIORITY);
+      if (highPriorityTemplates != null) {
+        divisionsBuilder.add(new DelegateTemplateDivision(highPriorityTemplates));
+      }
+      Map<String, TemplateDelegateNode> standardPriorityTemplates =
+          tempDivisions.get(Priority.STANDARD);
+      if (standardPriorityTemplates != null) {
+        divisionsBuilder.add(new DelegateTemplateDivision(standardPriorityTemplates));
       }
 
       delTemplatesMapBuilder.putAll(delTemplateKey, divisionsBuilder.build());

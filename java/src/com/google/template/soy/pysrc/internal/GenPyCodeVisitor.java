@@ -314,7 +314,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine(
         "runtime.register_delegate_fn(",
         delTemplateIdExprText, ", ", delTemplateVariantExprText, ", ",
-        Integer.toString(node.getDelPriority()), ", ",
+        node.getDelPriority().toString(), ", ",
         node.getPartialTemplateName().substring(1), ", '",
         node.getPartialTemplateName().substring(1), "')");
   }

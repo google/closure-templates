@@ -40,8 +40,24 @@ import javax.annotation.concurrent.Immutable;
  */
 public abstract class TemplateNode extends AbstractBlockCommandNode implements RenderUnitNode {
 
-  /** Priorities range from 0 to MAX_PRIORITY, inclusive. */
-  public static final int MAX_PRIORITY = 1;
+  /**
+   * Priority for delegate templates.
+   */
+  public enum Priority {
+    STANDARD(0),
+    HIGH_PRIORITY(1);
+
+    private final int value;
+
+    Priority(int value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return Integer.toString(value);
+    }
+  }
 
   /**
    * Info from the containing Soy file's {@code delpackage} and {@code namespace} declarations.
@@ -57,7 +73,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   public static class SoyFileHeaderInfo {
 
     @Nullable public final String delPackageName;
-    public final int defaultDelPriority;
+    final Priority priority;
     @Nullable public final String namespace;
     public final AutoescapeMode defaultAutoescapeMode;
 
@@ -73,7 +89,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     public SoyFileHeaderInfo(
         @Nullable String delPackageName, String namespace, AutoescapeMode defaultAutoescapeMode) {
       this.delPackageName = delPackageName;
-      this.defaultDelPriority = (delPackageName == null) ? 0 : 1;
+      this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
       this.defaultAutoescapeMode = defaultAutoescapeMode;
     }

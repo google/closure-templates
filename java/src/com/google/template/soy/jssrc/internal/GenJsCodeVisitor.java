@@ -629,7 +629,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine(
           "soy.$$registerDelegateFn(",
           delTemplateIdExprText, ", ", delTemplateVariantExprText, ", ",
-          Integer.toString(nodeAsDelTemplate.getDelPriority()), ", ",
+          nodeAsDelTemplate.getDelPriority().toString(), ", ",
           nodeAsDelTemplate.getTemplateName(), ");");
     }
   }

@@ -92,7 +92,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   private DelTemplateKey delTemplateKey;
 
   /** The delegate priority. */
-  private final int delPriority;
+  private final Priority delPriority;
 
   /**
    * Main constructor. This is package-private because TemplateDelegateNode instances should be
@@ -110,7 +110,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   TemplateDelegateNode(
       TemplateDelegateNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo, String delTemplateName, String delTemplateVariant,
-      ExprRootNode delTemplateVariantExpr, DelTemplateKey delTemplateKey, int delPriority,
+      ExprRootNode delTemplateVariantExpr, DelTemplateKey delTemplateKey, Priority delPriority,
       ImmutableList<TemplateParam> params) {
 
     super(nodeBuilder, "deltemplate", soyFileHeaderInfo,
@@ -174,7 +174,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
 
 
   /** Returns the delegate priority. */
-  public int getDelPriority() {
+  public Priority getDelPriority() {
     return delPriority;
   }
 

@@ -20,11 +20,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
+import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -47,6 +48,14 @@ import java.util.regex.Pattern;
  *
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
+
+  private static final SoyError INVALID_DELTEMPLATE_COMMAND_TEXT = SoyError.of(
+      "Invalid delegate template command text.");
+  private static final SoyError INVALID_DELTEMPLATE_NAME = SoyError.of(
+      "Invalid delegate template name");
+  private static final SoyError INVALID_VARIANT_EXPR = SoyError.of("Invalid variant expression "
+          + "(must be a string literal containing an identifier or global expression).");
+  private static final SoyError NO_SOY_DOC = SoyError.of("Delegate templates require SoyDoc.");
 
   /** Pattern for the command text. */
   // 2 capturing groups: del template name, attributes.
@@ -75,7 +84,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   private DelTemplateKey delTemplateKey;
 
   /** The delegate priority. */
-  private int delPriority;
+  private Priority delPriority;
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
@@ -109,15 +118,14 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     this.cmdText = cmdText;
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(cmdText);
-    if (! matcher.matches()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid 'deltemplate' command text \"" + cmdText + "\".");
+    if (!matcher.matches()) {
+      errorReporter.report(sourceLocation, INVALID_DELTEMPLATE_COMMAND_TEXT);
+      return this; // avoid IllegalStateExceptions in matcher.group(...) below.
     }
 
     this.delTemplateName = matcher.group(1);
-    if (! BaseUtils.isDottedIdentifier(delTemplateName)) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid delegate template name \"" + delTemplateName + "\".");
+    if (!BaseUtils.isDottedIdentifier(delTemplateName)) {
+      errorReporter.report(sourceLocation, INVALID_DELTEMPLATE_NAME);
     }
 
     Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
@@ -137,13 +145,11 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       } else if (variantExpr instanceof GlobalNode) {
         // A global expression was used as template variant. The expression will be stored and later
         // resolved into a value when the global expressions are resolved.
-        delTemplateVariantExpr = new ExprRootNode(variantExpr);
+        this.delTemplateVariantExpr = new ExprRootNode(variantExpr);
         this.templateNameForUserMsgs = delTemplateName + ":"
             + (((GlobalNode) variantExpr).getName());
       } else {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid variant expression \"" + variantExprText + "\" in 'deltemplate'" +
-                " (must be a string literal that contains an identifier or an integer global).");
+        errorReporter.report(sourceLocation, INVALID_VARIANT_EXPR);
       }
     }
 
@@ -154,12 +160,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       this.templateNameForUserMsgs = delTemplateKey.toString();
     }
 
-    this.delPriority = soyFileHeaderInfo.defaultDelPriority;
-    if (delPriority < 0 || delPriority > TemplateNode.MAX_PRIORITY) {
-      throw SoySyntaxException.createWithoutMetaInfo(String.format(
-          "Invalid delegate template priority %s (valid range is 0 to %s).",
-          delPriority, TemplateNode.MAX_PRIORITY));
-    }
+    this.delPriority = soyFileHeaderInfo.priority;
 
     setAutoescapeCmdText(attributes);
     setRequireCssCmdText(attributes);
@@ -184,7 +185,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
    * @return This builder.
    */
   public TemplateDelegateNodeBuilder setCmdTextInfo(
-      String delTemplateName, String delTemplateVariant, int delPriority,
+      String delTemplateName, String delTemplateVariant, Priority delPriority,
       AutoescapeMode autoescapeMode, ContentKind contentKind,
       ImmutableList<String> requiredCssNamespaces) {
 
@@ -192,7 +193,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delTemplateName));
     Preconditions.checkArgument(
         delTemplateVariant.length() == 0 || BaseUtils.isIdentifier(delTemplateVariant));
-    Preconditions.checkArgument(0 <= delPriority && delPriority <= TemplateNode.MAX_PRIORITY);
     Preconditions.checkArgument((contentKind != null) == (autoescapeMode == AutoescapeMode.STRICT));
 
     this.delTemplateName = delTemplateName;
@@ -248,10 +248,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
   @Override public TemplateDelegateNodeBuilder setSoyDoc(String soyDoc) {
     if (soyDoc == null) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          (delTemplateName != null) ?
-              "Encountered delegate template " + delTemplateName + " without SoyDoc." :
-              "Encountered delegate template without SoyDoc.");
+      errorReporter.report(sourceLocation, NO_SOY_DOC);
     }
     return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc);
   }
