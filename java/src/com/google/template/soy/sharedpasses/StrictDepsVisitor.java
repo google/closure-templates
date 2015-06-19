@@ -17,9 +17,9 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-// TODO(gboyer): Consider renaming to StrictDepsVisitor.
 /**
  * Visitor to check that there are no external calls. Used by backends that disallow external calls,
  * such as the Tofu (JavaObj) backend.
@@ -38,33 +37,29 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * no return value. A {@code SoySyntaxException} is thrown if an error is found.
  *
  */
-public final class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  /** Log of all found errors. */
-  private StringBuilder errorBuffer;
+  private static final SoyError CALL_TO_UNDEFINED_TEMPLATE = SoyError.of(
+      "Undefined template ''{0}''.");
+  private static final SoyError CALL_TO_INDIRECT_DEPENDENCY = SoyError.of(
+      "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency.");
+  private static final SoyError CALL_FROM_DEP_TO_SRC = SoyError.of(
+      "Illegal call to ''{0}'', because according to the dependency graph, {1} depends on {2}, "
+      + "not the other way around.");
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
-  public AssertNoExternalCallsVisitor(ErrorReporter errorReporter) {
+  public StrictDepsVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
   }
 
   @Override public Void exec(SoyNode soyNode) {
-
     Preconditions.checkArgument(
         soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
-
-    errorBuffer = new StringBuilder();
     templateRegistry = new TemplateRegistry(
         soyNode.getNearestAncestor(SoyFileSetNode.class), errorReporter);
-
     super.exec(soyNode);
-
-    if (errorBuffer.length() != 0) {
-      throw SoySyntaxException.createWithoutMetaInfo(errorBuffer.toString());
-    }
-
     return null;
   }
 
@@ -80,40 +75,32 @@ public final class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<V
     TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
 
     if (callee == null) {
-      addError(node,
-          "Encountered call to undefined template '" + node.getCalleeName() + "'.");
+      errorReporter.report(
+          node.getSourceLocation(), CALL_TO_UNDEFINED_TEMPLATE, node.getCalleeName());
     } else {
       SoyFileKind callerKind = node.getNearestAncestor(SoyFileNode.class).getSoyFileKind();
       SoyFileKind calleeKind = callee.getParent().getSoyFileKind();
       if (calleeKind == SoyFileKind.INDIRECT_DEP && callerKind == SoyFileKind.SRC) {
-        addError(node,
-            "Call to '" + callee.getTemplateNameForUserMsgs()
-            + "' is satisfied only by indirect dependency "
-            + callee.getSourceLocation().getFilePath()
-            + ". Add it as a direct dependency, instead.");
+        errorReporter.report(
+            node.getSourceLocation(),
+            CALL_TO_INDIRECT_DEPENDENCY,
+            callee.getSourceLocation().getFilePath());
       }
 
       // Double check if a dep calls a source. We shouldn't usually see this since the dependency
       // should fail due to unknown template, but it doesn't hurt to add this.
       if (calleeKind == SoyFileKind.SRC && callerKind != SoyFileKind.SRC) {
-        addError(node,
-            "Illegal call to '" + callee.getTemplateNameForUserMsgs()
-            + "', because according to the dependency graph, "
-            + callee.getSourceLocation().getFilePath() + " depends on "
-            + node.getSourceLocation().getFilePath() + ", not the other way around.");
+        errorReporter.report(
+            node.getSourceLocation(),
+            CALL_FROM_DEP_TO_SRC,
+            callee.getTemplateNameForUserMsgs(),
+            callee.getSourceLocation().getFilePath(),
+            node.getSourceLocation().getFilePath());
       }
     }
 
     // Don't forget to visit content within CallParamContentNodes.
     visitChildren(node);
-  }
-
-  private void addError(CallBasicNode node, String errorStr) {
-    TemplateNode containingTemplateNode = node.getNearestAncestor(TemplateNode.class);
-
-    String fullError = node.getSourceLocation() + ", template "
-        + containingTemplateNode.getTemplateNameForUserMsgs() + ": " + errorStr + "\n";
-    errorBuffer.append(fullError);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -125,5 +112,4 @@ public final class AssertNoExternalCallsVisitor extends AbstractSoyNodeVisitor<V
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

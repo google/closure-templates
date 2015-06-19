@@ -68,7 +68,6 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.sharedpasses.AssertNoExternalCallsVisitor;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
@@ -76,6 +75,7 @@ import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
+import com.google.template.soy.sharedpasses.StrictDepsVisitor;
 import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -924,7 +924,7 @@ public final class SoyFileSet {
 
     checkpoint = errorReporter.checkpoint();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
-    new AssertNoExternalCallsVisitor(errorReporter).exec(soyTree);
+    new StrictDepsVisitor(errorReporter).exec(soyTree);
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }
@@ -1170,7 +1170,7 @@ public final class SoyFileSet {
 
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
-      (new AssertNoExternalCallsVisitor(errorReporter)).exec(soyTree);
+      (new StrictDepsVisitor(errorReporter)).exec(soyTree);
     }
 
     // If requiring strict autoescaping, check and enforce it.
