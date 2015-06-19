@@ -740,6 +740,75 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
+  public void testUrlDangerousSchemeForbidden() throws Exception {
+    String message =
+        "Dynamic values are not permitted in javascript: URIs; either hard-code the"
+        + " entire URI, or pass in a SanitizedContent or SafeUri object, or use an existing"
+        + " filter like |filterImageDataUri.";
+    assertRewriteFails(
+        "In file no-path:4:29, template foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<style>url('javas{nil}cript:{$x}')</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:24, template foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<style>url(\"javascript:{$x}\")</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:30, template foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<style>url(\"javascript:alert({$x})\")</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:23, template foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<style>url(javascript:{$x})</style>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"not-javascript:{$x |escapeHtmlAttribute}\">Test</a>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"not-javascript:{$x}\">Test</a>\n",
+            "{/template}"));
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"not?javascript:{$x |escapeUri}\">Test</a>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"not?javascript:{$x}\">Test</a>\n",
+            "{/template}"));
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"javascript:hardcoded()\">Test</a>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template foo autoescape=\"strict\"}\n",
+              "<a href=\"javascript:hardcoded()\">Test</a>\n",
+            "{/template}"));
+  }
+
   public void testRecursiveTemplateGuessFails() throws Exception {
     assertRewriteFails(
         "In file no-path:5:5, template foo: Error while re-contextualizing template quot in"

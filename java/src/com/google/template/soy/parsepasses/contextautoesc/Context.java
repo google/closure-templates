@@ -310,6 +310,12 @@ public final class Context {
             + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or move the"
             + " print statement to the start of the URI to enable runtime validation"
             + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").");
+      case DANGEROUS_SCHEME:
+        // After javascript: or other dangerous schemes.
+        throw SoyAutoescapeException.createWithoutMetaInfo(
+            "Dynamic values are not permitted in javascript: URIs; either hard-code the"
+            + " entire URI, or pass in a SanitizedContent or SafeUri object, or use an existing"
+            + " filter like |filterImageDataUri.");
       default:
         break;
     }
@@ -567,6 +573,10 @@ public final class Context {
     }
 
     if (a.equals(b.derive(a.uriPart))) {
+      if (a.uriPart == UriPart.DANGEROUS_SCHEME || b.uriPart == UriPart.DANGEROUS_SCHEME) {
+        // Dangerous schemes are poison.
+        return Optional.of(a.derive(UriPart.DANGEROUS_SCHEME));
+      }
       if (a.uriPart != UriPart.FRAGMENT && b.uriPart != UriPart.FRAGMENT
           && a.uriPart != UriPart.UNKNOWN && b.uriPart != UriPart.UNKNOWN) {
         if (a.uriPart == UriPart.MAYBE_VARIABLE_SCHEME
@@ -1127,6 +1137,9 @@ public final class Context {
 
     /** Not {@link #NONE}, but unknown.  Used to join different contexts. */
     UNKNOWN,
+
+    /** A known-dangerous scheme where dynamic content is forbidden. */
+    DANGEROUS_SCHEME
     ;
   }
 

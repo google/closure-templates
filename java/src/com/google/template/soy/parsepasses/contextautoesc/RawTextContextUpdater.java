@@ -516,7 +516,7 @@ final class RawTextContextUpdater {
             // http:. This is safe (assuming it's a good scheme), and now we're on our way to the
             // authority.
             // TODO(gboyer): Transition to a stricter state if we end up seeing a dangerous scheme
-            // like javascript: or data:, and only allow hard-coded paths.
+            // like javascript:, and only allow hard-coded paths.
             return UriPart.AUTHORITY_OR_PATH;
           }
         }
@@ -564,27 +564,52 @@ final class RawTextContextUpdater {
       case FRAGMENT:
         // No transitions for fragment.
         return uriPart;
+      case DANGEROUS_SCHEME:
+        // Dangerous schemes remain dangerous.
+        return UriPart.DANGEROUS_SCHEME;
       default:
         throw new AssertionError("Unanticipated URI part: " + uriPart);
     }
   }
 
-  private static final Transition URI_PART_TRANSITION = new Transition("[:./&?=#]|\\z") {
+  /**
+   * Transition between different parts of an http-like URL.
+   *
+   * <p>This happens on the first important URI character, or upon seeing the end of the raw text
+   * segment and not seeing anything else.
+   */
+  private static final Transition URI_PART_TRANSITION = new Transition(
+      "([:./&?=#])|\\z") {
     @Override boolean isApplicableTo(Context prior, Matcher matcher) {
       return true;
     }
 
     @Override Context computeNextContext(Context prior, Matcher matcher) {
       UriPart uriPart = prior.uriPart;
-      // TODO(gboyer): Handle variable scheme
       if (uriPart == UriPart.START) {
         uriPart = UriPart.MAYBE_SCHEME;
       }
-      String match = matcher.group(0);
-      if (!match.isEmpty()) {
+      String match = matcher.group(1);
+      if (match != null) {
         uriPart = getNextUriPart(uriPart, match.charAt(0));
       }
       return prior.derive(uriPart);
+    }
+  };
+
+  /**
+   * Transition to detect dangerous URI schemes.
+   */
+  private static final Transition URI_START_TRANSITION =
+      new Transition("(?i)^(javascript:)") {
+    @Override boolean isApplicableTo(Context prior, Matcher matcher) {
+      return prior.uriPart == UriPart.START;
+    }
+
+    @Override Context computeNextContext(Context prior, Matcher matcher) {
+      // TODO(gboyer): Perhaps we can make exceptions for image URIs, etc.
+      // TODO(gboyer): Ban other unsafe schemes, like filesystem:, blob:, and maybe file:.
+      return prior.derive(UriPart.DANGEROUS_SCHEME);
     }
   };
 
@@ -761,17 +786,20 @@ final class RawTextContextUpdater {
       .put(Context.State.CSS_URI, ImmutableList.of(
           makeTransitionToState("[\\)\\s]", Context.State.CSS),
           URI_PART_TRANSITION,
+          URI_START_TRANSITION,
           makeTransitionToError("[\"']", "Quotes not permitted in CSS URIs."),
           makeEndTagTransition("style")))
       .put(Context.State.CSS_SQ_URI, ImmutableList.of(
           makeTransitionToState("'", Context.State.CSS),
           URI_PART_TRANSITION,
+          URI_START_TRANSITION,
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
           makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
           makeEndTagTransition("style")))
       .put(Context.State.CSS_DQ_URI, ImmutableList.of(
           makeTransitionToState("\"", Context.State.CSS),
           URI_PART_TRANSITION,
+          URI_START_TRANSITION,
           makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
           makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
           makeEndTagTransition("style")))
@@ -868,10 +896,7 @@ final class RawTextContextUpdater {
                   "|\\\\?<(?!/script)" +                   // or an angle bracket possibly escaped.
                 "\\]" +
               ")+")))
-      // TODO: Do we need to recognize URI attributes that start with javascript:, data:text/html,
-      // etc. and transition to JS instead with a second layer of percent decoding triggered by
-      // a protocol in (DATA, JAVASCRIPT, NONE) added to Context?
-      .put(Context.State.URI, ImmutableList.of(URI_PART_TRANSITION))
+      .put(Context.State.URI, ImmutableList.of(URI_PART_TRANSITION, URI_START_TRANSITION))
       .put(Context.State.HTML_RCDATA, ImmutableList.of(
           new Transition("</(\\w+)\\b") {
             @Override

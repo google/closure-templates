@@ -487,6 +487,9 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("URI START", "?", "URI QUERY");
     assertTransition("URI START", "&", "URI MAYBE_SCHEME");
     assertTransition("URI START", "=", "URI MAYBE_SCHEME");
+    assertTransition("URI START", "javascript:", "URI DANGEROUS_SCHEME");
+    assertTransition("URI START", "JavaScript:", "URI DANGEROUS_SCHEME");
+    assertTransition("URI START", "not-javascript:", "URI AUTHORITY_OR_PATH");
 
     assertTransition("URI QUERY", "", "URI QUERY");
     assertTransition("URI QUERY", ".", "URI QUERY");
@@ -494,9 +497,11 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("URI QUERY", "#", "URI FRAGMENT");
     assertTransition("URI QUERY", "x", "URI QUERY");
     assertTransition("URI QUERY", "&", "URI QUERY");
+    assertTransition("URI QUERY", "javascript:", "URI QUERY");
 
     assertTransition("URI FRAGMENT", "", "URI FRAGMENT");
     assertTransition("URI FRAGMENT", "?", "URI FRAGMENT");
+    assertTransition("URI FRAGMENT", "javascript:", "URI FRAGMENT");
 
     assertTransition("URI MAYBE_SCHEME", ":", "URI AUTHORITY_OR_PATH");
     assertTransition("URI MAYBE_SCHEME", ".", "URI MAYBE_SCHEME");
@@ -509,6 +514,8 @@ public class RawTextContextUpdaterTest extends TestCase {
     // If we have a hard-coded prefix, & and = don't do anything.
     assertTransition("URI MAYBE_SCHEME", "=", "URI MAYBE_SCHEME");
     assertTransition("URI MAYBE_SCHEME", "&", "URI MAYBE_SCHEME");
+    // We don't care about schemes that end with javascript:.
+    assertTransition("URI MAYBE_SCHEME", "javascript:", "URI AUTHORITY_OR_PATH");
 
     assertTransition("URI MAYBE_VARIABLE_SCHEME", ".", "URI MAYBE_VARIABLE_SCHEME");
     assertTransition("URI MAYBE_VARIABLE_SCHEME", "foo.bar", "URI MAYBE_VARIABLE_SCHEME");
@@ -520,8 +527,8 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("URI MAYBE_VARIABLE_SCHEME", "=", "URI QUERY");
     assertTransition("URI MAYBE_VARIABLE_SCHEME", "&", "URI QUERY");
     assertTransition("URI MAYBE_VARIABLE_SCHEME", "bah&foo=", "URI QUERY");
-    // NOTE: It's throws an exception to process ":" in this context. It is tested in
-    // ContextualAutoescaperTest.
+    assertTransition("URI MAYBE_VARIABLE_SCHEME", ":", "ERROR");
+    assertTransition("URI MAYBE_VARIABLE_SCHEME", "javascript:", "ERROR");
   }
 
   public final void testRcdata() throws Exception {
