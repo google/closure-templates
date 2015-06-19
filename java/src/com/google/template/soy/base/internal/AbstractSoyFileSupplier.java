@@ -26,8 +26,7 @@ import java.util.Objects;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
-
+public abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
 
   /** Whether this input file is only included because it's a dependency. */
   protected final SoyFileKind soyFileKind;
