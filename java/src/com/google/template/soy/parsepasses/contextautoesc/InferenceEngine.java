@@ -285,7 +285,8 @@ final class InferenceEngine {
         if (!maybeStrategy.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               "Messages are not supported in this context, because it would mean asking "
-                  + "translators to write source code: " + context,
+                  + "translators to write source code; if this is desired, try factoring the "
+                  + "message into a {let} block: " + context,
               node);
         }
         Context.MsgEscapingStrategy strategy = maybeStrategy.get();

@@ -2359,7 +2359,8 @@ public final class ContextualAutoescaperTest extends TestCase {
   private String getForbiddenMsgError(String path, String template, String context) {
     return "In file " + path + ", template " + template + ": "
         + "Messages are not supported in this context, because it would mean asking translators to "
-        + "write source code: (Context " + context + ")";
+        + "write source code; if this is desired, try factoring the message into a {let} block: "
+        + "(Context " + context + ")";
   }
 
   public void testMsgForbiddenUriStartContext() {
