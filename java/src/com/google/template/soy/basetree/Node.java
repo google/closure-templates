@@ -40,7 +40,7 @@ public interface Node {
    *     (V2_1, "Function hasData() is unnecessary and no longer allowed.")
    * Returns null if there is no known upper bound on this node's syntax version.
    */
-  @Nullable public SyntaxVersionBound getSyntaxVersionBound();
+  @Nullable SyntaxVersionBound getSyntaxVersionBound();
 
 
   /**
@@ -48,7 +48,7 @@ public interface Node {
    * @param newSyntaxVersionBound A newly discovered upper bound (exclusive!) for the syntax version
    *     of this node.
    */
-  public void maybeSetSyntaxVersionBound(SyntaxVersionBound newSyntaxVersionBound);
+  void maybeSetSyntaxVersionBound(SyntaxVersionBound newSyntaxVersionBound);
 
 
   /**
@@ -57,27 +57,27 @@ public interface Node {
    * version or higher).
    * @param syntaxVersionCutoff The syntax version cutoff to check.
    */
-  public boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff);
+  boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff);
 
 
   /**
    * Returns the source location (file path and line number) for this node.
    */
-  public SourceLocation getSourceLocation();
+  SourceLocation getSourceLocation();
 
 
   /**
    * Sets this node's parent.
    * @param parent The parent node to set.
    */
-  public void setParent(ParentNode<?> parent);
+  void setParent(ParentNode<?> parent);
 
 
   /**
    * Gets this node's parent.
    * @return This node's parent.
    */
-  public ParentNode<?> getParent();
+  ParentNode<?> getParent();
 
 
   /**
@@ -86,7 +86,7 @@ public interface Node {
    * @param ancestorClass The type of ancestor to look for.
    * @return True if this node has an ancestor of the given type.
    */
-  public boolean hasAncestor(Class<? extends Node> ancestorClass);
+  boolean hasAncestor(Class<? extends Node> ancestorClass);
 
 
   /**
@@ -96,7 +96,7 @@ public interface Node {
    * @param ancestorClass The class object for the type of ancestor to retrieve.
    * @return This node's nearest ancestor of the given type, or null if none.
    */
-  public <N extends Node> N getNearestAncestor(Class<N> ancestorClass);
+  <N extends Node> N getNearestAncestor(Class<N> ancestorClass);
 
 
   /**
@@ -109,7 +109,7 @@ public interface Node {
    * @return A Soy string that could be the source for this node.
    * @throws UnsupportedOperationException If this node does not directly map to Soy source.
    */
-  public String toSourceString();
+  String toSourceString();
 
 
   /**
@@ -119,7 +119,7 @@ public interface Node {
    * @param indent The indentation for each line of the tree string (usually pass 0).
    * @return A string that visually shows the subtree rooted at this node.
    */
-  public String toTreeString(int indent);
+  String toTreeString(int indent);
 
 
   /**
@@ -147,5 +147,5 @@ public interface Node {
    *
    * @return A clone of this code.
    */
-  public Node copy(CopyState copyState);
+  Node copy(CopyState copyState);
 }
