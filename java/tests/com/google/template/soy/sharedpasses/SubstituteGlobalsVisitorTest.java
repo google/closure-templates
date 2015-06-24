@@ -20,9 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
@@ -46,11 +46,10 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Unit tests for SubstituteGlobalsVisitor.
+ * Unit tests for {@link SubstituteGlobalsVisitor}.
  *
  */
-public class SubstituteGlobalsVisitorTest extends TestCase {
-
+public final class SubstituteGlobalsVisitorTest extends TestCase {
 
   public void testSubstituteGlobals() {
     ErrorReporter boom = ExplodingErrorReporter.get();
@@ -79,8 +78,7 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
     assertThat(((StringNode) plus0.getChild(1)).getValue()).isEqualTo("goo");
   }
 
-
-  public void testSubstituteGlobalsFromType() throws Exception {
+  public void testSubstituteGlobalsFromType() {
     ErrorReporter boom = ExplodingErrorReporter.get();
     ExprNode expr
         = new ExpressionParser("foo.BOO + foo.GOO", SourceLocation.UNKNOWN, boom)
@@ -149,11 +147,11 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
     assertThat(((IntegerNode) plus0.getChild(1)).getValue()).isEqualTo(2);
   }
 
-
-  public void testAssertNoUnboundGlobals() throws Exception {
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    ExprNode expr
-        = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, boom)
+  public void testAssertNoUnboundGlobals() {
+    ExprNode expr = new ExpressionParser(
+        "BOO + 'aaa' + foo.GOO",
+        SourceLocation.UNKNOWN,
+        ExplodingErrorReporter.get())
         .parseExpression();
 
     Map<String, PrimitiveData> globals =
@@ -161,17 +159,15 @@ public class SubstituteGlobalsVisitorTest extends TestCase {
             "BOO", StringData.forValue("boo"), "GOO", StringData.forValue("goo"),
             "foo.MOO", StringData.forValue("moo"));
 
-    try {
-      new SubstituteGlobalsVisitor(
-          globals, null /* typeRegistry */,
-          true /* shouldAssertNoUnboundGlobals */,
-          boom)
-          .new SubstituteGlobalsInExprVisitor()
-          .exec(expr);
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage()).contains("Found unbound global 'foo.GOO'.");
-    }
-  }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new SubstituteGlobalsVisitor(
+        globals, null /* typeRegistry */,
+        true /* shouldAssertNoUnboundGlobals */,
+        errorReporter)
+        .new SubstituteGlobalsInExprVisitor()
+        .exec(expr);
 
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(errorReporter.getErrorMessages().get(0)).contains("Unbound global 'foo.GOO'.");
+  }
 }

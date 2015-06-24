@@ -17,11 +17,11 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -47,6 +47,11 @@ import javax.annotation.Nullable;
  *
  */
 public final class SubstituteGlobalsVisitor {
+
+  private static final SoyError UNBOUND_GLOBAL =
+      SoyError.of("Unbound global ''{0}''.");
+  private static final SoyError ENUM_MEMBERSHIP_ERROR =
+      SoyError.of("''{0}'' is not a member of enum ''{1}''.");
 
   /** Map from compile-time global name to value. */
   private Map<String, PrimitiveData> compileTimeGlobals;
@@ -97,13 +102,12 @@ public final class SubstituteGlobalsVisitor {
           (compileTimeGlobals != null) ? compileTimeGlobals.get(node.getName()) : null;
 
       if (value == null && typeRegistry != null) {
-        value = getEnumValue(node.getName());
+        value = getEnumValue(node);
       }
 
       if (value == null) {
         if (shouldAssertNoUnboundGlobals) {
-          throw SoySyntaxException.createWithoutMetaInfo(
-              "Found unbound global '" + node.getName() + "'.");
+          errorReporter.report(node.getSourceLocation(), UNBOUND_GLOBAL, node.getName());
         }
         return;
       }
@@ -118,7 +122,8 @@ public final class SubstituteGlobalsVisitor {
       }
     }
 
-    private PrimitiveData getEnumValue(String name) {
+    private PrimitiveData getEnumValue(GlobalNode node) {
+      String name = node.getName();
       int lastDot = name.lastIndexOf('.');
       if (lastDot < 0) {
         return null;
@@ -134,8 +139,8 @@ public final class SubstituteGlobalsVisitor {
         } else {
           // If we found the type definition but not the value, then that's an error
           // regardless of whether we're allowing unbound globals or not.
-          throw SoySyntaxException.createWithoutMetaInfo(
-              "'" + enumValueName + "' is not a member of " + enumTypeName + ".");
+          errorReporter.report(
+              node.getSourceLocation(), ENUM_MEMBERSHIP_ERROR, enumValueName, enumTypeName);
         }
       }
       return null;
