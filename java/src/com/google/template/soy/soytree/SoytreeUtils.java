@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -29,6 +28,7 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -181,7 +181,7 @@ public final class SoytreeUtils {
    *
    * @param <R> The ExprNode visitor's return type.
    */
-  public static interface Shortcircuiter<R> {
+  public interface Shortcircuiter<R> {
 
     /**
      * Called at various points during a pass initiated by visitAllExprsShortcircuitably.
@@ -191,7 +191,7 @@ public final class SoytreeUtils {
      * @param exprNodeVisitor The expression visitor being used by visitAllExprsShortcircuitably.
      * @return Whether to shortcircuit the pass (at the current point in the pass).
      */
-    public boolean shouldShortcircuit(AbstractExprNodeVisitor<R> exprNodeVisitor);
+    boolean shouldShortcircuit(AbstractExprNodeVisitor<R> exprNodeVisitor);
   }
 
 
@@ -203,7 +203,6 @@ public final class SoytreeUtils {
   private static final class VisitAllV2ExprsVisitor<R> extends AbstractSoyNodeVisitor<R> {
 
     private final AbstractExprNodeVisitor<R> exprNodeVisitor;
-
     private final Shortcircuiter<R> shortcircuiter;
 
     private VisitAllV2ExprsVisitor(
@@ -228,14 +227,9 @@ public final class SoytreeUtils {
 
       if (node instanceof ExprHolderNode) {
         for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-          if (exprUnion.getExpr() == null) {
-            continue;
-          }
-
-          try {
-            exprNodeVisitor.exec(exprUnion.getExpr());
-          } catch (SoySyntaxException sse) {
-            throw SoySyntaxExceptionUtils.associateNode(sse, node);
+          ExprRootNode expr = exprUnion.getExpr();
+          if (expr != null) {
+            exprNodeVisitor.exec(expr);
           }
         }
       }
