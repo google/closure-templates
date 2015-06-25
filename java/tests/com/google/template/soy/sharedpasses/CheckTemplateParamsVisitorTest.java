@@ -110,21 +110,21 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         " * @param maa\n" +  // no 'gaa' is okay because it may be optional in 'baa.faa'
         " * @param transParam \n" +  // okay (not required) because it's used in transitive callee
         " */\n" +
-        "{template name=\".foo\"}\n" +
-        "  {call name=\".fee\" data=\"$goo.moo\" /}\n" +
-        "  {call name=\".fee\" data=\"$too\"}\n" +
+        "{template .foo}\n" +
+        "  {call .fee data=\"$goo.moo\" /}\n" +
+        "  {call .fee data=\"$too\"}\n" +
         "    {param key=\"gee\" value=\"$woo.hoo\" /}\n" +
         "    {param key=\"mee\"}\n" +
         "      {$zoo}\n" +
         "    {/param}\n" +
         "  {/call}\n" +
-        "  {call name=\".fee\" data=\"all\" /}\n" +
-        "  {call name=\"baa.faa\" data=\"all\" /}\n" +
+        "  {call .fee data=\"all\" /}\n" +
+        "  {call baa.faa data=\"all\" /}\n" +
         "  {call .transitive1 data=\"all\" /}\n" +
         "{/template}\n" +
         "\n" +
         "/** @param gee @param mee */\n" +
-        "{template name=\".fee\"}\n" +
+        "{template .fee}\n" +
         "  {$gee}{$mee}\n" +
         "{/template}\n" +
         "\n" +
@@ -142,7 +142,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         "{namespace baa autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** @param gaa @param maa */\n" +
-        "{template name=\".faa\"}\n" +
+        "{template .faa}\n" +
         "  {$gaa}{$maa}\n" +
         "{/template}\n";
 
@@ -196,7 +196,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         " * @param moo\n" +
         " * @param zoo\n" +  // 'zoo' is not used, even in call to .goo
         " */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  {call .goo data=\"all\" /}\n" +
         "{/template}\n" +
         "\n" +
@@ -226,7 +226,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
 
   public void testUnusedParamWithRecursiveCall() {
     String soyDoc = "@param boo @param foo";
-    String templateBody = "{call name=\".foo\" data=\"all\" /}";
+    String templateBody = "{call .foo data=\"all\" /}";
     ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0)).isEqualTo("Param boo unused in template body.");
@@ -325,7 +325,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** " + soyDoc + " */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         templateBody + "\n" +
         "{/template}\n";
 

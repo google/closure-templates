@@ -63,7 +63,7 @@ public final class InsertMsgsVisitorTest extends TestCase {
       "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
       "\n" +
       "/** Test template. */\n" +
-      "{template name=\".foo\"}\n" +
+      "{template .foo}\n" +
       "  {$boo}scary{sp}\n" +
       "  {msg desc=\"Test.\"}\n" +
       "    random{$foo}\n" +
@@ -175,7 +175,7 @@ public final class InsertMsgsVisitorTest extends TestCase {
       "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
       "\n" +
       "/** Test template with plural/select msgs. */\n" +
-      "{template name=\".foo\"}\n" +
+      "{template .foo}\n" +
       "  {msg desc=\"Plural message.\"}\n" +
       "    {plural $numFriends}\n" +
       "      {case 1}Added a friend to your circle.\n" +
@@ -299,7 +299,7 @@ public final class InsertMsgsVisitorTest extends TestCase {
       "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
       "\n" +
       "/** Test template. */\n" +
-      "{template name=\".foo\"}\n" +
+      "{template .foo}\n" +
       "  {msg desc=\"\"}\n" +  // no trans + no trans
       "    noTrans1\n" +
       "  {fallbackmsg desc=\"\"}\n" +

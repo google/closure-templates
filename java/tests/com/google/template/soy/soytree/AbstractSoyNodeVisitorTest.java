@@ -53,7 +53,7 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
     TemplateNode template1 =
         new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
             .setId(0)
-            .setCmdText("name=\".foo\"")
+            .setCmdText(".foo")
             .setSoyDoc("/** @param goo */")
             .build();
     soyFile.addChild(template1);
@@ -69,7 +69,7 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
     TemplateNode template2 =
         new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
             .setId(0)
-            .setCmdText("name=\".moo\"")
+            .setCmdText(".moo")
             .setSoyDoc(null)
             .build();
     soyFile.addChild(template2);

@@ -44,7 +44,7 @@ public final class ClearSoyDocStringsVisitorTest extends TestCase {
         " *\n" +
         " * @param goo blah blah\n" +
         " */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  {$goo}\n" +
         "{/template}\n";
 

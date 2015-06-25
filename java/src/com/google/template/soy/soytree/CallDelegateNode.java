@@ -83,14 +83,13 @@ public final class CallDelegateNode extends CallNode {
     }
   }
 
-  /** Pattern for a callee name not listed as an attribute name="...". */
+  /** Pattern for a callee name. */
   private static final Pattern NONATTRIBUTE_CALLEE_NAME =
-      Pattern.compile("^ (?! name=\") [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
+      Pattern.compile("^ [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
 
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
       new CommandTextAttributesParser("delcall",
-          new Attribute("name", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("variant", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("data", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("allowemptydefault", Attribute.BOOLEAN_VALUES, null));
@@ -202,21 +201,21 @@ public final class CallDelegateNode extends CallNode {
 
       // Handle callee name not listed as an attribute.
       Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(commandTextWithoutPhnameAttr);
+      String delCalleeName;
       if (ncnMatcher.find()) {
-        commandTextWithoutPhnameAttr
-            = ncnMatcher.replaceFirst("name=\"" + ncnMatcher.group() + "\"");
+        delCalleeName = ncnMatcher.group();
+        if (!BaseUtils.isDottedIdentifier(delCalleeName)) {
+          errorReporter.report(sourceLocation, INVALID_DELEGATE_NAME, delCalleeName);
+        }
+        commandTextWithoutPhnameAttr =
+            commandTextWithoutPhnameAttr.substring(ncnMatcher.end()).trim();
+      } else {
+        delCalleeName = null;
+        errorReporter.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
       }
 
       Map<String, String> attributes =
           ATTRIBUTES_PARSER.parse(commandTextWithoutPhnameAttr, errorReporter, sourceLocation);
-
-      String delCalleeName = attributes.get("name");
-      if (delCalleeName == null) {
-        errorReporter.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
-      }
-      if (!BaseUtils.isDottedIdentifier(delCalleeName)) {
-        errorReporter.report(sourceLocation, INVALID_DELEGATE_NAME, delCalleeName);
-      }
 
       String variantExprText = attributes.get("variant");
       ExprRootNode delCalleeVariantExpr;

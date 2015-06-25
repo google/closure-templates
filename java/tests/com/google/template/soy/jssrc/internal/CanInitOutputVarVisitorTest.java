@@ -66,18 +66,18 @@ public class CanInitOutputVarVisitorTest extends TestCase {
 
     runTestHelper("{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}", true);
 
-    runTestHelper("{call name=\".foo\" data=\"all\" /}", true);
+    runTestHelper("{call .foo data=\"all\" /}", true);
 
-    runTestHelper("{call name=\".foo\" data=\"$boo\"}{param key=\"goo\" value=\"$moo\" /}{/call}",
+    runTestHelper("{call .foo data=\"$boo\"}{param key=\"goo\" value=\"$moo\" /}{/call}",
                   true);
 
-    runTestHelper("{call name=\".foo\" data=\"$boo\"}{param key=\"goo\"}Blah{/param}{/call}",
+    runTestHelper("{call .foo data=\"$boo\"}{param key=\"goo\"}Blah{/param}{/call}",
                   true);
   }
 
 
   public void testNotSameValueAsIsComputableAsJsExprsVisitor() {
-    runTestHelper("{call name=\".foo\" data=\"$boo\"}" +
+    runTestHelper("{call .foo data=\"$boo\"}" +
                   "{param key=\"goo\"}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
                   "{/call}",
                   false);

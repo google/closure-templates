@@ -42,7 +42,7 @@ public final class RenameCssVisitorTest extends TestCase {
       "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
       "\n" +
       "/** Test template. @param goo */\n" +
-      "{template name=\".foo\"}\n" +
+      "{template .foo}\n" +
       "  <div class=\"{css AAA} {css $goo, AAA} {css BBB} {css $goo, BBB}\">\n" +
       "{/template}\n";
 

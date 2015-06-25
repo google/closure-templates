@@ -1066,7 +1066,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <title>{call .pagenum data=\"all\" /}</title>\n",
             "  <script>\n",
-            "    var pagenum = \"{call name=\".pagenum\" data=\"all\" /}\";\n",
+            "    var pagenum = \"{call .pagenum data=\"all\" /}\";\n",
             "    ...\n",
             "  </script>\n",
             "{/template}\n\n",
@@ -1111,7 +1111,7 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template name=\"iconTemplate\" autoescape=\"deprecated-contextual\"}\n",
+            "{template iconTemplate autoescape=\"deprecated-contextual\"}\n",
               "<img class=\"{$iconClass |escapeHtmlAttribute}\"",
               "{if $iconId}",
                 " id=\"{$iconId |escapeHtmlAttribute}\"",
@@ -1135,7 +1135,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template name=\"iconTemplate\" autoescape=\"deprecated-contextual\"}\n",
+            "{template iconTemplate autoescape=\"deprecated-contextual\"}\n",
               "<img class=\"{$iconClass}\"",
               "{if $iconId}",
                 " id=\"{$iconId}\"",

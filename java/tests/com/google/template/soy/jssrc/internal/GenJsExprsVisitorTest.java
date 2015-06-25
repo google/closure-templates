@@ -167,15 +167,15 @@ public final class GenJsExprsVisitorTest extends TestCase {
 
   public void testCall() {
     assertGeneratedJsExprs(
-        "{call name=\"some.func\" data=\"all\" /}",
+        "{call some.func data=\"all\" /}",
         ImmutableList.of(new JsExpr("some.func(opt_data)", Integer.MAX_VALUE)));
 
     assertGeneratedJsExprs(
-        "{call name=\"some.func\" data=\"$boo.foo\" /}",
+        "{call some.func data=\"$boo.foo\" /}",
         ImmutableList.of(new JsExpr("some.func(opt_data.boo.foo)", Integer.MAX_VALUE)));
 
     String soyNodeCode =
-        "{call name=\"some.func\"}" +
+        "{call some.func}" +
         "  {param key=\"goo\" value=\"$moo\" /}" +
         "{/call}";
     assertGeneratedJsExprs(
@@ -183,7 +183,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
         ImmutableList.of(new JsExpr("some.func({goo: opt_data.moo})", Integer.MAX_VALUE)));
 
     soyNodeCode =
-        "{call name=\"some.func\" data=\"$boo\"}" +
+        "{call some.func data=\"$boo\"}" +
         "  {param key=\"goo\"}Blah{/param}" +
         "{/call}";
     assertGeneratedJsExprs(
@@ -206,7 +206,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
         ImmutableList.of(new JsExpr(expectedJsExprText, Operator.CONDITIONAL.getPrecedence())));
 
     soyNodeCode =
-        "{call name=\"some.func\"}" +
+        "{call some.func}" +
         "  {param key=\"goo\"}{lb}{index($goo)}{rb} is {$goo.moo}{/param}" +
         "{/call}";
     expectedJsExprText =

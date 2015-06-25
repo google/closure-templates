@@ -34,7 +34,7 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** @param goo */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  {$goo}\n" +
         "{/template}\n";
 
@@ -61,7 +61,7 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** @param goo */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  {$goo}\n" +
         "{/template}\n";
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();

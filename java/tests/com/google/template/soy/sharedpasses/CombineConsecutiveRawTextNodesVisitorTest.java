@@ -39,7 +39,7 @@ public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** @param goo */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  Blah{$goo}blah\n" +
         "{/template}\n";
 

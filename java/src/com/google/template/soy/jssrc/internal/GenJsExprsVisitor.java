@@ -390,12 +390,12 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
   /**
    * Example:
    * <pre>
-   *   {call name="some.func" data="all" /}
-   *   {call name="some.func" data="$boo.foo" /}
-   *   {call name="some.func"}
+   *   {call some.func data="all" /}
+   *   {call some.func data="$boo.foo" /}
+   *   {call some.func}
    *     {param key="goo" value="$moo" /}
    *   {/call}
-   *   {call name="some.func" data="$boo"}
+   *   {call some.func data="$boo"}
    *     {param key="goo"}Blah{/param}
    *   {/call}
    * </pre>

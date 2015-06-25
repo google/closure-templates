@@ -293,18 +293,7 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".foo name=\"x.foo\" autoescape=\"deprecated-noncontextual\"")
-          .setSoyDoc("/***/")
-          .build();
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage()).contains(
-          "Invalid 'template' command with template name declared multiple times (.foo, x.foo).");
-    }
-
-    try {
-      templateBasicNode()
-          .setId(0).setCmdText("autoescape=\"strict").setSoyDoc("/***/").build();
+          .setId(0).setCmdText(".foo autoescape=\"strict").setSoyDoc("/***/").build();
       fail();
     } catch (IllegalStateException e) {
       assertThat(e.getMessage()).contains(
@@ -535,7 +524,7 @@ public class TemplateNodeTest extends TestCase {
     ErrorReporter boom = ExplodingErrorReporter.get();
     TemplateNode tn = templateBasicNode()
         .setId(0)
-        .setCmdText("name=\".boo\"")
+        .setCmdText(".boo")
         .setSoyDoc("" +
             "/**\n" +
             " * Test template.\n" +
@@ -567,7 +556,7 @@ public class TemplateNodeTest extends TestCase {
             " * @param goo\n" +
             " *     Goo to print.\n" +
             " */\n" +
-            "{template name=\".boo\"}\n" +
+            "{template .boo}\n" +
             "  {@param moo: bool}  /** Something milky. */\n" +
             "  {@param too: string|null}\n" +
             "{sp} {$foo}{$goo} {sp}\n" +

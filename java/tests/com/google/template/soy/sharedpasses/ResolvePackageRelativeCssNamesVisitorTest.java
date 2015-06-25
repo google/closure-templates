@@ -54,7 +54,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
     List<CssNode> cssNodes = compileTemplate(
         "{namespace boo cssbase=\"some.test.package\"}\n\n" +
         "/** Test template. @param goo */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  <div class=\"{css %AAA}\">\n" +
         "{/template}\n");
 
@@ -65,7 +65,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
     List<CssNode> cssNodes = compileTemplate(
         "{namespace boo}\n\n" +
         "/** Test template. @param goo */\n" +
-        "{template name=\".foo\" cssbase=\"some.test.package\"}\n" +
+        "{template .foo cssbase=\"some.test.package\"}\n" +
         "  <div class=\"{css %AAA}\">\n" +
         "{/template}\n");
 
@@ -76,7 +76,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
     List<CssNode> cssNodes = compileTemplate(
         "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n" +
         "/** Test template. @param goo */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  <div class=\"{css %AAA}\">\n" +
         "{/template}\n");
 
@@ -87,7 +87,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
     List<CssNode> cssNodes = compileTemplate(
         "{namespace boo cssbase=\"some.test.package\"}\n\n" +
         "/** Test template. @param goo */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  <div class=\"{css AAA}\">\n" +
         "{/template}\n");
 
@@ -99,7 +99,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
       compileTemplate(
           "{namespace boo}\n\n" +
           "/** Test template. @param goo */\n" +
-          "{template name=\".foo\"}\n" +
+          "{template .foo}\n" +
           "  <div class=\"{css %AAA}\">\n" +
           "{/template}\n");
       fail("Exception expected");
@@ -113,7 +113,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
       compileTemplate(
           "{namespace boo}\n\n" +
           "/** Test template. @param goo */\n" +
-          "{template name=\".foo\"}\n" +
+          "{template .foo}\n" +
           "  <div class=\"{css $goo, %AAA}\">\n" +
           "{/template}\n");
       fail("Exception expected");

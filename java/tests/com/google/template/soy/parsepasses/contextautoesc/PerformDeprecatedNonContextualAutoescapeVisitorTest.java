@@ -263,7 +263,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** Foo template. */\n" +
-        "{template name=\".foo\"" +
+        "{template .foo" +
         (shouldAutoescape ? "" : " autoescape=\"deprecated-noautoescape\"") + "}\n" +
         testPrintTags + "\n" +
         "{/template}\n";

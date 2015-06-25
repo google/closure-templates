@@ -124,12 +124,6 @@ import java.util.regex.*;
  *        {$boo} has a friend named {$goo.firstName}.
  *      {/msg}
  *    {/template}
- *    /**
- *     * Old style.
- *     *&#47;
- *    {template name="foo"}
- *      ...
- *    {/template}
  *
  * 6. Misc:
  *    + Other than the items specified above, everything else is ignored.

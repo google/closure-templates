@@ -264,7 +264,6 @@ final class Inferences {
       // We need to use the unnamespaced name in the command text since we'll be inserting this
       // template into a file node that already has a namespace declaration.
       TemplateNode clone;
-      boolean useAttrStyleForName = tn.getCommandText().contains("name=");
 
       if (tn instanceof TemplateBasicNode) {
         String derivedPartialName = (tn.getPartialTemplateName() != null) ?
@@ -273,7 +272,7 @@ final class Inferences {
             soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
             .setId(cloneId)
             .setCmdTextInfo(
-                derivedName, derivedPartialName, useAttrStyleForName,
+                derivedName, derivedPartialName,
                 tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
                 tn.getRequiredCssNamespaces())
             .setSoyDoc(tn.getSoyDoc())

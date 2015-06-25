@@ -74,14 +74,13 @@ public final class CallBasicNode extends CallNode {
     }
   }
 
-  /** Pattern for a callee name not listed as an attribute name="...". */
+  /** Pattern for a callee name not listed as an attribute function="...". */
   private static final Pattern NONATTRIBUTE_CALLEE_NAME =
-      Pattern.compile("^ (?! name=\" | function=\") [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
+      Pattern.compile("^ (?! function=\") [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
 
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
       new CommandTextAttributesParser("call",
-          new Attribute("name", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("function", Attribute.ALLOW_ALL_VALUES, null),  // V1
           new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
 
@@ -273,19 +272,6 @@ public final class CallBasicNode extends CallNode {
       Map<String, String> attributes
           = ATTRIBUTES_PARSER.parse(cmdTextForParsing, errorReporter, sourceLocation);
 
-      String nameAttr = attributes.get("name");
-      if (nameAttr != null) {
-        srcCalleeNames.add(nameAttr);
-        // Explicit attribute 'name' is only allowed in syntax versions 2.1 and below.
-        SyntaxVersionBound newSyntaxVersionBound = new SyntaxVersionBound(
-            SyntaxVersion.V2_2,
-            String.format(
-                "Callee name should be written directly instead of within attribute 'name' (i.e." +
-                    " use {call %s} instead of {call name=\"%s\"}.",
-                nameAttr, nameAttr));
-        syntaxVersionBound =
-            SyntaxVersionBound.selectLower(syntaxVersionBound, newSyntaxVersionBound);
-      }
       String functionAttr = attributes.get("function");
       if (functionAttr != null) {
         srcCalleeNames.add(functionAttr);

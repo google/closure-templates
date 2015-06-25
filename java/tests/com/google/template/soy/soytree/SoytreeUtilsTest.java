@@ -61,7 +61,7 @@ public final class SoytreeUtilsTest extends TestCase {
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
         "\n" +
         "/** @param items */\n" +
-        "{template name=\".foo\"}\n" +
+        "{template .foo}\n" +
         "  {length($items) + 5}\n" +  // 5 nodes
         "  {foreach $item in $items}\n" +  // 2 nodes
         "    {$item.goo}\n" +  // 3 nodes

@@ -351,7 +351,7 @@ public final class TemplateParserTest extends TestCase {
         "Number {$i}.{{/for}}");
     assertIsTemplateBody("{call function=\"aaa.bbb.ccc\" data=\"all\" /}");
     assertIsTemplateBody("" +
-        "{call name=\".aaa\"}\n" +
+        "{call .aaa}\n" +
         "  {{param key=\"boo\" value=\"$boo\" /}}\n" +
         "  {param key=\"foo\"}blah blah{/param}\n" +
         "  {param key=\"foo\" kind=\"html\"}blah blah{/param}\n" +
@@ -369,7 +369,7 @@ public final class TemplateParserTest extends TestCase {
         "{/call}");
     assertIsTemplateBody("{delcall aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
-        "{delcall name=\"ddd.eee\"}\n" +
+        "{delcall ddd.eee}\n" +
         "  {{param key=\"boo\" value=\"$boo\" /}}\n" +
         "  {param key=\"foo\"}blah blah{/param}\n" +
         "{/delcall}");
@@ -410,9 +410,9 @@ public final class TemplateParserTest extends TestCase {
     assertIsNotTemplateBody("{print $boo /}");
     assertIsNotTemplateBody("{if true}aaa{else/}bbb{/if}");
     assertIsNotTemplateBody("{call .aaa.bbb /}");
-    assertIsNotTemplateBody("{delcall name=\"ddd.eee\"}{param foo: 0}{/call}");
+    assertIsNotTemplateBody("{delcall ddd.eee}{param foo: 0}{/call}");
     assertIsNotTemplateBody("{delcall .dddEee /}");
-    assertIsNotTemplateBody("{call name=\".aaa\"}{param boo kind=\"html\": 123 /}{/call}\n");
+    assertIsNotTemplateBody("{call.aaa}{param boo kind=\"html\": 123 /}{/call}\n");
     assertIsNotTemplateBody("{log}");
     assertIsNotTemplateBody("{log 'Blah blah.'}");
     assertIsNotTemplateBody("{let $foo kind=\"html\" : 1 + 1/}\n");
@@ -983,7 +983,7 @@ public final class TemplateParserTest extends TestCase {
 
     String templateBody =
         "  {msg desc=\"Blah.\"}\n" +
-        "    Blah {call name=\".helper_\" data=\"all\" /} blah{sp}\n" +
+        "    Blah {call .helper_ data=\"all\" /} blah{sp}\n" +
         "    {call .helper_}\n" +
         "      {param foo}Foo{/param}\n" +
         "    {/call}{sp}\n" +
@@ -1258,9 +1258,9 @@ public final class TemplateParserTest extends TestCase {
   public void testParseBasicCallStmt() throws Exception {
 
     String templateBody =
-        "  {call name=\".booTemplate_\" /}\n" +
+        "  {call .booTemplate_ /}\n" +
         "  {call function=\"foo.goo.mooTemplate\" data=\"all\" /}\n" +
-        "  {call name=\".zooTemplate\" data=\"$animals\"}\n" +
+        "  {call .zooTemplate data=\"$animals\"}\n" +
         "    {param key=\"yoo\" value=\"round($too)\" /}\n" +
         "    {param key=\"woo\"}poo{/param}\n" +
         "    {param key=\"doo\" kind=\"html\"}doopoo{/param}\n" +
@@ -1382,7 +1382,7 @@ public final class TemplateParserTest extends TestCase {
   public void testParseDelegateCallStmt() throws Exception {
 
     String templateBody =
-        "  {delcall name=\"booTemplate\" /}\n" +
+        "  {delcall booTemplate /}\n" +
         "  {delcall foo.goo.mooTemplate data=\"all\" /}\n" +
         "  {delcall MySecretFeature.zooTemplate data=\"$animals\"}\n" +
         "    {param yoo: round($too) /}\n" +

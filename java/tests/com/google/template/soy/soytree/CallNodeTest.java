@@ -40,7 +40,7 @@ public final class CallNodeTest extends TestCase {
     checkCommandText("function=\"bar.foo\"");
     checkCommandText("foo");
     checkCommandText(".foo data=\"all\"");
-    checkCommandText("name=\".baz\" data=\"$x\"", ".baz data=\"$x\"");
+    checkCommandText(".baz data=\"$x\"", ".baz data=\"$x\"");
 
     try {
       checkCommandText(".foo.bar data=\"$x\"");
