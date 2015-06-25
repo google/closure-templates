@@ -17,8 +17,11 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -26,6 +29,8 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -35,8 +40,10 @@ import java.util.regex.Pattern;
  * <p> Adapted from Soy V1 code.
  *
  */
-class V1JsExprTranslator {
+final class V1JsExprTranslator {
 
+  private static final SoyError MALFORMED_FUNCTION_CALL =
+      SoyError.of("Malformed function call.");
 
   /** Regex for a template variable or data reference. */
   // 2 capturing groups: first part (excluding '$'), rest
@@ -82,13 +89,16 @@ class V1JsExprTranslator {
    * </pre>
    *
    * @param soyExpr The expression text to generate code for.
+   * @param sourceLocation Source location of the expression text.
    * @param localVarTranslations -
+   * @param errorReporter For reporting syntax errors.
    * @return The resulting expression code after the necessary substitutions.
-   * @throws SoySyntaxException If the given expression has an error.
    */
   public static JsExpr translateToJsExpr(
-      String soyExpr, Deque<Map<String, JsExpr>> localVarTranslations)
-      throws SoySyntaxException {
+      String soyExpr,
+      SourceLocation sourceLocation,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      ErrorReporter errorReporter) {
 
     soyExpr = CharMatcher.WHITESPACE.collapseFrom(soyExpr, ' ');
 
@@ -97,18 +107,22 @@ class V1JsExprTranslator {
     Matcher matcher = VAR_OR_REF_OR_BOOL_OP_OR_SOY_FUNCTION.matcher(soyExpr);
     while (matcher.find()) {
       String group = matcher.group();
-      if (VAR_OR_REF.matcher(group).matches()) {
+      Matcher varOrRef = VAR_OR_REF.matcher(group);
+      if (varOrRef.matches()) {
         matcher.appendReplacement(
             jsExprTextSb,
-            Matcher.quoteReplacement(translateVarOrRef(group, localVarTranslations)));
+            Matcher.quoteReplacement(
+                translateVarOrRef(localVarTranslations, varOrRef)));
       } else if (BOOL_OP_RE.matcher(group).matches()) {
         matcher.appendReplacement(
             jsExprTextSb,
             Matcher.quoteReplacement(translateBoolOp(group)));
       } else {
-        matcher.appendReplacement(
-            jsExprTextSb,
-            Matcher.quoteReplacement(translateFunction(group, localVarTranslations)));
+        String translation =
+            translateFunction(group, localVarTranslations, sourceLocation, errorReporter);
+        if (translation != null) {
+          matcher.appendReplacement(jsExprTextSb, Matcher.quoteReplacement(translation));
+        }
       }
     }
     matcher.appendTail(jsExprTextSb);
@@ -136,22 +150,14 @@ class V1JsExprTranslator {
    * $i          -->  i3                    (for var)
    * </pre>
    *
-   * @param varOrRefText The variable or data reference to translage.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
+   * @param matcher Matcher formed from {@link V1JsExprTranslator#VAR_OR_REF}.
    * @return Generated translation for the variable or data reference.
-   * @throws SoySyntaxException If the {@code varOrRefText} is malformed.
    */
   private static String translateVarOrRef(
-      String varOrRefText, Deque<Map<String, JsExpr>> localVarTranslations)
-      throws SoySyntaxException {
-
-    Matcher matcher = VAR_OR_REF.matcher(varOrRefText);
-    if (!matcher.matches()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Variable or data reference \"" + varOrRefText + "\" is malformed.");
-    }
-
+      Deque<Map<String, JsExpr>> localVarTranslations, Matcher matcher) {
+    Preconditions.checkArgument(matcher.matches());
     String firstPart = matcher.group(1);
     String rest = matcher.group(2);
 
@@ -188,15 +194,15 @@ class V1JsExprTranslator {
    * @return The translated string.
    */
   private static String translateBoolOp(String boolOp) {
-
-    if (boolOp.equals("not")) {
-      return "!";
-    } else if (boolOp.equals("and")) {
-      return "&&";
-    } else if (boolOp.equals("or")) {
-      return "||";
-    } else {
-      throw new AssertionError();
+    switch (boolOp) {
+      case "not":
+        return "!";
+      case "and":
+        return "&&";
+      case "or":
+        return "||";
+      default:
+        throw new AssertionError();
     }
   }
 
@@ -208,17 +214,19 @@ class V1JsExprTranslator {
    * @param functionText The text of the special function call.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
-   * @return The translated string
-   * @throws SoySyntaxException If a syntax error is detected.
+   * @param errorReporter For reporting syntax errors.
+   * @return The translated string, or null if the function text was malformed or the translation
+   *     couldn't be found.
    */
-  private static String translateFunction(
-      String functionText, Deque<Map<String, JsExpr>> localVarTranslations)
-      throws SoySyntaxException {
-
+  @Nullable private static String translateFunction(
+      String functionText,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      SourceLocation sourceLocation,
+      ErrorReporter errorReporter) {
     Matcher matcher = SOY_FUNCTION.matcher(functionText);
     if (!matcher.matches()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Soy function call \"" + functionText + "\" is malformed.");
+      errorReporter.report(sourceLocation, MALFORMED_FUNCTION_CALL);
+      return null;
     }
 
     String funcName = matcher.group(1);
@@ -299,7 +307,7 @@ class V1JsExprTranslator {
    *     variables (and foreach-loop special functions) current in scope.
    * @return The translated string for the given variable, or null if not found.
    */
-  private static String getLocalVarTranslation(
+  @Nullable private static String getLocalVarTranslation(
       String ident, Deque<Map<String, JsExpr>> localVarTranslations) {
 
     for (Map<String, JsExpr> localVarTranslationsFrame : localVarTranslations) {
@@ -312,8 +320,6 @@ class V1JsExprTranslator {
         }
       }
     }
-
     return null;
   }
-
 }

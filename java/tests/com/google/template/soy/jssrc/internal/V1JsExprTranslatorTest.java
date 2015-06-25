@@ -20,6 +20,8 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -99,7 +101,8 @@ public class V1JsExprTranslatorTest extends TestCase {
   public void runTestHelper(String soyExpr, JsExpr expectedJsExpr, boolean shouldBeLenient)
       throws Exception {
 
-    JsExpr actualJsExpr = V1JsExprTranslator.translateToJsExpr(soyExpr, LOCAL_VAR_TRANSLATIONS);
+    JsExpr actualJsExpr = V1JsExprTranslator.translateToJsExpr(
+        soyExpr, SourceLocation.UNKNOWN, LOCAL_VAR_TRANSLATIONS, ExplodingErrorReporter.get());
     assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
     if (shouldBeLenient) {
       assertThat(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence()).isTrue();

@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -87,8 +88,12 @@ class JsExprTranslator {
       return translateToJsExprVisitorFactory.create(localVarTranslations).exec(expr);
     } else {
       // V1 expression.
+      SourceLocation sourceLocation = expr != null
+          ? expr.getSourceLocation()
+          : SourceLocation.UNKNOWN;
       Preconditions.checkNotNull(exprText);
-      return V1JsExprTranslator.translateToJsExpr(exprText, localVarTranslations);
+      return V1JsExprTranslator.translateToJsExpr(
+          exprText, sourceLocation, localVarTranslations, errorReporter);
     }
   }
 
