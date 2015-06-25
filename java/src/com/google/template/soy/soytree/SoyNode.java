@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
  * subinterfaces that extend the base interface in various aspects. Every concrete node implements
  * some subset of these interfaces.
  *
- * The top level definition is the base node interface.
+ * <p> The top level definition is the base node interface.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -95,6 +95,20 @@ public interface SoyNode extends Node {
     CALL_DELEGATE_NODE,
     CALL_PARAM_VALUE_NODE,
     CALL_PARAM_CONTENT_NODE,
+
+    // These Node types are created by the com.google.template.soy.html package. RawTextNodes that
+    // appear in an HTML or attribute context are transformed into these node types. In general,
+    // passes that do not output generated code should not need to worry about these types, other
+    // than treating them as generic parent nodes that may contain descendants they are interested
+    // in.
+    HTML_OPEN_TAG,
+    HTML_OPEN_TAG_START,
+    HTML_OPEN_TAG_END,
+    HTML_VOID_TAG,
+    HTML_CLOSE_TAG,
+    HTML_ATTRIBUTE,
+    HTML_TEXT,
+    HTML_PRINT_NODE,
 
     LOG_NODE,
     DEBUGGER_NODE,

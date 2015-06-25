@@ -58,7 +58,7 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     super(errorReporter);
   }
 
-  @Override protected final void visit(SoyNode node) {
+  @Override protected void visit(SoyNode node) {
 
     switch (node.getKind()) {
 
@@ -117,7 +117,17 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case LOG_NODE: visitLogNode((LogNode) node); break;
       case DEBUGGER_NODE: visitDebuggerNode((DebuggerNode) node); break;
 
-      default: throw new UnsupportedOperationException();
+      case HTML_ATTRIBUTE: visitGenericHtmlNode(node); break;
+      case HTML_OPEN_TAG: visitGenericHtmlNode(node); break;
+      case HTML_OPEN_TAG_START: visitGenericHtmlNode(node); break;
+      case HTML_OPEN_TAG_END: visitGenericHtmlNode(node); break;
+      case HTML_CLOSE_TAG: visitGenericHtmlNode(node); break;
+      case HTML_VOID_TAG: visitGenericHtmlNode(node); break;
+      case HTML_TEXT: visitGenericHtmlNode(node); break;
+      case HTML_PRINT_NODE: visitGenericHtmlNode(node); break;
+
+
+      default: visitSoyNode(node); break;
     }
   }
 
@@ -135,8 +145,8 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   /**
    * Helper to visit all the children of a node, in order.
    *
-   * This method differs from {@code visitChildren} in that we are iterating through a copy of the
-   * children. Thus, concurrent modification of the list of children is allowed.
+   * <p>This method differs from {@code visitChildren} in that we are iterating through a copy of
+   * the children. Thus, concurrent modification of the list of children is allowed.
    *
    * @param node The parent node whose children to visit.
    * @see #visitChildren
@@ -346,4 +356,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     throw new UnsupportedOperationException();
   }
 
+  private final void visitGenericHtmlNode(SoyNode node) {
+    throw new IllegalStateException("This visitor does not handle nodes created by "
+          + "HtmlTransformVisitor. This visitor should implement AbstractHtmlSoyNodeVisitor "
+          + "instead. The visited node was" + node + ".");
+  }
 }
