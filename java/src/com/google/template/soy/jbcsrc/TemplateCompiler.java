@@ -29,7 +29,6 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -74,10 +73,11 @@ final class TemplateCompiler {
     this.registry = registry;
     this.template = template;
     this.errorReporter = errorReporter;
-    this.paramsField = createFinalField(template.typeInfo(), PARAMS_FIELD, SoyRecord.class);
-    this.ijField = createFinalField(template.typeInfo(), IJ_FIELD, SoyRecord.class);
-    this.stateField = createField(template.typeInfo(), STATE_FIELD, Type.INT_TYPE);
-    this.innerClasses = new InnerClasses(template.typeInfo());
+    TypeInfo ownerType = template.typeInfo();
+    this.paramsField = createFinalField(ownerType, PARAMS_FIELD, SoyRecord.class).asNonNull();
+    this.ijField = createFinalField(ownerType, IJ_FIELD, SoyRecord.class).asNonNull();
+    this.stateField = createField(ownerType, STATE_FIELD, Type.INT_TYPE);
+    this.innerClasses = new InnerClasses(ownerType);
     fieldNames.claimName(PARAMS_FIELD);
     fieldNames.claimName(IJ_FIELD);
     fieldNames.claimName(STATE_FIELD);
@@ -85,7 +85,7 @@ final class TemplateCompiler {
     for (TemplateParam param : template.node().getAllParams()) {
       String name = param.name();
       fieldNames.claimName(name);
-      builder.put(name, createFinalField(template.typeInfo(), name, SoyValueProvider.class));
+      builder.put(name, createFinalField(ownerType, name, SoyValueProvider.class).asNonNull());
     }
     this.paramFields = builder.build();
   }
@@ -173,9 +173,11 @@ final class TemplateCompiler {
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
     final LocalVariable appendableVar = 
-        createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
+        createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end)
+            .asNonNullable();
     final LocalVariable contextVar = 
-        createLocal("context", 2, Type.getType(RenderContext.class), start, end);
+        createLocal("context", 2, Type.getType(RenderContext.class), start, end)
+            .asNonNullable();
     final VariableSet variableSet = 
         new VariableSet(fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateNode node = template.node();
@@ -277,7 +279,7 @@ final class TemplateCompiler {
     } else {
       checkPresence = Statement.NULL_STATEMENT;
     }
-    return new SimpleExpression(Type.getType(SoyValueProvider.class), false) {
+    return new Expression(Type.getType(SoyValueProvider.class)) {
       @Override void doGen(CodeBuilder adapter) {
         checkPresence.gen(adapter);
         provider.gen(adapter);

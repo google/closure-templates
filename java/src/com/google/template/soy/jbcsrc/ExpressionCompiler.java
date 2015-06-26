@@ -62,7 +62,7 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
+import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -79,6 +79,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -265,7 +266,7 @@ final class ExpressionCompiler {
       final int numItems = node.numChildren() / 2;
       if (numItems == 0) {
         MapType mapType = (MapType) node.getType();
-        return SoyExpression.forMap(mapType, MethodRef.IMMUTABLE_MAP_OF.invoke().asConstant());
+        return SoyExpression.forMap(mapType, MethodRef.IMMUTABLE_MAP_OF.invoke().asCheap());
       }
       boolean isRecord = node.getType().getKind() == Kind.RECORD;
       List<Expression> keys = new ArrayList<>(numItems);
@@ -429,7 +430,7 @@ final class ExpressionCompiler {
       final SoyExpression leftInt = left.convert(long.class);
       final SoyExpression rightInt = right.convert(long.class);
       return SoyExpression.forInt(
-          new SimpleExpression(Type.LONG_TYPE, leftInt.isConstant() && rightInt.isConstant()) {
+          new Expression(Type.LONG_TYPE) {
             @Override void doGen(CodeBuilder mv) {
               leftInt.gen(mv);
               rightInt.gen(mv);
@@ -442,9 +443,8 @@ final class ExpressionCompiler {
         SoyExpression right) {
       final SoyExpression leftFloat = left.convert(double.class);
       final SoyExpression rightFloat = right.convert(double.class);
-      boolean constant = leftFloat.isConstant() && rightFloat.isConstant();
       return SoyExpression.forFloat(
-          new SimpleExpression(Type.DOUBLE_TYPE, constant) {
+          new Expression(Type.DOUBLE_TYPE) {
             @Override void doGen(CodeBuilder mv) {
               leftFloat.gen(mv);
               rightFloat.gen(mv);
@@ -459,7 +459,7 @@ final class ExpressionCompiler {
       final SoyExpression child = visit(node.getChild(0));
       if (child.isKnownInt()) {
         final SoyExpression intExpr = child.convert(long.class);
-        return SoyExpression.forInt(new SimpleExpression(Type.LONG_TYPE, child.isConstant()) {
+        return SoyExpression.forInt(new Expression(Type.LONG_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
             intExpr.gen(mv);
             mv.visitInsn(Opcodes.LNEG);
@@ -468,7 +468,7 @@ final class ExpressionCompiler {
       }
       if (child.isKnownNumber()) {
         final SoyExpression floatExpr = child.convert(double.class);
-        return SoyExpression.forFloat(new SimpleExpression(Type.DOUBLE_TYPE, child.isConstant()) {
+        return SoyExpression.forFloat(new Expression(Type.DOUBLE_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
             floatExpr.gen(mv);
             mv.visitInsn(Opcodes.DNEG);
@@ -608,7 +608,7 @@ final class ExpressionCompiler {
     @Override SoyExpression visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar) {
       final Expression expr = variables.getLocal(indexVar);
 
-      return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+      return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE) {
         @Override void doGen(CodeBuilder adapter) {
           // implements index == 0 ? true : false
           expr.gen(adapter);
@@ -629,7 +629,7 @@ final class ExpressionCompiler {
       final Expression index = variables.getLocal(indexVar);
       final Expression length = variables.getLocal(lengthVar);
       // basically 'index + 1 == length'
-      return SoyExpression.forBool(new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+      return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE) {
         @Override void doGen(CodeBuilder adapter) {
           // 'index + 1 == length ? true : false'
           index.gen(adapter);
@@ -659,7 +659,7 @@ final class ExpressionCompiler {
       final ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
       final SoyExpression childExpr = visit(childNode);
       return SoyExpression.forSoyValue(node.getType(),
-          new SimpleExpression(Type.getType(node.getType().javaType()), childExpr.isConstant()) {
+          new Expression(Type.getType(node.getType().javaType()), childExpr.features()) {
             @Override void doGen(CodeBuilder adapter) {
               childExpr.gen(adapter);
               adapter.dup();
@@ -669,7 +669,7 @@ final class ExpressionCompiler {
                   "'" + childNode.toSourceString() + "' evaluates to null");
               adapter.mark(end);
             }
-          });
+          }).asNonNullable();
     }
 
     // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext
@@ -713,22 +713,25 @@ final class ExpressionCompiler {
           return dataAccess;
         }
         return dataAccess.withSource(
-            new SimpleExpression(dataAccess.resultType(), dataAccess.isConstant()) {
+            new Expression(dataAccess.resultType(), dataAccess.features()) {
               @Override void doGen(CodeBuilder adapter) {
                 dataAccess.gen(adapter);
                 // At this point either 'orig' will be on the top of stack, or it will be a null
                 // value (if a null safety check failed).
                 adapter.mark(nullSafeExit);
               }
-            });
+            }).asNonNullable();
       }
 
       SoyExpression addNullSafetyCheck(SoyExpression baseExpr) {
         // need to check if baseExpr == null
         final SoyExpression orig = baseExpr;
         final Label nullSafeExit = getNullSafeExit();
+        EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
+        features.addAll(orig.features());
+        features.add(Feature.NON_NULLABLE);
         return SoyExpression.forSoyValue(SoyTypes.removeNull(orig.soyType()),
-            new SimpleExpression(orig.resultType(), false) {
+            new Expression(orig.resultType(), features) {
           @Override void doGen(CodeBuilder adapter) {
             orig.gen(adapter);                                       // S
             adapter.dup();                                           // S, S

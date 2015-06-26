@@ -393,7 +393,8 @@ final class VariableSet {
     FieldRef local = tempBufferField;
     if (local == null) {
       local = tempBufferField =
-          FieldRef.createFinalField(owner, TEMP_BUFFER_FIELD, AdvisingStringBuilder.class);
+          FieldRef.createFinalField(owner, TEMP_BUFFER_FIELD, AdvisingStringBuilder.class)
+              .asNonNull();
     }
     return local;
   }
@@ -405,7 +406,8 @@ final class VariableSet {
     FieldRef local = msgPlaceholderMapField;
     if (local == null) {
       local = msgPlaceholderMapField =
-          FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class);
+          FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class)
+              .asNonNull();
     }
     return local;
   }

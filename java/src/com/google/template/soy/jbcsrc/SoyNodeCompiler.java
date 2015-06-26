@@ -35,6 +35,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
+import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
@@ -342,7 +343,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Variable variable = scope.createSynthetic(
           SyntheticVarName.forLoopIncrement(forNode),
           increment,
-          increment.isConstant() ? DERIVED : STORE);
+          increment.isCheap() ? DERIVED : STORE);
       initStatements.add(variable.initializer().labelStart(detachPoint));
       increment = variable.local();
     } else {
@@ -362,7 +363,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Variable variable = scope.createSynthetic(
         SyntheticVarName.forLoopLimit(forNode),
         limit,
-        limit.isConstant() ? DERIVED : STORE);
+        limit.isCheap() ? DERIVED : STORE);
     initStatements.add(variable.initializer().labelStart(detachPoint));
     limit = variable.local();
     return new AutoValue_SoyNodeCompiler_CompiledRangeArgs(
@@ -370,7 +371,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private Statement incrementInt(final Variable variable, final Expression increment) {
-    Expression nextIndex = new Expression.SimpleExpression(Type.INT_TYPE, false) {
+    Expression nextIndex = new Expression(Type.INT_TYPE, Feature.CHEAP) {
       @Override void doGen(CodeBuilder adapter) {
         variable.local().gen(adapter);
         increment.gen(adapter);

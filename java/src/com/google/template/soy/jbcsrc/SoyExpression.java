@@ -113,7 +113,7 @@ class SoyExpression extends Expression {
 
   static final SoyExpression NULL =
       new SoyExpression(NullType.getInstance(), Object.class,
-          new SimpleExpression(Type.getType(Object.class), true) {
+          new Expression(Type.getType(Object.class), Feature.CHEAP) {
             @Override void doGen(CodeBuilder adapter) {
               adapter.visitInsn(Opcodes.ACONST_NULL);
             }
@@ -148,6 +148,7 @@ class SoyExpression extends Expression {
 
   private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate,
       Optional<Expression> renderContext) {
+    super(delegate.resultType(), delegate.features());
     checkArgument(
         clazz.isAssignableFrom(classFromAsmType(delegate.resultType())),
         "delegate with type %s isn't compatible with asserted SoyExpression type %s",
@@ -164,17 +165,9 @@ class SoyExpression extends Expression {
     this.renderContext = renderContext;
   }
 
-  @Override final Type resultType() {
-    return delegate.resultType();
-  }
-
   /** Returns the {@link SoyType} of the expression. */
   final SoyType soyType() {
     return soyType;
-  }
-
-  @Override final boolean isConstant() {
-    return delegate.isConstant();
   }
 
   @Override final void doGen(CodeBuilder adapter) {
@@ -201,10 +194,6 @@ class SoyExpression extends Expression {
 
   boolean isKnownSanitizedContent() {
     return soyType.getKind() != Kind.STRING && STRING_KINDS.contains(soyType.getKind());
-  }
-
-  boolean isKnownSanitizedContent(ContentKind kind) {
-    return soyType.equals(SanitizedType.getTypeForContentKind(kind));
   }
 
   /**
@@ -378,7 +367,7 @@ class SoyExpression extends Expression {
     if (asType.equals(boolean.class)) {
       final SoyExpression boxedDelegate = box();
       // Handle null soy values
-      return forBool(new SimpleExpression(Type.BOOLEAN_TYPE, delegate.isConstant()) {
+      return forBool(new Expression(Type.BOOLEAN_TYPE) {
         @Override void doGen(CodeBuilder adapter) {
           boxedDelegate.gen(adapter);
           adapter.dup();
@@ -447,6 +436,19 @@ class SoyExpression extends Expression {
                 this.box(),
             argsList));
   }
+
+  @Override SoyExpression asCheap() {
+    return withSource(delegate.asCheap());
+  }
+
+  @Override SoyExpression asNonNullable() {
+    return withSource(delegate.asNonNullable());
+  }
+
+  @Override Expression labelStart(Label label) {
+    return withSource(delegate.labelStart(label));
+  }
+
   /**
    * Default subtype of {@link SoyExpression} used by our core expression implementations.
    */

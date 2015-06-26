@@ -24,7 +24,6 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalOr;
 import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 
 import junit.framework.TestCase;
 
@@ -167,7 +166,7 @@ public class BytecodeUtilsTest extends TestCase {
   }
 
   private static Expression throwingBoolExpression() {
-    return new SimpleExpression(Type.BOOLEAN_TYPE, false) {
+    return new Expression(Type.BOOLEAN_TYPE) {
        @Override void doGen(CodeBuilder adapter) {
          adapter.throwException(Type.getType(IllegalStateException.class),
              "shouldn't have called me");

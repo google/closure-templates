@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
@@ -65,7 +66,7 @@ import org.objectweb.asm.commons.Method;
     TypeInfo type = TypeInfo.create(className);
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
-        MethodRef.createInstanceMethod(type, RENDER_METHOD),
+        MethodRef.createInstanceMethod(type, RENDER_METHOD, Feature.NON_NULLABLE),
         type, 
         node);
   }

@@ -282,7 +282,8 @@ final class LazyClosureCompiler {
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
       final LocalVariable appendableVar = 
-          createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end);
+          createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end)
+              .asNonNullable();
 
       final VariableSet variableSet = new VariableSet(fieldNames, type, thisVar, DO_RENDER);
       LazyClosureVariableLookup lookup = 
@@ -390,9 +391,11 @@ final class LazyClosureCompiler {
    */
   @AutoValue abstract static class ParentCapture {
     static ParentCapture create(TypeInfo owner, String name, Expression parentExpression) {
-      return new AutoValue_LazyClosureCompiler_ParentCapture(
-          FieldRef.createFinalField(owner, name, parentExpression.resultType()),
-          parentExpression);
+      FieldRef captureField = FieldRef.createFinalField(owner, name, parentExpression.resultType());
+      if (parentExpression.isNonNullable()) {
+        captureField = captureField.asNonNull();
+      }
+      return new AutoValue_LazyClosureCompiler_ParentCapture(captureField, parentExpression);
     }
 
     /** The field in the closure that stores the captured value. */

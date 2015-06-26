@@ -22,7 +22,6 @@ import static com.google.template.soy.jbcsrc.Statement.returnExpression;
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.jbcsrc.Expression.SimpleExpression;
 import com.google.template.soy.jbcsrc.VariableSet.SaveRestoreState;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 
@@ -123,7 +122,7 @@ final class DetachState implements ExpressionDetacher.Factory {
 
     @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
-      return new SimpleExpression(Type.getType(SoyValue.class), false) {
+      return new Expression(Type.getType(SoyValue.class)) {
         @Override void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
           // invocations.  This makes the expression api difficult/confusing to use.  So instead 

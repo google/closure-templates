@@ -29,13 +29,13 @@ import org.objectweb.asm.Type;
  */
 final class AppendableExpression extends Expression {
   private static final MethodRef APPEND =
-      MethodRef.create(AdvisingAppendable.class, "append", CharSequence.class);
+      MethodRef.create(AdvisingAppendable.class, "append", CharSequence.class).asNonNullable();
 
   private static final MethodRef APPEND_CHAR =
-      MethodRef.create(AdvisingAppendable.class, "append", char.class);
+      MethodRef.create(AdvisingAppendable.class, "append", char.class).asNonNullable();
 
   private static final MethodRef SOFT_LIMITED =
-      MethodRef.create(AdvisingAppendable.class, "softLimitReached");
+      MethodRef.forMethod(AdvisingAppendable.class, "softLimitReached").asCheap();
 
   private static final Type ADVISING_APPENDABLE_TYPE = Type.getType(AdvisingAppendable.class);
   private static final Type ADVISING_BUILDER_TYPE = Type.getType(AdvisingStringBuilder.class);
@@ -64,7 +64,10 @@ final class AppendableExpression extends Expression {
 
   private AppendableExpression(
       Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
+    super(ADVISING_APPENDABLE_TYPE, delegate.features());
     delegate.checkAssignableTo(ADVISING_APPENDABLE_TYPE);
+    checkArgument(delegate.isNonNullable(), 
+        "advising appendable expressions should always be non null");
     this.delegate = delegate;
     this.hasSideEffects = hasSideEffects;
     this.supportsSoftLimiting = supportsSoftLimiting;
@@ -72,10 +75,6 @@ final class AppendableExpression extends Expression {
 
   @Override void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
-  }
-
-  @Override Type resultType() {
-    return ADVISING_APPENDABLE_TYPE;
   }
 
   /**
