@@ -743,7 +743,7 @@ public final class TemplateParserTest extends TestCase {
 
     String templateBody =
         "  {$boo.foo}{$boo.foo}\n" +
-        "  {$goo + 1 |noAutoescape}\n" +
+        "  {$goo + 1 |noescape}\n" +  // note '|noescape' is allowed in V2_0 but not V2_1
         "  {print 'blah    blahblahblah' |escapeHtml|insertWordBreaks:8}\n";
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getBodyNodes();
@@ -767,7 +767,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(1, pn2.getChildren().size());
     PrintDirectiveNode pn2d0 = pn2.getChild(0);
     assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
-    assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_1));
+    assertFalse(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_1));
     assertEquals("|noAutoescape", pn2d0.getName());
     assertEquals("XXX", pn2.genBasePhName());
     assertTrue(pn2.getExprUnion().getExpr().getRoot() instanceof PlusOpNode);

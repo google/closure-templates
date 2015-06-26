@@ -195,7 +195,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
 
   public void testAutoescapeOffWithNoAutoescape() throws Exception {
 
-    String testPrintTags = "{'<br>' |noAutoescape}{'<br>' |noAutoescape |noAutoescape}";
+    String testPrintTags = "{'<br>' |noescape}{'<br>' |noAutoescape |noAutoescape}";  // V1 & V2
     Pair<SoyFileSetNode, List<PrintNode>> helperRetVal =
         parseTestPrintTagsHelper(testPrintTags, false);
     SoyFileSetNode soyTree = helperRetVal.first;
@@ -219,7 +219,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
   public void testAutoescapeOffWithEscapeHtml() throws Exception {
 
     String testPrintTags =
-        "{'<br>' |escapeHtml}{'<br>' |noAutoescape |escapeHtml}{'<br>' |escapeHtml |noAutoescape}";
+        "{'<br>' |escape}{'<br>' |noAutoescape |escapeHtml}{'<br>' |escape |noescape}";  // V1 & V2
     Pair<SoyFileSetNode, List<PrintNode>> helperRetVal =
         parseTestPrintTagsHelper(testPrintTags, false);
     SoyFileSetNode soyTree = helperRetVal.first;
