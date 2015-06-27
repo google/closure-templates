@@ -62,7 +62,8 @@ public class SoySauceTest extends TestCase {
       fail();
     } catch (IllegalStateException e) {
       assertThat(e.getMessage())
-          .isEqualTo("Expected template to be kind=\"js\" but was kind=\"html");
+          .isEqualTo("Expected template to be kind=\"js\" but was kind=\"html\":"
+              + " strict_test.helloHtml");
     }
   }
 
@@ -72,14 +73,16 @@ public class SoySauceTest extends TestCase {
       fail();
     } catch (IllegalStateException e) {
       assertThat(e.getMessage())
-          .isEqualTo("Expected template to be kind=\"html\" but was kind=\"js");
+          .isEqualTo("Expected template to be kind=\"html\" but was kind=\"js\":"
+              + " strict_test.helloJs");
     }
     try {
       sauce.renderTemplate("strict_test.helloJs").renderStrict();
       fail();
     } catch (IllegalStateException e) {
       assertThat(e.getMessage())
-          .isEqualTo("Expected template to be kind=\"html\" but was kind=\"js");
+          .isEqualTo("Expected template to be kind=\"html\" but was kind=\"js\":"
+              + " strict_test.helloJs");
     }
     assertEquals(ordainAsSafe("'Hello world'", ContentKind.JS),
         sauce.renderTemplate("strict_test.helloJs")

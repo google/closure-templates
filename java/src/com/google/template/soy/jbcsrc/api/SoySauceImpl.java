@@ -144,10 +144,11 @@ public final class SoySauceImpl implements SoySauce {
 
   @Override public RendererImpl renderTemplate(String template) {
     CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
-    return new RendererImpl(factory, templates.getTemplateContentKind(template));
+    return new RendererImpl(template, factory, templates.getTemplateContentKind(template));
   }
 
   private final class RendererImpl implements Renderer {
+    private final String templateName;
     private final CompiledTemplate.Factory templateFactory;
     private final Optional<ContentKind> contentKind;
     private ImmutableSet<String> activeDelegatePackages = ImmutableSet.of();
@@ -162,7 +163,10 @@ public final class SoySauceImpl implements SoySauce {
     private ContentKind expectedContentKind = ContentKind.HTML;
     private boolean contentKindExplicitlySet;
 
-    RendererImpl(CompiledTemplate.Factory templateFactory, Optional<ContentKind> contentKind) {
+    RendererImpl(String templateName, 
+        CompiledTemplate.Factory templateFactory, 
+        Optional<ContentKind> contentKind) {
+      this.templateName = templateName;
       this.templateFactory = checkNotNull(templateFactory);
       this.contentKind = contentKind;
     }
@@ -261,7 +265,8 @@ public final class SoySauceImpl implements SoySauce {
       if (expectedContentKind != contentKind.get()) {
         throw new IllegalStateException("Expected template to be kind=\""
             + NodeContentKinds.toAttributeValue(expectedContentKind)
-            + "\" but was kind=\"" + NodeContentKinds.toAttributeValue(contentKind.get()));
+            + "\" but was kind=\"" + NodeContentKinds.toAttributeValue(contentKind.get())
+            + "\": " + templateName);
       }
     }
   }
