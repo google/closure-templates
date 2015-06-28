@@ -29,6 +29,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
  * defaults for all classwriters used by {@code jbcsrc}.
  */
 final class SoyClassWriter extends ClassVisitor {
+  private static final String OBJECT_NAME = Type.getInternalName(Object.class);
   private final Writer writer;
 
   SoyClassWriter() {
@@ -60,20 +61,12 @@ final class SoyClassWriter extends ClassVisitor {
       if (!leftIsGenerated & !rightIsGenerated) {
         return super.getCommonSuperClass(left, right);
       }
-      // TODO(lukes): do something smarter here.  Specifically we only generate types that are 
-      // subclasses of CompileTemplate, CompiledTemplate.Factory, DetachableContentProvider and
-      // DetachableSoyValueProvider.  And more importantly we can detect each case based on the 
-      // classname alone:
-      // * ends with $Factory -> subtype of CompileTemplate.Factory
-      // * simple name is prefixed with 'LetContentNode_' or 'CallParamContentNode_' -> 
-      //   subtype of DetachableContentProvider
-      // * simple name is prefixed with 'LetValueNode_' or 'CallParamValueNode_' -> 
-      //   subtype of DetachableValueProvider
-      // * everything else -> subtype of CompiledTemplate
-      //
-      // However, it isn't currently clear to me that it is worth the effort.  Investigate more 
-      // about these cases.
-      return Type.getInternalName(Object.class);
+      // The only reason a generated type will get compared to a non-generated type is if they
+      // happen to share a local variable slot.  This is because ASM doesn't know that the old
+      // variable has gone 'out of scope' and a new one entered it.  The best advice from the asm
+      // community so far has been 'just return object', so that is what we are doing
+      // See http://mail.ow2.org/wws/arc/asm/2015-06/msg00008.html
+      return OBJECT_NAME;
     }
   }
 }
