@@ -25,7 +25,6 @@ import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
@@ -261,30 +260,13 @@ final class TemplateCompiler {
       final TemplateParam param) {
     Expression fieldName = BytecodeUtils.constant(param.name());
     Expression record = param.isInjected() ? ijVar : paramsVar;
-    final Expression provider = MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
-    final Statement checkPresence;
-    if (param.isRequired()) {
-      final Expression hasField = record.invoke(MethodRef.SOY_RECORD_HAS_FIELD, fieldName);
-      checkPresence = new Statement() {
-        @Override void doGen(CodeBuilder adapter) {
-          hasField.gen(adapter);
-          Label ifTrue = new Label();
-          adapter.ifZCmp(Opcodes.IFNE, ifTrue);
-          adapter.throwException(Type.getType(SoyDataException.class),
-              "Required " + (param.isInjected() ? "@inject" : "@param") + ": '" + param.name()
-                  + "' is undefined.");
-          adapter.mark(ifTrue);
-        }
-      };
-    } else {
-      checkPresence = Statement.NULL_STATEMENT;
-    }
-    return new Expression(Type.getType(SoyValueProvider.class)) {
-      @Override void doGen(CodeBuilder adapter) {
-        checkPresence.gen(adapter);
-        provider.gen(adapter);
-      }
-    };
+    // For required parameters we just call Runtime.getRequiredFieldProvider which will return
+    // a special throwing SoyValueProvider, otherwise we call Runtime.getFieldProvider which returns
+    // the null provider for missing parameters.
+    MethodRef method = param.isRequired()
+        ? MethodRef.RUNTIME_GET_REQUIRED_FIELD_PROVIDER
+        : MethodRef.RUNTIME_GET_FIELD_PROVIDER;
+    return method.invoke(record, fieldName);
   }
 
   private final class TemplateVariables implements VariableLookup {

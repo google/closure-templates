@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -72,6 +71,26 @@ public final class Runtime {
     }
   };
 
+  private static SoyValueProvider missingRequiredParamProvider(final String name) {
+    return new SoyValueProvider() {
+      @Override public RenderResult status() {
+        throw access();
+      }
+
+      @Override public SoyValue resolve() {
+        throw access();
+      }
+
+      @Override public RenderResult renderAndResolve(AdvisingAppendable a, boolean b) {
+        throw access();
+      }
+
+      RuntimeException access() {
+        return new NullPointerException("Required parameter $" + name + " is undefined.");
+      }
+    };
+  }
+
   public static AssertionError unexpectedStateError(int state) {
     return new AssertionError("Unexpected state requested: " + state);
   }
@@ -97,12 +116,22 @@ public final class Runtime {
   }
 
   /**
-   * Helper funtion to make SoyRecord.getFieldProvider a non-nullable function.
+   * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning
+   * {@link #NULL_PROVIDER} for missing fields.
    */
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     SoyValueProvider provider = record.getFieldProvider(field);
     return provider == null ? NULL_PROVIDER : provider;
+  }
+
+  /**
+   * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning a
+   * throwing {@link SoyValueProvider} for missing fields.
+   */
+  public static SoyValueProvider getRequiredFieldProvider(SoyRecord record, String field) {
+    SoyValueProvider provider = record.getFieldProvider(field);
+    return provider == null ? missingRequiredParamProvider(field) : provider;
   }
 
   /**
@@ -183,12 +212,6 @@ public final class Runtime {
   public static SoyValueProvider getSoyMapItem(SoyMap soyMap, SoyValue key) {
     SoyValueProvider soyValueProvider = soyMap.getItemProvider(key);
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
-  }
-
-  public static void checkRequiredParam(SoyRecord params, String paramName) {
-    if (!params.hasField(paramName)) {
-      throw new SoyDataException("required param '$" + paramName + "' is undefined");
-    }
   }
 
   /**

@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
@@ -576,35 +575,38 @@ public class BytecodeCompilerTest extends TestCase {
         .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
   }
 
-  public void testParamValidation() {
-    CompiledTemplate.Factory singleParam = 
-        TemplateTester.compileTemplateBody("{@param foo : int}");
+  public void testParamValidation() throws Exception {
+    CompiledTemplate.Factory singleParam =
+        TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo}");
+    AdvisingStringBuilder builder = new AdvisingStringBuilder();
     EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
     params.setField("foo", IntegerData.forValue(1));
-    singleParam.create(params, SoyValueHelper.EMPTY_DICT);
+    singleParam.create(params, SoyValueHelper.EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
+    assertEquals("1", builder.getAndClearBuffer());
     params.delField("foo");
     try {
-      singleParam.create(params, SoyValueHelper.EMPTY_DICT);
+       singleParam.create(params, SoyValueHelper.EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
       fail();
-    } catch (SoyDataException sde) {
-      assertThat(sde).hasMessage("Required @param: 'foo' is undefined.");
+    } catch (NullPointerException npe) {
+      assertThat(npe).hasMessage("Required parameter $foo is undefined.");
     }
 
     CompiledTemplate.Factory singleIj = 
-        TemplateTester.compileTemplateBody("{@inject foo : int}");
+        TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
     params.setField("foo", IntegerData.forValue(1));
-    singleIj.create(SoyValueHelper.EMPTY_DICT, params);
+    singleIj.create(SoyValueHelper.EMPTY_DICT, params).render(builder, DEFAULT_CONTEXT);
+    assertEquals("1", builder.getAndClearBuffer());
     params.delField("foo");
     try {
-      singleIj.create(params, SoyValueHelper.EMPTY_DICT);
+      singleIj.create(params, SoyValueHelper.EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
       fail();
-    } catch (SoyDataException sde) {
-      assertThat(sde).hasMessage("Required @inject: 'foo' is undefined.");
+    } catch (NullPointerException npe) {
+      assertThat(npe).hasMessage("Required parameter $foo is undefined.");
     }
   }
 
   public void testParamFields() throws Exception {
-    CompiledTemplate.Factory multipleParams = 
+    CompiledTemplate.Factory multipleParams =
         TemplateTester.compileTemplateBody(
             "{@param foo : string}",
             "{@param baz : string}",

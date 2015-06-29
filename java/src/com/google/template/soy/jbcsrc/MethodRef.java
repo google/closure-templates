@@ -176,9 +176,6 @@ import java.util.Map;
   static final MethodRef RUNTIME_CALL_SOY_FUNCTION =
       create(Runtime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
 
-  static final MethodRef RUNTIME_CHECK_REQUIRED_PARAM =
-      create(Runtime.class, "checkRequiredParam", SoyRecord.class, String.class);
-
   static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN =
       create(Runtime.class, "coerceToBoolean", double.class);
 
@@ -192,7 +189,11 @@ import java.util.Map;
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
   static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
-      create(Runtime.class, "getFieldProvider", SoyRecord.class, String.class);
+      create(Runtime.class, "getFieldProvider", SoyRecord.class, String.class).asNonNullable();
+
+  static final MethodRef RUNTIME_GET_REQUIRED_FIELD_PROVIDER =
+      create(Runtime.class, "getRequiredFieldProvider", SoyRecord.class, String.class)
+          .asNonNullable();
 
   static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(Runtime.class, "getSoyListItem", List.class, long.class);
@@ -238,8 +239,6 @@ import java.util.Map;
 
   static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       forMethod(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
-
-  static final MethodRef SOY_RECORD_HAS_FIELD = create(SoyRecord.class, "hasField", String.class);
 
   static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN =
       forMethod(SoyValue.class, "coerceToBoolean").asCheap();
