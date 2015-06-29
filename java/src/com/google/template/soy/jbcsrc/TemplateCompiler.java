@@ -229,7 +229,7 @@ final class TemplateCompiler {
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
     assignments.add(ijField.putInstanceField(thisVar, ijVar));
     for (final TemplateParam param : template.node().getAllParams()) {
-      Expression paramProvider = getAndCheckParam(paramsVar, ijVar, param);
+      Expression paramProvider = getParam(paramsVar, ijVar, param);
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }
     Statement constructorBody = new Statement() {
@@ -256,17 +256,13 @@ final class TemplateCompiler {
    * enforces the {@link TemplateParam#isRequired()} flag, throwing SoyDataException if a required
    * parameter is missing. 
    */
-  private Expression getAndCheckParam(final LocalVariable paramsVar, final LocalVariable ijVar,
-      final TemplateParam param) {
+  private static Expression getParam(
+      LocalVariable paramsVar, LocalVariable ijVar, TemplateParam param) {
     Expression fieldName = BytecodeUtils.constant(param.name());
     Expression record = param.isInjected() ? ijVar : paramsVar;
-    // For required parameters we just call Runtime.getRequiredFieldProvider which will return
-    // a special throwing SoyValueProvider, otherwise we call Runtime.getFieldProvider which returns
-    // the null provider for missing parameters.
-    MethodRef method = param.isRequired()
-        ? MethodRef.RUNTIME_GET_REQUIRED_FIELD_PROVIDER
-        : MethodRef.RUNTIME_GET_FIELD_PROVIDER;
-    return method.invoke(record, fieldName);
+    // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
+    // here instead they will just turn into null.  Existing templates depend on this.
+    return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
   }
 
   private final class TemplateVariables implements VariableLookup {

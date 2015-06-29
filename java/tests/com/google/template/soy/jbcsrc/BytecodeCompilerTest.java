@@ -577,19 +577,16 @@ public class BytecodeCompilerTest extends TestCase {
 
   public void testParamValidation() throws Exception {
     CompiledTemplate.Factory singleParam =
-        TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo}");
+        TemplateTester.compileTemplateBody(
+            "{@param foo : int}", 
+            "{$foo ?: -1}");
     AdvisingStringBuilder builder = new AdvisingStringBuilder();
     EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
     params.setField("foo", IntegerData.forValue(1));
-    singleParam.create(params, SoyValueHelper.EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
+    singleParam.create(params, EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
     assertEquals("1", builder.getAndClearBuffer());
-    params.delField("foo");
-    try {
-       singleParam.create(params, SoyValueHelper.EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
-      fail();
-    } catch (NullPointerException npe) {
-      assertThat(npe).hasMessage("Required parameter $foo is undefined.");
-    }
+    singleParam.create(EMPTY_DICT, EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
+    assertEquals("-1", builder.getAndClearBuffer());
 
     CompiledTemplate.Factory singleIj = 
         TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
@@ -597,12 +594,8 @@ public class BytecodeCompilerTest extends TestCase {
     singleIj.create(SoyValueHelper.EMPTY_DICT, params).render(builder, DEFAULT_CONTEXT);
     assertEquals("1", builder.getAndClearBuffer());
     params.delField("foo");
-    try {
-      singleIj.create(params, SoyValueHelper.EMPTY_DICT).render(builder, DEFAULT_CONTEXT);
-      fail();
-    } catch (NullPointerException npe) {
-      assertThat(npe).hasMessage("Required parameter $foo is undefined.");
-    }
+    singleIj.create(SoyValueHelper.EMPTY_DICT, params).render(builder, DEFAULT_CONTEXT);
+    assertEquals("null", builder.getAndClearBuffer());
   }
 
   public void testParamFields() throws Exception {

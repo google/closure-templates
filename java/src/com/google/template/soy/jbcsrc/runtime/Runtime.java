@@ -71,26 +71,6 @@ public final class Runtime {
     }
   };
 
-  private static SoyValueProvider missingRequiredParamProvider(final String name) {
-    return new SoyValueProvider() {
-      @Override public RenderResult status() {
-        throw access();
-      }
-
-      @Override public SoyValue resolve() {
-        throw access();
-      }
-
-      @Override public RenderResult renderAndResolve(AdvisingAppendable a, boolean b) {
-        throw access();
-      }
-
-      RuntimeException access() {
-        return new NullPointerException("Required parameter $" + name + " is undefined.");
-      }
-    };
-  }
-
   public static AssertionError unexpectedStateError(int state) {
     return new AssertionError("Unexpected state requested: " + state);
   }
@@ -123,15 +103,6 @@ public final class Runtime {
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     SoyValueProvider provider = record.getFieldProvider(field);
     return provider == null ? NULL_PROVIDER : provider;
-  }
-
-  /**
-   * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning a
-   * throwing {@link SoyValueProvider} for missing fields.
-   */
-  public static SoyValueProvider getRequiredFieldProvider(SoyRecord record, String field) {
-    SoyValueProvider provider = record.getFieldProvider(field);
-    return provider == null ? missingRequiredParamProvider(field) : provider;
   }
 
   /**

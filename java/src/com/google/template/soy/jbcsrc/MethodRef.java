@@ -191,9 +191,6 @@ import java.util.Map;
   static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       create(Runtime.class, "getFieldProvider", SoyRecord.class, String.class).asNonNullable();
 
-  static final MethodRef RUNTIME_GET_REQUIRED_FIELD_PROVIDER =
-      create(Runtime.class, "getRequiredFieldProvider", SoyRecord.class, String.class)
-          .asNonNullable();
 
   static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(Runtime.class, "getSoyListItem", List.class, long.class);
