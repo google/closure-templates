@@ -35,7 +35,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
-import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
@@ -275,10 +274,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     Scope scope = variables.enterScope();
     final CompiledRangeArgs rangeArgs = calculateRangeArgs(node, scope);
-    // The currentIndex variable has a user defined name and we always need a local for it because
-    // we mutate it across loop iterations.
-    final Variable currentIndex = scope.create(node.getVarName(), rangeArgs.startIndex(), STORE);
-    final Statement incrementCurrentIndex = incrementInt(currentIndex, rangeArgs.increment());
 
     final Statement loopBody = visitChildrenInNewScope(node);
 
@@ -292,12 +287,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         for (Statement initializer : rangeArgs.initStatements()) {
           initializer.gen(adapter);
         }
-        currentIndex.initializer().gen(adapter);
         // We need to check for an empty loop by doing an entry test
         Label loopStart = adapter.mark();
 
         // If current >= limit we are done
-        currentIndex.local().gen(adapter);
+        rangeArgs.currentIndex().gen(adapter);
         rangeArgs.limit().gen(adapter);
         Label end = new Label();
         adapter.ifCmp(Type.INT_TYPE, Opcodes.IFGE, end);
@@ -305,7 +299,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         loopBody.gen(adapter);
 
         // at the end of the loop we need to increment and jump back.
-        incrementCurrentIndex.gen(adapter);
+        rangeArgs.increment().gen(adapter);
         adapter.goTo(loopStart);
         adapter.mark(end);
         exitScope.gen(adapter);
@@ -314,14 +308,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @AutoValue abstract static class CompiledRangeArgs {
-    /** How much to increment the loop index by, defaults to {@code 1}. */
-    abstract Expression increment();
-
-    /** Where to start loop iteration, defaults to {@code 0}. */
-    abstract Expression startIndex();
+    /** Current loop index. */
+    abstract Expression currentIndex();
 
     /** Where to end loop iteration, defaults to {@code 0}. */
     abstract Expression limit();
+
+    /** This statement will increment the index by the loop stride. */
+    abstract Statement increment();
 
     /** Statements that must have been run prior to using any of the above expressions. */
     abstract ImmutableList<Statement> initStatements();
@@ -333,29 +327,48 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   private CompiledRangeArgs calculateRangeArgs(ForNode forNode, Scope scope) {
     RangeArgs rangeArgs = forNode.getRangeArgs();
+
     final ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
-    Expression increment;
+    final Variable currentIndex;
+    if (rangeArgs.start().isPresent()) {
+      Label startDetachPoint = new Label();
+      Expression startIndex = MethodRef.INTS_CHECKED_CAST.invoke(
+          exprCompiler.compile(rangeArgs.start().get(), startDetachPoint).convert(long.class));
+      currentIndex = scope.create(forNode.getVarName(), startIndex, STORE);
+      initStatements.add(currentIndex.initializer().labelStart(startDetachPoint));
+    } else {
+      currentIndex = scope.create(forNode.getVarName(), constant(0), STORE);
+      initStatements.add(currentIndex.initializer());
+    }
+
+    final Statement incrementCurrentIndex;
     if (rangeArgs.increment().isPresent()) {
       Label detachPoint = new Label();
-      increment = MethodRef.INTS_CHECKED_CAST.invoke(
+      Expression increment = MethodRef.INTS_CHECKED_CAST.invoke(
           exprCompiler.compile(rangeArgs.increment().get(), detachPoint).convert(long.class));
       // If the expression is non-trivial, make sure to save it to a field.
-      Variable variable = scope.createSynthetic(
+      final Variable incrementVariable = scope.createSynthetic(
           SyntheticVarName.forLoopIncrement(forNode),
           increment,
           increment.isCheap() ? DERIVED : STORE);
-      initStatements.add(variable.initializer().labelStart(detachPoint));
-      increment = variable.local();
+      initStatements.add(incrementVariable.initializer().labelStart(detachPoint));
+      incrementVariable.local();
+      incrementCurrentIndex = new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          currentIndex.local().gen(adapter);
+          incrementVariable.local().gen(adapter);
+          adapter.visitInsn(Opcodes.IADD);
+          adapter.visitVarInsn(Opcodes.ISTORE, currentIndex.local().index());
+        }
+      };
     } else {
-      increment = constant(1);
+      incrementCurrentIndex = new Statement() {
+        @Override void doGen(CodeBuilder adapter) {
+          adapter.iinc(currentIndex.local().index(), 1);
+        }
+      };
     }
-    Expression startIndex;
-    if (rangeArgs.start().isPresent()) {
-      startIndex = MethodRef.INTS_CHECKED_CAST.invoke(
-          exprCompiler.compile(rangeArgs.start().get()).convert(long.class));
-    } else {
-      startIndex = constant(0);
-    }
+
     Label detachPoint = new Label();
     Expression limit = MethodRef.INTS_CHECKED_CAST.invoke(
         exprCompiler.compile(rangeArgs.limit(), detachPoint).convert(long.class));
@@ -366,19 +379,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         limit.isCheap() ? DERIVED : STORE);
     initStatements.add(variable.initializer().labelStart(detachPoint));
     limit = variable.local();
-    return new AutoValue_SoyNodeCompiler_CompiledRangeArgs(
-        increment, startIndex, limit, initStatements.build());
-  }
 
-  private Statement incrementInt(final Variable variable, final Expression increment) {
-    Expression nextIndex = new Expression(Type.INT_TYPE, Feature.CHEAP) {
-      @Override void doGen(CodeBuilder adapter) {
-        variable.local().gen(adapter);
-        increment.gen(adapter);
-        adapter.visitInsn(Opcodes.IADD);
-      }
-    };
-    return variable.local().store(nextIndex);
+    return new AutoValue_SoyNodeCompiler_CompiledRangeArgs(
+        currentIndex.local(), limit, incrementCurrentIndex, initStatements.build());
   }
 
   @Override protected Statement visitForeachNode(ForeachNode node) {
@@ -485,7 +488,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * <p>In this case we could elide the currentRenderee altogether if we knew the soyValueProvider
    * expression was just a field read... And this is the _common_case for .renderAndResolve calls.
    * to actually do this we could add a mechanism similar to the SaveStrategy enum for expressions,
-   * kind of like {@link Expression#isConstant()} which isn't that useful in practice.
+   * kind of like {@link Expression#isCheap()} which isn't that useful in practice.
    */
   private Statement renderIncrementally(PrintNode node, Expression soyValueProvider,
       Label reattachPoint) {
