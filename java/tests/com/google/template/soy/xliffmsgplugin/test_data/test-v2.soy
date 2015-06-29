@@ -14,7 +14,7 @@
   {foreach $moo in $moose}
     {if isFirst($moo)}
       {call .mooHelper_}
-        {param key="moo" value="$moo" /}
+        {param moo : $moo /}
       {/call}
     {else}
       {call .mooHelper_}
