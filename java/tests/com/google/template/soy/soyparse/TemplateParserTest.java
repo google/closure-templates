@@ -349,7 +349,7 @@ public final class TemplateParserTest extends TestCase {
         "{for $i in range($boo + 1,\n" +
         "                 88, 11)}\n" +
         "Number {$i}.{{/for}}");
-    assertIsTemplateBody("{call function=\"aaa.bbb.ccc\" data=\"all\" /}");
+    assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{call .aaa}\n" +
         "  {{param key=\"boo\" value=\"$boo\" /}}\n" +
@@ -1259,7 +1259,7 @@ public final class TemplateParserTest extends TestCase {
 
     String templateBody =
         "  {call .booTemplate_ /}\n" +
-        "  {call function=\"foo.goo.mooTemplate\" data=\"all\" /}\n" +
+        "  {call foo.goo.mooTemplate data=\"all\" /}\n" +
         "  {call .zooTemplate data=\"$animals\"}\n" +
         "    {param key=\"yoo\" value=\"round($too)\" /}\n" +
         "    {param key=\"woo\"}poo{/param}\n" +
@@ -1287,7 +1287,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(0, cn0.numChildren());
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
-    assertFalse(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
+    assertTrue(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn1.getCalleeName());
     assertEquals("foo.goo.mooTemplate", cn1.getSrcCalleeName());
     assertEquals(true, cn1.dataAttribute().isPassingData());

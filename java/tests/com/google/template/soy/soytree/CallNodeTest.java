@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
 
 import junit.framework.TestCase;
@@ -37,10 +36,9 @@ public final class CallNodeTest extends TestCase {
 
   public void testCommandText() {
 
-    checkCommandText("function=\"bar.foo\"");
     checkCommandText("foo");
     checkCommandText(".foo data=\"all\"");
-    checkCommandText(".baz data=\"$x\"", ".baz data=\"$x\"");
+    checkCommandText(" .baz data=\"$x\"", ".baz data=\"$x\"");
 
     try {
       checkCommandText(".foo.bar data=\"$x\"");
@@ -77,13 +75,10 @@ public final class CallNodeTest extends TestCase {
       callNode.setCalleeName("testNamespace" + callNode.getSrcCalleeName());
     }
 
-    boolean useV1FunctionAttrForCalleeName
-        = !callNode.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0);
 
     CallBasicNode normCallNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .calleeName(callNode.getCalleeName())
         .sourceCalleeName(callNode.getSrcCalleeName())
-        .useV1FunctionAttrForCalleeName(useV1FunctionAttrForCalleeName)
         .dataAttribute(callNode.dataAttribute())
         .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
         .syntaxVersionBound(callNode.getSyntaxVersionBound())

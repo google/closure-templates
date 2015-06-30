@@ -85,7 +85,7 @@ public final class CallDelegateNode extends CallNode {
 
   /** Pattern for a callee name. */
   private static final Pattern NONATTRIBUTE_CALLEE_NAME =
-      Pattern.compile("^ [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
+      Pattern.compile("^\\s* ([.\\w]+) (?= \\s | $)", Pattern.COMMENTS);
 
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
@@ -203,7 +203,7 @@ public final class CallDelegateNode extends CallNode {
       Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(commandTextWithoutPhnameAttr);
       String delCalleeName;
       if (ncnMatcher.find()) {
-        delCalleeName = ncnMatcher.group();
+        delCalleeName = ncnMatcher.group(1);
         if (!BaseUtils.isDottedIdentifier(delCalleeName)) {
           errorReporter.report(sourceLocation, INVALID_DELEGATE_NAME, delCalleeName);
         }
