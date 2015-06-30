@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -72,7 +71,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
@@ -126,6 +124,8 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private static final SoyError NON_NAMESPACED_TEMPLATE =
       SoyError.of("Using the option to provide/require Soy namespaces, but called template "
           + "does not reside in a namespace.");
+  private static final SoyError IJ_PARAMS_DECLARED_BUT_IJ_DATA_NOT_ENABLED =
+      SoyError.of("Template declares injected params but injected data is not enabled");
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
@@ -282,11 +282,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     templateRegistry = new TemplateRegistry(node, errorReporter);
 
     for (SoyFileNode soyFile : node.getChildren()) {
-      try {
-        visit(soyFile);
-      } catch (SoySyntaxException sse) {
-        throw sse.associateMetaInfo(null, soyFile.getFilePath(), null);
-      }
+      visit(soyFile);
     }
   }
 
@@ -359,11 +355,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
       jsCodeBuilder.appendLine().appendLine();
-      try {
-        visit(template);
-      } catch (SoySyntaxException sse) {
-        throw sse.associateMetaInfo(null, null, template.getTemplateNameForUserMsgs());
-      }
+      visit(template);
     }
 
     jsFilesContents.add(jsCodeBuilder.getCode());
@@ -568,9 +560,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     assistantForMsgs = null;
 
     if (!node.getInjectedParams().isEmpty() && !isUsingIjData) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "Template declares @injected params but injected data is not enabled.",
-          node);
+      errorReporter.report(node.getSourceLocation(), IJ_PARAMS_DECLARED_BUT_IJ_DATA_NOT_ENABLED);
     }
 
     // ------ Generate JS Doc. ------

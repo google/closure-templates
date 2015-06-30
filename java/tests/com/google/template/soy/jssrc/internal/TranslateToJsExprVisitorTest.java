@@ -18,12 +18,12 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -43,11 +43,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Unit tests for TranslateToJsExprVisitor.
+ * Unit tests for {@link TranslateToJsExprVisitor}.
  *
  */
 public final class TranslateToJsExprVisitorTest extends TestCase {
-
 
   private static final Map<String, SoyJsSrcFunction> SOY_JS_SRC_FUNCTIONS_MAP = ImmutableMap.of();
 
@@ -65,7 +64,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
   }
 
 
-  public void testStringLiteral() throws Exception {
+  public void testStringLiteral() {
     assertTranslation(
         "'waldo'",
         new JsExpr("'waldo'", Integer.MAX_VALUE));
@@ -76,7 +75,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
   }
 
 
-  public void testListLiteral() throws Exception {
+  public void testListLiteral() {
 
     assertTranslation(
         "['blah', 123, $foo]",
@@ -85,7 +84,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
   }
 
 
-  public void testMapLiteral() throws Exception {
+  public void testMapLiteral() {
 
     // ------ Unquoted keys. ------
     assertTranslation("[:]", new JsExpr("{}", Integer.MAX_VALUE));
@@ -120,11 +119,10 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
     // ------ Errors. ------
 
     // Non-string key is error.
-    assertSoySyntaxException(
-        "[0: 123, 1: $foo]",
-        "Map literal must have keys that are strings or expressions that will evaluate to" +
-            " strings at render time" +
-            " (found non-string key \"0\" in map literal \"[0: 123, 1: $foo]\").");
+    assertSoyErrors(
+        "[0: 123, 1: 'oops']",
+        "Keys in map literals cannot be constants (found constant '0').",
+        "Keys in map literals cannot be constants (found constant '1').");
 
     SoyJsSrcOptions jsSrcOptionsWithoutCompiler = new SoyJsSrcOptions();
     SoyJsSrcOptions jsSrcOptionsWithCompiler = new SoyJsSrcOptions();
@@ -135,11 +133,11 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         "['0': 123, '1': $foo]",
         new JsExpr("{'0': 123, '1': opt_data.foo}", Integer.MAX_VALUE),
         jsSrcOptionsWithoutCompiler);
-    assertSoySyntaxException(
-        "['0': 123, '1': $foo]",
-        "Map literal with non-identifier key must be wrapped in quoteKeysIfJs()" +
-            " (found non-identifier key \"'0'\" in map literal \"['0': 123, '1': $foo]\").",
-        jsSrcOptionsWithCompiler);
+    assertSoyErrors(
+        "['0': 123, '1': '123']",
+        jsSrcOptionsWithCompiler,
+        "Map literal with non-identifier key '0' must be wrapped in quoteKeysIfJs().",
+        "Map literal with non-identifier key '1' must be wrapped in quoteKeysIfJs().");
 
     // Expression key without quoteKeysIfJs() is error only when using Closure Compiler.
     assertTranslation(
@@ -150,15 +148,14 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
                 " return map_s; })()",
             Integer.MAX_VALUE),
         jsSrcOptionsWithoutCompiler);
-    assertSoySyntaxException(
+    assertSoyErrors(
         "['aaa': 123, $boo: $foo]",
-        "Map literal with expression key must be wrapped in quoteKeysIfJs()" +
-            " (found expression key \"$boo\" in map literal \"['aaa': 123, $boo: $foo]\").",
-        jsSrcOptionsWithCompiler);
+        jsSrcOptionsWithCompiler,
+        "Expression key '$boo' in map literal must be wrapped in quoteKeysIfJs().");
   }
 
 
-  public void testDataRef() throws Exception {
+  public void testDataRef() {
 
     assertTranslation(
         "$boo", new JsExpr("opt_data.boo", Integer.MAX_VALUE));
@@ -198,7 +195,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
   }
 
 
-  public void testGlobal() throws Exception {
+  public void testGlobal() {
 
     assertTranslation("MOO_2",
         new JsExpr("MOO_2", Integer.MAX_VALUE));
@@ -206,7 +203,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         new JsExpr("aaa.BBB", Integer.MAX_VALUE));
   }
 
-  public void testOperators() throws Exception {
+  public void testOperators() {
 
     assertTranslation("not $boo or true and $goo",
         new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
@@ -218,7 +215,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
             Operator.NULL_COALESCING.getPrecedence()));
   }
 
-  public void testNullCoalescingNested() throws Exception {
+  public void testNullCoalescingNested() {
     assertTranslation("$boo ?: -1", nullCoalesing("($$temp = opt_data.boo) == null ? -1 : $$temp"));
     assertTranslation("$a ?: $b ?: $c",
         nullCoalesing(
@@ -250,8 +247,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
     return new JsExpr(text, Operator.NULL_COALESCING.getPrecedence());
   }
 
-  public void testGeneralFunctions() throws Exception {
-
+  public void testGeneralFunctions() {
     assertTranslation("isFirst($goo)",
         new JsExpr("gooIndex8 == 0", Operator.EQUAL.getPrecedence()));
     assertTranslation("not isLast($goo)",
@@ -266,7 +262,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * @param soyExpr The Soy expression to test.
    * @param expectedJsExpr The expected translated JsExpr.
    */
-  private void assertTranslation(String soyExpr, JsExpr expectedJsExpr) throws Exception {
+  private void assertTranslation(String soyExpr, JsExpr expectedJsExpr) {
     assertTranslation(soyExpr, expectedJsExpr, new SoyJsSrcOptions());
   }
 
@@ -278,7 +274,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * @param jsSrcOptions The JsSrc compiler options.
    */
   private void assertTranslation(
-      String soyExpr, JsExpr expectedJsExpr, SoyJsSrcOptions jsSrcOptions) throws Exception {
+      String soyExpr, JsExpr expectedJsExpr, SoyJsSrcOptions jsSrcOptions) {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
         "/***/\n" +
@@ -303,12 +299,10 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * Checks that the given Soy expression causes a SoySyntaxException during translation, optionally
    * checking the exception's error message.
    * @param soyExpr The Soy expression to test.
-   * @param expectedErrorMsgSubstring An expected substring of the expected exception's message.
-   * @throws Exception
+   * @param expectedErrorMsgSubstrings An expected substring of the expected exception's message.
    */
-  private void assertSoySyntaxException(String soyExpr, String expectedErrorMsgSubstring)
-      throws Exception {
-    assertSoySyntaxException(soyExpr, expectedErrorMsgSubstring, new SoyJsSrcOptions());
+  private void assertSoyErrors(String soyExpr, String... expectedErrorMsgSubstrings) {
+    assertSoyErrors(soyExpr, new SoyJsSrcOptions(), expectedErrorMsgSubstrings);
   }
 
 
@@ -316,25 +310,25 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * Checks that the given Soy expression causes a SoySyntaxException during translation, optionally
    * checking the exception's error message.
    * @param soyExpr The Soy expression to test.
-   * @param expectedErrorMsgSubstring An expected substring of the expected exception's message.
+   * @param expectedErrorMsgSubstrings An expected substring of the expected exception's message.
    * @param jsSrcOptions The JsSrc compiler options.
    */
-  private void assertSoySyntaxException(
-      String soyExpr, String expectedErrorMsgSubstring, SoyJsSrcOptions jsSrcOptions) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    ExprNode exprNode = new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, boom)
+  private void assertSoyErrors(
+      String soyExpr, SoyJsSrcOptions jsSrcOptions, String... expectedErrorMsgSubstrings) {
+    ExprNode exprNode = new ExpressionParser(
+        soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
         .parseExpression();
-    // TODO(user): ExpressionParser has been converted to use ErrorReporter, but
-    // TranslateToJsExprVisitor has not; it still throws SoySyntaxExceptions. Remove the try-catch
-    // once the visitors are converted to use the ErrorReporter.
-    try {
-      new TranslateToJsExprVisitor(
-          SOY_JS_SRC_FUNCTIONS_MAP, jsSrcOptions, LOCAL_VAR_TRANSLATIONS, boom)
-          .exec(exprNode);
-    } catch (SoySyntaxException e) {
-      assertThat(e.getMessage()).contains(expectedErrorMsgSubstring);
-      return;
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new TranslateToJsExprVisitor(
+        SOY_JS_SRC_FUNCTIONS_MAP,
+        jsSrcOptions,
+        LOCAL_VAR_TRANSLATIONS,
+        errorReporter)
+        .exec(exprNode);
+    ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
+    assertThat(errorMessages).hasSize(expectedErrorMsgSubstrings.length);
+    for (int i = 0; i < expectedErrorMsgSubstrings.length; ++i) {
+      assertThat(errorMessages.get(i)).contains(expectedErrorMsgSubstrings[i]);
     }
-    fail("expected SoySyntaxException, got none");
   }
 }
