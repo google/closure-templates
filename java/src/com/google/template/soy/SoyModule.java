@@ -44,6 +44,7 @@ public class SoyModule extends AbstractModule {
   @Override protected void configure() {
 
     // Install requisite modules.
+    install(new ErrorReporterModule());
     install(new SharedModule());
     install(new TofuModule());
     install(new JsSrcModule());

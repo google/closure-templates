@@ -28,11 +28,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
@@ -60,8 +58,7 @@ import javax.inject.Singleton;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SharedModule extends AbstractModule {
-
+public final class SharedModule extends AbstractModule {
 
   /**
    * Annotation for values provided by SharedModule (that need to be distinguished).
@@ -210,13 +207,6 @@ public class SharedModule extends AbstractModule {
           }
         });
   }
-
-  @Provides
-  @Singleton
-  ErrorReporter provideErrorReporter() {
-    return new ErrorReporterImpl();
-  }
-
 
   /**
    * Private helper class for provideSoyJavaDirectivesMap() to adapt SoyJavaRuntimePrintDirective to

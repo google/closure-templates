@@ -28,6 +28,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
@@ -67,6 +68,7 @@ import java.util.Map;
 public final class TemplateTester {
   private static final Injector INJECTOR =
       Guice.createInjector(
+          new ErrorReporterModule(),
           new SharedModule(), 
           new SharedPassesModule(),
           new BasicDirectivesModule(), 

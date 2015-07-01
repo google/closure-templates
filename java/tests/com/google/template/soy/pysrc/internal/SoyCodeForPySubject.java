@@ -25,6 +25,7 @@ import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -69,7 +70,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   SoyCodeForPySubject(FailureStrategy failureStrategy, String code, boolean isFile) {
     super(failureStrategy, code);
     this.isFile = isFile;
-    this.injector = Guice.createInjector(new PySrcModule());
+    this.injector = Guice.createInjector(new ErrorReporterModule(), new PySrcModule());
   }
 
 

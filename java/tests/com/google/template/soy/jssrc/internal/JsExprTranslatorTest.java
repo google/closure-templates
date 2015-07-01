@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -40,8 +41,8 @@ import java.util.Map;
  */
 public final class JsExprTranslatorTest extends TestCase {
 
-  private static final Injector INJECTOR =
-      Guice.createInjector(new JsSrcModule(), new BasicFunctionsModule());
+  private static final Injector INJECTOR = Guice.createInjector(
+      new ErrorReporterModule(), new JsSrcModule(), new BasicFunctionsModule());
 
   public void testTranslateToJsExpr() {
     JsSrcTestUtils.simulateNewApiCall(INJECTOR);

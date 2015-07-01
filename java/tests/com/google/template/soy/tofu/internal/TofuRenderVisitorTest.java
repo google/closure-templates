@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
@@ -44,11 +45,12 @@ import java.util.Collections;
  */
 public class TofuRenderVisitorTest extends TestCase {
 
-
-  private static final Injector INJECTOR =
-      Guice.createInjector(new SharedModule(), new SharedPassesModule(),
-          new BasicDirectivesModule(), new BasicFunctionsModule());
-
+  private static final Injector INJECTOR = Guice.createInjector(
+      new ErrorReporterModule(),
+      new SharedModule(),
+      new SharedPassesModule(),
+      new BasicDirectivesModule(),
+      new BasicFunctionsModule());
 
   // TODO: Does this belong in RenderVisitorTest instead?
   public void testLetWithinParam() throws Exception {

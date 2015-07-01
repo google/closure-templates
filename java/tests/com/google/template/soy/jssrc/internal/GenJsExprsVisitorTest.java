@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -46,8 +47,8 @@ import java.util.Map;
  */
 public final class GenJsExprsVisitorTest extends TestCase {
 
-
-  private static final Injector INJECTOR = Guice.createInjector(new JsSrcModule());
+  private static final Injector INJECTOR =
+      Guice.createInjector(new ErrorReporterModule(), new JsSrcModule());
 
   private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
       new ArrayDeque<Map<String, JsExpr>>();

@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.inject.AbstractModule;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.opti.OptiModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
@@ -29,14 +28,9 @@ import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class SharedPassesModule extends AbstractModule {
-
+public final class SharedPassesModule extends AbstractModule {
 
   @Override protected void configure() {
-
-    // Install requisite modules.
-    install(new SharedModule());
-
     // Install OptiModule, which explicitly binds classes in the opti package.
     // We use a separate module rather than inlining the classes here to allow
     // classes in the package to be package-private.
@@ -46,14 +40,11 @@ public class SharedPassesModule extends AbstractModule {
     bind(EvalVisitorFactory.class).to(EvalVisitorFactoryImpl.class);
   }
 
-
   @Override public boolean equals(Object other) {
     return other != null && this.getClass().equals(other.getClass());
   }
 
-
   @Override public int hashCode() {
     return this.getClass().hashCode();
   }
-
 }

@@ -30,12 +30,10 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.shared.internal.ModuleUtils;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import com.google.template.soy.tofu.restricted.SoyTofuFunction;
 import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
@@ -45,6 +43,7 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.inject.Singleton;
 
 
@@ -67,11 +66,6 @@ public class TofuModule extends AbstractModule {
 
 
   @Override protected void configure() {
-
-    // Install requisite modules.
-    install(new SharedModule());
-    install(new SharedPassesModule());
-
     // Bindings for when explicit dependencies are required.
     bind(TofuEvalVisitorFactory.class);
     bind(TofuRenderVisitorFactory.class);

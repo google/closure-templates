@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
@@ -59,9 +60,12 @@ import javax.annotation.Nullable;
  */
 public class EvalVisitorTest extends TestCase {
 
-  private static final Injector INJECTOR =
-      Guice.createInjector(new SharedModule(), new SharedPassesModule(),
-          new BasicDirectivesModule(), new BasicFunctionsModule());
+  private static final Injector INJECTOR = Guice.createInjector(
+      new ErrorReporterModule(),
+      new SharedModule(),
+      new SharedPassesModule(),
+      new BasicDirectivesModule(),
+      new BasicFunctionsModule());
 
   protected static final SoyValueHelper VALUE_HELPER = INJECTOR.getInstance(SoyValueHelper.class);
 

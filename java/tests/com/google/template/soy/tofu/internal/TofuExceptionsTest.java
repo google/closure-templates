@@ -23,11 +23,14 @@ import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
@@ -40,7 +43,8 @@ import junit.framework.TestCase;
  */
 public final class TofuExceptionsTest extends TestCase {
   private static final SoyValueHelper VALUE_HELPER = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
-  private static final Injector INJECTOR = Guice.createInjector(new TofuModule());
+  private static final Injector INJECTOR = Guice.createInjector(
+      new ErrorReporterModule(), new SharedModule(), new SharedPassesModule(), new TofuModule());
 
   private static final String SOY_FILE = Joiner.on('\n').join(
       "{namespace ns}",
