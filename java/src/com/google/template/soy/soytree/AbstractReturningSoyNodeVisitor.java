@@ -77,8 +77,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case MSG_PLURAL_NODE: return visitMsgPluralNode((MsgPluralNode) node);
       case MSG_PLURAL_CASE_NODE: return visitMsgPluralCaseNode((MsgPluralCaseNode) node);
       case MSG_PLURAL_DEFAULT_NODE: return visitMsgPluralDefaultNode((MsgPluralDefaultNode) node);
-      case MSG_PLURAL_REMAINDER_NODE:
-        return visitMsgPluralRemainderNode((MsgPluralRemainderNode) node);
       case MSG_SELECT_NODE: return visitMsgSelectNode((MsgSelectNode) node);
       case MSG_SELECT_CASE_NODE: return visitMsgSelectCaseNode((MsgSelectCaseNode) node);
       case MSG_SELECT_DEFAULT_NODE: return visitMsgSelectDefaultNode((MsgSelectDefaultNode) node);
@@ -184,10 +182,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
   protected R visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
     return visitSoyNode(node);
-  }
-
-  protected R visitMsgPluralRemainderNode(MsgPluralRemainderNode node) {
-    return visitMsgSubstUnitNode(node);
   }
 
   protected R visitMsgSelectNode(MsgSelectNode node) {

@@ -37,7 +37,6 @@ import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgPluralRemainderNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
@@ -59,10 +58,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   private final SoyMsgBundle msgBundle;
 
-  /** Holds the value of the remainder for the current enclosing plural node. */
-  private double currPluralRemainderValue;
-
-
   /**
    * @param master The master RenderVisitor instance.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
@@ -74,7 +69,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     super(errorReporter);
     this.master = master;
     this.msgBundle = msgBundle;
-    this.currPluralRemainderValue = -1;
   }
 
 
@@ -180,8 +174,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
           node);
     }
 
-    currPluralRemainderValue = pluralValue - node.getOffset();
-
     // Check each case.
     for (CaseOrDefaultNode child : node.getChildren()) {
       if (child instanceof MsgPluralDefaultNode) {
@@ -197,14 +189,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         }
       }
     }
-
-    currPluralRemainderValue = -1;
-  }
-
-
-  @Override protected void visitMsgPluralRemainderNode(MsgPluralRemainderNode node) {
-    RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(),
-        String.valueOf(currPluralRemainderValue));
   }
 
 

@@ -26,7 +26,6 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -131,7 +130,7 @@ public final class SoyFileSetParserBuilder {
    * <ul>
    *   <li>{@link com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.RewriteRemainderNodesVisitor}</li>
+   *   <li>{@link com.google.template.soy.parsepasses.RewriteRemaindersVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor}
    *   <li>{@link com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor}</li>

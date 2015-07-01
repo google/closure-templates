@@ -78,8 +78,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case MSG_PLURAL_NODE: visitMsgPluralNode((MsgPluralNode) node); break;
       case MSG_PLURAL_CASE_NODE: visitMsgPluralCaseNode((MsgPluralCaseNode) node); break;
       case MSG_PLURAL_DEFAULT_NODE: visitMsgPluralDefaultNode((MsgPluralDefaultNode) node); break;
-      case MSG_PLURAL_REMAINDER_NODE:
-        visitMsgPluralRemainderNode((MsgPluralRemainderNode) node); break;
       case MSG_SELECT_NODE: visitMsgSelectNode((MsgSelectNode) node); break;
       case MSG_SELECT_CASE_NODE: visitMsgSelectCaseNode((MsgSelectCaseNode) node); break;
       case MSG_SELECT_DEFAULT_NODE: visitMsgSelectDefaultNode((MsgSelectDefaultNode) node); break;
@@ -210,10 +208,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
 
   protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
     visitSoyNode(node);
-  }
-
-  protected void visitMsgPluralRemainderNode(MsgPluralRemainderNode node) {
-    visitMsgSubstUnitNode(node);
   }
 
   protected void visitMsgSelectNode(MsgSelectNode node) {

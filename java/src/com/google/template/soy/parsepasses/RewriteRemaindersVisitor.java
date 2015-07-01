@@ -36,7 +36,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p> {@link #exec} should be called on a full parse tree. There is no return value.
  *
  */
-public final class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError REMAINDER_ARITY_MISMATCH =
       SoyError.of("''remainder'' called with {0} arguments, expected 1.");
@@ -52,7 +52,7 @@ public final class RewriteRemainderNodesVisitor extends AbstractSoyNodeVisitor<V
   /** The MsgPluralNode most recently visited. */
   private MsgPluralNode currPluralNode;
 
-  public RewriteRemainderNodesVisitor(ErrorReporter errorReporter) {
+  public RewriteRemaindersVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
   }
 

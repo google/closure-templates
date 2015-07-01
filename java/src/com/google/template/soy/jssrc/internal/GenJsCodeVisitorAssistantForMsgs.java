@@ -40,7 +40,6 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgPluralRemainderNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -462,8 +461,6 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         genGoogMsgCodeBitsForPluralNode((MsgPluralNode) child, msgNode, googMsgCodeGenInfo);
       } else if (child instanceof MsgSelectNode) {
         genGoogMsgCodeBitsForSelectNode((MsgSelectNode) child, msgNode, googMsgCodeGenInfo);
-      } else if (child instanceof MsgPluralRemainderNode) {
-        // nothing to do
       } else {
         String nodeStringForErrorMsg =
             (parentNode instanceof CommandNode)

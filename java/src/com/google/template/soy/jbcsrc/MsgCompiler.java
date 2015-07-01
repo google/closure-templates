@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgPluralRemainderNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -203,7 +202,7 @@ final class MsgCompiler {
     for (SoyNode child : msg.getChildren()) {
       String varName;
       boolean addPlaceholder = true;
-      if (child instanceof MsgSubstUnitNode && !(child instanceof MsgPluralRemainderNode)) {
+      if (child instanceof MsgSubstUnitNode) {
         // Every placeholder may appear multiple times in overall {msg} if it is duplicated in
         // multiple cases of {plural} or {select} statements.  However, when this happens the
         // compiler ensures that the placeholders are identical when calculating placeholder names.

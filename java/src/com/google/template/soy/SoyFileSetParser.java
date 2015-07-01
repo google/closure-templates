@@ -31,7 +31,7 @@ import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
 import com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor;
 import com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor;
-import com.google.template.soy.parsepasses.RewriteRemainderNodesVisitor;
+import com.google.template.soy.parsepasses.RewriteRemaindersVisitor;
 import com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor;
 import com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor;
 import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
@@ -249,7 +249,7 @@ public final class SoyFileSetParser {
     // MsgNode.getAllExprUnions().
     new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter)
         .exec(fileNode);
-    new RewriteRemainderNodesVisitor(errorReporter)
+    new RewriteRemaindersVisitor(errorReporter)
         .exec(fileNode);
     new ReplaceHasDataFunctionVisitor(declaredSyntaxVersion, errorReporter)
         .exec(fileNode);
