@@ -177,7 +177,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
 
     String soyNodeCode =
         "{call some.func}" +
-        "  {param key=\"goo\" value=\"$moo\" /}" +
+        "  {param goo: $moo /}" +
         "{/call}";
     assertGeneratedJsExprs(
         soyNodeCode,
@@ -185,7 +185,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
 
     soyNodeCode =
         "{call some.func data=\"$boo\"}" +
-        "  {param key=\"goo\"}Blah{/param}" +
+        "  {param goo}Blah{/param}" +
         "{/call}";
     assertGeneratedJsExprs(
         soyNodeCode,
@@ -208,7 +208,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
 
     soyNodeCode =
         "{call some.func}" +
-        "  {param key=\"goo\"}{lb}{index($goo)}{rb} is {$goo.moo}{/param}" +
+        "  {param goo}{lb}{index($goo)}{rb} is {$goo.moo}{/param}" +
         "{/call}";
     expectedJsExprText =
         "some.func({goo: '{' + gooIndex8 + '} is ' + gooData8.moo})";

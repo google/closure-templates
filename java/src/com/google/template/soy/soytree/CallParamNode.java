@@ -48,6 +48,9 @@ public abstract class CallParamNode extends AbstractCommandNode {
       = SoyError.of("The key in a ''param'' tag must be top level, i.e. not contain multiple keys "
           + "(invalid ''param'' command text \"{0}\").");
 
+  private static final SoyError INVALID_COMMAND_TEXT
+      = SoyError.of("Invalid param command text \"{0}\"");
+
   /**
    * Return value for {@code parseCommandTextHelper()}.
    */
@@ -73,7 +76,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
   //Note: group 1 = key, group 2 = value (or null), group 3 = trailing attributes (or null).
   private static final Pattern NONATTRIBUTE_COMMAND_TEXT =
       Pattern.compile(
-          "^ (?! key=\") (\\w+) (?: \\s* : \\s* (\\S .*) | (.*) )? $",
+          "^ \\s* (\\w+) (?: \\s* : \\s* (\\S .*) | \\s* (\\S .*) )? $",
           Pattern.COMMENTS | Pattern.DOTALL);
 
 
@@ -81,9 +84,6 @@ public abstract class CallParamNode extends AbstractCommandNode {
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
       new CommandTextAttributesParser(
           "param",
-          new Attribute(
-              "key", Attribute.ALLOW_ALL_VALUES, Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
-          new Attribute("value", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("kind", NodeContentKinds.getAttributeValues(), null));
 
 
@@ -142,33 +142,13 @@ public abstract class CallParamNode extends AbstractCommandNode {
       // TODO(user): instead of munging the command text, use a parser that understands
       // the actual content.
       Matcher nctMatcher = NONATTRIBUTE_COMMAND_TEXT.matcher(commandText);
-      if (nctMatcher.matches()) {
-        // Convert {param foo : $bar/} and {param foo kind="xyz"/} syntax into attributes.
-        commandText = "key=\"" + nctMatcher.group(1) + "\"";
-
-        if (nctMatcher.group(3) != null) {
-          Preconditions.checkState(nctMatcher.group(2) == null);
-          commandText += " " + nctMatcher.group(3);
-        }
-
-        // Note that we do not convert a group(2) match into a value= attribute, since the attribute
-        // parser does not support a quoting syntax for double quotes within an attribute, which
-        // would result in errors for e.g. {param foo : bar " baz/}
+      if (!nctMatcher.matches()) {
+        errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT, commandText);
+        return new CommandTextParseResult(
+            "bad_key", null /* valueExprUnion */, null /* contentKind */);
       }
-      Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(commandText, errorReporter, sourceLocation);
-      String key = attributes.get("key");
-      String valueExprText;
-      // If the command was of the form {param foo : <bar>}, obtain the value from match group 2.
-      if (nctMatcher.matches() && (nctMatcher.group(2) != null)) {
-        valueExprText = nctMatcher.group(2);
-      } else {
-        valueExprText = attributes.get("value");
-      }
-      ContentKind contentKind =
-          (attributes.get("kind") != null) ?
-              NodeContentKinds.forAttributeValue(attributes.get("kind")) :
-              null;
+      // Convert {param foo : $bar/} and {param foo kind="xyz"/} syntax into attributes.
+      String key = nctMatcher.group(1);
 
       // Check the validity of the key name.
       ExprNode dataRef = new ExpressionParser("$" + key, sourceLocation, errorReporter)
@@ -178,10 +158,20 @@ public abstract class CallParamNode extends AbstractCommandNode {
         errorReporter.report(sourceLocation, KEY_IS_NOT_TOP_LEVEL, commandText);
       }
 
+      ContentKind contentKind;
+      if (nctMatcher.group(3) != null) {
+        Preconditions.checkState(nctMatcher.group(2) == null);
+        Map<String, String> attributes
+            = ATTRIBUTES_PARSER.parse(nctMatcher.group(3), errorReporter, sourceLocation);
+        contentKind = NodeContentKinds.forAttributeValue(attributes.get("kind"));
+      } else {
+        contentKind = null;
+      }
+
+      String valueExprText = nctMatcher.group(2);
       if (valueExprText == null) {
         return new CommandTextParseResult(key, null /* valueExprUnion */, contentKind);
       }
-
       // If valueExprText exists, try to parse it.
       // TODO(user): Remove throwaway ErrorReporter.
       // Explanation: In certain cases, Soy considers param nodes with clearly malformed command

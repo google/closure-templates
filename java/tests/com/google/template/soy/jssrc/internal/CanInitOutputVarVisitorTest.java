@@ -68,17 +68,17 @@ public class CanInitOutputVarVisitorTest extends TestCase {
 
     runTestHelper("{call .foo data=\"all\" /}", true);
 
-    runTestHelper("{call .foo data=\"$boo\"}{param key=\"goo\" value=\"$moo\" /}{/call}",
+    runTestHelper("{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
                   true);
 
-    runTestHelper("{call .foo data=\"$boo\"}{param key=\"goo\"}Blah{/param}{/call}",
+    runTestHelper("{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}",
                   true);
   }
 
 
   public void testNotSameValueAsIsComputableAsJsExprsVisitor() {
     runTestHelper("{call .foo data=\"$boo\"}" +
-                  "{param key=\"goo\"}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
+                  "{param goo}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
                   "{/call}",
                   false);
   }

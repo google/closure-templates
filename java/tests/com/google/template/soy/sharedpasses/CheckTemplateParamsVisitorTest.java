@@ -113,8 +113,8 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         "{template .foo}\n" +
         "  {call .fee data=\"$goo.moo\" /}\n" +
         "  {call .fee data=\"$too\"}\n" +
-        "    {param key=\"gee\" value=\"$woo.hoo\" /}\n" +
-        "    {param key=\"mee\"}\n" +
+        "    {param gee : $woo.hoo /}\n" +
+        "    {param mee}\n" +
         "      {$zoo}\n" +
         "    {/param}\n" +
         "  {/call}\n" +

@@ -81,14 +81,14 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
   public void testCallNode() {
     runTestHelper("{call .foo data=\"all\" /}", true);
 
-    runTestHelper("{call .foo data=\"$boo\"}{param key=\"goo\" value=\"$moo\" /}{/call}",
+    runTestHelper("{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
                   true);
 
-    runTestHelper("{call .foo data=\"$boo\"}{param key=\"goo\"}Blah{/param}{/call}",
+    runTestHelper("{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}",
                   true);
 
     runTestHelper("{call .foo data=\"$boo\"}" +
-                  "{param key=\"goo\"}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
+                  "{param goo}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
                   "{/call}",
                   false);
   }

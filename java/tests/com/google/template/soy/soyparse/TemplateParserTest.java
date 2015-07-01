@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
+import static junit.framework.TestCase.assertFalse;
 
 import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -352,9 +353,8 @@ public final class TemplateParserTest extends TestCase {
     assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{call .aaa}\n" +
-        "  {{param key=\"boo\" value=\"$boo\" /}}\n" +
-        "  {param key=\"foo\"}blah blah{/param}\n" +
-        "  {param key=\"foo\" kind=\"html\"}blah blah{/param}\n" +
+        "  {{param boo: $boo /}}\n" +
+        "  {param foo}blah blah{/param}\n" +
         "  {param foo kind=\"html\"}blah blah{/param}\n" +
         "{/call}");
     assertIsTemplateBody(
@@ -364,14 +364,14 @@ public final class TemplateParserTest extends TestCase {
     assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{call .aaa}\n" +
-        "  {{param key=\"boo\" value=\"$boo\" /}}\n" +
-        "  {param key=\"foo\"}blah blah{/param}\n" +
+        "  {{param boo: $boo /}}\n" +
+        "  {param foo}blah blah{/param}\n" +
         "{/call}");
     assertIsTemplateBody("{delcall aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{delcall ddd.eee}\n" +
-        "  {{param key=\"boo\" value=\"$boo\" /}}\n" +
-        "  {param key=\"foo\"}blah blah{/param}\n" +
+        "  {{param boo: $boo /}}\n" +
+        "  {param foo}blah blah{/param}\n" +
         "{/delcall}");
     assertIsTemplateBody("" +
         "{msg meaning=\"boo\" desc=\"blah\"}\n" +
@@ -1260,11 +1260,6 @@ public final class TemplateParserTest extends TestCase {
     String templateBody =
         "  {call .booTemplate_ /}\n" +
         "  {call foo.goo.mooTemplate data=\"all\" /}\n" +
-        "  {call .zooTemplate data=\"$animals\"}\n" +
-        "    {param key=\"yoo\" value=\"round($too)\" /}\n" +
-        "    {param key=\"woo\"}poo{/param}\n" +
-        "    {param key=\"doo\" kind=\"html\"}doopoo{/param}\n" +
-        "  {/call}\n" +
         "  {call .booTemplate_ /}\n" +
         "  {call .zooTemplate data=\"$animals\"}\n" +
         "    {param yoo: round($too) /}\n" +
@@ -1274,7 +1269,7 @@ public final class TemplateParserTest extends TestCase {
         "  {/call}\n";
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getBodyNodes();
-    assertEquals(5, nodes.size());
+    assertThat(nodes).hasSize(4);
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
     assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -1299,77 +1294,45 @@ public final class TemplateParserTest extends TestCase {
     CallBasicNode cn2 = (CallBasicNode) nodes.get(2);
     assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn2.getCalleeName());
-    assertEquals(".zooTemplate", cn2.getSrcCalleeName());
-    assertEquals(true, cn2.dataAttribute().isPassingData());
+    assertEquals(".booTemplate_", cn2.getSrcCalleeName());
+    assertFalse(cn2.dataAttribute().isPassingData());
     assertEquals(false, cn2.dataAttribute().isPassingAllData());
-    assertTrue(cn2.dataAttribute().dataExpr().getRoot() != null);
-    assertEquals("$animals", cn2.dataAttribute().dataExpr().toSourceString());
-    assertEquals(3, cn2.numChildren());
-
-    {
-      final CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
-      assertEquals("yoo", cn2cpvn0.getKey());
-      assertEquals("round($too)", cn2cpvn0.getValueExprText());
-      assertTrue(cn2cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
-    }
-
-    {
-      final CallParamContentNode cn2cpcn1 = (CallParamContentNode) cn2.getChild(1);
-      assertEquals("woo", cn2cpcn1.getKey());
-      assertNull(cn2cpcn1.getContentKind());
-      assertEquals("poo", ((RawTextNode) cn2cpcn1.getChild(0)).getRawText());
-    }
-
-    {
-      final CallParamContentNode cn2cpcn2 = (CallParamContentNode) cn2.getChild(2);
-      assertEquals("doo", cn2cpcn2.getKey());
-      assertNotNull(cn2cpcn2.getContentKind());
-      assertEquals(ContentKind.HTML, cn2cpcn2.getContentKind());
-      assertEquals("doopoo", ((RawTextNode) cn2cpcn2.getChild(0)).getRawText());
-    }
+    assertEquals(null, cn2.dataAttribute().dataExpr());
+    assertEquals("XXX", cn2.genBasePhName());
+    assertEquals(0, cn2.numChildren());
 
     CallBasicNode cn3 = (CallBasicNode) nodes.get(3);
     assertTrue(cn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn3.getCalleeName());
-    assertEquals(".booTemplate_", cn3.getSrcCalleeName());
-    assertEquals(false, cn3.dataAttribute().isPassingData());
+    assertEquals(".zooTemplate", cn3.getSrcCalleeName());
+    assertEquals(true, cn3.dataAttribute().isPassingData());
     assertEquals(false, cn3.dataAttribute().isPassingAllData());
-    assertEquals(null, cn3.dataAttribute().dataExpr());
-    assertEquals("XXX", cn3.genBasePhName());
-    assertEquals(0, cn3.numChildren());
-
-    CallBasicNode cn4 = (CallBasicNode) nodes.get(4);
-    assertTrue(cn4.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
-    assertEquals(null, cn4.getCalleeName());
-    assertEquals(".zooTemplate", cn4.getSrcCalleeName());
-    assertEquals(true, cn4.dataAttribute().isPassingData());
-    assertEquals(false, cn4.dataAttribute().isPassingAllData());
-    assertTrue(cn4.dataAttribute().dataExpr().getRoot() != null);
-    assertEquals("$animals", cn4.dataAttribute().dataExpr().toSourceString());
-    assertEquals(4, cn4.numChildren());
+    assertTrue(cn3.dataAttribute().dataExpr().getRoot() != null);
+    assertEquals("$animals", cn3.dataAttribute().dataExpr().toSourceString());
+    assertEquals(4, cn3.numChildren());
 
     {
-      final CallParamValueNode cn4cpvn0 = (CallParamValueNode) cn4.getChild(0);
+      final CallParamValueNode cn4cpvn0 = (CallParamValueNode) cn3.getChild(0);
       assertEquals("yoo", cn4cpvn0.getKey());
       assertEquals("round($too)", cn4cpvn0.getValueExprText());
       assertTrue(cn4cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
     }
 
     {
-      final CallParamContentNode cn4cpcn1 = (CallParamContentNode) cn4.getChild(1);
+      final CallParamContentNode cn4cpcn1 = (CallParamContentNode) cn3.getChild(1);
       assertEquals("woo", cn4cpcn1.getKey());
       assertNull(cn4cpcn1.getContentKind());
       assertEquals("poo", ((RawTextNode) cn4cpcn1.getChild(0)).getRawText());
     }
 
     {
-      final CallParamValueNode cn4cpvn2 = (CallParamValueNode) cn4.getChild(2);
+      final CallParamValueNode cn4cpvn2 = (CallParamValueNode) cn3.getChild(2);
       assertEquals("zoo", cn4cpvn2.getKey());
       assertEquals("0", cn4cpvn2.getValueExprText());
     }
 
     {
-      final CallParamContentNode cn4cpcn3 = (CallParamContentNode) cn4.getChild(3);
+      final CallParamContentNode cn4cpcn3 = (CallParamContentNode) cn3.getChild(3);
       assertEquals("doo", cn4cpcn3.getKey());
       assertNotNull(cn4cpcn3.getContentKind());
       assertEquals(ContentKind.HTML, cn4cpcn3.getContentKind());
