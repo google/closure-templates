@@ -19,14 +19,21 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
+import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 
 import junit.framework.TestCase;
+
+import java.io.IOException;
 
 /**
  * Tests basic soy sauce interaction
@@ -122,6 +129,80 @@ public class SoySauceTest extends TestCase {
       fail();
     } catch (IllegalStateException e) {
       assertThat(e.getMessage()).isEqualTo("Cannot render a non strict template as 'js'");
+    }
+  }
+
+  public void testDetaching_string() {
+    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.withParam");
+
+    SettableFuture<String> p = SettableFuture.create();
+    Continuation<String> stringContinuation = tmpl.setData(ImmutableMap.of("p", p)).render();
+    assertEquals(RenderResult.Type.DETACH, stringContinuation.result().type());
+    assertEquals(p, stringContinuation.result().future());
+    p.set("tigger");
+    stringContinuation = stringContinuation.continueRender();
+    assertEquals(RenderResult.done(), stringContinuation.result());
+    assertEquals("Hello, tigger", stringContinuation.get());
+  }
+  
+  public void testDetaching_strict() {
+    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.withParam");
+
+    SettableFuture<String> p = SettableFuture.create();
+    Continuation<SanitizedContent> strictContinuation = 
+        tmpl.setData(ImmutableMap.of("p", p)).renderStrict();
+    assertEquals(RenderResult.Type.DETACH, strictContinuation.result().type());
+    assertEquals(p, strictContinuation.result().future());
+    p.set("pooh bear");
+    strictContinuation = strictContinuation.continueRender();
+    assertEquals(RenderResult.done(), strictContinuation.result());
+    assertEquals("Hello, pooh bear", strictContinuation.get().getContent());
+  }
+  
+  public void testDetaching_appendable() throws IOException {
+    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.withParam");
+    TestAppendable builder = new TestAppendable();
+    builder.softLimitReached = true;
+    SettableFuture<String> p = SettableFuture.create();
+    WriteContinuation continuation = tmpl.setData(ImmutableMap.of("p", p)).render(builder);
+    assertEquals(RenderResult.Type.LIMITED, continuation.result().type());
+    assertEquals("Hello, ", builder.toString());
+    builder.softLimitReached = false;
+    
+    continuation = continuation.continueRender();
+    assertEquals(RenderResult.Type.DETACH, continuation.result().type());
+    assertEquals(p, continuation.result().future());
+    p.set("piglet");
+    continuation = continuation.continueRender();
+    assertEquals(RenderResult.done(), continuation.result());
+    assertEquals("Hello, piglet", builder.toString());
+  }
+  
+  private static final class TestAppendable implements AdvisingAppendable {
+    private final StringBuilder delegate = new StringBuilder();
+    boolean softLimitReached;
+
+    @Override public TestAppendable append(CharSequence s) {
+      delegate.append(s);
+      return this;
+    }
+
+    @Override public TestAppendable append(CharSequence s, int start, int end) {
+      delegate.append(s, start, end);
+      return this;
+    }
+
+    @Override public TestAppendable append(char c) {
+      delegate.append(c);
+      return this;
+    }
+
+    @Override public boolean softLimitReached() {
+      return softLimitReached;
+    }
+
+    @Override public String toString() {
+      return delegate.toString();
     }
   }
 }

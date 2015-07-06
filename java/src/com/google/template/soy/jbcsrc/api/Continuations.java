@@ -65,7 +65,7 @@ final class Continuations {
     }
     return new AbstractContinuation<SanitizedContent>(delegate, builder) {
       @Override Continuation<SanitizedContent> nextContinuation(WriteContinuation next) {
-        return strictContinuation(delegate, builder, kind);
+        return strictContinuation(next, builder, kind);
       }
     };
   }
