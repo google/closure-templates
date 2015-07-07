@@ -186,6 +186,7 @@ public final class SoyToJsSrcCompiler {
                   " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir.")
   private boolean useGoogIsRtlForBidiGlobalDir = false;
 
+  // TODO(user): remove
   @Option(name = "--cssHandlingScheme",
           usage = "The scheme to use for handling 'css' commands. Specifying 'literal' will" +
                   " cause command text to be inserted as literal text. Specifying 'reference'" +

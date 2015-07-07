@@ -40,16 +40,7 @@ import javax.annotation.Nullable;
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
  *
  */
-public class SoyGeneralOptions implements Cloneable {
-
-
-  /**
-   * Schemes for handling {@code css} commands.
-   */
-  public static enum CssHandlingScheme {
-    LITERAL, REFERENCE, BACKEND_SPECIFIC
-  }
-
+public final class SoyGeneralOptions implements Cloneable {
 
   /** User-declared syntax version, or null if not set. */
   @Nullable private SyntaxVersion declaredSyntaxVersion;
@@ -59,9 +50,6 @@ public class SoyGeneralOptions implements Cloneable {
 
   /** Whether Strict autoescaping is required. */
   private boolean strictAutoescapingRequired;
-
-  /** Scheme for handling 'css' commands. */
-  private CssHandlingScheme cssHandlingScheme;
 
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
@@ -74,7 +62,6 @@ public class SoyGeneralOptions implements Cloneable {
     declaredSyntaxVersion = null;
     allowExternalCalls = null;
     strictAutoescapingRequired = false;
-    cssHandlingScheme = CssHandlingScheme.BACKEND_SPECIFIC;
     compileTimeGlobals = null;
     supportContentSecurityPolicy = false;
   }
@@ -83,7 +70,6 @@ public class SoyGeneralOptions implements Cloneable {
     this.declaredSyntaxVersion = orig.declaredSyntaxVersion;
     this.allowExternalCalls = orig.allowExternalCalls;
     this.strictAutoescapingRequired = orig.strictAutoescapingRequired;
-    this.cssHandlingScheme = orig.cssHandlingScheme;
     this.compileTimeGlobals = orig.compileTimeGlobals;
     this.supportContentSecurityPolicy = orig.supportContentSecurityPolicy;
   }

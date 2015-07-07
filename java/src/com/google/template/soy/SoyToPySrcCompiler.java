@@ -108,6 +108,7 @@ public final class SoyToPySrcCompiler {
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.2, 2.3).")
   private String syntaxVersion = "";
 
+  // TODO(user): remove
   @Option(name = "--cssHandlingScheme",
           usage = "The scheme to use for handling 'css' commands. Specifying 'literal' will"
                   + " cause command text to be inserted as literal text. Specifying 'reference'"

@@ -57,7 +57,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.parsepasses.ChangeCallsToPassAllDataVisitor;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
-import com.google.template.soy.parsepasses.HandleCssCommandVisitor;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
@@ -66,7 +65,6 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
@@ -1167,7 +1165,6 @@ public final class SoyFileSet {
     }
 
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
-    new HandleCssCommandVisitor(CssHandlingScheme.BACKEND_SPECIFIC, errorReporter).exec(soyTree);
     if (generalOptions.getCompileTimeGlobals() != null || typeRegistry != null) {
       new SubstituteGlobalsVisitor(
           generalOptions.getCompileTimeGlobals(),
