@@ -21,8 +21,8 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.Names;
 import com.google.template.soy.jbcsrc.api.RenderContext;
-import com.google.template.soy.jbcsrc.runtime.Names;
 import com.google.template.soy.soytree.TemplateNode;
 
 import org.objectweb.asm.Type;

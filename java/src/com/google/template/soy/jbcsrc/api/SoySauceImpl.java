@@ -18,8 +18,10 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.api.Names.rewriteStackTrace;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -277,7 +279,11 @@ public final class SoySauceImpl implements SoySauce {
     RenderResult result;
     try (WithScope scope = scoper.enter()) {
       result = template.render(out, context);
-    }
+    } catch (Throwable t) {
+      rewriteStackTrace(t);
+      Throwables.propagateIfInstanceOf(t, IOException.class);
+      throw Throwables.propagate(t);
+    }      
     if (result.isDone()) {
       return Continuations.done();
     }

@@ -28,6 +28,10 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyAbstractCachingValueProvider;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 
@@ -176,6 +180,33 @@ public class SoySauceTest extends TestCase {
     continuation = continuation.continueRender();
     assertEquals(RenderResult.done(), continuation.result());
     assertEquals("Hello, piglet", builder.toString());
+  }
+  
+  public void testExceptionRewriting() {
+    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.callsItself");
+
+    SoyValueProvider intProvider = new SoyAbstractCachingValueProvider() {
+      @Override public RenderResult status() {
+        return RenderResult.done();
+      }
+      @Override protected SoyValue compute() {
+        return IntegerData.ZERO;
+      }
+    };
+    try {
+      tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).render();
+      fail();
+    } catch (ClassCastException cce) {
+      // we get an CCE because we passed an int but it expected a string
+      StackTraceElement[] stackTrace = cce.getStackTrace();
+      assertThat(stackTrace[0].toString())
+          .isEqualTo("strict_test.callsItself.render(strict.soy:32)");
+      
+      for (int i = 1; i < 11; i++) {
+        assertThat(stackTrace[i].toString())
+            .isEqualTo("strict_test.callsItself.render(strict.soy:34)");
+      }
+    }
   }
   
   private static final class TestAppendable implements AdvisingAppendable {

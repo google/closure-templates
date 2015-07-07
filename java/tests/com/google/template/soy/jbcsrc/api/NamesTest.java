@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.runtime;
+package com.google.template.soy.jbcsrc.api;
 
-import static com.google.template.soy.jbcsrc.runtime.Names.javaClassNameFromSoyTemplateName;
-import static com.google.template.soy.jbcsrc.runtime.Names.soyTemplateNameFromJavaClassName;
+import static com.google.template.soy.jbcsrc.api.Names.javaClassNameFromSoyTemplateName;
+import static com.google.template.soy.jbcsrc.api.Names.soyTemplateNameFromJavaClassName;
 
 import junit.framework.TestCase;
 

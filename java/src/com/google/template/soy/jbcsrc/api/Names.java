@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.runtime;
+package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -55,5 +55,24 @@ public final class Names {
           + " is not a mangled soy template name");
     }
     return javaClass.substring(CLASS_PREFIX.length());
+  }
+
+  /**
+   * Rewrites the given stack trace by replacing all references to generated jbcsrc types with the
+   * original template names. 
+   */
+  public static void rewriteStackTrace(Throwable throwable) {
+    StackTraceElement[] stack = throwable.getStackTrace();
+    for (int i = 0; i < stack.length; i++) {
+      StackTraceElement curr = stack[i];
+      if (curr.getClassName().startsWith(CLASS_PREFIX)) {
+        stack[i] = new StackTraceElement(
+            soyTemplateNameFromJavaClassName(curr.getClassName()), 
+            curr.getMethodName(),  // TODO(lukes): remove the method name? only if it == 'render'?
+            curr.getFileName(), 
+            curr.getLineNumber());
+      }
+    }
+    throwable.setStackTrace(stack);
   }
 }

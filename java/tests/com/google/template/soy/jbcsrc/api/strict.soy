@@ -24,3 +24,15 @@ Hello world
   Hello, {$p}
 {/template}
 
+/** a template with a param */
+{template .callsItself}
+  {@param depth : int}
+  {@param p : string}
+  {if $depth == 0}
+    {$p}
+  {else}
+    {call .callsItself data="all"}
+      {param depth : $depth - 1/}
+    {/call}
+  {/if}
+{/template}

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.template.soy.jbcsrc.runtime.Names;
+import com.google.template.soy.jbcsrc.api.Names;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
