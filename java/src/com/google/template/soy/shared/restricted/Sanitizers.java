@@ -279,7 +279,14 @@ public final class Sanitizers {
     } else if (value instanceof BooleanData) {
       return " " + value.booleanValue() + " ";
     } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
-      return value.coerceToString();
+      String jsCode = value.coerceToString();
+      // This value may not be embeddable if it contains the substring "</script".
+      // TODO(user): Fixup.  We need to be careful because mucking with '<' can
+      // break code like
+      //    while (i</foo/.exec(str).length)
+      // and mucking with / can break
+      //    return untrustedHTML.replace(/</g, '&lt;');
+      return jsCode;
     } else {
       return escapeJsValue(value.coerceToString());
     }
