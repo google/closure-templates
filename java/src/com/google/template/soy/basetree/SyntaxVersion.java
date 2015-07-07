@@ -44,7 +44,6 @@ public enum SyntaxVersion {
   V2_1,
       // V2.1 disallows some items that really should have been disallowed in V2.0.
       // Checks:
-      //   + Disallows old directive names (|noescape, |escape, |insertwordbreaks).
       //   + Disallows some forms of incorrect 'css' tags that weren't checked previously.
 
   V2_2,

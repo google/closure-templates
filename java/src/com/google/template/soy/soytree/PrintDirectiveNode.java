@@ -17,13 +17,9 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -31,8 +27,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Node representing a 'print' directive.
@@ -43,23 +37,8 @@ import java.util.Set;
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
 
-  /** Set of directive names only recognized in V1. */
-  private static final Set<String> V1_DIRECTIVE_NAMES = ImmutableSet.of(
-      "|noescape", "|escape", "|insertwordbreaks");
-
-  /** Maps deprecated directive names to the names of modern directives. */
-  private static final Map<String, String> DEPRECATED_DIRECTIVE_NAMES = ImmutableMap.of(
-      "|noescape", "|noAutoescape",
-      "|escape", "|escapeHtml",
-      "|escapeJs", "|escapeJsString",
-      "|insertwordbreaks", "|insertWordBreaks");
-
-
   /** The directive name (including vertical bar). */
   private final String name;
-
-  /** The directive name in source code (including vertical bar). For user msgs only! */
-  private final String srcName;
 
   /** The text of all the args. */
   private final String argsText;
@@ -70,20 +49,13 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   private PrintDirectiveNode(
       int id,
       String name,
-      String srcName,
       ImmutableList<ExprRootNode> args,
       String argsText,
       SourceLocation sourceLocation) {
     super(id, sourceLocation);
     this.name = name;
-    this.srcName = srcName;
     this.args = args;
     this.argsText = argsText;
-    // If this name is part of the V1 syntax, then maybe set the syntax version.
-    if (V1_DIRECTIVE_NAMES.contains(srcName)) {
-      maybeSetSyntaxVersionBound(new SyntaxVersionBound(
-          SyntaxVersion.V2_1, "Print directive '" + srcName + "' is from Soy V1.0."));
-    }
   }
 
 
@@ -93,7 +65,6 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
    */
   private PrintDirectiveNode(PrintDirectiveNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.srcName = orig.srcName;
     this.name = orig.name;
     this.argsText = orig.argsText;
     List<ExprRootNode> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
@@ -122,7 +93,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
 
   @Override public String toSourceString() {
-    return srcName + ((argsText.length() > 0) ? ":" + argsText : "");
+    return name + ((argsText.length() > 0) ? ":" + argsText : "");
   }
 
 
@@ -140,19 +111,19 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
    */
   public static final class Builder {
     private final int id;
-    private final String srcName;
+    private final String name;
     private final String argsText;
     private final SourceLocation sourceLocation;
 
     /**
      * @param id The node's id.
-     * @param srcName The directive name in source code (including vertical bar).
+     * @param name The directive name in source code (including vertical bar).
      * @param argsText The text of all the args, or empty string if none (usually empty string).
      * @param sourceLocation The node's source location.
      */
-    public Builder(int id, String srcName, String argsText, SourceLocation sourceLocation) {
+    public Builder(int id, String name, String argsText, SourceLocation sourceLocation) {
       this.id = id;
-      this.srcName = srcName;
+      this.name = name;
       this.argsText = argsText;
       this.sourceLocation = sourceLocation;
     }
@@ -162,21 +133,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
      * errors to the given {@link ErrorReporter}.
      */
     public PrintDirectiveNode build(ErrorReporter errorReporter) {
-      String name = parseName();
       ImmutableList<ExprRootNode> args = parseArgs(errorReporter);
-      return new PrintDirectiveNode(id, name, srcName, args, argsText, sourceLocation);
-    }
-
-    private String parseName() {
-      String translatedDirectiveName = DEPRECATED_DIRECTIVE_NAMES.get(srcName);
-      if (translatedDirectiveName == null) {
-        // Not a deprecated directive name.
-        return srcName;
-      } else {
-        // Use the undeprecated name since the supporting Java and JavaScript code only contains
-        // support functions for undeprecated directives.
-        return translatedDirectiveName;
-      }
+      return new PrintDirectiveNode(id, name, args, argsText, sourceLocation);
     }
 
     private ImmutableList<ExprRootNode> parseArgs(ErrorReporter errorReporter) {
