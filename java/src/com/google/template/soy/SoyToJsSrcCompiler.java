@@ -22,7 +22,6 @@ import com.google.inject.Injector;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 
 import org.kohsuke.args4j.Argument;
@@ -278,10 +277,6 @@ public final class SoyToJsSrcCompiler {
       sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
     }
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-    String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
-    sfsBuilder.setCssHandlingScheme(
-        cssHandlingSchemeUc.equals("GOOG") ?
-            CssHandlingScheme.BACKEND_SPECIFIC : CssHandlingScheme.valueOf(cssHandlingSchemeUc));
     if (!compileTimeGlobalsFile.isEmpty()) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }

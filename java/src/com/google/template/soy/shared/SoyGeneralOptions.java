@@ -74,7 +74,7 @@ public class SoyGeneralOptions implements Cloneable {
     declaredSyntaxVersion = null;
     allowExternalCalls = null;
     strictAutoescapingRequired = false;
-    cssHandlingScheme = CssHandlingScheme.LITERAL;
+    cssHandlingScheme = CssHandlingScheme.BACKEND_SPECIFIC;
     compileTimeGlobals = null;
     supportContentSecurityPolicy = false;
   }
@@ -138,22 +138,6 @@ public class SoyGeneralOptions implements Cloneable {
    */
   public boolean isStrictAutoescapingRequired() {
     return strictAutoescapingRequired;
-  }
-
-  /**
-   * Sets the scheme for handling {@code css} commands.
-   *
-   * @param cssHandlingScheme The css-handling scheme to set.
-   */
-  public void setCssHandlingScheme(CssHandlingScheme cssHandlingScheme) {
-    this.cssHandlingScheme = cssHandlingScheme;
-  }
-
-  /**
-   * Returns the scheme for handling {@code css} commands.
-   */
-  public CssHandlingScheme getCssHandlingScheme() {
-    return cssHandlingScheme;
   }
 
   /**

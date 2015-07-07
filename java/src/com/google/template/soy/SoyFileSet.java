@@ -448,18 +448,6 @@ public final class SoyFileSet {
 
 
     /**
-     * Sets the scheme for handling {@code css} commands.
-     *
-     * @param cssHandlingScheme The scheme for handling {@code css} commands.
-     * @return This builder.
-     */
-    public Builder setCssHandlingScheme(CssHandlingScheme cssHandlingScheme) {
-      getGeneralOptions().setCssHandlingScheme(cssHandlingScheme);
-      return this;
-    }
-
-
-    /**
      * Sets the map from compile-time global name to value.
      *
      * <p> The values can be any of the Soy primitive types: null, boolean, integer, float (Java
@@ -1179,7 +1167,7 @@ public final class SoyFileSet {
     }
 
     // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
-    new HandleCssCommandVisitor(generalOptions.getCssHandlingScheme(), errorReporter).exec(soyTree);
+    new HandleCssCommandVisitor(CssHandlingScheme.BACKEND_SPECIFIC, errorReporter).exec(soyTree);
     if (generalOptions.getCompileTimeGlobals() != null || typeRegistry != null) {
       new SubstituteGlobalsVisitor(
           generalOptions.getCompileTimeGlobals(),

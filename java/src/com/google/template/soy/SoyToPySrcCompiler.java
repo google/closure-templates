@@ -22,7 +22,6 @@ import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.shared.SoyGeneralOptions.CssHandlingScheme;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
@@ -200,7 +199,6 @@ public final class SoyToPySrcCompiler {
     if (cssHandlingSchemeUc.equals("GOOG")) {
       exitWithErrorFn.apply("CSS handling scheme 'GOOG' is not support in Python.");
     }
-    sfsBuilder.setCssHandlingScheme(CssHandlingScheme.valueOf(cssHandlingSchemeUc));
     if (compileTimeGlobalsFile.length() > 0) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
