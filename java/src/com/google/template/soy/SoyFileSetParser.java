@@ -17,9 +17,9 @@
 package com.google.template.soy;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -139,7 +139,13 @@ public final class SoyFileSetParser {
    * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
   public SoyFileSetNode parse() {
-    return parseWithVersions();
+    try {
+      return parseWithVersions();
+    } catch (IOException e) {
+      // parse has 9 callers in SoyFileSet, and those are public API methods,
+      // whose signatures it is infeasible to change.
+      throw Throwables.propagate(e);
+    }
   }
 
 
@@ -160,7 +166,7 @@ public final class SoyFileSetParser {
   /**
    * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
-  private SoyFileSetNode parseWithVersions() {
+  private SoyFileSetNode parseWithVersions() throws IOException {
     Preconditions.checkState((cache == null) || (doRunInitialParsingPasses && doRunCheckingPasses),
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
             "caching inconsistent versions");
@@ -215,10 +221,9 @@ public final class SoyFileSetParser {
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
    */
   private VersionedFile parseSoyFileHelper(
-      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry) {
-
+      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
+      throws IOException {
     String filePath = soyFileSupplier.getFilePath();
-
     SoyFileSupplier.Version version = soyFileSupplier.getVersion();
     try (Reader soyFileReader = soyFileSupplier.open()) {
       SoyFileNode soyFileNode = new SoyFileParser(
@@ -234,9 +239,6 @@ public final class SoyFileSetParser {
             new SourceLocation(filePath, -1, -1, -1, -1), VERSION_SKEW_IN_SOY_FILE, filePath);
       }
       return VersionedFile.of(soyFileNode, version);
-    } catch (IOException e) {
-      throw SoySyntaxException.createCausedWithoutMetaInfo(
-          "Error opening/closing Soy file " + soyFileSupplier.getFilePath(), e);
     }
   }
 
