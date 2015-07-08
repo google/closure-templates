@@ -19,9 +19,9 @@ package com.google.template.soy.parsepasses;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.MsgSubstUnitBaseVarNameUtils;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.SoytreeUtils;
 
 import java.util.List;
@@ -101,13 +100,11 @@ public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void>
     // being the outermost 'select' level.
     genderExprs = Lists.reverse(genderExprs);
 
-    List<String> baseSelectVarNames;
-    try {
-      baseSelectVarNames =
-          MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
-              ExprRootNode.unwrap(genderExprs), FALLBACK_BASE_SELECT_VAR_NAME);
-    } catch (SoySyntaxException sse) {
-      throw SoySyntaxExceptionUtils.associateNode(sse, msg);
+    Checkpoint checkpoint = errorReporter.checkpoint();
+    List<String> baseSelectVarNames = MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
+        ExprRootNode.unwrap(genderExprs), FALLBACK_BASE_SELECT_VAR_NAME, errorReporter);
+    if (errorReporter.errorsSince(checkpoint)) {
+      return; // To prevent an IndexOutOfBoundsException below.
     }
 
     for (int i = 0; i < genderExprs.size(); i++) {

@@ -22,8 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -41,12 +42,15 @@ import java.util.List;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class MsgSubstUnitBaseVarNameUtils {
+public final class MsgSubstUnitBaseVarNameUtils {
 
+  private static final SoyError COLLIDING_EXPRESSIONS = SoyError.of(
+      "Cannot generate noncolliding base names for vars. "
+      + "Colliding expressions: ''{0}'' and ''{1}''. "
+      + "Add explicit base names with the ''phname'' attribute.");
 
   // Disallow instantiation.
   private MsgSubstUnitBaseVarNameUtils() {}
-
 
   /**
    * Helper function to generate a base placeholder (or plural/select var) name from an expression,
@@ -119,11 +123,11 @@ public class MsgSubstUnitBaseVarNameUtils {
    *
    * @param exprNodes The expr nodes of the expressions to generate noncolliding base names for.
    * @param fallbackBaseName The fallback base name.
+   * @param errorReporter For reporting collision errors.
    * @return The list of generated noncolliding base names.
-   * @throws SoySyntaxException If it is impossible to generate noncolliding base names.
    */
   public static List<String> genNoncollidingBaseNamesForExprs(
-      List<ExprNode> exprNodes, String fallbackBaseName) throws SoySyntaxException {
+      List<ExprNode> exprNodes, String fallbackBaseName, ErrorReporter errorReporter) {
 
     int numExprs = exprNodes.size();
 
@@ -183,11 +187,11 @@ public class MsgSubstUnitBaseVarNameUtils {
           }
         }
         assert collidingExprRoot != null;
-        throw SoySyntaxException.createWithoutMetaInfo(String.format(
-            "Cannot generate noncolliding base names for msg placeholders and/or vars:" +
-                " found colliding expressions \"%s\" and \"%s\".",
-            exprRoot.toSourceString(), collidingExprRoot.toSourceString()));
-
+        errorReporter.report(
+            collidingExprRoot.getSourceLocation(),
+            COLLIDING_EXPRESSIONS,
+            exprRoot.toSourceString(), collidingExprRoot.toSourceString());
+        return noncollidingBaseNames;
       } else {
         // No candidates: Use fallback.
         noncollidingBaseNames.add(fallbackBaseName);

@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -57,19 +56,18 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
 
 
   public void testErrorIfCannotGenNoncollidingBaseNames() {
-
     String soyCode = "" +
         "{msg genders=\"$userGender, $gender\" desc=\"Button text.\"}\n" +
         "  You joined {$owner}'s community.\n" +
         "{/msg}\n";
-    try {
-      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-      fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains("Cannot generate noncolliding base names for msg placeholders and/or vars:"
-              + " found colliding expressions \"$gender\" and \"$userGender\".");
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+        .contains("Cannot generate noncolliding base names for vars. "
+            + "Colliding expressions: '$gender' and '$userGender'.");
   }
 
 

@@ -19,8 +19,10 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
@@ -30,11 +32,12 @@ import junit.framework.TestCase;
 import java.util.List;
 
 /**
- * Unit tests for MsgSubstUnitBaseVarNameUtils.
+ * Unit tests for {@link MsgSubstUnitBaseVarNameUtils}.
  *
  */
-public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
+public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
 
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
   public void testGenBaseNames() {
 
@@ -92,56 +95,42 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
         ImmutableList.of("EE_5", "CC_DD_EE_5"), exprText);
   }
 
-
-  /**
-   * Private helper for {@code testGenBaseNames()}.
-   */
   private void assertNaiveBaseNameForExpr(String expected, String exprText) {
     ExprNode exprRoot = new ExpressionParser(
-        exprText, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        exprText, SourceLocation.UNKNOWN, FAIL)
         .parseExpression();
     String actual = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(exprRoot, "FALLBACK");
     MsgNodeTest.assertEquals(expected, actual);
   }
 
-
-  /**
-   * Private helper for {@code testGenBaseNames()}.
-   */
   private void assertShortestBaseNameForExpr(String expected, String exprText) {
     ExprNode exprRoot = new ExpressionParser(
-        exprText, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        exprText, SourceLocation.UNKNOWN, FAIL)
         .parseExpression();
     String actual = MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
         exprRoot, "FALLBACK");
     MsgNodeTest.assertEquals(expected, actual);
   }
 
-
-  /**
-   * Private helper for {@code testGenBaseNames()}.
-   */
   private void assertCandidateBaseNamesForExpr(List<String> expected, String exprText) {
     ExprNode exprRoot = new ExpressionParser(
-        exprText, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        exprText, SourceLocation.UNKNOWN, FAIL)
         .parseExpression();
     List<String> actual = MsgSubstUnitBaseVarNameUtils.genCandidateBaseNamesForExpr(
         exprRoot);
     MsgNodeTest.assertEquals(expected, actual);
   }
 
-
   public void testGenNoncollidingBaseNames() {
-
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("GENDER"), "$user.gender");
     assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-        "Cannot generate noncolliding base names for msg placeholders and/or vars:" +
-            " found colliding expressions \"$gender\" and \"$ij.gender\".",
+        "Cannot generate noncolliding base names for vars. " +
+            "Colliding expressions: '$gender' and '$ij.gender'.",
         "$gender, $ij.gender");
     assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-        "Cannot generate noncolliding base names for msg placeholders and/or vars:" +
-            " found colliding expressions \"$ij.gender\" and \"$userGender\".",
+        "Cannot generate noncolliding base names for vars. " +
+            "Colliding expressions: '$ij.gender' and '$userGender'.",
         "$userGender, $ij.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USERGENDER", "GENDER"), "$usergender, $ij.gender");
@@ -160,34 +149,25 @@ public class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
         "$owner.gender, $actor.gender, $target.gender");
   }
 
-
-  /**
-   * Private helper for {@code testGenNoncollidingBaseNames()}.
-   */
   private void assertNoncollidingBaseNamesForExprs(List<String> expected, String exprListText) {
     List<ExprNode> exprRoots =
-        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL)
             .parseExpressionList();
     List<String> actual =
-        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
+        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK", FAIL);
     MsgNodeTest.assertEquals(expected, actual);
   }
 
-
-  /**
-   * Private helper for {@code testGenNoncollidingBaseNames()}.
-   */
   private void assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
       String expectedErrorMsg, String exprListText) {
     List<ExprNode> exprRoots =
-        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL)
             .parseExpressionList();
-    try {
-      MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK");
-      MsgNodeTest.fail();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage()).contains(expectedErrorMsg);
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
+        exprRoots, "FALLBACK", errorReporter);
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+        .contains(expectedErrorMsg);
   }
-
 }
