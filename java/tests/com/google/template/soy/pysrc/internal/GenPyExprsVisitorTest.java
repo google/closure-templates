@@ -35,6 +35,14 @@ public final class GenPyExprsVisitorTest extends TestCase {
         new PyExpr("'I\\'m feeling lucky!'", Integer.MAX_VALUE));
   }
 
+  public void testCss() {
+    assertThatSoyExpr("{css primary}").compilesTo(
+        new PyExpr("runtime.get_css_name('primary')", Integer.MAX_VALUE));
+
+    assertThatSoyExpr("{css $foo, bar}").compilesTo(
+        new PyExpr("runtime.get_css_name(opt_data.get('foo'), 'bar')", Integer.MAX_VALUE));
+  }
+
   public void testIf() {
     String soyNodeCode =
         "{if $boo}\n"

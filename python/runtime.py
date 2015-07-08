@@ -47,6 +47,54 @@ _DELEGATE_REGISTRY = {}
 _NUMBER_TYPES = (int, long, float)
 
 
+# The mapping of css class names for get_css_name.
+_css_name_mapping = None
+
+
+def get_css_name(class_name, modifier=None):
+  """Return the mapped css class name with modifier.
+
+  Following the pattern of goog.getCssName in closure, this function maps a css
+  class name to its proper name, and applies an optional modifier.
+
+  If no mapping is present, the class_name and modifier are joined with hyphens
+  and returned directly.
+
+  If a mapping is present, the resulting css name will be retrieved from the
+  mapping and returned.
+
+  If one argument is passed it will be processed, if two are passed only the
+  modifier will be processed, as it is assumed the first argument was generated
+  as a result of calling goog.getCssName.
+
+  Args:
+    class_name: The class name to look up.
+    modifier: An optional modifier to append to the class_name.
+
+  Returns:
+    A mapped class name with optional modifier.
+  """
+  pieces = [class_name]
+  if modifier:
+    pieces.append(modifier)
+
+  if _css_name_mapping:
+    # Only map the last piece of the name.
+    pieces[-1] = _css_name_mapping.get(pieces[-1], pieces[-1])
+
+  return '-'.join(pieces)
+
+
+def set_css_name_mapping(mapping):
+  """Set the mapping of css names.
+
+  Args:
+    mapping: A dictionary of original class names to mapped class names.
+  """
+  global _css_name_mapping
+  _css_name_mapping = mapping
+
+
 def get_delegate_fn(template_id, variant, allow_empty_default):
   """Get the delegate function associated with the given template_id/variant.
 
