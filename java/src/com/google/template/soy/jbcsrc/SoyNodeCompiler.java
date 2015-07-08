@@ -214,8 +214,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        SoyExpression cond =
-            exprCompiler.compile(icn.getExprUnion().getExpr()).convert(boolean.class);
+        SoyExpression cond = exprCompiler.compile(icn.getExprUnion().getExpr()).coerceToBoolean();
         Statement block = visitChildrenInNewScope(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {
@@ -332,8 +331,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Variable currentIndex;
     if (rangeArgs.start().isPresent()) {
       Label startDetachPoint = new Label();
-      Expression startIndex = MethodRef.INTS_CHECKED_CAST.invoke(
-          exprCompiler.compile(rangeArgs.start().get(), startDetachPoint).convert(long.class));
+      Expression startIndex =
+          MethodRef.INTS_CHECKED_CAST.invoke(
+              exprCompiler.compile(rangeArgs.start().get(), startDetachPoint).unboxAs(long.class));
       currentIndex = scope.create(forNode.getVarName(), startIndex, STORE);
       initStatements.add(currentIndex.initializer().labelStart(startDetachPoint));
     } else {
@@ -344,13 +344,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Statement incrementCurrentIndex;
     if (rangeArgs.increment().isPresent()) {
       Label detachPoint = new Label();
-      Expression increment = MethodRef.INTS_CHECKED_CAST.invoke(
-          exprCompiler.compile(rangeArgs.increment().get(), detachPoint).convert(long.class));
+      Expression increment =
+          MethodRef.INTS_CHECKED_CAST.invoke(
+              exprCompiler.compile(rangeArgs.increment().get(), detachPoint).unboxAs(long.class));
       // If the expression is non-trivial, make sure to save it to a field.
-      final Variable incrementVariable = scope.createSynthetic(
-          SyntheticVarName.forLoopIncrement(forNode),
-          increment,
-          increment.isCheap() ? DERIVED : STORE);
+      final Variable incrementVariable =
+          scope.createSynthetic(
+              SyntheticVarName.forLoopIncrement(forNode),
+              increment,
+              increment.isCheap() ? DERIVED : STORE);
       initStatements.add(incrementVariable.initializer().labelStart(detachPoint));
       incrementVariable.local();
       incrementCurrentIndex = new Statement() {
@@ -370,13 +372,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     Label detachPoint = new Label();
-    Expression limit = MethodRef.INTS_CHECKED_CAST.invoke(
-        exprCompiler.compile(rangeArgs.limit(), detachPoint).convert(long.class));
+    Expression limit =
+        MethodRef.INTS_CHECKED_CAST.invoke(
+            exprCompiler.compile(rangeArgs.limit(), detachPoint).unboxAs(long.class));
     // If the expression is non-trivial we should cache it in a local variable
-    Variable variable = scope.createSynthetic(
-        SyntheticVarName.forLoopLimit(forNode),
-        limit,
-        limit.isCheap() ? DERIVED : STORE);
+    Variable variable =
+        scope.createSynthetic(
+            SyntheticVarName.forLoopLimit(forNode), limit, limit.isCheap() ? DERIVED : STORE);
     initStatements.add(variable.initializer().labelStart(detachPoint));
     limit = variable.local();
 
@@ -386,7 +388,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitForeachNode(ForeachNode node) {
     ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
-    SoyExpression expr = exprCompiler.compile(node.getExpr()).convert(List.class);
+    SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAs(List.class);
     Scope scope = variables.enterScope();
     final Variable listVar =
         scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
@@ -454,8 +456,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Label reattachPoint = new Label();
     SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
     AppendableExpression renderSoyValue =
-        appendableExpression.appendString(value.convert(String.class))
-                .labelStart(reattachPoint);
+        appendableExpression.appendString(value.coerceToString()).labelStart(reattachPoint);
     return detachState.detachLimited(renderSoyValue)
         .withSourceLocation(node.getSourceLocation());
   }
@@ -557,8 +558,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getComponentNameExpr() != null) {
       Label reattachPoint = new Label();
       SoyExpression compiledComponent =
-          exprCompiler.compile(node.getComponentNameExpr(), reattachPoint).convert(String.class);
-      return appendableExpression.appendString(compiledComponent)
+          exprCompiler.compile(node.getComponentNameExpr(), reattachPoint).coerceToString();
+      return appendableExpression
+          .appendString(compiledComponent)
           .appendChar(constant('-'))
           .appendString(renamedSelector)
           .labelStart(reattachPoint)
@@ -633,7 +635,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       variantExpr = constant("");
     } else {
       variantExpr =
-          exprCompiler.compile(node.getDelCalleeVariantExpr(), reattachPoint).convert(String.class);
+          exprCompiler.compile(node.getDelCalleeVariantExpr(), reattachPoint).coerceToString();
     }
     Expression calleeExpression =
         variableLookup.getRenderContext()
@@ -784,32 +786,40 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private MsgCompiler getMsgCompiler() {
-    return new MsgCompiler(thisVar, detachState, variables, variableLookup, appendableExpression,
+    return new MsgCompiler(
+        thisVar,
+        detachState,
+        variables,
+        variableLookup,
+        appendableExpression,
         new SoyNodeToStringCompiler() {
-          @Override public Statement compileToBuffer(
+          @Override
+          public Statement compileToBuffer(
               MsgHtmlTagNode htmlTagNode, AppendableExpression appendable) {
             return compilerWithNewAppendable(appendable).visit(htmlTagNode);
           }
 
-          @Override public Expression compileToString(PrintNode node, Label reattachPoint) {
-            return compilePrintNodeAsExpression(node, reattachPoint).convert(String.class);
+          @Override
+          public Expression compileToString(PrintNode node, Label reattachPoint) {
+            return compilePrintNodeAsExpression(node, reattachPoint).coerceToString();
           }
 
-          @Override public Statement compileToBuffer(
-              CallNode call, AppendableExpression appendable) {
+          @Override
+          public Statement compileToBuffer(CallNode call, AppendableExpression appendable) {
             // TODO(lukes): in the case that CallNode has to be escaped we will render all the bytes
             // into a buffer, box it into a soy value, escape it, then copy the bytes into this
             // buffer.  Consider optimizing at least one of the buffer copies away.
             return compilerWithNewAppendable(appendable).visit(call);
           }
 
-          @Override public Expression compileToString(ExprRootNode node, Label reattachPoint) {
-            return exprCompiler.compile(node, reattachPoint).convert(String.class);
+          @Override
+          public Expression compileToString(ExprRootNode node, Label reattachPoint) {
+            return exprCompiler.compile(node, reattachPoint).coerceToString();
           }
 
-          @Override public Expression compileToInt(ExprRootNode node, Label reattachPoint) {
+          @Override
+          public Expression compileToInt(ExprRootNode node, Label reattachPoint) {
             return exprCompiler.compile(node, reattachPoint).box().cast(IntegerData.class);
-
           }
         });
   }

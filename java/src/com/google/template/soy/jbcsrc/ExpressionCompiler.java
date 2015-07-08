@@ -276,7 +276,7 @@ final class ExpressionCompiler {
         // Note: The soy grammar and type system both allow for maps to have arbitrary keys for
         // types but none of the implementations support this.  So we don't support it either.
         // b/20468013
-        keys.add(visit(node.getChild(2 * i)).convert(String.class));
+        keys.add(visit(node.getChild(2 * i)).unboxAs(String.class));
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
       Expression mapExpr = BytecodeUtils.newLinkedHashMap(keys, values);
@@ -304,11 +304,11 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.isKnownInt() && right.isKnownInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLT, left.convert(long.class), right.convert(long.class)));
+            compare(Opcodes.IFLT, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
       if (left.isKnownNumber() && right.isKnownNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLT, left.convert(double.class), right.convert(double.class)));
+            compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble()));
       }
       return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(left.box(), right.box()));
     }
@@ -318,11 +318,11 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.isKnownInt() && right.isKnownInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGT, left.convert(long.class), right.convert(long.class)));
+            compare(Opcodes.IFGT, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
       if (left.isKnownNumber() && right.isKnownNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGT, left.convert(double.class), right.convert(double.class)));
+            compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble()));
       }
       // Note the argument reversal
       return SoyExpression.forBool(
@@ -334,11 +334,11 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.isKnownInt() && right.isKnownInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLE, left.convert(long.class), right.convert(long.class)));
+            compare(Opcodes.IFLE, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
       if (left.isKnownNumber() && right.isKnownNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLE, left.convert(double.class), right.convert(double.class)));
+            compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble()));
       }
       return SoyExpression.forBool(
           MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(left.box(), right.box()));
@@ -350,11 +350,11 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.isKnownInt() && right.isKnownInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGE, left.convert(long.class), right.convert(long.class)));
+            compare(Opcodes.IFGE, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
       if (left.isKnownNumber() && right.isKnownNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGE, left.convert(double.class), right.convert(double.class)));
+            compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble()));
       }
       // Note the reversal of the arguments.
       return SoyExpression.forBool(
@@ -374,10 +374,9 @@ final class ExpressionCompiler {
       }
       // '+' is overloaded for string arguments to mean concatenation.
       if (left.isKnownString() || right.isKnownString()) {
-        SoyExpression leftString = left.convert(String.class);
-        SoyExpression rightString = right.convert(String.class);
-        return SoyExpression.forString(
-            MethodRef.STRING_CONCAT.invoke(leftString, rightString));
+        SoyExpression leftString = left.coerceToString();
+        SoyExpression rightString = right.coerceToString();
+        return SoyExpression.forString(leftString.invoke(MethodRef.STRING_CONCAT, rightString));
       }
       return SoyExpression.forSoyValue(node.getType(),
           MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()).cast(node.getType().javaType()));
@@ -427,8 +426,8 @@ final class ExpressionCompiler {
 
     private SoyExpression applyBinaryIntOperator(final int operator, SoyExpression left,
         SoyExpression right) {
-      final SoyExpression leftInt = left.convert(long.class);
-      final SoyExpression rightInt = right.convert(long.class);
+      final SoyExpression leftInt = left.unboxAs(long.class);
+      final SoyExpression rightInt = right.unboxAs(long.class);
       return SoyExpression.forInt(
           new Expression(Type.LONG_TYPE) {
             @Override void doGen(CodeBuilder mv) {
@@ -441,8 +440,8 @@ final class ExpressionCompiler {
 
     private SoyExpression applyBinaryFloatOperator(final int operator, SoyExpression left,
         SoyExpression right) {
-      final SoyExpression leftFloat = left.convert(double.class);
-      final SoyExpression rightFloat = right.convert(double.class);
+      final SoyExpression leftFloat = left.coerceToDouble();
+      final SoyExpression rightFloat = right.coerceToDouble();
       return SoyExpression.forFloat(
           new Expression(Type.DOUBLE_TYPE) {
             @Override void doGen(CodeBuilder mv) {
@@ -458,7 +457,7 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitNegativeOpNode(NegativeOpNode node) {
       final SoyExpression child = visit(node.getChild(0));
       if (child.isKnownInt()) {
-        final SoyExpression intExpr = child.convert(long.class);
+        final SoyExpression intExpr = child.unboxAs(long.class);
         return SoyExpression.forInt(new Expression(Type.LONG_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
             intExpr.gen(mv);
@@ -467,7 +466,7 @@ final class ExpressionCompiler {
         });
       }
       if (child.isKnownNumber()) {
-        final SoyExpression floatExpr = child.convert(double.class);
+        final SoyExpression floatExpr = child.coerceToDouble();
         return SoyExpression.forFloat(new Expression(Type.DOUBLE_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
             floatExpr.gen(mv);
@@ -483,19 +482,18 @@ final class ExpressionCompiler {
 
     @Override protected final SoyExpression visitNotOpNode(NotOpNode node) {
       // All values are convertible to boolean
-      return SoyExpression.forBool(
-          logicalNot(visit(node.getChild(0)).convert(boolean.class)));
+      return SoyExpression.forBool(logicalNot(visit(node.getChild(0)).coerceToBoolean()));
     }
 
     @Override protected final SoyExpression visitAndOpNode(AndOpNode node) {
-      SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
-      SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
+      SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
+      SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
       return SoyExpression.forBool(BytecodeUtils.logicalAnd(left, right));
     }
 
     @Override protected final SoyExpression visitOrOpNode(OrOpNode node) {
-      SoyExpression left = visit(node.getChild(0)).convert(boolean.class);
-      SoyExpression right = visit(node.getChild(1)).convert(boolean.class);
+      SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
+      SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
       return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
     }
 
@@ -510,7 +508,7 @@ final class ExpressionCompiler {
     }
 
     @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
-      final SoyExpression condition = visit(node.getChild(0)).convert(boolean.class);
+      final SoyExpression condition = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression trueBranch = visit(node.getChild(1));
       SoyExpression falseBranch = visit(node.getChild(2));
       // If types are == and they are both boxed (or both not boxed) then we can just use them
@@ -521,19 +519,19 @@ final class ExpressionCompiler {
       }
       // Otherwise try some simple unboxing conversions to get bytecode compatible types.
       if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
-        final SoyExpression trueAsLong = trueBranch.convert(long.class);
-        final SoyExpression falseAsLong = falseBranch.convert(long.class);
+        final SoyExpression trueAsLong = trueBranch.unboxAs(long.class);
+        final SoyExpression falseAsLong = falseBranch.unboxAs(long.class);
         return SoyExpression.forInt(ternary(condition, trueAsLong, falseAsLong));
       }
       if (trueBranch.isKnownNumber() && falseBranch.isKnownNumber()) {
-        final SoyExpression trueAsFloat = trueBranch.convert(double.class);
-        final SoyExpression falseAsFloat = falseBranch.convert(double.class);
+        final SoyExpression trueAsFloat = trueBranch.coerceToDouble();
+        final SoyExpression falseAsFloat = falseBranch.coerceToDouble();
         return SoyExpression.forFloat(ternary(condition, trueAsFloat, falseAsFloat));
       }
       if (typesEqual && trueBranch.isKnownStringOrSanitizedContent()
           && falseBranch.isKnownStringOrSanitizedContent()) {
-        final SoyExpression trueAsString = trueBranch.convert(String.class);
-        final SoyExpression falseAsString = falseBranch.convert(String.class);
+        final SoyExpression trueAsString = trueBranch.coerceToString();
+        final SoyExpression falseAsString = falseBranch.coerceToString();
         Expression ternary = ternary(condition, trueAsString, falseAsString);
         if (trueBranch.isKnownSanitizedContent()) {
           return SoyExpression.forSanitizedString(ternary,
@@ -791,9 +789,9 @@ final class ExpressionCompiler {
         // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
         // optimized the same way because there is no real way to 'unbox' a SoyMap.
         if (baseExpr.isKnownList()) {
-          soyValueProvider = MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
-              baseExpr.convert(List.class),
-              keyExpr.convert(long.class));
+          soyValueProvider =
+              MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
+                  baseExpr.unboxAs(List.class), keyExpr.unboxAs(long.class));
         } else {
           // Box and do a map style lookup.
           soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(

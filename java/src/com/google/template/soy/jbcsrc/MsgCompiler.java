@@ -150,7 +150,7 @@ final class MsgCompiler {
     for (String directive : escapingDirectives) {
       text = text.applyPrintDirective(variableLookup.getRenderContext(), directive);
     }
-    return appendableExpression.appendString(text.convert(String.class)).toStatement();
+    return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
 
   /**
@@ -184,9 +184,10 @@ final class MsgCompiler {
       for (String directive : escapingDirectives) {
         value = value.applyPrintDirective(variableLookup.getRenderContext(), directive);
       }
-      render = Statement.concat(
-          renderToBuffer,
-          appendableExpression.appendString(value.convert(String.class)).toStatement());
+      render =
+          Statement.concat(
+              renderToBuffer,
+              appendableExpression.appendString(value.coerceToString()).toStatement());
     }
     Statement detach = detachState.detachLimited(appendableExpression);
     return Statement.concat(populateMap, render, clearMap, detach)

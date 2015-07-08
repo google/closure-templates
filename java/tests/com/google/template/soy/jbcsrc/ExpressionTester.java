@@ -165,7 +165,22 @@ public final class ExpressionTester {
       }
       return this;
     }
-
+    
+    ExpressionSubject evaluatesToInstanceOf(Class<?> expected) {
+      compile();
+      Object actual;
+      try {
+        actual = ((ObjectInvoker) invoker).invoke();
+      } catch (Throwable t) {
+        failWithBadResults("evalutes to instance of", expected, "fails with", t);
+        return this;
+      }
+      if (!expected.isInstance(actual)) {
+        failWithBadResults("evaluates to instance of", expected, "evaluates to", actual);
+      }
+      return this;
+    }
+    
     ExpressionSubject throwsException(Class<? extends Throwable> clazz) {
       return throwsException(clazz, null);
     }

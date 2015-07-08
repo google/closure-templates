@@ -131,7 +131,7 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given String constant. */
   static Expression constant(final String value) {
     checkNotNull(value);
-    return new Expression(Type.getType(String.class), Feature.CHEAP) {
+    return new Expression(Type.getType(String.class), Feature.CHEAP, Feature.NON_NULLABLE) {
       @Override void doGen(CodeBuilder mv) {
         mv.pushString(value);
       }
@@ -245,7 +245,7 @@ final class BytecodeUtils {
   // that way we could save a branch.  Maybe these operators are a failed abstraction?
 
   /**
-   * Compares the two {@code double} valued expressions using the provided comparison operation.
+   * Compares the two primitive valued expressions using the provided comparison operation.
    */
   static Expression compare(final int comparisonOpcode, final Expression left, 
       final Expression right) {
@@ -324,16 +324,16 @@ final class BytecodeUtils {
     // If either is a string, we run special logic so test for that first
     // otherwise we special case primitives and eventually fall back to our runtime.
     if (left.isKnownString()) {
-      return doEqualsString(left.convert(String.class), right);
+      return doEqualsString(left.unboxAs(String.class), right);
     }
     if (right.isKnownString()) {
-      return doEqualsString(right.convert(String.class), left);
+      return doEqualsString(right.unboxAs(String.class), left);
     }
     if (left.isKnownInt() && right.isKnownInt()) {
-      return compare(Opcodes.IFEQ, left.convert(long.class), right.convert(long.class));
+      return compare(Opcodes.IFEQ, left.unboxAs(long.class), right.unboxAs(long.class));
     }
     if (left.isKnownNumber() && right.isKnownNumber()) {
-      return compare(Opcodes.IFEQ, left.convert(double.class), right.convert(double.class));
+      return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
     }
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
   }
@@ -348,13 +348,11 @@ final class BytecodeUtils {
     // This is compatible with SharedRuntime.compareString, which interestingly makes == break
     // transitivity.  See b/21461181
     if (other.isKnownStringOrSanitizedContent()) {
-      SoyExpression strOther = other.convert(String.class);
-      return stringExpr.invoke(MethodRef.EQUALS, strOther);
+      return stringExpr.invoke(MethodRef.EQUALS, other.unboxAs(String.class));
     }
     if (other.isKnownNumber()) {
       // in this case, we actually try to convert stringExpr to a number
-      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER
-          .invoke(stringExpr, other.convert(double.class));
+      return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(stringExpr, other.coerceToDouble());
     }
     // We don't know what other is, assume the worst and call out to our boxed implementation
     // TODO(lukes): in this case we know that the first param is a string, maybe we can specialize

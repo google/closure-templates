@@ -182,8 +182,7 @@ final class ExpressionToSoyValueProviderCompiler {
         if (!trueBranch.isPresent() || !falseBranch.isPresent()) {
           return Optional.absent();
         }
-        Expression condition = 
-            detachingExprCompiler.compile(node.getChild(0)).convert(boolean.class);
+        Expression condition = detachingExprCompiler.compile(node.getChild(0)).coerceToBoolean();
         return Optional.of(BytecodeUtils.ternary(condition, trueBranch.get(), falseBranch.get()));
       }
       return visitExprNode(node);

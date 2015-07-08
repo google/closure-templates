@@ -309,6 +309,20 @@ abstract class Expression extends BytecodeProducer {
     };
   }
 
+  /**
+   * Returns a new expression identical to this one but with the given label applied at the end
+   * of the expression.
+   */
+  Expression labelEnd(final Label label) {
+    return new Expression(resultType(), features) {
+      @Override
+      void doGen(CodeBuilder adapter) {
+        Expression.this.gen(adapter);
+        adapter.mark(label);
+      }
+    };
+  }
+
   @Override public String toString() {
     String name = getClass().getSimpleName();
     if (name.isEmpty()) {

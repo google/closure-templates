@@ -78,6 +78,8 @@ import java.util.Map;
       forMethod(BooleanData.class, "forValue", boolean.class).asNonNullable();
   
   static final MethodRef BOOLEAN_VALUE = forMethod(Boolean.class, "booleanValue").asCheap();
+  static final MethodRef BOOLEAN_TO_STRING =
+      forMethod(Boolean.class, "toString", boolean.class).asCheap().asNonNullable();
   
   static final MethodRef COMPILED_TEMPLATE_RENDER =
       forMethod(CompiledTemplate.class, "render", AdvisingAppendable.class, RenderContext.class)
