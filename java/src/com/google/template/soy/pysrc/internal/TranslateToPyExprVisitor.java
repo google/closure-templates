@@ -23,8 +23,8 @@ import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -72,11 +72,23 @@ import java.util.Map;
  */
 final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
 
+  private static final SoyError SOY_PY_SRC_FUNCTION_NOT_FOUND =
+      SoyError.of("Failed to find SoyPySrcFunction ''{0}''.");
+
+  /**
+   * Errors in this visitor generate Python source that immediately explodes.
+   * Users of Soy are expected to check the error reporter before using the gencode;
+   * if they don't, this should apprise them.
+   * TODO(brndn): consider changing the visitor to return {@code Optional<PyExpr>}
+   * and returning {@link Optional#absent()} on error.
+   */
+  private static final PyExpr ERROR =
+      new PyExpr("raise Exception('Soy compilation failed')", Integer.MAX_VALUE);
 
   /**
    * Injectable factory for creating an instance of this class.
    */
-  static interface TranslateToPyExprVisitorFactory {
+  interface TranslateToPyExprVisitorFactory {
     TranslateToPyExprVisitor create(LocalVariableStack localVarExprs);
   }
 
@@ -335,7 +347,6 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
    */
   @Override protected PyExpr visitFunctionNode(FunctionNode node)  {
     String fnName = node.getFunctionName();
-    int numArgs = node.numChildren();
 
     // Handle nonplugin functions.
     NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
@@ -345,33 +356,15 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
 
     // Handle plugin functions.
     SoyPySrcFunction pluginFn = soyPySrcFunctionsMap.get(fnName);
-    if (pluginFn != null) {
-      if (!pluginFn.getValidArgsSizes().contains(numArgs)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Function '" + fnName + "' called with the wrong number of arguments"
-                + " (function call \"" + node.toSourceString() + "\").");
-      }
-      List<PyExpr> args = visitChildren(node);
-      try {
-        return pluginFn.computeForPySrc(args);
-      } catch (Exception e) {
-        throw SoySyntaxException.createCausedWithoutMetaInfo(
-            "Error in function call \"" + node.toSourceString(), e);
-      }
+    if (pluginFn == null) {
+      errorReporter.report(node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, fnName);
+      return ERROR;
     }
-
-    // Function not found.
-    throw SoySyntaxException.createWithoutMetaInfo(
-        "Failed to find function with name '" + fnName + "'"
-            + " (function call \"" + node.toSourceString() + "\").");
+    List<PyExpr> args = visitChildren(node);
+    return pluginFn.computeForPySrc(args);
   }
 
   private PyExpr visitNonPluginFunction(FunctionNode node, NonpluginFunction nonpluginFn) {
-    if (node.numChildren() != nonpluginFn.getNumArgs()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Function '" + node.getFunctionName() + "' called with the wrong number of arguments"
-              + " (function call \"" + node.toSourceString() + "\").");
-    }
     switch (nonpluginFn) {
       case IS_FIRST:
         return visitForEachFunction(node, "__isFirst");
