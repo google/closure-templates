@@ -17,7 +17,6 @@
 package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
-import static junit.framework.TestCase.assertFalse;
 
 import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -68,6 +67,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
+import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.Type;
 import com.google.template.soy.soytree.TemplateSubject;
 import com.google.template.soy.soytree.XidNode;
 
@@ -726,16 +726,16 @@ public final class TemplateParserTest extends TestCase {
     assertEquals("BODY", result.getBodyNodes().get(0).toSourceString());
 
     List<DeclInfo> declInfos = result.getHeaderDecls();
-    assertEquals("@param", declInfos.get(0).cmdName);
-    assertEquals("boo: string", declInfos.get(0).cmdText);
-    assertEquals(null, declInfos.get(0).soyDoc);
-    assertEquals("foo: list<int>", declInfos.get(1).cmdText);
-    assertEquals("Something random.", declInfos.get(1).soyDoc);
-    assertEquals("Something\n      slimy.", declInfos.get(2).soyDoc);
-    assertEquals(null, declInfos.get(3).soyDoc);
-    assertEquals(null, declInfos.get(4).soyDoc);
-    assertEquals("Something exciting.", declInfos.get(5).soyDoc);
-    assertEquals(null, declInfos.get(6).soyDoc);
+    assertEquals(Type.PARAM, declInfos.get(0).type());
+    assertEquals("boo: string", declInfos.get(0).cmdText());
+    assertEquals(null, declInfos.get(0).soyDoc());
+    assertEquals("foo: list<int>", declInfos.get(1).cmdText());
+    assertEquals("Something random.", declInfos.get(1).soyDoc());
+    assertEquals("Something\n      slimy.", declInfos.get(2).soyDoc());
+    assertEquals(null, declInfos.get(3).soyDoc());
+    assertEquals(null, declInfos.get(4).soyDoc());
+    assertEquals("Something exciting.", declInfos.get(5).soyDoc());
+    assertEquals(null, declInfos.get(6).soyDoc());
   }
 
 

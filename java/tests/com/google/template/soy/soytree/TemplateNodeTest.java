@@ -31,6 +31,8 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
+import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.OptionalStatus;
+import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.Type;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.SoyDocParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -103,12 +105,34 @@ public class TemplateNodeTest extends TestCase {
 
   public void testParseHeaderDecls() {
     TemplateNode tn = templateBasicNode()
-        .setId(0).setCmdText(".boo").setSoyDoc("/** @param foo */")
-        .setHeaderDecls(ImmutableList.of(
-            new DeclInfo("@param", "goo   :   list<int>", null, false),
-            new DeclInfo("@param", "moo: string", "Something milky.", false),
-            new DeclInfo("@param", "boo: string", "Something scary.", true),
-            new DeclInfo("@inject", "zoo: string", "Something else.", false)))
+        .setId(0)
+        .setCmdText(".boo")
+        .setSoyDoc("/** @param foo */")
+        .setHeaderDecls(
+            new DeclInfo(
+                Type.PARAM,
+                OptionalStatus.REQUIRED,
+                "goo   :   list<int>",
+                null /* soyDoc */,
+                SourceLocation.UNKNOWN),
+            new DeclInfo(
+                Type.PARAM,
+                OptionalStatus.REQUIRED,
+                "moo: string",
+                "Something milky.",
+                SourceLocation.UNKNOWN),
+            new DeclInfo(
+                Type.PARAM,
+                OptionalStatus.OPTIONAL,
+                "boo: string",
+                "Something scary.",
+                SourceLocation.UNKNOWN),
+            new DeclInfo(
+                Type.INJECTED_PARAM,
+                OptionalStatus.REQUIRED,
+                "zoo: string",
+                "Something else.",
+                SourceLocation.UNKNOWN))
         .build();
 
     List<TemplateParam> params = tn.getParams();
@@ -160,7 +184,13 @@ public class TemplateNodeTest extends TestCase {
       templateBasicNode()
           .setId(0)
           .setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "33: int", null, false)))
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "33: int",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -169,8 +199,15 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "f-oo: int", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "f-oo: int",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -179,8 +216,15 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "foo",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -189,8 +233,15 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo:", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "foo:",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -199,8 +250,15 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", ": int", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  ": int",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -209,8 +267,15 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "foo int", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "foo int",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -232,8 +297,15 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(new DeclInfo("@param", "ij: int", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "ij: int",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -254,11 +326,27 @@ public class TemplateNodeTest extends TestCase {
 
     try {
       templateBasicNode()
-          .setId(0).setCmdText(".boo")
-          .setHeaderDecls(ImmutableList.of(
-              new DeclInfo("@param", "goo: null", "Something slimy.", false),
-              new DeclInfo("@param", "foo: string", "Something random.", false),
-              new DeclInfo("@param", "foo: int", null, false)))
+          .setId(0)
+          .setCmdText(".boo")
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "goo: null",
+                  "Something slimy.",
+                  SourceLocation.UNKNOWN),
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "foo: string",
+                  "Something random.",
+                  SourceLocation.UNKNOWN),
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "foo: int",
+                  null /* soyDoc */,
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -269,8 +357,13 @@ public class TemplateNodeTest extends TestCase {
       templateBasicNode()
           .setId(0).setCmdText(".boo")
           .setSoyDoc("/** @param? foo Something. */")
-          .setHeaderDecls(ImmutableList.of(
-              new DeclInfo("@param", "foo: string", "Something else.", false)))
+          .setHeaderDecls(
+              new DeclInfo(
+                  Type.PARAM,
+                  OptionalStatus.REQUIRED,
+                  "foo: string",
+                  "Something else.",
+                  SourceLocation.UNKNOWN))
           .build();
       fail();
     } catch (SoySyntaxException sse) {
@@ -533,9 +626,19 @@ public class TemplateNodeTest extends TestCase {
             " * @param goo\n" +
             " *     Goo to print.\n" +
             " */")
-        .setHeaderDecls(ImmutableList.of(
-            new DeclInfo("@param", "moo: bool", "Something milky.", false),
-            new DeclInfo("@param", "too   :   string|null", null, false)))
+        .setHeaderDecls(
+            new DeclInfo(
+                Type.PARAM,
+                OptionalStatus.REQUIRED,
+                "moo: bool",
+                "Something milky.",
+                SourceLocation.UNKNOWN),
+            new DeclInfo(
+                Type.PARAM,
+                OptionalStatus.REQUIRED,
+                "too   :   string|null",
+                null /* soyDoc */,
+                SourceLocation.UNKNOWN))
         .build();
     tn.addChild(new RawTextNode(0, "  ", SourceLocation.UNKNOWN));  // 2 spaces
     tn.addChild(

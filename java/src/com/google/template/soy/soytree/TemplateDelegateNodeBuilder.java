@@ -36,7 +36,6 @@ import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.types.SoyTypeRegistry;
 
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -253,7 +252,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc);
   }
 
-  @Override public TemplateDelegateNodeBuilder setHeaderDecls(List<DeclInfo> declInfos) {
+  @Override public TemplateDelegateNodeBuilder setHeaderDecls(DeclInfo... declInfos) {
     return (TemplateDelegateNodeBuilder) super.setHeaderDecls(declInfos);
   }
 

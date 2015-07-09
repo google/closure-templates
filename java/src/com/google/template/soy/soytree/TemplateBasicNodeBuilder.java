@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.types.SoyTypeRegistry;
 
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -213,7 +212,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     return (TemplateBasicNodeBuilder) super.setSoyDoc(soyDoc);
   }
 
-  @Override public TemplateBasicNodeBuilder setHeaderDecls(List<DeclInfo> declInfos) {
+  @Override public TemplateBasicNodeBuilder setHeaderDecls(DeclInfo... declInfos) {
     return (TemplateBasicNodeBuilder) super.setHeaderDecls(declInfos);
   }
 

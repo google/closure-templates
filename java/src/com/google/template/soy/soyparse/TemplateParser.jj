@@ -2352,29 +2352,31 @@ private DeclInfo Decl() :
  */
 private DeclInfo ParamDecl() :
 {
+  SourceItemInfo<Void> tagOpen;
   String cmdText;
   Token blockDocComment;
-  String tag;
-  boolean optional = false;
-  boolean injected = false;
+  DeclInfo.OptionalStatus optionalStatus = DeclInfo.OptionalStatus.REQUIRED;
+  DeclInfo.Type type = DeclInfo.Type.PARAM;
 }
 {
-  SoyTagOpen()
+  tagOpen = SoyTagOpen()
   (
     <CMD_NAME_PARAM_DECL>
-    { tag = "@param"; }
   |
     <CMD_NAME_INJECTED_PARAM_DECL>
-    { tag = "@inject"; injected = true; }
+    { type = DeclInfo.Type.INJECTED_PARAM; }
   )
 
-  [ <QMARK> { optional = true; } ]
+  [ <QMARK> { optionalStatus = DeclInfo.OptionalStatus.OPTIONAL; } ]
   <WS_AFTER_CMD_NAME>
 
   cmdText = CmdText()
   RegSoyTagClose()
 
-  { String desc; }
+    {
+      String desc;
+      SourceLocation sourceLocation;
+    }
   (
     LOOKAHEAD( ( <TOKEN_WS_NOT_NL> )* <BLOCK_DOC_COMMENT> )
 
@@ -2383,12 +2385,21 @@ private DeclInfo ParamDecl() :
     )*
 
     blockDocComment = <BLOCK_DOC_COMMENT>
-    { desc = blockDocComment.image; }
+    {
+      desc = blockDocComment.image;
+      sourceLocation = createSrcLoc(blockDocComment);
+    }
   |
-    { desc = null; }
+    {
+      desc = null;
+      // If there is no doc comment, just use the tag's source location.
+      sourceLocation = tagOpen.srcLocation();
+    }
   )
 
-  { return new DeclInfo(tag, cmdText, desc, optional); }
+  {
+    return new DeclInfo(type, optionalStatus, cmdText, desc, sourceLocation);
+  }
 }
 
 
@@ -2402,9 +2413,8 @@ private DeclInfo ParamDeclWithDocPrefix() :
 {
   String cmdText;
   Token blockDocComment;
-  String tag;
-  boolean optional = false;
-  boolean injected = false;
+  DeclInfo.OptionalStatus optionalStatus = DeclInfo.OptionalStatus.REQUIRED;
+  DeclInfo.Type type = DeclInfo.Type.PARAM;
 }
 {
   blockDocComment = <BLOCK_DOC_COMMENT>
@@ -2413,19 +2423,21 @@ private DeclInfo ParamDeclWithDocPrefix() :
   SoyTagOpen()
   (
     <CMD_NAME_PARAM_DECL>
-    { tag = "@param"; }
   |
     <CMD_NAME_INJECTED_PARAM_DECL>
-    { tag = "@inject"; injected = true; }
+    { type = DeclInfo.Type.INJECTED_PARAM; }
   )
 
-  [ <QMARK> { optional = true; } ]
+  [ <QMARK> { optionalStatus = DeclInfo.OptionalStatus.OPTIONAL; } ]
   <WS_AFTER_CMD_NAME>
 
   cmdText = CmdText()
   RegSoyTagClose()
 
-  { return new DeclInfo(tag, cmdText, blockDocComment.image, optional); }
+  {
+    return new DeclInfo(
+        type, optionalStatus, cmdText, blockDocComment.image, createSrcLoc(blockDocComment));
+  }
 }
 
 
