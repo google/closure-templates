@@ -186,13 +186,25 @@ def namespaced_import(name, namespace=None):
     # TODO(dcphillips): After namespace sharing limits are in place, remove the
     # logic to combine modules (b/16628735).
     if namespace:
+      regex_safe_namespace = full_namespace.replace('.', r'\.')
+      namespace_key = re.compile(
+          r"^SOY_NAMESPACE = '%s'$" % regex_safe_namespace, flags=re.MULTILINE)
       full_module = imp.new_module(full_namespace)
       found = False
-      for path, f in _find_modules(name):
-        module = getattr(__import__(path, globals(), locals(), [f], -1), f)
-        if getattr(module, 'SOY_NAMESPACE', None) == full_namespace:
-          full_module.__dict__.update(module.__dict__)
-          found = True
+      for sys_path, f_path, f_name in _find_modules(name):
+        # Verify the file namespace with a regex before loading.
+        with open('%s/%s' % (f_path, f_name), 'r') as f:
+          if not namespace_key.search(f.read(2000)):
+            continue
+
+        # Strip the root path and the file extension.
+        module_path = os.path.relpath(f_path, sys_path).replace('/', '.')
+        module_name = os.path.splitext(f_name)[0]
+        module = getattr(
+            __import__(module_path, globals(), locals(), [module_name], -1),
+            module_name)
+        full_module.__dict__.update(module.__dict__)
+        found = True
       if found:
         # Add this to the global modules list for faster loading in the future.
         _cache_module(full_namespace, full_module)
@@ -410,15 +422,14 @@ def _find_modules(name):
   """Walks the sys path and looks for modules that start with 'name'.
 
   This function yields all results which match the pattern in the sys path.
-  It can be treated similar to os.walk(), but yields a path and file name
-  (minus the .py extension). These are meant to be used for traditional import
+  It can be treated similar to os.walk(), but yields only files which match
+  the pattern. These are meant to be used for traditional import
   syntax. Bad paths are ignored and skipped.
 
   Args:
     name: The name to match against the beginning of the module name.
   Yields:
-    A tuple containing the path (with dots instead of slashes), and the file
-    name with the python extension stripped.
+    A tuple containing the path, the base system path, and the file name.
   """
   # TODO(dcphillips): Allow for loading of compiled source once namespaces are
   # limited to one file (b/16628735).
@@ -428,8 +439,7 @@ def _find_modules(name):
       for root, _, files in os.walk(path):
         for f in files:
           if module_file_name.match(f):
-            module_path = root[len(path) + 1:]
-            yield module_path.replace('/', '.'), os.path.splitext(f)[0]
+            yield path, root, f
     except OSError:
       # Ignore bad paths
       pass
