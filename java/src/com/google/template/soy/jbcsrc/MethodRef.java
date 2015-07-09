@@ -22,8 +22,6 @@ import static com.google.template.soy.jbcsrc.Expression.areAllCheap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
@@ -40,6 +38,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
+import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
@@ -60,7 +59,6 @@ import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -271,46 +269,8 @@ import java.util.Map;
   static final MethodRef STRING_VALUE_OF =
       forMethod(String.class, "valueOf", Object.class).asNonNullable();
 
-  static final class Builder {
-    final java.lang.reflect.Method method;
-    private Builder(java.lang.reflect.Method method) {
-      this.method = method;
-    }
-    
-    MethodRef withFeatures(Feature ...features) {
-      Class<?> clazz = method.getDeclaringClass();
-      TypeInfo ownerType = TypeInfo.create(method.getDeclaringClass());
-      boolean isStatic = Modifier.isStatic(method.getModifiers());
-      ImmutableList<Type> argTypes;
-      if (isStatic) {
-        argTypes = ImmutableList.copyOf(Type.getArgumentTypes(method));
-      } else {
-        // for instance methods the first 'argument' is always an instance of the class.
-        argTypes = ImmutableList.<Type>builder()
-            .add(ownerType.type())
-            .add(Type.getArgumentTypes(method))
-            .build();
-      }
-      return new AutoValue_MethodRef(
-          clazz.isInterface() 
-              ? Opcodes.INVOKEINTERFACE 
-              : isStatic 
-                  ? Opcodes.INVOKESTATIC 
-                  : Opcodes.INVOKEVIRTUAL, 
-          ownerType,
-          org.objectweb.asm.commons.Method.getMethod(method),
-          Type.getType(method.getReturnType()),
-          argTypes,
-          Sets.immutableEnumSet(Arrays.asList(features)));
-      }
-    }
-  
   static MethodRef forMethod(Class<?> clazz, String methodName, Class<?> ...params) {
     return create(clazz, methodName, params);
-  }
-
-  static Builder forMethod(java.lang.reflect.Method m) {
-    return new Builder(m);
   }
 
   static MethodRef create(Class<?> clazz, String methodName, Class<?> ...params) {
@@ -321,14 +281,37 @@ import java.util.Map;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    return new Builder(m).withFeatures();
+    return create(m);
   }
 
-  static MethodRef create(java.lang.reflect.Method m) {
-    return forMethod(m).withFeatures();
+  static MethodRef create(java.lang.reflect.Method method) {
+    Class<?> clazz = method.getDeclaringClass();
+    TypeInfo ownerType = TypeInfo.create(method.getDeclaringClass());
+    boolean isStatic = Modifier.isStatic(method.getModifiers());
+    ImmutableList<Type> argTypes;
+    if (isStatic) {
+      argTypes = ImmutableList.copyOf(Type.getArgumentTypes(method));
+    } else {
+      // for instance methods the first 'argument' is always an instance of the class.
+      argTypes = ImmutableList.<Type>builder()
+          .add(ownerType.type())
+          .add(Type.getArgumentTypes(method))
+          .build();
+    }
+    return new AutoValue_MethodRef(
+        clazz.isInterface() 
+            ? Opcodes.INVOKEINTERFACE 
+            : isStatic 
+                ? Opcodes.INVOKESTATIC 
+                : Opcodes.INVOKEVIRTUAL, 
+        ownerType,
+        org.objectweb.asm.commons.Method.getMethod(method),
+        Type.getType(method.getReturnType()),
+        argTypes,
+        Features.of());
   }
 
-  static MethodRef createInstanceMethod(TypeInfo owner, Method method, Feature ...features) {
+  static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
     return new AutoValue_MethodRef(
         Opcodes.INVOKEVIRTUAL, 
         owner,
@@ -338,7 +321,7 @@ import java.util.Map;
             .add(owner.type())
             .add(method.getArgumentTypes())
             .build(),
-            Sets.immutableEnumSet(Arrays.asList(features)));
+        Features.of());
   }
 
   /**
@@ -353,7 +336,7 @@ import java.util.Map;
   abstract org.objectweb.asm.commons.Method method();
   abstract Type returnType();
   abstract ImmutableList<Type> argTypes();
-  abstract ImmutableSet<Feature> features();
+  abstract Features features();
   
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are 
   // actually calling the method rather than generating an expression that will output code that
@@ -381,10 +364,9 @@ import java.util.Map;
     checkState(!Type.VOID_TYPE.equals(returnType()), 
         "Cannot produce an expression from a void method.");
     Expression.checkTypes(argTypes(), args);
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-    features.addAll(features());
+    Features features = features();
     if (!areAllCheap(args)) {
-      features.remove(Feature.CHEAP);
+      features = features.minus(Feature.CHEAP);
     }
     return new Expression(returnType(), features) {
       @Override void doGen(CodeBuilder mv) {
@@ -401,8 +383,8 @@ import java.util.Map;
     return withFeature(Feature.NON_NULLABLE);
   }
 
-  private MethodRef withFeature(Feature cheap) {
-    if (features().contains(cheap)) {
+  private MethodRef withFeature(Feature feature) {
+    if (features().has(feature)) {
       return this;
     }
     return new AutoValue_MethodRef(
@@ -411,7 +393,7 @@ import java.util.Map;
         method(),
         returnType(),
         argTypes(),
-        Sets.immutableEnumSet(cheap, features().toArray(new Feature[0])));
+        features().plus(feature));
   }
   
   /**

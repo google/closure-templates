@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
+import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
 
 import org.objectweb.asm.ClassVisitor;
@@ -30,7 +31,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Modifier;
-import java.util.EnumSet;
 
 /**
  * Representation of a field in a java class.
@@ -142,12 +142,12 @@ import java.util.EnumSet;
   Expression accessor(final Expression owner) {
     checkState(!isStatic());
     checkArgument(owner.resultType().equals(this.owner().type()));
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
+    Features features = Features.of();
     if (owner.isCheap()) {
-      features.add(Feature.CHEAP);
+      features = features.plus(Feature.CHEAP);
     }
     if (!isNullable()) {
-      features.add(Feature.NON_NULLABLE);
+      features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(type(), features) {
       @Override void doGen(CodeBuilder mv) {
@@ -162,10 +162,9 @@ import java.util.EnumSet;
    */
   Expression accessor() {
     checkState(isStatic());
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-    features.add(Feature.CHEAP);
+    Features features = Features.of(Feature.CHEAP);
     if (!isNullable()) {
-      features.add(Feature.NON_NULLABLE);
+      features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(type(), features) {
       @Override void doGen(CodeBuilder mv) {

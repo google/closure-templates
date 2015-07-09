@@ -49,7 +49,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -262,11 +261,8 @@ class SoyExpression extends Expression {
     if (!delegate.isNonNullable()) {
       // now prefix with a null check and then box so null is preserved via 'boxing'
       final Label end = new Label();
-      EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-      features.addAll(delegate.features());
-      features.add(Feature.NON_NULLABLE);
       return new SoyExpression(SoyTypes.removeNull(soyType), clazz,
-          new Expression(resultType(), features) {
+          new Expression(resultType(), features().plus(Feature.NON_NULLABLE)) {
             @Override void doGen(CodeBuilder adapter) {
               delegate.gen(adapter);
               adapter.dup();
@@ -318,21 +314,19 @@ class SoyExpression extends Expression {
       // If we are potentially nullable, then map null to false and run the normal logic recursively
       // for the non-nullable branch.
       final Label end = new Label();
-      EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-      features.addAll(delegate.features());
-      features.add(Feature.NON_NULLABLE);
-      return withSource(new Expression(delegate.resultType(), features) {
-        @Override void doGen(CodeBuilder adapter) {
-          delegate.gen(adapter);
-          adapter.dup();
-          Label nonNull = new Label();
-          adapter.ifNonNull(nonNull);
-          adapter.pop();
-          adapter.pushBoolean(false);
-          adapter.goTo(end);
-          adapter.mark(nonNull);
-        }
-      }).coerceToBoolean().labelEnd(end);
+      return withSource(
+          new Expression(resultType(), features().plus(Feature.NON_NULLABLE)) {
+            @Override void doGen(CodeBuilder adapter) {
+              delegate.gen(adapter);
+              adapter.dup();
+              Label nonNull = new Label();
+              adapter.ifNonNull(nonNull);
+              adapter.pop();
+              adapter.pushBoolean(false);
+              adapter.goTo(end);
+              adapter.mark(nonNull);
+            }
+          }).coerceToBoolean().labelEnd(end);
     }
   }
 
@@ -437,6 +431,7 @@ class SoyExpression extends Expression {
           "Trying to unbox an unboxed value doesn't make sense, "
               + "should you be using a type coercion? e.g. .coerceToBoolean()");
     }
+
     if (asType.equals(long.class)) {
       return forInt(delegate.invoke(MethodRef.SOY_VALUE_LONG_VALUE));
     }
@@ -454,16 +449,14 @@ class SoyExpression extends Expression {
       // else it must be a List/Proto/String all of which must preserve null through the unboxing
       // operation
       final Label ifNull = new Label();
-      EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-      features.addAll(features());
-      features.add(Feature.NON_NULLABLE);
-      Expression nonNullDelegate = new Expression(resultType(), features) {
-        @Override void doGen(CodeBuilder adapter) {
-          delegate.gen(adapter);
-          adapter.dup();
-          adapter.ifNull(ifNull);
-        }
-      };
+      Expression nonNullDelegate =
+          new Expression(resultType(), features().plus(Feature.NON_NULLABLE)) {
+            @Override void doGen(CodeBuilder adapter) {
+              delegate.gen(adapter);
+              adapter.dup();
+              adapter.ifNull(ifNull);
+            }
+          };
       final SoyExpression unboxAs = withSource(nonNullDelegate).unboxAs(asType);
       return withSource(new Expression(resultType(), features()) {
         @Override void doGen(CodeBuilder adapter) {

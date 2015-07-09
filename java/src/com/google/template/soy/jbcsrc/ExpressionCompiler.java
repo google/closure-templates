@@ -79,7 +79,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -725,11 +724,8 @@ final class ExpressionCompiler {
         // need to check if baseExpr == null
         final SoyExpression orig = baseExpr;
         final Label nullSafeExit = getNullSafeExit();
-        EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-        features.addAll(orig.features());
-        features.add(Feature.NON_NULLABLE);
         return SoyExpression.forSoyValue(SoyTypes.removeNull(orig.soyType()),
-            new Expression(orig.resultType(), features) {
+            new Expression(orig.resultType(), orig.features().plus(Feature.NON_NULLABLE)) {
           @Override void doGen(CodeBuilder adapter) {
             orig.gen(adapter);                                       // S
             adapter.dup();                                           // S, S

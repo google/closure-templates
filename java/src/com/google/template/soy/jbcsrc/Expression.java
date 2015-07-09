@@ -20,14 +20,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 
 /**
@@ -56,6 +55,79 @@ abstract class Expression extends BytecodeProducer {
     CHEAP;
     // TODO(lukes): an idempotent feature would be useful some expressions are not safe to gen more
     // than once.
+  }
+
+  /** An immutable wrapper of an EnumSet of {@link Feature}. */
+  static final class Features {
+    private static final Features EMPTY = new Features(EnumSet.noneOf(Feature.class));
+
+    static Features of() {
+      return EMPTY;
+    }
+
+    static Features of(Feature first, Feature ...rest) {
+      EnumSet<Feature> set = EnumSet.of(first);
+      Collections.addAll(set, rest);
+      return new Features(set);
+    }
+
+    private static Features forType(Type expressionType, Features features) {
+      switch (expressionType.getSort()) {
+        case Type.OBJECT:
+        case Type.ARRAY:
+          return features;
+        case Type.BOOLEAN:
+        case Type.BYTE:
+        case Type.CHAR:
+        case Type.DOUBLE:
+        case Type.INT:
+        case Type.SHORT:
+        case Type.LONG:
+        case Type.FLOAT:
+          // primitives are never null
+          return features.plus(Feature.NON_NULLABLE);
+        case Type.VOID:
+        case Type.METHOD:
+          throw new IllegalArgumentException("Invalid type: " + expressionType);
+        default:
+          throw new AssertionError("unexpected type " + expressionType);
+      }
+    }
+
+    private final EnumSet<Feature> set;
+
+    private Features(EnumSet<Feature> set) {
+      this.set = checkNotNull(set);
+    }
+
+    boolean has(Feature feature) {
+      return set.contains(feature);
+    }
+
+    Features plus(Feature feature) {
+      if (set.contains(feature)) {
+        return this;
+      }
+      EnumSet<Feature> newSet = copyFeatures();
+      newSet.add(feature);
+      return new Features(newSet);
+    }
+
+    Features minus(Feature feature) {
+      if (!set.contains(feature)) {
+        return this;
+      }
+      EnumSet<Feature> newSet = copyFeatures();
+      newSet.remove(feature);
+      return new Features(newSet);
+    }
+
+    private EnumSet<Feature> copyFeatures() {
+      // Can't use EnumSet.copyOf() because it throws on empty collections!
+      EnumSet<Feature> newSet = EnumSet.noneOf(Feature.class);
+      newSet.addAll(set);
+      return newSet;
+    }
   }
 
   /** Returns true if all referenced expressions are {@linkplain #isCheap() cheap}. */
@@ -96,42 +168,20 @@ abstract class Expression extends BytecodeProducer {
     }
   }
 
-  private final ImmutableSet<Feature> features;
+  private final Features features;
   private final Type resultType;
 
-  Expression(Type resultType, Feature ...features) {
-    this(resultType, Arrays.asList(features));
+  Expression(Type resultType) {
+    this(resultType, Features.of());
   }
 
-  Expression(Type resultType, Iterable<Feature> features) {
+  Expression(Type resultType, Feature first, Feature ...rest) {
+    this(resultType, Features.of(first, rest));
+  }
+
+  Expression(Type resultType, Features features) {
     this.resultType = checkNotNull(resultType);
-    this.features = buildFeatureSet(resultType, features);
-  }
-
-  private static ImmutableSet<Feature> buildFeatureSet(Type type, Iterable<Feature> features) {
-    EnumSet<Feature> featureSet = EnumSet.noneOf(Feature.class);
-    Iterables.addAll(featureSet, features);
-    switch (type.getSort()) {
-      case Type.OBJECT:
-      case Type.ARRAY:
-        break;
-      case Type.BOOLEAN:
-      case Type.BYTE:
-      case Type.CHAR:
-      case Type.DOUBLE:
-      case Type.INT:
-      case Type.SHORT:
-      case Type.LONG:
-      case Type.FLOAT:
-        featureSet.add(Feature.NON_NULLABLE);
-        break;
-      case Type.VOID:
-      case Type.METHOD:
-        throw new IllegalArgumentException("Invalid type: " + type);
-      default:
-        throw new AssertionError("unexpected type " + type);
-    }
-    return Sets.immutableEnumSet(featureSet);
+    this.features = Features.forType(resultType, features);
   }
 
   /** 
@@ -149,12 +199,12 @@ abstract class Expression extends BytecodeProducer {
 
   /** Whether or not this expression is {@link Feature#CHEAP cheap}. */
   boolean isCheap() {
-    return features.contains(Feature.CHEAP);
+    return features.has(Feature.CHEAP);
   }
 
   /** Whether or not this expression is {@link Feature#NON_NULLABLE non nullable}. */
   boolean isNonNullable() {
-    return features.contains(Feature.NON_NULLABLE);
+    return features.has(Feature.NON_NULLABLE);
   }
 
   /**
@@ -162,7 +212,7 @@ abstract class Expression extends BytecodeProducer {
    * Typically, users will want to invoke one of the convenience accessors {@link #isCheap()} or 
    * {@link #isNonNullable()}. 
    */
-  ImmutableSet<Feature> features() {
+  Features features() {
     return features;
   }
 
@@ -227,10 +277,7 @@ abstract class Expression extends BytecodeProducer {
     if (isCheap()) {
       return this;
     }
-    EnumSet<Feature> newFeatures = EnumSet.noneOf(Feature.class);
-    newFeatures.addAll(features);
-    newFeatures.add(Feature.CHEAP);
-    return new Expression(resultType, newFeatures) {
+    return new Expression(resultType, features.plus(Feature.CHEAP)) {
       @Override void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
       }
@@ -242,10 +289,7 @@ abstract class Expression extends BytecodeProducer {
     if (isNonNullable()) {
       return this;
     }
-    EnumSet<Feature> newFeatures = EnumSet.noneOf(Feature.class);
-    newFeatures.addAll(features);
-    newFeatures.add(Feature.NON_NULLABLE);
-    return new Expression(resultType, newFeatures) {
+    return new Expression(resultType, features.plus(Feature.NON_NULLABLE)) {
       @Override void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
       }
@@ -331,11 +375,11 @@ abstract class Expression extends BytecodeProducer {
     }
     name = name + "(" + resultType + "){";
     boolean needsLeadingSpace = false;
-    if (features.contains(Feature.CHEAP)) {
+    if (features.has(Feature.CHEAP)) {
       name += "cheap";
       needsLeadingSpace = true;
     }
-    if (features.contains(Feature.NON_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)) {
+    if (features.has(Feature.NON_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)) {
       name += (needsLeadingSpace ? " " : "") + "non-null";
     }
     return name + "}<" + resultType() + ">:\n" + trace();

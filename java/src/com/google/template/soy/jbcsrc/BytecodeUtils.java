@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Primitives;
 import com.google.template.soy.jbcsrc.Expression.Feature;
+import com.google.template.soy.jbcsrc.Expression.Features;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -34,7 +35,6 @@ import org.objectweb.asm.util.Printer;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -253,10 +253,8 @@ final class BytecodeUtils {
         "left and right must have matching types, found %s and %s", left.resultType(), 
         right.resultType());
     checkIntComparisonOpcode(left.resultType(), comparisonOpcode);
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
-    if (Expression.areAllCheap(left, right)) {
-      features.add(Feature.CHEAP);
-    }
+    Features features = 
+        Expression.areAllCheap(left, right) ? Features.of(Feature.CHEAP) : Features.of();
     return new Expression(Type.BOOLEAN_TYPE, features) {
       @Override void doGen(CodeBuilder mv) {
         left.gen(mv);
@@ -367,12 +365,12 @@ final class BytecodeUtils {
   static Expression firstNonNull(final Expression left, final Expression right) {
     checkArgument(left.resultType().getSort() == Type.OBJECT);
     checkArgument(right.resultType().getSort() == Type.OBJECT);
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
+    Features features = Features.of();
     if (Expression.areAllCheap(left, right)) {
-      features.add(Feature.CHEAP);
+      features = features.plus(Feature.CHEAP);
     }
     if (right.isNonNullable()) {
-      features.add(Feature.NON_NULLABLE);
+      features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(left.resultType(), features) {
       @Override void doGen(CodeBuilder cb) {
@@ -397,12 +395,12 @@ final class BytecodeUtils {
       final Expression falseBranch) {
     checkArgument(condition.resultType().equals(Type.BOOLEAN_TYPE));
     checkArgument(trueBranch.resultType().getSort() == falseBranch.resultType().getSort());
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
+    Features features = Features.of();
     if (Expression.areAllCheap(condition, trueBranch, falseBranch)) {
-      features.add(Feature.CHEAP);
+      features = features.plus(Feature.CHEAP);
     }
     if (trueBranch.isNonNullable() && falseBranch.isNonNullable()) {
-      features.add(Feature.NON_NULLABLE);
+      features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(trueBranch.resultType(), features) {
       @Override void doGen(CodeBuilder mv) {
@@ -463,8 +461,8 @@ final class BytecodeUtils {
 
     return new Expression(Type.BOOLEAN_TYPE, 
         Expression.areAllCheap(expressions) 
-            ? EnumSet.of(Feature.CHEAP)
-            : EnumSet.noneOf(Feature.class)) {
+            ? Features.of(Feature.CHEAP)
+            : Features.of()) {
       @Override void doGen(CodeBuilder adapter) {
         Label end = new Label();
         Label shortCircuit = new Label();

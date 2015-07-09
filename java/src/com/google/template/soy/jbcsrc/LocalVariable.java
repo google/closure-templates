@@ -50,13 +50,12 @@ final class LocalVariable extends Expression {
   // parameters to tableEntry?
 
   static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
-    return new LocalVariable("this", owner.type(), 0, start, end, 
-        Feature.CHEAP, Feature.NON_NULLABLE);
+    return new LocalVariable("this", owner.type(), 0, start, end, Feature.NON_NULLABLE);
   }
 
   static LocalVariable createLocal(String name, int index, Type type, Label start, Label end) {
     checkArgument(!name.equals("this"));
-    return new LocalVariable(name, type, index, start, end, Feature.CHEAP);
+    return new LocalVariable(name, type, index, start, end);
   }
 
   private final String variableName;
@@ -66,7 +65,7 @@ final class LocalVariable extends Expression {
   
   private LocalVariable(
       String variableName, Type type, int index, Label start, Label end, Feature ...features) {
-    super(type, features);
+    super(type, Feature.CHEAP /* locals are always cheap */, features);
     this.variableName = checkNotNull(variableName);
     this.index = index;
     this.start = checkNotNull(start);
@@ -100,8 +99,7 @@ final class LocalVariable extends Expression {
     if (isNonNullable()) {
       return this;
     }
-    return new LocalVariable(
-        variableName, resultType(), index, start, end, Feature.CHEAP, Feature.NON_NULLABLE);
+    return new LocalVariable(variableName, resultType(), index, start, end, Feature.NON_NULLABLE);
   }
   
   /**
