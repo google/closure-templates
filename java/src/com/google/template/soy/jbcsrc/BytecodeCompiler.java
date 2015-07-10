@@ -18,8 +18,10 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
@@ -29,10 +31,14 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplates;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * The entry point to the {@code jbcsrc} compiler.
  */
 public final class BytecodeCompiler {
+  private static final Logger logger = Logger.getLogger(BytecodeCompiler.class.getName());
   /**
    * Compiles all the templates in the given registry.
    *
@@ -41,6 +47,7 @@ public final class BytecodeCompiler {
    */
   public static Optional<CompiledTemplates> compile(
       TemplateRegistry registry, ErrorReporter reporter) {
+    Stopwatch stopwatch = Stopwatch.createStarted();
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     checkForUnsupportedFeatures(registry, reporter);
     if (reporter.errorsSince(checkpoint)) {
@@ -52,15 +59,30 @@ public final class BytecodeCompiler {
     // configured in such a way that we load the classes from the system class loader.  Then we
     // could add a build phase that writes the compiled templates out to a jar.  Then in the non
     // development mode case we could skip even parsing templates!
-    MemoryClassLoader loader = compileTemplates(registry, compilerRegistry, reporter);
+    CompilationResult results = compileTemplates(registry, compilerRegistry, reporter);
     if (reporter.errorsSince(checkpoint)) {
       return Optional.absent();
     }
+    logger.log(
+        Level.INFO,
+        "Compilation took {0}\n"
+            + "  templates: {1}\n"
+            + "    classes: {2}\n"
+            + "      bytes: {3}\n"
+            + "     fields: {4}",
+        new Object[] {
+          stopwatch.toString(),
+          results.numTemplates(),
+          results.numClasses(),
+          results.numBytes(),
+          results.numFields()
+        });
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
     for (TemplateNode node : registry.getAllTemplates()) {
       String name = node.getTemplateName();
-      factories.put(name, loadFactory(compilerRegistry.getTemplateInfo(name), loader));
+      factories.put(name, loadFactory(compilerRegistry.getTemplateInfo(name), results.loader()));
     }
+    logger.log(Level.INFO, "Loaded all classes in {0}", stopwatch);
     return Optional.of(new CompiledTemplates(factories.build()));
   }
 
@@ -95,25 +117,51 @@ public final class BytecodeCompiler {
     return factory;
   }
 
+  @AutoValue
+  abstract static class CompilationResult {
+    abstract MemoryClassLoader loader();
+
+    abstract int numTemplates();
+
+    abstract int numClasses();
+
+    abstract int numBytes();
+
+    abstract int numFields();
+  }
+
   /**
    * Run the compiler for all templates and return the generated class in a
    * {@link MemoryClassLoader}
    */
-  private static MemoryClassLoader compileTemplates(
+  private static CompilationResult compileTemplates(
       TemplateRegistry registry,
       CompiledTemplateRegistry compilerRegistry,
       ErrorReporter errorReporter) {
+    int numTemplates = 0;
+    int numClasses = 0;
+    int numBytes = 0;
+    int numFields = 0;
     MemoryClassLoader.Builder builder = new MemoryClassLoader.Builder();
     // We generate all the classes and then start loading them.  This 2 phase process ensures that
     // we don't have to worry about ordering (where a class we have generated references a class we
     // haven't generated yet), because none of the classes are loadable until they all are.
     for (TemplateNode template : registry.getAllTemplates()) {
+      numTemplates++;
       String name = template.getTemplateName();
+      logger.log(Level.FINE, "Compiling template: {0}", name);
       try {
         CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(name);
         TemplateCompiler templateCompiler = 
             new TemplateCompiler(compilerRegistry, classInfo, errorReporter);
         for (ClassData clazz : templateCompiler.compile()) {
+          logger.log(
+              Level.FINE,
+              "Generated class {0}.  size: {1}, fields: {2}",
+              new Object[] {clazz.type().className(), clazz.data().length, clazz.numberOfFields()});
+          numClasses++;
+          numBytes += clazz.data().length;
+          numFields += clazz.numberOfFields();
           clazz.checkClass();
           builder.add(clazz);
         }
@@ -133,7 +181,8 @@ public final class BytecodeCompiler {
             Throwables.getStackTraceAsString(t));
       }
     }
-    return builder.build();
+    return new AutoValue_BytecodeCompiler_CompilationResult(
+        builder.build(), numTemplates, numClasses, numBytes, numFields);
   }
 
   private BytecodeCompiler() {}

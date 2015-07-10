@@ -58,12 +58,10 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -128,6 +126,10 @@ final class LazyClosureCompiler {
   private static final Method DETACHABLE_CONTENT_PROVIDER_INIT;
   private static final FieldRef RESOLVED_VALUE = 
       FieldRef.instanceFieldReference(DetachableSoyValueProvider.class, "resolvedValue");
+  private static final TypeInfo DETACHABLE_CONTENT_PROVIDER_TYPE =
+      TypeInfo.create(DetachableContentProvider.class);
+  private static final TypeInfo DETACHABLE_VALUE_PROVIDER_TYPE =
+      TypeInfo.create(DetachableSoyValueProvider.class); 
 
   static {
     try {
@@ -172,36 +174,42 @@ final class LazyClosureCompiler {
     if (asSoyValueProvider.isPresent()) {
       return asSoyValueProvider.get();
     }
-    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-    ClassVisitor visitor = new CheckClassAdapter(writer, false);
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
         getProposedName(declaringNode, varName),
         LAZY_CLOSURE_ACCESS);
+    SoyClassWriter writer =
+        SoyClassWriter.builder(type)
+            .setAccess(LAZY_CLOSURE_ACCESS)
+            .extending(DETACHABLE_VALUE_PROVIDER_TYPE)
+            .build();
     Expression expr =
-        new CompilationUnit(visitor, type, DetachableSoyValueProvider.class, declaringNode)
+        new CompilationUnit(writer, type, DETACHABLE_VALUE_PROVIDER_TYPE, declaringNode)
             .compileExpression(exprNode);
-    
-    innerClasses.registerAsInnerClass(visitor, type);
-    innerClasses.add(ClassData.create(type, writer.toByteArray()));
-    visitor.visitEnd();
+
+    innerClasses.registerAsInnerClass(writer, type);
+    writer.visitEnd();
+    innerClasses.add(writer.toClassData());
     return expr;
   }
 
   Expression compileLazyContent(RenderUnitNode renderUnit, String varName) {
     // TODO(lukes): consider adding an optimization for renderUnits that only contain RawTextNodes
     // they do exist!
-    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-    ClassVisitor visitor = new CheckClassAdapter(writer, false);
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
         getProposedName(renderUnit, varName),
         LAZY_CLOSURE_ACCESS);
+    SoyClassWriter writer =
+        SoyClassWriter.builder(type)
+            .setAccess(LAZY_CLOSURE_ACCESS)
+            .extending(DETACHABLE_CONTENT_PROVIDER_TYPE)
+            .build();
     Expression expr =
-        new CompilationUnit(visitor, type, DetachableContentProvider.class, renderUnit)
+        new CompilationUnit(writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
             .compileRenderable(renderUnit);
-    
-    innerClasses.registerAsInnerClass(visitor, type);
-    innerClasses.add(ClassData.create(type, writer.toByteArray()));
-    visitor.visitEnd();
+
+    innerClasses.registerAsInnerClass(writer, type);
+    writer.visitEnd();
+    innerClasses.add(writer.toClassData());
     return expr;
   }
 
@@ -219,17 +227,11 @@ final class LazyClosureCompiler {
     final SoyNode node;
     final ClassVisitor visitor;
 
-    CompilationUnit(ClassVisitor visitor, TypeInfo type, Class<?> baseClass, SoyNode node) {
+    CompilationUnit(ClassVisitor visitor, TypeInfo type, TypeInfo baseClass, SoyNode node) {
       this.visitor = visitor;
       this.type = type;
-      this.baseClass = TypeInfo.create(baseClass);
+      this.baseClass = baseClass;
       this.node = node;
-      visitor.visit(Opcodes.V1_7, 
-          LAZY_CLOSURE_ACCESS,
-          type.internalName(), 
-          null, // not a generic type
-          this.baseClass.internalName(), // superclass
-          new String[] {});
       visitor.visitSource(
         node.getSourceLocation().getFileName(),
         // No JSR-45 style source maps, instead we write the line numbers in the normal locations.

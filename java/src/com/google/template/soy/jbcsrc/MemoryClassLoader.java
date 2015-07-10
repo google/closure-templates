@@ -29,8 +29,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 final class MemoryClassLoader extends ClassLoader {
 
-  private static final ClassData TOMBSTONE = 
-      ClassData.create(TypeInfo.create("not.a.real.Class"), Longs.toByteArray(0xdeadbeef));
+  private static final ClassData TOMBSTONE =
+      ClassData.create(TypeInfo.create("not.a.real.Class"), Longs.toByteArray(0xdeadbeef), 0);
 
   static {
     // Since we only override findClass(), we can call this method to get fine grained locking

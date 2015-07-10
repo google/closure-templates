@@ -54,7 +54,7 @@ import java.util.List;
  * classes.
  */
 final class TemplateCompiler {
-  private static final String[] INTERFACES = { Type.getInternalName(CompiledTemplate.class) };
+  private static final TypeInfo TEMPLATE_TYPE = TypeInfo.create(CompiledTemplate.class);
 
   private final CompiledTemplateRegistry registry;
   private final FieldRef paramsField;
@@ -117,13 +117,11 @@ final class TemplateCompiler {
     // constructors directly.
     new TemplateFactoryCompiler(template, innerClasses).compile();
 
-    writer = new SoyClassWriter();
-    writer.visit(Opcodes.V1_7, 
-        Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL,
-        template.typeInfo().type().getInternalName(), 
-        null, // not a generic type
-        "java/lang/Object", // superclass
-        INTERFACES);
+    writer =
+        SoyClassWriter.builder(template.typeInfo())
+            .setAccess(Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL)
+            .implementing(TEMPLATE_TYPE)
+            .build();
     generateTemplateMetadata();
     // TODO(lukes): this associates a file name that will ultimately appear in exceptions as well
     // as be used by debuggers to 'attach source'.  We may want to consider placing our generated
@@ -148,7 +146,7 @@ final class TemplateCompiler {
     innerClasses.registerAllInnerClasses(writer);
     writer.visitEnd();
 
-    classes.add(ClassData.create(template.typeInfo(), writer.toByteArray()));
+    classes.add(writer.toClassData());
     classes.addAll(innerClasses.getInnerClassData());
     writer = null;
     return classes;

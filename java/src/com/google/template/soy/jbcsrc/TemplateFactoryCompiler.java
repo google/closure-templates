@@ -44,11 +44,9 @@ import org.objectweb.asm.commons.Method;
  * <p>Where the only thing that differs is the name of the template being constructed.
  */
 final class TemplateFactoryCompiler {
-  private static final String[] INTERFACES =
-      { Type.getInternalName(CompiledTemplate.Factory.class) };
+  private static final TypeInfo FACTORY_TYPE = TypeInfo.create(CompiledTemplate.Factory.class);
 
-  private static final int FACTORY_ACCESS = 
-      Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL;
+  private static final int FACTORY_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL;
 
   private static final Method CREATE_METHOD;
   static {
@@ -71,22 +69,19 @@ final class TemplateFactoryCompiler {
 
   /** Compiles the factory. */
   void compile() {
-    SoyClassWriter cw = new SoyClassWriter();
     TypeInfo factoryType = innerClasses.registerInnerClass(FACTORY_CLASS, FACTORY_ACCESS);
-    cw.visit(Opcodes.V1_7,
-        FACTORY_ACCESS,
-        factoryType.internalName(),
-        null, // not a generic type
-        Type.getInternalName(Object.class), // super class
-        INTERFACES);
+    SoyClassWriter cw =
+        SoyClassWriter.builder(factoryType)
+            .implementing(FACTORY_TYPE)
+            .setAccess(FACTORY_ACCESS)
+            .build();
     innerClasses.registerAsInnerClass(cw, factoryType);
 
     generateStaticInitializer(cw);
     defineDefaultConstructor(cw, factoryType);
     generateCreateMethod(cw, factoryType);
     cw.visitEnd();
-    byte[] byteArray = cw.toByteArray();
-    innerClasses.add(ClassData.create(factoryType, byteArray));
+    innerClasses.add(cw.toClassData());
   }
 
   /**

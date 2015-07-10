@@ -31,21 +31,22 @@ import java.io.StringWriter;
  * A simple tuple of generated class data and type information about the class.
  */
 @AutoValue abstract class ClassData {
-  static ClassData create(TypeInfo type, byte[] b) {
-    return new AutoValue_ClassData(type, b);
+  static ClassData create(TypeInfo type, byte[] b, int numFields) {
+    return new AutoValue_ClassData(type, b, numFields);
   }
 
   abstract TypeInfo type();
   abstract byte[] data();
+  abstract int numberOfFields();
 
-  /** 
+  /**
    * Runs the {@link CheckClassAdapter} on this class in basic analysis mode.
-   * 
+   *
    * <p>Basic anaylsis mode can flag verification errors that don't depend on knowing complete type
    * information for the classes and methods being called.  This is useful for flagging simple
    * generation mistakes (e.g. stack underflows, method return type mismatches, accessing invalid
    * locals).  Additionally, the error messages are more useful than what the java verifier normally
-   * presents. 
+   * presents.
    */
   void checkClass() {
     new ClassReader(data()).accept(new CheckClassAdapter(new ClassNode(), true), 0);

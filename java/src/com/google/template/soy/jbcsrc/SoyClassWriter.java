@@ -16,34 +16,107 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.jbcsrc.api.Names;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.CheckClassAdapter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * A subclass of {@link ClassWriter} that allows us to specialize 
- * {@link ClassWriter#getCommonSuperClass} for compiler generated types as well as set common 
+ * A subclass of {@link ClassWriter} that allows us to specialize
+ * {@link ClassWriter#getCommonSuperClass} for compiler generated types as well as set common
  * defaults for all classwriters used by {@code jbcsrc}.
  */
 final class SoyClassWriter extends ClassVisitor {
-  private static final String OBJECT_NAME = Type.getInternalName(Object.class);
-  private final Writer writer;
+  static final TypeInfo OBJECT = TypeInfo.create(Object.class);
 
-  SoyClassWriter() {
-    this(new Writer());
+  /** Returns a new SoyClassWriter for writing a new class of the given type. */
+  static Builder builder(TypeInfo type) {
+    return new Builder(type);
   }
 
-  private SoyClassWriter(Writer writer) {
+  static final class Builder {
+    private final TypeInfo type;
+    private int access = Opcodes.ACC_FINAL | Opcodes.ACC_SUPER;
+    private TypeInfo baseClass = OBJECT;
+    private List<String> interfaces = new ArrayList<>();
+
+    private Builder(TypeInfo type) {
+      this.type = checkNotNull(type);
+    }
+
+    /**
+     * Set the access permissions on the generated class.  The default is package private and 
+     * {@code final}.
+     * 
+     * @param access The access permissions, a bit mask composed from constants like 
+     *     {@link Opcodes#ACC_PUBLIC}
+     */
+    Builder setAccess(int access) {
+      this.access = access;
+      return this;
+    }
+
+    /** Sets the base class for this type.  The default is {@code Object}. */
+    Builder extending(TypeInfo baseClass) {
+      this.baseClass = checkNotNull(baseClass);
+      return this;
+    }
+
+    /** Adds an {@code interface} to the class. */
+    Builder implementing(TypeInfo typeInfo) {
+      interfaces.add(typeInfo.internalName());
+      return this;
+    }
+
+    SoyClassWriter build() {
+      return new SoyClassWriter(new Writer(), this);
+    }
+  }
+
+  private final Writer writer;
+  private final TypeInfo typeInfo;
+  private int numFields;
+
+  private SoyClassWriter(Writer writer, Builder builder) {
     super(writer.api(), new CheckClassAdapter(writer, false));
     this.writer = writer;
+    this.typeInfo = builder.type;
+    super.visit(
+        Opcodes.V1_7,
+        builder.access,
+        builder.type.internalName(),
+        null /* not generic */,
+        builder.baseClass.internalName(),
+        builder.interfaces.toArray(new String[builder.interfaces.size()]));
+  }
+
+  /**
+   * @deprecated Don't call visit(), SoyClassWriter calls it for you during construction.
+   */
+  @Deprecated
+  @Override
+  public void visit(int v, int a, String n, String s, String b, String[] i) {
+    throw new UnsupportedOperationException("Don't call visit(), SoyClassWriter calls it for you");
+  }
+
+  @Override
+  public FieldVisitor visitField(
+      int access, String name, String desc, String signature, Object value) {
+    numFields++;
+    return super.visitField(access, name, desc, signature, value);
   }
 
   /** Returns the bytecode of the class that was build with this class writer. */
-  byte[] toByteArray() {
-    return writer.toByteArray();
+  ClassData toClassData() {
+    return ClassData.create(typeInfo, writer.toByteArray(), numFields);
   }
 
   private static final class Writer extends ClassWriter {
@@ -66,7 +139,7 @@ final class SoyClassWriter extends ClassVisitor {
       // variable has gone 'out of scope' and a new one entered it.  The best advice from the asm
       // community so far has been 'just return object', so that is what we are doing
       // See http://mail.ow2.org/wws/arc/asm/2015-06/msg00008.html
-      return OBJECT_NAME;
+      return OBJECT.internalName();
     }
   }
 }
