@@ -188,13 +188,13 @@ def namespaced_import(name, namespace=None):
     if namespace:
       regex_safe_namespace = full_namespace.replace('.', r'\.')
       namespace_key = re.compile(
-          r"^SOY_NAMESPACE = '%s'$" % regex_safe_namespace, flags=re.MULTILINE)
+          r"^SOY_NAMESPACE: '%s'.$" % regex_safe_namespace, flags=re.MULTILINE)
       full_module = imp.new_module(full_namespace)
       found = False
       for sys_path, f_path, f_name in _find_modules(name):
         # Verify the file namespace with a regex before loading.
         with open('%s/%s' % (f_path, f_name), 'r') as f:
-          if not namespace_key.search(f.read(2000)):
+          if not namespace_key.search(f.read(300)):
             continue
 
         # Strip the root path and the file extension.

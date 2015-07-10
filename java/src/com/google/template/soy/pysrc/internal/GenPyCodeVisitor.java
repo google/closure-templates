@@ -234,6 +234,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine("\"\"\" This file was automatically generated from ",
         node.getFileName(), ".");
     pyCodeBuilder.appendLine("Please don't edit this file by hand.");
+    pyCodeBuilder.appendLine();
+    pyCodeBuilder.appendLine("SOY_NAMESPACE: '" + node.getNamespace() + "'.");
 
     // Output a section containing optionally-parsed compiler directives in comments.
     pyCodeBuilder.appendLine();
@@ -247,7 +249,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine();
     addCodeToRequireGeneralDeps();
     addCodeToRequireSoyNamespaces(node);
-    addCodeToRegisterCurrentSoyNamespace(node);
     addCodeToFixUnicodeStrings();
 
     // Add code for each template.
@@ -797,16 +798,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
       pyCodeBuilder.appendLine();
     }
-
-  /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add module constant to register this module's
-   * Soy namespace.
-   * @param soyFile The node we're visiting.
-   */
-  private void addCodeToRegisterCurrentSoyNamespace(SoyFileNode soyFile) {
-    String namespace = soyFile.getNamespace();
-    pyCodeBuilder.appendLine("SOY_NAMESPACE = '" + namespace + "'");
-  }
 
   /**
    * Helper to retrieve the namespace and name from a module name.
