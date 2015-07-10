@@ -87,6 +87,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.BoolType;
+import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
@@ -458,7 +459,13 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
     @Override protected void visitNegativeOpNode(NegativeOpNode node) {
       visitChildren(node);
-      node.setType(node.getChild(0).getType());
+      SoyType childType = node.getChild(0).getType();
+      if (typeOps.isNumericOrUnknown(childType)) {
+        node.setType(childType);
+      } else {
+        // TODO(lukes): consider making this an error -'string' doesn't make much sense
+        node.setType(UnknownType.getInstance());
+      }
       tryApplySubstitution(node);
     }
 
@@ -472,7 +479,18 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     }
 
     @Override protected void visitDivideByOpNode(DivideByOpNode node) {
-      visitArithmeticOpNode(node);
+      // division is special. it is always coerced to a float
+      visitChildren(node);
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      if (typeOps.isNumericOrUnknown(left) && typeOps.isNumericOrUnknown(right)) {
+        node.setType(FloatType.getInstance());
+      } else {
+        // TODO(b/21712154): jssrc will do some type coercions here, tofu and jbcsrc will throw
+        // exceptions.  Consider making this a compiler error
+        node.setType(UnknownType.getInstance());
+      }
+      tryApplySubstitution(node);
     }
 
     @Override protected void visitModOpNode(ModOpNode node) {

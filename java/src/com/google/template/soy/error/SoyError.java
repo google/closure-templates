@@ -38,7 +38,7 @@ public final class SoyError {
 
   private SoyError(MessageFormat messageFormat) {
     this.messageFormat = messageFormat;
-    this.requiredArgs = messageFormat.getFormats().length;
+    this.requiredArgs = messageFormat.getFormatsByArgumentIndex().length;
   }
 
   public String format(Object... args) {

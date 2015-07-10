@@ -108,7 +108,7 @@ public final class SoyTypeOps {
     }
   }
 
-  private boolean isNumericOrUnknown(SoyType t0) {
+  public boolean isNumericOrUnknown(SoyType t0) {
     return t0.getKind() == SoyType.Kind.UNKNOWN || numberType.isAssignableFrom(t0);
   }
 }

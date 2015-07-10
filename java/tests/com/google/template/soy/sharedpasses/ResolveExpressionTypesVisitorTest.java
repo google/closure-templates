@@ -205,6 +205,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
             "{@param pa: unknown}",
             "{@param pi: int}",
             "{@param pf: float}",
+            "{@param ps: string}",
             "{$pa + $pa}",
             "{$pi + $pi}",
             "{$pf + $pf}",
@@ -222,7 +223,11 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
             "{$pf % $pf}",
             "{-$pa}",
             "{-$pi}",
-            "{-$pf}"))
+            "{-$pf}",
+            // The remainder are all logically template errors but are not enforced by the compiler
+            "{-$ps}",
+            "{$ps / $pf}"
+            ))
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
@@ -239,8 +244,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(6)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(7)).isEqualTo(IntType.getInstance());
     assertThat(types.get(8)).isEqualTo(FloatType.getInstance());
-    assertThat(types.get(9)).isEqualTo(UnknownType.getInstance());
-    assertThat(types.get(10)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(9)).isEqualTo(FloatType.getInstance());
+    assertThat(types.get(10)).isEqualTo(FloatType.getInstance());
     assertThat(types.get(11)).isEqualTo(FloatType.getInstance());
     assertThat(types.get(12)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(13)).isEqualTo(IntType.getInstance());
@@ -248,6 +253,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(15)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(16)).isEqualTo(IntType.getInstance());
     assertThat(types.get(17)).isEqualTo(FloatType.getInstance());
+
+    // These are the 'error' cases
+    assertThat(types.get(18)).isEqualTo(UnknownType.getInstance());
+    assertThat(types.get(19)).isEqualTo(UnknownType.getInstance());
   }
 
   public void ignoreTestArithmeticTypesError() {
