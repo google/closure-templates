@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Predicates.notNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
@@ -51,9 +52,11 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -193,8 +196,10 @@ final class LazyClosureCompiler {
   }
 
   Expression compileLazyContent(RenderUnitNode renderUnit, String varName) {
-    // TODO(lukes): consider adding an optimization for renderUnits that only contain RawTextNodes
-    // they do exist!
+    Optional<Expression> asRawText = asRawTextOnly(renderUnit);
+    if (asRawText.isPresent()) {
+      return asRawText.get();
+    }
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
         getProposedName(renderUnit, varName),
         LAZY_CLOSURE_ACCESS);
@@ -211,6 +216,30 @@ final class LazyClosureCompiler {
     writer.visitEnd();
     innerClasses.add(writer.toClassData());
     return expr;
+  }
+
+  private Optional<Expression> asRawTextOnly(RenderUnitNode renderUnit) {
+    StringBuilder builder = null;
+    for (StandaloneNode child : renderUnit.getChildren()) {
+      if (child instanceof RawTextNode) {
+        if (builder == null) { 
+          builder = new StringBuilder();
+        }
+        builder.append(((RawTextNode) child).getRawText());
+      } else {
+        return Optional.absent();
+      }
+    }
+    // TODO(lukes): ideally this would be a static final StringData field rather than reboxing each
+    // time, but we don't (yet) have a good mechanism for that.
+    ContentKind kind = renderUnit.getContentKind();
+    Expression constant = constant(builder == null ? "" : builder.toString());
+    if (kind == null) {
+      return Optional.<Expression>of(MethodRef.STRING_DATA_FOR_VALUE.invoke(constant));
+    } else {
+      return Optional.<Expression>of(
+          MethodRef.ORDAIN_AS_SAFE.invoke(constant, FieldRef.enumReference(kind).accessor()));
+    }
   }
 
   private String getProposedName(SoyNode declaringNode, String varName) {
