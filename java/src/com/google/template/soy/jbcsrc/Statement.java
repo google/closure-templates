@@ -155,7 +155,7 @@ abstract class Statement extends BytecodeProducer {
     checkNotNull(location);
     return new Statement(location) {
       @Override void doGen(CodeBuilder adapter) {
-        Statement.this.doGen(adapter);
+        Statement.this.gen(adapter);
       }
     };
   }

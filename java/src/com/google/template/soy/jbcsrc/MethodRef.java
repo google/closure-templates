@@ -188,9 +188,11 @@ import java.util.Map;
   static final MethodRef RUNTIME_EQUAL =
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
+  static final MethodRef RUNTIME_COMPARE_STRING =
+      create(SharedRuntime.class, "compareString", String.class, SoyValue.class);
+
   static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       create(Runtime.class, "getFieldProvider", SoyRecord.class, String.class).asNonNullable();
-
 
   static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(Runtime.class, "getSoyListItem", List.class, long.class);

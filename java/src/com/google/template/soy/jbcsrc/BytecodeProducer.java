@@ -33,14 +33,14 @@ import java.io.StringWriter;
 abstract class BytecodeProducer {
   /**
    * This bit tracks whether or not the current thread is generating code.
-   * 
+   *
    * <p>This is used to enforce an invariant that creation of {@link BytecodeProducer} instances
    * should not occur during code generation.  This is because BytecodeProducer instances tend to
    * trigger verification checks and mutate mutable data structures as part of their initialization.
    * Accidentally delaying this work until code generation time is an easy mistake to make and it
    * may cause undefined behavior.
-   * 
-   * <p>TODO(lukes): this thread local is a little magical, consider introducing an explicit 
+   *
+   * <p>TODO(lukes): this thread local is a little magical, consider introducing an explicit
    * 'compilation state' or 'compiler' object in which this phase information could be stored.
    */
   private static final ThreadLocal<Boolean> isGenerating = new ThreadLocal<Boolean>() {
@@ -90,9 +90,9 @@ abstract class BytecodeProducer {
         adapter.mark(start);
         adapter.visitLineNumber(location.get().getLineNumber(), start);
       }
-  
+
       doGen(adapter);
-  
+
       if (location.isPresent()) {
         Label end = new Label();
         adapter.mark(end);
@@ -105,21 +105,19 @@ abstract class BytecodeProducer {
     }
   }
 
-  // TODO(lukes): add @ForOverride when https://github.com/google/error-prone/issues/302 is in
-  // JavaBuilder
   abstract void doGen(CodeBuilder adapter);
 
   /**
    * Returns a human readable string for the code that this {@link BytecodeProducer} generates.
    */
   final String trace() {
-    // TODO(lukes): textifier has support for custom label names by overriding appendLabel.  
+    // TODO(lukes): textifier has support for custom label names by overriding appendLabel.
     // Consider trying to make use of (using the Label.info field? adding a custom NamedLabel
     // sub type?)
     Textifier textifier = new Textifier(Opcodes.ASM5) {
       {
         // reset tab sizes.  Since we don't care about formatting class names or method signatures
-        // (only code). We only need to set the tab2,tab3 and ltab settings (tab is for class 
+        // (only code). We only need to set the tab2,tab3 and ltab settings (tab is for class
         // members).
         this.tab = null;  // trigger an error if used.
         this.tab2 = "  ";  // tab setting for instructions

@@ -19,10 +19,12 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
-import com.google.common.primitives.Primitives;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
 
@@ -44,17 +46,75 @@ import java.util.List;
 final class BytecodeUtils {
   static final Method NULLARY_INIT = Method.getMethod("void <init>()");
   static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
-  private static final ImmutableMap<String, Class<?>> PRIMITIVES_MAP;
 
-  static {
-    ImmutableMap.Builder<String, Class<?>> builder = ImmutableMap.builder();
-    for (Class<?> cl : Primitives.allPrimitiveTypes()) {
-      builder.put(cl.getName(), cl);
-    }
-    PRIMITIVES_MAP = builder.build();
-  }
+  private static final LoadingCache<Type, Optional<Class<?>>> objectTypeToClassCache = 
+      CacheBuilder.newBuilder()
+      .build(new CacheLoader<Type, Optional<Class<?>>>() {
+        @Override public Optional<Class<?>> load(Type key) throws Exception {
+          switch (key.getSort()) {
+            case Type.ARRAY:
+              Optional<Class<?>> elementType = 
+                  objectTypeToClassCache.getUnchecked(key.getElementType());
+              if (elementType.isPresent()) {
+                // The easiest way to generically get an array class.
+                return Optional.<Class<?>>of(Array.newInstance(elementType.get(), 0).getClass());
+              }
+              return Optional.absent();
+            case Type.VOID:
+              return Optional.<Class<?>>of(void.class);
+            case Type.BOOLEAN:
+              return Optional.<Class<?>>of(boolean.class);
+            case Type.BYTE:
+              return Optional.<Class<?>>of(byte.class);
+            case Type.CHAR:
+              return Optional.<Class<?>>of(char.class);
+            case Type.DOUBLE:
+              return Optional.<Class<?>>of(double.class);
+            case Type.INT:
+              return Optional.<Class<?>>of(int.class);
+            case Type.SHORT:
+              return Optional.<Class<?>>of(short.class);
+            case Type.LONG:
+              return Optional.<Class<?>>of(long.class);
+            case Type.FLOAT:
+              return Optional.<Class<?>>of(float.class);
+            case Type.OBJECT:
+              try {
+                return Optional.<Class<?>>of(
+                    Class.forName(key.getClassName(), false, BytecodeUtils.class.getClassLoader()));
+              } catch (ClassNotFoundException e) {
+                return Optional.absent();
+              }
+            default:
+              throw new IllegalArgumentException("unsupported type: " + key);
+          }
+        }
+      });
 
   private BytecodeUtils() {}
+
+  /** Returns {@code false} if {@code left} is not assignable from {@code right}. */
+  static boolean isAssignableFrom(Type left, Type right) {
+    if (left.equals(right)) {
+      return true;
+    }
+    if (left.getSort() != right.getSort()) {
+      return false;
+    }
+    if (left.getSort() != Type.OBJECT) {
+      return false;  // all other sorts require exact equality (even arrays)
+    }
+    // for object types we really need to know type hierarchy information to test for whether 
+    // right is assignable to left.
+    Optional<Class<?>> leftClass = objectTypeToClassCache.getUnchecked(left);
+    Optional<Class<?>> rightClass = objectTypeToClassCache.getUnchecked(right);
+    if (!leftClass.isPresent() || rightClass.isPresent()) {
+      // This means one of the types being compared is a generated object.  So we can't easily check
+      // it.  Just delegate responsibility to the verifier.
+      return true;
+    }
+    return leftClass.get().isAssignableFrom(rightClass.get());
+  }
 
   /**
    * Returns the runtime class represented by the given type.
@@ -63,24 +123,11 @@ final class BytecodeUtils {
    *     method will only be called for types that have a runtime on the compilers classpath.
    */
   static Class<?> classFromAsmType(Type type) {
-    switch (type.getSort()) {
-      case Type.ARRAY:
-        Class<?> elementType = classFromAsmType(type.getElementType());
-        // The easiest way to generically get an array class.
-        Object array = Array.newInstance(elementType, 0);
-        return array.getClass();
-      case Type.OBJECT:
-        try {
-          return Class.forName(type.getClassName(), false, BytecodeUtils.class.getClassLoader());
-        } catch (ClassNotFoundException e) {
-          throw new IllegalArgumentException("Could not load " + type, e);
-        }
-      case Type.METHOD:
-        throw new IllegalArgumentException("Method types are not supported: " + type);
-      default:
-        // primitive, class.forname doesn't work on primitives
-        return PRIMITIVES_MAP.get(type.getClassName());
+    Optional<Class<?>> maybeClass = objectTypeToClassCache.getUnchecked(type);
+    if (!maybeClass.isPresent()) {
+      throw new IllegalArgumentException("Could not load: " + type);
     }
+    return maybeClass.get();
   }
 
   /** Returns an {@link Expression} that can load the given 'boolean' constant. */
@@ -352,10 +399,9 @@ final class BytecodeUtils {
       // in this case, we actually try to convert stringExpr to a number
       return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(stringExpr, other.coerceToDouble());
     }
-    // We don't know what other is, assume the worst and call out to our boxed implementation
-    // TODO(lukes): in this case we know that the first param is a string, maybe we can specialize
-    // the runtime to take advantage of this and avoid reboxing the string (and rechecking the type)
-    return MethodRef.RUNTIME_EQUAL.invoke(stringExpr.box(), other.box());
+    // We don't know what other is, assume the worst and call out to our boxed implementation for
+    // string comparisons.
+    return MethodRef.RUNTIME_COMPARE_STRING.invoke(stringExpr, other.box());
   }
 
   /**

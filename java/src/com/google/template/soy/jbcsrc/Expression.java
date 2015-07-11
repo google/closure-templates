@@ -227,16 +227,7 @@ abstract class Expression extends BytecodeProducer {
    * Check that this expression is assignable to {@code expected}. 
    */
   final void checkAssignableTo(Type expected, String fmt, Object ...args) {
-    if (resultType().equals(expected)) {
-      return;
-    }
-    if (expected.getSort() == resultType().getSort() && expected.getSort() == Type.OBJECT) {
-      // for class types we really need to know type hierarchy information to test for 
-      // whether actualType is assignable to expectedType.
-      // This test is mostly optimistic so we just assume that they match. The verifier will tell
-      // us ultimately if we screw up.
-      // TODO(lukes): see if we can do something better here,  special case the SoyValue 
-      // hierarchy?  We could use BytecodeUtils.classFromAsmType, but that might be overly expensive
+    if (BytecodeUtils.isAssignableFrom(resultType(), expected)) {
       return;
     }
     String message = String.format(

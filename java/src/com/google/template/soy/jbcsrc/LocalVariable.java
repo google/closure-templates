@@ -116,7 +116,7 @@ final class LocalVariable extends Expression {
         index());
   }
 
-  @Override public void doGen(CodeBuilder mv) {
+  @Override void doGen(CodeBuilder mv) {
     mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
