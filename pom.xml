@@ -261,7 +261,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.2</version>
+        <!-- this is downgraded from 3.2 or 3.3 until maven corrects its annotation compiler code.
+             See https://issues.apache.org/jira/browse/MCOMPILER-235 and
+             https://issues.apache.org/jira/browse/MCOMPILER-236 -->
+        <version>3.1</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
