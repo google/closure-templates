@@ -21,10 +21,18 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
+import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -32,8 +40,6 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
@@ -115,21 +121,25 @@ final class MsgCompiler {
    * Compiles the given {@link MsgNode} to a statement with the given escaping directives applied.
    *
    * <p>The returned statement must be written to a location with a stack depth of zero.
-   * 
-   * @param id The computed msg id
+   *
+   * @param partsAndId The computed msg id
    * @param msg The msg node
    * @param escapingDirectives The set of escaping directives to apply.
    */
-  Statement compileMessage(long id, MsgNode msg, List<String> escapingDirectives) {
-    Expression soyMsg = variableLookup.getRenderContext()
-        .invoke(MethodRef.RENDER_CONTEXT_GET_SOY_MSG, constant(id));
+  Statement compileMessage(
+      MsgPartsAndIds partsAndId, MsgNode msg, List<String> escapingDirectives) {
+    Expression soyMsg =
+        variableLookup
+            .getRenderContext()
+            .invoke(MethodRef.RENDER_CONTEXT_GET_SOY_MSG, constant(partsAndId.id));
     Statement printMsg;
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
       printMsg = handleBasicTranslation(escapingDirectives, soyMsg);
     } else {
       // String translation + placeholders
-      printMsg = handleTranslationWithPlaceholders(msg, escapingDirectives, soyMsg);
+      printMsg =
+          handleTranslationWithPlaceholders(msg, escapingDirectives, soyMsg, partsAndId.parts);
     }
     return Statement.concat(
         printMsg.withSourceLocation(msg.getSourceLocation()),
@@ -154,17 +164,18 @@ final class MsgCompiler {
   }
 
   /**
-   * Handles a translation consisting of raw text with placeholders.
+   * Handles a complex message with placeholders.
    */
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
       List<String> escapingDirectives,
-      Expression soyMsg) {
+      Expression soyMsg,
+      ImmutableList<SoyMsgPart> parts) {
     // We need to render placeholders into a buffer and then pack them into a map to pass to
     // Runtime.renderSoyMsgWithPlaceholders.
     Expression placeholderMap = variables.getMsgPlaceholderMapField().accessor(thisVar);
     Map<String, Statement> placeholderNameToPutStatement = new LinkedHashMap<>();
-    putPlaceholdersIntoMap(placeholderMap, msg, placeholderNameToPutStatement);
+    putPlaceholdersIntoMap(placeholderMap, msg, parts, placeholderNameToPutStatement);
     // sanity check
     checkState(!placeholderNameToPutStatement.isEmpty());
     variables.setMsgPlaceholderMapMinSize(placeholderNameToPutStatement.size());
@@ -198,82 +209,109 @@ final class MsgCompiler {
    * Adds a {@link Statement} to {@link Map#put} every msg placeholder, plural variable and select
    * case value into {@code mapExpression}
    */
-  private void putPlaceholdersIntoMap(Expression mapExpression, ParentSoyNode<?> msg,
+  private void putPlaceholdersIntoMap(
+      Expression mapExpression,
+      MsgNode originalMsg,
+      Iterable<? extends SoyMsgPart> parts,
       Map<String, Statement> placeholderNameToPutStatement) {
-    for (SoyNode child : msg.getChildren()) {
-      String varName;
-      boolean addPlaceholder = true;
-      if (child instanceof MsgSubstUnitNode) {
-        // Every placeholder may appear multiple times in overall {msg} if it is duplicated in
-        // multiple cases of {plural} or {select} statements.  However, when this happens the
-        // compiler ensures that the placeholders are identical when calculating placeholder names.
-        // So as long as two MsgSubstUnitNodes have the same placeholder we can just use the first
-        // one for generating the placeholder code.  This is the same strategy that jssrc uses.
-        varName = ((MsgSubstUnitNode) child).getBaseVarName();
-        if (placeholderNameToPutStatement.containsKey(varName)) {
-          addPlaceholder = false;
-        }
-      } else {
-        // must be a RawTextNode or a MsgPluralRemainderNode, these don't need placeholders
+    for (SoyMsgPart child : parts) {
+      if (child instanceof SoyMsgRawTextPart || child instanceof SoyMsgPluralRemainderPart) {
+        // raw text doesn't have placeholders and remainders use the same placeholder as plural they
+        // are a member of.
         continue;
       }
-      if (child instanceof MsgPluralNode) {
-        MsgPluralNode plural = (MsgPluralNode) child;
-        if (addPlaceholder) {
-          Label reattachPoint = new Label();
-          Expression value = soyNodeCompiler.compileToInt(plural.getExpr(), reattachPoint);
-          placeholderNameToPutStatement.put(varName,
-              putToMap(mapExpression, varName, value).labelStart(reattachPoint));
-        }
-        // Recursively visit plural cases
-        for (CaseOrDefaultNode caseOrDefault : plural.getChildren()) {
-          putPlaceholdersIntoMap(mapExpression, caseOrDefault, placeholderNameToPutStatement);
-        }
-      } else if (child instanceof MsgSelectNode) {
-        MsgSelectNode select = (MsgSelectNode) child;
-        if (addPlaceholder) {
-          Label reattachPoint = new Label();
-          Expression value = soyNodeCompiler.compileToString(select.getExpr(), reattachPoint);
-          placeholderNameToPutStatement.put(varName,
-              putToMap(mapExpression, varName, value).labelStart(reattachPoint));
-        }
-        // Recursively visit select cases
-        for (CaseOrDefaultNode caseOrDefault : select.getChildren()) {
-          putPlaceholdersIntoMap(mapExpression, caseOrDefault, placeholderNameToPutStatement);
-        }
-      } else if (child instanceof MsgPlaceholderNode) {
-        if (addPlaceholder) {
-          placeholderNameToPutStatement.put(varName,
-              putPlaceholderIntoMap(mapExpression, (MsgPlaceholderNode) child));
-        }
+      if (child instanceof SoyMsgPluralPart) {
+        putPluralPartIntoMap(
+            mapExpression, originalMsg, placeholderNameToPutStatement, (SoyMsgPluralPart) child);
+      } else if (child instanceof SoyMsgSelectPart) {
+        putSelectPartIntoMap(
+            mapExpression, originalMsg, placeholderNameToPutStatement, (SoyMsgSelectPart) child);
+      } else if (child instanceof SoyMsgPlaceholderPart) {
+        putPlaceholderIntoMap(
+            mapExpression,
+            originalMsg,
+            placeholderNameToPutStatement,
+            (SoyMsgPlaceholderPart) child);
       } else {
         throw new AssertionError("unexpected child: " + child);
       }
     }
   }
 
-  private Statement putPlaceholderIntoMap(Expression mapExpression, MsgPlaceholderNode placeholder)
-      throws AssertionError {
-    StandaloneNode initialNode = placeholder.getChild(0);
-    String mapKey = placeholder.getBaseVarName();
-    Statement putEntyInMap;
-    if (initialNode instanceof MsgHtmlTagNode) {
-      putEntyInMap =
-          addHtmlTagNodeToPlaceholderMap(mapExpression, mapKey, (MsgHtmlTagNode) initialNode);
-    } else if (initialNode instanceof CallNode) {
-      putEntyInMap = addCallNodeToPlaceholderMap(mapExpression, mapKey, (CallNode) initialNode);
-    } else if (initialNode instanceof PrintNode) {
-      putEntyInMap = addPrintNodeToPlaceholderMap(mapExpression, mapKey, (PrintNode) initialNode);
-    } else {
-      // the AST for MsgNodes guarantee that these are the only options
-      throw new AssertionError();
+  private void putSelectPartIntoMap(
+      Expression mapExpression,
+      MsgNode originalMsg,
+      Map<String, Statement> placeholderNameToPutStatement,
+      SoyMsgSelectPart select) {
+    MsgSelectNode repSelectNode = originalMsg.getRepSelectNode(select.getSelectVarName());
+    if (!placeholderNameToPutStatement.containsKey(select.getSelectVarName())) {
+      Label reattachPoint = new Label();
+      Expression value = soyNodeCompiler.compileToString(repSelectNode.getExpr(), reattachPoint);
+      placeholderNameToPutStatement.put(
+          select.getSelectVarName(),
+          putToMap(mapExpression, select.getSelectVarName(), value).labelStart(reattachPoint));
     }
-    return putEntyInMap;
+    // Recursively visit select cases
+    for (Case<String> caseOrDefault : select.getCases()) {
+      putPlaceholdersIntoMap(
+          mapExpression, originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
+    }
   }
 
+  private void putPluralPartIntoMap(
+      Expression mapExpression,
+      MsgNode originalMsg,
+      Map<String, Statement> placeholderNameToPutStatement,
+      SoyMsgPluralPart plural) {
+    MsgPluralNode repPluralNode = originalMsg.getRepPluralNode(plural.getPluralVarName());
+    if (!placeholderNameToPutStatement.containsKey(plural.getPluralVarName())) {
+      Label reattachPoint = new Label();
+      Expression value = soyNodeCompiler.compileToInt(repPluralNode.getExpr(), reattachPoint);
+      placeholderNameToPutStatement.put(
+          plural.getPluralVarName(),
+          putToMap(mapExpression, plural.getPluralVarName(), value).labelStart(reattachPoint));
+    }
+    // Recursively visit plural cases
+    for (Case<SoyMsgPluralCaseSpec> caseOrDefault : plural.getCases()) {
+      putPlaceholdersIntoMap(
+          mapExpression, originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
+    }
+  }
+
+  private void putPlaceholderIntoMap(
+      Expression mapExpression,
+      MsgNode originalMsg,
+      Map<String, Statement> placeholderNameToPutStatement,
+      SoyMsgPlaceholderPart placeholder)
+      throws AssertionError {
+    MsgPlaceholderNode repPlaceholderNode =
+        originalMsg.getRepPlaceholderNode(placeholder.getPlaceholderName());
+    String placeholderName = placeholder.getPlaceholderName();
+    if (!placeholderNameToPutStatement.containsKey(placeholderName)) {
+      StandaloneNode initialNode = repPlaceholderNode.getChild(0);
+      Statement putEntyInMap;
+      if (initialNode instanceof MsgHtmlTagNode) {
+        putEntyInMap =
+            addHtmlTagNodeToPlaceholderMap(
+                mapExpression, placeholderName, (MsgHtmlTagNode) initialNode);
+      } else if (initialNode instanceof CallNode) {
+        putEntyInMap =
+            addCallNodeToPlaceholderMap(mapExpression, placeholderName, (CallNode) initialNode);
+      } else if (initialNode instanceof PrintNode) {
+        putEntyInMap =
+            addPrintNodeToPlaceholderMap(mapExpression, placeholderName, (PrintNode) initialNode);
+      } else {
+        // the AST for MsgNodes guarantee that these are the only options
+        throw new AssertionError();
+      }
+      placeholderNameToPutStatement.put(placeholder.getPlaceholderName(), putEntyInMap);
+    }
+  }
+
+  
   /**
    * Returns a statement that adds the content of the node to the map.
-   * 
+   *
    * @param mapExpression The map to put the new entry in
    * @param mapKey The map key
    * @param htmlTagNode The node

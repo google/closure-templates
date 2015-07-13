@@ -43,6 +43,7 @@ import com.google.template.soy.jbcsrc.VariableSet.Variable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
+import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -588,23 +589,28 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   @Override protected Statement visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     MsgNode msg = node.getMsg();
-    long id = MsgUtils.computeMsgIdForDualFormat(msg);
+    MsgPartsAndIds idAndParts = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msg);
     ImmutableList<String> escapingDirectives = node.getEscapingDirectiveNames();
-    Statement renderDefault = getMsgCompiler().compileMessage(id, msg, escapingDirectives);
+    Statement renderDefault = getMsgCompiler().compileMessage(idAndParts, msg, escapingDirectives);
     // fallback groups have 1 or 2 children.  if there are 2 then the second is a fallback and we
     // need to check for presence.
     if (node.hasFallbackMsg()) {
       MsgNode fallback = node.getFallbackMsg();
-      long fallbackId = MsgUtils.computeMsgIdForDualFormat(node.getChild(1));
+      MsgPartsAndIds fallbackIdAndParts =
+          MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(fallback);
       IfBlock ifAvailableRenderDefault =
           IfBlock.create(
-              variableLookup.getRenderContext()
-                  .invoke(MethodRef.RENDER_CONTEXT_USE_PRIMARY_MSG,
-                      constant(id),
-                      constant(fallbackId)),
+              variableLookup
+                  .getRenderContext()
+                  .invoke(
+                      MethodRef.RENDER_CONTEXT_USE_PRIMARY_MSG,
+                      constant(idAndParts.id),
+                      constant(fallbackIdAndParts.id)),
               renderDefault);
-      return ControlFlow.ifElseChain(ImmutableList.of(ifAvailableRenderDefault),
-          Optional.of(getMsgCompiler().compileMessage(fallbackId, fallback, escapingDirectives)));
+      return ControlFlow.ifElseChain(
+          ImmutableList.of(ifAvailableRenderDefault),
+          Optional.of(
+              getMsgCompiler().compileMessage(fallbackIdAndParts, fallback, escapingDirectives)));
     } else {
       return renderDefault;
     }

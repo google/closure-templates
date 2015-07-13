@@ -93,8 +93,6 @@ final class BytecodeUtils {
 
   private BytecodeUtils() {}
 
-  /** Returns {@code false} if {@code left} is not assignable from {@code right}. */
-  static boolean isAssignableFrom(Type left, Type right) {
   /** 
    * Returns {@code true} if {@code left} is possibly assignable from {@code right}.
    */
