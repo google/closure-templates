@@ -57,7 +57,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   public void testListLiteral() {
     assertThatSoyExpr("[]").translatesTo(new PyExpr("[]", Integer.MAX_VALUE), PyListExpr.class);
     assertThatSoyExpr("['blah', 123, $foo]").translatesTo(
-        new PyExpr("['blah', 123, opt_data.get('foo')]", Integer.MAX_VALUE), PyListExpr.class);
+        new PyExpr("['blah', 123, data.get('foo')]", Integer.MAX_VALUE), PyListExpr.class);
   }
 
   public void testMapLiteral() {
@@ -69,7 +69,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']")
         .translatesTo(
             new PyExpr(
-                "collections.OrderedDict([('aaa', opt_data.get('foo')), ('bbb', 'blah')])",
+                "collections.OrderedDict([('aaa', data.get('foo')), ('bbb', 'blah')])",
                 Integer.MAX_VALUE));
 
     // Non-string keys are allowed in Python.
@@ -84,7 +84,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyExpr("quoteKeysIfJs( ['aaa': $foo, 'bbb': 'blah'] )")
         .translatesTo(
             new PyExpr(
-                "collections.OrderedDict([('aaa', opt_data.get('foo')), ('bbb', 'blah')])",
+                "collections.OrderedDict([('aaa', data.get('foo')), ('bbb', 'blah')])",
                 Integer.MAX_VALUE));
   }
 
@@ -104,31 +104,31 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   }
 
   public void testDataRef() {
-    assertThatSoyExpr("$boo").translatesTo(new PyExpr("opt_data.get('boo')", Integer.MAX_VALUE));
+    assertThatSoyExpr("$boo").translatesTo(new PyExpr("data.get('boo')", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo.goo").translatesTo(
-        new PyExpr("opt_data.get('boo').get('goo')", Integer.MAX_VALUE));
+        new PyExpr("data.get('boo').get('goo')", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo['goo']").translatesTo(
-        new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 'goo')", Integer.MAX_VALUE));
+        new PyExpr("runtime.key_safe_data_access(data.get('boo'), 'goo')", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo[0]").translatesTo(
-        new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 0)", Integer.MAX_VALUE));
+        new PyExpr("runtime.key_safe_data_access(data.get('boo'), 0)", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo[0]").translatesTo(
-        new PyExpr("runtime.key_safe_data_access(opt_data.get('boo'), 0)", Integer.MAX_VALUE));
+        new PyExpr("runtime.key_safe_data_access(data.get('boo'), 0)", Integer.MAX_VALUE));
     assertThatSoyExpr("$boo[$foo][$foo+1]").translatesTo(
         new PyExpr("runtime.key_safe_data_access("
-            + "runtime.key_safe_data_access(opt_data.get('boo'), opt_data.get('foo')), "
-            + "runtime.type_safe_add(opt_data.get('foo'), 1))",
+            + "runtime.key_safe_data_access(data.get('boo'), data.get('foo')), "
+            + "runtime.type_safe_add(data.get('foo'), 1))",
             Integer.MAX_VALUE));
 
     assertThatSoyExpr("$boo?.goo").translatesTo(
         new PyExpr(
-            "None if opt_data.get('boo') is None else opt_data.get('boo').get('goo')",
+            "None if data.get('boo') is None else data.get('boo').get('goo')",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
     assertThatSoyExpr("$boo?[0]?[1]").translatesTo(
         new PyExpr(
-            "None if opt_data.get('boo') is None else "
-            + "None if runtime.key_safe_data_access(opt_data.get('boo'), 0) is None else "
+            "None if data.get('boo') is None else "
+            + "None if runtime.key_safe_data_access(data.get('boo'), 0) is None else "
             + "runtime.key_safe_data_access("
-            + "runtime.key_safe_data_access(opt_data.get('boo'), 0), 1)",
+            + "runtime.key_safe_data_access(data.get('boo'), 0), 1)",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 
@@ -143,7 +143,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
 
   public void testBasicOperators() {
     assertThatSoyExpr("not $boo or true and $foo").translatesTo(
-        new PyExpr("not opt_data.get('boo') or True and opt_data.get('foo')",
+        new PyExpr("not data.get('boo') or True and data.get('foo')",
             PyExprUtils.pyPrecedenceForOperator(Operator.OR)));
   }
 
@@ -151,7 +151,7 @@ public class TranslateToPyExprVisitorTest extends TestCase {
     assertThatSoyExpr("'5' == 5").translatesTo(
         new PyExpr("runtime.type_safe_eq('5', 5)", Integer.MAX_VALUE));
     assertThatSoyExpr("'5' == $boo").translatesTo(
-        new PyExpr("runtime.type_safe_eq('5', opt_data.get('boo'))", Integer.MAX_VALUE));
+        new PyExpr("runtime.type_safe_eq('5', data.get('boo'))", Integer.MAX_VALUE));
   }
 
   public void testNotEqualOperator() {
@@ -167,13 +167,13 @@ public class TranslateToPyExprVisitorTest extends TestCase {
 
   public void testNullCoalescingOperator() {
     assertThatSoyExpr("$boo ?: 5").translatesTo(
-        new PyExpr("opt_data.get('boo') if opt_data.get('boo') is not None else 5",
+        new PyExpr("data.get('boo') if data.get('boo') is not None else 5",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 
   public void testConditionalOperator() {
     assertThatSoyExpr("$boo ? 5 : 6").translatesTo(
-        new PyExpr("5 if opt_data.get('boo') else 6",
+        new PyExpr("5 if data.get('boo') else 6",
             PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 }

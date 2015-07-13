@@ -163,8 +163,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
    * </pre>
    * might generate
    * <pre>
-   *   sanitize.change_newline_to_br(opt_data.get('boo'))
-   *   opt_data.get('goo') + 5
+   *   sanitize.change_newline_to_br(data.get('boo'))
+   *   data.get('goo') + 5
    * </pre>
    */
   @Override protected void visitPrintNode(PrintNode node) {

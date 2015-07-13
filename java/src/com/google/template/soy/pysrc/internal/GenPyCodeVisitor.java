@@ -35,7 +35,6 @@ import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
-import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -270,7 +269,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * <p>Example:
    * <pre>
-   * def myfunc(opt_data=None, opt_ijData=None):
+   * def myfunc(data, ijData):
    *   output = ''
    *   ...
    *   ...
@@ -285,7 +284,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine(
         "def ",
         node.getPartialTemplateName().substring(1),
-        "(opt_data=None, opt_ijData=None):");
+        // These defaults are safe because soy only ever reads from these parameters.  If that
+        // changes, bad things could happen.
+        "(data={}, ijData={}):");
     pyCodeBuilder.increaseIndent();
 
     generateFunctionBody(node);
@@ -300,7 +301,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * <p>Example:
    * <pre>
-   * def myfunc(opt_data=None, opt_ijData=None):
+   * def myfunc(data=None, ijData=None):
    *   ...
    * runtime.register_delegate_fn('delname', 'delvariant', 0, myfunc, 'myfunc')
    * </pre>
@@ -336,7 +337,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   if opt_data.get('boo') > 0:
+   *   if data.get('boo') > 0:
    *     ...
    * </pre>
    */
@@ -392,7 +393,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   switchValue = opt_data.get('boo')
+   *   switchValue = data.get('boo')
    *   if switchValue == 0:
    *     ...
    *   elif switchValue == 1:
@@ -463,7 +464,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   for i4 in xrange(1, opt_data.get('boo')):
+   *   for i4 in xrange(1, data.get('boo')):
    *     ...
    * </pre>
    */
@@ -512,7 +513,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   fooList2 = opt_data.get('boo')
+   *   fooList2 = data.get('boo')
    *   if fooList2:
    *     ...loop...
    *   else:
@@ -568,7 +569,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   fooList2 = opt_data.get('boo')
+   *   fooList2 = data.get('boo')
    *   for fooIndex2, fooData2 in enumerate(fooList2):
    *     ...
    * </pre>
@@ -619,7 +620,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   boo3 = opt_data.get('foo')['moo']
+   *   boo3 = data.get('foo')['moo']
    * </pre>
    */
   @Override protected void visitLetValueNode(LetValueNode node) {
@@ -650,7 +651,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    * might generate
    * <pre>
-   *   boo3 = sanitize.SanitizedHtml(''.join(['Hello ', sanitize.escape_html(opt_data.get('name'))])
+   *   boo3 = sanitize.SanitizedHtml(''.join(['Hello ', sanitize.escape_html(data.get('name'))])
    * </pre>
    */
   @Override protected void visitLetContentNode(LetContentNode node) {
@@ -838,11 +839,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private void generateFunctionBody(TemplateNode node) {
     // Add a new frame for local variable translations.
     localVarExprs.pushFrame();
-
-    // Generate statement to ensure data exists as an object, if ever used.
-    if (new ShouldEnsureDataIsDefinedVisitor(errorReporter).exec(node)) {
-      pyCodeBuilder.appendLine("opt_data = opt_data or {}");
-    }
 
     pyCodeBuilder.pushOutputVar("output");
 

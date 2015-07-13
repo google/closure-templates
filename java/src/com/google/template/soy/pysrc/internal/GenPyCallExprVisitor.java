@@ -102,10 +102,10 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * </pre>
    * Their respective generated calls might be the following:
    * <pre>
-   *   some.func(opt_data)
-   *   some.func(opt_data.get('boo'))
+   *   some.func(data)
+   *   some.func(data.get('boo'))
    *   some.func({'goo': opt_data.get('moo')})
-   *   some.func(runtime.merge_into_dict({'goo': 'Blah'}, opt_data.get('boo')))
+   *   some.func(runtime.merge_into_dict({'goo': 'Blah'}, data.get('boo')))
    *   some.func({'goo': param65})
    * </pre>
    * Note that in the last case, the param content is not computable as Python expressions, so we
@@ -144,7 +144,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
       calleeExprText = calleeName.substring(secondToLastDotIndex + 1);
     }
 
-    String callExprText = calleeExprText + "(" + genObjToPass(node) + ", opt_ijData)";
+    String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
     return escapeCall(callExprText, node.getEscapingDirectiveNames());
   }
 
@@ -172,7 +172,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
         .addArg(node.allowsEmptyDefault())
         .build();
 
-    String callExprText = calleeExprText + "(" + genObjToPass(node) + ", opt_ijData)";
+    String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
     return escapeCall(callExprText, node.getEscapingDirectiveNames());
   }
 
@@ -190,11 +190,11 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     // Generate the expression for the original data to pass.
     String dataToPass;
     if (callNode.dataAttribute().isPassingAllData()) {
-      dataToPass = "opt_data";
+      dataToPass = "data";
     } else if (callNode.dataAttribute().isPassingData()) {
       dataToPass = translator.exec(callNode.dataAttribute().dataExpr()).getText();
     } else {
-      dataToPass = "None";
+      dataToPass = "{}";
     }
 
     // Case 1: No additional params.
@@ -239,7 +239,9 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
     // Cases 2 and 3: Additional params with and without original data to pass.
     if (callNode.dataAttribute().isPassingData()) {
-      return "runtime.merge_into_dict(" + additionalParamsExpr.getText() + ", " + dataToPass + ")";
+      // make a shallow copy so we don't accidentally modify the param
+      dataToPass = "dict(" + dataToPass + ")";
+      return "runtime.merge_into_dict(" + dataToPass + ", " + additionalParamsExpr.getText() + ")";
     } else {
       return additionalParamsExpr.getText();
     }

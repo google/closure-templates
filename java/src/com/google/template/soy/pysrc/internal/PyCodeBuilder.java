@@ -30,14 +30,14 @@ import java.util.List;
  * <p>Usage example that demonstrates most of the methods:
  * <pre>
  *   PyCodeBuilder pcb = new PyCodeBuilder();
- *   pcb.appendLine("def title(opt_data):");
+ *   pcb.appendLine("def title(data):");
  *   pcb.increaseIndent();
  *   pcb.pushOutputVar("output");
  *   pcb.initOutputVarIfNecessary();
  *   pcb.pushOutputVar("temp");
  *   pcb.addToOutputVar(Lists.newArrayList(
  *       new PyExpr("'Snow White and the '", Integer.MAX_VALUE),
- *       new PyExpr("opt_data['numDwarfs']", Integer.MAX_VALUE));
+ *       new PyExpr("data['numDwarfs']", Integer.MAX_VALUE));
  *   pcb.popOutputVar();
  *   pcb.addToOutputVar(Lists.newArrayList(
  *       new PyExpr("temp", Integer.MAX_VALUE),
@@ -51,9 +51,9 @@ import java.util.List;
  *
  * The above example builds the following Python code:
  * <pre>
- * def title(opt_data):
+ * def title(data):
  *   output = ''
- *   temp = ''.join(['Snow White and the ', str(opt_data['numDwarfs'])])
+ *   temp = ''.join(['Snow White and the ', str(data['numDwarfs'])])
  *   output += ''.join([temp, ' Dwarfs'])
  *   return output
  * # the end

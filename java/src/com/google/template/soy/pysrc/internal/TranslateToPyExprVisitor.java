@@ -208,10 +208,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         VarRefNode varRef = (VarRefNode) node;
         if (varRef.isInjected()) {
           // Case 1: Injected data reference.
-          if (varRef.isNullSafeInjected()) {
-            nullSafetyPrefix.append("None if opt_ijData is None else ");
-          }
-          return genCodeForLiteralKeyAccess("opt_ijData", varRef.getName());
+          return genCodeForLiteralKeyAccess("ijData", varRef.getName());
         } else {
           PyExpr translation = localVarExprs.getVariableExpression(varRef.getName());
           if (translation != null) {
@@ -219,7 +216,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             return translation.getText();
           } else {
             // Case 3: Data reference.
-            return genCodeForLiteralKeyAccess("opt_data", varRef.getName());
+            return genCodeForLiteralKeyAccess("data", varRef.getName());
           }
         }
       }

@@ -92,7 +92,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/template}\n";
 
     String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
-        + "def helloWorld(opt_data=None, opt_ijData=None):\n"
+        + "def helloWorld(data={}, ijData={}):\n"
         + "  output = []\n"
         + "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")\n";
 
@@ -106,7 +106,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/template}\n";
 
     String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
-        + "def helloWorld(opt_data=None, opt_ijData=None):\n"
+        + "def helloWorld(data={}, ijData={}):\n"
         + "  output = []\n"
         + "  output.append('Hello World!')\n"
         + "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")\n";
@@ -127,12 +127,11 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/template}\n";
 
     String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
-        + "def helloWorld(opt_data=None, opt_ijData=None):\n"
-        + "  opt_data = opt_data or {}\n"
+        + "def helloWorld(data={}, ijData={}):\n"
         + "  output = []\n"
-        + "  if opt_data.get('foo'):\n"
+        + "  if data.get('foo'):\n"
         + "    for i### in xrange(5):\n"
-        + "      output.append(str(runtime.key_safe_data_access(opt_data.get('boo'), i###)))\n"
+        + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n"
         + "  else:\n"
         + "    output.append('Blah')\n"
         + "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")\n";
@@ -151,7 +150,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "     !\n"
         + "{/switch}\n";
     String expectedPyCode =
-        "switchValue = opt_data.get('boo')\n"
+        "switchValue = data.get('boo')\n"
         + "if runtime.type_safe_eq(switchValue, 0):\n"
         + "  output.append('Hello')\n"
         + "elif runtime.type_safe_eq(switchValue, 1):\n"
@@ -168,7 +167,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "     Hello World!\n"
         + "{/switch}\n";
     String expectedPyCode =
-        "switchValue = opt_data.get('boo')\n"
+        "switchValue = data.get('boo')\n"
         + "output.append('Hello World!')\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
@@ -180,7 +179,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/for}\n";
     String expectedPyCode =
         "for i### in xrange(5):\n"
-        + "  output.append(str(runtime.key_safe_data_access(opt_data.get('boo'), i###)))\n";
+        + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
@@ -189,7 +188,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/for}\n";
     expectedPyCode =
         "for i### in xrange(5, 10):\n"
-        + "  output.append(str(runtime.key_safe_data_access(opt_data.get('boo'), i###)))\n";
+        + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
@@ -197,8 +196,8 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "  {$boo[$i]}\n"
         + "{/for}\n";
     expectedPyCode =
-        "for i### in xrange(opt_data.get('foo'), opt_data.get('boo'), opt_data.get('goo')):\n"
-        + "  output.append(str(runtime.key_safe_data_access(opt_data.get('boo'), i###)))\n";
+        "for i### in xrange(data.get('foo'), data.get('boo'), data.get('goo')):\n"
+        + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
@@ -211,7 +210,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
     // There's no simple way to account for all instances of the id in these variables, so for now
     // we just hardcode '3'.
     String expectedPyCode =
-        "operandList### = opt_data.get('operands')\n"
+        "operandList### = data.get('operands')\n"
         + "for operandIndex###, operandData### in enumerate(operandList###):\n"
         + "  output.append(str(operandData###))\n";
 
@@ -225,7 +224,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/foreach}\n";
 
     expectedPyCode =
-        "operandList### = opt_data.get('operands')\n"
+        "operandList### = data.get('operands')\n"
         + "for operandIndex###, operandData### in enumerate(operandList###):\n"
         + "  output.extend([str(operandIndex### == 0),"
                          + "str(operandIndex### == len(operandList###) - 1),"
@@ -243,18 +242,18 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/foreach}\n";
 
     String expectedPyCode =
-        "operandList### = opt_data.get('operands')\n"
+        "operandList### = data.get('operands')\n"
         + "if operandList###:\n"
         + "  for operandIndex###, operandData### in enumerate(operandList###):\n"
         + "    output.append(str(operandData###))\n"
         + "else:\n"
-        + "  output.append(str(opt_data.get('foo')))\n";
+        + "  output.append(str(data.get('foo')))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
   public void testLetValue() {
-    assertThatSoyCode("{let $foo: $boo /}\n").compilesTo("foo__soy### = opt_data.get('boo')\n");
+    assertThatSoyCode("{let $foo: $boo /}\n").compilesTo("foo__soy### = data.get('boo')\n");
   }
 
   public void testLetContent() {
@@ -264,7 +263,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "{/let}\n";
 
     String expectedPyCode =
-        "foo__soy### = ['Hello ',str(opt_data.get('boo'))]\n"
+        "foo__soy### = ['Hello ',str(data.get('boo'))]\n"
         + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
         + SANITIZATION_APPROVAL + ")\n";
 
@@ -284,7 +283,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         "foo__soy### = []\n"
         + "for num### in xrange(5):\n"
         + "  foo__soy###.append(str(num###))\n"
-        + "foo__soy###.extend(['Hello ',str(opt_data.get('boo'))])\n"
+        + "foo__soy###.extend(['Hello ',str(data.get('boo'))])\n"
         + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
         + SANITIZATION_APPROVAL + ")\n";
 
@@ -303,7 +302,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
   public void testCallReturnsString() {
     String soyCode = "{call .foo data=\"all\" /}";
 
-    String expectedPyCode = "output.append(str(ns.foo(opt_data, opt_ijData)))\n";
+    String expectedPyCode = "output.append(str(ns.foo(data, ijData)))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
