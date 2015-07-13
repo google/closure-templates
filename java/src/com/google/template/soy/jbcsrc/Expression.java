@@ -227,7 +227,7 @@ abstract class Expression extends BytecodeProducer {
    * Check that this expression is assignable to {@code expected}. 
    */
   final void checkAssignableTo(Type expected, String fmt, Object ...args) {
-    if (BytecodeUtils.isAssignableFrom(resultType(), expected)) {
+    if (BytecodeUtils.isPossiblyAssignableFrom(resultType(), expected)) {
       return;
     }
     String message = String.format(
@@ -295,7 +295,7 @@ abstract class Expression extends BytecodeProducer {
   Expression cast(final Type target) {
     checkArgument(target.getSort() == Type.OBJECT, "cast targets must be reference types.");
     checkArgument(resultType().getSort() == Type.OBJECT, "you may only cast from reference types.");
-    if (target.equals(resultType())) {
+    if (BytecodeUtils.isDefinitelyAssignableFrom(target, resultType())) {
       return this;
     }
     return new Expression(target, features()) {

@@ -95,6 +95,23 @@ final class BytecodeUtils {
 
   /** Returns {@code false} if {@code left} is not assignable from {@code right}. */
   static boolean isAssignableFrom(Type left, Type right) {
+  /** 
+   * Returns {@code true} if {@code left} is possibly assignable from {@code right}.
+   */
+  static boolean isPossiblyAssignableFrom(Type left, Type right) {
+    return doIsAssignableFrom(left, right, true);
+  }
+
+  /** Returns {@code true} if {@code left} is definitely assignable from {@code right}. */
+  static boolean isDefinitelyAssignableFrom(Type left, Type right) {
+    return doIsAssignableFrom(left, right, false);
+  }
+
+  /**
+   * Checks if {@code left} is assignable from {@code right}, however if we don't have information
+   * about one of the types then this returns {@code failOpen}.
+   */
+  private static boolean doIsAssignableFrom(Type left, Type right, boolean failOpen) {
     if (left.equals(right)) {
       return true;
     }
@@ -111,7 +128,7 @@ final class BytecodeUtils {
     if (!leftClass.isPresent() || rightClass.isPresent()) {
       // This means one of the types being compared is a generated object.  So we can't easily check
       // it.  Just delegate responsibility to the verifier.
-      return true;
+      return failOpen;
     }
     return leftClass.get().isAssignableFrom(rightClass.get());
   }
