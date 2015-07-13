@@ -145,6 +145,23 @@ public final class GenPyExprsVisitorTest extends TestCase {
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 
+  public void testMsgOnlyLiteralWithApostrophe() {
+    // Should escape '\'' in format string.
+
+   String soyCode =
+        "{msg meaning=\"verb\" desc=\"The word 'Archive' used as a verb.\"}"
+          + "Archive's"
+      + "{/msg}\n";
+
+    String expectedPyCode =
+        "translator_impl.render_literal("
+        + "translator_impl.prepare_literal("
+          + "###, "
+          + "'Archive\\'s'))";
+
+    assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
+
   public void testMsgSimpleSoyExpression() {
     String soyCode =
         "{msg desc=\"var placeholder\"}"

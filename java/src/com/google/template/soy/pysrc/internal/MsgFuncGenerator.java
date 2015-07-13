@@ -280,7 +280,7 @@ final class MsgFuncGenerator {
       new Function<String, String>() {
     @Override
     public String apply(String str) {
-      return str.replaceAll("\\{", "{{").replaceAll("\\}", "}}");
+      return str.replaceAll("\\{", "{{").replaceAll("\\}", "}}").replaceAll("'", "\\\\'");
     }
   };
 
