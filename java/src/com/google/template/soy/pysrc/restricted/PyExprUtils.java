@@ -193,6 +193,23 @@ public final class PyExprUtils {
    * @param dict A Map to be converted to PyExpr as a dictionary, both key and value should be
    *        PyExpr.
    */
+  public static PyExpr convertMapToOrderedDict(Map<PyExpr, PyExpr> dict) {
+    List<String> values = new ArrayList<>();
+
+    for (Map.Entry<PyExpr, PyExpr> entry : dict.entrySet()) {
+      values.add("(" + entry.getKey().getText() + ", " + entry.getValue().getText() + ")");
+    }
+
+    Joiner joiner = Joiner.on(", ");
+    return new PyExpr("collections.OrderedDict([" + joiner.join(values) + "])", Integer.MAX_VALUE);
+  }
+
+    /**
+   * Convert a java Map to valid PyExpr as dict.
+   *
+   * @param dict A Map to be converted to PyExpr as a dictionary, both key and value should be
+   *        PyExpr.
+   */
   public static PyExpr convertMapToPyExpr(Map<PyExpr, PyExpr> dict) {
     List<String> values = new ArrayList<>();
 

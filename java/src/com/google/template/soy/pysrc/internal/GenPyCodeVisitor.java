@@ -738,6 +738,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private void addCodeToRequireGeneralDeps() {
     pyCodeBuilder.appendLine("from __future__ import unicode_literals");
 
+    pyCodeBuilder.appendLine("import collections");
     pyCodeBuilder.appendLine("import math");
     pyCodeBuilder.appendLine("import random");
 

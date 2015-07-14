@@ -44,6 +44,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "\"\"\"\n"
       + "\n"
       + "from __future__ import unicode_literals\n"
+      + "import collections\n"
       + "import math\n"
       + "import random\n"
       + "from example.runtime import bidi\n"

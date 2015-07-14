@@ -173,7 +173,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
       dict.put(visit(keyNode), visit(valueNode));
     }
 
-    return PyExprUtils.convertMapToPyExpr(dict);
+    return PyExprUtils.convertMapToOrderedDict(dict);
   }
 
 

@@ -19,7 +19,6 @@ package com.google.template.soy.data.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyEasyDict;
@@ -29,6 +28,7 @@ import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.internal.base.Pair;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -58,7 +58,7 @@ public final class EasyDictImpl extends AbstractDict implements SoyEasyDict {
    * @param valueHelper The instance of SoyValueHelper to use for internal conversions.
    */
   public EasyDictImpl(SoyValueHelper valueHelper) {
-    super(Maps.<String, SoyValueProvider>newHashMap());
+    super(new LinkedHashMap<String, SoyValueProvider>());
 
     this.valueHelper = valueHelper;
     this.isMutable = true;
