@@ -59,6 +59,10 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "  pass\n"
       + "\n";
 
+  private static final String SANITIZATION_APPROVAL =
+      "approval=sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
+      + "'Internally created Sanitization.')";
+
 
   public void testSoyFile() {
     assertThatSoyFile(SOY_NAMESPACE).compilesToSourceContaining(EXPECTED_PYFILE_START);
@@ -89,7 +93,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
     String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
         + "def helloWorld(opt_data=None, opt_ijData=None):\n"
         + "  output = []\n"
-        + "  return sanitize.SanitizedHtml(''.join(output))\n";
+        + "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")\n";
 
     assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
@@ -104,7 +108,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "def helloWorld(opt_data=None, opt_ijData=None):\n"
         + "  output = []\n"
         + "  output.append('Hello World!')\n"
-        + "  return sanitize.SanitizedHtml(''.join(output))\n";
+        + "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")\n";
 
     assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
@@ -130,7 +134,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "      output.append(str(runtime.key_safe_data_access(opt_data.get('boo'), i###)))\n"
         + "  else:\n"
         + "    output.append('Blah')\n"
-        + "  return sanitize.SanitizedHtml(''.join(output))\n";
+        + "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")\n";
 
     assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
   }
@@ -260,7 +264,8 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
     String expectedPyCode =
         "foo__soy### = ['Hello ',str(opt_data.get('boo'))]\n"
-        + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###))\n";
+        + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
+        + SANITIZATION_APPROVAL + ")\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
@@ -279,7 +284,8 @@ public final class GenPyCodeVisitorTest extends TestCase {
         + "for num### in xrange(5):\n"
         + "  foo__soy###.append(str(num###))\n"
         + "foo__soy###.extend(['Hello ',str(opt_data.get('boo'))])\n"
-        + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###))\n";
+        + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
+        + SANITIZATION_APPROVAL + ")\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }

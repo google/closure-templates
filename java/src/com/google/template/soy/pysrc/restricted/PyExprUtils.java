@@ -149,12 +149,18 @@ public final class PyExprUtils {
   /**
    * Wraps an expression with the proper SanitizedContent constructor.
    *
+   * <p>NOTE: The pyExpr provided must be properly escaped for the given ContentKind. Please talk to
+   * ISE (ise@) for any questions or concerns.
+   *
    * @param contentKind The kind of sanitized content.
    * @param pyExpr The expression to wrap.
    */
   public static PyExpr wrapAsSanitizedContent(ContentKind contentKind, PyExpr pyExpr) {
     String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
-    return new PyExpr(sanitizer + "(" + pyExpr.getText() + ")", Integer.MAX_VALUE);
+    String approval = "sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
+        + "'Internally created Sanitization.')";
+    return new PyExpr(sanitizer + "(" + pyExpr.getText() + ", approval=" + approval + ")",
+        Integer.MAX_VALUE);
   }
 
   /**

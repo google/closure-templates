@@ -79,7 +79,9 @@ def change_newline_to_br(value):
   result = _NEWLINE_RE.sub('<br>', str(value))
 
   if is_content_kind(value, CONTENT_KIND.HTML):
-    return SanitizedHtml(result, get_content_dir(value))
+    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+        'Persisting existing sanitization.')
+    return SanitizedHtml(result, get_content_dir(value), approval=approval)
 
   return result
 
@@ -91,8 +93,10 @@ def clean_html(value, safe_tags=None):
   if is_content_kind(value, CONTENT_KIND.HTML):
     return value
 
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Escaped html is by nature sanitized.')
   return SanitizedHtml(_strip_html_tags(value, safe_tags),
-                       get_content_dir(value))
+                       get_content_dir(value), approval=approval)
 
 
 def escape_css_string(value):
@@ -103,8 +107,10 @@ def escape_html(value):
   if is_content_kind(value, CONTENT_KIND.HTML):
     return value
 
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Escaped html is by nature sanitized.')
   return SanitizedHtml(generated_sanitize.escape_html_helper(value),
-                       get_content_dir(value))
+                       get_content_dir(value), approval=approval)
 
 
 def escape_html_attribute(value):
@@ -198,7 +204,10 @@ def filter_html_element_name(value):
 
 
 def filter_image_data_uri(value):
-  return SanitizedUri(generated_sanitize.filter_image_data_uri_helper(value))
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Filtered URIs are by nature sanitized.')
+  return SanitizedUri(
+      generated_sanitize.filter_image_data_uri_helper(value), approval=approval)
 
 
 def filter_no_auto_escape(value):
@@ -369,6 +378,14 @@ def _balance_tags(tags):
 #####################
 
 
+class IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval:
+  justification = None
+
+  def __init__(self, justification=None):
+    if justification:
+      self.justification = justification
+
+
 class CONTENT_KIND:
   HTML, JS, JS_STR_CHARS, URI, ATTRIBUTES, CSS, TEXT = range(1, 8)
 
@@ -387,11 +404,17 @@ class SanitizedContent(object):
 
   def __new__(cls, *args, **kwargs):
     if cls is SanitizedContent or not cls.content_kind:
-      raise TypeError('SanitizedContent cannot be instantiated directly. ' +
+      raise TypeError('SanitizedContent cannot be instantiated directly. '
                       'Instantiate a child class with a valid content_kind.')
     return object.__new__(cls, *args, **kwargs)
 
-  def __init__(self, content=None, content_dir=None):
+  def __init__(self, content=None, content_dir=None, approval=None):
+    if not isinstance(approval,
+                      IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval):
+      raise TypeError('Caller does not have sanitization approval.')
+    elif not approval.justification or len(approval.justification) < 20:
+      raise TypeError('A justification of at least 20 characters must be'
+                      'provided with the approval.')
     self.content = content
     self.content_dir = content_dir
 
@@ -417,8 +440,8 @@ class SanitizedContent(object):
 class SanitizedCss(SanitizedContent):
   content_kind = CONTENT_KIND.CSS
 
-  def __init__(self, content=None):
-    super(SanitizedCss, self).__init__(content, DIR.LTR)
+  def __init__(self, content=None, approval=None):
+    super(SanitizedCss, self).__init__(content, DIR.LTR, approval)
 
 
 class SanitizedHtml(SanitizedContent):
@@ -428,15 +451,16 @@ class SanitizedHtml(SanitizedContent):
 class SanitizedHtmlAttribute(SanitizedContent):
   content_kind = CONTENT_KIND.ATTRIBUTES
 
-  def __init__(self, content=None):
-    super(SanitizedHtmlAttribute, self).__init__(content, DIR.LTR)
+  def __init__(self, content=None, approval=None):
+    super(SanitizedHtmlAttribute, self).__init__(
+        content, DIR.LTR, approval)
 
 
 class SanitizedJs(SanitizedContent):
   content_kind = CONTENT_KIND.JS
 
-  def __init__(self, content=None):
-    super(SanitizedJs, self).__init__(content, DIR.LTR)
+  def __init__(self, content=None, approval=None):
+    super(SanitizedJs, self).__init__(content, DIR.LTR, approval)
 
 
 class SanitizedJsStrChars(SanitizedContent):
@@ -446,12 +470,17 @@ class SanitizedJsStrChars(SanitizedContent):
 class SanitizedUri(SanitizedContent):
   content_kind = CONTENT_KIND.URI
 
-  def __init__(self, content=None):
-    super(SanitizedUri, self).__init__(content, DIR.LTR)
+  def __init__(self, content=None, approval=None):
+    super(SanitizedUri, self).__init__(content, DIR.LTR, approval)
 
 
 class UnsanitizedText(SanitizedContent):
   content_kind = CONTENT_KIND.TEXT
 
-  def __init__(self, content=None, content_dir=None):
-    super(UnsanitizedText, self).__init__(str(content), content_dir)
+  def __init__(self, content=None, content_dir=None, approval=None):
+    # approval is still in the api for consistency, but unsanitized text is
+    # always approved.
+    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+        'Unsanitized Text does not require approval.')
+    super(UnsanitizedText, self).__init__(str(content), content_dir,
+                                          approval=approval)
