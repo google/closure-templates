@@ -441,6 +441,22 @@ public class BytecodeCompilerTest extends TestCase {
         "{/if}").rendersAs("three");
   }
 
+  public void testIfNode_nullableBool() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param? cond1 : bool}",
+            "{@param cond2 : bool}",
+            "{if $cond2 or $cond1}",
+            "  hello",
+            "{else}",
+            "  goodbye",
+            "{/if}");
+    tester.rendersAs("goodbye", ImmutableMap.of("cond2", false));
+    tester.rendersAs("hello", ImmutableMap.of("cond2", true));
+    tester.rendersAs("goodbye", ImmutableMap.of("cond1", false, "cond2", false));
+    tester.rendersAs("hello", ImmutableMap.of("cond1", true, "cond2", false));
+  }
+
   public void testPrintNode() {
     assertThatTemplateBody("{1 + 2}").rendersAs("3");
     assertThatTemplateBody("{'asdf'}").rendersAs("asdf");

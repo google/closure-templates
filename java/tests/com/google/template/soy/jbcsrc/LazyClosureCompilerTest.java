@@ -23,10 +23,12 @@ import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -111,6 +113,45 @@ public class LazyClosureCompilerTest extends TestCase {
         "{@param param: string}",
         "{let $foo : $param + '_suffix' /}",
         "{$foo}").rendersAs("string_suffix", ImmutableMap.of("param", "string"));
+  }
+
+  public void testLetValueNode_nullableParameter() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param? param : bool}",
+            "{let $paramWithDefault : $param ?: true /}",
+            "{$paramWithDefault ? 'true' : 'false'}");
+    tester.rendersAs("true", ImmutableMap.<String, Object>of());
+    tester.rendersAs("true", ImmutableMap.<String, Object>of("param", true));
+    tester.rendersAs("false", ImmutableMap.<String, Object>of("param", false));
+  }
+
+  public void testLetValueNode_nullableString() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param? param : string}",
+            "{@param? param2 : string}",
+            "{let $paramWithDefault : $param ?: $param2 /}",
+            "{$paramWithDefault}");
+    tester.rendersAs("null", ImmutableMap.<String, Object>of());
+    tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1"));
+    tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1", "param2", "2"));
+    tester.rendersAs("2", ImmutableMap.<String, Object>of("param2", "2"));
+  }
+
+  public void testLetValueNode_optionalInts() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param comments: list<string>}",
+            "{@param? numComments: number}",
+            "  {let $numNotShown: ",
+            "      isNonnull($numComments) and length($comments) > $numComments + 2 ?",
+            "          length($comments) - $numComments : 0 /}",
+            "  {$numNotShown}");
+    tester.rendersAs("0", ImmutableMap.of("comments", ImmutableList.of(), "numComments", 2));
+    tester.rendersAs("0", ImmutableMap.of("comments", ImmutableList.of()));
+    tester.rendersAs(
+        "3", ImmutableMap.of("comments", ImmutableList.of("a", "b", "c", "d"), "numComments", 1));
   }
 
   public void testDetachOnFutureLazily() throws IOException {

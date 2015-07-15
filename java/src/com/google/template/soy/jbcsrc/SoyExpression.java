@@ -245,7 +245,7 @@ class SoyExpression extends Expression {
    * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
    */
   final boolean isKnownNumber() {
-    return isKnownFloat() || isKnownInt();
+    return SoyTypes.NUMBER_TYPE.isAssignableFrom(soyType);
   }
 
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
@@ -261,14 +261,19 @@ class SoyExpression extends Expression {
     if (!delegate.isNonNullable()) {
       // now prefix with a null check and then box so null is preserved via 'boxing'
       final Label end = new Label();
-      return new SoyExpression(SoyTypes.removeNull(soyType), clazz,
-          new Expression(resultType(), features().plus(Feature.NON_NULLABLE)) {
-            @Override void doGen(CodeBuilder adapter) {
-              delegate.gen(adapter);
-              adapter.dup();
-              adapter.ifNull(end);
-            }
-          }).box().labelEnd(end);
+      return withSource(
+              new Expression(resultType(), features()) {
+                @Override
+                void doGen(CodeBuilder adapter) {
+                  delegate.gen(adapter);
+                  adapter.dup();
+                  adapter.ifNull(end);
+                }
+              })
+          .asNonNullable()
+          .box()
+          .asNullable()
+          .labelEnd(end);
     }
     if (isKnownBool()) {
       return asBoxed(MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(delegate));
@@ -292,10 +297,8 @@ class SoyExpression extends Expression {
     if (isKnownMap() || isKnownRecord()) {
       return asBoxed(MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(delegate));
     }
-    if (soyType.getKind() == Kind.NULL) {
-      return this;
-    }
-    throw new IllegalStateException("cannot box expression of type " + clazz);
+    throw new IllegalStateException(
+        "cannot box soy expression of type " + soyType + " with runtime type " + clazz);
   }
 
   private DefaultBoxed asBoxed(Expression expr) {
@@ -308,6 +311,9 @@ class SoyExpression extends Expression {
     if (BytecodeUtils.isPrimitive(resultType())) {
       return coercePrimitiveToBoolean();
     }
+    if (soyType.equals(NullType.getInstance())) {
+      return FALSE;
+    }
     if (delegate.isNonNullable()) {
       return coerceNonNullableReferenceTypeToBoolean();
     } else {
@@ -315,18 +321,22 @@ class SoyExpression extends Expression {
       // for the non-nullable branch.
       final Label end = new Label();
       return withSource(
-          new Expression(resultType(), features().plus(Feature.NON_NULLABLE)) {
-            @Override void doGen(CodeBuilder adapter) {
-              delegate.gen(adapter);
-              adapter.dup();
-              Label nonNull = new Label();
-              adapter.ifNonNull(nonNull);
-              adapter.pop();
-              adapter.pushBoolean(false);
-              adapter.goTo(end);
-              adapter.mark(nonNull);
-            }
-          }).coerceToBoolean().labelEnd(end);
+              new Expression(delegate.resultType(), delegate.features()) {
+                @Override
+                void doGen(CodeBuilder adapter) {
+                  delegate.gen(adapter);
+                  adapter.dup();
+                  Label nonNull = new Label();
+                  adapter.ifNonNull(nonNull);
+                  adapter.pop();
+                  adapter.pushBoolean(false);
+                  adapter.goTo(end);
+                  adapter.mark(nonNull);
+                }
+              })
+          .asNonNullable()
+          .coerceToBoolean()
+          .labelEnd(end);
     }
   }
 
@@ -431,7 +441,9 @@ class SoyExpression extends Expression {
           "Trying to unbox an unboxed value doesn't make sense, "
               + "should you be using a type coercion? e.g. .coerceToBoolean()");
     }
-
+    if (asType.equals(boolean.class)) {
+      return forBool(delegate.invoke(MethodRef.SOY_VALUE_BOOLEAN_VALUE));
+    }
     if (asType.equals(long.class)) {
       return forInt(delegate.invoke(MethodRef.SOY_VALUE_LONG_VALUE));
     }
@@ -440,7 +452,11 @@ class SoyExpression extends Expression {
     }
     if (delegate.isNonNullable()) {
       if (asType.equals(String.class)) {
-        return forString(delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE));
+        Expression unboxedString = delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
+        // We need to ensure that santized types don't lose their content kinds
+        return isKnownSanitizedContent()
+            ? forSanitizedString(unboxedString, ((SanitizedType) soyType).getContentKind())
+            : forString(unboxedString);
       }
       if (asType.equals(List.class)) {
         return unboxAsList();
@@ -488,6 +504,51 @@ class SoyExpression extends Expression {
   }
 
   /**
+   * A generic unbox operator.  Doesn't always work since not every type has a canonical unboxed
+   * representation and we don't always have enough type information.
+   *
+   * <p>For example, unboxed 'int' is always a java {@code long}, but unboxed '?' is undefined.
+   */
+  Optional<SoyExpression> tryUnbox() {
+    if (!isBoxed()) {
+      return Optional.of(this);
+    }
+    switch (soyType.getKind()) {
+      case OBJECT:
+      case RECORD:
+      case UNKNOWN:
+      case ANY:
+      case MAP:
+        return Optional.absent();
+      case CSS:
+      case ATTRIBUTES:
+      case HTML:
+      case JS:
+      case URI:
+      case STRING:
+        return Optional.of(unboxAs(String.class));
+      case BOOL:
+        return Optional.of(unboxAs(boolean.class));
+      case ENUM:
+      case INT:
+        return Optional.of(unboxAs(long.class));
+      case UNION:
+        // TODO(lukes): special case nullable reference types
+        // fall-through
+        return Optional.absent();
+      case FLOAT:
+        return Optional.of(unboxAs(double.class));
+      case LIST:
+        return Optional.of(unboxAs(List.class));
+      case NULL:
+        return Optional.of(NULL);
+      case ERROR:
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  /**
    * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
    */
   SoyExpression withSource(Expression expr) {
@@ -526,7 +587,14 @@ class SoyExpression extends Expression {
   }
 
   @Override SoyExpression asNonNullable() {
-    return withSource(delegate.asNonNullable());
+    return new SoyExpression(
+        SoyTypes.removeNull(soyType), clazz, delegate.asNonNullable(), renderContext);
+  }
+
+  @Override
+  public SoyExpression asNullable() {
+    return new SoyExpression(
+        SoyTypes.makeNullable(soyType), clazz, delegate.asNullable(), renderContext);
   }
 
   @Override SoyExpression labelStart(Label label) {
@@ -551,6 +619,11 @@ class SoyExpression extends Expression {
 
     @Override final SoyExpression unboxAs(Class<?> asType) {
       return unboxed.unboxAs(asType);
+    }
+
+    @Override
+    Optional<SoyExpression> tryUnbox() {
+      return Optional.of(unboxed);
     }
 
     @Override SoyExpression coerceToBoolean() {

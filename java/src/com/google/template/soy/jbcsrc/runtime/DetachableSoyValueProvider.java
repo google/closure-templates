@@ -53,7 +53,12 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
       throws IOException {
     RenderResult result = status();
     if (result.type() == Type.DONE) {
-      resolve().render(appendable);
+      SoyValue resolved = resolve();
+      if (resolved == null) {
+        appendable.append("null");
+      } else {
+        resolved.render(appendable);
+      }
     }
     return result;
   }

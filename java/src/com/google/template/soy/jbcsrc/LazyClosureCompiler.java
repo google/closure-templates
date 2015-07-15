@@ -274,12 +274,13 @@ final class LazyClosureCompiler {
       VariableSet variableSet = new VariableSet(fieldNames, type, thisVar, DO_RESOLVE);
       LazyClosureVariableLookup lookup = 
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
-      SoyExpression expression = 
-          ExpressionCompiler.createBasicCompiler(lookup, errorReporter)
-              .compile(exprNode)
-              .box();
-      final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression)
-          .withSourceLocation(exprNode.getSourceLocation());
+      SoyExpression compile =
+          ExpressionCompiler.createBasicCompiler(lookup, errorReporter).compile(exprNode);
+      SoyExpression expression = compile.box();
+      final Statement storeExpr =
+          RESOLVED_VALUE
+              .putInstanceField(thisVar, expression)
+              .withSourceLocation(exprNode.getSourceLocation());
       final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
       Statement doResolveImpl = new Statement() {
         @Override void doGen(CodeBuilder adapter) {

@@ -62,7 +62,7 @@ public class SoyTypeOpsTest extends TestCase {
     SoyType floatT = FloatType.getInstance();
     SoyType stringT = StringType.getInstance();
     SoyType htmlT = HtmlType.getInstance();
-    SoyType numberT = typeRegistry.getType("number");
+    SoyType numberT = SoyTypes.NUMBER_TYPE;
 
     assertThat(typeOps.computeLowestCommonTypeArithmetic(intT, anyT)).isAbsent();
     assertThat(typeOps.computeLowestCommonTypeArithmetic(anyT, intT)).isAbsent();

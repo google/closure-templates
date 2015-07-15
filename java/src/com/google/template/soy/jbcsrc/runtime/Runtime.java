@@ -89,7 +89,7 @@ public final class Runtime {
    */
   public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
     SoyValue value = provider.resolve();
-    if (value == NullData.INSTANCE) {
+    if (value instanceof NullData) {
       return null;
     }
     return value;
@@ -102,7 +102,7 @@ public final class Runtime {
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     SoyValueProvider provider = record.getFieldProvider(field);
-    return provider == null ? NULL_PROVIDER : provider;
+    return provider == null | provider instanceof NullData ? NULL_PROVIDER : provider;
   }
 
   /**

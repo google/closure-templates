@@ -242,6 +242,9 @@ import java.util.Map;
   static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN =
       forMethod(SoyValue.class, "coerceToBoolean").asCheap();
 
+  static final MethodRef SOY_VALUE_BOOLEAN_VALUE =
+      forMethod(SoyValue.class, "booleanValue").asCheap();
+
   static final MethodRef SOY_VALUE_FLOAT_VALUE = forMethod(SoyValue.class, "floatValue").asCheap();
 
   static final MethodRef SOY_VALUE_LONG_VALUE = forMethod(SoyValue.class, "longValue").asCheap();

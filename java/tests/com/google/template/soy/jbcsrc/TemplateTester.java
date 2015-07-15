@@ -131,6 +131,7 @@ public final class TemplateTester {
     return (SoyRecord) SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(params);
   }
 
+  // TODO(lukes): add a fluent api for specifying all the parameters to render
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
     private Iterable<ClassData> classData;
     private SoyMsgBundle msgBundle;

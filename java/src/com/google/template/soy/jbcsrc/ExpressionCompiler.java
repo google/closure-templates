@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.firstNonNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.ternary;
 
@@ -63,10 +64,12 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.Expression.Feature;
+import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
@@ -132,8 +135,8 @@ final class ExpressionCompiler {
   /**
    * Create a basic compiler with trivial detaching logic.
    *
-   * <p>All generated detach points are implemented as {@code return} statements so it is only valid
-   * for use by the {@link LazyClosureCompiler}.
+   * <p>All generated detach points are implemented as {@code return} statements and the returned
+   * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
   static BasicExpressionCompiler createBasicCompiler(VariableLookup variables,
       ErrorReporter reporter) {
@@ -497,13 +500,73 @@ final class ExpressionCompiler {
     }
 
     @Override protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-      // TODO(lukes): we should be able to avoid boxing the right hand side at least some of the
-      // time but it is tricky.  Consider adding specific primitive optimizations ($foo ?: 0 is not
-      // uncommon).
-      Class<? extends SoyValue> javaType = node.getType().javaType();
-      Expression left = visit(node.getLeftChild()).box().cast(javaType);
-      Expression right = visit(node.getRightChild()).box().cast(javaType);
-      return SoyExpression.forSoyValue(node.getType(), BytecodeUtils.firstNonNull(left, right));
+      final SoyExpression left = visit(node.getLeftChild());
+      if (left.isNonNullable()) {
+        // This would be for when someone writes '1 ?: 2', we just compile that to '1'
+        // This case is insane and should potentially be a compiler error, for now we just assume
+        // it is dead code.
+        return left;
+      }
+      // It is extremely common for a user to write '<complex-expression> ?: <primitive-expression>
+      // so try to generate code that doesn't involve unconditionally boxing the right hand side.
+      final SoyExpression right = visit(node.getRightChild());
+      SoyType nonNullLeftType = SoyTypes.removeNull(left.soyType());
+      Features features = Features.of();
+      if (Expression.areAllCheap(left, right)) {
+        features = features.plus(Feature.CHEAP);
+      }
+      if (right.isNonNullable()) {
+        features = features.plus(Feature.NON_NULLABLE);
+      }
+      if (nonNullLeftType.equals(right.soyType())) {
+        if (left.isBoxed() == right.isBoxed()) {
+          // no conversions!
+          return right.withSource(firstNonNull(left, right));
+        }
+        // try to unbox the right hand side
+        if (right.isBoxed()) {
+          Optional<SoyExpression> unboxedRight = right.tryUnbox();
+          if (unboxedRight.isPresent()) {
+            return left.withSource(firstNonNull(left, unboxedRight.get()));
+          }
+        } else {
+          // left is boxed and right is unboxed, try to avoid unboxing the right hand side by
+          // attempting an unboxing conversion on the left hand side.  However, we cannot do the
+          // type conversion until after the null check... so it is a bit tricky.
+          final Label leftIsNull = new Label();
+          final Optional<SoyExpression> nullCheckedUnboxedLeft =
+              left
+                  .withSource(
+                      new Expression(left.resultType(), features) {
+                        @Override
+                        void doGen(CodeBuilder cb) {
+                          left.gen(cb);
+                          cb.dup();
+                          cb.ifNull(leftIsNull);
+                        }
+                      })
+                  .asNonNullable()
+                  .tryUnbox();
+          if (nullCheckedUnboxedLeft.isPresent()) {
+            return right.withSource(
+                new Expression(right.resultType(), features) {
+                  @Override
+                  void doGen(CodeBuilder adapter) {
+                    nullCheckedUnboxedLeft.get().gen(adapter);
+                    Label end = new Label();
+                    adapter.goTo(end);
+                    adapter.mark(leftIsNull);
+                    adapter.pop(); // pop the extra copy of left off the stack
+                    right.gen(adapter);
+                    adapter.mark(end);
+                  }
+                });
+          }
+        }
+      }
+      // Now we need to do some boxing conversions.  soy expression boxes null -> null so this is
+      // safe (and I assume that the jit can eliminate the resulting redundant branches)
+      return SoyExpression.forSoyValue(node.getType(), firstNonNull(left.box(), right.box()));
     }
 
     @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
@@ -513,8 +576,18 @@ final class ExpressionCompiler {
       // If types are == and they are both boxed (or both not boxed) then we can just use them
       // directly.
       boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
-      if (typesEqual && (trueBranch.isBoxed() == falseBranch.isBoxed())) {
-        return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
+      if (typesEqual) {
+        if (trueBranch.isBoxed() == falseBranch.isBoxed()) {
+          return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
+        }
+        // one is unboxed and one is boxed, try to unbox the odd man out
+        Optional<SoyExpression> unboxedTrue = trueBranch.tryUnbox();
+        Optional<SoyExpression> unboxedFalse = falseBranch.tryUnbox();
+        if (unboxedTrue.isPresent() && unboxedFalse.isPresent()) {
+          return unboxedTrue
+              .get()
+              .withSource(ternary(condition, unboxedTrue.get(), unboxedFalse.get()));
+        }
       }
       // Otherwise try some simple unboxing conversions to get bytecode compatible types.
       if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
@@ -539,10 +612,9 @@ final class ExpressionCompiler {
         return SoyExpression.forString(ternary);
       }
       // Fallback to boxing and use the type from the type checker as our node type.
-      // TODO(lukes): can we do better here? other types? if the types match can we generically
-      // unbox? in the common case the runtime type will just be SoyValue, which is not very useful.
-      final Expression trueBoxed = trueBranch.box().cast(node.getType().javaType());
-      final Expression falseBoxed = falseBranch.box().cast(node.getType().javaType());
+      Class<? extends SoyValue> javaType = node.getType().javaType();
+      final Expression trueBoxed = trueBranch.box().cast(javaType);
+      final Expression falseBoxed = falseBranch.box().cast(javaType);
       return SoyExpression.forSoyValue(node.getType(), ternary(condition, trueBoxed, falseBoxed));
     }
 
@@ -705,35 +777,53 @@ final class ExpressionCompiler {
       }
 
       SoyExpression visit(DataAccessNode node) {
-        final SoyExpression dataAccess = visitNullSafeNodeRecurse(node);
+        SoyExpression dataAccess = visitNullSafeNodeRecurse(node);
         if (nullSafeExit == null) {
           return dataAccess;
         }
-        return dataAccess.withSource(
-            new Expression(dataAccess.resultType(), dataAccess.features()) {
-              @Override void doGen(CodeBuilder adapter) {
-                dataAccess.gen(adapter);
-                // At this point either 'orig' will be on the top of stack, or it will be a null
-                // value (if a null safety check failed).
-                adapter.mark(nullSafeExit);
+        if (BytecodeUtils.isPrimitive(dataAccess.resultType())) {
+          // proto accessors will return primitives, so in order to allow it to be compatible with
+          // a nullable expression we need to box.
+          dataAccess = dataAccess.box();
+        }
+        final SoyExpression orig = dataAccess;
+        return dataAccess
+            .withSource(
+                new Expression(dataAccess.resultType(), dataAccess.features()) {
+                  @Override
+                  void doGen(CodeBuilder adapter) {
+                    orig.gen(adapter);
+                    // At this point either 'orig' will be on the top of stack, or it will be a null
+                    // value (if a null safety check failed).
+                    adapter.mark(nullSafeExit);
+                    // insert a cast operator to enforce type agreement between both branches.
+                    adapter.checkCast(this.resultType());
               }
-            }).asNonNullable();
+
+              // TODO(b/20537225):  The type system lies to us in this case.  It says that the
+              // result of foo?.bar is non-nullable when in fact it has to be!  Fixing the
+              // underlying issue is extremely complicated (and likely involves changing the type
+              // system).  For now we workaround by fixing it up after the fact.
+                })
+            .asNullable();
       }
 
-      SoyExpression addNullSafetyCheck(SoyExpression baseExpr) {
+      SoyExpression addNullSafetyCheck(final SoyExpression baseExpr) {
         // need to check if baseExpr == null
-        final SoyExpression orig = baseExpr;
         final Label nullSafeExit = getNullSafeExit();
-        return SoyExpression.forSoyValue(SoyTypes.removeNull(orig.soyType()),
-            new Expression(orig.resultType(), orig.features().plus(Feature.NON_NULLABLE)) {
-          @Override void doGen(CodeBuilder adapter) {
-            orig.gen(adapter);                                       // S
-            adapter.dup();                                           // S, S
-            adapter.ifNull(nullSafeExit);                            // S
-            // Note. When we jump to nullSafeExit there is still an instance of 'orig' on the
-            // stack but we know it is == null.
-          }
-        });
+        return baseExpr
+            .withSource(
+                new Expression(baseExpr.resultType(), baseExpr.features()) {
+                  @Override
+                  void doGen(CodeBuilder adapter) {
+                    baseExpr.gen(adapter); // S
+                    adapter.dup(); // S, S
+                    adapter.ifNull(nullSafeExit); // S
+                    // Note. When we jump to nullSafeExit there is still an instance of 'orig' on
+                    // the stack but we know it is == null.
+                  }
+                })
+            .asNonNullable();
       }
 
       SoyExpression visitNullSafeNodeRecurse(ExprNode node) {

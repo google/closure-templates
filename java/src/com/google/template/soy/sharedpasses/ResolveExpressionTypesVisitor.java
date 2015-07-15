@@ -714,7 +714,7 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
         // TODO(b/21712154): jssrc will do some type coercions here, tofu will throw exceptions.
         // so the best idea is probably to add an error.  However, 'number' is probably the most
         // accurate (even if sometimes it will fail).
-        node.setType(typeOps.getTypeRegistry().getType("number"));
+        node.setType(SoyTypes.NUMBER_TYPE);
       }
       tryApplySubstitution(node);
     }

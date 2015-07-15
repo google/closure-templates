@@ -287,6 +287,18 @@ abstract class Expression extends BytecodeProducer {
     };
   }
 
+  Expression asNullable() {
+    if (!isNonNullable()) {
+      return this;
+    }
+    return new Expression(resultType, features.minus(Feature.NON_NULLABLE)) {
+      @Override
+      void doGen(CodeBuilder adapter) {
+        Expression.this.gen(adapter);
+      }
+    };
+  }
+
   /**
    * Returns an expression that performs a checked cast from the current type to the target type.
    *

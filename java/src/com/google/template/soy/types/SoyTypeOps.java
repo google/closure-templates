@@ -28,17 +28,12 @@ import javax.inject.Inject;
  *
  */
 public final class SoyTypeOps {
-  // TODO(lukes): create a static type for this.  Though, should it be Kind.UNION? or a new Kind
-  // for a super type of int and float.
-  private final SoyType numberType;
-
   private final SoyTypeRegistry typeRegistry;
 
 
   @Inject
   public SoyTypeOps(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
-    this.numberType = typeRegistry.getType("number");
   }
 
 
@@ -109,6 +104,6 @@ public final class SoyTypeOps {
   }
 
   public boolean isNumericOrUnknown(SoyType t0) {
-    return t0.getKind() == SoyType.Kind.UNKNOWN || numberType.isAssignableFrom(t0);
+    return t0.getKind() == SoyType.Kind.UNKNOWN || SoyTypes.NUMBER_TYPE.isAssignableFrom(t0);
   }
 }

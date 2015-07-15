@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
 
 import com.google.common.collect.ImmutableList;
@@ -329,10 +330,17 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   public void testNullCoalescingOpNode() {
-    assertExpression("1 ?: 2").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("1 ?: 2").evaluatesTo(1L);
     // force the type checker to interpret the left hand side as a nullable string, the literal null
     // is rejected by the type checker.
     assertExpression("(true ? null : 'a') ?: 2").evaluatesTo(IntegerData.forValue(2));
+    assertExpression("(true ? null : 'a') ?: 'b'").evaluatesTo("b");
+    assertExpression("(false ? null : 'a') ?: 'b'").evaluatesTo("a");
+
+    variables.put("p1",
+        untypedBoxedSoyExpression(SoyExpression.forString(constantNull(String.class))));
+    variables.put("p2", SoyExpression.forString(constant("a")).box());
+    assertExpression("$p1 ?: $p2").evaluatesTo("a");
   }
 
   public void testCheckNotNull() {

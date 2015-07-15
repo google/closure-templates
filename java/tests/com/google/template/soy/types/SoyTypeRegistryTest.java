@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
-import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;

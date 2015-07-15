@@ -18,12 +18,17 @@ package com.google.template.soy.types;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.types.aggregate.UnionType;
+import com.google.template.soy.types.primitive.FloatType;
+import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
 
 /**
  * Utility methods for operating on {@link SoyType} instances.
  */
 public final class SoyTypes {
+  /** Shared constant for the 'number' type. */
+  public static final SoyType NUMBER_TYPE =
+      UnionType.of(IntType.getInstance(), FloatType.getInstance());
 
   public static SoyType removeNull(SoyType type) {
     checkArgument(!NullType.getInstance().equals(type), "Can't remove null from null");

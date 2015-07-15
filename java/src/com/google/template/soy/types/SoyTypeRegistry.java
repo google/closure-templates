@@ -55,20 +55,21 @@ import javax.inject.Singleton;
 public final class SoyTypeRegistry {
 
 
-  private static final Map<String, SoyType> BUILTIN_TYPES = ImmutableMap.<String, SoyType>builder()
-      .put("any", AnyType.getInstance())
-      .put("null", NullType.getInstance())
-      .put("bool", BoolType.getInstance())
-      .put("int", IntType.getInstance())
-      .put("float", FloatType.getInstance())
-      .put("string", StringType.getInstance())
-      .put("number", UnionType.of(IntType.getInstance(), FloatType.getInstance()))
-      .put("html", HtmlType.getInstance())
-      .put("attributes", AttributesType.getInstance())
-      .put("css", CssType.getInstance())
-      .put("uri", UriType.getInstance())
-      .put("js", JsType.getInstance())
-      .build();
+  private static final Map<String, SoyType> BUILTIN_TYPES =
+      ImmutableMap.<String, SoyType>builder()
+          .put("any", AnyType.getInstance())
+          .put("null", NullType.getInstance())
+          .put("bool", BoolType.getInstance())
+          .put("int", IntType.getInstance())
+          .put("float", FloatType.getInstance())
+          .put("string", StringType.getInstance())
+          .put("number", SoyTypes.NUMBER_TYPE)
+          .put("html", HtmlType.getInstance())
+          .put("attributes", AttributesType.getInstance())
+          .put("css", CssType.getInstance())
+          .put("uri", UriType.getInstance())
+          .put("js", JsType.getInstance())
+          .build();
 
 
   private final ImmutableSet<SoyTypeProvider> typeProviders;
