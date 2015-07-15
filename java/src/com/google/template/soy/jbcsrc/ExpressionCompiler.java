@@ -73,8 +73,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
-import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.SanitizedType;
 
 import org.objectweb.asm.Label;
@@ -94,7 +92,7 @@ final class ExpressionCompiler {
 
     private BasicExpressionCompiler(VariableLookup variables, ErrorReporter errorReporter) {
       this.compilerVisitor =
-          new CompilerVisitor(errorReporter, variables,
+          new CompilerVisitor(errorReporter, variables, new PluginFunctionCompiler(variables),
               Suppliers.ofInstance(BasicDetacher.INSTANCE));
     }
 
@@ -181,7 +179,10 @@ final class ExpressionCompiler {
         throw new AssertionError();
       }
     };
-    return Optional.of(new CompilerVisitor(reporter, variables, throwingSupplier).exec(node));
+    return Optional.of(
+        new CompilerVisitor(
+            reporter, variables, new PluginFunctionCompiler(variables), throwingSupplier)
+                .exec(node));
   }
 
   /**
@@ -190,7 +191,7 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(final Label reattachPoint) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(reporter, variables,
+        new CompilerVisitor(reporter, variables, new PluginFunctionCompiler(variables),
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // neccesary.
@@ -219,12 +220,15 @@ final class ExpressionCompiler {
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     final Supplier<? extends ExpressionDetacher> detacher;
     final VariableLookup variables;
+    final PluginFunctionCompiler functions;
 
     CompilerVisitor(ErrorReporter errorReporter, VariableLookup variables,
+        PluginFunctionCompiler functions,
         Supplier<? extends ExpressionDetacher> detacher) {
       super(errorReporter);
       this.detacher = detacher;
       this.variables = variables;
+      this.functions = functions;
     }
 
     @Override protected final SoyExpression visitExprRootNode(ExprRootNode node) {
@@ -267,8 +271,7 @@ final class ExpressionCompiler {
       // constants.
       final int numItems = node.numChildren() / 2;
       if (numItems == 0) {
-        MapType mapType = (MapType) node.getType();
-        return SoyExpression.forMap(mapType, MethodRef.IMMUTABLE_MAP_OF.invoke().asCheap());
+        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor());
       }
       boolean isRecord = node.getType().getKind() == Kind.RECORD;
       List<Expression> keys = new ArrayList<>(numItems);
@@ -281,11 +284,12 @@ final class ExpressionCompiler {
         keys.add(visit(node.getChild(2 * i)).unboxAs(String.class));
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
-      Expression mapExpr = BytecodeUtils.newLinkedHashMap(keys, values);
+      Expression soyDict =
+          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newLinkedHashMap(keys, values));
       if (isRecord) {
-        return SoyExpression.forRecord((RecordType) node.getType(), mapExpr);
+        return SoyExpression.forSoyValue(node.getType(), soyDict);
       }
-      return SoyExpression.forMap((MapType) node.getType(), mapExpr);
+      return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 
   // Comparison operators.
@@ -747,12 +751,7 @@ final class ExpressionCompiler {
     // template). We would probably need to introduce a new mechanism for registering functions.
     // Or we should just 'intrinsify' a number of extra function (isNonnull for example)
     @Override SoyExpression visitPluginFunction(FunctionNode node) {
-      Expression soyJavaFunctionExpr =
-          MethodRef.RENDER_CONTEXT_GET_FUNCTION
-              .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
-      Expression list = SoyExpression.asBoxedList(visitChildren(node));
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
+      return functions.callPluginFunction(node, visitChildren(node));
     }
 
     @Override protected final SoyExpression visitExprNode(ExprNode node) {

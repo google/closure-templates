@@ -54,7 +54,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class StrSubFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+final class StrSubFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject

@@ -49,7 +49,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+final class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -70,10 +70,6 @@ class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrc
 
     Preconditions.checkArgument(arg0 instanceof StringData || arg0 instanceof SanitizedContent,
         "First argument to strContains() function is not StringData or SanitizedContent: %s", arg0);
-
-    Preconditions.checkArgument(arg1 instanceof StringData || arg1 instanceof SanitizedContent,
-        "Second argument to strContains() function is not StringData or SanitizedContent: %s",
-        arg1);
 
     String strArg0 = arg0.coerceToString();
     String strArg1 = arg1.coerceToString();

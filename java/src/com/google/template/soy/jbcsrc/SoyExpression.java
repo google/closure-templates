@@ -34,8 +34,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
-import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
@@ -50,7 +48,6 @@ import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * An Expression involving a soy value.
@@ -91,14 +88,6 @@ class SoyExpression extends Expression {
 
   static SoyExpression forList(ListType listType, Expression delegate) {
     return new SoyExpression(listType, List.class, delegate);
-  }
-
-  static SoyExpression forMap(MapType mapType, Expression delegate) {
-    return new SoyExpression(mapType, Map.class, delegate);
-  }
-
-  static SoyExpression forRecord(RecordType recordType, Expression delegate) {
-    return new SoyExpression(recordType, Map.class, delegate);
   }
 
   /**
@@ -293,9 +282,6 @@ class SoyExpression extends Expression {
     }
     if (isKnownList()) {
       return asBoxed(MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate));
-    }
-    if (isKnownMap() || isKnownRecord()) {
-      return asBoxed(MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(delegate));
     }
     throw new IllegalStateException(
         "cannot box soy expression of type " + soyType + " with runtime type " + clazz);

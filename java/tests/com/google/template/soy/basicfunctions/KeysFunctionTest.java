@@ -44,7 +44,7 @@ public class KeysFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-    KeysFunction keysFunction = new KeysFunction(VALUE_HELPER);
+    KeysFunction keysFunction = new KeysFunction();
 
     SoyValue map = VALUE_HELPER.newEasyDict(
         "boo", "bar", "foo", 2, "goo", VALUE_HELPER.newEasyDict("moo", 4));
@@ -62,7 +62,7 @@ public class KeysFunctionTest extends TestCase {
   }
 
   public void testComputeForJsSrc() {
-    KeysFunction keysFunction = new KeysFunction(VALUE_HELPER);
+    KeysFunction keysFunction = new KeysFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
     assertEquals(
         new JsExpr("soy.$$getMapKeys(JS_CODE)", Integer.MAX_VALUE),
@@ -70,7 +70,7 @@ public class KeysFunctionTest extends TestCase {
   }
 
   public void testComputeForPySrc() {
-    KeysFunction keysFunction = new KeysFunction(VALUE_HELPER);
+    KeysFunction keysFunction = new KeysFunction();
     PyExpr dict = new PyExpr("dictionary", Integer.MAX_VALUE);
     assertThat(keysFunction.computeForPySrc(ImmutableList.of(dict)))
         .isEqualTo(new PyListExpr("(dictionary).keys()", Integer.MAX_VALUE));

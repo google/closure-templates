@@ -19166,7 +19166,7 @@ goog.dom.getDocumentHeight_ = function(win) {
     // to figure out.
 
     var body = doc.body;
-    var docEl = doc.documentElement;
+    var docEl = /** @type {!HTMLElement} */ (doc.documentElement);
     if (!(docEl && body)) {
       return 0;
     }
@@ -19658,7 +19658,7 @@ goog.dom.canHaveChildren = function(node) {
   if (node.nodeType != goog.dom.NodeType.ELEMENT) {
     return false;
   }
-  switch (node.tagName) {
+  switch (/** @type {!Element} */ (node).tagName) {
     case goog.dom.TagName.APPLET:
     case goog.dom.TagName.AREA:
     case goog.dom.TagName.BASE:

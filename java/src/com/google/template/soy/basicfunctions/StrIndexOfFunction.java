@@ -52,7 +52,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class StrIndexOfFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+final class StrIndexOfFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject

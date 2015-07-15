@@ -39,7 +39,8 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-class RandomIntFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class RandomIntFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -57,7 +58,13 @@ class RandomIntFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFu
   @Override public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
-    return IntegerData.forValue((long) Math.floor(Math.random() * arg.longValue()));
+    long longValue = arg.longValue();
+    return IntegerData.forValue(randomInt(longValue));
+  }
+
+  /** Returns a random integer between {@code 0} and the provided argument. */
+  public static long randomInt(long longValue) {
+    return (long) Math.floor(Math.random() * longValue);
   }
 
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {

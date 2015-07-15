@@ -18,11 +18,12 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -32,6 +33,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -44,17 +46,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class AugmentMapFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class AugmentMapFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
-  /** The SoyValueHelper instance to use internally. */
-  private final SoyValueHelper valueHelper;
-
-
-  @Inject
-  AugmentMapFunction(SoyValueHelper valueHelper) {
-    this.valueHelper = valueHelper;
-  }
+  @Inject AugmentMapFunction() {}
 
 
   @Override public String getName() {
@@ -82,11 +77,18 @@ class AugmentMapFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcF
     Preconditions.checkArgument(arg1 instanceof SoyDict,
         "Second argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't" +
             " support maps that are not dicts (it is a todo).");
+    return augmentMap((SoyDict) arg0, (SoyDict) arg1);
+  }
 
-    SoyEasyDict resultDict = valueHelper.newEasyDict();
-    resultDict.setItemsFromDict((SoyDict) arg0);
-    resultDict.setItemsFromDict((SoyDict) arg1);
-    return resultDict;
+  /**
+   * Combine the two maps.
+   */
+  public static SoyDict augmentMap(SoyDict first, SoyDict second) {
+    Map<String, SoyValueProvider> map =
+        Maps.newHashMapWithExpectedSize(first.getItemCnt() + second.getItemCnt());
+    map.putAll(first.asJavaStringMap());
+    map.putAll(second.asJavaStringMap());
+    return DictImpl.forProviderMap(map);
   }
 
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {

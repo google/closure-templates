@@ -29,6 +29,8 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -133,16 +135,18 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   public void testCollectionLiterals_map() {
-    assertExpression("[:]").evaluatesTo(ImmutableMap.of());
+    assertExpression("[:]").evaluatesTo(SoyValueHelper.EMPTY_DICT);
 
-    // Map values are always boxed
-    assertExpression("['a': 1, 'b': 1.0, 'c': 'asdf', 'd': false]")
+    // Map values are always boxed.  SoyMaps use == for equality, so check equivalence by comparing
+    // their string representations.
+    assertExpression("['a': 1, 'b': 1.0, 'c': 'asdf', 'd': false] + ''")
         .evaluatesTo(
-            ImmutableMap.<String, SoyValue>of(
-                "a", IntegerData.forValue(1),
-                "b", FloatData.forValue(1.0),
-                "c", StringData.forValue("asdf"),
-                "d", BooleanData.FALSE));
+            DictImpl.forProviderMap(
+                ImmutableMap.<String, SoyValue>of(
+                    "a", IntegerData.forValue(1),
+                    "b", FloatData.forValue(1.0),
+                    "c", StringData.forValue("asdf"),
+                    "d", BooleanData.FALSE)).toString());
   }
 
   public void testNegativeOpNode() {

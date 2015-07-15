@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -40,7 +41,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -59,6 +60,11 @@ class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
+    return max(arg0, arg1);
+  }
+
+  /** Returns the numeric maximum of the two arguments. */
+  public static NumberData max(SoyValue arg0, SoyValue arg1) {
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
       return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
     } else {

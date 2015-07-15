@@ -38,7 +38,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -54,10 +54,16 @@ class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFuncti
   }
 
   @Override public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
+    return floor(args.get(0));
+  }
 
+  /**
+   * Returns the largest (closest to positive infinity) integer value that is less than or equal to
+   * the argument.
+   */
+  public static IntegerData floor(SoyValue arg) {
     if (arg instanceof IntegerData) {
-      return arg;
+      return (IntegerData) arg;
     } else {
       return IntegerData.forValue((int) Math.floor(arg.floatValue()));
     }

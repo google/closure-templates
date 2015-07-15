@@ -41,7 +41,7 @@ public class AugmentMapFunctionTest extends TestCase {
 
 
   public void testComputeForJava() {
-    AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
     SoyMap origMap = VALUE_HELPER.newEasyDict(
         "aaa", "blah", "bbb", "bleh", "ccc", VALUE_HELPER.newEasyDict("xxx", 2));
     SoyMap additionalMap =
@@ -56,7 +56,7 @@ public class AugmentMapFunctionTest extends TestCase {
   }
 
   public void testComputeForJsSrc() {
-    AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
     JsExpr baseMapExpr = new JsExpr("BASE_MAP_JS_CODE", Integer.MAX_VALUE);
     JsExpr additionalMapExpr = new JsExpr("ADDITIONAL_MAP_JS_CODE", Integer.MAX_VALUE);
     assertEquals(
@@ -65,7 +65,7 @@ public class AugmentMapFunctionTest extends TestCase {
   }
 
   public void testComputeForPySrc() {
-    AugmentMapFunction augmentMapFunction = new AugmentMapFunction(VALUE_HELPER);
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
     PyExpr baseMapExpr = new PyExpr("base", Integer.MAX_VALUE);
     PyExpr additionalMapExpr = new PyExpr("additional", Integer.MAX_VALUE);
     assertThat(augmentMapFunction.computeForPySrc(ImmutableList.of(baseMapExpr, additionalMapExpr)))

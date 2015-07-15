@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -40,7 +41,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject
@@ -59,6 +60,11 @@ class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
+    return min(arg0, arg1);
+  }
+
+  /** Returns the numeric minimum of the two arguments. */
+  public static NumberData min(SoyValue arg0, SoyValue arg1) {
     if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
       return IntegerData.forValue(Math.min(arg0.longValue(), arg1.longValue()));
     } else {

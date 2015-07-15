@@ -17,9 +17,10 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -28,6 +29,7 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -46,17 +48,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
-
-  /** The SoyValueHelper instance to use internally. */
-  private final SoyValueHelper valueHelper;
-
+public final class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Inject
-  KeysFunction(SoyValueHelper valueHelper) {
-    this.valueHelper = valueHelper;
-  }
+  KeysFunction() {}
 
 
   @Override public String getName() {
@@ -73,7 +68,14 @@ class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunctio
     if (! (arg instanceof SoyMap)) {
       throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
     }
-    return valueHelper.newEasyListFromJavaIterable(((SoyMap) arg).getItemKeys());
+    return ListImpl.forProviderList(keys((SoyMap) arg));
+  }
+
+  /** Returns a list of all the keys in the given map. */
+  public static List<SoyValue> keys(SoyMap map) {
+    List<SoyValue> list = new ArrayList<>(map.getItemCnt());
+    Iterables.addAll(list, map.getItemKeys());
+    return list;
   }
 
   @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
