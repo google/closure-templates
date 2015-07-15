@@ -24,6 +24,7 @@ import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorPrettyPrinter;
+import com.google.template.soy.error.SnippetFormatter;
 
 import junit.framework.TestCase;
 
@@ -42,7 +43,9 @@ public final class MainClassUtilsTest extends TestCase {
       public CompilationResult main() throws IOException {
         return new CompilationResult(
             ImmutableList.<SoySyntaxException>of(),
-            new ErrorPrettyPrinter(ImmutableList.<SoyFileSupplier>of()));
+            new ErrorPrettyPrinter(
+                new SnippetFormatter(
+                    ImmutableList.<SoyFileSupplier>of())));
       }
     })).isEqualTo(0);
   }
@@ -71,7 +74,9 @@ public final class MainClassUtilsTest extends TestCase {
       public CompilationResult main() throws IOException {
         return new CompilationResult(
             ImmutableList.of(SoySyntaxException.createWithoutMetaInfo("OOPS")),
-            new ErrorPrettyPrinter(ImmutableList.<SoyFileSupplier>of()));
+            new ErrorPrettyPrinter(
+                new SnippetFormatter(
+                    ImmutableList.<SoyFileSupplier>of())));
       }
     })).isEqualTo(1);
   }

@@ -16,17 +16,13 @@
 
 package com.google.template.soy.error;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.SoyFileSupplier;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 
 /**
  * Displays {@link SoySyntaxException}s in a useful way, with a snippet of Soy source code
@@ -36,14 +32,10 @@ import java.util.List;
  */
 public final class ErrorPrettyPrinter {
 
-  private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
+  private final SnippetFormatter snippetFormatter;
 
-  public ErrorPrettyPrinter(List<SoyFileSupplier> suppliers) {
-    ImmutableMap.Builder<String, SoyFileSupplier> builder = new Builder<>();
-    for (SoyFileSupplier supplier : suppliers) {
-      builder.put(supplier.getFilePath(), supplier);
-    }
-    this.filePathsToSuppliers = builder.build();
+  public ErrorPrettyPrinter(SnippetFormatter snippetFormatter) {
+    this.snippetFormatter = snippetFormatter;
   }
 
   /**
@@ -57,37 +49,24 @@ public final class ErrorPrettyPrinter {
 
     // Try to find a snippet of source code associated with the exception and print it.
     SourceLocation sourceLocation = e.getSourceLocation();
-    SoyFileSupplier supplier = filePathsToSuppliers.get(sourceLocation.getFilePath());
-    if (supplier == null) {
+    Optional<String> snippet;
+    try {
+      snippet = snippetFormatter.getSnippet(sourceLocation);
+    } catch (IOException exception) {
+      return;
+    }
+    if (!snippet.isPresent()) {
       // TODO(user): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
       // which occurs almost 100 times. Clean them up.
       return;
     }
-    String snippet;
-    try {
-      snippet = getSnippet(supplier, sourceLocation);
-    } catch (IOException ioe) {
-      return;
-    }
 
-    err.println(snippet);
+    err.println(snippet.get());
     // Print a caret below the error.
     // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
     // instantiations and ensure the SourceLocation is well-formed.
     int beginColumn = Math.max(e.getSourceLocation().getBeginColumn(), 1);
     String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
     err.println(caretLine);
-  }
-
-  private String getSnippet(SoyFileSupplier supplier, SourceLocation sourceLocation)
-      throws IOException {
-    try (BufferedReader reader = new BufferedReader(supplier.open())) {
-      // Line numbers are 1-indexed
-      for (int linenum = 1; linenum < sourceLocation.getLineNumber(); ++linenum) {
-        // Skip preceding lines
-        reader.readLine();
-      }
-      return reader.readLine();
-    }
   }
 }

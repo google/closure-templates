@@ -42,6 +42,7 @@ import com.google.template.soy.conformance.ConformanceInput;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.CompiledTemplates;
@@ -1117,14 +1118,16 @@ public final class SoyFileSet {
 
   private CompilationResult result() {
     ErrorReporterImpl impl = (ErrorReporterImpl) errorReporter;
-    return new CompilationResult(impl.getErrors(), new ErrorPrettyPrinter(soyFileSuppliers));
+    return new CompilationResult(
+        impl.getErrors(), new ErrorPrettyPrinter(new SnippetFormatter(soyFileSuppliers)));
   }
 
   private CompilationResult failure() {
     ImmutableCollection<? extends SoySyntaxException> errors
         = ((ErrorReporterImpl) errorReporter).getErrors();
     Preconditions.checkState(!errors.isEmpty());
-    return new CompilationResult(errors, new ErrorPrettyPrinter(soyFileSuppliers));
+    return new CompilationResult(
+        errors, new ErrorPrettyPrinter(new SnippetFormatter(soyFileSuppliers)));
   }
 
   // TODO(gboyer): There are several fields on this class that end up saving around some state, and
