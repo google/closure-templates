@@ -42,6 +42,9 @@ import javax.inject.Singleton;
  * <p><code>strLen(expr1)</code> requires <code>expr1</code> to be of type
  * string or {@link com.google.template.soy.data.SanitizedContent}.
  *
+ * <p>TODO(lukes,dcphillips): This function has inconsistent behavior between the backends when it
+ * comes to astral plane codepoints.  Python is the only backend doing it right.
+ *
  */
 @Singleton
 @SoyPureFunction
