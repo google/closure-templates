@@ -55,10 +55,11 @@ import java.util.Map;
  * Class to generate python code for one {@link MsgNode}.
  *
  */
-final class MsgFuncGenerator {
+public final class MsgFuncGenerator {
 
-  static interface MsgFuncGeneratorFactory {
-    public MsgFuncGenerator create(MsgNode node, LocalVariableStack localVarExprs);
+  /** Factory for assisted injection **/
+  public static interface MsgFuncGeneratorFactory {
+    MsgFuncGenerator create(MsgNode node, LocalVariableStack localVarExprs);
   }
 
   /** The msg node to generate the function calls from. */
