@@ -65,15 +65,6 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
     fail("is an invalid expression");
   }
 
-  void isNotValidDataRef() {
-    try {
-      expressionParser().parseDataReference();
-    } catch (IllegalStateException e) {
-      return; // passes
-    }
-    fail("is an invalid data ref");
-  }
-
   void isNotValidExpressionList() {
     try {
       expressionParser().parseExpressionList();
@@ -103,10 +94,6 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   ExprNode isValidExpression() {
     return expressionParser().parseExpression();
-  }
-
-  ExprNode isValidDataRef() {
-    return expressionParser().parseDataReference();
   }
 
   List<ExprNode> isValidExpressionList() {

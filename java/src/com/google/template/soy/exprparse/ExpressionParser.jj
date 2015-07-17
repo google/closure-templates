@@ -258,26 +258,6 @@ public final class ExpressionParser {
     }
   }
 
-
-  /**
-   * Parses the input as a data reference.
-   *
-   * <p>Maintains the following invariant: an error node is returned if and only if an error
-   * is reported to the parser's {@link ErrorReporter}.
-   */
-  public ExprNode parseDataReference() {
-    try {
-      return DataRefInput();
-    } catch (ParseException e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return VarRefNode.ERROR;
-    } catch (TokenMgrError e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return VarRefNode.ERROR;
-    }
-  }
-
-
   /**
    * Parses the input as a global.
    * <p>Maintains the following invariant: an error node is returned if and only if am error
@@ -530,22 +510,6 @@ private VarNode VarInput() :
   var = Var()
   <EOF>
   { return var; }
-}
-
-
-/**
- * Matches the whole input if it is a data reference.
- *
- * DataRefInput -> DataRef EOF
- */
-private ExprNode DataRefInput():
-{
-  ExprNode dataRef;
-}
-{
-  dataRef = DataRef()
-  <EOF>
-  { return dataRef; }
 }
 
 

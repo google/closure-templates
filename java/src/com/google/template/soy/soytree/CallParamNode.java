@@ -27,7 +27,6 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -43,10 +42,6 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class CallParamNode extends AbstractCommandNode {
-
-  private static final SoyError KEY_IS_NOT_TOP_LEVEL
-      = SoyError.of("The key in a ''param'' tag must be top level, i.e. not contain multiple keys "
-          + "(invalid ''param'' command text \"{0}\").");
 
   private static final SoyError INVALID_COMMAND_TEXT
       = SoyError.of("Invalid param command text \"{0}\"");
@@ -150,13 +145,9 @@ public abstract class CallParamNode extends AbstractCommandNode {
       // Convert {param foo : $bar/} and {param foo kind="xyz"/} syntax into attributes.
       String key = nctMatcher.group(1);
 
-      // Check the validity of the key name.
-      ExprNode dataRef = new ExpressionParser("$" + key, sourceLocation, errorReporter)
-          .parseDataReference();
-
-      if (!(dataRef instanceof VarRefNode) || ((VarRefNode) dataRef).isInjected()) {
-        errorReporter.report(sourceLocation, KEY_IS_NOT_TOP_LEVEL, commandText);
-      }
+      // Check the validity of the key name, this will report appropriate errors to the
+      // reporter if it fails.
+      new ExpressionParser("$" + key, sourceLocation, errorReporter).parseVariable();
 
       ContentKind contentKind;
       if (nctMatcher.group(3) != null) {
