@@ -144,17 +144,20 @@ public final class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction, S
     boolean isLiteral = precisionAsInt != Integer.MIN_VALUE;
 
     if (precisionAsInt >= -12 && precisionAsInt <= 12 || !isLiteral) {
+      // Python rounds ties away from 0 instead of towards infinity as JS and Java do. So to make
+      // the behavior consistent, we add the smallest possible float amount to break ties towards
+      // infinity.
+      String floatBreakdown = "math.frexp(" + value.getText() + ")";
+      String precisionValue = isLiteral ? precisionAsInt + "" : precision.getText();
       StringBuilder roundedValue = new StringBuilder("round(")
-          .append(value.getText())
+          .append("(" + floatBreakdown + "[0]")
+          .append(" + sys.float_info.epsilon)*2**" + floatBreakdown + "[1]")
           .append(", ")
-          .append(isLiteral ? precisionAsInt : precision.getText())
+          .append(precisionValue)
           .append(")");
       // The precision is less than 1. Convert to an int to prevent extraneous decimals in display.
-      if (isLiteral && precisionAsInt <= 0) {
-        return new PyExpr("int(" + roundedValue + ")", Integer.MAX_VALUE);
-      } else {
-        return new PyExpr(roundedValue.toString(), Integer.MAX_VALUE);
-      }
+      return new PyExpr("runtime.simplify_num(" + roundedValue + ", " + precisionValue + ")",
+          Integer.MAX_VALUE);
     } else {
       throw new IllegalArgumentException(
           "Second argument to round() function is " + precisionAsInt +

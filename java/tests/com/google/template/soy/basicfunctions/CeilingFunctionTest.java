@@ -58,6 +58,6 @@ public class CeilingFunctionTest extends TestCase {
     CeilingFunction ceilingFunction = new CeilingFunction();
     PyExpr expr = new PyExpr("number", Integer.MAX_VALUE);
     assertThat(ceilingFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("math.ceil(number)", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("int(math.ceil(number))", Integer.MAX_VALUE));
   }
 }

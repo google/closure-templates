@@ -78,6 +78,6 @@ public final class CeilingFunction implements SoyJavaFunction, SoyJsSrcFunction,
   @Override public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
 
-    return new PyExpr("math.ceil(" + arg.getText() + ")", Integer.MAX_VALUE);
+    return new PyExpr("int(math.ceil(" + arg.getText() + "))", Integer.MAX_VALUE);
   }
 }

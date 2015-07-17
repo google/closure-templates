@@ -78,6 +78,6 @@ public final class FloorFunction implements SoyJavaFunction, SoyJsSrcFunction, S
   @Override public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
 
-    return new PyExpr("math.floor(" + arg.getText() + ")", Integer.MAX_VALUE);
+    return new PyExpr("int(math.floor(" + arg.getText() + "))", Integer.MAX_VALUE);
   }
 }

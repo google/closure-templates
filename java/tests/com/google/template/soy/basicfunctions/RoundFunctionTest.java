@@ -90,24 +90,32 @@ public class RoundFunctionTest extends TestCase {
   public void testComputeForPySrc() {
     RoundFunction roundFunction = new RoundFunction();
 
+    String modifiedNumber =
+        "(math.frexp(number)[0] + sys.float_info.epsilon)*2**math.frexp(number)[1]";
+
     PyExpr floatExpr = new PyExpr("number", Integer.MAX_VALUE);
     assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr)))
-         .isEqualTo(new PyExpr("int(round(number, 0))", Integer.MAX_VALUE));
+         .isEqualTo(new PyExpr("runtime.simplify_num(round(" + modifiedNumber + ", 0), 0)",
+               Integer.MAX_VALUE));
 
     PyExpr numDigitsAfterPtExpr = new PyExpr("0", Integer.MAX_VALUE);
     assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-         .isEqualTo(new PyExpr("int(round(number, 0))", Integer.MAX_VALUE));
+         .isEqualTo(new PyExpr("runtime.simplify_num(round(" + modifiedNumber + ", 0), 0)",
+               Integer.MAX_VALUE));
 
     numDigitsAfterPtExpr = new PyExpr("4", Integer.MAX_VALUE);
     assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-         .isEqualTo(new PyExpr("round(number, 4)", Integer.MAX_VALUE));
+         .isEqualTo(new PyExpr("runtime.simplify_num(round(" + modifiedNumber + ", 4), 4)",
+               Integer.MAX_VALUE));
 
     numDigitsAfterPtExpr = new PyExpr("-2", Operator.NEGATIVE.getPrecedence());
     assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(new PyExpr("int(round(number, -2))", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("runtime.simplify_num(round(" + modifiedNumber + ", -2), -2)",
+              Integer.MAX_VALUE));
 
     numDigitsAfterPtExpr = new PyExpr("digits", Integer.MAX_VALUE);
     assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(new PyExpr("round(number, digits)", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("runtime.simplify_num(round(" + modifiedNumber + ", digits), digits)",
+              Integer.MAX_VALUE));
   }
 }

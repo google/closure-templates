@@ -60,6 +60,6 @@ public class FloorFunctionTest extends TestCase {
     FloorFunction floorFunction = new FloorFunction();
     PyExpr expr = new PyExpr("number", Integer.MAX_VALUE);
     assertThat(floorFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("math.floor(number)", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("int(math.floor(number))", Integer.MAX_VALUE));
   }
 }

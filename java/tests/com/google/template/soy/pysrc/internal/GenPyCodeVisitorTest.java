@@ -47,6 +47,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "import collections\n"
       + "import math\n"
       + "import random\n"
+      + "import sys\n"
       + "from example.runtime import bidi\n"
       + "from example.runtime import directives\n"
       + "from example.runtime import runtime\n"

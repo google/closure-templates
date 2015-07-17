@@ -263,6 +263,20 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
         (template_id, variant, priority))
 
 
+def simplify_num(value, precision):
+  """Convert the given value to an int if the precision is below 1.
+
+  Args:
+    value: A number value (int, float, etc.).
+    precision: The desired precision.
+  Returns:
+    A number typed as an int if the precision is low enough.
+  """
+  if precision <= 0:
+    return int(value)
+  return value
+
+
 def type_safe_add(*args):
   """A coercion function emulating JS style type conversion in the '+' operator.
 
