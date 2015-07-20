@@ -178,7 +178,8 @@ public class SourceLocation {
    * and ends where {@code other} ends.
    */
   public SourceLocation extend(SourceLocation other) {
-    checkState(filePath.equals(other.filePath));
+    checkState(filePath.equals(other.filePath),
+        "Mismatched files paths: %s and %s", filePath, other.filePath);
     return new SourceLocation(filePath, beginLine, beginColumn, other.endLine, other.endColumn);
   }
 }

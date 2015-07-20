@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 import static com.google.template.soy.exprtree.Operator.Associativity.RIGHT;
 import static com.google.template.soy.exprtree.Operator.Constants.OPERAND_0;
@@ -299,6 +300,18 @@ public enum Operator {
   /** Creates a node representing this operator. */
   public abstract OperatorNode createNode(SourceLocation location);
 
+  /** Creates a node representing this operator, with the given children. */
+  public final OperatorNode createNode(ExprNode ...children) {
+    checkArgument(children.length == getNumOperands());
+    // TODO(lukes): the source locations for all ExprNodes are pretty much a joke, currently all
+    // ParentExprNodes just use the source location of their first child, so that is what we do here
+    // but it is just wrong.
+    OperatorNode node = createNode(children[0].getSourceLocation());
+    for (ExprNode child : children) {
+      node.addChild(child);
+    }
+    return node;
+  }
 
   // -----------------------------------------------------------------------------------------------
 
