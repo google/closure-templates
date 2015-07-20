@@ -191,7 +191,7 @@ public class ExpressionParserTest extends TestCase {
     assertThatExpression("isFirst($x)").isValidExpression();
     assertThatExpression("isLast($y)").isValidExpression();
     assertThatExpression("index($z)").isValidExpression();
-    assertThatExpression("hasData()").isValidExpression();
+    assertThatExpression("randomInt()").isValidExpression();
     assertThatExpression("length($x.y.z)").isValidExpression();
     assertThatExpression("round(3.14159)").isValidExpression();
     assertThatExpression("round(3.14159, 2)").isValidExpression();

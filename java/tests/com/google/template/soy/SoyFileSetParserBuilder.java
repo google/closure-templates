@@ -129,7 +129,6 @@ public final class SoyFileSetParserBuilder {
    * <p>The initial parsing passes include:
    * <ul>
    *   <li>{@link com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.RewriteRemaindersVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor}</li>
    *   <li>{@link com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor}
