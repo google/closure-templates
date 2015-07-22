@@ -149,22 +149,27 @@ abstract class Expression extends BytecodeProducer {
    * Checks that the given expressions are compatible with the given types.
    */
   static void checkTypes(ImmutableList<Type> types, Expression ...exprs) {
-    checkTypes(types, Arrays.asList(exprs));
+    if (Flags.DEBUG) {
+      checkTypes(types, Arrays.asList(exprs));
+    }
   }
 
   /**
    * Checks that the given expressions are compatible with the given types.
    */
   static void checkTypes(ImmutableList<Type> types, Iterable<? extends Expression> exprs) {
-    int size = Iterables.size(exprs);
-    checkArgument(size == types.size(), 
-        "Supplied the wrong number of parameters. Expected %s, got %s",
-        types.size(),
-        size);
-    int i = 0;
-    for (Expression expr : exprs) {
-      expr.checkAssignableTo(types.get(i), "Parameter %s", i);
-      i++;
+    if (Flags.DEBUG) {
+      int size = Iterables.size(exprs);
+      checkArgument(
+          size == types.size(),
+          "Supplied the wrong number of parameters. Expected %s, got %s",
+          types.size(),
+          size);
+      int i = 0;
+      for (Expression expr : exprs) {
+        expr.checkAssignableTo(types.get(i), "Parameter %s", i);
+        i++;
+      }
     }
   }
 
@@ -220,24 +225,25 @@ abstract class Expression extends BytecodeProducer {
    * Check that this expression is assignable to {@code expected}. 
    */
   final void checkAssignableTo(Type expected) {
-    checkAssignableTo(expected, "");
+    if (Flags.DEBUG) {
+      checkAssignableTo(expected, "");
+    }
   }
 
   /**
    * Check that this expression is assignable to {@code expected}. 
    */
   final void checkAssignableTo(Type expected, String fmt, Object ...args) {
-    if (BytecodeUtils.isPossiblyAssignableFrom(resultType(), expected)) {
-      return;
+    if (Flags.DEBUG) {
+      if (BytecodeUtils.isPossiblyAssignableFrom(resultType(), expected)) {
+        return;
+      }
+      String message = String.format("Type mismatch. Expected %s, got %s.", expected, resultType());
+      if (!fmt.isEmpty()) {
+        message = String.format(fmt, args) + ". " + message;
+      }
+      throw new IllegalArgumentException(message);
     }
-    String message = String.format(
-        "Type mismatch. Expected %s, got %s.",
-        expected,
-        resultType());
-    if (!fmt.isEmpty()) {
-      message = String.format(fmt, args) + ". " + message;
-    }
-    throw new IllegalArgumentException(message);
   }
 
   /** 

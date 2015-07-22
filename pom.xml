@@ -271,7 +271,14 @@
           <compilerArgument>-Xlint:deprecation</compilerArgument>
         </configuration>
       </plugin>
-
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <soy_jbcsrc_debug_mode>true</soy_jbcsrc_debug_mode>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>

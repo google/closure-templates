@@ -16,6 +16,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.firstNonNull;
@@ -731,18 +732,22 @@ final class ExpressionCompiler {
       // there is only ever a single child
       final ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
       final SoyExpression childExpr = visit(childNode);
-      return SoyExpression.forSoyValue(node.getType(),
-          new Expression(Type.getType(node.getType().javaType()), childExpr.features()) {
-            @Override void doGen(CodeBuilder adapter) {
-              childExpr.gen(adapter);
-              adapter.dup();
-              Label end = new Label();
-              adapter.ifNonNull(end);
-              adapter.throwException(Type.getType(NullPointerException.class),
-                  "'" + childNode.toSourceString() + "' evaluates to null");
-              adapter.mark(end);
-            }
-          }).asNonNullable();
+      return SoyExpression.forSoyValue(
+              node.getType(),
+              new Expression(Type.getType(node.getType().javaType()), childExpr.features()) {
+                @Override
+                void doGen(CodeBuilder adapter) {
+                  childExpr.gen(adapter);
+                  adapter.dup();
+                  Label end = new Label();
+                  adapter.ifNonNull(end);
+                  adapter.throwException(
+                      NULL_POINTER_EXCEPTION_TYPE,
+                      "'" + childNode.toSourceString() + "' evaluates to null");
+                  adapter.mark(end);
+                }
+              })
+          .asNonNullable();
     }
 
     // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext

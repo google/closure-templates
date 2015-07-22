@@ -17,12 +17,12 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_BUILDER_TYPE;
 
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 
 /**
  * An expression for an {@link AdvisingAppendable}.
@@ -36,9 +36,6 @@ final class AppendableExpression extends Expression {
 
   private static final MethodRef SOFT_LIMITED =
       MethodRef.forMethod(AdvisingAppendable.class, "softLimitReached").asCheap();
-
-  private static final Type ADVISING_APPENDABLE_TYPE = Type.getType(AdvisingAppendable.class);
-  private static final Type ADVISING_BUILDER_TYPE = Type.getType(AdvisingStringBuilder.class);
 
   static AppendableExpression forLocal(LocalVariable delegate) {
     return new AppendableExpression(delegate, false /* hasSideEffects*/,

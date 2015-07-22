@@ -43,11 +43,15 @@ abstract class BytecodeProducer {
    * <p>TODO(lukes): this thread local is a little magical, consider introducing an explicit
    * 'compilation state' or 'compiler' object in which this phase information could be stored.
    */
-  private static final ThreadLocal<Boolean> isGenerating = new ThreadLocal<Boolean>() {
-    @Override protected Boolean initialValue() {
-      return false;
-    }
-  };
+  private static final ThreadLocal<Boolean> isGenerating =
+      Flags.DEBUG
+          ? new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+              return false;
+            }
+          }
+          : null;
 
   // Optional because there will be many situations where having a source location is not possible
   // e.g. NULL_STATEMENT, exprnodes (currently).  In general we should attempt to associate source
@@ -65,7 +69,7 @@ abstract class BytecodeProducer {
   }
 
   private BytecodeProducer(Optional<SourceLocation> location) {
-    if (isGenerating.get()) {
+    if (Flags.DEBUG && isGenerating.get()) {
       throw new IllegalStateException(
           "All bytecode producers should be created prior to code generation beginning.");
     }
@@ -75,7 +79,7 @@ abstract class BytecodeProducer {
   /** Writes the bytecode to the adapter. */
   final void gen(CodeBuilder adapter) {
     boolean shouldClearIsGeneratingBit = false;
-    if (!isGenerating.get()) {
+    if (Flags.DEBUG && !isGenerating.get()) {
       isGenerating.set(true);
       shouldClearIsGeneratingBit = true;
     }

@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 
 import com.google.template.soy.jbcsrc.api.Names;
 
@@ -35,7 +36,6 @@ import java.util.List;
  * defaults for all classwriters used by {@code jbcsrc}.
  */
 final class SoyClassWriter extends ClassVisitor {
-  static final TypeInfo OBJECT = TypeInfo.create(Object.class);
 
   /** Returns a new SoyClassWriter for writing a new class of the given type. */
   static Builder builder(TypeInfo type) {
@@ -86,7 +86,7 @@ final class SoyClassWriter extends ClassVisitor {
   private int numFields;
 
   private SoyClassWriter(Writer writer, Builder builder) {
-    super(writer.api(), new CheckClassAdapter(writer, false));
+    super(writer.api(), Flags.DEBUG ? new CheckClassAdapter(writer, false) : writer);
     this.writer = writer;
     this.typeInfo = builder.type;
     super.visit(
@@ -143,4 +143,3 @@ final class SoyClassWriter extends ClassVisitor {
     }
   }
 }
-

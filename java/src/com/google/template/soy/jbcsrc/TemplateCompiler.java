@@ -16,6 +16,11 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
@@ -28,9 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.TemplateMetadata;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -45,7 +48,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +56,8 @@ import java.util.List;
  * classes.
  */
 final class TemplateCompiler {
+  private static final String TEMPLATE_METADATA_DESCRIPTOR =
+      Type.getDescriptor(TemplateMetadata.class);
   private static final TypeInfo TEMPLATE_TYPE = TypeInfo.create(CompiledTemplate.class);
 
   private final CompiledTemplateRegistry registry;
@@ -154,10 +158,8 @@ final class TemplateCompiler {
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    AnnotationVisitor annotationWriter = 
-        writer.visitAnnotation(
-            Type.getDescriptor(TemplateMetadata.class), 
-            true /* visible at runtime */);
+    AnnotationVisitor annotationWriter =
+        writer.visitAnnotation(TEMPLATE_METADATA_DESCRIPTOR, true /* visible at runtime */);
     String kind = template.node().getContentKind() == null 
         ? ""
         : template.node().getContentKind().name(); 
@@ -169,12 +171,10 @@ final class TemplateCompiler {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
-    final LocalVariable appendableVar = 
-        createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end)
-            .asNonNullable();
-    final LocalVariable contextVar = 
-        createLocal("context", 2, Type.getType(RenderContext.class), start, end)
-            .asNonNullable();
+    final LocalVariable appendableVar =
+        createLocal("appendable", 1, ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
+    final LocalVariable contextVar =
+        createLocal("context", 2, RENDER_CONTEXT_TYPE, start, end).asNonNullable();
     final VariableSet variableSet = 
         new VariableSet(fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateNode node = template.node();
@@ -192,7 +192,8 @@ final class TemplateCompiler {
             errorReporter).compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         methodBody.gen(adapter);
         adapter.mark(end);
@@ -203,7 +204,7 @@ final class TemplateCompiler {
         contextVar.tableEntry(adapter);
         variableSet.generateTableEntries(adapter);
       }
-    }.writeMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), IOException.class, writer);
+    }.writeIOExceptionMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), writer);
     return variableSet.defineFields(writer);
   }
 
@@ -219,9 +220,8 @@ final class TemplateCompiler {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
-    final LocalVariable paramsVar = 
-        createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
-    final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
+    final LocalVariable paramsVar = createLocal("params", 1, SOY_RECORD_TYPE, start, end);
+    final LocalVariable ijVar = createLocal("ij", 2, SOY_RECORD_TYPE, start, end);
     final List<Statement> assignments = new ArrayList<>();
     assignments.add(fieldInitializers);  // for other fields needed by the compiler.
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
@@ -230,22 +230,24 @@ final class TemplateCompiler {
       Expression paramProvider = getParam(paramsVar, ijVar, param);
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }
-    Statement constructorBody = new Statement() {
-      @Override void doGen(CodeBuilder ga) {
-        ga.mark(start);
-        // call super()
-        thisVar.gen(ga);
-        ga.invokeConstructor(Type.getType(Object.class), BytecodeUtils.NULLARY_INIT);
-        for (Statement assignment : assignments) {
-          assignment.gen(ga);
-        }
-        ga.visitInsn(Opcodes.RETURN);
-        ga.visitLabel(end);
-        thisVar.tableEntry(ga);
-        paramsVar.tableEntry(ga);
-        ijVar.tableEntry(ga);
-      }
-    };
+    Statement constructorBody =
+        new Statement() {
+          @Override
+          void doGen(CodeBuilder ga) {
+            ga.mark(start);
+            // call super()
+            thisVar.gen(ga);
+            ga.invokeConstructor(OBJECT.type(), NULLARY_INIT);
+            for (Statement assignment : assignments) {
+              assignment.gen(ga);
+            }
+            ga.visitInsn(Opcodes.RETURN);
+            ga.visitLabel(end);
+            thisVar.tableEntry(ga);
+            paramsVar.tableEntry(ga);
+            ijVar.tableEntry(ga);
+          }
+        };
     constructorBody.writeMethod(Opcodes.ACC_PUBLIC, template.constructor().method(), writer);
   }
 

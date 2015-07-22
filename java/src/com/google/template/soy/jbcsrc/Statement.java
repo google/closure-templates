@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.THROWABLE_TYPE;
 
 import com.google.template.soy.base.SourceLocation;
 
@@ -25,6 +26,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -37,9 +39,13 @@ import java.util.Arrays;
  * identical to the frame map at the end of the statement).
  */
 abstract class Statement extends BytecodeProducer {
-  static final Statement NULL_STATEMENT = new Statement() {
-    @Override void doGen(CodeBuilder adapter) {}
-  };
+  private static final Type[] IO_EXCEPTION_ARRAY = new Type[] {Type.getType(IOException.class)};
+
+  static final Statement NULL_STATEMENT =
+      new Statement() {
+        @Override
+        void doGen(CodeBuilder adapter) {}
+      };
 
   /**
    * Generates a statement that returns the value produced by the given expression.
@@ -65,9 +71,10 @@ abstract class Statement extends BytecodeProducer {
   * <p>This does not validate that the throwable is compatible with the methods throws clause. 
   */
   static Statement throwExpression(final Expression expression) {
-    expression.checkAssignableTo(Type.getType(Throwable.class));
+    expression.checkAssignableTo(THROWABLE_TYPE);
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.throwException();
       }
@@ -112,15 +119,13 @@ abstract class Statement extends BytecodeProducer {
 
   /**
    * Writes this statement to the {@link ClassVisitor} as a method.
-   * 
+   *
    * @param access The access modifiers of the method
    * @param method The method signature
-   * @param exception A checked exception to add to the method signature
    * @param visitor The class visitor to write it to
    */
-  final void writeMethod(int access, Method method, Class<? extends Throwable> exception,
-      ClassVisitor visitor) {
-    writeMethodTo(new CodeBuilder(access, method, new Type[] { Type.getType(exception) }, visitor));
+  final void writeIOExceptionMethod(int access, Method method, ClassVisitor visitor) {
+    writeMethodTo(new CodeBuilder(access, method, IO_EXCEPTION_ARRAY, visitor));
   }
 
   /** Writes this statement as the complete method body to {@code ga}. */

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.defineDefaultConstructor;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
@@ -27,7 +28,6 @@ import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
@@ -97,17 +97,20 @@ final class TemplateFactoryCompiler {
    * loading them.
    */
   private void generateStaticInitializer(ClassVisitor cv) {
-    GeneratorAdapter ga = new GeneratorAdapter(
-        Opcodes.ACC_STATIC,
-        BytecodeUtils.CLASS_INIT,
-        null /* no generic signature */,
-        null /* no checked exceptions */,
-        cv);
-    ga.visitCode();
-    ga.push(template.typeInfo().type());
-    ga.visitVarInsn(Opcodes.ASTORE, 0);
-    ga.returnValue();
-    ga.endMethod();
+    if (Flags.DEBUG) {
+      GeneratorAdapter ga =
+          new GeneratorAdapter(
+              Opcodes.ACC_STATIC,
+              BytecodeUtils.CLASS_INIT,
+              null /* no generic signature */,
+              null /* no checked exceptions */,
+              cv);
+      ga.visitCode();
+      ga.push(template.typeInfo().type());
+      ga.visitVarInsn(Opcodes.ASTORE, 0);
+      ga.returnValue();
+      ga.endMethod();
+    }
   }
 
   /**
@@ -118,10 +121,9 @@ final class TemplateFactoryCompiler {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(factoryType, start, end);
-    final LocalVariable paramsVar = 
-        createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
-    final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
-    final Statement returnTemplate = 
+    final LocalVariable paramsVar = createLocal("params", 1, SOY_RECORD_TYPE, start, end);
+    final LocalVariable ijVar = createLocal("ij", 2, SOY_RECORD_TYPE, start, end);
+    final Statement returnTemplate =
         Statement.returnExpression(template.constructor().construct(paramsVar, ijVar));
     new Statement() {
       @Override void doGen(CodeBuilder ga) {

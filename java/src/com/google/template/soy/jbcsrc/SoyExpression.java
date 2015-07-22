@@ -17,6 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
@@ -25,7 +27,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -102,9 +103,12 @@ class SoyExpression extends Expression {
   }
 
   static final SoyExpression NULL =
-      new SoyExpression(NullType.getInstance(), Object.class,
-          new Expression(Type.getType(Object.class), Feature.CHEAP) {
-            @Override void doGen(CodeBuilder adapter) {
+      new SoyExpression(
+          NullType.getInstance(),
+          Object.class,
+          new Expression(OBJECT.type(), Feature.CHEAP) {
+            @Override
+            void doGen(CodeBuilder adapter) {
               adapter.visitInsn(Opcodes.ACONST_NULL);
             }
           });
@@ -485,8 +489,52 @@ class SoyExpression extends Expression {
       }
     }
     return forList(
-        asListType,
-        delegate.cast(Type.getType(SoyList.class)).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
+        asListType, delegate.cast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
+  }
+
+  /**
+   * A generic unbox operator.  Doesn't always work since not every type has a canonical unboxed
+   * representation and we don't always have enough type information.
+   *
+   * <p>For example, unboxed 'int' is always a java {@code long}, but unboxed '?' is undefined.
+   */
+  Optional<SoyExpression> tryUnbox() {
+    if (!isBoxed()) {
+      return Optional.of(this);
+    }
+    switch (soyType.getKind()) {
+      case OBJECT:
+      case RECORD:
+      case UNKNOWN:
+      case ANY:
+      case MAP:
+        return Optional.absent();
+      case CSS:
+      case ATTRIBUTES:
+      case HTML:
+      case JS:
+      case URI:
+      case STRING:
+        return Optional.of(unboxAs(String.class));
+      case BOOL:
+        return Optional.of(unboxAs(boolean.class));
+      case ENUM:
+      case INT:
+        return Optional.of(unboxAs(long.class));
+      case UNION:
+        // TODO(lukes): special case nullable reference types
+        // fall-through
+        return Optional.absent();
+      case FLOAT:
+        return Optional.of(unboxAs(double.class));
+      case LIST:
+        return Optional.of(unboxAs(List.class));
+      case NULL:
+        return Optional.of(NULL);
+      case ERROR:
+      default:
+        throw new AssertionError();
+    }
   }
 
   /**

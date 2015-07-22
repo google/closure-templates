@@ -16,7 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.auto.value.AutoValue;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -29,15 +30,38 @@ import java.io.StringWriter;
 
 /**
  * A simple tuple of generated class data and type information about the class.
+ * 
+ * <p>Note: not using an @AutoValue since it copies
  */
-@AutoValue abstract class ClassData {
+final class ClassData {
   static ClassData create(TypeInfo type, byte[] b, int numFields) {
-    return new AutoValue_ClassData(type, b, numFields);
+    return new ClassData(type, b, numFields);
   }
 
-  abstract TypeInfo type();
-  abstract byte[] data();
-  abstract int numberOfFields();
+  private final TypeInfo type;
+  private final byte[] data;
+  private final int numberOfFields;
+
+  private ClassData(TypeInfo type, byte[] data, int numberOfFields) {
+    this.type = checkNotNull(type);
+    this.data = checkNotNull(data);
+    this.numberOfFields = numberOfFields;
+  }
+
+  TypeInfo type() {
+    return type;
+  }
+
+  /**
+   * Caution, this returns the underlying array and is mutable.
+   */
+  byte[] data() {
+    return data;
+  }
+
+  int numberOfFields() {
+    return numberOfFields;
+  }
 
   /**
    * Runs the {@link CheckClassAdapter} on this class in basic analysis mode.
@@ -49,12 +73,16 @@ import java.io.StringWriter;
    * presents.
    */
   void checkClass() {
-    new ClassReader(data()).accept(new CheckClassAdapter(new ClassNode(), true), 0);
+    ClassNode cv = new ClassNode();
+    new ClassReader(data).accept(new CheckClassAdapter(cv, true /* check data flow */), 0);
+    // double check our fields while we are here.
+    checkState(type.internalName().equals(cv.name));
+    checkState(numberOfFields == cv.fields.size());
   }
 
   @Override public String toString() {
     StringWriter sw = new StringWriter();
-    new ClassReader(data())
+    new ClassReader(data)
         .accept(new TraceClassVisitor(null, new Textifier(), new PrintWriter(sw)), 0);
     return sw.toString();
   }

@@ -155,14 +155,20 @@ public final class BytecodeCompiler {
         TemplateCompiler templateCompiler = 
             new TemplateCompiler(compilerRegistry, classInfo, errorReporter);
         for (ClassData clazz : templateCompiler.compile()) {
-          logger.log(
-              Level.FINE,
-              "Generated class {0}.  size: {1}, fields: {2}",
-              new Object[] {clazz.type().className(), clazz.data().length, clazz.numberOfFields()});
+          // This loop is relatively hot, so this actually makes a detectable difference :(
+          if (logger.isLoggable(Level.FINE)) {
+            logger.log(
+                Level.FINE,
+                "Generated class {0}.  size: {1}, fields: {2}",
+                new Object[] {clazz.type().className(), clazz.data().length,
+                    clazz.numberOfFields()});
+          }
           numClasses++;
           numBytes += clazz.data().length;
           numFields += clazz.numberOfFields();
-          clazz.checkClass();
+          if (Flags.DEBUG) {
+            clazz.checkClass();
+          }
           builder.add(clazz);
         }
       // Report unexpected errors and keep going to try to collect more.

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
@@ -58,6 +59,7 @@ import com.google.template.soy.types.primitive.UnknownType;
 import junit.framework.TestCase;
 
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -341,8 +343,8 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("(true ? null : 'a') ?: 'b'").evaluatesTo("b");
     assertExpression("(false ? null : 'a') ?: 'b'").evaluatesTo("a");
 
-    variables.put("p1",
-        untypedBoxedSoyExpression(SoyExpression.forString(constantNull(String.class))));
+    variables.put(
+        "p1", untypedBoxedSoyExpression(SoyExpression.forString(constantNull(STRING_TYPE))));
     variables.put("p2", SoyExpression.forString(constant("a")).box());
     assertExpression("$p1 ?: $p2").evaluatesTo("a");
   }
@@ -390,19 +392,21 @@ public class ExpressionCompilerTest extends TestCase {
   public void testNullSafeItemAccess_map() {
     // Note: due to bugs in the type resolver (b/20537225) we can't properly type this variable
     // so instead we have to lie about the nullability of this map.
-    variables.put("nullMap",
+    variables.put(
+        "nullMap",
         SoyExpression.forSoyValue(
             MapType.of(StringType.getInstance(), IntType.getInstance()),
-            BytecodeUtils.constantNull(SoyMap.class)));
+            BytecodeUtils.constantNull(Type.getType(SoyMap.class))));
     assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
     assertExpression("$nullMap?['a']").evaluatesTo(null);
   }
 
   public void testNullSafeItemAccess_list() {
-    variables.put("nullList",
+    variables.put(
+        "nullList",
         SoyExpression.forSoyValue(
             ListType.of(StringType.getInstance()),
-            BytecodeUtils.constantNull(SoyList.class)));
+            BytecodeUtils.constantNull(Type.getType(SoyList.class))));
     assertExpression("$nullList[1]").throwsException(NullPointerException.class);
     assertExpression("$nullList?[1]").evaluatesTo(null);
   }
@@ -419,11 +423,11 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   public void testNullSafeFieldAccess() {
-    variables.put("nullRecord",
+    variables.put(
+        "nullRecord",
         SoyExpression.forSoyValue(
-            SoyTypes.makeNullable(
-                RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
-            BytecodeUtils.constantNull(SoyDict.class)));
+            SoyTypes.makeNullable(RecordType.of(ImmutableMap.of("a", StringType.getInstance()))),
+            BytecodeUtils.constantNull(Type.getType(SoyDict.class))));
     assertExpression("$nullRecord.a").throwsException(NullPointerException.class);
     assertExpression("$nullRecord?.a").evaluatesTo(null);
   }

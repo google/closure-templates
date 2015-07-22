@@ -17,13 +17,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_RESULT_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.VariableSet.SaveRestoreState;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -121,11 +121,12 @@ final class DetachState implements ExpressionDetacher.Factory {
     }
 
     @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
-      return new Expression(Type.getType(SoyValue.class)) {
-        @Override void doGen(CodeBuilder adapter) {
+      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+      return new Expression(SOY_VALUE_TYPE) {
+        @Override
+        void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
-          // invocations.  This makes the expression api difficult/confusing to use.  So instead 
+          // invocations.  This makes the expression api difficult/confusing to use.  So instead
           // call a bunch of unchecked invocations.
           // Legend: SVP = SoyValueProvider, RS = ResolveStatus, Z = boolean, SV = SoyValue
           soyValueProvider.gen(adapter);                                  // Stack: SVP
@@ -141,8 +142,8 @@ final class DetachState implements ExpressionDetacher.Factory {
           adapter.returnValue();
 
           adapter.mark(resolve);
-          adapter.pop();                                                  // Stack: SVP
-          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter);  // Stack: SV
+          adapter.pop(); // Stack: SVP
+          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter); // Stack: SV
         }
       };
     }
@@ -230,7 +231,7 @@ final class DetachState implements ExpressionDetacher.Factory {
    *     safe to generate more than once. 
    */
   Statement detachForRender(final Expression callRender) {
-    checkArgument(callRender.resultType().equals(Type.getType(RenderResult.class)));
+    checkArgument(callRender.resultType().equals(RENDER_RESULT_TYPE));
     final Label reattachRender = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
     // We pass NULL statement for the restore logic since we handle that ourselves below

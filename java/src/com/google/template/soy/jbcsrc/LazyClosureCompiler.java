@@ -17,6 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Predicates.notNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.CONTENT_KIND_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
@@ -313,9 +315,8 @@ final class LazyClosureCompiler {
       final Label start = new Label();
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
-      final LocalVariable appendableVar = 
-          createLocal("appendable", 1, Type.getType(AdvisingAppendable.class), start, end)
-              .asNonNullable();
+      final LocalVariable appendableVar =
+          createLocal("appendable", 1, ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
 
       final VariableSet variableSet = new VariableSet(fieldNames, type, thisVar, DO_RENDER);
       LazyClosureVariableLookup lookup = 
@@ -340,7 +341,7 @@ final class LazyClosureCompiler {
       ContentKind kind = renderUnit.getContentKind();
       final Expression contentKind =
           (kind == null)
-              ? BytecodeUtils.constantNull(ContentKind.class)
+              ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
               : FieldRef.enumReference(kind).accessor();
       Statement fieldInitializers = variableSet.defineFields(visitor);
       Statement superClassContstructor = new Statement() {

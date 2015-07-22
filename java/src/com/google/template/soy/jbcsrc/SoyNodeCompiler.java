@@ -17,6 +17,9 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.CONTENT_KIND_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
@@ -29,7 +32,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.error.ErrorReporter;
@@ -40,7 +42,6 @@ import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -398,9 +399,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Variable listSizeVar =
         scope.createSynthetic(SyntheticVarName.foreachLoopLength(nonEmptyNode),
             MethodRef.LIST_SIZE.invoke(listVar.local()), DERIVED);
-    final Variable itemVar = scope.create(nonEmptyNode.getVarName(),
-        MethodRef.LIST_GET.invoke(listVar.local(),
-            indexVar.local()).cast(Type.getType(SoyValueProvider.class)), SaveStrategy.DERIVED);
+    final Variable itemVar =
+        scope.create(
+            nonEmptyNode.getVarName(),
+            MethodRef.LIST_GET
+                .invoke(listVar.local(), indexVar.local())
+                .cast(SOY_VALUE_PROVIDER_TYPE),
+            SaveStrategy.DERIVED);
     final Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
     final Statement exitScope = scope.exitScope();
 
@@ -511,7 +516,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             constant(false));
     Statement doCall = detachState.detachForRender(callRenderAndResolve);
     Statement clearRenderee =
-        currentRendereeField.putInstanceField(thisVar, constantNull(SoyValueProvider.class));
+        currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
     return Statement.concat(initRenderee, doCall, clearRenderee)
         .withSourceLocation(node.getSourceLocation());
   }
@@ -691,7 +696,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               calleeExpression,
               BytecodeUtils.asList(directiveExprs),
               calleeContentKind == null
-                  ? BytecodeUtils.constantNull(ContentKind.class)
+                  ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
                   : FieldRef.enumReference(calleeContentKind).accessor());
     }
     Statement initCallee =
@@ -702,8 +707,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             appendableExpression,
             variableLookup.getRenderContext());
     Statement callCallee = detachState.detachForRender(callRender);
-    Statement clearCallee = currentCalleeField.putInstanceField(thisVar,
-        BytecodeUtils.constantNull(CompiledTemplate.class));
+    Statement clearCallee =
+        currentCalleeField.putInstanceField(
+            thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));
     return Statement.concat(initCallee, callCallee, clearCallee)
         .withSourceLocation(node.getSourceLocation());
   }

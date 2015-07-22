@@ -16,8 +16,9 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
+
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.Names;
@@ -38,9 +39,9 @@ import org.objectweb.asm.commons.Method;
    * The {@link Method} signature of all generated constructors for the {@link CompiledTemplate}
    * classes.
    */
-  private static final Method GENERATED_CONSTRUCTOR = new Method("<init>",
-      Type.getMethodDescriptor(Type.VOID_TYPE, 
-          Type.getType(SoyRecord.class), Type.getType(SoyRecord.class)));
+  private static final Method GENERATED_CONSTRUCTOR =
+      new Method(
+          "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, SOY_RECORD_TYPE, SOY_RECORD_TYPE));
 
   /** 
    * The {@link Method} signature of the 

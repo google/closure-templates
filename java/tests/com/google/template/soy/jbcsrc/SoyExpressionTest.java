@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
@@ -36,6 +37,8 @@ import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 
 import junit.framework.TestCase;
+
+import org.objectweb.asm.Type;
 
 import java.util.List;
 
@@ -105,9 +108,8 @@ public class SoyExpressionTest extends TestCase {
   }
 
   public void testStringExpression() {
-    assertThatExpression(forString(constantNull(String.class)).coerceToBoolean())
-        .evaluatesTo(false);
-    assertThatExpression(forString(constantNull(String.class)).box()).evaluatesTo(null);
+    assertThatExpression(forString(constantNull(STRING_TYPE)).coerceToBoolean()).evaluatesTo(false);
+    assertThatExpression(forString(constantNull(STRING_TYPE)).box()).evaluatesTo(null);
     assertThatExpression(forString(constant("")).coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(forString(constant("")).box()).evaluatesTo(StringData.EMPTY_STRING);
     assertThatExpression(forString(constant("truthy")).coerceToBoolean()).evaluatesTo(true);
@@ -115,9 +117,10 @@ public class SoyExpressionTest extends TestCase {
 
   public void testListExpression() {
     ListType list = ListType.of(IntType.getInstance());
-    assertThatExpression(forList(list, constantNull(List.class)).coerceToBoolean())
+    assertThatExpression(forList(list, constantNull(Type.getType(List.class))).coerceToBoolean())
         .evaluatesTo(false);
-    assertThatExpression(forList(list, constantNull(List.class)).box()).evaluatesTo(null);
+    assertThatExpression(forList(list, constantNull(Type.getType(List.class))).box())
+        .evaluatesTo(null);
     assertThatExpression(forList(list, MethodRef.IMMUTABLE_LIST_OF.invoke()).coerceToBoolean())
         .evaluatesTo(true);
     // SoyList uses Object identity for equality so we can't really assert on the value.

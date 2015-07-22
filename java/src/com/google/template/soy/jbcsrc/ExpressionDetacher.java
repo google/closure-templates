@@ -16,13 +16,14 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.template.soy.data.SoyValue;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
+
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 /**
  * A helper for generating detach operations in soy expressions.
@@ -64,11 +65,12 @@ interface ExpressionDetacher {
     private BasicDetacher() {}
 
     @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
-      return new Expression(Type.getType(SoyValue.class)) {
-        @Override void doGen(CodeBuilder adapter) {
+      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+      return new Expression(SOY_VALUE_TYPE) {
+        @Override
+        void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
-          // invocations.  This makes the expression api difficult/confusing to use.  So instead 
+          // invocations.  This makes the expression api difficult/confusing to use.  So instead
           // call a bunch of unchecked invocations.
           // Legend: SVP = SoyValueProvider, RS = ResolveStatus, Z = boolean, SV = SoyValue
           soyValueProvider.gen(adapter);                                  // Stack: SVP

@@ -25,8 +25,18 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
+import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -44,6 +54,23 @@ import java.util.List;
  * A set of utilities for generating simple expressions in bytecode
  */
 final class BytecodeUtils {
+  static final TypeInfo OBJECT = TypeInfo.create(Object.class);
+  static final Type STRING_TYPE = Type.getType(String.class);
+  static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
+  static final Type ADVISING_APPENDABLE_TYPE = Type.getType(AdvisingAppendable.class);
+  static final Type ADVISING_BUILDER_TYPE = Type.getType(AdvisingStringBuilder.class);
+  static final Type RENDER_RESULT_TYPE = Type.getType(RenderResult.class);
+  static final Type NULL_POINTER_EXCEPTION_TYPE = Type.getType(NullPointerException.class);
+  static final Type RENDER_CONTEXT_TYPE = Type.getType(RenderContext.class);
+  static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
+  static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
+  static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
+  static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
+  static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
+  static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
+  static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
+  static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
+
   static final Method NULLARY_INIT = Method.getMethod("void <init>()");
   static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
 
@@ -145,13 +172,25 @@ final class BytecodeUtils {
     return maybeClass.get();
   }
 
+  private static final Expression FALSE =
+      new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
+        @Override
+        void doGen(CodeBuilder mv) {
+          mv.pushBoolean(false);
+        }
+      };
+
+  private static final Expression TRUE =
+      new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
+        @Override
+        void doGen(CodeBuilder mv) {
+          mv.pushBoolean(true);
+        }
+      };
+
   /** Returns an {@link Expression} that can load the given 'boolean' constant. */
-  static Expression constant(final boolean value) {
-    return new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
-      @Override void doGen(CodeBuilder mv) {
-        mv.pushBoolean(value);
-      }
-    };
+  static Expression constant(boolean value) {
+    return value ? TRUE : FALSE;
   }
 
   /** Returns an {@link Expression} that can load the given 'int' constant. */
@@ -193,20 +232,23 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given String constant. */
   static Expression constant(final String value) {
     checkNotNull(value);
-    return new Expression(Type.getType(String.class), Feature.CHEAP, Feature.NON_NULLABLE) {
-      @Override void doGen(CodeBuilder mv) {
+    return new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+      @Override
+      void doGen(CodeBuilder mv) {
         mv.pushString(value);
       }
     };
   }
   
   /** Returns an {@link Expression} with the given type that always returns null. */
-  static Expression constantNull(final Class<?> clazz) {
-    Type type = Type.getType(clazz);
-    checkArgument(type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY, 
-        "%s is not a reference type", clazz);
+  static Expression constantNull(Type type) {
+    checkArgument(
+        type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY,
+        "%s is not a reference type",
+        type);
     return new Expression(type, Feature.CHEAP) {
-      @Override void doGen(CodeBuilder mv) {
+      @Override
+      void doGen(CodeBuilder mv) {
         mv.visitInsn(Opcodes.ACONST_NULL);
       }
     };
@@ -293,7 +335,7 @@ final class BytecodeUtils {
     Label end = mg.newLabel();
     LocalVariable thisVar = LocalVariable.createThisVar(ownerType, start, end);
     thisVar.gen(mg);
-    mg.invokeConstructor(Type.getType(Object.class), NULLARY_INIT);
+    mg.invokeConstructor(OBJECT.type(), NULLARY_INIT);
     mg.returnValue();
     mg.mark(end);
     thisVar.tableEntry(mg);
@@ -556,14 +598,15 @@ final class BytecodeUtils {
     // Note, we cannot neccesarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
-    return new Expression(Type.getType(ArrayList.class), Feature.NON_NULLABLE) {
-      @Override void doGen(CodeBuilder mv) {
+    return new Expression(ARRAY_LIST_TYPE, Feature.NON_NULLABLE) {
+      @Override
+      void doGen(CodeBuilder mv) {
         construct.gen(mv);
         for (Expression child : copy) {
           mv.dup();
           child.gen(mv);
           MethodRef.ARRAY_LIST_ADD.invokeUnchecked(mv);
-          mv.pop();  // pop the bool result of arraylist.add
+          mv.pop(); // pop the bool result of arraylist.add
         }
       }
     };
@@ -585,8 +628,9 @@ final class BytecodeUtils {
     }
     final Expression construct = ConstructorRef.LINKED_HASH_MAP_SIZE
         .construct(constant(hashMapCapacity(keysCopy.size())));
-    return new Expression(Type.getType(LinkedHashMap.class), Feature.NON_NULLABLE) {
-      @Override void doGen(CodeBuilder mv) {
+    return new Expression(LINKED_HASH_MAP_TYPE, Feature.NON_NULLABLE) {
+      @Override
+      void doGen(CodeBuilder mv) {
         construct.gen(mv);
         for (int i = 0; i < keysCopy.size(); i++) {
           Expression key = keysCopy.get(i);
@@ -595,7 +639,7 @@ final class BytecodeUtils {
           key.gen(mv);
           value.gen(mv);
           MethodRef.LINKED_HASH_MAP_PUT.invokeUnchecked(mv);
-          mv.pop();  // pop the Object result of map.put
+          mv.pop(); // pop the Object result of map.put
         }
       }
     };
